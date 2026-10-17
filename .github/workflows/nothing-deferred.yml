@@ -1,0 +1,58 @@
+name: Nothing deferred
+
+# The gate that refuses a merge while any item raised against the change is unresolved. Its own
+# workflow rather than a job of `Checks`, for the reason its siblings are: a `host.checks` entry
+# states one mirrored local command, so two commands behind one workflow name could not be
+# stated on the surface at all.
+#
+# ⛔ This is the one workflow here that holds a token scope. Why that is a departure worth making,
+# and what it buys, is stated once in
+# docs/single-source-of-truth.md#the-gate-on-the-change-nothing-is-deferred — not repeated here.
+
+on:
+  # ⚠️ Two events, because the signal this gate exists for arrives without a commit. A review is
+  # submitted with findings on it and no push follows, so a workflow listening to `pull_request`
+  # alone goes green once and stays green while findings pile up against it — measured on this
+  # pull request, which reported green carrying sixteen unresolved threads. `edited` and
+  # `ready_for_review` are non-default types of the first event for the same reason: both change
+  # what the gate reads and neither pushes a commit.
+  #
+  # ⛔ There is no third event, and not for want of asking. `pull_request_review_thread` is a
+  # webhook the host sends and **not** a workflow trigger: a file naming it is rejected whole —
+  # measured here, twice, as a push-event failure with no jobs and no pull-request run at all.
+  # So resolving the last thread re-runs nothing, and the verdict stands until the next push,
+  # body edit, review or manual re-run. That residue is stated in the document rather than
+  # papered over.
+  #
+  # The surface's `triggers` facet states an event and a base, and can state neither the types
+  # above nor the second event — #82.
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  nothing-deferred:
+    name: Nothing deferred
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, planted violations first: the change is held only once each
+      # check has been shown it can fail — and shown it can pass, since an over-broad body
+      # rule would redden every honest pull request alike. That command is what `host.checks`
+      # declares this run mirrors, so the two cannot drift.
+      #
+      # The token is passed to the step rather than left in the git config, so the one thing
+      # that holds it is the one process that needs it. No dependency is installed: the run
+      # reads the pull request out of the event payload, and only a local run needs the
+      # configuration reader to find the slug.
+      - name: Assert each check can fail, then hold this change to the rule
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 tools/check_nothing_deferred.py --self-test

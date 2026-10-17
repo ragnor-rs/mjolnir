@@ -82,6 +82,46 @@ statement; it carries no count, because a count restated elsewhere drifts the mo
 added. The measurements that forced each to be independent are in
 [`docs/configuration-surface.md`](../../../docs/configuration-surface.md).
 
+### Nothing is deferred
+
+⛔ **A work item is delivered whole.** A role that reaches a question it cannot answer **asks**,
+and waits for the answer. It does not note the question, pick a default and carry on, and it does
+not hand the question forward as a follow-up item for the same work.
+
+**The asking form is stated, so that asking costs less than deferring:** the question, the options,
+what each one costs, and which the role recommends. A question with no options is the role handing
+its own work back.
+
+⛔ **No change merges with an open item against it** — not a review finding, not a still-open list
+in a pull request body, not a `TODO` marker, not a paragraph of known costs. A pull request that
+cannot state that every item raised against it is resolved is not ready.
+
+⛔ **That statement is read back, never asserted.** The items are counted where they were raised —
+the pull request body, and every thread on the change the host can report as unresolved — and a
+gate refuses the merge while any one of them stands, naming it. A reviewer noticing is not the
+mechanism.
+
+⚠️ **So a finding goes where its resolution can be read back.** Where the host distinguishes a
+resolvable thread from a plain comment, a finding is posted as the first: a comment nothing can
+mark resolved is an item no gate can see, and an item no gate can see reads as resolved.
+
+**The narrow exception is separate work.** Work that genuinely belongs to a **different** outcome
+is a separate numbered item, filed before the merge and linked from it. ⛔ **The test is whether
+the current item's stated acceptance check passes without it** — where it does not, the work is
+this item's and the exception does not apply.
+
+⚠️ **The relation is claimed where it holds and not as a formality.** Where the tracker records
+dependencies, a genuine blocker is recorded as one rather than as a prose line; but an item every
+consumer can be built *tolerating* is not a blocker, and filing it as one stops work that nothing
+is waiting on. Tolerating versus requiring is the test, and it is answered against each consumer's
+own acceptance check.
+
+Procedure rather than configuration, and there is no setting that turns it off, for the reason § 6
+gives for authorship: a defect a project can configure away is a defect the toolkit ships. The
+failure mode this guards is specific — surfacing a gap *reads* as diligence, so a role that writes
+a thorough known-costs section scores better with a reader than one that stops and asks, and the
+honest-looking version of the defect is the one that survives review.
+
 ## 1. Roots
 
 ```yaml
@@ -477,6 +517,8 @@ register (§8).
   project's split-by-audience rule makes different from its tracker's.
 - **The authorship rule above binds the pull request as it binds the commit**: no generated-by
   marker, no tool credited.
+- **The body is held to [*Nothing is deferred*](#nothing-is-deferred)**, which is where the
+  open-items statement and what reads it back are ruled.
 
 **The reconciled shape of the summary and the test plan is transitional.** It still lives in the
 five copies of the finishing role, and extracting that role moves the shape into its skill. The

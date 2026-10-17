@@ -60,6 +60,10 @@ host:
     - workflow: "Port contract"
       mirrors: "python3 plugins/mjolnir/scripts/port.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ What this entry cannot state about its workflow is #82, and is stated there.
+    - workflow: "Nothing deferred"
+      mirrors: "python3 tools/check_nothing_deferred.py --self-test"
+      triggers: ["pull_request -> *"]
 
 tracker:
   # Plain GitHub issues with no project board — the cheapest real configuration, and one

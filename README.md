@@ -138,6 +138,7 @@ found between the old copies and the decision that settled it.
 | [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) | How the single-authority claim is held: the checks, their kinds, and what each deliberately leaves alone |
 | [`tools/check_single_source.py`](tools/check_single_source.py) | The single-authority check, run by the `Checks` workflow on every change |
 | [`tools/check_no_project_names.py`](tools/check_no_project_names.py) | The sweep that holds the convention above: no other project named anywhere, and no value, tracker or stack in any carrier root |
+| [`tools/check_nothing_deferred.py`](tools/check_nothing_deferred.py) | The gate that refuses a merge while any item raised against the change is unresolved, counted in the body and in the threads on it |
 | [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) — today, a `Stop` hook holding a role's reply to the register |
 
 The remaining eight roles land here as they are reconciled. A project that has not been migrated
@@ -165,6 +166,16 @@ tree. Its exceptions are in the script, and what it deliberately leaves to a rev
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-second-sweep-naming-no-other-project).
 
 Projects referred to in the documentation are lettered A–F. The counts are what carry the argument.
+
+⛔ **Nothing is deferred.** A role that reaches a question it cannot answer asks, with the options
+stated, rather than noting it and carrying on; and no change merges carrying an item raised
+against it. The
+[completeness rule](plugins/mjolnir/config/schema.md#nothing-is-deferred) is the single statement
+of it, the exception for genuinely separate work, and the test that tells the two apart. It is
+held by the `Nothing deferred` workflow rather than by a reviewer noticing, and what it
+deliberately leaves to a reviewer is in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-gate-on-the-change-nothing-is-deferred)
+— a comment finding, a `None.` that is not true, and the closing half of the rule.
 
 ⛔ **The only author is the authenticated user** — here and in every project the toolkit drives.
 The [authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration)
