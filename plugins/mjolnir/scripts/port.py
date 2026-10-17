@@ -114,6 +114,15 @@ def operations(surface_text: str) -> dict[str, str]:
                 continue
             name = match.group("name")
             fallback = " ".join(cells[-1].split())
+            if name in found:
+                # Two rows for one operation are two fallbacks that may
+                # disagree, which is the defect this contract is here to stop
+                # rather than something to resolve by row order.
+                raise ConfigError(
+                    f"tracker.operations.{name}",
+                    "is stated twice, so it has two absent cases and the second "
+                    "would silently win. One row per operation.",
+                )
             if not fallback:
                 raise ConfigError(
                     f"tracker.operations.{name}",
@@ -224,15 +233,6 @@ class Outcome:
 
     def __str__(self) -> str:
         return f"{self.operation}: {self.detail}"
-
-    def to_dict(self) -> dict:
-        return {
-            "operation": self.operation,
-            "performed": self.performed,
-            "refused": self.refused,
-            "writer": self.writer,
-            "detail": self.detail,
-        }
 
 
 class Port:
@@ -516,6 +516,13 @@ def self_test() -> int:
         "an operation stated with no absent case is refused, naming it",
         _refused(lambda: operations(blanked)) == f"tracker.operations.{first}",
         f"reported {_refused(lambda: operations(blanked))!r}",
+    )
+    row = re.search(r"^\| `" + first + r"` \|.*\|$", surface_text, re.M).group(0)
+    twice_stated = surface_text.replace(row, row + "\n" + row, 1)
+    check(
+        "an operation stated twice is refused, naming it",
+        _refused(lambda: operations(twice_stated)) == f"tracker.operations.{first}",
+        f"reported {_refused(lambda: operations(twice_stated))!r}",
     )
 
     # An absent capability resolves to the stated fallback, for every operation,
