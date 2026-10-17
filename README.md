@@ -137,6 +137,7 @@ found between the old copies and the decision that settled it.
 | [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) | How the single-authority claim is held: the checks, their kinds, and what each deliberately leaves alone |
 | [`tools/check_single_source.py`](tools/check_single_source.py) | The single-authority check, run by the `Checks` workflow on every change |
 | [`tools/check_no_project_names.py`](tools/check_no_project_names.py) | The sweep that holds the convention above: no other project named anywhere, and no value, tracker or stack in any carrier root |
+| [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) — today, a `Stop` hook holding a role's reply to the register |
 
 The remaining eight roles land here as they are reconciled. A project that has not been migrated
 keeps working throughout — that is a safety property of the migration, not an acceptable end state.
@@ -153,7 +154,9 @@ toolkit [builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/
 public artifacts cited as evidence — the plugin cited as
 [prior art](docs/configuration-surface.md#prior-art), and the published practice the
 [window-as-a-resource measurements](docs/configuration-surface.md#the-window-is-a-resource-the-loop-spends)
-are drawn from — each an artifact rather than a project in scope. Nothing under `skills/` carries a value.
+are drawn from — each an artifact rather than a project in scope. Nothing under a carrier root
+carries a value — which since the reply-register hook means the hooks root as well as the skills
+one.
 
 That is a **search** rather than a reading of the procedure, and the search is the check:
 [`tools/check_no_project_names.py`](tools/check_no_project_names.py) runs in the `Names no other
@@ -169,6 +172,14 @@ Projects referred to in the documentation are lettered A–F. The counts are wha
 The [authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration)
 is the single statement of what that means, why it is procedure rather than a setting, and the
 one trap in it.
+
+⛔ **A role's reply to the person running it has a fixed register** — procedure too, and for the
+same kind of reason. The
+[register rule](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) is the
+single statement of what it requires and why a project does not choose it. It is held in the
+session by a hook rather than by the gate, since a reply is not a file; the checks, and what they
+leave to a reader, are in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-replys-register-held-in-the-session-not-on-the-gate).
 
 ## License
 

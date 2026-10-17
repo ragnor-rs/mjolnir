@@ -171,8 +171,9 @@ STACK_TOKENS = {
     """,
 }
 
-# ⚠️ A language interpreter is deliberately **not** on that list, and
-# `python3 <day_log.script>` is the one live instance of one. Whether a
+# ⚠️ A language interpreter is deliberately **not** on that list, and the strict
+# set carries live instances of one -- a configured script run under it, and the
+# hook carrier that calls the reply-register check. Whether a
 # configured script is a path the procedure prefixes with an interpreter or a
 # command the procedure merely runs is #65's and #66's ruling about what
 # configuration carries, not this check's to pre-empt by reddening on it.
