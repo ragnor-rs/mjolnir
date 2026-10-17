@@ -17,6 +17,13 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py"
 It resolves `.claude/mjolnir.yaml` against the skills root, applies the defaults the surface
 marks, and refuses a configuration the surface does not allow — naming the key that is wrong.
 
+⛔ **Say which project was resolved before reading anything else**, naming what
+[`config/schema.md § 1`](../../config/schema.md#the-skills-root-is-where-the-role-runs) lists
+there — the reader reports each item, and the skills root is the directory this role was invoked
+in. ⚠️ Invoked anywhere else, this role resolves whichever project has a configuration there and
+reports **that** project's day, having done something plausible first. Saying it is the only
+thing that makes the mistake visible, and it is one sentence.
+
 ⛔ **Do not parse that file here.** A skill that reads the configuration itself is a second set
 of defaults, and two sets drift apart without anything noticing.
 

@@ -82,11 +82,10 @@ statement; it carries no count, because a count restated elsewhere drifts the mo
 added. The measurements that forced each to be independent are in
 [`docs/configuration-surface.md`](../../../docs/configuration-surface.md).
 
-## 1. Roots — three independent paths
+## 1. Roots
 
 ```yaml
 roots:
-  skills: "."              # where this config lives; default
   code: "."                # the path every git and gh call addresses
   code_is_own_repo: false  # true when `code` is its own repository; default
 ```
@@ -101,6 +100,38 @@ own repository, possibly under a different owner, and not a submodule. Branches,
 and CI then belong to the inner repository and the engagement material to the outer. A skill
 stops rather than proceeding when a `code` root that should exist does not — a fresh clone of
 the outer repository does not have it.
+
+### The skills root is where the role runs
+
+⛔ **The skills root is the directory the role was invoked in. It is procedure, and this surface
+carries no key for it.** It is where `.claude/mjolnir.yaml` is *found*, so it is needed before
+any configuration can be read at all, and a key stating it would sit inside the file it is
+needed to locate. The reader takes it as an argument whose default is the working directory,
+which is how a role addresses a project it is not standing in.
+
+⚠️ **This is not the inference the rule above forbids, and the difference is the whole of why
+both hold at once.** A fact the configuration *could* state and a role derives anyway is an
+inference — the code root's case, where deriving it is wrong wherever the two roots differ. A
+fact no configuration can state is a definition. The test is whether a project could have
+written the value down.
+
+⛔ **A role names what it resolved before it acts: the root, the file it read there, and the
+repository that file's configuration addresses.** The reader reports each of them, so this costs
+the role a sentence and no work. The list is stated here and a role reads it from here.
+
+⚠️ **That naming is the only guard, and it is weaker than a stop.** Run from a directory with no
+configuration, a role stops; run from a *sibling project that has one*, it resolves that project
+correctly and proceeds — and since the absolute code root is the configured `code` joined onto
+the resolved root, every `git` and `gh` call then addresses the other project's repository. No
+in-band test tells that apart from a deliberate run on that project, so what the surface
+requires is that the answer be stated where the person can see it, not that it be guessed.
+
+⛔ **`roots.skills` is retired, and a configuration that still declares it is refused with the
+key named.** It was declared here, written in every configuration, and read by nothing — and
+because the file is found *at* the root that key described, the only value it could ever hold
+was the one it already held. A key nothing reads is worse than no key: a project that pointed it
+at a subdirectory was ignored in silence, which is the failure above with the project's own
+statement discarded as well.
 
 ## 2. Code host
 

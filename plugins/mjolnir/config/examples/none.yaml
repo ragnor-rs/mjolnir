@@ -9,7 +9,6 @@
 version: 1
 
 roots:
-  skills: "."
   code: "."
   code_is_own_repo: false
 
