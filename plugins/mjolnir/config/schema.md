@@ -9,6 +9,16 @@ documents under `docs/` explain why the surface has this shape and record how ea
 was settled; the work items track what is not yet built. None of them is a second authority —
 where another text appears to state a rule, the binding form is the section here that it cites.
 
+⛔ **That claim is held mechanically, not by review.** A gate on every change asserts that every
+citation of this file resolves, that every section here is motivated by at least one document,
+that every ruling's outcome lives here or in a named work item, and that no document states a
+binding rule without citing the section that binds it. What no check can establish is
+**fidelity** — whether a paraphrase elsewhere still matches the section it cites — because a
+check that quotes a sentence back at the text it came from goes red on an innocent reword and
+green when a claim is reworded into its opposite. So a document paraphrases as little as it can
+and cites instead, and a reviewer covers the rest. The checks, and what each deliberately leaves
+alone, are in [`docs/single-source-of-truth.md`](../../../docs/single-source-of-truth.md).
+
 **The boundary this file defends:** a fact that cannot be expressed here is either procedure —
 in which case it belongs in a skill — or a project-specific skill that stays in that project.
 It is never a special case in the toolkit.
@@ -25,6 +35,17 @@ is written down, and it is excluded from the "names no particular project" searc
 examples of a shape rather than any project's facts.
 
 ---
+
+## The file itself
+
+```yaml
+version: 1
+```
+
+One key is not a facet. `version` states which revision of this surface a configuration was
+written against, so a reader of an older file can tell a deliberately absent facet from one that
+did not exist yet. It is the only key that describes the file rather than the project, and it is
+the only key every configuration carries unconditionally.
 
 ## The loop — nine roles
 
@@ -388,3 +409,18 @@ day_log:
 procedure can be shared before the script is. Extracting the script into the plugin is the next
 piece of this role; until then, `script` is how a project that has not been migrated keeps
 working.
+
+## 10. Invocation
+
+Roles are addressed **namespaced, with no alias** — `/<plugin>:<role>`.
+
+Procedure rather than configuration: there is no setting that turns it off. A project-level alias
+would be one file per project per role, which reintroduces in miniature the duplication this
+toolkit exists to delete. The namespace also makes a deliberate local override read as a
+*different* name rather than the same one — which matters, because one role name in the original
+copies denoted two unrelated roles.
+
+⚠️ **A role's carrier changes the string the harness injects**, and anything matching on it
+breaks silently: a command expands into a transcript record carrying its own title, a skill
+injects a preamble naming its directory. A matcher that must key on one of those asserts both
+directions, and §7 is the axis it reads.

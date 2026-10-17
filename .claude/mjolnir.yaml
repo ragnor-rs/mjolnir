@@ -22,6 +22,14 @@ roots:
 host:
   kind: github
   repo: "ragnor-rs/mjolnir"
+  # ⚠️ The first entry this facet has ever been written for (#47), and the cheapest place to
+  # find out whether its shape survives contact with a real workflow. Keyed by the workflow
+  # name and never by a job name — the job here is `single-source-of-truth`, and nothing may
+  # key on that. `paths` is omitted: the workflow filters none, so every change runs it.
+  checks:
+    - workflow: "Checks"
+      mirrors: "python3 tools/check_single_source.py"
+      triggers: "pull_request + push:main"
 
 tracker:
   # Plain GitHub issues with no project board — the cheapest real configuration, and one

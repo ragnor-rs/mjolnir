@@ -61,10 +61,8 @@ Skills are addressed **namespaced, with no alias**:
 /mjolnir:day-report
 ```
 
-A project-level alias would be one file per project per skill, which reintroduces in miniature the
-duplication this toolkit exists to delete. The namespace also makes a deliberate local override
-read as a *different* name rather than the same one — which matters, because one skill name in the
-original copies denoted two unrelated roles.
+The rule, and why it is procedure rather than a setting, is
+[`schema.md § 10`](plugins/mjolnir/config/schema.md#10-invocation).
 
 ## Where the rules live
 
@@ -74,6 +72,10 @@ its five axes, the tracker port and its capabilities, the work-item facets with 
 cases, the status writers, the readiness gate, commit behaviour and the day log. Everything else
 written about the procedure, in this repository or on a work item, explains or records; none of
 it is a second authority.
+
+That is enforced rather than asserted: the `Checks` workflow holds every document to it on every
+change — see [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) for the checks and
+the three things they deliberately leave alone.
 
 The why sits beside it: [`docs/configuration-surface.md`](docs/configuration-surface.md) holds
 the measurements the surface was derived from, and
