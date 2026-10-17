@@ -1,0 +1,35 @@
+name: Config reader
+
+# The shared configuration reader, held to the surface it derives from and to every
+# example beside it. This is a workflow of its own rather than a second job of `Checks`
+# on purpose: `host.checks` states one mirrored command per workflow, and a workflow
+# running two commands is a shape that facet cannot express yet (#58). One workflow,
+# one job, one command keeps this file and that facet honest until #58 rules.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: the reader reads files in the tree and reaches nothing.
+permissions: {}
+
+jobs:
+  config-reader:
+    name: Config reader
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Pinned rather than relying on whatever the runner image happens to ship:
+      # a reader that silently stops running because a dependency moved is the
+      # failure this job exists to catch.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` declares this
+      # run mirrors, so the two cannot drift.
+      - name: Hold the reader to the surface and the examples
+        run: python3 plugins/mjolnir/scripts/config.py --self-test

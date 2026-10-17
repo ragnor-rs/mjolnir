@@ -4,11 +4,13 @@
 # reviewed through the loop this repository ships. That is a correctness requirement, not a
 # nicety — a procedure whose own repository cannot run it is not finished.
 #
-# ⚠️ NO SKILL READS THIS FILE'S VALUES YET. The configuration reader is #1 and the tracker
-# behind `kind: github-issues` is #27. Until both land, this file is a declaration of what
-# self-hosting needs, and the loop here runs by hand. One consumer does exist as of the
-# single-source-of-truth gate: it holds this file's top-level keys to the schema on every
-# change, so a key invented here reddens the build even though nothing acts on its value.
+# ⚠️ THIS FILE'S VALUES ARE READ, BUT NOTHING YET ACTS ON MOST OF THEM. The shared reader
+# (#1) resolves this file, applies the surface's defaults and refuses a configuration the
+# surface does not allow — `plugins/mjolnir/scripts/config.py`, held to the examples on
+# every change. The tracker behind `kind: github-issues` is still #27, so no tracker
+# operation runs here and the loop is driven by hand. The single-source gate is the other
+# consumer: it holds this file's top-level keys to the schema, so a key invented here
+# reddens the build even though nothing acts on its value.
 #
 # ⛔ The repository slug is named here, and it is correct that it is: this is the project's own
 # configuration, the same file every adopter writes. It is not the only such place — README.md
@@ -33,6 +35,11 @@ host:
   checks:
     - workflow: "Checks"
       mirrors: "python3 tools/check_single_source.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    # A workflow of its own rather than a second job of the one above: an entry states
+    # one mirrored command, and a workflow running two is the shape #58 is filed about.
+    - workflow: "Config reader"
+      mirrors: "python3 plugins/mjolnir/scripts/config.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
 
 tracker:

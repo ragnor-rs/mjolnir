@@ -8,10 +8,22 @@ argument-hint: "[--date YYYY-MM-DD] [--meeting HH:MM-HH:MM] [--keep-ritual]"
 
 Produces two values for one working day: **Hours worked** and **Description**. Nothing else.
 
-Read `day_log` from the project's `.claude/mjolnir.yaml` first. Every figure, path, stream,
-exclusion and audience below comes from there; this file holds the procedure and none of the
-values. A key that is absent has a default stated in `config/schema.md`, and an absent facet
-with a stated reason is a configuration rather than a gap.
+Read the project's configuration first, by running the shared reader:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py"
+```
+
+It resolves `.claude/mjolnir.yaml` against the skills root, applies the defaults the surface
+marks, and refuses a configuration the surface does not allow — naming the key that is wrong.
+
+⛔ **Do not parse that file here.** A skill that reads the configuration itself is a second set
+of defaults, and two sets drift apart without anything noticing.
+
+Every figure, path, stream, exclusion and audience below comes from the `day_log` block of the
+reader's output; this file holds the procedure and none of the values. Defaults are applied
+there, so a key the project left out still arrives with its value, and the `unavailable` list
+names what this project cannot support — each entry a stated decision rather than a gap.
 
 Write the two values to `<day_log.out_dir>/day-report-<YYYY-MM-DD>.txt` and say the path.
 
