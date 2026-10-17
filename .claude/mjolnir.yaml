@@ -36,8 +36,7 @@ host:
     - workflow: "Checks"
       mirrors: "python3 tools/check_single_source.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
-    # A workflow of its own rather than a second job of the one above: an entry states
-    # one mirrored command, and a workflow running two is the shape #58 is filed about.
+    # A workflow of its own rather than a second job of the one above, per § 2.
     - workflow: "Config reader"
       mirrors: "python3 plugins/mjolnir/scripts/config.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]

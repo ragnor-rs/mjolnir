@@ -1,10 +1,9 @@
 name: Config reader
 
 # The shared configuration reader, held to the surface it derives from and to every
-# example beside it. This is a workflow of its own rather than a second job of `Checks`
-# on purpose: `host.checks` states one mirrored command per workflow, and a workflow
-# running two commands is a shape that facet cannot express yet (#58). One workflow,
-# one job, one command keeps this file and that facet honest until #58 rules.
+# example beside it. A workflow of its own rather than a second job of `Checks`, per the
+# rule in § 2 of plugins/mjolnir/config/schema.md: each mirrored command takes its own
+# workflow where the project controls its workflows.
 
 on:
   pull_request:

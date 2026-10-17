@@ -131,6 +131,19 @@ live state: which runs exist for this commit, and how each concluded.
 identically, and a job-keyed map refused a build on the strength of a check that only validated a
 title.
 
+⚠️ **An entry states one mirrored command, and a workflow may run more than one.** A workflow
+whose jobs mirror two local commands has no form here — the entry would carry two `mirrors`
+behind one workflow name — and a second command written in a comment beside the facet is a fact
+the surface does not hold. The gap is #58's, and it is real for an adopting project whose
+workflows already exist and are not the toolkit's to reshape.
+
+⛔ **Where a project does control its own workflows, each mirrored command takes a workflow of
+its own.** Not because one job per workflow is better continuous integration, but because the
+alternative is a configuration this facet cannot state, and the project required to run this
+procedure on itself is the worst place to keep a shape the surface cannot express. The cost is a
+checkout per command; what it buys is `checks` remaining the single statement of what the host
+runs, with nothing carried beside it.
+
 ⚠️ **`triggers` takes two forms, and a list where a workflow has both.** They are
 `pull_request -> <base pattern>`, with `*` for any base, and `push -> <branch>`. A single string
 was the first shape this facet had; the first entry ever written against it ran on every pull
