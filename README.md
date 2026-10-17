@@ -68,7 +68,7 @@ The rule, and why it is procedure rather than a setting, is
 
 **The single statement of every rule and flow is
 [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the nine-role loop and
-its six axes, the tracker port and its capabilities, the work-item facets with their absent
+its axes, the tracker port and its capabilities, the work-item facets with their absent
 cases, the status writers, the readiness gate, commit behaviour, the day log and the branch
 model. Everything else written about the procedure, in this repository or on a work item,
 explains or records; none of it is a second authority.

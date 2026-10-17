@@ -106,6 +106,8 @@ day_log:
 
 branch_model:
   kind: worktree
+  # The shared checkout is worked in when it is free; a tree is taken when it is not.
+  work_in_shared_checkout: when_free
   parallel_trees: true
   mechanics: ".claude/worktrees.md"   # the tree's own setup and teardown steps
   exclusive_resources:

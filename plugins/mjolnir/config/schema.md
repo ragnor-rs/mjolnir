@@ -65,9 +65,11 @@ Gating is a role of its own, not a step of filing or of starting: it owns the da
 estimate (§4.3), and starting never re-runs it — re-gating recomputes a commitment somebody may
 already have been given.
 
-**The surface has six independent axes, not three:** the work-item tracker (§3), the code host
-(§2), the code root (§1), each role's carrier (§7), language/register/audience per artifact
-(§8), and the branch model (§10). The measurements that forced each to be independent are in
+**The surface's axes are independent, and there are more of them than the obvious three:** the
+work-item tracker (§3), the code host (§2), the code root (§1), each role's carrier (§7),
+language/register/audience per artifact (§8), and the branch model (§10). The list is the
+statement; it carries no count, because a count restated elsewhere drifts the moment an axis is
+added. The measurements that forced each to be independent are in
 [`docs/configuration-surface.md`](../../../docs/configuration-surface.md).
 
 ## 1. Roots — three independent paths
@@ -444,8 +446,9 @@ working.
 ```yaml
 branch_model:
   kind: worktree | in_place
+  work_in_shared_checkout: when_free | never   # read only under worktree; null under in_place
   parallel_trees: true
-  mechanics: "<path to the project's own setup steps>"   # null where it has none
+  mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
   exclusive_resources:           # [] where nothing in this project is exclusive
     - { name: "…", cap: 1, subject: tree }
     - { name: "…", cap: 2, subject: call }
@@ -457,56 +460,73 @@ Where a branch is cut, and therefore which working tree every step after the gat
 `in_place` — an answer, not an omission. The absence that is a configuration here is
 `exclusive_resources: []`, which is a statement that nothing contends, not a missing value.
 
-**Four readers, which is why it is an axis rather than each role's own assumption:** the
+**Several roles read it, which is why it is an axis rather than each role's own assumption:** the
 dirty-tree derivation (§6), where the starting role cuts the branch, which tree a verdict belongs
-to, and what is released after a merge. Where the model is stated nowhere, two layers of one
-project disagree about it and each looks correct read on its own.
+to, and what the finishing role releases once the work has landed. Where the model is stated
+nowhere, the layers of a single project disagree about it and each reads correctly on its own.
 
 ⛔ **The mechanics stay local.** Installing dependencies, copying the assets and environment
-files git does not track, allocating ports, naming a container project: all of that is
-project-specific, and `mechanics` is the pointer the shared procedure calls rather than a
-procedure the shared one absorbs. ⚠️ **Unlike `day_log.script`, this pointer is not
-transitional.** Nothing here is waiting to be extracted — a tree's setup is where a project's
-own build genuinely differs, and a skill on the route **names** `mechanics` instead of restating
-it.
+files git does not track, allocating ports, naming a container project, and tearing all of it
+down again: that is project-specific, and `mechanics` is the pointer the shared procedure calls
+rather than a procedure the shared one absorbs. ⚠️ **Unlike `day_log.script`, this pointer is not
+transitional.** Nothing here is waiting to be extracted — a tree's setup and teardown are where a
+project's own build genuinely differs, and a skill on the route **names** `mechanics` instead of
+restating it.
 
-### The decision table
+### Where the work happens
 
-Procedure, and the same everywhere:
+⛔ **`kind` says whether a second tree can exist; `work_in_shared_checkout` says whether the
+shared one is ever worked in.** Two questions, two measured answers, and collapsing them is how a
+routing rule gets promoted to procedure it is not: among the projects that cut trees, one works in
+its shared checkout whenever that checkout is free, and another never does — the second having
+switched a shared checkout off a branch that another session was mid-flight on. Under
+`kind: in_place` the question does not arise, the key is `null`, and §6's derivation is the whole
+of that mode's dirty-tree behaviour.
 
-| The shared checkout is | Then |
+⛔ **A branch already checked out somewhere is worked in where it is, and never checked out a
+second time.** That holds under either value. ⚠️ **A branch may be checked out in at most one
+working tree**, and git refuses the second checkout by name — a **stop**, because the session
+holding the branch may be mid-task, and never something to route around with a second path or a
+force flag.
+
+`work_in_shared_checkout: never` then needs no routing: every item gets its own tree. `when_free`
+routes by this table, ⛔ **read in order, first match wins** — so the overlapping cases resolve
+rather than being left to whoever reads it:
+
+| the shared checkout | then |
 |---|---|
-| on the integration branch, clean, and no other session live | work in it — no second tree |
-| on another item's branch, or dirty | take a tree |
-| already holding this item's branch | work in the tree that holds it, and never check that branch out a second time |
+| holds this item's branch already | work in it, by the rule above |
+| is on another item's branch, is dirty, or has another session live in it | take a tree |
+| otherwise | work in it — no second tree |
 
-⚠️ **A branch is checked out once per working tree**, and git refuses the second checkout by
-name. That refusal is a **stop** — the session holding the branch may be mid-task — and never
-something to route around with a second path or a force flag.
-
-⛔ **A role on this route names this table; it does not carry its own copy of it.** That is the
-rule the one project that had already extracted this mechanism states about its own reference
-file, and it is why the table is three rows here rather than a paragraph in each of the four
-roles that read it.
+⛔ **A role on this route names this section; it does not carry its own copy of the table.** That
+is the rule the one project that had already extracted this mechanism states about its own
+reference file, and it is why the routing is stated once here rather than in a paragraph inside
+each role that reads it.
 
 ### Which tree a verdict belongs to
 
 ⛔ **A verdict belongs to the tree that produced it, and a run states which tree that was.** A
 local check run where another tree's build or service is bound answers about code this branch
-does not contain — in the direction that passes. An unrun check is a verdict and is reported as
-unrun; a check run against the wrong tree is not a verdict at all. This is the §2 rule
-(absence of signal is not an answer) in the other direction: presence of a signal is not an
-answer either unless the tree it came from is named.
+does not contain — in the direction that passes.
+
+⛔ **So an unrun check is reported as unrun and a wrong-tree check is not run at all.** By §2 an
+unrun check is **no answer**, and that is the honest outcome here; a check run against another
+tree's build reads as an answer and is not one, which is the worse of the two. §2 bars reading
+absence as green, and this bars reading a signal as an answer unless the tree it came from is
+named.
 
 ### Exclusive resources
 
-A resource no two trees may hold at once — a local service stack, a build daemon's slots, a
-machine-wide lock. Each entry states three things, and ⛔ **each is stated rather than assumed**:
+A resource the trees cannot all help themselves to — a local service stack, a build daemon's
+slots, a machine-wide lock. How many may be held at once is `cap`, and what holds a place is
+`subject`, so neither "one" nor "a tree" is built into the facet. Each entry states three things,
+and ⛔ **each is stated rather than assumed**:
 
 - **`name`** — what is held.
 - **`cap`** — how many may be in flight at once. **Never assumed to be one:** caps of one *and*
-  of two were measured in the same project, so a facet that implied one would have been wrong on
-  half of its first adopter.
+  of two were measured side by side in one project, so a facet that implied one would have
+  understated the capacity it was describing.
 - **`subject`** — what holds a place: `tree`, where two sessions in one tree share one place and
   two trees queue against each other, or `call`, where each invocation holds its own so
   releasing one does not release its sibling.

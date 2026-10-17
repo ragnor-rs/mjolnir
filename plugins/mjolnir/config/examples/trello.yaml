@@ -130,6 +130,7 @@ branch_model:
   # outer one carries the cwd. Where a tree goes, and what must be copied into it before the
   # stack's first boot, is the pointer's — not the shared procedure's.
   kind: worktree
+  work_in_shared_checkout: when_free
   parallel_trees: true
   mechanics: ".claude/worktrees.md"
   exclusive_resources:

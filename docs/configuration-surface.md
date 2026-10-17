@@ -77,11 +77,12 @@ The vocabularies measured differ in **length and meaning**, not merely wording: 
 one project, four in another, seven and eight in two more, with a state between review and
 completion that some reason about explicitly and others do not have.
 
-## Six axes, not three
+## The axes, and why each is independent
 
 The axes are stated in
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles). The
-measurements that forced each to be independent:
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles) — which
+carries the list, and no count, so this document does not hold a copy of one. There are more than
+the three that are obvious. The measurements that forced each to be independent:
 
 1. **Work-item tracker.** Four models were in play — GitHub Projects in three projects, Jira in
    one, Trello in one, and **none** in one, whose work items were entries in a specification tree
@@ -114,8 +115,9 @@ measurements that forced each to be independent:
    [`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project).
 6. **Branch model.** Four of the six cut a working tree per work item; two never do. Even the
    two that do not are not indifferent to it: one of them carries a day-log caveat — already in
-   the shipped skill — that a session opened in a worktree writes its transcripts where the
-   evidence script cannot reach them, so the day comes out under-measured.
+   the shipped skill — that a session opened in a worktree *the configuration cannot reach*
+   writes its transcripts elsewhere and is invisible to the evidence script, so the day comes out
+   under-measured and is reported as under-measured rather than silently short.
    The split alone would make this configuration. What makes it an **axis** is that in two of the
    four it is stated in no one place and the layers that read it disagree: the starting role
    aborts on a dirty tree — the in-place behaviour — while the same project's hooks exist to
@@ -127,16 +129,36 @@ measurements that forced each to be independent:
 
    The measurements that gave § 10 its shape rather than merely its existence:
 
-   - **The mechanism is already extracted in one project and is not a skill.** A 150-line
-     reference file carries the decision table, the setup steps and the teardown, and its own
-     rule is read-it-from-one-place again: a skill on the route **names** that file rather than
-     restating it. That is the shape the facet's `mechanics` pointer keeps, rather than growing
-     those steps into the shared procedure.
+   - **The mechanism is already extracted in one project and is not a skill.** A reference file
+     carries the routing, the setup steps and the teardown, and its own rule is
+     read-it-from-one-place again: a skill on the route **names** that file rather than restating
+     it. That is the shape the facet's `mechanics` pointer keeps, rather than growing those steps
+     into the shared procedure. Its length is not quoted here — the number lives in that file and
+     a copy of it would drift, which is the same reason the axes carry no count.
+   - **The routing itself is two measured positions, not one.** One project works in its shared
+     checkout whenever that checkout is on the integration branch, clean and unoccupied, and
+     takes a tree otherwise; another never works in it at all, every item getting its own tree,
+     having had a shared checkout switched off a branch a second session was mid-flight on. Both
+     are `kind: worktree`, so a single routing rule stated as procedure would have been one
+     project's policy imposed on the other — hence `work_in_shared_checkout` and
+     [`schema.md § 10 → Where the work happens`](../plugins/mjolnir/config/schema.md#where-the-work-happens).
+   - **A tree is released, not just created, and the release is read from the same place.** The
+     extracted mechanism ends with teardown — drop what the tree held, then remove the tree, on
+     the merge as the signal — and two of the projects run it from a hook that surveys trees and
+     reports rather than removing. So the facet is read by the role that finishes work as well as
+     by the one that starts it, which is why `mechanics` points at setup *and* teardown.
+   - **A verdict has to name its tree, because the failure is silent and passes.** One project
+     records that a check run against whichever service stack happens to be up is a check of
+     another branch's code, and that an idle stack is not an unused one; another found a capacity
+     hook resolving its project root relatively, which made a session in a tree blind to a build
+     running outside it. Neither failure announces itself — hence
+     [`schema.md § 10 → Which tree a verdict belongs to`](../plugins/mjolnir/config/schema.md#which-tree-a-verdict-belongs-to).
    - **Exclusivity is a list with a cap, not a name.** Two projects cap two different resources
      each: a local application instance at **one** and a build daemon's slots at **two** in one,
      a single service stack at **one** and the same build cap of **two** in the other. A scalar
      naming one exclusive resource would have been wrong on both, and a facet implying a cap of
-     one would have halved the build capacity of both.
+     one would have halved the build capacity of both — hence the list in
+     [`schema.md § 10 → Exclusive resources`](../plugins/mjolnir/config/schema.md#exclusive-resources).
    - **What holds a place differs too.** One project's ticket belongs to the **working tree**, so
      two sessions in one tree share a place and two trees queue against each other; another takes
      a ticket **per call**, explicitly so that releasing one build does not release its sibling.
