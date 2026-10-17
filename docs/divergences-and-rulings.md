@@ -79,8 +79,11 @@ Present in one or two copies each, and true for every project:
 - Entering a worktree accepts an arbitrary path only on a session's first entry.
 - The working directory resets between calls, so an absolute root on every git invocation is
   mandatory.
-- A worktree serves the skills **committed on its own branch**, so a tree cut before a skill
-  existed does not have it.
+- A worktree serves the skills **committed on its own branch** — for skills the project carries at
+  `.claude/skills/`, so a tree cut before one existed does not have it. It does **not** hold for a
+  skill shipped in a plugin: every session serves the single registered marketplace path, whichever
+  worktree it runs in — measured 2026-10-17, see
+  [*Working on the toolkit itself*](../README.md#working-on-the-toolkit-itself).
 - Resolve today's date from the harness context, never from the shell.
 
 ---
