@@ -114,3 +114,12 @@ branch_model:
     # state. The instance is one per project; the build daemon runs two in flight.
     - { name: "<the local application instance>", cap: 1, subject: tree }
     - { name: "<the build daemon's slots>",       cap: 2, subject: call }
+context:
+  artifacts:
+    # Research, plan and progress artifacts: what one role hands the next (schema § 11).
+    carrier: file
+    # Outside every tree, which is the shape for a project that keeps per-item working papers
+    # out of its history: `committed: false` with an in-tree path is what § 11 refuses, since
+    # a teardown takes whatever git does not have.
+    dir: "$TMPDIR/<project>/artifacts"
+    committed: false

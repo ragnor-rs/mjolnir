@@ -95,13 +95,34 @@ PLUGIN_NON_CARRIER = [
 # like any other file.
 SELF_FILE = "tools/check_no_project_names.py"
 
-# A foreign slug permitted by name, with its reason. The convention forbids
-# naming another *project*; a public artifact cited as prior art is not one, and
-# the citation is load-bearing -- it is the independent confirmation of the
-# status design. One entry, and adding a second means editing this table and
-# saying why, which is the point of its being a table.
-PRIOR_ART = {
-    "nesquikm/dev-process-toolkit": "the public MIT plugin cited as prior art",
+# A foreign slug permitted by name, with its reason and the roots it is
+# permitted in. The convention forbids naming another *project*; a public
+# artifact cited as evidence is not one, and each citation here is load-bearing.
+# No count of the entries is written in this comment: the first version of it
+# said "one entry" and was wrong the moment a second was added -- in the very
+# change that updated both *document* copies of the same fact, which is the
+# asymmetry this file's docstring predicts, since nothing holds a comment to a
+# document.
+#
+# ⛔ Each entry names where it is permitted, because a slug permitted everywhere
+# is a hole the size of the tree. `docs/` is where this repository quotes the
+# measurements it was derived from and the README is where it points at them;
+# those are the only places a cited artifact's slug has business appearing.
+# Permitting one in a carrier root, in an example configuration or as a `repo:`
+# value would let the thing this check exists to catch through under cover of a
+# citation. Measured: before the scope existed, the second entry's slug passed
+# in a skill and as a `repo:` value in an example.
+CITED_ARTIFACTS = {
+    "nesquikm/dev-process-toolkit": (
+        "the public MIT plugin cited as prior art -- independent confirmation of "
+        "the status design",
+        ["docs/", "README.md"],
+    ),
+    "humanlayer/advanced-context-engineering-for-coding-agents": (
+        "the published practice § 11's window-as-a-resource measurements are "
+        "drawn from",
+        ["docs/", "README.md"],
+    ),
 }
 
 # --- the grammars ----------------------------------------------------------
@@ -212,7 +233,7 @@ VALUE_KEYS = [
     "name",          # a status word, and a status field's own name
     "label_prefix",  # the prefix a label convention carries
     "unit",          # an estimate's unit
-    "dir",           # where a project keeps its templates
+    "dir",           # a template directory (§ 4.4) or an artifact store (§ 11)
     "outcome",       # a template's own heading, per semantic section
     "acceptance",
     "reproduction",
@@ -475,7 +496,6 @@ def check_no_other_repository_is_named(tree: Tree) -> list[str]:
             f"{OWN_CONFIG}: states no `host.repo`, so this check has no permitted slug to "
             "measure against and would forbid every slug including this project's own."
         ]
-    permitted = {own} | set(PRIOR_ART)
     for path in tree.everything():
         body = tree.text[path]
         found = [(m.group("slug"), "a code-host URL") for m in HOST_URL.finditer(body)]
@@ -483,14 +503,23 @@ def check_no_other_repository_is_named(tree: Tree) -> list[str]:
         if path in tree.configs():
             found += [(m.group("slug"), "a `repo:` value") for m in CONFIG_SLUG.finditer(body)]
         for slug, form in found:
-            if slug in permitted:
+            if slug == own:
+                continue
+            cited = CITED_ARTIFACTS.get(slug)
+            if cited and tree.inside(path, cited[1]):
                 continue
             if tree.inside(path, DATA_ROOTS) and PLACEHOLDER_IN_DATA.match(slug):
                 continue
+            scope = (
+                f" It is a cited artifact -- {cited[0]} -- and is permitted only in "
+                f"{', '.join(cited[1])}."
+                if cited
+                else ""
+            )
             problems.append(
                 f"{path}: names the repository `{slug}` as {form}. This repository names no "
                 f"other project's slug; the permitted ones are `{own}`, its own, and the "
-                "prior-art table in this script."
+                f"cited-artifact table in this script, each within the roots it names.{scope}"
             )
     return problems
 
@@ -719,6 +748,22 @@ def _plant_foreign_slug_as_url(tree: Tree) -> Tree:
     return tree
 
 
+def _plant_cited_slug_outside_its_roots(tree: Tree) -> Tree:
+    """A cited artifact's slug, permitted in `docs/`, planted in a carrier root.
+
+    The table's whole point is that a citation is permitted *somewhere*; a
+    permitted-everywhere entry would let a foreign slug through under cover of
+    one, which is measurably what the first version of the entry did.
+    """
+    slug = next(iter(CITED_ARTIFACTS))
+    target = next(
+        (p for p in tree.strict() if p.endswith(".md")),
+        "plugins/mjolnir/skills/planted/SKILL.md",
+    )
+    tree.text[target] = tree.text.get(target, "") + f"\nSee <https://github.com/{slug}>.\n"
+    return tree
+
+
 def _plant_foreign_slug_in_install_command(tree: Tree) -> Tree:
     tree.text["README.md"] += "\n```\n/plugin marketplace add planted-owner/planted-repo\n```\n"
     return tree
@@ -814,6 +859,7 @@ VIOLATIONS = [
     ("no other repository is named", "a foreign slug in a URL", _plant_foreign_slug_as_url),
     ("no other repository is named", "a foreign slug in the install command", _plant_foreign_slug_in_install_command),
     ("no other repository is named", "a foreign slug as a config value", _plant_foreign_slug_as_config_value),
+    ("no other repository is named", "a cited artifact's slug outside the roots its entry names", _plant_cited_slug_outside_its_roots),
     ("no other repository is named", "this project's own slug unstated", _plant_own_slug_unstated),
     ("no home directory is named", "an absolute home path", _plant_home_path),
     ("no home directory is named", "a tilde path", _plant_tilde_path),

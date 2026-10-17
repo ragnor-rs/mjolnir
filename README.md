@@ -113,8 +113,8 @@ The rule, and why it is procedure rather than a setting, is
 **The single statement of every rule and flow is
 [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the nine-role loop and
 its axes, the tracker port and its capabilities, the work-item facets with their absent
-cases, the status writers, the readiness gate, commit behaviour, the day log and the branch
-model. Everything else written about the procedure, in this repository or on a work item,
+cases, the status writers, the readiness gate, commit behaviour, the day log, the branch model and
+the session's context. Everything else written about the procedure, in this repository or on a work item,
 explains or records; none of it is a second authority.
 
 That is enforced rather than asserted: the `Checks` workflow holds every document to it on every
@@ -153,9 +153,12 @@ directory. Three things are not that:
 rather than procedure and uses placeholders throughout; this repository's own slug and
 backlog, which the install command, `.claude/mjolnir.yaml` and the documents cite because the
 toolkit [builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/27); and the
-public plugin cited as [prior art](docs/configuration-surface.md#prior-art), which is an artifact
-rather than a project in scope. Nothing under a carrier root carries a value — which since the
-reply-register hook means the hooks root as well as the skills one.
+public artifacts cited as evidence — the plugin cited as
+[prior art](docs/configuration-surface.md#prior-art), and the published practice the
+[window-as-a-resource measurements](docs/configuration-surface.md#the-window-is-a-resource-the-loop-spends)
+are drawn from — each an artifact rather than a project in scope. Nothing under a carrier root
+carries a value — which since the reply-register hook means the hooks root as well as the skills
+one.
 
 That is a **search** rather than a reading of the procedure, and the search is the check:
 [`tools/check_no_project_names.py`](tools/check_no_project_names.py) runs in the `Names no other

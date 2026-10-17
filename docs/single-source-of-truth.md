@@ -256,10 +256,17 @@ A literal reading of the convention would forbid all three, so each is in the sc
 - **This repository's own slug**, derived rather than listed. Removing `host.repo` from the
   configuration reddens the build rather than quietly permitting every slug, which is one of the
   planted violations.
-- **The public plugin cited as prior art.** It is an artifact rather than a project in scope, and
-  it sits in a one-entry table in the script with its reason beside it, so a second entry means
-  editing that table and saying why. Emptying the table reddens the build on the live citation —
-  measured, so the carve-out is known to be load-bearing rather than decorative.
+- **The public artifacts cited as evidence.** Each is an artifact rather than a project in
+  scope, and each sits in a table in the script with its reason beside it, so **an entry means
+  editing that table and saying why** — which is what the second one did: the published
+  context-engineering practice
+  [`§ 11`](../plugins/mjolnir/config/schema.md#11-session-context)'s measurements are drawn from
+  is cited by repository URL, and a measurement whose source is not citable is not a measurement.
+  ⚠️ **Each entry names the roots it is permitted in**, because a slug permitted everywhere is a
+  hole the size of the tree: measured before the scope was added, a cited slug passed in a skill
+  and as a `repo:` value in two configurations. Emptying the table, or moving a citation outside
+  the roots its entry names, reddens the build — measured in both directions, so the carve-out is
+  known to be load-bearing rather than decorative.
 
 `docs/` is deliberately outside the strict set: it quotes the measurements the surface was derived
 from and has to keep naming the build tool that reported a cached pass as work done. A rule that

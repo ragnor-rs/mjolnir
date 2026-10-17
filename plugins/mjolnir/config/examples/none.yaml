@@ -89,3 +89,12 @@ branch_model:
   parallel_trees: false                # one checkout cannot hold two branches
   mechanics: null
   exclusive_resources: []
+context:
+  artifacts:
+    # The absent case: one mapped role, so nothing is handed from one role to another and
+    # there is no boundary for an artifact to cross.
+    carrier: none
+    absent_reason: >-
+      The only mapped role reads evidence and writes its own entry outside the repository.
+      No role hands work to another here, so no artifact crosses a boundary.
+    revisit_when: A second role is mapped.

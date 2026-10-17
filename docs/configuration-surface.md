@@ -346,3 +346,116 @@ roles map indirecting the procedure away from the words. That is independent con
 status design, arrived at separately. It is superseded rather than adopted because of its
 adapters: seven entries, of which only two are real trackers, and **neither is one any project
 in scope runs**. <https://github.com/nesquikm/dev-process-toolkit>
+
+## The window is a resource the loop spends
+
+[`schema.md § 11`](../plugins/mjolnir/config/schema.md#11-session-context) is the only section of
+the surface derived from measurements taken **outside** these six projects as well as inside them,
+so what forced its shape is worth recording in both directions.
+
+### What the published measurements establish
+
+- Input length alone degrades performance. Eighteen frontier models, 194,480 calls, task
+  complexity held constant and length varied: **every model degraded**, and not at the window's
+  limit — a single irrelevant passage beside the relevant one measurably costs recall, and four
+  compound it. ⚠️ Their impact is **not uniform**, which is the source's own word; it does not
+  measure similarity, so nothing here reads the cost off how alike the passages look. The result
+  that matters most for a repository written like this one: a **coherent** haystack is worse than
+  a shuffled one, and the source declines to explain it, calling for work on how structure
+  influences attention rather than offering a reading. The explanation is therefore nobody's yet,
+  and this section does not supply one.
+  <https://www.trychroma.com/research/context-rot>
+- The vendor's own framing is an **attention budget** — a finite resource every token draws on —
+  with three techniques for spending it: summarising a window and restarting from the summary,
+  writing notes outside the window, and spending a separate window on a sub-task. The first is
+  lossy, which is why § 11 makes the artifact the handoff rather than the summary.
+  <https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents>
+- The published practice this loop's shape is closest to keeps a window at **40–60 %** of its
+  capacity — its own qualifier is that the figure depends on the problem's complexity — separates research from planning from implementation into different windows, writes
+  each phase's output to a file that is the real handoff, and spends human review on the plan
+  rather than on the diff — *a bad line of a plan leads to hundreds of bad lines of code; a bad
+  line of research, thousands*. Its ranking of what hurts is the reason § 11 is about what enters
+  and what crosses a boundary rather than about token counts: **incorrect beats missing beats
+  noisy**. <https://github.com/humanlayer/advanced-context-engineering-for-coding-agents>
+
+### What this repository measures about itself
+
+⚠️ **No count of this tree's own files is written down here**, for the reason the gate's document
+gives for refusing to count schema sections: a number copied out of the tree drifts the moment the
+tree changes, silently and green. This subsection's first draft carried a three-row table of lines,
+bytes and markers. It was already two commits stale when it was written — and it understated by a
+fifth the one file the same change grows, so the argument it was offered as evidence for was
+weaker in the document than in reality. **Deleted rather than synchronised**, which is this
+repository's standing remedy; [#91](https://github.com/ragnor-rs/mjolnir/issues/91) is filed to
+have the gate print the live figure instead.
+
+What is stable enough to state without a number going stale: **a single role runs to thousands of
+tokens and carries dozens of ⛔ and ⚠️ markers, and the loop has nine roles.** A window largely
+spent on procedure before a line of anyone's code is read is what § 11 exists to notice, and the
+harness vendor's own guidance is that an over-long instructions file is not read selectively — it
+is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
+
+Two consequences, both already true of this tree rather than predicted of it. A role's body is
+loaded only when the role runs, and only its frontmatter — a name and a description — is always
+resident: that is the right shape, and it was not arrived at deliberately. And a role that cites
+the surface to settle one sentence resolves the whole of it to do so, which is the argument for a
+citation naming the narrowest section that states the fact — held today only at `##` level, as
+[`single-source-of-truth.md`](single-source-of-truth.md#the-three-kinds-and-why-one-of-them-is-absent)
+already records against itself and [#91](https://github.com/ragnor-rs/mjolnir/issues/91) exists to
+close.
+
+### Why there is no threshold on the surface
+
+The harness exposes a window's utilization at **one moment only**, and never while a window is
+filling. Of its hook events, only the one that fires when a session is resumed or forked carries a
+token count — alongside the time since the
+last response, whether the prompt cache has likely expired, and the estimated cost of rewriting
+it — and the event that fires immediately before a window is summarised carries no count and no
+threshold at all. <https://code.claude.com/docs/en/hooks>
+
+So a `budget: 60 %` key would be a number nothing could check at the moment it is exceeded: a
+convention written into the surface, which is the shape this repository calls a defect rather than
+a guideline. ⚠️ **The test that key failed is not "is it enforceable in principle" but "is there a
+run-time reading to enforce it against"** — § 11's own in-tree rule passes that test on three keys
+the reader already holds, and is refused there rather than stated and hoped for. The qualitative
+rules are stated instead, and the one live reading goes to the two items that already exist to
+read something like it: [#31](https://github.com/ragnor-rs/mjolnir/issues/31), the role that
+restores a session, and [#26](https://github.com/ragnor-rs/mjolnir/issues/26), the spend guard.
+
+### Why `committed` is a key of its own, and not implied by `dir`
+
+Under [`§ 10`](../plugins/mjolnir/config/schema.md#10-branch-model)'s `worktree` model the
+teardown removes everything git does not have, and a per-item plan is exactly what a tree holds
+and the repository does not. So an in-tree store and an uncommitted store are safe in opposite
+cases, and a single path key could not say which was intended.
+
+⚠️ Measured on this repository, 2026-10-18, which is why the hazard is stated rather than
+reasoned about: the one artifact several concurrent sessions coordinate through is a plan file
+carried in no configuration and committed nowhere. It lives in the agent harness's own per-project
+store, beside the session transcripts, while the standing convention that tells a session to read
+it names a path **beside the repository** — which does not resolve. The file and the pointer to it
+disagree, and nothing reports that: a session following the pointer finds nothing, and a session
+that knows better depends on a store no key names.
+
+⚠️ **The first draft of this paragraph said the file was gone**, on a search bounded to the
+repository's neighbourhood and the temp directory, which does not reach that store. The claim was
+wider than the search that produced it — the same defect one level up from the one the paragraph
+describes, and the reason it is recorded here rather than quietly corrected.
+
+### Why the read-side rule lives here rather than beside the write-side one
+
+[`§ 3`](../plugins/mjolnir/config/schema.md#3-tracker-port) bars facts from reaching a card. The
+read side is a different question with a different blast radius, and it spans three ports rather
+than one — the tracker, the host's review and check surfaces, and whatever a role fetches — so
+stating it under the tracker would have made two of the three a special case of the first.
+
+The published incident is a code-host one: payloads written into pull request titles, issue bodies
+and issue comments drove three separate agents into exfiltrating repository secrets back through
+the host itself, with no attacker-controlled server involved anywhere.
+<https://labs.cloudsecurityalliance.org/research/csa-research-note-comment-control-github-prompt-injection-20/> That is the measurement; the
+rule it forced, including the half about markup a reviewer never sees, is
+[`§ 11`](../plugins/mjolnir/config/schema.md#11-session-context)'s and is not restated here. The
+toolkit's own gate already holds the other half of the same shape, by
+[#50](https://github.com/ragnor-rs/mjolnir/issues/50)'s ruling: a workflow is granted no scope it
+does not need and its checkout persists no credential — which is a rule about what a run may
+hold, not a claim that every run holds nothing.

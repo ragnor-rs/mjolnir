@@ -114,3 +114,13 @@ branch_model:
   parallel_trees: true
   mechanics: null                      # a tree here needs nothing installed or copied
   exclusive_resources: []              # nothing local is held; the checks run on the host
+context:
+  artifacts:
+    carrier: file
+    # The other legal shape: in-tree, and legal only because it is committed — every item here
+    # is worked in a tree that is then removed (`work_in_shared_checkout: never` below), and a
+    # teardown takes whatever git does not have. One repository, so the committed plan also
+    # arrives in the pull request with the change it plans, which is where a wrong plan is
+    # cheapest to catch.
+    dir: ".claude/artifacts"
+    committed: true

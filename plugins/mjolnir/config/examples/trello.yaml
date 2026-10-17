@@ -137,3 +137,13 @@ branch_model:
     # One stack for the whole project, and the ticket belongs to the tree: two sessions in one
     # tree share a place, two trees queue against each other.
     - { name: "<the local service stack>", cap: 1, subject: tree }
+context:
+  artifacts:
+    carrier: file
+    # The two-repository case, and the reason `committed: true` is not simply "the plan is in
+    # the pull request": every `.claude/…` path here resolves in the OUTER repository, while
+    # the branches and pull requests belong to the inner one (§ 1). Committing the plan would
+    # file it beside the engagement material and not in front of a reviewer, so this store
+    # sits outside every tree instead.
+    dir: "$TMPDIR/<project>/artifacts"
+    committed: false

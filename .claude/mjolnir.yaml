@@ -25,8 +25,9 @@
 # That guard is live as of #19: tools/check_no_project_names.py, and it reads the permitted
 # slug out of `host.repo` below rather than carrying one. ⚠️ The exceptions are THREE, not two,
 # and they are stated in the script rather than left to a reader — the third turned up in the
-# tree while #19 was being built: the public plugin cited as prior art in
-# docs/configuration-surface.md is an artifact, not a project in scope.
+# tree while #19 was being built: a public artifact cited as evidence in docs/ is an artifact,
+# not a project in scope. That third exception is a table, carrying a reason and the roots each
+# entry is permitted in; no count of its entries is written here or in any document.
 #
 # What survives all three without exception: nothing under a carrier root — skills, commands or
 # hooks — carries a value, and no OTHER project is ever named.
@@ -171,3 +172,20 @@ branch_model:
   # Nothing contends. The only check this project runs is a python script with no daemon, no
   # service and no machine-wide lock, so no lease is taken and none is synthesised.
   exclusive_resources: []
+context:
+  artifacts:
+    # ⚠️ Measured rather than chosen: the one artifact concurrent sessions here coordinate
+    # through is a plan file carried in no configuration and committed nowhere. It sits in the
+    # agent harness's own per-project store, beside the session transcripts, while the standing
+    # convention that tells a session to read it names a path beside the repository that does
+    # not resolve. The file and its pointer disagree, and nothing reports it — which is the
+    # absence this facet makes statable.
+    carrier: file
+    # A choice rather than a constraint, since § 11 offers two legal shapes: this repository
+    # keeps per-item working papers out of its history, so `committed` is false — and that is
+    # what obliges the store to sit outside every tree, because `kind: worktree` with
+    # `work_in_shared_checkout: never` means every item's work happens in a tree that is then
+    # removed. ⚠️ The temp-directory hazard § 11 states is accepted here knowingly: a plan lost
+    # to a reboot is replayable from the session transcript, which is #31's own finding.
+    dir: "$TMPDIR/mjolnir/artifacts"
+    committed: false
