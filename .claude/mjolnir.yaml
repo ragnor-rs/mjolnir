@@ -14,8 +14,16 @@
 # configuration, the same file every adopter writes. It is not the only such place — README.md
 # carries the install command and an issue link, and docs/single-source-of-truth.md cites this
 # backlog — so the names-no-particular-project guard (#19) excludes this project's own slug
-# everywhere, and config/examples/ as example data. What #19 still asserts without exception:
-# nothing under skills/ carries a value, and no OTHER project is ever named.
+# everywhere, and config/examples/ as example data.
+#
+# That guard is live as of #19: tools/check_no_project_names.py, and it reads the permitted
+# slug out of `host.repo` below rather than carrying one. ⚠️ The exceptions are THREE, not two,
+# and they are stated in the script rather than left to a reader — the third turned up in the
+# tree while #19 was being built: the public plugin cited as prior art in
+# docs/configuration-surface.md is an artifact, not a project in scope.
+#
+# What survives all three without exception: nothing under a carrier root — skills, commands or
+# hooks — carries a value, and no OTHER project is ever named.
 version: 1
 
 roots:
@@ -30,9 +38,19 @@ host:
   # find out whether its shape survives contact with a real workflow. It did not survive
   # unchanged: this workflow has two triggers, which the single-string form could not state,
   # so the schema now declares a list. `paths` is omitted — the workflow filters none.
+  #
+  # ⚠️ #19 added a second gate, and the shape held: it is a second WORKFLOW with its own
+  # entry, not a second job of the first. A second job would have been a second mirrored
+  # command behind one workflow name, which this facet cannot state — #58's divergence,
+  # which this repository declined to create rather than record in a comment. The cost is
+  # one more workflow file and one more checkout; the gain is that `checks` stays the single
+  # statement of what the host runs, with nothing carried beside it.
   checks:
     - workflow: "Checks"
       mirrors: "python3 tools/check_single_source.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Names no other project"
+      mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
 
 tracker:

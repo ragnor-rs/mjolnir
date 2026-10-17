@@ -1,0 +1,33 @@
+name: Names no other project
+
+# The sweep that holds this repository to naming no other project, and to keeping every
+# value out of a carrier root. It is its own workflow rather than a second job of `Checks`
+# for one reason: `host.checks` is keyed by workflow name and states **one** mirrored local
+# command per entry, so two commands behind one workflow name could not be stated on the
+# surface at all. Two workflows, two entries, nothing carried in a comment — the divergence
+# #58 records stays a divergence found in other projects rather than one this repository
+# chose to create.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind, for the same reason the sibling workflow has none: nothing
+# here reaches the tracker, and the checkout is told not to leave a token in the git config.
+permissions: {}
+
+jobs:
+  names-no-project:
+    name: Names no other project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, planted violations first: the tree is held only once each
+      # check has been shown it can fail. That command is what `host.checks` declares this
+      # run mirrors, so the two cannot drift.
+      - name: Assert each check can fail, then sweep the tree for another project's names
+        run: python3 tools/check_no_project_names.py --self-test
