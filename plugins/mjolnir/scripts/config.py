@@ -277,17 +277,22 @@ def _set_default(data: dict, path: str, value) -> None:
 class Config:
     """A project's facts, resolved. Read through the accessors, not the dict."""
 
-    def __init__(self, data: dict, skills_root: str, facts: dict):
+    def __init__(self, data: dict, skills_root: str, facts: dict, source: str | None = None):
         self.data = data
         self.skills_root = skills_root
         self.facts = facts
+        # The file this came from, where it came from one. `None` for a
+        # configuration handed over as text, which is the self-test loading the
+        # examples -- reporting a path that was never opened would be the
+        # plausible-looking wrong answer this whole section is about.
+        self.source = source
 
     # -- the roots. The skills root is where the role ran (§ 1); the code root is
     # read from the file found there and is never inferred.
 
     @property
-    def config_path(self) -> str:
-        """The file this configuration was read from, absolute.
+    def config_path(self) -> str | None:
+        """The file this configuration was read from, absolute, or None.
 
         Reported so a role can say *which project* it resolved. Under § 1 the
         skills root is the directory the role ran in, and a role run from a
@@ -295,7 +300,7 @@ class Config:
         project and proceeds -- naming the file is the only thing that makes
         that visible at the moment it happens.
         """
-        return os.path.abspath(os.path.join(self.skills_root, CONFIG_PATH))
+        return self.source
 
     @property
     def code_root(self) -> str:
@@ -574,7 +579,7 @@ def load(skills_root: str = ".", *, check_paths: bool = True) -> Config:
     if not isinstance(data, dict):
         raise ConfigError(CONFIG_PATH, "is empty or is not a block of keys.")
 
-    return _resolve(data, skills_root, facts, check_paths)
+    return _resolve(data, skills_root, facts, check_paths, os.path.abspath(path))
 
 
 def load_text(text: str, skills_root: str, *, check_paths: bool = False) -> Config:
@@ -587,12 +592,18 @@ def load_text(text: str, skills_root: str, *, check_paths: bool = False) -> Conf
     return _resolve(data, skills_root, facts, check_paths)
 
 
-def _resolve(data: dict, skills_root: str, facts: dict, check_paths: bool) -> Config:
+def _resolve(
+    data: dict,
+    skills_root: str,
+    facts: dict,
+    check_paths: bool,
+    source: str | None = None,
+) -> Config:
     for path, value in facts["defaults"].items():
         _set_default(data, path, value)
     validate(data, facts)
 
-    config = Config(data, skills_root, facts)
+    config = Config(data, skills_root, facts, source)
     if check_paths and not os.path.isdir(config.code_root):
         raise ConfigError(
             "roots.code",
