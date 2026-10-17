@@ -102,10 +102,31 @@ the three that are obvious. The measurements that forced each to be independent:
    under a different owner, not a submodule. Its skills write the root explicitly into every git
    call and stop if the directory is absent, because a fresh clone of the outer repository does
    not have it. The failure mode behind
-   [`schema.md § 1`](../plugins/mjolnir/config/schema.md#1-roots--three-independent-paths): a
-   skill that takes the top level of the repository it is installed in commits the engagement
+   [`schema.md § 1`](../plugins/mjolnir/config/schema.md#1-roots):
+   a skill that takes the top level of the repository it is installed in commits the engagement
    notes and never touches the code; a host CLI call inheriting the working directory addresses
    the wrong repository. Both fail quietly, having done something plausible first.
+
+   **The same section's other root was measured here rather than in the survey, and it is the one
+   root the surface cannot carry.** The shared reader resolves `.claude/mjolnir.yaml` against the
+   skills root, so that root is needed before any configuration can be read. Every in-band
+   candidate was tried:
+
+   | Candidate | Measured outcome |
+   |---|---|
+   | `${CLAUDE_PROJECT_DIR}` | not set in the environment a skill's command runs in |
+   | `${CLAUDE_PLUGIN_ROOT}` | the plugin's own location — outside the project entirely under a user-scope install |
+   | the repository top level, from the version-control tool | wrong wherever the two roots differ — which is why the rule above bars it for the code root |
+   | a key on this surface | inside the file the key is needed to find |
+
+   So it is stated as a definition rather than configured —
+   [`schema.md § 1 → The skills root is where the role runs`](../plugins/mjolnir/config/schema.md#the-skills-root-is-where-the-role-runs).
+   The key that used to declare it carried `"."` in every configuration and was read by nothing:
+   declared and dead, which is worse than absent, because a project that pointed it at a
+   subdirectory was ignored in silence. The costs are accepted with it and are stated in that
+   section rather than here — the naming requirement being a statement rather than a stop, and
+   the argument form staying, because a role has to be able to address a project it is not
+   standing in.
 4. **Carrier.** See above. Three projects also run process hooks, at eight, five and four.
 5. **Audience and language.** One project writes its items in one language and its repository in
    another and states the split is by audience — its branch slug a **translation** of the item
@@ -113,6 +134,23 @@ the three that are obvious. The measurements that forced each to be independent:
    another writes it in a business register for a reader outside the build. Three settings, not
    one — hence
    [`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project).
+
+   **One artifact in that map is fixed rather than configured.** The measurement that forced it
+   is an absence: the reply a role writes in the session is an artifact like the day log, and for
+   several roles the only output, and **no copy of any role in the survey stated its register** —
+   not one of the thirty-two read in full, and nothing in the surface either. Where every other
+   artifact above was carried three or four different ways by different projects, this one was
+   carried nowhere, so there was no divergence to reconcile and nothing to make configurable
+   from.
+
+   ⚠️ **The evidence for what to put there instead is of a different kind from the rest of this
+   document, and that is worth naming.** It is not a count across projects A–F: it is the stated
+   requirement of the person the replies are written to, recorded on
+   [#79](https://github.com/ragnor-rs/mjolnir/issues/79) in their own words. The first entry here
+   whose argument a count does not carry. Why that still settles it as *procedure* rather than as
+   a setting is the rule's own, at
+   [`schema.md § 8 → The reply to the person running a role`](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role),
+   which this document does not restate.
 6. **Branch model.** Four of the six cut a working tree per work item; two never do. Even the
    two that do not are not indifferent to it: one of them carries a day-log caveat — already in
    the shipped skill — that a session opened in a worktree *the configuration cannot reach*

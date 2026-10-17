@@ -17,6 +17,13 @@ second command with nowhere on the surface to live. It is recorded in
 [its own section](#the-second-sweep-naming-no-other-project) below, because the two claims share
 this document's discipline of stating every limit and not its subject.
 
+`plugins/mjolnir/scripts/check_reply_register.py` holds the register of a role's reply, and it is
+the one here that does not run on the gate at all. It is in
+[its own section](#the-replys-register-held-in-the-session-not-on-the-gate) too, and for the same
+reason: whatever holds a claim here states what it leaves alone. ⚠️ No count of these scripts is
+written down, here or anywhere — a count in prose is a copy, and three open changes were each
+adding themselves to this document as "the third" when it was.
+
 ## Why this is a check rather than a convention
 
 Every other duplication in this backlog is one the toolkit exists to delete. This one is the
@@ -260,13 +267,14 @@ exempted the whole directory and so would have read straight past it.
   has a stable form, and forbidding a list of them would be a list to keep in sync. This is the
   same reason projects are lettered A–F in the documentation: the convention is held by what the
   documents *don't* contain, and the counts carry the argument instead.
-- **A language interpreter.** `python3` is on no list, and `python3 <day_log.script>` in the
-  day-log skill is the one live instance of one. ⚠️ Whether a configured script is a path the
-  procedure prefixes with an interpreter, or a command the procedure merely runs, is
+- **A language interpreter.** `python3` is on no list, and the strict set carries live instances
+  of one: a configured script run under it in the day-log skill, and the hook carrier that calls
+  the reply-register check. ⚠️ Whether a configured script is a path the procedure prefixes with
+  an interpreter, or a command the procedure merely runs, is
   [#65](https://github.com/ragnor-rs/mjolnir/issues/65)'s and
   [#66](https://github.com/ragnor-rs/mjolnir/issues/66)'s ruling about what configuration carries.
-  This check does not pre-empt it by reddening, so until that lands the interpreter named in a
-  skill is a known hole — stated, because an unstated limit reads later as coverage.
+  This check does not pre-empt it by reddening, so until that lands an interpreter named in a
+  carrier is a known hole — stated, because an unstated limit reads later as coverage.
 - **A stack token hidden in a script's comment.** Rule 1 strips comments before sweeping a
   script, so `# run npm run build first` in a hook is not read. That is the deliberate trade: a
   comment is prose, and sweeping it would redden on an ordinary English sentence. A command the
@@ -274,10 +282,12 @@ exempted the whole directory and so would have read straight past it.
 - **A bare all-caps value inside an example configuration**, per the first exception above. The
   residue is narrow — an example whose status words are upper-case — and the alternative was
   dropping `OWNER/REPO` and `KEY` out of the placeholder set.
-- **Most carrier roots are empty, and the run still exits 0.** Of the carrier shapes, only
-  `plugins/*/skills/` matches anything today: the hooks that enforce the loop are
-  [#16](https://github.com/ragnor-rs/mjolnir/issues/16) and the command carrier belongs to
-  whichever project migrates with one. The run says how many shapes swept nothing and **does not**
+- **Most carrier roots are empty, and the run still exits 0.** The shapes that match a file today
+  are the skills root and — since the reply-register hook — the hooks root; the hooks that enforce
+  the *loop* are still [#16](https://github.com/ragnor-rs/mjolnir/issues/16), and the command
+  carrier belongs to whichever project migrates with one. ⚠️ No number is given here, for the
+  reason the plant counts are not: the run prints its own, and a count in prose goes stale green.
+  The run says how many shapes swept nothing and **does not**
   fail on them, because a shape for a carrier kind this repository has not adopted is not a
   defect. What is held instead: check 4 fails if the strict set empties altogether, and check 5
   fails on a carrier sitting outside every shape.
@@ -286,11 +296,12 @@ exempted the whole directory and so would have read straight past it.
 
 ## Beside the document checks: the tracker port's own contract
 
-⚠️ No count of the scripts is carried here. Two of them hold a document claim and are the subject
-of this document; the other two hold a module to the surface — `plugins/mjolnir/scripts/config.py`,
-the configuration reader, whose own checks are its work item's, and the port contract recorded
-below. Each has its own workflow and its own `host.checks` entry, for the reason the sweep above
-does: one entry states one mirrored command.
+⚠️ No count of the scripts is carried here. The two above hold a document claim and are what this
+document was written for; the rest hold a module or a rule — `plugins/mjolnir/scripts/config.py`,
+the configuration reader, whose own checks are its work item's; the reply-register hook recorded
+in the next section; and the port contract recorded in this one. Each carries its own workflow and
+its own `host.checks` entry, for the reason the sweep above does: one entry states one mirrored
+command.
 
 `plugins/mjolnir/scripts/port.py --self-test` runs in the `Port contract` workflow. It is not a
 document check, and it is recorded here because its subject is the same discipline — it holds a
@@ -331,6 +342,107 @@ trackers.
   what a project wants where comments are impossible is a judgement the measurement behind it
   carries, not something a check can read. This is the *fidelity* limit one claim over.
 
+## The reply's register: held in the session, not on the gate
+
+The surface fixes the register of the reply a role writes in the session, as procedure with no
+per-project setting —
+[schema § 8 → The reply to the person running a role](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role).
+⛔ That rule had to be held by something other than the writer, because a writer judging its own
+register while writing is the mechanism it replaces, and the honest-looking version of the defect
+is the one that survives review.
+
+**A gate cannot hold it, and that is not a limitation of this repository's gate.** A reply is not a
+file; it exists in a session and nowhere a workflow can read. The harness's `Stop` event is the one
+place the finished reply is available, and it hands the text over directly, so
+`plugins/mjolnir/hooks/hooks.json` is the carrier and
+`plugins/mjolnir/scripts/check_reply_register.py` the implementation it calls — the division
+`config.py` already has, and the reason the hook script is classified rather than strictly swept.
+
+| Property | What is checked | Kind | A finding |
+|---|---|---|---|
+| Opening | The first line carrying the reply's own words is not one of a closed set of preamble forms | forbidding | **blocks**, once per turn |
+| Length | No text is compressed into an arrow chain — two arrows sharing an operand | forbidding | **blocks**, once per turn |
+| Emphasis | Emphasised spans against the reply's own prose line count | computed | reports |
+| Register | A closed list of dramatic words, and exclamations, over a density | forbidding, over a density | reports |
+| Uncertainty | A closed list of hedges, over a density | forbidding, over a density | reports |
+| Structure | — | — | nothing; see below |
+
+**What blocks, and why the rest does not.** The first two forbid a thing whose form is stable and
+whose presence is the defect: a preamble form is a phrase, and a chain is two arrows sharing an
+operand. A finding there is a fact about the text, so it hands the turn back.
+
+The other three are weaker in two different ways, and neither weakness is a threshold alone.
+*Emphasis* is genuinely **computed** — a density derived from the reply's own length, so no word
+list can be reworded past it, but the density is a proxy for "as a default texture" rather than
+that rule. *Register* and *Uncertainty* are **forbidding** checks over closed word lists read at a
+density: ⚠️ a synonym that is not on the list passes, which is precisely the *quoting* weakness
+this document rules out elsewhere, and the lists cannot be completed because the thing forbidden
+is a tone rather than a name. So all three report and none blocks. ⚠️ The densities are
+deliberately not written down here — a number in prose is a copy that has to be kept in sync, and
+the run prints its own.
+
+**Blocking means handing the turn back, not refusing it.** The hook returns `decision: block` with
+the findings as `additionalContext`, which the harness's documented contract makes the field the
+writer reads back; the `reason` beside it is shown to the person instead. ⚠️ **It blocks at most
+once per turn**, keyed on the harness's own turn id under `CLAUDE_PLUGIN_DATA`, because a hook that
+also blocked the restatement would hold the session open on a judgement a forbidding check cannot
+make. A payload carrying no turn at all cannot be guarded, so it reports and **says that it could
+not guard** rather than returning the same answer as a turn that has had its hand-back.
+
+It derives what it can, for the reason the gate's own scripts do:
+
+| Derived, at run time | Hardcoded |
+|---|---|
+| the property list, from the first column of the register's own table in the surface | the anchor of the subsection that table sits in |
+| which properties are accounted for, by holding that list against the checks in both directions | the preamble forms, the chain form, the word lists and the densities |
+| the self-test's own plants against the surface, from the table it just parsed | the markdown table and heading grammar |
+| that the carrier still names this script, by reading `hooks.json` and resolving what it calls | the hook event's name, and the carrier's path |
+
+A property added to the register's table with no check and no stated reason for having none
+reddens `--self-test` at the moment the row is added. That is check 2's direction, one surface
+over — and it runs in the direction nobody remembers to check by hand, because the failure
+otherwise is a register that grew a clause and a hook that silently never held it. ⛔ Held and
+excused are kept apart rather than unioned: a property excused *in part* must still be held in
+part, so deleting the compression check does not leave the padding limit standing in for it. The
+same discipline reaches the carrier — `hooks.json` naming another script, another event, or
+nothing parseable at all leaves every check here green, so the gate resolves what the carrier
+calls and asserts it is this script. See
+[schema § 7](../plugins/mjolnir/config/schema.md#7-carrier) for the carrier axis itself.
+
+### What this check deliberately does not hold
+
+- **Structure.** Whether continuous prose was carrying enumerable facts is a judgement about the
+  facts and not about the text: the same paragraph is correct prose or a withheld table depending
+  on what it says. A reader covers it.
+- **The padding half of Length.** Whether a sentence earns its place cannot be computed, and a
+  length threshold would punish exactly the content the rule's own first clause protects. Only the
+  compression half is held — which is also the distinction the rule turns on: shortening by
+  selection against shortening by compression.
+- **Whether the reply was a role's at all.** The hook fires on every reply in a session where this
+  plugin is enabled, and nothing in a `Stop` payload says whether a role was running. So the
+  register is held more widely than the surface states it — in the safe direction here, and stated
+  because an unstated limit reads later as coverage. ⚠️ That direction is a property of this one
+  rule rather than of hooks, and it does not survive the next one:
+  [#87](https://github.com/ragnor-rs/mjolnir/issues/87) is where a hook's own role is settled, and
+  it blocks [#16](https://github.com/ragnor-rs/mjolnir/issues/16), whose guards and leases are
+  **wrong** rather than merely wide when they fire outside their role.
+- **A reply that was never sent as text.** A turn that ends in a tool call carries no final
+  message, and the hook answers nothing rather than guessing.
+- **Code, a quotation, and — for the emphasis density only — a table.** A fenced block, an
+  indented block and a quoted line are dropped from every check: they are not the writer's own
+  prose, and sweeping them produced false reds on a pasted traceback and on quoting the person's
+  own words back. Table rows are read by the word-list checks and **not** by the emphasis density,
+  because a bolded term in a cell is the shape the Structure row asks for. So emphasis as a
+  texture inside a table is held by nothing.
+- **A failure before this script is running.** The hook fails open and names itself, but only once
+  it has started: the harness's timeout, no interpreter on the path, or a syntax error in the file
+  produces no output at all, and nothing in the session then says the reply was held to nothing.
+  That residue cannot be closed from inside the hook, and what covers it is this run.
+- **Its own failure.** ⛔ The hook **fails open** and says so: an internal error answers with a
+  message naming itself, rather than with silence that reads as a reply in register, or with a
+  non-zero exit that would break every turn — the same absence-is-not-an-answer rule
+  [§ 2](../plugins/mjolnir/config/schema.md#2-code-host) states for the host's own runs.
+
 ## Each check has a violation it is asserted to redden on
 
 `--self-test` plants one violation per check and asserts that check goes red, as the first step of
@@ -338,7 +450,7 @@ the workflow — before the tree is held to anything. The discipline is #28's: a
 before its break tends to match only the break its author imagined, and a check that cannot fail
 is not a check.
 
-Every script recorded here carries the mode and is run through it by its workflow, and the plant is
+Every script here carries the mode and each is run through it by its workflow, and the plant is
 per *branch that does real work* rather than per check — a plant that reddens a check by the wrong
 route proves nothing about the branch it was written for. ⛔ The numbers are deliberately not
 written down here: a count in prose is a copy that has to be kept in sync, and the run prints its
@@ -350,6 +462,14 @@ beside the assertion it belongs to, because each needs a configuration or a surf
 synthesised for it and a first phase would build all of them twice. What the ordering buys — no
 check is believed until it has been shown it can fail — holds either way, and it is stated here
 rather than in a comment in one workflow, where nothing reading this document would find it.
+
+⚠️ **The reply-register check's plants carry two things its siblings' do not**, because what it
+holds afterwards is a rule rather than a tree. It plants replies that must stay **green** as well
+as ones that must redden — a check that flags an arrow inside a fenced block, an indented block or
+a quotation is not the check it claims to be, and each of those was a measured false red rather
+than a hypothesis. And it runs its turn-guard assertions against a state directory of its own,
+after a second run of the self-test read the first run's markers and reported that a blocking
+finding does not block.
 
 ⚠️ **A plant may not name the file it plants into.** The sweep's first draft hardcoded the one
 skill's path, so moving or renaming a carrier root made `--self-test` — the command the workflow

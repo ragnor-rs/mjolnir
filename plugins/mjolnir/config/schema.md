@@ -82,11 +82,10 @@ statement; it carries no count, because a count restated elsewhere drifts the mo
 added. The measurements that forced each to be independent are in
 [`docs/configuration-surface.md`](../../../docs/configuration-surface.md).
 
-## 1. Roots — three independent paths
+## 1. Roots
 
 ```yaml
 roots:
-  skills: "."              # where this config lives; default
   code: "."                # the path every git and gh call addresses
   code_is_own_repo: false  # true when `code` is its own repository; default
 ```
@@ -101,6 +100,38 @@ own repository, possibly under a different owner, and not a submodule. Branches,
 and CI then belong to the inner repository and the engagement material to the outer. A skill
 stops rather than proceeding when a `code` root that should exist does not — a fresh clone of
 the outer repository does not have it.
+
+### The skills root is where the role runs
+
+⛔ **The skills root is the directory the role was invoked in. It is procedure, and this surface
+carries no key for it.** It is where `.claude/mjolnir.yaml` is *found*, so it is needed before
+any configuration can be read at all, and a key stating it would sit inside the file it is
+needed to locate. The reader takes it as an argument whose default is the working directory,
+which is how a role addresses a project it is not standing in.
+
+⚠️ **This is not the inference the rule above forbids, and the difference is the whole of why
+both hold at once.** A fact the configuration *could* state and a role derives anyway is an
+inference — the code root's case, where deriving it is wrong wherever the two roots differ. A
+fact no configuration can state is a definition. The test is whether a project could have
+written the value down.
+
+⛔ **A role names what it resolved before it acts: the root, the file it read there, and the
+repository that file's configuration addresses.** The reader reports each of them, so this costs
+the role a sentence and no work. The list is stated here and a role reads it from here.
+
+⚠️ **That naming is the only guard, and it is weaker than a stop.** Run from a directory with no
+configuration, a role stops; run from a *sibling project that has one*, it resolves that project
+correctly and proceeds — and since the absolute code root is the configured `code` joined onto
+the resolved root, every `git` and `gh` call then addresses the other project's repository. No
+in-band test tells that apart from a deliberate run on that project, so what the surface
+requires is that the answer be stated where the person can see it, not that it be guessed.
+
+⛔ **`roots.skills` is retired, and a configuration that still declares it is refused with the
+key named.** It was declared here, written in every configuration, and read by nothing — and
+because the file is found *at* the root that key described, the only value it could ever hold
+was the one it already held. A key nothing reads is worse than no key: a project that pointed it
+at a subdirectory was ignored in silence, which is the failure above with the project's own
+statement discarded as well.
 
 ## 2. Code host
 
@@ -497,6 +528,46 @@ is by audience; its branch slug must be a **translation** of the item title, nev
 transliteration. Another writes the day log in a technical register for itself where a third
 writes it in a business register for someone outside the build. These are three settings, not
 one.
+
+### The reply to the person running a role
+
+The reply a role writes in the session is an artifact like the day log, and for several roles it
+is the only output. It is also the one artifact above whose audience a project does not choose.
+
+⛔ **So its register is procedure, and no setting turns it off.** The person running a role is not
+a reader a configuration can nominate, and a toolkit that let a project configure its assistant
+into a narrative register would have made the defect configurable rather than fixed it. This is
+the same placement the authorship rule has under § 6 and the invocation rule under § 7:
+procedure, stated inside the axis it would otherwise be a value of.
+
+| Property | Required | Not |
+|---|---|---|
+| Opening | The finding or the outcome, in the first sentence | Preamble, or restating the request |
+| Structure | Headed sections, lists, tables where the content enumerates | Continuous prose carrying enumerable facts |
+| Register | Reference and technical, as a textbook states a result | Narrative, dramatic, or persuasive |
+| Length | What the content needs | Padding, or compression into fragments and arrow chains |
+| Emphasis | Where a fact is load-bearing | As a default texture |
+| Uncertainty | Stated plainly, once | Hedging throughout |
+
+⚠️ **Readable and short are different things, and readable wins.** There are two ways to shorten
+and only one of them is this table's: **selection** drops what does not change the reader's next
+action, and **compression** keeps every fact while destroying the reading — sentences crushed into
+fragments and arrow chains. Compression scores better on length than selection does, which is why
+the Length row names it rather than naming a limit.
+
+**The language is the one the person addressed the role in** — not `language.repo`, and not
+`language.work_item`. It is the only part of this artifact's triple that varies at all, and it
+varies by who is speaking rather than by project, so nothing configures it and no role derives it
+from the repository.
+
+⛔ **A role does not hold its own reply to this by reading it back before sending it.** The writer
+judging its own register at the time of writing is the mechanism being replaced, not the one being
+specified: the properties above are held by a check over the reply the role actually produced,
+reported to the session rather than to a file. Which of them are held mechanically, which are
+reported without being held, and which are left to a reader are stated once in
+[`docs/single-source-of-truth.md § The reply's register`](../../../docs/single-source-of-truth.md#the-replys-register-held-in-the-session-not-on-the-gate)
+— beside the gate's own checks and under the same discipline, because an unstated limit reads
+later as coverage.
 
 ## 9. Day log
 

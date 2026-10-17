@@ -33,7 +33,6 @@
 version: 1
 
 roots:
-  skills: "."
   code: "."
   code_is_own_repo: false
 
@@ -54,6 +53,9 @@ host:
       triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Reply register"
+      mirrors: "python3 plugins/mjolnir/scripts/check_reply_register.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Port contract"
       mirrors: "python3 plugins/mjolnir/scripts/port.py --self-test"
