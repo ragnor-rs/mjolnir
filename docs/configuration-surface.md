@@ -102,10 +102,31 @@ the three that are obvious. The measurements that forced each to be independent:
    under a different owner, not a submodule. Its skills write the root explicitly into every git
    call and stop if the directory is absent, because a fresh clone of the outer repository does
    not have it. The failure mode behind
-   [`schema.md § 1`](../plugins/mjolnir/config/schema.md#1-roots--three-independent-paths): a
-   skill that takes the top level of the repository it is installed in commits the engagement
+   [`schema.md § 1`](../plugins/mjolnir/config/schema.md#1-roots):
+   a skill that takes the top level of the repository it is installed in commits the engagement
    notes and never touches the code; a host CLI call inheriting the working directory addresses
    the wrong repository. Both fail quietly, having done something plausible first.
+
+   **The same section's other root was measured here rather than in the survey, and it is the one
+   root the surface cannot carry.** The shared reader resolves `.claude/mjolnir.yaml` against the
+   skills root, so that root is needed before any configuration can be read. Every in-band
+   candidate was tried:
+
+   | Candidate | Measured outcome |
+   |---|---|
+   | `${CLAUDE_PROJECT_DIR}` | not set in the environment a skill's command runs in |
+   | `${CLAUDE_PLUGIN_ROOT}` | the plugin's own location — outside the project entirely under a user-scope install |
+   | the repository top level, from the version-control tool | wrong wherever the two roots differ — which is why the rule above bars it for the code root |
+   | a key on this surface | inside the file the key is needed to find |
+
+   So it is stated as a definition rather than configured —
+   [`schema.md § 1 → The skills root is where the role runs`](../plugins/mjolnir/config/schema.md#the-skills-root-is-where-the-role-runs).
+   The key that used to declare it carried `"."` in every configuration and was read by nothing:
+   declared and dead, which is worse than absent, because a project that pointed it at a
+   subdirectory was ignored in silence. The costs are accepted with it and are stated in that
+   section rather than here — the naming requirement being a statement rather than a stop, and
+   the argument form staying, because a role has to be able to address a project it is not
+   standing in.
 4. **Carrier.** See above. Three projects also run process hooks, at eight, five and four.
 5. **Audience and language.** One project writes its items in one language and its repository in
    another and states the split is by audience — its branch slug a **translation** of the item
@@ -113,6 +134,23 @@ the three that are obvious. The measurements that forced each to be independent:
    another writes it in a business register for a reader outside the build. Three settings, not
    one — hence
    [`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project).
+
+   **One artifact in that map is fixed rather than configured.** The measurement that forced it
+   is an absence: the reply a role writes in the session is an artifact like the day log, and for
+   several roles the only output, and **no copy of any role in the survey stated its register** —
+   not one of the thirty-two read in full, and nothing in the surface either. Where every other
+   artifact above was carried three or four different ways by different projects, this one was
+   carried nowhere, so there was no divergence to reconcile and nothing to make configurable
+   from.
+
+   ⚠️ **The evidence for what to put there instead is of a different kind from the rest of this
+   document, and that is worth naming.** It is not a count across projects A–F: it is the stated
+   requirement of the person the replies are written to, recorded on
+   [#79](https://github.com/ragnor-rs/mjolnir/issues/79) in their own words. The first entry here
+   whose argument a count does not carry. Why that still settles it as *procedure* rather than as
+   a setting is the rule's own, at
+   [`schema.md § 8 → The reply to the person running a role`](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role),
+   which this document does not restate.
 6. **Branch model.** Four of the six cut a working tree per work item; two never do. Even the
    two that do not are not indifferent to it: one of them carries a day-log caveat — already in
    the shipped skill — that a session opened in a worktree *the configuration cannot reach*
@@ -177,27 +215,37 @@ the three that are obvious. The measurements that forced each to be independent:
 
 ## The tracker port
 
-The operations the shared procedure needs, and the shapes the three implementations give them:
+The operation list itself, and what the procedure does where an operation is unavailable, are
+[`schema.md § 3 → The operations`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does).
+What follows is the measurement behind that list: the shapes the three implementations give these
+operations, which is why none of them could be assumed.
+
+Each row is keyed by the operation § 3 states, so the two tables are read against each other
+without a mapping in between. ⚠️ The rows are the operations the survey measured; § 3's list is
+longer, and `advance_on_merge`, `set_labels`, `assign`, `checklist_read` and `checklist_write` are
+argued below rather than in the table — stated because a reader comparing the two would otherwise
+read a missing row as an operation nobody had evidence for.
 
 | Operation | GitHub Projects | Jira | Trello |
 |---|---|---|---|
-| Create item | create, add to project, set status | one call | create, then **one label attach per label** — labels cannot be set at creation |
-| Read item | one call | one call | one call, **plus a separate call for checklists** |
-| Set state | update a field value by project, field and option id | find the transition by name, then transition | move to a list |
-| Item number | the item number | the item key | **parsed out of the returned URL** — there is no short-id field |
-| Link dependency | a dependencies API keyed on the **internal id, not the number**, posted on the *blocked* item | a link call, with an inward/outward inversion relative to the tracker's own metadata naming | **description links, written at both ends by hand** |
-| Close via pull request | a keyword in the body, declarative, on merge | an explicit transition; no closing keyword exists | a bracketed number in the title, and **never a hash**, which would autolink to an unrelated object |
-| Comment | one call | one call | **impossible** — no comment action; it goes into the description |
-| Delete a checklist item | n/a | n/a | **impossible** — reword and tick instead |
+| `create_item` | create, add to project, set status | one call | create, then **one label attach per label** — labels cannot be set at creation |
+| `read_item` | one call | one call | one call, **plus a separate call for checklists** |
+| `set_state` | update a field value by project, field and option id | find the transition by name, then transition | move to a list |
+| `item_number` | the item number | the item key | **parsed out of the returned URL** — there is no short-id field |
+| `link_dependency` | a dependencies API keyed on the **internal id, not the number**, posted on the *blocked* item | a link call, with an inward/outward inversion relative to the tracker's own metadata naming | **description links, written at both ends by hand** |
+| `link_for_close` | a keyword in the body, declarative, on merge | an explicit transition; no closing keyword exists | a bracketed number in the title, and **never a hash**, which would autolink to an unrelated object |
+| `comment` | one call | one call | **impossible** — no comment action; it goes into the description |
+| `checklist_item_delete` | n/a | n/a | **impossible** — reword and tick instead |
 
 Three of these measurements each forced a property of the port, stated in
 [`schema.md § 3`](../plugins/mjolnir/config/schema.md#3-tracker-port):
 
 - Closing being declarative on one tracker (a keyword on merge), webhook-automated on another
   (where the procedure must *not* do it by hand) and absent on the third is why `link_for_close`
-  and `advance_on_merge` are separate capabilities.
-- Comment, delete-a-checklist-item, set-labels-atomically and assign-a-member each missing on at
-  least one tracker is why capabilities are queried with a stated fallback per absence. One
+  and `advance_on_merge` are separate operations rather than one.
+- `comment`, `checklist_item_delete`, `set_labels` atomically and `assign` each missing on at
+  least one tracker is why a capability is queried with a stated fallback per absence — and the
+  four are the measurement behind the operations the table above does not carry a row for. One
   project's skills already did this: a failed gate written into the description *because*
   comments are impossible there.
 - One project barring source code, credentials, hosting details, file paths and branch names from

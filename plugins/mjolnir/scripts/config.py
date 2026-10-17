@@ -30,6 +30,15 @@ Three things it deliberately does not do:
   * **It infers no root.** `roots.code` is read, never derived from the working
     directory or from `git rev-parse` -- both would do something plausible first
     and be wrong wherever the two roots differ.
+
+    ⚠️ The **skills root** is the one root no configuration can state, because it
+    is where the configuration is found. The surface rules it the directory the
+    role was invoked in, which is this reader's default, and `--skills-root` is
+    how a role addresses a project it is not standing in. That is a definition
+    rather than an inference -- the test the surface states is whether a project
+    could have written the value down -- and because it cannot be checked, every
+    resolution reports what § 1 requires a role to name before it acts. Which
+    items those are is § 1's list, not a second one here.
   * **It does not decide what a role then does.** It reports what a
     configuration cannot support; acting on that is the role's business.
 
@@ -185,6 +194,15 @@ def surface_facts(surface_text: str) -> dict:
     return {"defaults": defaults, "enums": enums}
 
 
+def surface_keys(surface_text: str) -> set[str]:
+    """Every dotted key path the surface's blocks declare.
+
+    Used by the self-test to hold the retired keys to the surface: a key this
+    reader refuses must not be one the surface still tells a project to write.
+    """
+    return {path for block in _fences(surface_text) for path, _ in _walk_keys(block)}
+
+
 def vocabulary(facts: dict, path: str, what: str) -> list[str]:
     """An alternation the reader requires, or a refusal naming what is absent."""
     found = facts["enums"].get(path)
@@ -259,12 +277,30 @@ def _set_default(data: dict, path: str, value) -> None:
 class Config:
     """A project's facts, resolved. Read through the accessors, not the dict."""
 
-    def __init__(self, data: dict, skills_root: str, facts: dict):
+    def __init__(self, data: dict, skills_root: str, facts: dict, source: str | None = None):
         self.data = data
         self.skills_root = skills_root
         self.facts = facts
+        # The file this came from, where it came from one. `None` for a
+        # configuration handed over as text, which is the self-test loading the
+        # examples -- reporting a path that was never opened would be the
+        # plausible-looking wrong answer this whole section is about.
+        self.source = source
 
-    # -- the roots. Both are absolute, and neither is ever inferred.
+    # -- the roots. The skills root is where the role ran (§ 1); the code root is
+    # read from the file found there and is never inferred.
+
+    @property
+    def config_path(self) -> str | None:
+        """The file this configuration was read from, absolute, or None.
+
+        Reported so a role can say *which project* it resolved. Under § 1 the
+        skills root is the directory the role ran in, and a role run from a
+        sibling project that has a configuration of its own resolves that
+        project and proceeds -- naming the file is the only thing that makes
+        that visible at the moment it happens.
+        """
+        return self.source
 
     @property
     def code_root(self) -> str:
@@ -294,9 +330,10 @@ class Config:
         out = []
         if not self.has_tracker:
             out.append(
-                "No tracker is configured (`tracker.kind: none`), so every "
-                "tracker operation is unavailable. Branching, the pull request, "
-                "the review and the day log do not need one."
+                "No tracker is configured (`tracker.kind: none`). Branching, the "
+                "pull request, the review and the day log do not need one. What "
+                "that leaves each tracker operation doing is the port's to report, "
+                "never this reader's: a capability is the adapter's fact."
             )
         for facet in ("type", "estimate", "template"):
             if self.get(f"work_item.{facet}.carrier") == "none":
@@ -339,6 +376,7 @@ class Config:
     def to_dict(self) -> dict:
         return {
             "skills_root": os.path.abspath(self.skills_root),
+            "config_path": self.config_path,
             "code_root": os.path.abspath(self.code_root),
             "code_is_own_repo": self.code_is_own_repo,
             "config": self.data,
@@ -380,6 +418,22 @@ REQUIRED = [
      "what the trees cannot all help themselves to; `[]` states that nothing contends (§ 10)"),
 ]
 
+# Keys the surface used to declare and no longer does, each with where the fact
+# lives now. A retired key is **refused**, not ignored: `roots.skills` was
+# declared, written in every configuration and read by nothing, so a project
+# that pointed it at a subdirectory was ignored in silence -- and a stale file
+# that still carries it would be that same silence surviving the removal. The
+# self-test holds each entry to the surface in both directions, so re-declaring
+# one there reddens the build rather than making every configuration unreadable.
+RETIRED = [
+    (
+        "roots.skills",
+        "the skills root is the directory the role was invoked in, which no "
+        "configuration can state -- it is where this file is found. See § 1, "
+        "`The skills root is where the role runs`. Delete the key",
+    ),
+]
+
 # A facet whose carrier is `none` states why. This is the line between a
 # deliberate absence and an unset value, and it is the whole reason the two can
 # be told apart at all.
@@ -403,6 +457,10 @@ CONTEXTUAL = {"role", "writer", "check", "on_fail", "carriers.day_log"}
 
 
 def validate(data: dict, facts: dict) -> None:
+    for path, where in RETIRED:
+        if _has(data, path):
+            raise ConfigError(path, f"is retired -- {where}.")
+
     for path, what in REQUIRED:
         if not _has(data, path):
             raise ConfigError(path, f"required -- {what}.")
@@ -522,7 +580,7 @@ def load(skills_root: str = ".", *, check_paths: bool = True) -> Config:
     if not isinstance(data, dict):
         raise ConfigError(CONFIG_PATH, "is empty or is not a block of keys.")
 
-    return _resolve(data, skills_root, facts, check_paths)
+    return _resolve(data, skills_root, facts, check_paths, os.path.abspath(path))
 
 
 def load_text(text: str, skills_root: str, *, check_paths: bool = False) -> Config:
@@ -535,12 +593,18 @@ def load_text(text: str, skills_root: str, *, check_paths: bool = False) -> Conf
     return _resolve(data, skills_root, facts, check_paths)
 
 
-def _resolve(data: dict, skills_root: str, facts: dict, check_paths: bool) -> Config:
+def _resolve(
+    data: dict,
+    skills_root: str,
+    facts: dict,
+    check_paths: bool,
+    source: str | None = None,
+) -> Config:
     for path, value in facts["defaults"].items():
         _set_default(data, path, value)
     validate(data, facts)
 
-    config = Config(data, skills_root, facts)
+    config = Config(data, skills_root, facts, source)
     if check_paths and not os.path.isdir(config.code_root):
         raise ConfigError(
             "roots.code",
@@ -630,6 +694,39 @@ def self_test() -> int:
         f"reported {missing_root!r}",
     )
 
+    # § 1's two halves, in both directions. A retired key must be refused where a
+    # project still writes it, *and* must be gone from the surface -- a key this
+    # reader refuses while the surface still asks for it would make every
+    # configuration that follows the surface unreadable.
+    with open(SURFACE, encoding="utf-8") as handle:
+        declared = surface_keys(handle.read())
+    for path, _ in RETIRED:
+        check(
+            f"the surface declares no `{path}`",
+            path not in declared,
+            "the surface still states it, and this reader refuses it",
+        )
+        broken = _refused(_a_valid_example_with(path, "."))
+        check(
+            f"a configuration still declaring `{path}` is refused, with the key named",
+            broken == path,
+            f"reported {broken!r}",
+        )
+
+    # A root with no configuration stops, and names the root it looked in --
+    # which is the one case § 1 can make a stop rather than a statement.
+    stopped, named = _refuses_a_root_with_no_config()
+    check(
+        "a root with no configuration stops, naming the file",
+        stopped == CONFIG_PATH,
+        f"reported {stopped!r}",
+    )
+    check(
+        "that refusal names the absolute root it looked in",
+        named,
+        "the message did not carry the root",
+    )
+
     # Every marked default is applied. Nothing used to assert this: emptying
     # `_set_default` left the whole suite green, because every example spells
     # its defaults out and so exercises the one path the defaults do not take.
@@ -693,6 +790,21 @@ def self_test() -> int:
                     for key in _load_bearing_absences(config)
                 ),
                 f"reported {reported!r}",
+            )
+            # The resolved identity, which is the only guard § 1 has against a
+            # role run from a sibling project: the reader says which root it
+            # resolved and which file it read, both absolute, for the role to
+            # name before it acts.
+            resolved = config.to_dict()
+            check(
+                "a resolution reports the skills root it resolved, absolutely",
+                resolved.get("skills_root") == os.path.abspath(REPO_ROOT),
+                f"reported {resolved.get('skills_root')!r}",
+            )
+            check(
+                "a resolution reports the configuration file it read, absolutely",
+                resolved.get("config_path") == os.path.abspath(own),
+                f"reported {resolved.get('config_path')!r}",
             )
         except ConfigError as error:
             failures += 1
@@ -832,6 +944,30 @@ def _refuses_missing_code_root() -> str | None:
     return _refused(data, check_paths=True)
 
 
+def _a_valid_example_with(path: str, value) -> dict:
+    """A complete example with one key written back into it."""
+    data = _a_valid_example()
+    node, parts = data, path.split(".")
+    for part in parts[:-1]:
+        node = node.setdefault(part, {})
+    node[parts[-1]] = value
+    return data
+
+
+def _refuses_a_root_with_no_config() -> tuple[str | None, bool]:
+    """(the key the refusal names, whether it also names the root it looked in).
+
+    The examples directory is a root with no configuration in it, so no
+    temporary tree is needed to reach this branch.
+    """
+    root = EXAMPLES
+    try:
+        load(root)
+    except ConfigError as error:
+        return error.key, os.path.abspath(root) in str(error)
+    return None, False
+
+
 # --- entry point -----------------------------------------------------------
 
 
@@ -842,9 +978,9 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--skills-root",
         default=".",
-        help="the root the configuration is resolved relative to; defaults to the "
-        "working directory, which is where a role invoked inside a project "
-        "finds it",
+        help="the root the configuration is resolved relative to. Defaults to the "
+        "working directory, which § 1 states is the skills root; pass it to "
+        "address a project the role is not standing in",
     )
     parser.add_argument(
         "--no-check-paths",

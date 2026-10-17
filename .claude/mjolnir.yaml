@@ -8,9 +8,13 @@
 # (#1) resolves this file, applies the surface's defaults and refuses a configuration the
 # surface does not allow — `plugins/mjolnir/scripts/config.py`, held to the examples on
 # every change. The tracker behind `kind: github-issues` is still #27, so no tracker
-# operation runs here and the loop is driven by hand. The single-source gate is the other
-# consumer: it holds this file's top-level keys to the schema, so a key invented here
-# reddens the build even though nothing acts on its value.
+# operation runs here and the loop is driven by hand. The port contract (#2) says exactly
+# that out loud: it reads `tracker.kind` below, finds no implementation registered for it,
+# and reports every operation as taking its stated fallback — a distinct report from a
+# project that needs no tracker at all. The other readers of this file are the single-source
+# gate, which holds its top-level keys to the schema so a key invented here reddens the
+# build, and the names-no-project sweep below. ⛔ No count of them is carried: the readers
+# are named where they are, and a number here would be wrong by the next one.
 #
 # ⛔ The repository slug is named here, and it is correct that it is: this is the project's own
 # configuration, the same file every adopter writes. It is not the only such place — README.md
@@ -29,7 +33,6 @@
 version: 1
 
 roots:
-  skills: "."
   code: "."
   code_is_own_repo: false
 
@@ -50,6 +53,12 @@ host:
       triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Reply register"
+      mirrors: "python3 plugins/mjolnir/scripts/check_reply_register.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Port contract"
+      mirrors: "python3 plugins/mjolnir/scripts/port.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ What this entry cannot state about its workflow is #82, and is stated there.
     - workflow: "Nothing deferred"

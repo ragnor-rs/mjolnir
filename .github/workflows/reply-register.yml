@@ -1,0 +1,34 @@
+name: Reply register
+
+# The register the surface fixes for a role's reply is held in the session, by a `Stop` hook —
+# the only place a finished reply exists. So what a gate can hold is the checker and its wiring:
+# that every property of the register's table is either held by a check or stated as unheld, that
+# each check still reddens on the violation it was written for, and that the carrier still calls
+# this script on the event carrying a reply. A hook whose checks have quietly stopped firing, or
+# which is no longer called at all, reports green on every reply — the failure this run catches.
+#
+# A workflow of its own rather than a second job of `Checks`, per § 2 of
+# plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the
+# project controls its workflows, because a `host.checks` entry states one mirrored command.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: the checker reads files in the tree and reaches nothing.
+permissions: {}
+
+jobs:
+  reply-register:
+    name: Reply register
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, planted violations first — and the same string `host.checks`
+      # declares this run mirrors, so the two cannot drift.
+      - name: Assert each check can fail, then hold the properties and the carrier to the surface
+        run: python3 plugins/mjolnir/scripts/check_reply_register.py --self-test

@@ -122,11 +122,10 @@ failure mode this guards is specific — surfacing a gap *reads* as diligence, s
 a thorough known-costs section scores better with a reader than one that stops and asks, and the
 honest-looking version of the defect is the one that survives review.
 
-## 1. Roots — three independent paths
+## 1. Roots
 
 ```yaml
 roots:
-  skills: "."              # where this config lives; default
   code: "."                # the path every git and gh call addresses
   code_is_own_repo: false  # true when `code` is its own repository; default
 ```
@@ -141,6 +140,38 @@ own repository, possibly under a different owner, and not a submodule. Branches,
 and CI then belong to the inner repository and the engagement material to the outer. A skill
 stops rather than proceeding when a `code` root that should exist does not — a fresh clone of
 the outer repository does not have it.
+
+### The skills root is where the role runs
+
+⛔ **The skills root is the directory the role was invoked in. It is procedure, and this surface
+carries no key for it.** It is where `.claude/mjolnir.yaml` is *found*, so it is needed before
+any configuration can be read at all, and a key stating it would sit inside the file it is
+needed to locate. The reader takes it as an argument whose default is the working directory,
+which is how a role addresses a project it is not standing in.
+
+⚠️ **This is not the inference the rule above forbids, and the difference is the whole of why
+both hold at once.** A fact the configuration *could* state and a role derives anyway is an
+inference — the code root's case, where deriving it is wrong wherever the two roots differ. A
+fact no configuration can state is a definition. The test is whether a project could have
+written the value down.
+
+⛔ **A role names what it resolved before it acts: the root, the file it read there, and the
+repository that file's configuration addresses.** The reader reports each of them, so this costs
+the role a sentence and no work. The list is stated here and a role reads it from here.
+
+⚠️ **That naming is the only guard, and it is weaker than a stop.** Run from a directory with no
+configuration, a role stops; run from a *sibling project that has one*, it resolves that project
+correctly and proceeds — and since the absolute code root is the configured `code` joined onto
+the resolved root, every `git` and `gh` call then addresses the other project's repository. No
+in-band test tells that apart from a deliberate run on that project, so what the surface
+requires is that the answer be stated where the person can see it, not that it be guessed.
+
+⛔ **`roots.skills` is retired, and a configuration that still declares it is refused with the
+key named.** It was declared here, written in every configuration, and read by nothing — and
+because the file is found *at* the root that key described, the only value it could ever hold
+was the one it already held. A key nothing reads is worse than no key: a project that pointed it
+at a subdirectory was ignored in silence, which is the failure above with the project's own
+statement discarded as well.
 
 ## 2. Code host
 
@@ -210,15 +241,69 @@ it; the adapter behind it is #27, and the examples do not yet cover it.
 
 Three properties of the port the procedure depends on:
 
-- **Capabilities are queried, not assumed.** Comment, delete-a-checklist-item,
-  set-labels-atomically and assign-a-member are each unavailable on at least one tracker. The
-  procedure has a stated fallback per absence and does not fail. Where comments are impossible,
-  a gate result is written into the item's description instead.
+- **Capabilities are queried, not assumed**, and every absence has a fallback stated in the
+  table below rather than left to the role that meets it.
 - **Closing is declarative on one tracker and imperative on another.** `link_for_close` and
-  `advance_on_merge` are separate capabilities, either of which may be absent: a keyword in a
-  pull request body closes the item on merge in one system; another needs an explicit
+  `advance_on_merge` are separate operations, either of whose capability may be absent: a keyword
+  in a pull request body closes the item on merge in one system; another needs an explicit
   transition and no keyword; a third has no link at all and the item moves separately.
 - **A write may be forbidden by policy rather than by capability.**
+
+### The operations, and what an absent capability does
+
+The operations are a closed set, stated here once. An operation always exists; what may be absent
+is its **capability** on a given tracker. ⛔ **No absence is an error.** An operation whose
+capability is absent takes the fallback in the third column, and the role is told which fallback
+was taken; a role that meets an absence improvises nothing. The shapes behind the rows that were
+measured are in [`docs/configuration-surface.md`](../../../docs/configuration-surface.md), which
+covers the operations the survey reached and says which it did not.
+
+| Operation | What the procedure asks for | When the capability is absent |
+|---|---|---|
+| `create_item` | a new work item, from the body the filing role wrote | nothing is filed, and the run report carries the body and says what it would have created |
+| `read_item` | the item's own facts: its body, its state, its fields | the role proceeds on what its argument and its branch already state, and the report names what could not be read |
+| `set_state` | an advance to a **role**, never to a status word (§ 4.2) | the move is reported for whoever does make it; § 4.2's writer refusal is the second, stricter reason the same move is not made |
+| `item_number` | the identifier the branch name and the pull request carry | the number is read from the argument the role was given, and a role with neither stops rather than inventing one |
+| `link_dependency` | one item recorded as blocked by another | the dependency is written into both items' bodies as prose — which of the two statements survives is #69's |
+| `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
+| `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
+| `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
+| `set_labels` | every label set in one call | one call per label, and a set that is left partial is reported rather than retried silently |
+| `assign` | the item assigned to the person the role acts for | the report names who holds the item; what a session's **claim** rides on is #70's, not this fallback |
+| `checklist_read` | the item's check items, and which of them are ticked | the role has **no answer** about the checklist and says so; an unreadable checklist is never read as an empty one, by § 2's rule that absence of signal is not an answer |
+| `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
+| `checklist_item_delete` | a check item removed | the item is reworded and ticked instead |
+
+### Who declares a capability
+
+⛔ **The adapter declares what it can do; a project states nothing about it.** A capability is a
+fact about the tracker, so a project restating one would be a second statement that is allowed to
+disagree with the implementation — and the project would lose, having no way to make a tracker do
+what it cannot. There is therefore no capability key on this surface, and a role asks the port
+rather than reading a configuration.
+
+⚠️ **An adapter declares an operation by implementing it, not by listing it.** The two cannot
+drift apart, and an adapter naming an operation this table does not state is refused.
+
+Where two projects on the **same** tracker genuinely differ, the difference is already a facet
+here rather than a capability: what carries the type, the estimate or the template, each with its
+own absent case (§ 4.1, § 4.3, § 4.4); what the tracker may hold at all (`policy` below); and who
+may write a given state (§ 4.2). Three stated homes, none of them a per-project override of what
+the tracker is able to do.
+
+### The trackerless adapter, and a kind with no implementation
+
+`kind: none` is an adapter like any other: it implements no operation, so every one of them takes
+its stated fallback and the roles that need no tracker — branching, the pull request, the review,
+the day log — run untouched. ⛔ **That is a configuration and not a broken install**, and nothing
+in the procedure reports it as one.
+
+⚠️ A configured kind whose **implementation is not installed** behaves identically and is not the
+same fact, so the port reports the two apart: one is a project that decided it needs no tracker,
+the other is an adapter that has not been built yet. This repository is the second case today —
+its `github-issues` adapter is #27 — which is why the distinction is not theoretical.
+
+### A write forbidden by policy rather than by capability
 
 ```yaml
 tracker:
@@ -228,6 +313,11 @@ tracker:
 
 A tracker that is a third-party service holding someone else's material may bar these from ever
 reaching a card. Where a fact is barred, it goes in the run report instead.
+
+⚠️ This is the one half of the port a **project** states, and it is content rather than
+operations: it says what may reach an item, never which operations exist. A role meeting a policy
+refusal has a capability it may not use here, which reads differently from an absence and is
+reported differently.
 
 ## 4. Work-item facets
 
@@ -277,6 +367,11 @@ The two vocabularies, stated once:
 
 **A project maps a subset; an absent role is legitimate.** Vocabularies differ in length and in
 meaning, not merely in wording.
+
+⛔ **A role is mapped by at most one status.** The procedure asks the port to advance to a role, so
+two status words answering one role leave the move undefined — and there is no first-match rule to
+fall back on, because picking the earlier row would be a choice the configuration never made. The
+port refuses it naming `statuses` rather than acting on the first.
 
 ⛔ **The writer is what makes this correct rather than merely configurable.** The procedure asks
 the port to advance to a *role*, and is **refused** when the configured writer is not
@@ -475,6 +570,46 @@ is by audience; its branch slug must be a **translation** of the item title, nev
 transliteration. Another writes the day log in a technical register for itself where a third
 writes it in a business register for someone outside the build. These are three settings, not
 one.
+
+### The reply to the person running a role
+
+The reply a role writes in the session is an artifact like the day log, and for several roles it
+is the only output. It is also the one artifact above whose audience a project does not choose.
+
+⛔ **So its register is procedure, and no setting turns it off.** The person running a role is not
+a reader a configuration can nominate, and a toolkit that let a project configure its assistant
+into a narrative register would have made the defect configurable rather than fixed it. This is
+the same placement the authorship rule has under § 6 and the invocation rule under § 7:
+procedure, stated inside the axis it would otherwise be a value of.
+
+| Property | Required | Not |
+|---|---|---|
+| Opening | The finding or the outcome, in the first sentence | Preamble, or restating the request |
+| Structure | Headed sections, lists, tables where the content enumerates | Continuous prose carrying enumerable facts |
+| Register | Reference and technical, as a textbook states a result | Narrative, dramatic, or persuasive |
+| Length | What the content needs | Padding, or compression into fragments and arrow chains |
+| Emphasis | Where a fact is load-bearing | As a default texture |
+| Uncertainty | Stated plainly, once | Hedging throughout |
+
+⚠️ **Readable and short are different things, and readable wins.** There are two ways to shorten
+and only one of them is this table's: **selection** drops what does not change the reader's next
+action, and **compression** keeps every fact while destroying the reading — sentences crushed into
+fragments and arrow chains. Compression scores better on length than selection does, which is why
+the Length row names it rather than naming a limit.
+
+**The language is the one the person addressed the role in** — not `language.repo`, and not
+`language.work_item`. It is the only part of this artifact's triple that varies at all, and it
+varies by who is speaking rather than by project, so nothing configures it and no role derives it
+from the repository.
+
+⛔ **A role does not hold its own reply to this by reading it back before sending it.** The writer
+judging its own register at the time of writing is the mechanism being replaced, not the one being
+specified: the properties above are held by a check over the reply the role actually produced,
+reported to the session rather than to a file. Which of them are held mechanically, which are
+reported without being held, and which are left to a reader are stated once in
+[`docs/single-source-of-truth.md § The reply's register`](../../../docs/single-source-of-truth.md#the-replys-register-held-in-the-session-not-on-the-gate)
+— beside the gate's own checks and under the same discipline, because an unstated limit reads
+later as coverage.
 
 ## 9. Day log
 
