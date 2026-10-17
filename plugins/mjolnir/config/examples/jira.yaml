@@ -12,6 +12,10 @@ roots:
 host:
   kind: github
   repo: "OWNER/REPO"
+  checks:
+    - workflow: "Build"
+      mirrors: "<the build command>"
+      triggers: "pull_request -> release/*"
 
 tracker:
   kind: jira

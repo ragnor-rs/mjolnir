@@ -71,9 +71,33 @@ the outer repository does not have it.
 host:
   kind: github
   repo: "OWNER/NAME"       # stated, never inherited from the working directory
+  checks:                  # the host's own runs, keyed by workflow name — never job name
+    - workflow: "…"
+      mirrors: "<local command>"   # the local command whose verdict this run duplicates
+      triggers: "<base pattern>"   # what starts it: a pull-request base pattern, or every push
+      paths: ["…"]                 # path filters; omitted when the workflow runs on every change
 ```
 
 Independent of the tracker. A project may keep its cards in one system and its code in another.
+
+**`checks` is the single statement of the host's workflows and jobs** — which runs exist, which
+local command each one mirrors, what triggers it, and which paths it watches. Every consumer reads
+it and none carries the facts itself: the finishing role's CI-answer preconditions, and the guards
+that refuse a local check the host has already run. The facet is mandatory on a project whose host
+runs anything; `checks: []` is the one legitimate absence and means every verdict is local.
+
+⛔ **The mapping is configured, never inferred.** A run's name does not say which local command it
+duplicates, so no consumer derives the map from the host at run time — the host is read only for
+live state: which runs exist for this commit, and how each concluded.
+
+⚠️ **The key is the workflow name, never the job name.** Two unrelated workflows named their job
+identically, and a job-keyed map refused a build on the strength of a check that only validated a
+title.
+
+⛔ **Absence of signal is not an answer.** A conflicted pull request produces zero runs; a
+billing-suspended run fails in seconds having started no steps; a path-filtered workflow
+legitimately runs nothing on a change outside its paths. An empty or silent check list reads as
+*no answer* — never as green, and never as coverage.
 
 ## 3. Tracker port
 
@@ -272,6 +296,26 @@ signature.
 - **A dirty tree at start is not configured** — it follows from the branch model. Worktree mode
   reports it, states plainly that nothing was stashed or moved, and continues; in-place mode
   aborts.
+
+### The pull request title and body
+
+Like authorship, this is procedure rather than configuration — the per-project facts it reads are
+already stated elsewhere: the repository (§1, §2), the closing capability (§3), the language and
+register (§8).
+
+- **The body is a summary and a test plan, and the plan is driven rather than published.**
+- **The closing reference is whatever `link_for_close` (§3) says** — a keyword in the body on one
+  tracker, a bracketed number in the title and never a hash on another, and legitimately absent on
+  a third, where the item moves separately and neither title nor body carries a closing form.
+- **Title and body are written in the repository's language and register (§8)** — which one
+  project's split-by-audience rule makes different from its tracker's.
+- **The authorship rule above binds the pull request as it binds the commit**: no generated-by
+  marker, no tool credited.
+
+**The reconciled shape of the summary and the test plan is transitional.** It still lives in the
+five copies of the finishing role, and extracting that role moves the shape into its skill. The
+rules above are the part already shared; nothing in a copy that contradicts them survives the
+extraction.
 
 ## 7. Carrier
 

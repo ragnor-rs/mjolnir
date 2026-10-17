@@ -10,6 +10,15 @@ roots:
 host:
   kind: github
   repo: "OWNER/REPO"
+  checks:
+    # Keyed by workflow name, never job name — two unrelated workflows may name a job identically.
+    - workflow: "CI"
+      mirrors: "npm test"
+      triggers: "pull_request -> main"
+    - workflow: "Lint"
+      mirrors: "npm run lint"
+      triggers: "pull_request -> main"
+      paths: ["src/**", "package.json"]
 
 tracker:
   kind: github-projects

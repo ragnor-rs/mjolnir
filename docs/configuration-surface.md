@@ -90,7 +90,13 @@ measurements that forced each to be independent:
    proved against a deliberately trackerless scratch config anyway, because the next project to
    adopt this may have no tracker on its first day.
 2. **Code host.** The same host in all six, including both projects whose cards are elsewhere —
-   which is precisely why it is a separate axis.
+   which is precisely why it is a separate axis. The host's own runs later forced a facet inside
+   the axis, [`schema.md § 2`](../plugins/mjolnir/config/schema.md#2-code-host): one project's
+   guard, keyed on job names, refused a build on the strength of a check that only validated a
+   title — two unrelated workflows had named their job identically — and the same project measured
+   a conflicted pull request producing **zero** runs, which reads as green to anything that treats
+   an empty check list as a pass. Hence `checks` keyed by workflow name, with
+   absence-of-signal-is-not-an-answer stated beside it.
 3. **Code root.** One project's code is a git-ignored subdirectory that is its own repository
    under a different owner, not a submodule. Its skills write the root explicitly into every git
    call and stop if the directory is absent, because a fresh clone of the outer repository does

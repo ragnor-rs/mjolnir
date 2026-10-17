@@ -12,6 +12,11 @@ roots:
 host:
   kind: github
   repo: "INNER_OWNER/INNER_REPO"   # NOT the outer repository
+  checks:
+    # The inner repository's workflows — the outer one runs nothing.
+    - workflow: "Tests"
+      mirrors: "<the test command>"
+      triggers: "pull_request -> <integration branch>"
 
 tracker:
   kind: trello
