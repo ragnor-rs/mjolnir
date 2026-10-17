@@ -945,8 +945,8 @@ VIOLATIONS = [
 EXEMPTIONS: list[tuple[str, str, object]] = [
     ("no value is carried in the strict set", "a status word in a script a carrier calls",
      _plant_in_a_carrier_implementation("STATES = ('open', 'closed')\n")),
-    ("no stack is named in the strict set", "a language named in a script a carrier calls",
-     _plant_in_a_carrier_implementation("# python3, called by the carrier beside it\n")),
+    ("no stack is named in the strict set", "a build tool a script a carrier calls invokes",
+     _plant_in_a_carrier_implementation('subprocess.run(["npm", "run", "build"])\n')),
 ]
 
 
