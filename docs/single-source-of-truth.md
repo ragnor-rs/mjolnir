@@ -422,10 +422,14 @@ calls and asserts it is this script. See
   plugin is enabled, and nothing in a `Stop` payload says whether a role was running. So the
   register is held more widely than the surface states it — in the safe direction here, and stated
   because an unstated limit reads later as coverage. ⚠️ That direction is a property of this one
-  rule rather than of hooks, and it does not survive the next one:
-  [#87](https://github.com/ragnor-rs/mjolnir/issues/87) is where a hook's own role is settled, and
-  it blocks [#16](https://github.com/ragnor-rs/mjolnir/issues/16), whose guards and leases are
-  **wrong** rather than merely wide when they fire outside their role.
+  rule rather than of hooks, so what a hook reads in place of a role is
+  [#87](https://github.com/ragnor-rs/mjolnir/issues/87)'s to settle. It blocks nothing, and that is
+  a finding rather than an omission: a guard is correct whether or not a role is running — a build
+  slot contends regardless, and a check the host has already run for this code is wasted work
+  regardless — so every hook role [#16](https://github.com/ragnor-rs/mjolnir/issues/16) measures
+  keys on an event and a command, and passes its acceptance check without the ruling. The gap
+  belongs to a rule whose **scope** is the loop rather than a command, which today is only this
+  one.
 - **A reply that was never sent as text.** A turn that ends in a tool call carries no final
   message, and the hook answers nothing rather than guessing.
 - **Code, a quotation, and — for the emphasis density only — a table.** A fenced block, an
