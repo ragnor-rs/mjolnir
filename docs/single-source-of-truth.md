@@ -6,13 +6,18 @@ without being a second authority. This document states none of the rules either.
 the gate checks, which kind of check each one is, and — the part worth reading — what it
 deliberately does not check.
 
-The check is `tools/check_single_source.py`, run by the `Checks` workflow on every pull request
-and every push to the default branch, and stated in this repository's own `host.checks`.
+The check is `tools/check_single_source.py`, run by the `Single source of truth` workflow on every
+pull request and every push to the default branch, and stated in this repository's own
+`host.checks`. ⚠️ Every workflow here is named for the one claim it holds, and each carries a
+single job of the same name, so the name `host.checks` is keyed by and the name the host reports
+as a status context are the same string — there is no key to get wrong. It was not always so: this
+workflow was called `Checks`, which both differed from its job name and read as an umbrella over
+the five beside it.
 
 A second script, `tools/check_no_project_names.py`, holds a different claim — that this repository
 names no other project, and that nothing carrying procedure carries a value. It runs in its own
 `Names no other project` workflow, and is stated in `host.checks` as its own entry: a
-`host.checks` entry states one mirrored command, so a second job of `Checks` would have been a
+`host.checks` entry states one mirrored command, so folding it into a sibling would have been a
 second command with nowhere on the surface to live. It is recorded in
 [its own section](#the-second-sweep-naming-no-other-project) below, because the two claims share
 this document's discipline of stating every limit and not its subject.
@@ -595,12 +600,18 @@ route proves nothing about the branch it was written for. ⛔ The numbers are de
 written down here: a count in prose is a copy that has to be kept in sync, and the run prints its
 own.
 
-⚠️ **Where the plants run differs, and only the ordering does.** The two document checks run every
-plant as a first phase, before the tree is held to anything; the port contract runs each plant
-beside the assertion it belongs to, because each needs a configuration or a surface of its own
-synthesised for it and a first phase would build all of them twice. What the ordering buys — no
-check is believed until it has been shown it can fail — holds either way, and it is stated here
-rather than in a comment in one workflow, where nothing reading this document would find it.
+⚠️ **Where the plants run differs, and only the ordering does.** The two document checks and the
+reply-register check run every plant as a first phase, before the tree is held to anything; the
+port contract and the configuration reader run each plant beside the assertion it belongs to,
+because each needs a configuration or a surface of its own synthesised for it and a first phase
+would build all of them twice. What the ordering buys — no check is believed until it has been
+shown it can fail — holds either way, and it is stated here rather than in a comment in one
+workflow, where nothing reading this document would find it.
+
+That ordering is why the step names in `.github/workflows/` fall into two families. A run with a
+first phase names it — *Assert each check can fail, then …* — and a run without one has no phase
+to name, so it says only what it holds. ⛔ A step name is not evidence that a suite plants: both
+families plant, and the run prints what it planted.
 
 ⚠️ **The reply-register check's plants carry two things its siblings' do not**, because what it
 holds afterwards is a rule rather than a tree. It plants replies that must stay **green** as well

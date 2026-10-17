@@ -1,12 +1,12 @@
 name: Names no other project
 
 # The sweep that holds this repository to naming no other project, and to keeping every
-# value out of a carrier root. It is its own workflow rather than a second job of `Checks`
-# for one reason: `host.checks` is keyed by workflow name and states **one** mirrored local
-# command per entry, so two commands behind one workflow name could not be stated on the
-# surface at all. Two workflows, two entries, nothing carried in a comment — the divergence
-# #58 records stays a divergence found in other projects rather than one this repository
-# chose to create.
+# value out of a carrier root. It is its own workflow rather than a second job of a sibling,
+# per § 2 of plugins/mjolnir/config/schema.md. ⚠️ This is the sweep that measured that rule:
+# the first attempt here was a second job of the single-source gate with the second command
+# parked in a comment, and review rejected it. Two workflows, two entries, nothing carried
+# beside the facet — so the divergence #58 records stays one found in other projects rather
+# than one this repository chose to create.
 
 on:
   pull_request:
@@ -27,7 +27,8 @@ jobs:
           persist-credentials: false
 
       # One step, one command, planted violations first: the tree is held only once each
-      # check has been shown it can fail. That command is what `host.checks` declares this
-      # run mirrors, so the two cannot drift.
+      # check has been shown it can fail. That command is the string `host.checks` states this
+      # run mirrors — ⚠️ held together by eye and not by a check, since nothing here reads a
+      # workflow file. That is #49.
       - name: Assert each check can fail, then sweep the tree for another project's names
         run: python3 tools/check_no_project_names.py --self-test

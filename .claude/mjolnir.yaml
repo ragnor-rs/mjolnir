@@ -42,29 +42,35 @@ host:
   repo: "ragnor-rs/mjolnir"
   # ⚠️ The first entry this facet has ever been written for (#47), and the cheapest place to
   # find out whether its shape survives contact with a real workflow. It did not survive
-  # unchanged: this workflow has two triggers, which the single-string form could not state,
-  # so the schema now declares a list. `paths` is omitted — the workflow filters none.
+  # unchanged: the first workflow written against it has two triggers, which the single-string
+  # form could not state, so the schema now declares a list. `paths` is omitted throughout —
+  # none of these workflows filters.
+  #
+  # Every entry is a workflow of its own rather than a job of another, per § 2. They are listed
+  # in the order their files sort under .github/workflows/, so that reading the directory and
+  # reading this list give the same sequence; and each workflow's name is the same string as
+  # its single job's name, so there is no key here that can be got wrong. ⛔ Nothing reads
+  # either property — holding this facet to those files mechanically is #49.
   checks:
-    - workflow: "Checks"
-      mirrors: "python3 tools/check_single_source.py --self-test"
-      triggers: ["pull_request -> *", "push -> main"]
-    # Each of these is a workflow of its own rather than a job of the one above, per § 2.
     - workflow: "Config reader"
       mirrors: "python3 plugins/mjolnir/scripts/config.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
-    - workflow: "Reply register"
-      mirrors: "python3 plugins/mjolnir/scripts/check_reply_register.py --self-test"
-      triggers: ["pull_request -> *", "push -> main"]
-    - workflow: "Port contract"
-      mirrors: "python3 plugins/mjolnir/scripts/port.py --self-test"
-      triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ What this entry cannot state about its workflow is #82, and is stated there.
     - workflow: "Nothing deferred"
       mirrors: "python3 tools/check_nothing_deferred.py --self-test"
       triggers: ["pull_request -> *"]
+    - workflow: "Port contract"
+      mirrors: "python3 plugins/mjolnir/scripts/port.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Reply register"
+      mirrors: "python3 plugins/mjolnir/scripts/check_reply_register.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Single source of truth"
+      mirrors: "python3 tools/check_single_source.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
 
 tracker:
   # Plain GitHub issues with no project board — the cheapest real configuration, and one

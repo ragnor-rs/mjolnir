@@ -1,7 +1,7 @@
 name: Nothing deferred
 
 # The gate that refuses a merge while any item raised against the change is unresolved. Its own
-# workflow rather than a job of `Checks`, for the reason its siblings are: a `host.checks` entry
+# workflow rather than a job of a sibling, for the reason its siblings are: a `host.checks` entry
 # states one mirrored local command, so two commands behind one workflow name could not be
 # stated on the surface at all.
 #
@@ -45,8 +45,10 @@ jobs:
 
       # One step, one command, planted violations first: the change is held only once each
       # check has been shown it can fail — and shown it can pass, since an over-broad body
-      # rule would redden every honest pull request alike. That command is what `host.checks`
-      # declares this run mirrors, so the two cannot drift.
+      # rule would redden every honest pull request alike. That command is the string
+      # `host.checks` states this run mirrors — ⚠️ held together by eye and not by a check,
+      # since nothing here reads a workflow file. That is #49, and on this entry it is #82
+      # as well: the facet cannot state these triggers, so no comparison could pass.
       #
       # The token is passed to the step rather than left in the git config, so the one thing
       # that holds it is the one process that needs it. No dependency is installed: the run

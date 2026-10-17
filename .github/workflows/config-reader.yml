@@ -1,7 +1,7 @@
 name: Config reader
 
 # The shared configuration reader, held to the surface it derives from and to every
-# example beside it. A workflow of its own rather than a second job of `Checks`, per the
+# example beside it. A workflow of its own rather than a second job of a sibling, per the
 # rule in § 2 of plugins/mjolnir/config/schema.md: each mirrored command takes its own
 # workflow where the project controls its workflows.
 
@@ -28,7 +28,14 @@ jobs:
       - name: Install PyYAML
         run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
 
-      # One step, one command, and the same string `host.checks` declares this
-      # run mirrors, so the two cannot drift.
+      # One step, one command, and the same string `host.checks` states this run mirrors —
+      # ⚠️ held together by eye and not by a check, since nothing here reads a workflow
+      # file. That is #49.
+      #
+      # ⚠️ The step is not named for its plants, though this suite plants: like the port
+      # contract beside it, it runs each plant next to the assertion it belongs to rather
+      # than as a first phase, so there is no phase to name. That divergence from the four
+      # `Assert each check can fail, then …` siblings is stated once, where the discipline
+      # is, in docs/single-source-of-truth.md.
       - name: Hold the reader to the surface and the examples
         run: python3 plugins/mjolnir/scripts/config.py --self-test
