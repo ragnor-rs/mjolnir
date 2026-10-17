@@ -65,9 +65,9 @@ Gating is a role of its own, not a step of filing or of starting: it owns the da
 estimate (§4.3), and starting never re-runs it — re-gating recomputes a commitment somebody may
 already have been given.
 
-**The surface has five independent axes, not three:** the work-item tracker (§3), the code host
-(§2), the code root (§1), each role's carrier (§7), and language/register/audience per artifact
-(§8). The measurements that forced each to be independent are in
+**The surface has six independent axes, not three:** the work-item tracker (§3), the code host
+(§2), the code root (§1), each role's carrier (§7), language/register/audience per artifact
+(§8), and the branch model (§10). The measurements that forced each to be independent are in
 [`docs/configuration-surface.md`](../../../docs/configuration-surface.md).
 
 ## 1. Roots — three independent paths
@@ -325,9 +325,11 @@ signature.
   between two sessions; no heredoc, so no permission-allowlist accumulation; a trailer, where a
   project has a legitimate one, still parses as a final paragraph.
 - **Concise by default, and history is not read for style cues.**
-- **A dirty tree at start is not configured** — it follows from the branch model. Worktree mode
-  reports it, states plainly that nothing was stashed or moved, and continues; in-place mode
-  aborts.
+- **A dirty tree at start is not configured** — it is derived from `branch_model.kind` (§10).
+  `worktree` reports it, states plainly that nothing was stashed or moved, and continues;
+  `in_place` aborts. One axis already configured decides it, so it costs no setting of its own —
+  but the key it reads has to exist, and until §10 was written this derivation named a value no
+  configuration carried.
 
 ### The pull request title and body
 
@@ -436,3 +438,88 @@ day_log:
 procedure can be shared before the script is. Extracting the script into the plugin is the next
 piece of this role; until then, `script` is how a project that has not been migrated keeps
 working.
+
+## 10. Branch model
+
+```yaml
+branch_model:
+  kind: worktree | in_place
+  parallel_trees: true
+  mechanics: "<path to the project's own setup steps>"   # null where it has none
+  exclusive_resources:           # [] where nothing in this project is exclusive
+    - { name: "…", cap: 1, subject: tree }
+    - { name: "…", cap: 2, subject: call }
+```
+
+Where a branch is cut, and therefore which working tree every step after the gate addresses.
+
+⛔ **The facet is mandatory and has no absent case.** A project that never cuts a second tree is
+`in_place` — an answer, not an omission. The absence that is a configuration here is
+`exclusive_resources: []`, which is a statement that nothing contends, not a missing value.
+
+**Four readers, which is why it is an axis rather than each role's own assumption:** the
+dirty-tree derivation (§6), where the starting role cuts the branch, which tree a verdict belongs
+to, and what is released after a merge. Where the model is stated nowhere, two layers of one
+project disagree about it and each looks correct read on its own.
+
+⛔ **The mechanics stay local.** Installing dependencies, copying the assets and environment
+files git does not track, allocating ports, naming a container project: all of that is
+project-specific, and `mechanics` is the pointer the shared procedure calls rather than a
+procedure the shared one absorbs. ⚠️ **Unlike `day_log.script`, this pointer is not
+transitional.** Nothing here is waiting to be extracted — a tree's setup is where a project's
+own build genuinely differs, and a skill on the route **names** `mechanics` instead of restating
+it.
+
+### The decision table
+
+Procedure, and the same everywhere:
+
+| The shared checkout is | Then |
+|---|---|
+| on the integration branch, clean, and no other session live | work in it — no second tree |
+| on another item's branch, or dirty | take a tree |
+| already holding this item's branch | work in the tree that holds it, and never check that branch out a second time |
+
+⚠️ **A branch is checked out once per working tree**, and git refuses the second checkout by
+name. That refusal is a **stop** — the session holding the branch may be mid-task — and never
+something to route around with a second path or a force flag.
+
+⛔ **A role on this route names this table; it does not carry its own copy of it.** That is the
+rule the one project that had already extracted this mechanism states about its own reference
+file, and it is why the table is three rows here rather than a paragraph in each of the four
+roles that read it.
+
+### Which tree a verdict belongs to
+
+⛔ **A verdict belongs to the tree that produced it, and a run states which tree that was.** A
+local check run where another tree's build or service is bound answers about code this branch
+does not contain — in the direction that passes. An unrun check is a verdict and is reported as
+unrun; a check run against the wrong tree is not a verdict at all. This is the §2 rule
+(absence of signal is not an answer) in the other direction: presence of a signal is not an
+answer either unless the tree it came from is named.
+
+### Exclusive resources
+
+A resource no two trees may hold at once — a local service stack, a build daemon's slots, a
+machine-wide lock. Each entry states three things, and ⛔ **each is stated rather than assumed**:
+
+- **`name`** — what is held.
+- **`cap`** — how many may be in flight at once. **Never assumed to be one:** caps of one *and*
+  of two were measured in the same project, so a facet that implied one would have been wrong on
+  half of its first adopter.
+- **`subject`** — what holds a place: `tree`, where two sessions in one tree share one place and
+  two trees queue against each other, or `call`, where each invocation holds its own so
+  releasing one does not release its sibling.
+
+⛔ **A project with no exclusive resource runs no exclusivity check.** `[]` is the common case
+and the procedure must not synthesise a lease for it.
+
+⛔ **`parallel_trees: true` with `kind: in_place` is a misconfiguration**, not a preference: one
+checkout cannot hold two branches. It is stated separately from `kind` because the converse is
+not implied — a project may cut a tree per item for isolation while never running two at once,
+and whether a second tree can be live is what decides whether an exclusive resource is ever
+contended.
+
+What happens *on* contention — wait, queue, refuse, or ask — is the enforcing hook's to state,
+and is not configuration here. This facet states only what is exclusive, how many of it there
+are, and what holds a place.

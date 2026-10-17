@@ -124,3 +124,15 @@ day_log:
     calendars:
       - "<the calendar whose titles are legible>"
       - "<a free-busy calendar: times only, no titles>"
+
+branch_model:
+  # The tree pairs with the nested code checkout (§1), so both halves are cut per card and the
+  # outer one carries the cwd. Where a tree goes, and what must be copied into it before the
+  # stack's first boot, is the pointer's — not the shared procedure's.
+  kind: worktree
+  parallel_trees: true
+  mechanics: ".claude/worktrees.md"
+  exclusive_resources:
+    # One stack for the whole project, and the ticket belongs to the tree: two sessions in one
+    # tree share a place, two trees queue against each other.
+    - { name: "<the local service stack>", cap: 1, subject: tree }

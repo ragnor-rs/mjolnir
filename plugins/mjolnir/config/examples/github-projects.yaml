@@ -103,3 +103,13 @@ day_log:
     chat_exclude: []
     mixed_chats: ["<a chat carrying both work and personal talk>"]
     calendars: ["<the one calendar whose titles are legible>"]
+
+branch_model:
+  kind: worktree
+  parallel_trees: true
+  mechanics: ".claude/worktrees.md"   # the tree's own setup and teardown steps
+  exclusive_resources:
+    # Two resources in one project, with different caps — the shape a single name could not
+    # state. The instance is one per project; the build daemon runs two in flight.
+    - { name: "<the local application instance>", cap: 1, subject: tree }
+    - { name: "<the build daemon's slots>",       cap: 2, subject: call }

@@ -106,3 +106,11 @@ day_log:
     chat_exclude: []
     mixed_chats: ["<the direct chat that carries both>"]
     calendars: ["<the one calendar whose titles are legible>"]
+
+branch_model:
+  # Every item gets its own tree, stated in the starting role after a shared checkout was
+  # switched off a branch another session was mid-flight on. Five or more trees is routine.
+  kind: worktree
+  parallel_trees: true
+  mechanics: null                      # a tree here needs nothing installed or copied
+  exclusive_resources: []              # nothing local is held; the checks run on the host

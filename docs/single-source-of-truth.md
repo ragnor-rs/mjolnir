@@ -70,7 +70,7 @@ instead of one. That carve-out is in the script, so it is stated here too.
 
 ## The check must not become one more copy of the principles
 
-⛔ A check that hardcoded "nine roles", "five axes", "four facets with absent cases" would have to
+⛔ A check that hardcoded "nine roles", "six axes", "four facets with absent cases" would have to
 be edited on every change to the surface whose
 [single-authority claim](../plugins/mjolnir/config/schema.md#the-configuration-surface) it
 enforces — this repository's own thesis violated in its own gate, and a copy that has to be kept

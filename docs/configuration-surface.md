@@ -77,7 +77,7 @@ The vocabularies measured differ in **length and meaning**, not merely wording: 
 one project, four in another, seven and eight in two more, with a state between review and
 completion that some reason about explicitly and others do not have.
 
-## Five axes, not three
+## Six axes, not three
 
 The axes are stated in
 [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles). The
@@ -112,6 +112,46 @@ measurements that forced each to be independent:
    another writes it in a business register for a reader outside the build. Three settings, not
    one — hence
    [`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project).
+6. **Branch model.** Four of the six cut a working tree per work item; two never do. Even the
+   two that do not are not indifferent to it: one of them carries a day-log caveat — already in
+   the shipped skill — that a session opened in a worktree writes its transcripts where the
+   evidence script cannot reach them, so the day comes out under-measured.
+   The split alone would make this configuration. What makes it an **axis** is that in two of the
+   four it is stated in no one place and the layers that read it disagree: the starting role
+   aborts on a dirty tree — the in-place behaviour — while the same project's hooks exist to
+   manage parallel worktrees and the resources those trees contend for. A third project's
+   starting role states the opposite rule in its own words, naming the dated incident that forced
+   it: a `git checkout` in the shared clone switched it off the branch another session was
+   mid-flight on. See
+   [`schema.md § 10`](../plugins/mjolnir/config/schema.md#10-branch-model).
+
+   The measurements that gave § 10 its shape rather than merely its existence:
+
+   - **The mechanism is already extracted in one project and is not a skill.** A 150-line
+     reference file carries the decision table, the setup steps and the teardown, and its own
+     rule is read-it-from-one-place again: a skill on the route **names** that file rather than
+     restating it. That is the shape the facet's `mechanics` pointer keeps, rather than growing
+     those steps into the shared procedure.
+   - **Exclusivity is a list with a cap, not a name.** Two projects cap two different resources
+     each: a local application instance at **one** and a build daemon's slots at **two** in one,
+     a single service stack at **one** and the same build cap of **two** in the other. A scalar
+     naming one exclusive resource would have been wrong on both, and a facet implying a cap of
+     one would have halved the build capacity of both.
+   - **What holds a place differs too.** One project's ticket belongs to the **working tree**, so
+     two sessions in one tree share a place and two trees queue against each other; another takes
+     a ticket **per call**, explicitly so that releasing one build does not release its sibling.
+     Hence `subject`.
+   - **The waits are not interchangeable, which is why contention is the hook's to rule and not
+     this facet's.** One project waits a long time for a build slot and deliberately far less for
+     a service stack, on the recorded grounds that a build is certain to finish while a stack can
+     stay up indefinitely.
+   - **Placement and setup are irreducibly local.** One project nests the tree under its skills
+     root with a second checkout inside it; another makes it a sibling of the main checkout. One
+     must copy a four-gigabyte untracked asset directory with copy-on-write and make three
+     separations in the tree's environment file before the stack's first boot, or the new stack
+     silently rebinds the shared checkout's volumes. None of that generalises, and
+     [`schema.md § 10`](../plugins/mjolnir/config/schema.md#10-branch-model) keeps it behind the
+     pointer.
 
 ## The tracker port
 

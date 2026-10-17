@@ -124,3 +124,16 @@ day_log:
     chat_exclude: []
     mixed_chats: []
     calendars: []
+
+branch_model:
+  # Measured on this repository rather than declared for it: parallel sessions take a tree each
+  # off the primary checkout, which is how rows of the backlog are worked concurrently.
+  kind: worktree
+  parallel_trees: true
+  # No setup steps at all — a tree here needs no dependency install, no asset copy, no port and
+  # no container. The absent case for the pointer, and the cheapest proof that a project whose
+  # trees are free to create still has to state the model.
+  mechanics: null
+  # Nothing contends. The only check this project runs is a python script with no daemon, no
+  # service and no machine-wide lock, so no lease is taken and none is synthesised.
+  exclusive_resources: []
