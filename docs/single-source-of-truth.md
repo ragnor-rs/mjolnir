@@ -294,6 +294,54 @@ exempted the whole directory and so would have read straight past it.
 - **Issues and pull requests**, for the same reason check 3 above cannot read issue state: that
   store is not a file, the workflow holds no credential, and a reviewer covers it.
 
+## Beside the document checks: the tracker port's own contract
+
+⚠️ No count of the scripts is carried here. The two above hold a document claim and are what this
+document was written for; the rest hold a module or a rule — `plugins/mjolnir/scripts/config.py`,
+the configuration reader, whose own checks are its work item's; the reply-register hook recorded
+in the next section; and the port contract recorded in this one. Each carries its own workflow and
+its own `host.checks` entry, for the reason the sweep above does: one entry states one mirrored
+command.
+
+`plugins/mjolnir/scripts/port.py --self-test` runs in the `Port contract` workflow. It is not a
+document check, and it is recorded here because its subject is the same discipline — it holds a
+claim about the tree that a reviewer would otherwise be the only thing holding.
+
+What it holds: that the operation list and every absent case are read out of
+[schema § 3](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)
+rather than written in the script; that an unavailable operation comes back as the fallback stated
+there and never as an error; that an advance to a status whose configured writer is not the
+procedure is refused with the writer named
+([schema § 4.2](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer));
+and that against a configuration with no tracker every operation is unavailable while the report
+reads as a configuration rather than a fault.
+
+The kinds are the same two as above. Reading the operation list and the fallback text out of the
+surface is **computed** — a reworded fallback travels, and a table that states the list twice, or
+states an operation twice, or loses a cell out of a row, reddens rather than silently changing
+what a role is told. One check is **forbidding**: that the contract itself names no tracker the
+surface declares, in the slug spelling or the prose one and in any case, to the same de-slugged
+grammar check 6 above uses and with the kinds derived by asking the reader which `kind` values are
+trackers.
+
+### What it deliberately does not check
+
+- **That an adapter is correct.** No implementation is installed yet — the three are their own
+  work items — so the available-capability branch is proved against a double that implements a
+  subset, not against a tracker. What the contract holds is the shape: a declared operation is
+  performed by the implementation, an undeclared one falls back.
+- **Any module but the contract.** `plugins/*/scripts/` sits outside the sweep's strict set,
+  which that sweep argues in stack terms — an implementation is written in some language and
+  saying so names the toolkit's stack rather than a project's. It gives no reason to exempt a
+  module from the *tracker*-name rule; that exemption is an artifact of the strict set being
+  path-shaped. So the contract asserts the rule of **itself**, and nothing holds the reader beside
+  it or an adapter module to come — where a kind's name is legitimate anyway. A carrier root,
+  where a role's text lives, is still swept by check 6 above, which is the half of this that
+  matters for a shared role.
+- **That a fallback is the right fallback.** Whether writing a gate result into a description is
+  what a project wants where comments are impossible is a judgement the measurement behind it
+  carries, not something a check can read. This is the *fidelity* limit one claim over.
+
 ## The reply's register: held in the session, not on the gate
 
 The surface fixes the register of the reply a role writes in the session, as procedure with no
@@ -402,12 +450,18 @@ the workflow — before the tree is held to anything. The discipline is #28's: a
 before its break tends to match only the break its author imagined, and a check that cannot fail
 is not a check.
 
-Every script here carries the mode and each is run through it by its workflow, as the first step,
-before the tree is held to anything. In each the plant count is well above the check count,
-because the plant is per *branch that does real work* — a plant that reddens a check by the wrong
+Every script here carries the mode and each is run through it by its workflow, and the plant is
+per *branch that does real work* rather than per check — a plant that reddens a check by the wrong
 route proves nothing about the branch it was written for. ⛔ The numbers are deliberately not
 written down here: a count in prose is a copy that has to be kept in sync, and the run prints its
 own.
+
+⚠️ **Where the plants run differs, and only the ordering does.** The two document checks run every
+plant as a first phase, before the tree is held to anything; the port contract runs each plant
+beside the assertion it belongs to, because each needs a configuration or a surface of its own
+synthesised for it and a first phase would build all of them twice. What the ordering buys — no
+check is believed until it has been shown it can fail — holds either way, and it is stated here
+rather than in a comment in one workflow, where nothing reading this document would find it.
 
 ⚠️ **The reply-register check's plants carry two things its siblings' do not**, because what it
 holds afterwards is a rule rather than a tree. It plants replies that must stay **green** as well
