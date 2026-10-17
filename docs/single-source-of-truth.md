@@ -403,9 +403,15 @@ there has it backwards.
 - **A pull request that does not exist yet.** Run by hand before one is opened, the gate has no
   answer and says so, and no answer is not green — the surface's rule for an absent run
   ([§ 2](../plugins/mjolnir/config/schema.md#2-code-host)) holds here for the same reason.
-- **A merge that happens between the last run and the button.** The verdict is about the change as
-  the last triggering event left it. The workflow listens to the review and thread events as well
-  as to the pull request's own, so the window is small; it is not nothing.
+- **A thread resolved after the last run.** ⚠️ `pull_request_review_thread` is a webhook the host
+  sends and **not** a workflow trigger — a workflow file naming it is rejected whole, measured
+  twice here as a push-event failure with no jobs. So the gate re-runs when a review is
+  *submitted*, which is when findings arrive, but not when the last one is *resolved*: that
+  verdict stands until the next push, body edit, review or manual re-run. The direction that
+  matters is covered — findings arriving turn it red — and the direction left open costs a re-run
+  rather than a false green.
+- **A merge between the last run and the button.** The verdict is about the change as the last
+  triggering event left it. The window is small; it is not nothing.
 
 ## Beside the document checks: the tracker port's own contract
 

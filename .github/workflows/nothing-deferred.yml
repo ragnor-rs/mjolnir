@@ -10,21 +10,26 @@ name: Nothing deferred
 # docs/single-source-of-truth.md#the-gate-on-the-change-nothing-is-deferred — not repeated here.
 
 on:
-  # ⚠️ Three events, because the signal this gate exists for arrives on two of them. A review is
-  # submitted and a thread is resolved without any commit being pushed, so a workflow listening
-  # to `pull_request` alone goes green once and stays green while findings pile up against it —
-  # measured on this pull request, which reported green carrying sixteen unresolved threads.
-  # `edited` and `ready_for_review` are non-default types of the first event for the same reason:
-  # both change what the gate reads and neither pushes a commit.
+  # ⚠️ Two events, because the signal this gate exists for arrives without a commit. A review is
+  # submitted with findings on it and no push follows, so a workflow listening to `pull_request`
+  # alone goes green once and stays green while findings pile up against it — measured on this
+  # pull request, which reported green carrying sixteen unresolved threads. `edited` and
+  # `ready_for_review` are non-default types of the first event for the same reason: both change
+  # what the gate reads and neither pushes a commit.
   #
-  # The surface's `triggers` facet states an event and a base, and cannot state a type or either
-  # of the other two events — #82.
+  # ⛔ There is no third event, and not for want of asking. `pull_request_review_thread` is a
+  # webhook the host sends and **not** a workflow trigger: a file naming it is rejected whole —
+  # measured here, twice, as a push-event failure with no jobs and no pull-request run at all.
+  # So resolving the last thread re-runs nothing, and the verdict stands until the next push,
+  # body edit, review or manual re-run. That residue is stated in the document rather than
+  # papered over.
+  #
+  # The surface's `triggers` facet states an event and a base, and can state neither the types
+  # above nor the second event — #82.
   pull_request:
     types: [opened, edited, synchronize, reopened, ready_for_review]
   pull_request_review:
     types: [submitted, dismissed]
-  pull_request_review_thread:
-    types: [resolved, unresolved]
 
 permissions:
   pull-requests: read
