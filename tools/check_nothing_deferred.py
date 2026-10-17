@@ -58,10 +58,14 @@ import urllib.request
 # none of them is a fact about this project.
 
 # The section a body states its open items under, and the only answer that
-# closes it. A heading at any level, matched on its text alone, because the
-# level a body puts it at is formatting.
-OPEN_ITEMS = "open items"
-NO_OPEN_ITEMS = {"none", "none."}
+# closes it. A heading at any level, matched on its text alone and without
+# regard to case, because the level and the casing a body puts it at are
+# formatting. The spellings below are what a refusal quotes back, so what the
+# gate asks for and what the documents state are one string rather than two.
+HEADING_TEXT = "Open items"
+NO_OPEN_ITEMS_ANSWER = "None."
+OPEN_ITEMS = HEADING_TEXT.lower()
+NO_OPEN_ITEMS = {NO_OPEN_ITEMS_ANSWER.lower(), NO_OPEN_ITEMS_ANSWER.lower().rstrip(".")}
 
 HEADING = re.compile(r"^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$")
 UNTICKED = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+\[ \]\s*(?P<text>.*)")
@@ -333,10 +337,10 @@ def check_the_body_states_its_open_items(change: Change) -> list[str]:
     lines = change.section(OPEN_ITEMS)
     if lines is None:
         return [
-            f"the body carries no `{OPEN_ITEMS.title()}` section. The statement that every "
-            "item raised against this change is resolved is what the gate reads back, so a "
-            "body that does not make it is not ready — write the section, and answer it "
-            f"`{sorted(NO_OPEN_ITEMS)[0].title()}` where nothing is open."
+            f"the body carries no `{HEADING_TEXT}` section. The statement that every item "
+            "raised against this change is resolved is what the gate reads back, so a body "
+            "that does not make it is not ready — write the section, and answer it "
+            f"`{NO_OPEN_ITEMS_ANSWER}` where nothing is open."
         ]
     content = [line.rstrip() for line in lines if line.strip()]
     answer = " ".join(" ".join(content).split()).lower()
@@ -344,11 +348,11 @@ def check_the_body_states_its_open_items(change: Change) -> list[str]:
         return []
     if not content:
         return [
-            f"the body's `{OPEN_ITEMS.title()}` section is empty. An empty section is not an "
+            f"the body's `{HEADING_TEXT}` section is empty. An empty section is not an "
             "answer: state what is open, or state that nothing is."
         ]
     return [
-        f"the body's `{OPEN_ITEMS.title()}` section carries {len(content)} open item(s), and "
+        f"the body's `{HEADING_TEXT}` section carries {len(content)} open item(s), and "
         "no change merges with one against it:"
     ] + [f"    {line.strip()}" for line in content]
 
