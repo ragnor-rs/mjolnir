@@ -183,7 +183,10 @@ What follows is the measurement behind that list: the shapes the three implement
 operations, which is why none of them could be assumed.
 
 Each row is keyed by the operation § 3 states, so the two tables are read against each other
-without a mapping in between.
+without a mapping in between. ⚠️ The rows are the operations the survey measured; § 3's list is
+longer, and `advance_on_merge`, `set_labels`, `assign`, `checklist_read` and `checklist_write` are
+argued below rather than in the table — stated because a reader comparing the two would otherwise
+read a missing row as an operation nobody had evidence for.
 
 | Operation | GitHub Projects | Jira | Trello |
 |---|---|---|---|
@@ -201,9 +204,10 @@ Three of these measurements each forced a property of the port, stated in
 
 - Closing being declarative on one tracker (a keyword on merge), webhook-automated on another
   (where the procedure must *not* do it by hand) and absent on the third is why `link_for_close`
-  and `advance_on_merge` are separate capabilities.
-- Comment, delete-a-checklist-item, set-labels-atomically and assign-a-member each missing on at
-  least one tracker is why capabilities are queried with a stated fallback per absence. One
+  and `advance_on_merge` are separate operations rather than one.
+- `comment`, `checklist_item_delete`, `set_labels` atomically and `assign` each missing on at
+  least one tracker is why a capability is queried with a stated fallback per absence — and the
+  four are the measurement behind the operations the table above does not carry a row for. One
   project's skills already did this: a failed gate written into the description *because*
   comments are impossible there.
 - One project barring source code, credentials, hosting details, file paths and branch names from

@@ -173,19 +173,19 @@ Three properties of the port the procedure depends on:
 - **Capabilities are queried, not assumed**, and every absence has a fallback stated in the
   table below rather than left to the role that meets it.
 - **Closing is declarative on one tracker and imperative on another.** `link_for_close` and
-  `advance_on_merge` are separate operations, either of which may be absent: a keyword in a
-  pull request body closes the item on merge in one system; another needs an explicit
+  `advance_on_merge` are separate operations, either of whose capability may be absent: a keyword
+  in a pull request body closes the item on merge in one system; another needs an explicit
   transition and no keyword; a third has no link at all and the item moves separately.
 - **A write may be forbidden by policy rather than by capability.**
 
 ### The operations, and what an absent capability does
 
-The operations are a closed set, stated here once. ⛔ **No absence is an error.** An operation
-whose capability is absent takes the fallback in the third column, and the role is told which
-fallback was taken; a role that meets an absence improvises nothing. The shapes each tracker
-gives these operations are measured in
-[`docs/configuration-surface.md`](../../../docs/configuration-surface.md) — this table is the
-list and the absent case, and that document is the evidence behind both.
+The operations are a closed set, stated here once. An operation always exists; what may be absent
+is its **capability** on a given tracker. ⛔ **No absence is an error.** An operation whose
+capability is absent takes the fallback in the third column, and the role is told which fallback
+was taken; a role that meets an absence improvises nothing. The shapes behind the rows that were
+measured are in [`docs/configuration-surface.md`](../../../docs/configuration-surface.md), which
+covers the operations the survey reached and says which it did not.
 
 | Operation | What the procedure asks for | When the capability is absent |
 |---|---|---|
@@ -196,10 +196,10 @@ list and the absent case, and that document is the evidence behind both.
 | `link_dependency` | one item recorded as blocked by another | the dependency is written into both items' bodies as prose — which of the two statements survives is #69's |
 | `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
-| `comment` | a note on the item: a gate result, the provenance of a duplicate | it goes into the item's description instead |
+| `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
 | `set_labels` | every label set in one call | one call per label, and a set that is left partial is reported rather than retried silently |
 | `assign` | the item assigned to the person the role acts for | the report names who holds the item; what a session's **claim** rides on is #70's, not this fallback |
-| `checklist_read` | the item's check items, and which of them are ticked | the item is read as carrying none, and the report says the checklist could not be read |
+| `checklist_read` | the item's check items, and which of them are ticked | the role has **no answer** about the checklist and says so; an unreadable checklist is never read as an empty one, by § 2's rule that absence of signal is not an answer |
 | `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
 | `checklist_item_delete` | a check item removed | the item is reworded and ticked instead |
 
@@ -296,6 +296,11 @@ The two vocabularies, stated once:
 
 **A project maps a subset; an absent role is legitimate.** Vocabularies differ in length and in
 meaning, not merely in wording.
+
+⛔ **A role is mapped by at most one status.** The procedure asks the port to advance to a role, so
+two status words answering one role leave the move undefined — and there is no first-match rule to
+fall back on, because picking the earlier row would be a choice the configuration never made. The
+port refuses it naming `statuses` rather than acting on the first.
 
 ⛔ **The writer is what makes this correct rather than merely configurable.** The procedure asks
 the port to advance to a *role*, and is **refused** when the configured writer is not

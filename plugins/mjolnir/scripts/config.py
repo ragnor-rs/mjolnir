@@ -294,9 +294,10 @@ class Config:
         out = []
         if not self.has_tracker:
             out.append(
-                "No tracker is configured (`tracker.kind: none`), so every "
-                "tracker operation is unavailable. Branching, the pull request, "
-                "the review and the day log do not need one."
+                "No tracker is configured (`tracker.kind: none`). Branching, the "
+                "pull request, the review and the day log do not need one. What "
+                "that leaves each tracker operation doing is the port's to report, "
+                "never this reader's: a capability is the adapter's fact."
             )
         for facet in ("type", "estimate", "template"):
             if self.get(f"work_item.{facet}.carrier") == "none":

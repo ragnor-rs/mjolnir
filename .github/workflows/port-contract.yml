@@ -36,8 +36,8 @@ jobs:
         run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
 
       # One step, one command, and the same string `host.checks` declares this run mirrors, so
-      # the two cannot drift. Each refusal carries a planted violation beside the assertion it
-      # belongs to rather than in a block of its own — the suite is written against one
-      # configuration at a time, which is why the plants are not a separate first phase here.
+      # the two cannot drift. This suite runs each plant beside the assertion it belongs to
+      # rather than as a first phase; that divergence from its siblings is stated where the
+      # discipline is, in docs/single-source-of-truth.md, and not in this comment.
       - name: Hold the port contract to the surface and the examples
         run: python3 plugins/mjolnir/scripts/port.py --self-test
