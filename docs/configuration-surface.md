@@ -135,24 +135,22 @@ the three that are obvious. The measurements that forced each to be independent:
    one — hence
    [`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project).
 
-   **One artifact in that map is fixed rather than configured, and the measurement is what
-   decided it.** The reply a role writes in the session is an artifact like the day log, and for
-   several roles it is the only output — yet it was the one artifact whose register nothing
-   stated, in the surface or in any copy. What the absence produced was measured here, by the
-   person reading the replies: a drift to narrative and emphasis rather than reference, reported
-   in their own words as a preference for *straight-to-point, structured information* in a
-   *scientific, reference, textbook* register, with lists and tables. ⛔ It is procedure and not
-   one more entry in the `artifacts` map because the audience is the one thing a project cannot
-   choose about it — a configuration can nominate who reads a day log, and it cannot nominate who
-   is running the role. A toolkit that let a project set that register to narrative would have
-   made the defect configurable instead of fixing it, which is the authorship argument under § 6
-   reaching a second rule. See
-   [`schema.md § 8 → The reply to the person running a role`](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role).
+   **One artifact in that map is fixed rather than configured.** The measurement that forced it
+   is an absence: the reply a role writes in the session is an artifact like the day log, and for
+   several roles the only output, and **no copy of any role in the survey stated its register** —
+   not one of the thirty-two read in full, and nothing in the surface either. Where every other
+   artifact above was carried three or four different ways by different projects, this one was
+   carried nowhere, so there was no divergence to reconcile and nothing to make configurable
+   from.
 
-   The reply's **language** is the one remaining variable and it is still not configuration: it is
-   the language the person addressed the role in. No project facet knows it — the same person
-   addresses two projects, and `language.repo` is a fact about the repository rather than about
-   whoever is at the keyboard.
+   ⚠️ **The evidence for what to put there instead is of a different kind from the rest of this
+   document, and that is worth naming.** It is not a count across projects A–F: it is the stated
+   requirement of the person the replies are written to, recorded on
+   [#79](https://github.com/ragnor-rs/mjolnir/issues/79) in their own words. The first entry here
+   whose argument a count does not carry. Why that still settles it as *procedure* rather than as
+   a setting is the rule's own, at
+   [`schema.md § 8 → The reply to the person running a role`](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role),
+   which this document does not restate.
 6. **Branch model.** Four of the six cut a working tree per work item; two never do. Even the
    two that do not are not indifferent to it: one of them carries a day-log caveat — already in
    the shipped skill — that a session opened in a worktree *the configuration cannot reach*

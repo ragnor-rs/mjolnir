@@ -17,10 +17,12 @@ second command with nowhere on the surface to live. It is recorded in
 [its own section](#the-second-sweep-naming-no-other-project) below, because the two claims share
 this document's discipline of stating every limit and not its subject.
 
-A third, `plugins/mjolnir/scripts/check_reply_register.py`, holds the register of a role's reply
-and is the one of the three that does not run on the gate at all. It is in
-[its own section](#the-third-check-a-roles-reply-and-why-it-is-a-hook) too, and for the same
-reason: whatever holds a claim here states what it leaves alone.
+`plugins/mjolnir/scripts/check_reply_register.py` holds the register of a role's reply, and it is
+the one here that does not run on the gate at all. It is in
+[its own section](#the-replys-register-held-in-the-session-not-on-the-gate) too, and for the same
+reason: whatever holds a claim here states what it leaves alone. ⚠️ No count of these scripts is
+written down, here or anywhere — a count in prose is a copy, and three open changes were each
+adding themselves to this document as "the third" when it was.
 
 ## Why this is a check rather than a convention
 
@@ -265,13 +267,14 @@ exempted the whole directory and so would have read straight past it.
   has a stable form, and forbidding a list of them would be a list to keep in sync. This is the
   same reason projects are lettered A–F in the documentation: the convention is held by what the
   documents *don't* contain, and the counts carry the argument instead.
-- **A language interpreter.** `python3` is on no list, and `python3 <day_log.script>` in the
-  day-log skill is the one live instance of one. ⚠️ Whether a configured script is a path the
-  procedure prefixes with an interpreter, or a command the procedure merely runs, is
+- **A language interpreter.** `python3` is on no list, and the strict set carries live instances
+  of one: a configured script run under it in the day-log skill, and the hook carrier that calls
+  the reply-register check. ⚠️ Whether a configured script is a path the procedure prefixes with
+  an interpreter, or a command the procedure merely runs, is
   [#65](https://github.com/ragnor-rs/mjolnir/issues/65)'s and
   [#66](https://github.com/ragnor-rs/mjolnir/issues/66)'s ruling about what configuration carries.
-  This check does not pre-empt it by reddening, so until that lands the interpreter named in a
-  skill is a known hole — stated, because an unstated limit reads later as coverage.
+  This check does not pre-empt it by reddening, so until that lands an interpreter named in a
+  carrier is a known hole — stated, because an unstated limit reads later as coverage.
 - **A stack token hidden in a script's comment.** Rule 1 strips comments before sweeping a
   script, so `# run npm run build first` in a hook is not read. That is the deliberate trade: a
   comment is prose, and sweeping it would redden on an ordinary English sentence. A command the
@@ -279,18 +282,19 @@ exempted the whole directory and so would have read straight past it.
 - **A bare all-caps value inside an example configuration**, per the first exception above. The
   residue is narrow — an example whose status words are upper-case — and the alternative was
   dropping `OWNER/REPO` and `KEY` out of the placeholder set.
-- **Most carrier roots are empty, and the run still exits 0.** Of the carrier shapes, two match
-  anything today — `plugins/*/skills/` and, since the reply-register hook landed,
-  `plugins/*/hooks/`. The hooks that enforce the *loop* are still
-  [#16](https://github.com/ragnor-rs/mjolnir/issues/16), and the command carrier belongs to
-  whichever project migrates with one. The run says how many shapes swept nothing and **does not**
+- **Most carrier roots are empty, and the run still exits 0.** The shapes that match a file today
+  are the skills root and — since the reply-register hook — the hooks root; the hooks that enforce
+  the *loop* are still [#16](https://github.com/ragnor-rs/mjolnir/issues/16), and the command
+  carrier belongs to whichever project migrates with one. ⚠️ No number is given here, for the
+  reason the plant counts are not: the run prints its own, and a count in prose goes stale green.
+  The run says how many shapes swept nothing and **does not**
   fail on them, because a shape for a carrier kind this repository has not adopted is not a
   defect. What is held instead: check 4 fails if the strict set empties altogether, and check 5
   fails on a carrier sitting outside every shape.
 - **Issues and pull requests**, for the same reason check 3 above cannot read issue state: that
   store is not a file, the workflow holds no credential, and a reviewer covers it.
 
-## The third check: a role's reply, and why it is a hook
+## The reply's register: held in the session, not on the gate
 
 The surface fixes the register of the reply a role writes in the session, as procedure with no
 per-project setting —
@@ -309,38 +313,53 @@ place the finished reply is available, and it hands the text over directly, so
 | Property | What is checked | Kind | A finding |
 |---|---|---|---|
 | Opening | The first line carrying the reply's own words is not one of a closed set of preamble forms | forbidding | **blocks**, once per turn |
-| Length | No prose line is compressed into an arrow chain | forbidding | **blocks**, once per turn |
-| Emphasis | Emphasised spans against the reply's prose line count | computed, over a proxy | reports |
-| Register | Dramatic words and exclamations, counted | computed, over a proxy | reports |
-| Uncertainty | Hedges, counted | computed, over a proxy | reports |
+| Length | No text is compressed into an arrow chain — two arrows sharing an operand | forbidding | **blocks**, once per turn |
+| Emphasis | Emphasised spans against the reply's own prose line count | computed | reports |
+| Register | A closed list of dramatic words, and exclamations, over a density | forbidding, over a density | reports |
+| Uncertainty | A closed list of hedges, over a density | forbidding, over a density | reports |
 | Structure | — | — | nothing; see below |
 
-**Why two of them block and three do not.** The first two are *forbidding* checks whose forbidden
-thing has a stable form: a preamble form is a phrase, and a chain of arrows is a chain of arrows.
-The other three are *computed* — the property is derived from the text rather than quoted back at
-it — but the property each derives is a **proxy** for the rule rather than the rule itself, and a
-threshold is where a proxy is wrong. So a finding there is reported into the session and nothing is
-blocked. ⚠️ The thresholds are deliberately not written down here: a number in prose is a copy that
-has to be kept in sync, and the run prints its own.
+**What blocks, and why the rest does not.** The first two forbid a thing whose form is stable and
+whose presence is the defect: a preamble form is a phrase, and a chain is two arrows sharing an
+operand. A finding there is a fact about the text, so it hands the turn back.
+
+The other three are weaker in two different ways, and neither weakness is a threshold alone.
+*Emphasis* is genuinely **computed** — a density derived from the reply's own length, so no word
+list can be reworded past it, but the density is a proxy for "as a default texture" rather than
+that rule. *Register* and *Uncertainty* are **forbidding** checks over closed word lists read at a
+density: ⚠️ a synonym that is not on the list passes, which is precisely the *quoting* weakness
+this document rules out elsewhere, and the lists cannot be completed because the thing forbidden
+is a tone rather than a name. So all three report and none blocks. ⚠️ The densities are
+deliberately not written down here — a number in prose is a copy that has to be kept in sync, and
+the run prints its own.
 
 **Blocking means handing the turn back, not refusing it.** The hook returns `decision: block` with
-the findings as `additionalContext`, which is the only field the writer reads back — the reason
-shown to the person is not. ⚠️ **It blocks at most once per turn**, keyed on the harness's own turn
-id under `CLAUDE_PLUGIN_DATA`, because a hook that also blocked the restatement would hold the
-session open on a judgement a forbidding check cannot make. A payload with no turn id falls back to
-the session, which blocks once per session — the conservative direction.
+the findings as `additionalContext`, which the harness's documented contract makes the field the
+writer reads back; the `reason` beside it is shown to the person instead. ⚠️ **It blocks at most
+once per turn**, keyed on the harness's own turn id under `CLAUDE_PLUGIN_DATA`, because a hook that
+also blocked the restatement would hold the session open on a judgement a forbidding check cannot
+make. A payload carrying no turn at all cannot be guarded, so it reports and **says that it could
+not guard** rather than returning the same answer as a turn that has had its hand-back.
 
-It derives what it can, for the same reason the two gate scripts do:
+It derives what it can, for the reason the gate's own scripts do:
 
 | Derived, at run time | Hardcoded |
 |---|---|
 | the property list, from the first column of the register's own table in the surface | the anchor of the subsection that table sits in |
-| which properties are accounted for, by holding that list against the checks in both directions | the preamble forms, the arrow forms, and the three thresholds |
+| which properties are accounted for, by holding that list against the checks in both directions | the preamble forms, the chain form, the word lists and the densities |
+| the self-test's own plants against the surface, from the table it just parsed | the markdown table and heading grammar |
+| that the carrier still names this script, by reading `hooks.json` and resolving what it calls | the hook event's name, and the carrier's path |
 
 A property added to the register's table with no check and no stated reason for having none
 reddens `--self-test` at the moment the row is added. That is check 2's direction, one surface
 over — and it runs in the direction nobody remembers to check by hand, because the failure
-otherwise is a register that grew a clause and a hook that silently never held it.
+otherwise is a register that grew a clause and a hook that silently never held it. ⛔ Held and
+excused are kept apart rather than unioned: a property excused *in part* must still be held in
+part, so deleting the compression check does not leave the padding limit standing in for it. The
+same discipline reaches the carrier — `hooks.json` naming another script, another event, or
+nothing parseable at all leaves every check here green, so the gate resolves what the carrier
+calls and asserts it is this script. See
+[schema § 7](../plugins/mjolnir/config/schema.md#7-carrier) for the carrier axis itself.
 
 ### What this check deliberately does not hold
 
@@ -361,6 +380,16 @@ otherwise is a register that grew a clause and a hook that silently never held i
   **wrong** rather than merely wide when they fire outside their role.
 - **A reply that was never sent as text.** A turn that ends in a tool call carries no final
   message, and the hook answers nothing rather than guessing.
+- **Code, a quotation, and — for the emphasis density only — a table.** A fenced block, an
+  indented block and a quoted line are dropped from every check: they are not the writer's own
+  prose, and sweeping them produced false reds on a pasted traceback and on quoting the person's
+  own words back. Table rows are read by the word-list checks and **not** by the emphasis density,
+  because a bolded term in a cell is the shape the Structure row asks for. So emphasis as a
+  texture inside a table is held by nothing.
+- **A failure before this script is running.** The hook fails open and names itself, but only once
+  it has started: the harness's timeout, no interpreter on the path, or a syntax error in the file
+  produces no output at all, and nothing in the session then says the reply was held to nothing.
+  That residue cannot be closed from inside the hook, and what covers it is this run.
 - **Its own failure.** ⛔ The hook **fails open** and says so: an internal error answers with a
   message naming itself, rather than with silence that reads as a reply in register, or with a
   non-zero exit that would break every turn — the same absence-is-not-an-answer rule
@@ -373,19 +402,20 @@ the workflow — before the tree is held to anything. The discipline is #28's: a
 before its break tends to match only the break its author imagined, and a check that cannot fail
 is not a check.
 
-All three scripts carry the mode and each is run through it by its workflow, as the first step,
+Every script here carries the mode and each is run through it by its workflow, as the first step,
 before the tree is held to anything. In each the plant count is well above the check count,
 because the plant is per *branch that does real work* — a plant that reddens a check by the wrong
 route proves nothing about the branch it was written for. ⛔ The numbers are deliberately not
 written down here: a count in prose is a copy that has to be kept in sync, and the run prints its
 own.
 
-⚠️ **The reply-register check's self-test is the whole of what its workflow can run**, since there
-is no tree for it to hold afterwards — so it carries two things its siblings do not. It plants
-replies that must stay **green** as well as ones that must redden, because a check that flags an
-arrow inside a fenced block is not the check it claims to be; and it runs its turn-guard
-assertions against a state directory of its own, after a second run of the self-test read the
-first run's markers and reported that a forbidding finding does not block.
+⚠️ **The reply-register check's plants carry two things its siblings' do not**, because what it
+holds afterwards is a rule rather than a tree. It plants replies that must stay **green** as well
+as ones that must redden — a check that flags an arrow inside a fenced block, an indented block or
+a quotation is not the check it claims to be, and each of those was a measured false red rather
+than a hypothesis. And it runs its turn-guard assertions against a state directory of its own,
+after a second run of the self-test read the first run's markers and reported that a blocking
+finding does not block.
 
 ⚠️ **A plant may not name the file it plants into.** The sweep's first draft hardcoded the one
 skill's path, so moving or renaming a carrier root made `--self-test` — the command the workflow

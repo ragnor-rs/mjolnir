@@ -501,8 +501,9 @@ judging its own register at the time of writing is the mechanism being replaced,
 specified: the properties above are held by a check over the reply the role actually produced,
 reported to the session rather than to a file. Which of them are held mechanically, which are
 reported without being held, and which are left to a reader are stated once in
-[`docs/single-source-of-truth.md`](../../../docs/single-source-of-truth.md) — beside the gate's
-own checks and under the same discipline, because an unstated limit reads later as coverage.
+[`docs/single-source-of-truth.md § The reply's register`](../../../docs/single-source-of-truth.md#the-replys-register-held-in-the-session-not-on-the-gate)
+— beside the gate's own checks and under the same discipline, because an unstated limit reads
+later as coverage.
 
 ## 9. Day log
 
