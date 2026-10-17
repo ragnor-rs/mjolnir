@@ -134,6 +134,23 @@ the three that are obvious. The measurements that forced each to be independent:
    another writes it in a business register for a reader outside the build. Three settings, not
    one — hence
    [`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project).
+
+   **One artifact in that map is fixed rather than configured.** The measurement that forced it
+   is an absence: the reply a role writes in the session is an artifact like the day log, and for
+   several roles the only output, and **no copy of any role in the survey stated its register** —
+   not one of the thirty-two read in full, and nothing in the surface either. Where every other
+   artifact above was carried three or four different ways by different projects, this one was
+   carried nowhere, so there was no divergence to reconcile and nothing to make configurable
+   from.
+
+   ⚠️ **The evidence for what to put there instead is of a different kind from the rest of this
+   document, and that is worth naming.** It is not a count across projects A–F: it is the stated
+   requirement of the person the replies are written to, recorded on
+   [#79](https://github.com/ragnor-rs/mjolnir/issues/79) in their own words. The first entry here
+   whose argument a count does not carry. Why that still settles it as *procedure* rather than as
+   a setting is the rule's own, at
+   [`schema.md § 8 → The reply to the person running a role`](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role),
+   which this document does not restate.
 6. **Branch model.** Four of the six cut a working tree per work item; two never do. Even the
    two that do not are not indifferent to it: one of them carries a day-log caveat — already in
    the shipped skill — that a session opened in a worktree *the configuration cannot reach*

@@ -50,6 +50,9 @@ host:
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Reply register"
+      mirrors: "python3 plugins/mjolnir/scripts/check_reply_register.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
 
 tracker:
   # Plain GitHub issues with no project board — the cheapest real configuration, and one

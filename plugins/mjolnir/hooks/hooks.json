@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/check_reply_register.py"],
+            "timeout": 10,
+            "statusMessage": "Holding the reply to its register"
+          }
+        ]
+      }
+    ]
+  }
+}
