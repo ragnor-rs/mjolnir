@@ -124,3 +124,20 @@ day_log:
     chat_exclude: []
     mixed_chats: []
     calendars: []
+
+branch_model:
+  # Measured on this repository rather than declared for it: parallel sessions take a tree each
+  # off the primary checkout, which is how rows of the backlog are worked concurrently.
+  kind: worktree
+  # Each session takes its own tree; the primary checkout is not where an issue's work happens.
+  # It is also what the registered marketplace path points at, so leaving it alone keeps it
+  # serving the procedure while a branch is in flight beside it.
+  work_in_shared_checkout: never
+  parallel_trees: true
+  # Null because there is nothing to point at: a tree here needs no dependency install, no asset
+  # copy, no port, no container, and nothing to tear down. The cheapest proof that a project
+  # whose trees are free to create still has to state the model.
+  mechanics: null
+  # Nothing contends. The only check this project runs is a python script with no daemon, no
+  # service and no machine-wide lock, so no lease is taken and none is synthesised.
+  exclusive_resources: []
