@@ -353,8 +353,12 @@ otherwise is a register that grew a clause and a hook that silently never held i
   selection against shortening by compression.
 - **Whether the reply was a role's at all.** The hook fires on every reply in a session where this
   plugin is enabled, and nothing in a `Stop` payload says whether a role was running. So the
-  register is held more widely than the surface states it — in the safe direction, and stated
-  because an unstated limit reads later as coverage.
+  register is held more widely than the surface states it — in the safe direction here, and stated
+  because an unstated limit reads later as coverage. ⚠️ That direction is a property of this one
+  rule rather than of hooks, and it does not survive the next one:
+  [#87](https://github.com/ragnor-rs/mjolnir/issues/87) is where a hook's own role is settled, and
+  it blocks [#16](https://github.com/ragnor-rs/mjolnir/issues/16), whose guards and leases are
+  **wrong** rather than merely wide when they fire outside their role.
 - **A reply that was never sent as text.** A turn that ends in a tool call carries no final
   message, and the hook answers nothing rather than guessing.
 - **Its own failure.** ⛔ The hook **fails open** and says so: an internal error answers with a
