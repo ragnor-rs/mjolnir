@@ -1,23 +1,24 @@
 # Why the configuration surface has this shape
 
-The reference for *what* the keys are is [`../plugins/mjolnir/config/schema.md`](../plugins/mjolnir/config/schema.md).
-This document is *why*. It was derived by reading every copy of every process role across the six
-projects that run this pattern — thirty-two of about forty role files in full — and the findings
-below are measurements rather than preferences.
+The single statement of every rule and flow is
+[`../plugins/mjolnir/config/schema.md`](../plugins/mjolnir/config/schema.md); this document
+states none. It carries the *why*: it was derived by reading every copy of every process role
+across the six projects that run this pattern — thirty-two of about forty role files in full —
+and the findings below are measurements rather than preferences. Each one names the schema
+section it forced. Where a sentence here reads as a rule, the binding form is the section it
+cites.
 
 Projects are referred to as A–F throughout. Naming them is forbidden here, and the counts are
 what carry the argument anyway.
 
 ## The pattern is nine roles, not eight
 
-File a work item, **gate it into committed work**, start it, finish it, review it, deploy, log
-the day, keep the session's books, produce deliverables.
-
-Gating is a genuine ninth role rather than a variant: one project splits intake into *write the
-item* and *gate it into committed work*, and the gate owns the due date and the estimate. The
-projects without it fold a little into filing and a little into starting, and neither place sets
-a date. The project that has it refuses to let starting re-run it, because re-gating recomputes
-a commitment somebody may already have been given.
+The loop's statement is [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles).
+What the survey established is the count: gating is a genuine ninth role rather than a variant.
+One project splits intake into *write the item* and *gate it into committed work*, and its gate
+copy owns the due date and the estimate; the projects without the role fold a little into filing
+and a little into starting, and neither place sets a date. The same project refuses to let
+starting re-run the gate — which is where the schema's no-re-gating rule comes from.
 
 Depth per project: **1, 7, 7, 8, 9, 9.** Five of six run the whole pattern; one runs a single
 role.
@@ -26,10 +27,10 @@ role.
 
 ### A role's carrier is an axis beside its name
 
-Project B reads as the shallowest adopter at depth 2 and is actually the second deepest. A sweep
-of skill directories finds two files; the other six roles are slash commands. **Carrier (skill,
-command, hook) is therefore configured independently of role** — otherwise the same undercount
-recurs at migration time and that project is declared done with six roles still local.
+Project B reads as the shallowest adopter at depth 2 and is actually the second deepest: a sweep
+of skill directories finds two files, and the other six roles are slash commands. That undercount
+recurring at migration time — the project declared done with six roles still local — is what
+forced [`schema.md § 7`](../plugins/mjolnir/config/schema.md#7-carrier).
 
 This also bites inside a skill. A command expands into a transcript record carrying its own
 title; a skill injects a preamble naming its directory. Anything matching on those strings
@@ -65,42 +66,46 @@ Writers observed, in the copies' own words: an automation off a merge; a deploy 
 who ordered the work; a mechanical path-based sweep where no judgement is needed; and the
 procedure itself, which owns only the initial state and the in-flight one.
 
-So a state is configured as `(name, role, writer)` and the procedure is **refused** when it is
-not the writer. That turns what read as three contradictory bookkeeping skills into three correct
-configurations of one mechanism — including the strictest case, where the procedure may write
-nothing at all, because the tracker credential is a person's own account and every write reads as
-that person speaking.
+Hence `(name, role, writer)` and the refusal in
+[`schema.md § 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer).
+That design turns what read as three contradictory bookkeeping skills into three correct
+configurations of one mechanism — the strictest of them being the project whose tracker
+credential is a person's own account, where every write reads as that person speaking, which is
+where `writer: never` comes from.
 
-Status vocabularies differ in **length and meaning**, not merely wording: three states in one
-project, four in another, seven and eight in two more, with a state between review and
-completion that some reason about explicitly and others do not have. An absent role is a
-legitimate configuration.
+The vocabularies measured differ in **length and meaning**, not merely wording: three states in
+one project, four in another, seven and eight in two more, with a state between review and
+completion that some reason about explicitly and others do not have.
 
 ## Five axes, not three
+
+The axes are stated in
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles). The
+measurements that forced each to be independent:
 
 1. **Work-item tracker.** Four models were in play — GitHub Projects in three projects, Jira in
    one, Trello in one, and **none** in one, whose work items were entries in a specification tree
    on disk. The port ships with three implementations; the trackerless project moves onto a real
-   tracker rather than the toolkit growing a filesystem adapter. **"No tracker configured"
-   survives as a supported configuration anyway**, proved against a deliberately trackerless
-   scratch config, because the next project to adopt this may have no tracker on its first day.
-2. **Code host.** Where branches, pull requests and CI live. The same host in all six, including
-   both projects whose cards are elsewhere — which is precisely why it is a separate axis.
-3. **Code root.** The path `git` and `gh` address. One project's code is a git-ignored
-   subdirectory that is its own repository under a different owner, not a submodule. Its skills
-   write the root explicitly into every git call and stop if the directory is absent, because a
-   fresh clone of the outer repository does not have it. A skill that takes the top level of the
-   repository it is installed in commits the engagement notes and never touches the code; a host
-   CLI call inheriting the working directory addresses the wrong repository. **Both fail quietly,
-   having done something plausible first.**
-4. **Carrier.** Skill, command or hook — see above. Three projects also run process hooks, at
-   eight, five and four.
-5. **Audience and language, per *artifact* rather than per project.** One project writes its items
-   in one language and its repository in another and states the split is by audience; its branch
-   slug must be a **translation** of the item title, never a transliteration. One writes the day
-   log in a technical register for itself; another writes it in a business register for a reader
-   outside the build. Work-item language, repository language, and per-artifact (language,
-   register, audience) are separate settings.
+   tracker rather than the toolkit growing a filesystem adapter — and the trackerless case was
+   proved against a deliberately trackerless scratch config anyway, because the next project to
+   adopt this may have no tracker on its first day.
+2. **Code host.** The same host in all six, including both projects whose cards are elsewhere —
+   which is precisely why it is a separate axis.
+3. **Code root.** One project's code is a git-ignored subdirectory that is its own repository
+   under a different owner, not a submodule. Its skills write the root explicitly into every git
+   call and stop if the directory is absent, because a fresh clone of the outer repository does
+   not have it. The failure mode behind
+   [`schema.md § 1`](../plugins/mjolnir/config/schema.md#1-roots--three-independent-paths): a
+   skill that takes the top level of the repository it is installed in commits the engagement
+   notes and never touches the code; a host CLI call inheriting the working directory addresses
+   the wrong repository. Both fail quietly, having done something plausible first.
+4. **Carrier.** See above. Three projects also run process hooks, at eight, five and four.
+5. **Audience and language.** One project writes its items in one language and its repository in
+   another and states the split is by audience — its branch slug a **translation** of the item
+   title, never a transliteration. One writes the day log in a technical register for itself;
+   another writes it in a business register for a reader outside the build. Three settings, not
+   one — hence
+   [`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project).
 
 ## The tracker port
 
@@ -117,22 +122,19 @@ The operations the shared procedure needs, and the shapes the three implementati
 | Comment | one call | one call | **impossible** — no comment action; it goes into the description |
 | Delete a checklist item | n/a | n/a | **impossible** — reword and tick instead |
 
-Three consequences for the port:
+Three of these measurements each forced a property of the port, stated in
+[`schema.md § 3`](../plugins/mjolnir/config/schema.md#3-tracker-port):
 
-- **Closing has a declarative implementation and an imperative one.** `link_for_close` and
-  `advance_on_merge` are distinct capabilities, either of which may be absent. On one tracker a
-  keyword does it on merge; on another an automation does it off a webhook and the procedure must
-  *not* do it by hand; on the third there is no link and the item moves separately.
-- **Some operations do not exist.** Comment, delete-a-checklist-item, set-labels-atomically and
-  assign-a-member are each unavailable on at least one tracker. The port exposes capability
-  queries and the procedure has a stated fallback per absence rather than failing. One project's
-  skills already do this: a failed gate is written into the description *because* comments are
-  impossible there.
-- **A write may be forbidden by confidentiality rather than by capability.** One project bars
-  source code, credentials, hosting details, file paths and branch names from the tracker,
-  because it is a third-party service holding someone else's material. That is a per-project
-  **policy on the port**, and it changes what the procedure may put on an item — it is why that
-  project's branch name goes in the run report instead.
+- Closing being declarative on one tracker (a keyword on merge), webhook-automated on another
+  (where the procedure must *not* do it by hand) and absent on the third is why `link_for_close`
+  and `advance_on_merge` are separate capabilities.
+- Comment, delete-a-checklist-item, set-labels-atomically and assign-a-member each missing on at
+  least one tracker is why capabilities are queried with a stated fallback per absence. One
+  project's skills already did this: a failed gate written into the description *because*
+  comments are impossible there.
+- One project barring source code, credentials, hosting details, file paths and branch names from
+  a third-party tracker holding someone else's material is why policy sits on the port beside
+  capability — and why that project's branch name goes in the run report instead.
 
 ## Two things are ordered lists of named checks, not procedure
 
@@ -144,33 +146,31 @@ no dependency check at all; another refuses without a sprint, a fix version, and
 branch for that fix version existing on the remote, and has no state check at all; another runs
 eight checks including the item's position in a priority queue.
 
-A fixed sequence would be wrong for every one of them. So the gate is an ordered list of named
-predicates drawn from a shared library, each with its own stop message, and **the list runs
-whole** — one copy says it outright: an item with four problems should hear about four, not be
-bounced once per round trip.
-
-Two subtleties worth carrying:
-
-- **A dependency's bar depends on what the dependency produced.** A code dependency is satisfied
-  when its code is on the integration branch; a non-code dependency only when it is finished.
-  Requiring the stronger bar of both stops every dependent item on the board.
-- **Some failures are not defects.** Two of one project's eight checks mean the item is correct
-  and merely early, or that board automation did not fire — so they stop without flagging. A gate
-  that flags them flags an item whose author has nothing to fix.
+A fixed sequence would be wrong for every one of them — hence the ordered predicate list in
+[`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list),
+each of whose three rules traces to one copy: *the list runs whole* is one copy's own statement
+that an item with four problems should hear about four, not be bounced once per round trip; the
+two-bar dependency check is the copy that distinguished a code dependency (satisfied on the
+integration branch) from a non-code one (satisfied only when finished); and `stop_quietly` is
+the project whose eight checks include two that stop on an item which is correct and merely
+early, or whose board automation did not fire — an author with nothing to fix must not be
+flagged.
 
 ### The day log's exclusions
 
 The sets differ in membership, not merely in length. One project's heaviest exclusion is a
 scope-of-engagement rule no other project has, and it is the one that does most of the cutting
-there. So the exclusions are an ordered list of named entries drawn from a shared library, which
-a project may extend. The default set is a decision, not the only possible one.
+there — hence the named, extensible list in
+[`schema.md § 9`](../plugins/mjolnir/config/schema.md#9-day-log), whose default set is a
+decision rather than the only possible one.
 
 ## The four facets, and the absent case
 
-Issue type, status, estimate and template are each per-project, and each is carried by a
-different mechanism depending on the project. **The failure to design against is a facet that is
-absent rather than different** — three of the four have a real absent case, and a procedure that
-treats absence as an unset value fails on a project that is correctly configured.
+Issue type, status, estimate and template
+([`schema.md § 4`](../plugins/mjolnir/config/schema.md#4-work-item-facets)) are each per-project,
+and each was carried by a different mechanism depending on the project. Three of the four had a
+real absent case — which is where the schema's absence-is-a-configuration rule comes from: a
+procedure that treats absence as an unset value fails on a project that is correctly configured.
 
 - **Type** — five carriers observed: a native field; a label convention, because a user-owned
   repository on one host has no type field at all; a bare label whose absence means the other
@@ -191,14 +191,16 @@ treats absence as an unset value fails on a project that is correctly configured
   type label against the template the body uses, because a mismatch surfaces later as a branch
   under the wrong prefix and a branch name is the thing nobody goes back and corrects. Another
   fails a free-prose description however clear, because the structure is what makes it checkable.
-  So the procedure names the **semantic** sections and each template declares which of its own
-  headings fills each.
+  Hence the semantic-section map in
+  [`schema.md § 4.4`](../plugins/mjolnir/config/schema.md#44-template).
 
 ## One rule that is procedure everywhere
 
-**An estimate is a bound written before the work; a logged hour is a measurement written after.
-Never move a number between them in either direction.** One project states it; it is true in all
-of them.
+The estimate/measurement separation in
+[`schema.md § 4.3`](../plugins/mjolnir/config/schema.md#43-estimate) — a bound written before
+the work against a measurement written after, with a number never moving between them — is
+stated by one project and true in all of them: the single rule the survey found already
+universal.
 
 ## The strongest argument for extraction is not borrowed
 

@@ -4,6 +4,11 @@ Every per-project fact the shared procedure needs, named once. A project states 
 `.claude/mjolnir.yaml`, relative to its **skills root**. The procedure reads them; it never
 names a value itself.
 
+**This file is the single statement of every rule and flow of the shared procedure.** The
+documents under `docs/` explain why the surface has this shape and record how each divergence
+was settled; the work items track what is not yet built. None of them is a second authority —
+where another text appears to state a rule, the binding form is the section here that it cites.
+
 **The boundary this file defends:** a fact that cannot be expressed here is either procedure —
 in which case it belongs in a skill — or a project-specific skill that stays in that project.
 It is never a special case in the toolkit.
@@ -20,6 +25,25 @@ is written down, and it is excluded from the "names no particular project" searc
 examples of a shape rather than any project's facts.
 
 ---
+
+## The loop — nine roles
+
+File a work item · gate it into committed work · start it · finish it · review it · deploy ·
+log the day · keep the session's books · produce deliverables. Two utilities travel beside the
+loop without being part of it.
+
+A project maps a subset — an absent role is a legitimate configuration, not a partial install;
+one adopting project runs a single role. Each role's carrier (skill, command or hook) is §7's
+axis.
+
+Gating is a role of its own, not a step of filing or of starting: it owns the date and the
+estimate (§4.3), and starting never re-runs it — re-gating recomputes a commitment somebody may
+already have been given.
+
+**The surface has five independent axes, not three:** the work-item tracker (§3), the code host
+(§2), the code root (§1), each role's carrier (§7), and language/register/audience per artifact
+(§8). The measurements that forced each to be independent are in
+[`docs/configuration-surface.md`](../../../docs/configuration-surface.md).
 
 ## 1. Roots — three independent paths
 
@@ -121,9 +145,7 @@ statuses:
 
 Roles: `initial`, `ready`, `in_flight`, `code_landed`, `deployed`, `accepted`, `terminal`,
 `dropped`. **A project maps a subset; an absent role is legitimate.** Vocabularies differ in
-length and in meaning, not merely in wording — three states in one project, eight in another,
-with a state between review and completion that some projects reason about explicitly and
-others do not have at all.
+length and in meaning, not merely in wording.
 
 ⛔ **The writer is what makes this correct rather than merely configurable.** The procedure asks
 the port to advance to a *role*, and is **refused** when the configured writer is not

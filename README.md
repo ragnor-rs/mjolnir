@@ -1,7 +1,7 @@
 # mjolnir
 
-The development process — file a work item, gate it, start it, finish it, review it, deploy, log
-the day, keep the board current — as **one shared procedure over per-project configuration**.
+The development process — nine roles, from filing a work item to the day's log — as **one shared
+procedure over per-project configuration**.
 
 Installed as a Claude Code plugin. No clone, no submodule, no symlink, and no copy of anything in
 the adopting project.
@@ -16,9 +16,10 @@ corrections that existed in exactly one copy.
 Only a closed set of facts actually differs between projects. Those facts belong in
 configuration, and the procedure belongs in one place.
 
-The argument is not borrowed: read-it-from-one-place had already been independently invented five
-times across those projects, in four different stores, each time with the same justification in its
-own words —
+The argument is not borrowed: read-it-from-one-place had already been independently invented six
+times across those projects, in five different stores
+([the count](docs/configuration-surface.md#the-strongest-argument-for-extraction-is-not-borrowed)),
+each time with the same justification in its own words —
 
 > a copy that has to be «kept in sync» is the defect rather than the maintenance burden
 
@@ -65,30 +66,19 @@ duplication this toolkit exists to delete. The namespace also makes a deliberate
 read as a *different* name rather than the same one — which matters, because one skill name in the
 original copies denoted two unrelated roles.
 
-## What is configuration and what is procedure
+## Where the rules live
 
-**Five independent axes**, not three: the work-item tracker, the code host, the code root, each
-role's carrier (skill, command or hook), and language/register/audience *per artifact*.
+**The single statement of every rule and flow is
+[`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the nine-role loop and
+its five axes, the tracker port and its capabilities, the work-item facets with their absent
+cases, the status writers, the readiness gate, commit behaviour and the day log. Everything else
+written about the procedure, in this repository or on a work item, explains or records; none of
+it is a second authority.
 
-**The shared procedure names a tracker port, never a tracker.** GitHub Projects, Jira and Trello
-sit behind it. A tracker that is simply unset is a supported configuration, not a broken install.
-
-**Absence is first-class.** Issue type, status, estimate and template each have a real absent case
-in the projects this was derived from, and a procedure that treats absence as an unset value fails
-on a project that is correctly configured. A deliberately absent facet carries its reason and, where
-one exists, the condition under which to revisit it.
-
-**A status is `(name, role, writer)`.** The procedure asks the port to advance to a *role* and is
-refused when the configured writer is somebody else — an automation off a merge, a deploy, the
-person who ordered the work, or nobody at all where the tracker credential is a person's own
-account.
-
-**The readiness gate and the day log's exclusions are ordered lists of named checks**, drawn from a
-shared library, because the copies they came from shared no single check between them.
-
-A fact that cannot be expressed as configuration is either procedure — in which case it belongs in
-a skill here — or a project-specific skill that stays in that project. It is never a special case in
-the toolkit.
+The why sits beside it: [`docs/configuration-surface.md`](docs/configuration-surface.md) holds
+the measurements the surface was derived from, and
+[`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) records every divergence
+found between the old copies and the decision that settled it.
 
 ## What is in it
 
@@ -96,7 +86,7 @@ the toolkit.
 |---|---|
 | [`plugins/mjolnir/skills/day-report/`](plugins/mjolnir/skills/day-report/) | Build a working day's time-log entry from session transcripts, git, the code host, chat and the calendar |
 | [`plugins/mjolnir/config/`](plugins/mjolnir/config/) | The configuration surface: the schema, and a whole example per tracker including a deliberately trackerless one |
-| [`docs/configuration-surface.md`](docs/configuration-surface.md) | Why the surface has this shape — the nine roles, the five axes, the tracker port's operation matrix, and the status-writer argument |
+| [`docs/configuration-surface.md`](docs/configuration-surface.md) | Why the surface has this shape — the measurements behind every schema section |
 | [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) | Every divergence found between the old copies and which behaviour was kept, including where a ruling overrode a stated counter-argument |
 
 The remaining eight roles land here as they are reconciled. A project that has not been migrated
@@ -112,12 +102,10 @@ rather than procedure and uses placeholders throughout. Nothing under `skills/` 
 
 Projects referred to in the documentation are lettered A–F. The counts are what carry the argument.
 
-⛔ **The only author is the authenticated user.** No tool, assistant or generator is recorded as an
-author, committer or co-author of any commit here, and no generated-by marker goes in a commit
-message or a pull request body. This holds in every project the toolkit drives, it is procedure
-rather than a setting, and the
-[authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration) says
-why.
+⛔ **The only author is the authenticated user** — here and in every project the toolkit drives.
+The [authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration)
+is the single statement of what that means, why it is procedure rather than a setting, and the
+one trap in it.
 
 ## License
 

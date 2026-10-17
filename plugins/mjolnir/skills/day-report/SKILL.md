@@ -27,10 +27,10 @@ Write the two values to `<day_log.out_dir>/day-report-<YYYY-MM-DD>.txt` and say 
 - ⛔ **Never write hours into a work item, a pull request, a commit message or any tracked
   file.** The log is the only place they go.
 
-⚠️ **The ban is on *logged* hours, and a work item's estimate is not one.** An estimate is a
-bound written before the work; time spent is a measurement written after. ⛔ **Never move a
-number between them in either direction** — an item re-sized to match the day is the log leaking
-onto the board, and an estimate copied into the log is a plan reported as work.
+⚠️ **The ban is on *logged* hours, and a work item's estimate is not one.** The
+estimate/measurement separation is [`config/schema.md § 4.3`](../../config/schema.md#43-estimate)'s
+rule; applied here it means an item re-sized to match the day is the log leaking onto the board,
+and an estimate copied into the log is a plan reported as work.
 
 **Resolving who someone is:** read it from wherever the project states it once, named in its
 config. ⛔ **Do not restate such a table in this skill or in a reply.** Two records of who owns
