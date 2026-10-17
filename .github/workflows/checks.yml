@@ -1,0 +1,30 @@
+name: Checks
+
+# This repository's own gate. The shell and Python that extraction brings in are read by
+# nothing until #50 adds its linters as further jobs of this workflow; #19's sweep lands
+# here too. This file is keyed by its workflow name in `host.checks`, never by a job name.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: every scope of the automatic token is dropped, and the
+# checkout is told not to leave it behind in the git config. Nothing here needs to
+# reach the tracker, and the one check that would have wanted to does without.
+permissions: {}
+
+jobs:
+  single-source-of-truth:
+    name: Single source of truth
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command: the planted violations run first, and the tree is held
+      # only once each check has been shown it can fail. That command is also what
+      # `host.checks` declares this run mirrors, so the two cannot drift.
+      - name: Assert each check can fail, then hold every document to the surface
+        run: python3 tools/check_single_source.py --self-test

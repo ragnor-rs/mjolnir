@@ -61,10 +61,8 @@ Skills are addressed **namespaced, with no alias**:
 /mjolnir:day-report
 ```
 
-A project-level alias would be one file per project per skill, which reintroduces in miniature the
-duplication this toolkit exists to delete. The namespace also makes a deliberate local override
-read as a *different* name rather than the same one — which matters, because one skill name in the
-original copies denoted two unrelated roles.
+The rule, and why it is procedure rather than a setting, is
+[`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
 
 ## Where the rules live
 
@@ -74,6 +72,10 @@ its five axes, the tracker port and its capabilities, the work-item facets with 
 cases, the status writers, the readiness gate, commit behaviour and the day log. Everything else
 written about the procedure, in this repository or on a work item, explains or records; none of
 it is a second authority.
+
+That is enforced rather than asserted: the `Checks` workflow holds every document to it on every
+change — see [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) for the checks and
+what they deliberately leave alone.
 
 The why sits beside it: [`docs/configuration-surface.md`](docs/configuration-surface.md) holds
 the measurements the surface was derived from, and
@@ -88,17 +90,22 @@ found between the old copies and the decision that settled it.
 | [`plugins/mjolnir/config/`](plugins/mjolnir/config/) | The configuration surface: the schema, and a whole example per tracker including a deliberately trackerless one |
 | [`docs/configuration-surface.md`](docs/configuration-surface.md) | Why the surface has this shape — the measurements behind every schema section |
 | [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) | Every divergence found between the old copies and which behaviour was kept, including where a ruling overrode a stated counter-argument |
+| [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) | How the single-authority claim is held: the checks, their kinds, and what each deliberately leaves alone |
+| [`tools/check_single_source.py`](tools/check_single_source.py) | The check itself, run by the `Checks` workflow on every change |
 
 The remaining eight roles land here as they are reconciled. A project that has not been migrated
 keeps working throughout — that is a safety property of the migration, not an acceptable end state.
 
 ## Conventions
 
-**This repository names no particular project, anywhere, ever** — no repository slug, board or card
+**This repository names no *other* project, anywhere, ever** — no repository slug, board or card
 id, tracker account, label, milestone, assignee, host, service name, or path under anyone's home
-directory. The one exception is
+directory. Two things are not that:
 [`plugins/mjolnir/config/examples/`](plugins/mjolnir/config/examples/), which is example *data*
-rather than procedure and uses placeholders throughout. Nothing under `skills/` carries a value.
+rather than procedure and uses placeholders throughout; and this repository's own slug and
+backlog, which the install command, `.claude/mjolnir.yaml` and the documents cite because the
+toolkit [builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/27). Nothing
+under `skills/` carries a value.
 
 Projects referred to in the documentation are lettered A–F. The counts are what carry the argument.
 

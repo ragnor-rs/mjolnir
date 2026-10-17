@@ -9,6 +9,19 @@ documents under `docs/` explain why the surface has this shape and record how ea
 was settled; the work items track what is not yet built. None of them is a second authority —
 where another text appears to state a rule, the binding form is the section here that it cites.
 
+⛔ **That claim is held mechanically, not by review.** A gate on every change holds every document
+that cites this file to it, and holds a ruling's outcome to living here or in a **numbered** work
+item. What no check can establish is **fidelity** — whether a paraphrase elsewhere still matches
+the section it cites — because a check that quotes a sentence back at the text it came from goes
+red on an innocent reword and green when a claim is reworded into its opposite. So a document
+paraphrases as little as it can and cites instead, and a reviewer covers the rest.
+
+⚠️ The checks and their limits are stated once, in
+[`docs/single-source-of-truth.md`](../../../docs/single-source-of-truth.md). This paragraph
+deliberately does not enumerate them: a list here would be a second copy of that table, and the
+gate holds documents to this file rather than this file to the documents, so the copy could drift
+indefinitely without anything noticing.
+
 **The boundary this file defends:** a fact that cannot be expressed here is either procedure —
 in which case it belongs in a skill — or a project-specific skill that stays in that project.
 It is never a special case in the toolkit.
@@ -25,6 +38,18 @@ is written down, and it is excluded from the "names no particular project" searc
 examples of a shape rather than any project's facts.
 
 ---
+
+## The file itself
+
+```yaml
+version: 1
+```
+
+One key is not a facet. `version` states which revision of this surface a configuration was
+written against, so a reader of an older file can tell a facet that is absent **by decision**
+from one that did not exist when the file was written — the two read identically otherwise, and
+only the revision separates them. It is the only key that describes the file rather than the
+project.
 
 ## The loop — nine roles
 
@@ -74,7 +99,7 @@ host:
   checks:                  # the host's own runs, keyed by workflow name — never job name
     - workflow: "…"
       mirrors: "<local command>"   # the local command whose verdict this run duplicates
-      triggers: "<base pattern>"   # what starts it: a pull-request base pattern, or every push
+      triggers: "<pattern>"        # what starts it; a list when there is more than one
       paths: ["…"]                 # path filters; omitted when the workflow runs on every change
 ```
 
@@ -93,6 +118,13 @@ live state: which runs exist for this commit, and how each concluded.
 ⚠️ **The key is the workflow name, never the job name.** Two unrelated workflows named their job
 identically, and a job-keyed map refused a build on the strength of a check that only validated a
 title.
+
+⚠️ **`triggers` takes two forms, and a list where a workflow has both.** They are
+`pull_request -> <base pattern>`, with `*` for any base, and `push -> <branch>`. A single string
+was the first shape this facet had; the first entry ever written against it ran on every pull
+request *and* on pushes to the default branch, which that shape could not state — so the value is
+one pattern or a list of them, never a conjunction improvised inside one string. A consumer that
+cannot parse a trigger has no answer about the run, which §2's absence rule already covers.
 
 ⛔ **Absence of signal is not an answer.** A conflicted pull request produces zero runs; a
 billing-suspended run fails in seconds having started no steps; a path-filtered workflow
@@ -329,6 +361,22 @@ A role's carrier is an axis beside its name. One project's whole loop is slash c
 than skills, so a sweep of skill directories undercounts it by six roles. Configure the carrier
 independently of the role, or a migration declares that project done with most of it still
 local.
+
+### Invocation
+
+A role is addressed **namespaced, with no alias** — `/<plugin>:<name>`, where the name is the
+carrier's own (a skill's directory, a command's file) rather than the role key above.
+
+Procedure rather than configuration: there is no setting that turns it off. A project-level alias
+would be one file per project per role, which reintroduces in miniature the duplication this
+toolkit exists to delete. The namespace also makes a deliberate local override read as a
+*different* name rather than the same one — which matters, because one **skill** name in the
+original copies denoted two unrelated roles.
+
+⚠️ **Changing a role's carrier changes the string the harness injects**, and anything matching on
+it breaks silently: a command expands into a transcript record carrying its own title, a skill
+injects a preamble naming its directory. A matcher that must key on one of those asserts both
+directions. A carrier of `hook` has no invocation name at all.
 
 ## 8. Language, register, audience — per artifact, not per project
 

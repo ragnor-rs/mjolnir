@@ -10,8 +10,15 @@ recent**, and a decision nobody wrote down reads later as an oversight.
 
 **This is the decision record, not the rule.** The binding statement of each ruling's outcome is
 [`../plugins/mjolnir/config/schema.md`](../plugins/mjolnir/config/schema.md) — or, for a role
-not yet extracted, the work item that will carry it — and each ruling below names where its
-outcome lives. Where this record and that statement disagree, this record is stale.
+not yet extracted, **the numbered work item** that will carry it — and each ruling below names
+where its outcome lives. Where this record and that statement disagree, this record is stale.
+
+Those are the only two homes a ruling's outcome may have, and the `Checks` workflow holds the
+table to it: a cell naming a document instead is this record becoming a second authority for the
+rule, and a cell naming an unnumbered work item cannot be resolved by anyone asking whether the
+outcome has moved yet. One ruling below adds `the skill` **beside** a section, for an outcome
+split between the surface and the skill that carries it; that is permitted alongside a home and
+never instead of one.
 
 Projects are referred to as A–F. Naming them is forbidden here.
 
@@ -82,16 +89,16 @@ Present in one or two copies each, and true for every project:
 
 | # | Divergence | Ruling | Outcome lives in |
 |---|---|---|---|
-| 1 | Staging a commit | Per-project `staging: explicit \| all`. The parallel-session exception and the secret scan are **shared regardless** — every copy already had them; only the default differed | schema § 6 |
-| 2 | Commit message mechanism | **Repeated message flags, one per paragraph.** This dominates rather than trades off: no temp file so no race, no heredoc so no allowlist accumulation, and the trailer still parses | schema § 6 |
-| 3 | Commit message style | Concise by default; **do not read history for style**. Do read it for the trailer signature, which is a fact about the repository rather than a style | schema § 6 |
-| 4 | What the log measures | **Delivered work.** Rework and overhead leave the hours as well as the wording — the majority position, three copies to two | schema § 9 |
-| 5 | Rounding | Nearest half hour, exact quarter **down**, pairing with (4) since both cut one way. A third copy rounds to one decimal instead, so `round_to` and *whether a grid is enforced* are both configuration | schema § 9 |
-| 6 | Cut work | **Disclosed, not hidden** — a `Not billed (N h):` section, one figure on the heading and none per item, omitted rather than written empty. Bookkeeping and contractual time appear in neither section, having never bought hours. A synthesis of the three observed positions, not one of them | schema § 9, the skill |
-| 7 | Dirty tree at start | **Derived from the branch model, not configured.** Worktree mode reports and continues; in-place mode aborts. One axis already configured decides it, so it costs no setting | schema § 6 |
-| 8 | A duplicate at filing | **Rewrite the body** to what the work now is; no dated appends. Provenance goes in a comment where the tracker has them, otherwise in the run report | the filing role's work item, until extracted |
-| 9 | Invocation names | **Namespaced, no alias.** A project-level alias would be one file per project per skill, reintroducing in miniature the duplication this toolkit exists to delete. The namespace also makes a deliberate local override read as a *different* name rather than the same one, which matters because one skill name already denotes two unrelated roles | README § Invocation |
-| 10 | Deployment | **A thin skeleton only**: confirm intent and name the target, with an explicit go required for a live environment *for this deploy*; read-only preflight; invoke the project's own script; verify health; report what was rebuilt and what failed with its log tail. Hosts, services, secrets, build steps and tier selection stay local | the deploy role's work item, until extracted |
+| 1 | Staging a commit | Per-project `staging: explicit \| all`. The parallel-session exception and the secret scan are **shared regardless** — every copy already had them; only the default differed | [schema § 6](../plugins/mjolnir/config/schema.md#6-commit-behaviour) |
+| 2 | Commit message mechanism | **Repeated message flags, one per paragraph.** This dominates rather than trades off: no temp file so no race, no heredoc so no allowlist accumulation, and the trailer still parses | [schema § 6](../plugins/mjolnir/config/schema.md#6-commit-behaviour) |
+| 3 | Commit message style | Concise by default; **do not read history for style**. Do read it for the trailer signature, which is a fact about the repository rather than a style | [schema § 6](../plugins/mjolnir/config/schema.md#6-commit-behaviour) |
+| 4 | What the log measures | **Delivered work.** Rework and overhead leave the hours as well as the wording — the majority position, three copies to two | [schema § 9](../plugins/mjolnir/config/schema.md#9-day-log) |
+| 5 | Rounding | Nearest half hour, exact quarter **down**, pairing with (4) since both cut one way. A third copy rounds to one decimal instead, so `round_to` and *whether a grid is enforced* are both configuration | [schema § 9](../plugins/mjolnir/config/schema.md#9-day-log) |
+| 6 | Cut work | **Disclosed, not hidden** — a `Not billed (N h):` section, one figure on the heading and none per item, omitted rather than written empty. Bookkeeping and contractual time appear in neither section, having never bought hours. A synthesis of the three observed positions, not one of them | [schema § 9](../plugins/mjolnir/config/schema.md#9-day-log), the skill |
+| 7 | Dirty tree at start | **Derived from the branch model, not configured.** Worktree mode reports and continues; in-place mode aborts. One axis already configured decides it, so it costs no setting | [schema § 6](../plugins/mjolnir/config/schema.md#6-commit-behaviour) |
+| 8 | A duplicate at filing | **Rewrite the body** to what the work now is; no dated appends. Provenance goes in a comment where the tracker has them, otherwise in the run report | #7, until extracted |
+| 9 | Invocation names | **Namespaced, no alias.** A project-level alias would be one file per project per skill, reintroducing in miniature the duplication this toolkit exists to delete. The namespace also makes a deliberate local override read as a *different* name rather than the same one, which matters because one skill name already denotes two unrelated roles | [schema § 7](../plugins/mjolnir/config/schema.md#invocation) |
+| 10 | Deployment | **A thin skeleton only**: confirm intent and name the target, with an explicit go required for a live environment *for this deploy*; read-only preflight; invoke the project's own script; verify health; report what was rebuilt and what failed with its log tail. Hosts, services, secrets, build steps and tier selection stay local | #13, until extracted |
 
 ### Where a ruling overrode a stated counter-argument
 
@@ -109,7 +116,10 @@ Recorded so the next reader does not take it for an oversight:
 
 ### Two further things that are configuration, not procedure
 
-The **readiness gate** (schema § 5) and the day log's **exclusion list** (schema § 9) — each an
+The **readiness gate**
+([schema § 5](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list))
+and the day log's **exclusion list**
+([schema § 9](../plugins/mjolnir/config/schema.md#9-day-log)) — each an
 ordered list of named checks drawn from a shared library rather than a fixed sequence. The
 measurements are in `configuration-surface.md`.
 
