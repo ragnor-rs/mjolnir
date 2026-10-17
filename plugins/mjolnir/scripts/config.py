@@ -165,8 +165,8 @@ def surface_facts(surface_text: str) -> dict:
                 defaults[path] = _literal(shown if shown else value.strip())
 
             # A closed set, written either as the value or as a comment beside
-            # it: `kind: github-projects | jira | trello | none` is the first
-            # shape, `day_log: skill  # skill | command | hook` the second.
+            # it -- `key: a | b | c` is the first shape, and a line whose value
+            # is one member with `# a | b | c` beside it is the second.
             for candidate in (value.strip(), comment.strip()):
                 if ALTERNATION.match(candidate):
                     enums.setdefault(path, [v.strip() for v in candidate.split("|")])
@@ -784,8 +784,14 @@ def _planted_violations():
 
 
 def _a_valid_example() -> dict:
-    with open(os.path.join(EXAMPLES, "github-projects.yaml"), encoding="utf-8") as h:
-        return yaml.safe_load(h.read())
+    """Any complete example, to break in a stated way.
+
+    Taken from the directory rather than named: a fixture that names one tracker
+    is the toolkit's code naming a tracker, which is the thing the procedure
+    does not do.
+    """
+    with open(_examples()[0], encoding="utf-8") as handle:
+        return _load_yaml(handle.read(), CONFIG_PATH)
 
 
 def _refused(data: dict, *, check_paths: bool = False) -> str | None:

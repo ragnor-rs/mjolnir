@@ -16,8 +16,16 @@
 # configuration, the same file every adopter writes. It is not the only such place — README.md
 # carries the install command and an issue link, and docs/single-source-of-truth.md cites this
 # backlog — so the names-no-particular-project guard (#19) excludes this project's own slug
-# everywhere, and config/examples/ as example data. What #19 still asserts without exception:
-# nothing under skills/ carries a value, and no OTHER project is ever named.
+# everywhere, and config/examples/ as example data.
+#
+# That guard is live as of #19: tools/check_no_project_names.py, and it reads the permitted
+# slug out of `host.repo` below rather than carrying one. ⚠️ The exceptions are THREE, not two,
+# and they are stated in the script rather than left to a reader — the third turned up in the
+# tree while #19 was being built: the public plugin cited as prior art in
+# docs/configuration-surface.md is an artifact, not a project in scope.
+#
+# What survives all three without exception: nothing under a carrier root — skills, commands or
+# hooks — carries a value, and no OTHER project is ever named.
 version: 1
 
 roots:
@@ -36,9 +44,12 @@ host:
     - workflow: "Checks"
       mirrors: "python3 tools/check_single_source.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
-    # A workflow of its own rather than a second job of the one above, per § 2.
+    # Each of these is a workflow of its own rather than a job of the one above, per § 2.
     - workflow: "Config reader"
       mirrors: "python3 plugins/mjolnir/scripts/config.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Names no other project"
+      mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
 
 tracker:
