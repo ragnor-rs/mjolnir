@@ -17,6 +17,11 @@ second command with nowhere on the surface to live. It is recorded in
 [its own section](#the-second-sweep-naming-no-other-project) below, because the two claims share
 this document's discipline of stating every limit and not its subject.
 
+A third, `plugins/mjolnir/scripts/check_reply_register.py`, holds the register of a role's reply
+and is the one of the three that does not run on the gate at all. It is in
+[its own section](#the-third-check-a-roles-reply-and-why-it-is-a-hook) too, and for the same
+reason: whatever holds a claim here states what it leaves alone.
+
 ## Why this is a check rather than a convention
 
 Every other duplication in this backlog is one the toolkit exists to delete. This one is the
@@ -274,15 +279,88 @@ exempted the whole directory and so would have read straight past it.
 - **A bare all-caps value inside an example configuration**, per the first exception above. The
   residue is narrow — an example whose status words are upper-case — and the alternative was
   dropping `OWNER/REPO` and `KEY` out of the placeholder set.
-- **Most carrier roots are empty, and the run still exits 0.** Of the carrier shapes, only
-  `plugins/*/skills/` matches anything today: the hooks that enforce the loop are
-  [#16](https://github.com/ragnor-rs/mjolnir/issues/16) and the command carrier belongs to
+- **Most carrier roots are empty, and the run still exits 0.** Of the carrier shapes, two match
+  anything today — `plugins/*/skills/` and, since the reply-register hook landed,
+  `plugins/*/hooks/`. The hooks that enforce the *loop* are still
+  [#16](https://github.com/ragnor-rs/mjolnir/issues/16), and the command carrier belongs to
   whichever project migrates with one. The run says how many shapes swept nothing and **does not**
   fail on them, because a shape for a carrier kind this repository has not adopted is not a
   defect. What is held instead: check 4 fails if the strict set empties altogether, and check 5
   fails on a carrier sitting outside every shape.
 - **Issues and pull requests**, for the same reason check 3 above cannot read issue state: that
   store is not a file, the workflow holds no credential, and a reviewer covers it.
+
+## The third check: a role's reply, and why it is a hook
+
+The surface fixes the register of the reply a role writes in the session, as procedure with no
+per-project setting —
+[schema § 8 → The reply to the person running a role](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role).
+⛔ That rule had to be held by something other than the writer, because a writer judging its own
+register while writing is the mechanism it replaces, and the honest-looking version of the defect
+is the one that survives review.
+
+**A gate cannot hold it, and that is not a limitation of this repository's gate.** A reply is not a
+file; it exists in a session and nowhere a workflow can read. The harness's `Stop` event is the one
+place the finished reply is available, and it hands the text over directly, so
+`plugins/mjolnir/hooks/hooks.json` is the carrier and
+`plugins/mjolnir/scripts/check_reply_register.py` the implementation it calls — the division
+`config.py` already has, and the reason the hook script is classified rather than strictly swept.
+
+| Property | What is checked | Kind | A finding |
+|---|---|---|---|
+| Opening | The first line carrying the reply's own words is not one of a closed set of preamble forms | forbidding | **blocks**, once per turn |
+| Length | No prose line is compressed into an arrow chain | forbidding | **blocks**, once per turn |
+| Emphasis | Emphasised spans against the reply's prose line count | computed, over a proxy | reports |
+| Register | Dramatic words and exclamations, counted | computed, over a proxy | reports |
+| Uncertainty | Hedges, counted | computed, over a proxy | reports |
+| Structure | — | — | nothing; see below |
+
+**Why two of them block and three do not.** The first two are *forbidding* checks whose forbidden
+thing has a stable form: a preamble form is a phrase, and a chain of arrows is a chain of arrows.
+The other three are *computed* — the property is derived from the text rather than quoted back at
+it — but the property each derives is a **proxy** for the rule rather than the rule itself, and a
+threshold is where a proxy is wrong. So a finding there is reported into the session and nothing is
+blocked. ⚠️ The thresholds are deliberately not written down here: a number in prose is a copy that
+has to be kept in sync, and the run prints its own.
+
+**Blocking means handing the turn back, not refusing it.** The hook returns `decision: block` with
+the findings as `additionalContext`, which is the only field the writer reads back — the reason
+shown to the person is not. ⚠️ **It blocks at most once per turn**, keyed on the harness's own turn
+id under `CLAUDE_PLUGIN_DATA`, because a hook that also blocked the restatement would hold the
+session open on a judgement a forbidding check cannot make. A payload with no turn id falls back to
+the session, which blocks once per session — the conservative direction.
+
+It derives what it can, for the same reason the two gate scripts do:
+
+| Derived, at run time | Hardcoded |
+|---|---|
+| the property list, from the first column of the register's own table in the surface | the anchor of the subsection that table sits in |
+| which properties are accounted for, by holding that list against the checks in both directions | the preamble forms, the arrow forms, and the three thresholds |
+
+A property added to the register's table with no check and no stated reason for having none
+reddens `--self-test` at the moment the row is added. That is check 2's direction, one surface
+over — and it runs in the direction nobody remembers to check by hand, because the failure
+otherwise is a register that grew a clause and a hook that silently never held it.
+
+### What this check deliberately does not hold
+
+- **Structure.** Whether continuous prose was carrying enumerable facts is a judgement about the
+  facts and not about the text: the same paragraph is correct prose or a withheld table depending
+  on what it says. A reader covers it.
+- **The padding half of Length.** Whether a sentence earns its place cannot be computed, and a
+  length threshold would punish exactly the content the rule's own first clause protects. Only the
+  compression half is held — which is also the distinction the rule turns on: shortening by
+  selection against shortening by compression.
+- **Whether the reply was a role's at all.** The hook fires on every reply in a session where this
+  plugin is enabled, and nothing in a `Stop` payload says whether a role was running. So the
+  register is held more widely than the surface states it — in the safe direction, and stated
+  because an unstated limit reads later as coverage.
+- **A reply that was never sent as text.** A turn that ends in a tool call carries no final
+  message, and the hook answers nothing rather than guessing.
+- **Its own failure.** ⛔ The hook **fails open** and says so: an internal error answers with a
+  message naming itself, rather than with silence that reads as a reply in register, or with a
+  non-zero exit that would break every turn — the same absence-is-not-an-answer rule
+  [§ 2](../plugins/mjolnir/config/schema.md#2-code-host) states for the host's own runs.
 
 ## Each check has a violation it is asserted to redden on
 
@@ -291,12 +369,19 @@ the workflow — before the tree is held to anything. The discipline is #28's: a
 before its break tends to match only the break its author imagined, and a check that cannot fail
 is not a check.
 
-Both scripts carry the mode and both are run through it by their workflow, as the first step,
+All three scripts carry the mode and each is run through it by its workflow, as the first step,
 before the tree is held to anything. In each the plant count is well above the check count,
 because the plant is per *branch that does real work* — a plant that reddens a check by the wrong
 route proves nothing about the branch it was written for. ⛔ The numbers are deliberately not
 written down here: a count in prose is a copy that has to be kept in sync, and the run prints its
 own.
+
+⚠️ **The reply-register check's self-test is the whole of what its workflow can run**, since there
+is no tree for it to hold afterwards — so it carries two things its siblings do not. It plants
+replies that must stay **green** as well as ones that must redden, because a check that flags an
+arrow inside a fenced block is not the check it claims to be; and it runs its turn-guard
+assertions against a state directory of its own, after a second run of the self-test read the
+first run's markers and reported that a forbidding finding does not block.
 
 ⚠️ **A plant may not name the file it plants into.** The sweep's first draft hardcoded the one
 skill's path, so moving or renaming a carrier root made `--self-test` — the command the workflow

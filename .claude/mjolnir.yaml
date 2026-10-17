@@ -50,6 +50,13 @@ host:
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The one entry whose mirrored command is not the check itself. The register of a role's
+    # reply (§ 8) is held in the session by a hook, because a gate has no reply to read; what
+    # this run mirrors is the assertion that the hook's own checks still fire and that every
+    # property of the register is accounted for.
+    - workflow: "Reply register"
+      mirrors: "python3 plugins/mjolnir/scripts/check_reply_register.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
 
 tracker:
   # Plain GitHub issues with no project board — the cheapest real configuration, and one

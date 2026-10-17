@@ -465,6 +465,45 @@ transliteration. Another writes the day log in a technical register for itself w
 writes it in a business register for someone outside the build. These are three settings, not
 one.
 
+### The reply to the person running a role
+
+The reply a role writes in the session is an artifact like the day log, and for several roles it
+is the only output. It is also the one artifact above whose audience a project does not choose.
+
+⛔ **So its register is procedure, and no setting turns it off.** The person running a role is not
+a reader a configuration can nominate, and a toolkit that let a project configure its assistant
+into a narrative register would have made the defect configurable rather than fixed it. This is
+the same placement the authorship rule has under § 6 and the invocation rule under § 7:
+procedure, stated inside the axis it would otherwise be a value of.
+
+| Property | Required | Not |
+|---|---|---|
+| Opening | The finding or the outcome, in the first sentence | Preamble, or restating the request |
+| Structure | Headed sections, lists, tables where the content enumerates | Continuous prose carrying enumerable facts |
+| Register | Reference and technical, as a textbook states a result | Narrative, dramatic, or persuasive |
+| Length | What the content needs | Padding, or compression into fragments and arrow chains |
+| Emphasis | Where a fact is load-bearing | As a default texture |
+| Uncertainty | Stated plainly, once | Hedging throughout |
+
+⚠️ **Readable and short are different things, and readable wins.** There are two ways to shorten
+and only one of them is this table's: **selection** drops what does not change the reader's next
+action, and **compression** keeps every fact while destroying the reading — sentences crushed into
+fragments and arrow chains. Compression scores better on length than selection does, which is why
+the Length row names it rather than naming a limit.
+
+**The language is the one the person addressed the role in** — not `language.repo`, and not
+`language.work_item`. It is the only part of this artifact's triple that varies at all, and it
+varies by who is speaking rather than by project, so nothing configures it and no role derives it
+from the repository.
+
+⛔ **A role does not hold its own reply to this by reading it back before sending it.** The writer
+judging its own register at the time of writing is the mechanism being replaced, not the one being
+specified: the properties above are held by a check over the reply the role actually produced,
+reported to the session rather than to a file. Which of them are held mechanically, which are
+reported without being held, and which are left to a reader are stated once in
+[`docs/single-source-of-truth.md`](../../../docs/single-source-of-truth.md) — beside the gate's
+own checks and under the same discipline, because an unstated limit reads later as coverage.
+
 ## 9. Day log
 
 ```yaml

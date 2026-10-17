@@ -137,6 +137,7 @@ found between the old copies and the decision that settled it.
 | [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) | How the single-authority claim is held: the checks, their kinds, and what each deliberately leaves alone |
 | [`tools/check_single_source.py`](tools/check_single_source.py) | The single-authority check, run by the `Checks` workflow on every change |
 | [`tools/check_no_project_names.py`](tools/check_no_project_names.py) | The sweep that holds the convention above: no other project named anywhere, and no value, tracker or stack in any carrier root |
+| [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers. One today: a `Stop` hook that holds a role's reply to the register, through [`scripts/check_reply_register.py`](plugins/mjolnir/scripts/check_reply_register.py) |
 
 The remaining eight roles land here as they are reconciled. A project that has not been migrated
 keeps working throughout — that is a safety property of the migration, not an acceptable end state.
@@ -167,6 +168,15 @@ Projects referred to in the documentation are lettered A–F. The counts are wha
 The [authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration)
 is the single statement of what that means, why it is procedure rather than a setting, and the
 one trap in it.
+
+⛔ **A role's reply to the person running it is reference register** — the finding first, lists and
+tables where the content enumerates, emphasis only where a fact is load-bearing. Procedure as
+well, for the reason the
+[register rule](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) states:
+it is the one artifact whose audience a project does not choose. It is held in the session by a
+hook rather than by the gate, since a reply is not a file — the checks, and what they leave to a
+reader, are in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-third-check-a-roles-reply-and-why-it-is-a-hook).
 
 ## License
 
