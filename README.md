@@ -50,18 +50,26 @@ claude plugin install mjolnir@mjolnir --scope user
 `user` rather than `local`, because whoever works on the toolkit is also the person adopting it in
 every other project on the same machine, and one registration serves both: self-hosting here, and
 every other project — whose adoption then costs exactly one file, `.claude/mjolnir.yaml`, with no
-install step at all. A `local` registration writes into a single project's
-`.claude/settings.local.json` and is invisible from everywhere else, so it needs a second
-registration per adopting project: the per-project duplication this toolkit exists to delete,
-reappearing in its own install instructions.
+install step at all.
 
-What those two commands write, so the choice is checkable rather than asserted:
+`local` does not confine a registration the way its name suggests, which is the sharper reason to
+pass `user` explicitly rather than a matter of reach. Only the *declaration* lands in one project's
+`.claude/settings.local.json`; the registry entry that resolution actually reads is machine-wide and
+keyed by marketplace name. Measured: a project declaring nothing of its own resolved the plugin
+from an entry a different project's `local` add had written, a second `local` add of the same name
+re-pointed that entry for every project instead of coexisting with the first, and a `remove` from
+one project emptied it for all of them — leaving the first project's own declaration pointing at
+nothing. So `local` is not a narrower `user`; it is the same machine-wide entry with its declaration
+filed somewhere that does not govern it.
+
+What those two commands write, so the choice is checkable rather than asserted. Paths are inside
+the harness's own user configuration directory, wherever `CLAUDE_CONFIG_DIR` puts it:
 
 | | |
 |---|---|
-| `~/.claude/settings.json` | `extraKnownMarketplaces.mjolnir` — `source: directory` with the path — and `enabledPlugins["mjolnir@mjolnir"]` |
-| `~/.claude/plugins/known_marketplaces.json` | `installLocation`, which for a directory source **is the working tree** |
-| `~/.claude/plugins/installed_plugins.json` | `scope`, a `version`, a `gitCommitSha`, and an `installPath` under `~/.claude/plugins/cache/` |
+| `settings.json` | `extraKnownMarketplaces.mjolnir` — `source: directory` with the path — and `enabledPlugins["mjolnir@mjolnir"]` |
+| `plugins/known_marketplaces.json` | `installLocation`, which for a directory source **is the working tree** |
+| `plugins/installed_plugins.json` | `scope`, a `version`, a `gitCommitSha`, and an `installPath` under `plugins/cache/` |
 
 **That `installPath` is a snapshot copy, and it is vestigial.** It is written once, at install, and
 pinned to the recorded `gitCommitSha`. Nothing refreshes it: `plugin marketplace update` leaves it
