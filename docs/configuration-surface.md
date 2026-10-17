@@ -347,18 +347,21 @@ so what forced its shape is worth recording in both directions.
 
 - Input length alone degrades performance. Eighteen frontier models, 194,480 calls, task
   complexity held constant and length varied: **every model degraded**, and not at the window's
-  limit — a single irrelevant passage beside the relevant one measurably costs recall, four
-  compound it, and the cost per passage is not proportional to how similar it looks. The result
+  limit — a single irrelevant passage beside the relevant one measurably costs recall, and four
+  compound it. ⚠️ Their impact is **not uniform**, which is the source's own word; it does not
+  measure similarity, so nothing here reads the cost off how alike the passages look. The result
   that matters most for a repository written like this one: a **coherent** haystack is worse than
-  a shuffled one, the proposed reading being that coherent prose makes more plausible
-  distractors. <https://www.trychroma.com/research/context-rot>
+  a shuffled one, and the source declines to explain it, calling for work on how structure
+  influences attention rather than offering a reading. The explanation is therefore nobody's yet,
+  and this section does not supply one.
+  <https://www.trychroma.com/research/context-rot>
 - The vendor's own framing is an **attention budget** — a finite resource every token draws on —
   with three techniques for spending it: summarising a window and restarting from the summary,
   writing notes outside the window, and spending a separate window on a sub-task. The first is
   lossy, which is why § 11 makes the artifact the handoff rather than the summary.
   <https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents>
 - The published practice this loop's shape is closest to keeps a window at **40–60 %** of its
-  capacity, separates research from planning from implementation into different windows, writes
+  capacity — its own qualifier is that the figure depends on the problem's complexity — separates research from planning from implementation into different windows, writes
   each phase's output to a file that is the real handoff, and spends human review on the plan
   rather than on the diff — *a bad line of a plan leads to hundreds of bad lines of code; a bad
   line of research, thousands*. Its ranking of what hurts is the reason § 11 is about what enters
@@ -367,40 +370,47 @@ so what forced its shape is worth recording in both directions.
 
 ### What this repository measures about itself
 
-One role, and the two documents every reader of it resolves, as of the day § 11 was written:
+⚠️ **No count of this tree's own files is written down here**, for the reason the gate's document
+gives for refusing to count schema sections: a number copied out of the tree drifts the moment the
+tree changes, silently and green. This subsection's first draft carried a three-row table of lines,
+bytes and markers. It was already two commits stale when it was written — and it understated by a
+fifth the one file the same change grows, so the argument it was offered as evidence for was
+weaker in the document than in reality. **Deleted rather than synchronised**, which is this
+repository's standing remedy; [#91](https://github.com/ragnor-rs/mjolnir/issues/91) is filed to
+have the gate print the live figure instead.
 
-| | lines | characters | ⛔ | ⚠️ |
-|---|---|---|---|---|
-| `plugins/mjolnir/skills/day-report/SKILL.md` | 452 | 29,827 | 31 | 36 |
-| `plugins/mjolnir/config/schema.md` | 586 | 30,676 | 22 | 8 |
-| `docs/single-source-of-truth.md` | 310 | 22,433 | 4 | 8 |
-
-A role is roughly 30,000 characters and **67 directive markers**. Nine roles at that size is the
-whole of a window spent on procedure before a line of anyone's code is read, and the reported
-ceiling on instructions a frontier model follows consistently is of the order of a couple of
-hundred — with the failure mode being wholesale dismissal rather than selective filtering, which
-is the opposite of how a long rule list reads when it is written.
+What is stable enough to state without a number going stale: **a single role runs to thousands of
+tokens and carries dozens of ⛔ and ⚠️ markers, and the loop has nine roles.** A window largely
+spent on procedure before a line of anyone's code is read is what § 11 exists to notice, and the
+harness vendor's own guidance is that an over-long instructions file is not read selectively — it
+is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
 
 Two consequences, both already true of this tree rather than predicted of it. A role's body is
-loaded only when the role runs, and only its 433-byte description is always resident: that is the
-right shape and it was not arrived at deliberately. And a role that cites the surface to settle
-one sentence resolves 30,000 characters to do it, which is the argument for a citation naming the
-narrowest section that states the fact — held today only at `##` level, as
+loaded only when the role runs, and only its frontmatter — a name and a description — is always
+resident: that is the right shape, and it was not arrived at deliberately. And a role that cites
+the surface to settle one sentence resolves the whole of it to do so, which is the argument for a
+citation naming the narrowest section that states the fact — held today only at `##` level, as
 [`single-source-of-truth.md`](single-source-of-truth.md#the-three-kinds-and-why-one-of-them-is-absent)
-already records against itself.
+already records against itself and [#91](https://github.com/ragnor-rs/mjolnir/issues/91) exists to
+close.
 
 ### Why there is no threshold on the surface
 
-The harness exposes a window's utilization to **no** guard. Of its hook events, only the one that
-fires when a session is resumed or forked carries a token count — alongside the time since the
+The harness exposes a window's utilization at **one moment only**, and never while a window is
+filling. Of its hook events, only the one that fires when a session is resumed or forked carries a
+token count — alongside the time since the
 last response, whether the prompt cache has likely expired, and the estimated cost of rewriting
 it — and the event that fires immediately before a window is summarised carries no count and no
 threshold at all. <https://code.claude.com/docs/en/hooks>
 
-So a `budget: 60 %` key would be a number nothing could enforce at run time: a convention written
-into the surface, which is the shape this repository calls a defect rather than a guideline. The
-qualitative rules are stated instead, and the one live reading goes to the two roles that already
-exist to read something like it — the session-restoring role and the spend guard.
+So a `budget: 60 %` key would be a number nothing could check at the moment it is exceeded: a
+convention written into the surface, which is the shape this repository calls a defect rather than
+a guideline. ⚠️ **The test that key failed is not "is it enforceable in principle" but "is there a
+run-time reading to enforce it against"** — § 11's own in-tree rule passes that test on three keys
+the reader already holds, and is refused there rather than stated and hoped for. The qualitative
+rules are stated instead, and the one live reading goes to the two items that already exist to
+read something like it: [#31](https://github.com/ragnor-rs/mjolnir/issues/31), the role that
+restores a session, and [#26](https://github.com/ragnor-rs/mjolnir/issues/26), the spend guard.
 
 ### Why `committed` is a key of its own, and not implied by `dir`
 
@@ -431,8 +441,11 @@ stating it under the tracker would have made two of the three a special case of 
 
 The published incident is a code-host one: payloads written into pull request titles, issue bodies
 and issue comments drove three separate agents into exfiltrating repository secrets back through
-the host itself, with no attacker-controlled server involved anywhere. The half that defeats
-review is that markup rendering as nothing is still read in full, so the person approving the item
-and the role reading it do not see the same text. The toolkit's own gate already holds the other
-half of this shape: its workflows are granted no credential and persist none, per the item that
-ruled it.
+the host itself, with no attacker-controlled server involved anywhere.
+<https://labs.cloudsecurityalliance.org/research/csa-research-note-comment-control-github-prompt-injection-20/> That is the measurement; the
+rule it forced, including the half about markup a reviewer never sees, is
+[`§ 11`](../plugins/mjolnir/config/schema.md#11-session-context)'s and is not restated here. The
+toolkit's own gate already holds the other half of the same shape, by
+[#50](https://github.com/ragnor-rs/mjolnir/issues/50)'s ruling: a workflow is granted no scope it
+does not need and its checkout persists no credential — which is a rule about what a run may
+hold, not a claim that every run holds nothing.

@@ -118,7 +118,8 @@ context:
   artifacts:
     # Research, plan and progress artifacts: what one role hands the next (schema § 11).
     carrier: file
-    # Outside every tree, because this project tears trees down and does not commit its
-    # working papers — the two keys below are what make that combination legal.
-    dir: "$TMPDIR/<project>/artifacts"
-    committed: false
+    # In-tree, and legal only because it is committed: this project cuts trees, and a
+    # teardown takes whatever git does not have. One repository here, so a committed plan
+    # also arrives in the pull request with the change it plans.
+    dir: ".claude/artifacts"
+    committed: true

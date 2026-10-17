@@ -113,8 +113,8 @@ The rule, and why it is procedure rather than a setting, is
 **The single statement of every rule and flow is
 [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the nine-role loop and
 its axes, the tracker port and its capabilities, the work-item facets with their absent
-cases, the status writers, the readiness gate, commit behaviour, the day log and the branch
-model. Everything else written about the procedure, in this repository or on a work item,
+cases, the status writers, the readiness gate, commit behaviour, the day log, the branch model and
+the session's context. Everything else written about the procedure, in this repository or on a work item,
 explains or records; none of it is a second authority.
 
 That is enforced rather than asserted: the `Checks` workflow holds every document to it on every
@@ -150,7 +150,7 @@ directory. Three things are not that:
 [`plugins/mjolnir/config/examples/`](plugins/mjolnir/config/examples/), which is example *data*
 rather than procedure and uses placeholders throughout; this repository's own slug and
 backlog, which the install command, `.claude/mjolnir.yaml` and the documents cite because the
-toolkit [builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/27); and the two
+toolkit [builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/27); and the
 public artifacts cited as evidence — the plugin cited as
 [prior art](docs/configuration-surface.md#prior-art), and the published practice the
 [window-as-a-resource measurements](docs/configuration-surface.md#the-window-is-a-resource-the-loop-spends)

@@ -140,8 +140,10 @@ branch_model:
 context:
   artifacts:
     carrier: file
-    # The other legal combination: in-tree, and safe only because it is committed — the tree's
-    # teardown takes whatever git does not have. It also puts the plan in the pull request,
-    # where a wrong plan is cheapest to catch.
-    dir: ".claude/artifacts"
-    committed: true
+    # The two-repository case, and the reason `committed: true` is not simply "the plan is in
+    # the pull request": every `.claude/…` path here resolves in the OUTER repository, while
+    # the branches and pull requests belong to the inner one (§ 1). Committing the plan would
+    # file it beside the engagement material and not in front of a reviewer, so this store
+    # sits outside every tree instead.
+    dir: "$TMPDIR/<project>/artifacts"
+    committed: false

@@ -117,7 +117,8 @@ branch_model:
 context:
   artifacts:
     carrier: file
-    # The policy above bars a file path from ever reaching a card, so the plan cannot live on
-    # the item: a store is mandatory here rather than a convenience.
+    # Outside every tree: `work_in_shared_checkout: never` below means every item is worked in
+    # a tree that is then removed, and nothing here is committed — so an in-tree store would be
+    # torn down with the tree it was planning.
     dir: "$TMPDIR/<project>/artifacts"
     committed: false

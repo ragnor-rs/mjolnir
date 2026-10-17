@@ -338,6 +338,13 @@ class Config:
             if self.get(f"work_item.{facet}.carrier") == "none":
                 reason = self.get(f"work_item.{facet}.absent_reason")
                 out.append(f"No {facet} is carried: {' '.join(str(reason).split())}")
+        if self.get("context.artifacts.carrier") == "none":
+            reason = self.get("context.artifacts.absent_reason")
+            out.append(
+                "No artifact store is carried (`context.artifacts.carrier: "
+                "none`), so nothing crosses a role boundary in a file here: "
+                f"{' '.join(str(reason).split())}"
+            )
         if not self.get("statuses"):
             out.append(
                 "No status is configured, so the procedure never asks the port "
@@ -498,6 +505,42 @@ def validate(data: dict, facts: dict) -> None:
                 "required when the carrier is `none`. A deliberately absent "
                 "facet states its reason; an unset one is a misconfiguration, "
                 "and the two read identically without it.",
+            )
+
+    # § 11. Three facts are in hand by the time this runs -- the branch model,
+    # the store's path and whether it is committed -- so the section's in-tree
+    # rule is decidable rather than advisory, and refusing it here is the
+    # standard that section sets for itself when it declines to state a
+    # threshold nothing could enforce.
+    if _get(data, "context.artifacts.carrier") == "file":
+        directory = _get(data, "context.artifacts.dir")
+        if not directory:
+            raise ConfigError(
+                "context.artifacts.dir",
+                "required when the carrier is `file`: there is nowhere for an "
+                "artifact to be written, and a role would discover that at the "
+                "boundary it was meant to survive (§ 11).",
+            )
+        committed = _get(data, "context.artifacts.committed")
+        if not isinstance(committed, bool):
+            raise ConfigError(
+                "context.artifacts.committed",
+                f"is {committed!r}; it takes true or false (§ 11). It is the "
+                "key the in-tree rule hinges on, so a value that merely reads "
+                "as truthy would resolve to the permissive arm.",
+            )
+        # In-tree is a path read relative to the skills root, per § 11: one
+        # that is absolute, or begins with a variable the shell expands, is
+        # somewhere a tree's teardown cannot reach.
+        in_tree = not str(directory).startswith(("/", "$", "~"))
+        if in_tree and not committed and _get(data, "branch_model.kind") == "worktree":
+            raise ConfigError(
+                "context.artifacts.dir",
+                f"is {directory!r}, inside the tree, while `committed` is false "
+                "and `branch_model.kind` is `worktree`. The teardown takes "
+                "everything git does not have, so the plan for the work would "
+                "go with the tree it was planning: commit the store, or put it "
+                "outside every tree (§ 11).",
             )
 
     statuses = _get(data, "statuses")
@@ -894,7 +937,22 @@ def _planted_violations():
          at("carriers", {"day_log": "telepathy"})),
         ("a block written where keys belong", "day_log",
          at("day_log", "see tools/day_log.py")),
+        ("a `file` carrier with no store", "context.artifacts.dir",
+         at("context.artifacts.dir", None)),
+        ("a `committed` flag that is not a boolean", "context.artifacts.committed",
+         at("context.artifacts.committed", "definitely not")),
+        ("an in-tree store a tree's teardown would take", "context.artifacts.dir",
+         _in_tree_and_uncommitted),
     ]
+
+
+def _in_tree_and_uncommitted(data: dict) -> dict:
+    """§ 11's in-tree rule, broken in the one way that needs three keys."""
+    data.setdefault("context", {}).setdefault("artifacts", {}).update(
+        {"carrier": "file", "dir": ".claude/artifacts", "committed": False}
+    )
+    data.setdefault("branch_model", {})["kind"] = "worktree"
+    return data
 
 
 def _a_valid_example() -> dict:

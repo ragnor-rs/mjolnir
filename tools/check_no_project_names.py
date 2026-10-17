@@ -214,7 +214,7 @@ VALUE_KEYS = [
     "name",          # a status word, and a status field's own name
     "label_prefix",  # the prefix a label convention carries
     "unit",          # an estimate's unit
-    "dir",           # where a project keeps its templates
+    "dir",           # a template directory (§ 4.4) or an artifact store (§ 11)
     "outcome",       # a template's own heading, per semantic section
     "acceptance",
     "reproduction",

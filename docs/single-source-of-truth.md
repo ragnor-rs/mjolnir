@@ -245,8 +245,11 @@ A literal reading of the convention would forbid all three, so each is in the sc
   context-engineering practice
   [`§ 11`](../plugins/mjolnir/config/schema.md#11-session-context)'s measurements are drawn from
   is cited by repository URL, and a measurement whose source is not citable is not a measurement.
-  Emptying the table reddens the build on the live citations — measured, so the carve-out is known
-  to be load-bearing rather than decorative.
+  ⚠️ **Each entry names the roots it is permitted in**, because a slug permitted everywhere is a
+  hole the size of the tree: measured before the scope was added, a cited slug passed in a skill
+  and as a `repo:` value in two configurations. Emptying the table, or moving a citation outside
+  the roots its entry names, reddens the build — measured in both directions, so the carve-out is
+  known to be load-bearing rather than decorative.
 
 `docs/` is deliberately outside the strict set: it quotes the measurements the surface was derived
 from and has to keep naming the build tool that reported a cached pass as work done. A rule that
