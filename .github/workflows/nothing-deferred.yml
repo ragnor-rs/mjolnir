@@ -1,0 +1,46 @@
+name: Nothing deferred
+
+# The gate that refuses a merge while any item raised against the change is unresolved. Its own
+# workflow rather than a job of `Checks`, for the reason its siblings are: a `host.checks` entry
+# states one mirrored local command, so two commands behind one workflow name could not be
+# stated on the surface at all.
+#
+# ⛔ This is the one workflow here that holds a token scope, and the reason is stated rather
+# than assumed. Its siblings read files in the tree and reach nothing. This one reads the
+# threads on the pull request, whose resolution the host records and the author cannot describe
+# — and a finding the gate cannot see reads as resolved. `pull-requests: read` is the narrowest
+# scope that answers it; nothing here writes, and the checkout still persists no credential.
+# The trade is recorded in docs/single-source-of-truth.md.
+
+on:
+  pull_request:
+    # ⚠️ `edited` is the one that is not default, and it is load-bearing: a body corrected in
+    # place pushes no commit, so without it the pull request stays red until an unrelated push.
+    # The surface's `triggers` facet states the event and the base, never the types — #82.
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  nothing-deferred:
+    name: Nothing deferred
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, planted violations first: the change is held only once each
+      # check has been shown it can fail — and shown it can pass, since an over-broad body
+      # rule would redden every honest pull request alike. That command is what `host.checks`
+      # declares this run mirrors, so the two cannot drift.
+      #
+      # The token is passed to the step rather than left in the git config, so the one thing
+      # that holds it is the one process that needs it. No dependency is installed: the run
+      # reads the pull request out of the event payload, and only a local run needs the
+      # configuration reader to find the slug.
+      - name: Assert each check can fail, then hold this change to the rule
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 tools/check_nothing_deferred.py --self-test

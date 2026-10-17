@@ -17,6 +17,13 @@ second command with nowhere on the surface to live. It is recorded in
 [its own section](#the-second-sweep-naming-no-other-project) below, because the two claims share
 this document's discipline of stating every limit and not its subject.
 
+A third, `tools/check_nothing_deferred.py`, holds a claim about the change rather than about the
+tree: that nothing in it was deferred. It runs in its own `Nothing deferred` workflow and has its
+own `host.checks` entry, for the same reason the second does, and is recorded in
+[its own section](#the-third-gate-nothing-is-deferred) below. It is the only one of the three
+that reaches off the tree, and the only one granted a token scope — stated there rather than
+discovered in a workflow file.
+
 ## Why this is a check rather than a convention
 
 Every other duplication in this backlog is one the toolkit exists to delete. This one is the
@@ -283,6 +290,73 @@ exempted the whole directory and so would have read straight past it.
   fails on a carrier sitting outside every shape.
 - **Issues and pull requests**, for the same reason check 3 above cannot read issue state: that
   store is not a file, the workflow holds no credential, and a reviewer covers it.
+
+## The third gate: nothing is deferred
+
+The surface rules that a work item is delivered whole — a role that cannot answer a question asks
+rather than noting it, and no change merges with an open item against it:
+[schema § *Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred). One
+sentence of that rule is the whole reason a script exists for it rather than a convention: the
+completeness statement is **read back, never asserted**. A pull request that says in prose that
+everything is resolved is making the same claim the defect makes.
+
+So `tools/check_nothing_deferred.py` counts the items where they were raised — the body, and the
+threads the host records a resolution for — and names each one it finds.
+
+| # | Check | Scope | Kind |
+|---|---|---|---|
+| 0 | A pull request was resolved, and it has a body | the change | computed |
+| 1 | The body states its open items, and the answer is that there are none | the body | computed |
+| 2 | No thread on the change is unresolved | every thread, following the cursor | computed |
+| 3 | No unticked item in the body | the body | forbidding |
+| 4 | No deferral marker on a line this change adds | the added lines of the diff | forbidding |
+
+Check 1 is the one that reddens the shape the rule was written against. A body that lists what it
+knows is unfinished under a heading reading as diligence — the measured case — carries no
+statement at all, and the absence is what fails: the section is required, and `None.` is the only
+answer that closes it. Check 2 is what a reviewer cannot be, and ⚠️ it follows the cursor rather
+than reading a first page, because a review that ran long is exactly the change this gate is for.
+
+⛔ **This gate holds a token scope, and that is a departure from its two siblings** rather than an
+oversight in one workflow file. They read files in the tree and reach nothing; this one reads a
+resolution the host records and an author cannot describe, and the surface's own rule that a
+finding goes where its resolution can be read back
+([§ *Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred)) is only worth
+stating if something reads it. The scope is `pull-requests: read`, the narrowest the host offers;
+nothing writes; the checkout still persists no credential, and the token is handed to the one step
+that needs it rather than left in the git config.
+
+### What this gate deliberately does not check
+
+- **The closing half of the rule.** No item closes carrying an unresolved item either, and that is
+  a tracker write this gate neither performs nor reads. Only the merge half is held here.
+- **Whether the answer is true.** `None.` is a claim, and the gate holds that the claim was made
+  and that nothing it can read contradicts it. A known cost written into the summary as a feature
+  reads as green — the *fidelity* limit this document already states one gate over, in a second
+  place.
+- **A thread resolved to clear the gate.** Resolution is the host's record of somebody's
+  judgement. The gate reads the record, never the judgement.
+- **A finding raised as a plain comment.** A comment carries no resolution state anywhere on the
+  host, so nothing can report it unresolved — which is why the rule puts a finding in a thread.
+  A finding posted where it cannot be read back is a reviewer's catch, and the one real hole in
+  check 2.
+- **Re-running when a thread is resolved.** Resolving a thread fires no workflow event, so a
+  verdict stands until the next push, body edit or manual re-run. Stated because a red check with
+  every thread resolved otherwise reads as a defect in the gate.
+- **A marker with no colon and no argument list.** A bare `TODO` in a sentence is prose, and both
+  spellings already sit innocently in this tree — in a comment quoting a status vocabulary, and in
+  this document. Sweeping prose for the words would redden on a reworded sentence, which is the
+  *quoting* failure ruled out above.
+- **A marker this change did not write.** Only added lines are read: somebody else's marker is
+  somebody else's item.
+- **A pull request that does not exist yet.** Run by hand before one is opened, the gate has no
+  answer and says so, and no answer is not green — the surface's rule for an absent run
+  ([§ 2](../plugins/mjolnir/config/schema.md#2-code-host)) holds here for the same reason.
+- **The heading the body states its open items under.** `Open items` is hardcoded as grammar, in
+  the sense the two scripts above hardcode a citation form: a project whose repository language is
+  not English needs it configured, which is
+  [#51](https://github.com/ragnor-rs/mjolnir/issues/51)'s body-section gate. This script is the
+  implementation that item would call rather than a second one.
 
 ## Each check has a violation it is asserted to redden on
 
