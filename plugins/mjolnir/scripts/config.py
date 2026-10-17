@@ -37,8 +37,8 @@ Three things it deliberately does not do:
     how a role addresses a project it is not standing in. That is a definition
     rather than an inference -- the test the surface states is whether a project
     could have written the value down -- and because it cannot be checked, every
-    resolution reports the root and the file it read, for the role to name
-    before it acts.
+    resolution reports what § 1 requires a role to name before it acts. Which
+    items those are is § 1's list, not a second one here.
   * **It does not decide what a role then does.** It reports what a
     configuration cannot support; acting on that is the role's business.
 
@@ -419,7 +419,7 @@ REQUIRED = [
 
 # Keys the surface used to declare and no longer does, each with where the fact
 # lives now. A retired key is **refused**, not ignored: `roots.skills` was
-# declared, written in all five configurations and read by nothing, so a project
+# declared, written in every configuration and read by nothing, so a project
 # that pointed it at a subdirectory was ignored in silence -- and a stale file
 # that still carries it would be that same silence surviving the removal. The
 # self-test holds each entry to the surface in both directions, so re-declaring

@@ -82,7 +82,7 @@ statement; it carries no count, because a count restated elsewhere drifts the mo
 added. The measurements that forced each to be independent are in
 [`docs/configuration-surface.md`](../../../docs/configuration-surface.md).
 
-## 1. Roots — two roots, and only one is configured
+## 1. Roots
 
 ```yaml
 roots:
@@ -106,9 +106,8 @@ the outer repository does not have it.
 ⛔ **The skills root is the directory the role was invoked in. It is procedure, and this surface
 carries no key for it.** It is where `.claude/mjolnir.yaml` is *found*, so it is needed before
 any configuration can be read at all, and a key stating it would sit inside the file it is
-needed to locate. The reader takes it as an argument whose default is the working directory —
-which is how a role is pointed at a project other than the one it runs in, and the only way it
-can be.
+needed to locate. The reader takes it as an argument whose default is the working directory,
+which is how a role addresses a project it is not standing in.
 
 ⚠️ **This is not the inference the rule above forbids, and the difference is the whole of why
 both hold at once.** A fact the configuration *could* state and a role derives anyway is an
@@ -116,8 +115,9 @@ inference — the code root's case, where deriving it is wrong wherever the two 
 fact no configuration can state is a definition. The test is whether a project could have
 written the value down.
 
-⛔ **A role names the root it resolved, and the repository that root's configuration addresses,
-before it acts.** The reader reports both, so this costs the role a sentence and no work.
+⛔ **A role names what it resolved before it acts: the root, the file it read there, and the
+repository that file's configuration addresses.** The reader reports each of them, so this costs
+the role a sentence and no work. The list is stated here and a role reads it from here.
 
 ⚠️ **That naming is the only guard, and it is weaker than a stop.** Run from a directory with no
 configuration, a role stops; run from a *sibling project that has one*, it resolves that project
