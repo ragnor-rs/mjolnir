@@ -40,18 +40,54 @@ means.
 ### Working on the toolkit itself
 
 A plugin installed from a GitHub marketplace is a **clone**, so editing this tree changes nothing a
-session serves. Add the tree itself as the marketplace instead:
+session serves. Register the tree itself as the marketplace instead, at **user scope**:
 
 ```
-claude plugin marketplace add /path/to/this/repo --scope local
-claude plugin install mjolnir@mjolnir --scope local
+claude plugin marketplace add /path/to/this/repo --scope user
+claude plugin install mjolnir@mjolnir --scope user
 ```
 
-A path source registers with its install location pointing **at the working tree**, so edits are
-live and there is nothing to push, update or re-install between them. This matters because the
-toolkit [builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/27) — every issue
-here is filed, started, finished and reviewed through the loop this repository ships, on the
-configuration in [`.claude/mjolnir.yaml`](.claude/mjolnir.yaml).
+`user` rather than `local`, because whoever works on the toolkit is also the person adopting it in
+every other project on the same machine, and one registration serves both: self-hosting here, and
+every other project — whose adoption then costs exactly one file, `.claude/mjolnir.yaml`, with no
+install step at all. A `local` registration writes into a single project's
+`.claude/settings.local.json` and is invisible from everywhere else, so it needs a second
+registration per adopting project: the per-project duplication this toolkit exists to delete,
+reappearing in its own install instructions.
+
+What those two commands write, so the choice is checkable rather than asserted:
+
+| | |
+|---|---|
+| `~/.claude/settings.json` | `extraKnownMarketplaces.mjolnir` — `source: directory` with the path — and `enabledPlugins["mjolnir@mjolnir"]` |
+| `~/.claude/plugins/known_marketplaces.json` | `installLocation`, which for a directory source **is the working tree** |
+| `~/.claude/plugins/installed_plugins.json` | `scope`, a `version`, a `gitCommitSha`, and an `installPath` under `~/.claude/plugins/cache/` |
+
+**That `installPath` is a snapshot copy, and it is vestigial.** It is written once, at install, and
+pinned to the recorded `gitCommitSha`. Nothing refreshes it: `plugin marketplace update` leaves it
+alone, and `plugin update` is version-gated, so it reports the plugin already at its latest version
+while the snapshot stays where it was. Measured in this repository: the snapshot was byte-identical
+to its pinned commit, three commits behind the branch tip, and differed from the tree in six of its
+seven files.
+
+Edits are live anyway, because a session resolves a directory-source plugin through the
+marketplace's `installLocation` — the working tree — and never through `installPath`.
+`$CLAUDE_PLUGIN_ROOT` resolves there too, so plugin-provided scripts and hooks also run from the
+tree. Reading `installPath` and concluding the install is frozen is reading the copy nothing serves.
+
+Two consequences of that, worth knowing before editing:
+
+- A session started **afterwards** serves an edited skill or `hooks/hooks.json` with no reinstall,
+  no `plugin update` and no version bump. A session already running keeps the configuration it
+  started with.
+- Only the registered tree is served, so a branch in a git worktree is served **nowhere** until it
+  reaches that tree. A change to the procedure cannot be dogfooded from the worktree it was written
+  in.
+
+This matters because the toolkit
+[builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/27) — every issue here is
+filed, started, finished and reviewed through the loop this repository ships, on the configuration
+in [`.claude/mjolnir.yaml`](.claude/mjolnir.yaml).
 
 ## Invocation
 
