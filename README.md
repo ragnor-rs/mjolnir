@@ -75,7 +75,7 @@ it is a second authority.
 
 That is enforced rather than asserted: the `Checks` workflow holds every document to it on every
 change — see [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) for the checks and
-the three things they deliberately leave alone.
+what they deliberately leave alone.
 
 The why sits beside it: [`docs/configuration-surface.md`](docs/configuration-surface.md) holds
 the measurements the surface was derived from, and
