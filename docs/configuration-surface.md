@@ -102,10 +102,31 @@ the three that are obvious. The measurements that forced each to be independent:
    under a different owner, not a submodule. Its skills write the root explicitly into every git
    call and stop if the directory is absent, because a fresh clone of the outer repository does
    not have it. The failure mode behind
-   [`schema.md § 1`](../plugins/mjolnir/config/schema.md#1-roots--three-independent-paths): a
-   skill that takes the top level of the repository it is installed in commits the engagement
+   [`schema.md § 1`](../plugins/mjolnir/config/schema.md#1-roots--two-roots-and-only-one-is-configured):
+   a skill that takes the top level of the repository it is installed in commits the engagement
    notes and never touches the code; a host CLI call inheriting the working directory addresses
    the wrong repository. Both fail quietly, having done something plausible first.
+
+   **The same section's other root was measured here rather than in the survey, and it is the one
+   root the surface cannot carry.** The shared reader resolves `.claude/mjolnir.yaml` against the
+   skills root, so that root is needed before any configuration can be read. Every in-band
+   candidate was tried:
+
+   | Candidate | Measured outcome |
+   |---|---|
+   | `${CLAUDE_PROJECT_DIR}` | not set in the environment a skill's command runs in |
+   | `${CLAUDE_PLUGIN_ROOT}` | the plugin's own location — outside the project entirely under a user-scope install |
+   | the repository top level, from the version-control tool | barred by § 1 above, and wrong wherever the two roots differ |
+   | a key on this surface | inside the file the key is needed to find |
+
+   So it is stated as a definition rather than configured —
+   [`schema.md § 1 → The skills root is where the role runs`](../plugins/mjolnir/config/schema.md#the-skills-root-is-where-the-role-runs).
+   The key that used to declare it carried `"."` in all five configurations and was read by
+   nothing: declared and dead, which is worse than absent, because a project that pointed it at a
+   subdirectory was ignored in silence. Two costs are accepted with it, and both are stated in
+   that section rather than here: a role run from a sibling project that has a configuration of
+   its own resolves *that* project, with the naming requirement as the only guard; and the
+   argument form stays, because a role has to be able to address a project it is not standing in.
 4. **Carrier.** See above. Three projects also run process hooks, at eight, five and four.
 5. **Audience and language.** One project writes its items in one language and its repository in
    another and states the split is by audience — its branch slug a **translation** of the item
