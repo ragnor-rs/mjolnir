@@ -1,0 +1,30 @@
+{
+  "name": "mjolnir",
+  "owner": {
+    "name": "ragnor-rs"
+  },
+  "metadata": {
+    "description": "A marketplace carrying one plugin: the issue-to-merge development process, as shared procedure over per-project configuration.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "mjolnir",
+      "version": "0.1.0",
+      "source": "./plugins/mjolnir",
+      "description": "File a work item, gate it, start it, finish it, review it, deploy, log the day, keep the board current — one procedure, driven by a tracker port with GitHub Projects, Jira and Trello behind it.",
+      "license": "MIT",
+      "category": "development-workflow",
+      "keywords": [
+        "process",
+        "issue-tracker",
+        "pull-request",
+        "code-review",
+        "time-log",
+        "github-projects",
+        "jira",
+        "trello"
+      ]
+    }
+  ]
+}

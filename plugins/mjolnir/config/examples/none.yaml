@@ -1,0 +1,79 @@
+# A deliberately trackerless configuration.
+#
+# This is the scratch config every skill is proved against: no tracker is configured at all,
+# and nothing here may be reported as a broken install. It exists because the next project to
+# adopt the toolkit may well have no tracker on its first day, and a skill that crashes on an
+# unset value is cheap to prevent now and expensive to discover then.
+#
+# Example data — not any project's facts.
+version: 1
+
+roots:
+  skills: "."
+  code: "."
+  code_is_own_repo: false
+
+host:
+  kind: github
+  repo: "OWNER/REPO"
+
+tracker:
+  kind: none
+  # No block follows. Every tracker operation is unavailable, and the procedure says so
+  # plainly and continues with what does not need one: branching, the pull request, the
+  # review, the gate, the day log.
+
+work_item:
+  type:
+    carrier: none
+    absent_reason: "There is no tracker to carry a type."
+  type_branch_prefix:
+    # Still used — a branch needs a prefix whether or not a card exists.
+    bug: bugfix
+    feature: feature
+  estimate:
+    carrier: none
+    absent_reason: "There is no tracker to carry an estimate, and nothing reads one here."
+  template:
+    carrier: none
+    absent_reason: >-
+      With no tracker there is no item body to template. A request is acted on directly, and
+      the acceptance check is stated in the pull request instead.
+
+statuses: []
+# An empty status list is legitimate. Every role is absent, so the procedure never asks the
+# port to advance anything and never reports a missing state as a fault.
+
+readiness:
+  # An empty gate is legitimate too: there is no item to gate.
+  []
+
+commit:
+  staging: explicit
+  trailer: read_from_history
+
+carriers:
+  day_log: skill
+
+language:
+  work_item: en
+  repo: en
+  artifacts:
+    day_log: { language: en, register: technical, audience: "whoever keeps this project's own record" }
+
+day_log:
+  out_dir: "$TMPDIR/<project>"
+  day_start: "05:00"
+  round_to: 0.5
+  round_ties: down
+  enforce_grid: true
+  script: ".claude/skills/day-report/scripts/active_time.py"
+  streams: [sessions, commits]
+  attribute_to: null
+  exclusions: [log_upkeep, rework, overhead]
+  sections: billed_only
+  evidence:
+    chat_patterns: []
+    chat_exclude: []
+    mixed_chats: []
+    calendars: []

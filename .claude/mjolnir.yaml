@@ -1,0 +1,114 @@
+# mjolnir's own configuration.
+#
+# The toolkit builds itself with itself: every issue here is filed, started, finished and
+# reviewed through the loop this repository ships. That is a correctness requirement, not a
+# nicety — a procedure whose own repository cannot run it is not finished.
+#
+# ⚠️ NOTHING READS THIS FILE YET. The configuration reader is #1 and the tracker behind
+# `kind: github-issues` is #27. Until both land, this file is a declaration of what
+# self-hosting needs, and the loop here runs by hand.
+#
+# ⛔ This is the one file in the repository that names a repository slug, and it is correct
+# that it does: it is this project's own configuration, the same file every adopter writes.
+# The names-no-particular-project guard (#19) must exclude it, exactly as it excludes
+# config/examples/.
+version: 1
+
+roots:
+  skills: "."
+  code: "."
+  code_is_own_repo: false
+
+host:
+  kind: github
+  repo: "ragnor-rs/mjolnir"
+
+tracker:
+  # Plain GitHub issues with no project board — the cheapest real configuration, and one
+  # none of the examples covered. Found by writing this file; tracked as #27.
+  kind: github-issues
+  labels: [role, port, infra, hooks, migration, utility, decision]
+
+work_item:
+  type:
+    # The labels above classify work by surface rather than by type, and nothing here reads
+    # a type. Deliberately absent rather than unset.
+    carrier: none
+    absent_reason: >-
+      Work here is classified by which part of the toolkit it touches, not by bug/feature.
+      No skill reads a type, and the branch prefix is taken from the role instead.
+  type_branch_prefix:
+    role: feature
+    port: feature
+    infra: feature
+    hooks: feature
+    migration: feature
+    utility: feature
+    decision: feature
+  estimate:
+    carrier: none
+    absent_reason: >-
+      A solo build with no commitment to anyone outside it. Estimates would be ceremony.
+    revisit_when: >-
+      A second person takes work from this backlog, or someone outside the build starts
+      asking when a given issue lands.
+  template:
+    carrier: none
+    absent_reason: >-
+      The backlog was written in one pass against a completed inventory, so every issue
+      already states its outcome and its acceptance check. A template would be imposed on
+      issues that predate it.
+    revisit_when: An issue is filed that states no acceptance check.
+
+statuses:
+  # Two states, and that is the whole vocabulary: a plain issue is open or closed.
+  # ⚠️ There is no `in_flight` role here, and an absent role is a legitimate configuration —
+  # this repository is the proof of that claim rather than merely its author.
+  - { name: "open",   role: initial,  writer: procedure }
+  - { name: "closed", role: terminal, writer: automation }
+
+readiness:
+  - { check: state_is, roles: [initial], stop: "The issue is already closed." }
+  - { check: no_open_blockers, stop: "An issue this one depends on has not landed yet." }
+
+commit:
+  staging: explicit
+  # ⛔ Not read_from_history. The only author is this host's authenticated user; no tool,
+  # assistant or generator is credited as author, committer or co-author. See the
+  # authorship rule in the schema — it is procedure, not a setting, and `read_from_history`
+  # would hand back whatever history happened to carry.
+  trailer: none
+
+carriers:
+  day_log: skill
+  file: skill
+  start: skill
+  finish: skill
+  review: skill
+
+language:
+  work_item: en
+  repo: en
+  artifacts:
+    day_log: { language: en, register: technical, audience: "whoever maintains this toolkit" }
+
+day_log:
+  out_dir: "$TMPDIR/mjolnir"
+  day_start: "05:00"
+  round_to: 0.5
+  round_ties: down
+  enforce_grid: true
+  # ⚠️ Unset on purpose: the evidence script is not extracted yet (#15), and this repository
+  # has no local copy to point at. So the day-log role cannot run here until #15 lands —
+  # which makes this repository the first place that absence is load-bearing rather than
+  # theoretical.
+  script: null
+  streams: [sessions, commits]
+  attribute_to: null
+  exclusions: [log_upkeep, rework, overhead]
+  sections: billed_only
+  evidence:
+    chat_patterns: []
+    chat_exclude: []
+    mixed_chats: []
+    calendars: []

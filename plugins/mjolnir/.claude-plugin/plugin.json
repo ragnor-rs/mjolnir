@@ -1,0 +1,22 @@
+{
+  "name": "mjolnir",
+  "version": "0.1.0",
+  "description": "The issue-to-merge development process as shared procedure over per-project configuration. Names a tracker port, never a tracker.",
+  "author": {
+    "name": "Renat Sarymsakov"
+  },
+  "license": "MIT",
+  "keywords": [
+    "process",
+    "issue-tracker",
+    "pull-request",
+    "code-review",
+    "time-log",
+    "github-projects",
+    "jira",
+    "trello"
+  ],
+  "skills": [
+    "./skills/day-report"
+  ]
+}

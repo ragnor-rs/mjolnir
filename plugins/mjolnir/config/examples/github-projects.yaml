@@ -1,0 +1,96 @@
+# A project tracked on GitHub Projects, code and cards on the same host.
+# Carries the whole set of roles. Example data — not any project's facts.
+version: 1
+
+roots:
+  skills: "."
+  code: "."
+  code_is_own_repo: false
+
+host:
+  kind: github
+  repo: "OWNER/REPO"
+
+tracker:
+  kind: github-projects
+  project: { owner: "OWNER", number: 0 }
+  status_field:
+    name: "Status"
+    # Option ids are read from the tracker, never copied between skills.
+    resolve: by_name
+
+work_item:
+  type:
+    # A user-owned repository on this host has no native issue types at all,
+    # so the type is carried as a label convention.
+    carrier: label
+    label_prefix: "type:"
+    values: [bug, feature, task]
+  type_branch_prefix:
+    bug: bugfix
+    feature: feature
+    task: feature
+  estimate:
+    carrier: none
+    absent_reason: >-
+      The board has no estimate field, and the process tracks readiness rather than velocity.
+      Estimates on a solo build would be ceremony.
+    revisit_when: >-
+      A second person starts taking items from this board, or someone outside the build begins
+      asking when a given item lands.
+  template:
+    carrier: file
+    dir: ".claude/templates"
+    by_type:
+      bug: "bug.md"
+      feature: "feature.md"
+      task: "task.md"
+    sections:
+      outcome: "Outcome"
+      acceptance: "Acceptance check"
+      reproduction: "Reproduction"
+
+statuses:
+  - { name: "Todo",        role: initial,     writer: procedure }
+  - { name: "In Progress", role: in_flight,   writer: procedure }
+  - { name: "Merged",      role: code_landed, writer: automation }
+  - { name: "Done",        role: terminal,    writer: deploy }
+
+readiness:
+  - { check: state_is, roles: [initial], stop: "The item is not in the starting state." }
+  - { check: no_open_blockers, stop: "An open blocker has to land first." }
+
+commit:
+  staging: explicit
+  trailer: read_from_history
+
+carriers:
+  day_log: skill
+  file: skill
+  start: skill
+  finish: skill
+  review: skill
+  deploy: skill
+
+language:
+  work_item: en
+  repo: en
+  artifacts:
+    day_log: { language: en, register: business, audience: "the person the work is delivered to" }
+
+day_log:
+  out_dir: "$TMPDIR/<project>"
+  day_start: "05:00"
+  round_to: 0.5
+  round_ties: down
+  enforce_grid: true
+  script: ".claude/skills/day-report/scripts/active_time.py"
+  streams: [sessions, commits, telegram, meetings]
+  attribute_to: null
+  exclusions: [contractual, other_projects, log_upkeep, rework, overhead]
+  sections: billed_only
+  evidence:
+    chat_patterns: ["<exact chat name>"]
+    chat_exclude: []
+    mixed_chats: ["<a chat carrying both work and personal talk>"]
+    calendars: ["<the one calendar whose titles are legible>"]

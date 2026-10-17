@@ -1,0 +1,121 @@
+# Cards in Trello, code on GitHub, and the code is a separate repository nested inside
+# the repository the skills live in — under a different owner, git-ignored by the outer one,
+# not a submodule. Three roots, all different.
+# Example data — not any project's facts.
+version: 1
+
+roots:
+  skills: "."
+  code: "<subdirectory>"
+  code_is_own_repo: true        # branches, PRs and CI belong to the inner repository
+
+host:
+  kind: github
+  repo: "INNER_OWNER/INNER_REPO"   # NOT the outer repository
+
+tracker:
+  kind: trello
+  board: "<board id>"
+  lists:                        # a Trello state is a list
+    resolve: by_name
+  capabilities:
+    comment: false              # no comment action exists; results go in the description
+    delete_checklist_item: false   # reword and tick instead
+    set_labels_at_creation: false  # one attach per label, after creation
+    link_for_close: false       # no link; the card moves separately
+    advance_on_merge: false
+    item_number: parse_from_url # there is no short-id field
+  policy:
+    # A third-party service holding someone else's material.
+    forbid_on_item: [source_code, credentials, hosting_details, file_paths, branch_names]
+
+work_item:
+  type:
+    carrier: label
+    label_prefix: "T:"
+    values: [bug, feature, chore, docs, refactor]
+  type_branch_prefix:
+    bug: fix
+    feature: feat
+    chore: chore
+    docs: docs
+    refactor: refactor
+  estimate:
+    carrier: label
+    label_prefix: "E:"
+    unit: hours
+    values: [1, 2, 4, 8, 16]
+    band: top                   # each rung is the top of a band, not a point value
+  template:
+    carrier: file
+    dir: ".claude/templates"
+    by_type:
+      bug: "bug.md"
+      feature: "feature.md"
+    sections:
+      outcome: "<this template's own heading>"
+      acceptance: "<this template's own heading>"
+      reproduction: "<this template's own heading>"
+
+statuses:
+  - { name: "<backlog>",     role: initial,     writer: procedure }
+  - { name: "<gated>",       role: ready,       writer: procedure }
+  - { name: "<in flight>",   role: in_flight,   writer: procedure }
+  - { name: "<code landed>", role: code_landed, writer: automation }
+  - { name: "<published>",   role: deployed,    writer: deploy }
+  - { name: "<approved>",    role: accepted,    writer: orderer }
+  - { name: "<finished>",    role: terminal,    writer: deploy }
+  - { name: "<dropped>",     role: dropped,     writer: procedure }
+
+readiness:
+  - { check: state_is, roles: [ready], stop: "The item has not been gated into committed work." }
+  - { check: field_present, field: "<due date>", stop: "No due date." }
+  - { check: field_present, field: "<estimate label>", stop: "No estimate." }
+  - { check: label_absent, label: "<incomplete>", stop: "The item is marked incomplete." }
+  - { check: no_open_blockers, stop: "An open blocker has to land first." }
+  - { check: assignee_matches_role, stop: "The assignee does not match the role on the item." }
+  - { check: queue_position, ahead_allowed: 0, on_fail: stop_quietly, stop: "Higher-priority work is ahead of this in the queue." }
+
+commit:
+  staging: explicit
+  trailer: read_from_history
+
+carriers:
+  day_log: skill
+  file: skill
+  gate: skill                   # filing and gating are two roles here
+  start: skill
+  finish: skill
+  review: skill
+  deploy: skill
+
+language:
+  work_item: ru
+  repo: en
+  artifacts:
+    day_log: { language: en, register: business, audience: "the person the hours are reported to" }
+
+day_log:
+  out_dir: "$TMPDIR/<project>"
+  day_start: "05:00"
+  round_to: 0.1                 # this project states one decimal, so the grid is not asserted
+  round_ties: down
+  enforce_grid: false
+  script: ".claude/skills/day-report/scripts/active_time.py"
+  streams: [sessions, commits, telegram, meetings]
+  attribute_to: null
+  exclusions: [contractual, log_upkeep, rework, overhead]
+  extra_exclusions:
+    - name: off_plan
+      rule: >-
+        Only work that advances a row of one of the agreed plans is billed. Work around a plan
+        item counts as the item; work the plans never asked for leaves the total even when it
+        was worth doing.
+  sections: billed_and_not_billed
+  evidence:
+    chat_patterns: ["<exact chat name>"]
+    chat_exclude: []
+    mixed_chats: []
+    calendars:
+      - "<the calendar whose titles are legible>"
+      - "<a free-busy calendar: times only, no titles>"

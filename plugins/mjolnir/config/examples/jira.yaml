@@ -1,0 +1,104 @@
+# Cards in Jira, code on GitHub — the two axes are independent.
+# Deployment is split per environment, and the tracker credential is a person's own
+# account, so the procedure may not write status at all.
+# Example data — not any project's facts.
+version: 1
+
+roots:
+  skills: "."
+  code: "."
+  code_is_own_repo: false
+
+host:
+  kind: github
+  repo: "OWNER/REPO"
+
+tracker:
+  kind: jira
+  project_key: "KEY"
+  # Transitions are found by name; there is no closing keyword on this tracker.
+  transitions: { resolve: by_name }
+  capabilities:
+    link_for_close: false
+    advance_on_merge: true      # an automation off a webhook does it; the procedure must not
+  policy:
+    forbid_on_item: []
+
+work_item:
+  type:
+    carrier: native             # a built-in field on this tracker
+    values: [Bug, Task, Story, Improvement, Epic, Sub-task]
+  type_branch_prefix:
+    Bug: fix
+    Task: chore
+    Story: feat
+    Epic: feat
+    Sub-task: chore
+    # Improvement resolves by whether a user can see the change.
+    Improvement: feat|refactor
+  estimate:
+    carrier: none
+    absent_reason: >-
+      This project plans with a sprint and a fix version rather than with a per-item number;
+      the sprint is what the readiness gate checks.
+  template:
+    carrier: file
+    dir: ".claude/templates"
+    by_type:
+      Bug: "bug.md"
+      Story: "story.md"
+    sections:
+      outcome: "<this template's own heading>"
+      acceptance: "<this template's own heading>"
+      reproduction: "<this template's own heading>"
+
+statuses:
+  - { name: "<not started>", role: initial,     writer: never }
+  - { name: "<in flight>",   role: in_flight,   writer: never }
+  - { name: "<code landed>", role: code_landed, writer: automation }
+  - { name: "<finished>",    role: terminal,    writer: never }
+
+# writer: never throughout — the credential acts as a person's own account, so every write
+# reads as that person speaking. The procedure reports the move it would have made instead.
+
+readiness:
+  - { check: field_present, field: "<sprint>", stop: "The item is in no sprint." }
+  - { check: field_present, field: "<fix version>", stop: "The item has no fix version." }
+  - { check: ref_exists, ref: "<the release branch for that fix version>", stop: "The release branch is missing from the remote." }
+  - { check: state_is, roles: [initial, ready], on_fail: flag, stop: "Already started or finished." }
+
+commit:
+  staging: all
+  trailer: read_from_history
+
+carriers:
+  day_log: skill
+  file: skill
+  start: skill
+  finish: skill
+  review: skill
+  deploy: skill                 # split per environment at the project level
+
+language:
+  work_item: ru
+  repo: en
+  artifacts:
+    day_log: { language: en, register: business, audience: "the person the hours are reported to" }
+    # The branch slug must be a translation of the item title, never a transliteration.
+
+day_log:
+  out_dir: "$TMPDIR/<project>"
+  day_start: "05:00"
+  round_to: 0.5
+  round_ties: down
+  enforce_grid: true
+  script: ".claude/skills/day-report/scripts/active_time.py"
+  streams: [sessions, commits, telegram, meetings]
+  attribute_to: null
+  exclusions: [contractual, log_upkeep, rework, overhead]
+  sections: billed_and_not_billed
+  evidence:
+    chat_patterns: ["<exact chat name>"]
+    chat_exclude: []
+    mixed_chats: ["<the direct chat that carries both>"]
+    calendars: ["<the one calendar whose titles are legible>"]
