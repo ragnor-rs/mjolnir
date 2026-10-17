@@ -393,10 +393,17 @@ and the repository does not. So an in-tree store and an uncommitted store are sa
 cases, and a single path key could not say which was intended.
 
 ⚠️ Measured on this repository, 2026-10-18, which is why the hazard is stated rather than
-reasoned about: the one artifact three concurrent sessions coordinated through was a plan file
-written **beside** the repository, carried in no configuration and committed nowhere. The standing
-convention still names it by path; the file is not on disk. A pointer outliving its file leaves no
-symptom, which is the same silence the day-log role's absent evidence script was made loud for.
+reasoned about: the one artifact several concurrent sessions coordinate through is a plan file
+carried in no configuration and committed nowhere. It lives in the agent harness's own per-project
+store, beside the session transcripts, while the standing convention that tells a session to read
+it names a path **beside the repository** — which does not resolve. The file and the pointer to it
+disagree, and nothing reports that: a session following the pointer finds nothing, and a session
+that knows better depends on a store no key names.
+
+⚠️ **The first draft of this paragraph said the file was gone**, on a search bounded to the
+repository's neighbourhood and the temp directory, which does not reach that store. The claim was
+wider than the search that produced it — the same defect one level up from the one the paragraph
+describes, and the reason it is recorded here rather than quietly corrected.
 
 ### Why the read-side rule lives here rather than beside the write-side one
 
