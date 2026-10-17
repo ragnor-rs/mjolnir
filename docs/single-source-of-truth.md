@@ -284,6 +284,44 @@ exempted the whole directory and so would have read straight past it.
 - **Issues and pull requests**, for the same reason check 3 above cannot read issue state: that
   store is not a file, the workflow holds no credential, and a reviewer covers it.
 
+## The third script: the tracker port's own contract
+
+`plugins/mjolnir/scripts/port.py --self-test` runs in the `Port contract` workflow and is its own
+`host.checks` entry, for the reason the sweep above is: one entry states one mirrored command. It
+is not a document check, and it is recorded here because its subject is the same discipline — it
+holds a claim about the tree that a reviewer would otherwise be the only thing holding.
+
+What it holds: that the operation list and every absent case are read out of
+[schema § 3](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)
+rather than written in the script; that an unavailable operation comes back as the fallback stated
+there and never as an error; that an advance to a status whose configured writer is not the
+procedure is refused with the writer named
+([schema § 4.2](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer));
+and that against a configuration with no tracker every operation is unavailable while the report
+reads as a configuration rather than a fault.
+
+The kinds are the same two as above. Reading the operation list and the fallback text out of the
+surface is **computed** — a reworded fallback travels, and a table with the headers reworded away
+reddens rather than silently holding nothing. One check is **forbidding**: that the contract
+itself names no tracker the surface declares, derived by asking the reader which `kind` values are
+trackers rather than by listing them.
+
+### What it deliberately does not check
+
+- **That an adapter is correct.** No implementation is installed yet — the three are their own
+  work items — so the available-capability branch is proved against a double that implements a
+  subset, not against a tracker. What the contract holds is the shape: a declared operation is
+  performed by the implementation, an undeclared one falls back.
+- **An adapter's own file.** `plugins/*/scripts/` sits outside the sweep's strict set by that
+  sweep's own reasoning, so the no-tracker-name rule is held here by one script asserting it of
+  itself. An adapter module is where a tracker's name legitimately appears, and the day a second
+  module appears beside the contract, nothing holds *it* to anything. A carrier root — where a
+  role's text lives — is still swept by check 6 above, which is the half of this that matters for
+  a shared role.
+- **That a fallback is the right fallback.** Whether writing a gate result into a description is
+  what a project wants where comments are impossible is a judgement the measurement behind it
+  carries, not something a check can read. This is the *fidelity* limit one claim over.
+
 ## Each check has a violation it is asserted to redden on
 
 `--self-test` plants one violation per check and asserts that check goes red, as the first step of

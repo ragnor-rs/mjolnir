@@ -1,0 +1,43 @@
+name: Port contract
+
+# The tracker port, held to the contract § 3 of plugins/mjolnir/config/schema.md states: the
+# operation list and every absent case are read out of that section, an absent capability
+# resolves to the fallback stated there, a status whose writer is not the procedure is refused
+# with the writer named, and the trackerless configuration leaves every operation unavailable
+# while reporting no fault.
+#
+# A workflow of its own rather than a second job of `Checks`, per § 2: a `host.checks` entry
+# states one mirrored command, so two commands behind one workflow name could not be stated on
+# the surface at all.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: the contract reads the surface and the examples in the tree, and
+# reaches no tracker — which is the one thing a port with no implementation installed certainly
+# cannot do.
+permissions: {}
+
+jobs:
+  port-contract:
+    name: Port contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Pinned rather than relying on whatever the runner image ships, for the reason the
+      # sibling workflow pins it: the contract runs on the shared reader, which needs the
+      # parser, and a check that silently stops running is the failure this job exists to catch.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` declares this run mirrors, so
+      # the two cannot drift. Each refusal carries a planted violation beside the assertion it
+      # belongs to rather than in a block of its own — the suite is written against one
+      # configuration at a time, which is why the plants are not a separate first phase here.
+      - name: Hold the port contract to the surface and the examples
+        run: python3 plugins/mjolnir/scripts/port.py --self-test

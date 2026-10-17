@@ -170,15 +170,69 @@ it; the adapter behind it is #27, and the examples do not yet cover it.
 
 Three properties of the port the procedure depends on:
 
-- **Capabilities are queried, not assumed.** Comment, delete-a-checklist-item,
-  set-labels-atomically and assign-a-member are each unavailable on at least one tracker. The
-  procedure has a stated fallback per absence and does not fail. Where comments are impossible,
-  a gate result is written into the item's description instead.
+- **Capabilities are queried, not assumed**, and every absence has a fallback stated in the
+  table below rather than left to the role that meets it.
 - **Closing is declarative on one tracker and imperative on another.** `link_for_close` and
-  `advance_on_merge` are separate capabilities, either of which may be absent: a keyword in a
+  `advance_on_merge` are separate operations, either of which may be absent: a keyword in a
   pull request body closes the item on merge in one system; another needs an explicit
   transition and no keyword; a third has no link at all and the item moves separately.
 - **A write may be forbidden by policy rather than by capability.**
+
+### The operations, and what an absent capability does
+
+The operations are a closed set, stated here once. ⛔ **No absence is an error.** An operation
+whose capability is absent takes the fallback in the third column, and the role is told which
+fallback was taken; a role that meets an absence improvises nothing. The shapes each tracker
+gives these operations are measured in
+[`docs/configuration-surface.md`](../../../docs/configuration-surface.md) — this table is the
+list and the absent case, and that document is the evidence behind both.
+
+| Operation | What the procedure asks for | When the capability is absent |
+|---|---|---|
+| `create_item` | a new work item, from the body the filing role wrote | nothing is filed, and the run report carries the body and says what it would have created |
+| `read_item` | the item's own facts: its body, its state, its fields | the role proceeds on what its argument and its branch already state, and the report names what could not be read |
+| `set_state` | an advance to a **role**, never to a status word (§ 4.2) | the move is reported for whoever does make it; § 4.2's writer refusal is the second, stricter reason the same move is not made |
+| `item_number` | the identifier the branch name and the pull request carry | the number is read from the argument the role was given, and a role with neither stops rather than inventing one |
+| `link_dependency` | one item recorded as blocked by another | the dependency is written into both items' bodies as prose — which of the two statements survives is #69's |
+| `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
+| `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
+| `comment` | a note on the item: a gate result, the provenance of a duplicate | it goes into the item's description instead |
+| `set_labels` | every label set in one call | one call per label, and a set that is left partial is reported rather than retried silently |
+| `assign` | the item assigned to the person the role acts for | the report names who holds the item; what a session's **claim** rides on is #70's, not this fallback |
+| `checklist_read` | the item's check items, and which of them are ticked | the item is read as carrying none, and the report says the checklist could not be read |
+| `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
+| `checklist_item_delete` | a check item removed | the item is reworded and ticked instead |
+
+### Who declares a capability
+
+⛔ **The adapter declares what it can do; a project states nothing about it.** A capability is a
+fact about the tracker, so a project restating one would be a second statement that is allowed to
+disagree with the implementation — and the project would lose, having no way to make a tracker do
+what it cannot. There is therefore no capability key on this surface, and a role asks the port
+rather than reading a configuration.
+
+⚠️ **An adapter declares an operation by implementing it, not by listing it.** The two cannot
+drift apart, and an adapter naming an operation this table does not state is refused.
+
+Where two projects on the **same** tracker genuinely differ, the difference is already a facet
+here rather than a capability: what carries the type, the estimate or the template, each with its
+own absent case (§ 4.1, § 4.3, § 4.4); what the tracker may hold at all (`policy` below); and who
+may write a given state (§ 4.2). Three stated homes, none of them a per-project override of what
+the tracker is able to do.
+
+### The trackerless adapter, and a kind with no implementation
+
+`kind: none` is an adapter like any other: it implements no operation, so every one of them takes
+its stated fallback and the roles that need no tracker — branching, the pull request, the review,
+the day log — run untouched. ⛔ **That is a configuration and not a broken install**, and nothing
+in the procedure reports it as one.
+
+⚠️ A configured kind whose **implementation is not installed** behaves identically and is not the
+same fact, so the port reports the two apart: one is a project that decided it needs no tracker,
+the other is an adapter that has not been built yet. This repository is the second case today —
+its `github-issues` adapter is #27 — which is why the distinction is not theoretical.
+
+### A write forbidden by policy rather than by capability
 
 ```yaml
 tracker:
@@ -188,6 +242,11 @@ tracker:
 
 A tracker that is a third-party service holding someone else's material may bar these from ever
 reaching a card. Where a fact is barred, it goes in the run report instead.
+
+⚠️ This is the one half of the port a **project** states, and it is content rather than
+operations: it says what may reach an item, never which operations exist. A role meeting a policy
+refusal has a capability it may not use here, which reads differently from an absence and is
+reported differently.
 
 ## 4. Work-item facets
 

@@ -177,18 +177,24 @@ the three that are obvious. The measurements that forced each to be independent:
 
 ## The tracker port
 
-The operations the shared procedure needs, and the shapes the three implementations give them:
+The operation list itself, and what the procedure does where an operation is unavailable, are
+[`schema.md § 3 → The operations`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does).
+What follows is the measurement behind that list: the shapes the three implementations give these
+operations, which is why none of them could be assumed.
+
+Each row is keyed by the operation § 3 states, so the two tables are read against each other
+without a mapping in between.
 
 | Operation | GitHub Projects | Jira | Trello |
 |---|---|---|---|
-| Create item | create, add to project, set status | one call | create, then **one label attach per label** — labels cannot be set at creation |
-| Read item | one call | one call | one call, **plus a separate call for checklists** |
-| Set state | update a field value by project, field and option id | find the transition by name, then transition | move to a list |
-| Item number | the item number | the item key | **parsed out of the returned URL** — there is no short-id field |
-| Link dependency | a dependencies API keyed on the **internal id, not the number**, posted on the *blocked* item | a link call, with an inward/outward inversion relative to the tracker's own metadata naming | **description links, written at both ends by hand** |
-| Close via pull request | a keyword in the body, declarative, on merge | an explicit transition; no closing keyword exists | a bracketed number in the title, and **never a hash**, which would autolink to an unrelated object |
-| Comment | one call | one call | **impossible** — no comment action; it goes into the description |
-| Delete a checklist item | n/a | n/a | **impossible** — reword and tick instead |
+| `create_item` | create, add to project, set status | one call | create, then **one label attach per label** — labels cannot be set at creation |
+| `read_item` | one call | one call | one call, **plus a separate call for checklists** |
+| `set_state` | update a field value by project, field and option id | find the transition by name, then transition | move to a list |
+| `item_number` | the item number | the item key | **parsed out of the returned URL** — there is no short-id field |
+| `link_dependency` | a dependencies API keyed on the **internal id, not the number**, posted on the *blocked* item | a link call, with an inward/outward inversion relative to the tracker's own metadata naming | **description links, written at both ends by hand** |
+| `link_for_close` | a keyword in the body, declarative, on merge | an explicit transition; no closing keyword exists | a bracketed number in the title, and **never a hash**, which would autolink to an unrelated object |
+| `comment` | one call | one call | **impossible** — no comment action; it goes into the description |
+| `checklist_item_delete` | n/a | n/a | **impossible** — reword and tick instead |
 
 Three of these measurements each forced a property of the port, stated in
 [`schema.md § 3`](../plugins/mjolnir/config/schema.md#3-tracker-port):
