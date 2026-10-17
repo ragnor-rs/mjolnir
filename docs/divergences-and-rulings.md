@@ -13,12 +13,12 @@ recent**, and a decision nobody wrote down reads later as an oversight.
 not yet extracted, **the numbered work item** that will carry it — and each ruling below names
 where its outcome lives. Where this record and that statement disagree, this record is stale.
 
-Those are the only two homes a ruling's outcome may have, and the `Checks` workflow holds the
-table to it: a cell naming a document instead is this record becoming a second authority for the
-rule, and a cell naming an unnumbered work item cannot be resolved by anyone asking whether the
-outcome has moved yet. One ruling below adds `the skill` **beside** a section, for an outcome
-split between the surface and the skill that carries it; that is permitted alongside a home and
-never instead of one.
+Those are the only two homes a ruling's outcome may have, and the `Single source of truth`
+workflow holds the table to it: a cell naming a document instead is this record becoming a
+second authority for the rule, and a cell naming an unnumbered work item cannot be resolved by
+anyone asking whether the outcome has moved yet. One ruling below adds `the skill` **beside** a
+section, for an outcome split between the surface and the skill that carries it; that is
+permitted alongside a home and never instead of one.
 
 Projects are referred to as A–F. Naming them is forbidden here.
 

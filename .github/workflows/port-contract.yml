@@ -6,7 +6,7 @@ name: Port contract
 # with the writer named, and the trackerless configuration leaves every operation unavailable
 # while reporting no fault.
 #
-# A workflow of its own rather than a second job of `Checks`, per § 2: a `host.checks` entry
+# A workflow of its own rather than a second job of a sibling, per § 2: a `host.checks` entry
 # states one mirrored command, so two commands behind one workflow name could not be stated on
 # the surface at all.
 
@@ -35,9 +35,13 @@ jobs:
       - name: Install PyYAML
         run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
 
-      # One step, one command, and the same string `host.checks` declares this run mirrors, so
-      # the two cannot drift. This suite runs each plant beside the assertion it belongs to
-      # rather than as a first phase; that divergence from its siblings is stated where the
-      # discipline is, in docs/single-source-of-truth.md, and not in this comment.
+      # One step, one command, and the same string `host.checks` states this run mirrors —
+      # ⚠️ held together by eye and not by a check, since nothing here reads a workflow file.
+      # That is #49.
+      #
+      # This suite runs each plant beside the assertion it belongs to rather than as a first
+      # phase, which is why the step is not named for its plants; the config reader beside it
+      # diverges the same way. That divergence is stated where the discipline is, in
+      # docs/single-source-of-truth.md, and not in this comment.
       - name: Hold the port contract to the surface and the examples
         run: python3 plugins/mjolnir/scripts/port.py --self-test

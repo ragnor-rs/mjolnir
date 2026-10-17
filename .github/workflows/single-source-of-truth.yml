@@ -1,0 +1,35 @@
+name: Single source of truth
+
+# The gate that holds every document to the surface. One mirrored command, so one workflow,
+# per § 2 of plugins/mjolnir/config/schema.md — the rule its five siblings here cite too.
+#
+# ⚠️ The workflow name and the job name are deliberately the same string, as in every sibling:
+# `host.checks` is keyed by the workflow name and never by a job name, and identical names leave
+# no key to get wrong. Why this file in particular is where that was learned is recorded in
+# docs/single-source-of-truth.md, not here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: every scope of the automatic token is dropped, and the
+# checkout is told not to leave it behind in the git config. Nothing here needs to
+# reach the tracker, and the one check that would have wanted to does without.
+permissions: {}
+
+jobs:
+  single-source-of-truth:
+    name: Single source of truth
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command: the planted violations run first, and the tree is held
+      # only once each check has been shown it can fail. That command is also the string
+      # `host.checks` states this run mirrors — ⚠️ held together by eye and not by a check,
+      # since nothing here reads a workflow file. That is #49.
+      - name: Assert each check can fail, then hold every document to the surface
+        run: python3 tools/check_single_source.py --self-test
