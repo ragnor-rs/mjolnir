@@ -34,7 +34,7 @@ jobs:
       #
       # ⚠️ The step is not named for its plants, though this suite plants: like the port
       # contract beside it, it runs each plant next to the assertion it belongs to rather
-      # than as a first phase, so there is no phase to name. That divergence from the four
+      # than as a first phase, so there is no phase to name. That divergence from the
       # `Assert each check can fail, then …` siblings is stated once, where the discipline
       # is, in docs/single-source-of-truth.md.
       - name: Hold the reader to the surface and the examples

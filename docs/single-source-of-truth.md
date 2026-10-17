@@ -12,7 +12,7 @@ pull request and every push to the default branch, and stated in this repository
 single job of the same name, so the name `host.checks` is keyed by and the name the host reports
 as a status context are the same string — there is no key to get wrong. It was not always so: this
 workflow was called `Checks`, which both differed from its job name and read as an umbrella over
-the five beside it.
+the workflows beside it.
 
 A second script, `tools/check_no_project_names.py`, holds a different claim — that this repository
 names no other project, and that nothing carrying procedure carries a value. It runs in its own
