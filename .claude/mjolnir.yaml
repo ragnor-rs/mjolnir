@@ -16,6 +16,11 @@
 # backlog — so the names-no-particular-project guard (#19) excludes this project's own slug
 # everywhere, and config/examples/ as example data. What #19 still asserts without exception:
 # nothing under skills/ carries a value, and no OTHER project is ever named.
+#
+# That guard is live as of #19: tools/check_no_project_names.py, and it reads the permitted
+# slug out of `host.repo` below rather than carrying one. A third exception turned up in the
+# tree and is stated in the script rather than left to a reader: the public plugin cited as
+# prior art in docs/configuration-surface.md is an artifact, not a project in scope.
 version: 1
 
 roots:
@@ -30,6 +35,15 @@ host:
   # find out whether its shape survives contact with a real workflow. It did not survive
   # unchanged: this workflow has two triggers, which the single-string form could not state,
   # so the schema now declares a list. `paths` is omitted — the workflow filters none.
+  #
+  # ⚠️ Measured again by #19, and the second thing the shape cannot state: this one workflow
+  # now runs TWO jobs mirroring TWO local commands, and `mirrors` takes one. The second is
+  #     python3 tools/check_no_project_names.py --self-test
+  # and it is written here as a comment because there is nowhere on the surface to write it.
+  # That is #58 — one entry, one mirrored command, one workflow running more than one — now
+  # with a live instance in this repository rather than only in the projects it was found in.
+  # ⛔ Not joined into the value below with `&&`: a conjunction improvised inside one string
+  # is the shape the schema already rejected for `triggers`.
   checks:
     - workflow: "Checks"
       mirrors: "python3 tools/check_single_source.py --self-test"

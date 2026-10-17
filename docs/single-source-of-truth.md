@@ -9,6 +9,12 @@ deliberately does not check.
 The check is `tools/check_single_source.py`, run by the `Checks` workflow on every pull request
 and every push to the default branch, and stated in this repository's own `host.checks`.
 
+The same workflow runs a second script, `tools/check_no_project_names.py`, which holds a
+different claim — that this repository names no other project, and that nothing carrying
+procedure carries a value. It is recorded in [its own section](#the-second-sweep-naming-no-other-project)
+below, because the two claims share this document's discipline of stating every limit and not
+its subject.
+
 ## Why this is a check rather than a convention
 
 Every other duplication in this backlog is one the toolkit exists to delete. This one is the
@@ -134,12 +140,111 @@ Stated, because an unstated limit reads later as coverage.
   asserts only that each glob matched something, which catches a moved directory but not a new
   one somewhere else.
 
+## The second sweep: naming no other project
+
+The convention in the README — that this repository names no *other* project and that nothing
+under `skills/` carries a value — says the **search is the check** rather than a reading of the
+procedure. `tools/check_no_project_names.py` is that search, as the second job of the same
+workflow. Every check in it is of the *forbidding* kind, so the whole script stands or falls on
+whether the thing forbidden has a stable form.
+
+Two scopes. The repository-wide one looks for what identifies someone else's project; the strict
+one — `skills/` and `hooks/`, never the whole tree — looks for a value, a tracker or a stack in
+text that is supposed to be procedure.
+
+| # | Check | Scope | Kind |
+|---|---|---|---|
+| 0 | No repository but this one's is named, as a URL, an install-command argument or a `repo:` value | every tracked text file | forbidding |
+| 1 | No path under a home directory | same | forbidding |
+| 2 | No address | same | forbidding |
+| 3 | No identifier that resolves on a tracker — a Jira key, a Trello object id, either service's URL | same | forbidding |
+| 4 | The strict set matched a file at all | `skills/`, `hooks/` | computed |
+| 5 | No tracker is named | the strict set | forbidding |
+| 6 | No package manager, task runner, build tool, checker, manifest or lockfile; no directory change prefixing a command, no directory flag, no absolute path | the strict set | forbidding |
+| 7 | No value any configuration supplies | the strict set | forbidding |
+
+**Two rules are what make a forbidding sweep of prose sound**, and they are the part worth reading:
+
+1. **A stack token counts only inside a code span or a fenced block.** `make`, `go`, `task`,
+   `just`, `stack`, `bundle`, `mix` and `pod` are ordinary English words in prose and unambiguous
+   commands in a code span. A sweep of prose for them would redden on a reworded sentence, which
+   is the *quoting* failure this document already rules out.
+2. **A value counts only as a whole code span or a whole quoted string.** A value written as a
+   value stands alone in its span. So `` `In Progress` `` is a status word and `"CI went green"`
+   — quoted in the day-log skill as an example of what not to write — is not a workflow name; and
+   a status vocabulary of `open` and `closed` does not forbid the word "opening".
+
+It derives what it can, for the reason stated above about the check not becoming one more copy:
+
+| Derived, at run time | Hardcoded |
+|---|---|
+| the one permitted slug, from `host.repo` in this project's own configuration | the host-URL, address and tracker-identifier grammars |
+| the tracker names, from the surface's `kind` alternatives and every configuration's declared kind | the closed list of stack tool names |
+| the forbidden value set, from the configurations themselves | which leaf keys of a configuration carry a project's fact |
+| the file list, from `git ls-files` | the code-span and quoted-string forms of rules 1 and 2 |
+
+Reading the forbidden values out of the configurations is what makes the acceptance item's pair
+work in opposite directions: **a new example configuration adds to what is forbidden under
+`skills/` instead of tripping anything, and a status word added to a skill reddens the build.**
+Both were measured rather than reasoned about.
+
+### Three exceptions, encoded rather than assumed
+
+A literal reading of the convention would forbid all three, so each is in the script:
+
+- **`config/examples/`** is whole example configurations and is data rather than procedure. It is
+  the one place a concrete status word or label prefix is written down — the surface's own
+  [boundary](../plugins/mjolnir/config/schema.md#the-configuration-surface) — and it is where the
+  sweep reads the forbidden set *from*. The strict set asserts that nothing under `skills/`
+  carries a value regardless.
+- **This repository's own slug**, derived rather than listed. Removing `host.repo` from the
+  configuration reddens the build rather than quietly permitting every slug, which is one of the
+  planted violations.
+- **The public plugin cited as prior art.** It is an artifact rather than a project in scope, and
+  it sits in a one-entry table in the script with its reason beside it, so a second entry means
+  editing that table and saying why. Emptying the table reddens the build on the live citation —
+  measured, so the carve-out is known to be load-bearing rather than decorative.
+
+`docs/` is deliberately outside the strict set: it quotes the measurements the surface was derived
+from and has to keep naming the build tool that reported a cached pass as work done. A rule that
+forbade a tool name in a measurement would forbid the evidence. `tools/` is outside it too — a
+script that forbids a list of tokens necessarily writes every one of them down.
+
+### What this sweep deliberately does not check
+
+- **A bare slug in prose.** `owner/repo` and `docs/single-source-of-truth.md` have the same shape,
+  so the sound forms are the URL, the install-command argument and the `repo:` value. A workflow's
+  `uses: actions/checkout@v4` is a third shape it does not read, and a slug written bare in a
+  sentence is a reviewer's catch.
+- **A person's name, a bare label, a milestone title, an assignee handle, a service name.** None
+  has a stable form, and forbidding a list of them would be a list to keep in sync. This is the
+  same reason projects are lettered A–F in the documentation: the convention is held by what the
+  documents *don't* contain, and the counts carry the argument instead.
+- **A language interpreter.** `python3` is on no list, and `python3 <day_log.script>` in the
+  day-log skill is the one live instance of one. ⚠️ Whether a configured script is a path the
+  procedure prefixes with an interpreter, or a command the procedure merely runs, is
+  [#65](https://github.com/ragnor-rs/mjolnir/issues/65)'s and
+  [#66](https://github.com/ragnor-rs/mjolnir/issues/66)'s ruling about what configuration carries.
+  This check does not pre-empt it by reddening, so until that lands the interpreter named in a
+  skill is a known hole — stated, because an unstated limit reads later as coverage.
+- **`hooks/`.** It is declared as a strict root and matches no file today; the hooks that enforce
+  the loop are [#16](https://github.com/ragnor-rs/mjolnir/issues/16). The run prints each declared
+  root that swept nothing rather than reporting green over it, and check 4 fails if the strict set
+  empties altogether.
+- **Issues and pull requests**, for the same reason check 3 above cannot read issue state: that
+  store is not a file, the workflow holds no credential, and a reviewer covers it.
+
 ## Each check has a violation it is asserted to redden on
 
 `--self-test` plants one violation per check and asserts that check goes red, as the first step of
 the workflow — before the tree is held to anything. The discipline is #28's: an assertion written
 before its break tends to match only the break its author imagined, and a check that cannot fail
 is not a check.
+
+Both scripts carry the mode and both are run through it by the workflow: 13 planted violations for
+the single-authority checks, 21 for the sweep. The count is above the number of checks in each
+because the plant is per *branch that does real work* — a plant that reddens a check by the wrong
+route proves nothing about the branch it was written for.
 
 That mode caught its own author. The first draft of the anchor rule collapsed runs of whitespace
 where the code host replaces each space individually, which reported six sound citations as broken
