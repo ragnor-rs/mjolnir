@@ -26,9 +26,9 @@ Three were in the tree when the check was written, which is the argument for it:
 - One ruling's outcome lived in the README, which stated that rule citing no schema section, so
   the README was a second authority for exactly one rule. It is now
   [schema § 7 → Invocation](../plugins/mjolnir/config/schema.md#invocation), which the README
-  cites. It sits as a subsection of the carrier axis rather than as a tenth numbered section,
-  because every numbered section is a configuration facet opening with a `yaml` block and this
-  is procedure — the same placement the authorship rule has under § 6.
+  cites. It sits as a subsection of the carrier axis rather than as a numbered section of its
+  own, because every numbered section is a configuration facet opening with a `yaml` block and
+  this is procedure — the same placement the authorship rule has under § 6.
 - Two rulings pointed at "the filing role's work item" and "the deploy role's work item" with no
   number, so nothing could resolve whether the outcome had moved. They now name #7 and #13.
 
@@ -52,9 +52,11 @@ file it came from fails in both directions. Every check below is one of the firs
 Check 2 is the one that does the most work, because it runs in the direction nobody remembers to
 check by hand: a section added to the schema with nothing recording why it has that shape fails
 the build at the moment it is added, rather than being noticed a year later by someone wondering
-whether it is load-bearing. ⚠️ It holds `##` sections only. Two `###` subsections are motivated by
-no document today and the gate is green on them, so the direction is enforced one level less
-deeply than it reads.
+whether it is load-bearing. ⚠️ It holds `##` sections only, so a `###` subsection that no
+document motivates passes — and some do today, including a ⛔ rule of its own. The direction is
+enforced one level less deeply than it reads. No number is given here on purpose: a count of them
+is a fact about the schema, and a copy of it in this document would go stale on the next
+subsection either way, green.
 
 Check 4 is scoped to documents that explain or record, not to a skill. That is the schema's own
 [boundary rule](../plugins/mjolnir/config/schema.md#the-configuration-surface): a fact that cannot
@@ -70,8 +72,8 @@ instead of one. That carve-out is in the script, so it is stated here too.
 
 ## The check must not become one more copy of the principles
 
-⛔ A check that hardcoded "nine roles", "five axes", "four facets with absent cases" would have to
-be edited on every change to the surface whose
+⛔ A check that hardcoded the loop's role count, the list of axes, or which facets have an absent
+case would have to be edited on every change to the surface whose
 [single-authority claim](../plugins/mjolnir/config/schema.md#the-configuration-surface) it
 enforces — this repository's own thesis violated in its own gate, and a copy that has to be kept
 in sync is the defect rather than the maintenance burden.

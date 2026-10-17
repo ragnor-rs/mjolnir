@@ -79,8 +79,11 @@ Present in one or two copies each, and true for every project:
 - Entering a worktree accepts an arbitrary path only on a session's first entry.
 - The working directory resets between calls, so an absolute root on every git invocation is
   mandatory.
-- A worktree serves the skills **committed on its own branch**, so a tree cut before a skill
-  existed does not have it.
+- A worktree serves the skills **committed on its own branch** — for skills the project carries at
+  `.claude/skills/`, so a tree cut before one existed does not have it. It does **not** hold for a
+  skill shipped in a plugin: every session serves the single registered marketplace path, whichever
+  worktree it runs in — measured 2026-10-17, see
+  [*Working on the toolkit itself*](../README.md#working-on-the-toolkit-itself).
 - Resolve today's date from the harness context, never from the shell.
 
 ---
@@ -95,7 +98,7 @@ Present in one or two copies each, and true for every project:
 | 4 | What the log measures | **Delivered work.** Rework and overhead leave the hours as well as the wording — the majority position, three copies to two | [schema § 9](../plugins/mjolnir/config/schema.md#9-day-log) |
 | 5 | Rounding | Nearest half hour, exact quarter **down**, pairing with (4) since both cut one way. A third copy rounds to one decimal instead, so `round_to` and *whether a grid is enforced* are both configuration | [schema § 9](../plugins/mjolnir/config/schema.md#9-day-log) |
 | 6 | Cut work | **Disclosed, not hidden** — a `Not billed (N h):` section, one figure on the heading and none per item, omitted rather than written empty. Bookkeeping and contractual time appear in neither section, having never bought hours. A synthesis of the three observed positions, not one of them | [schema § 9](../plugins/mjolnir/config/schema.md#9-day-log), the skill |
-| 7 | Dirty tree at start | **Derived from the branch model, not configured.** Worktree mode reports and continues; in-place mode aborts. One axis already configured decides it, so it costs no setting | [schema § 6](../plugins/mjolnir/config/schema.md#6-commit-behaviour) |
+| 7 | Dirty tree at start | **Derived from the branch model, not configured.** Worktree mode reports and continues; in-place mode aborts. One axis already configured decides it, so it costs no setting — the derivation sits in § 6 and the key it reads in § 10, which this ruling predated: while that key was absent, two projects' own layers disagreed about which mode they were in | [schema § 6](../plugins/mjolnir/config/schema.md#6-commit-behaviour), [schema § 10](../plugins/mjolnir/config/schema.md#10-branch-model) |
 | 8 | A duplicate at filing | **Rewrite the body** to what the work now is; no dated appends. Provenance goes in a comment where the tracker has them, otherwise in the run report | #7, until extracted |
 | 9 | Invocation names | **Namespaced, no alias.** A project-level alias would be one file per project per skill, reintroducing in miniature the duplication this toolkit exists to delete. The namespace also makes a deliberate local override read as a *different* name rather than the same one, which matters because one skill name already denotes two unrelated roles | [schema § 7](../plugins/mjolnir/config/schema.md#invocation) |
 | 10 | Deployment | **A thin skeleton only**: confirm intent and name the target, with an explicit go required for a live environment *for this deploy*; read-only preflight; invoke the project's own script; verify health; report what was rebuilt and what failed with its log tail. Hosts, services, secrets, build steps and tier selection stay local | #13, until extracted |

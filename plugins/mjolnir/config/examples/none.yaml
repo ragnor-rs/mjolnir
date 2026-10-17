@@ -80,3 +80,13 @@ day_log:
     chat_exclude: []
     mixed_chats: []
     calendars: []
+
+branch_model:
+  # The in-place case, and the one that makes the dirty-tree derivation (schema § 6) observable:
+  # a dirty tree aborts here, because there is no second tree for the branch to be cut in.
+  kind: in_place
+  # Not read under in_place: there is one checkout, so there is nothing to route.
+  work_in_shared_checkout: null
+  parallel_trees: false                # one checkout cannot hold two branches
+  mechanics: null
+  exclusive_resources: []

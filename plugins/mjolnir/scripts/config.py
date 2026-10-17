@@ -370,6 +370,14 @@ REQUIRED = [
     ("carriers", "each mapped role's carrier (§ 7)"),
     ("language.work_item", "the language work items are written in (§ 8)"),
     ("language.repo", "the language the repository is written in (§ 8)"),
+    # § 10 is mandatory and has no absent case: a project that never cuts a
+    # second tree is `in_place`, which is an answer rather than an omission.
+    # `work_in_shared_checkout` and `mechanics` are the two keys it states as
+    # conditionally null, so they are not required here.
+    ("branch_model.kind", "where a branch is cut (§ 10)"),
+    ("branch_model.parallel_trees", "whether two trees may be live at once (§ 10)"),
+    ("branch_model.exclusive_resources",
+     "what the trees cannot all help themselves to; `[]` states that nothing contends (§ 10)"),
 ]
 
 # A facet whose carrier is `none` states why. This is the line between a
@@ -409,6 +417,13 @@ def validate(data: dict, facts: dict) -> None:
         if path in CONTEXTUAL or not _has(data, path):
             continue
         value = _get(data, path)
+        # An alternation constrains a value that is stated; it says nothing
+        # about one that is absent. Several keys are null under a condition the
+        # surface states beside them -- `work_in_shared_checkout` under
+        # `in_place` is the case that found this -- and whether a key may be
+        # absent at all is `REQUIRED`'s question, answered above.
+        if value is None:
+            continue
         if value not in allowed:
             raise ConfigError(
                 path, f"is {value!r}; the surface allows {' | '.join(allowed)}."

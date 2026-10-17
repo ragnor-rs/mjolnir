@@ -106,3 +106,12 @@ day_log:
     chat_exclude: []
     mixed_chats: ["<the direct chat that carries both>"]
     calendars: ["<the one calendar whose titles are legible>"]
+
+branch_model:
+  # The shape where every item gets its own tree and the shared checkout is never worked in —
+  # the alternative to `when_free`, and the reason that is a key rather than a fixed rule.
+  kind: worktree
+  work_in_shared_checkout: never
+  parallel_trees: true
+  mechanics: null                      # a tree here needs nothing installed or copied
+  exclusive_resources: []              # nothing local is held; the checks run on the host
