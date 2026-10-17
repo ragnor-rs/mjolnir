@@ -92,7 +92,7 @@ found between the old copies and the decision that settled it.
 | [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) | Every divergence found between the old copies and which behaviour was kept, including where a ruling overrode a stated counter-argument |
 | [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) | How the single-authority claim is held: the checks, their kinds, and what each deliberately leaves alone |
 | [`tools/check_single_source.py`](tools/check_single_source.py) | The single-authority check, run by the `Checks` workflow on every change |
-| [`tools/check_no_project_names.py`](tools/check_no_project_names.py) | The sweep that holds the convention above: no other project named anywhere, and no value, tracker or stack under `skills/` or `hooks/` |
+| [`tools/check_no_project_names.py`](tools/check_no_project_names.py) | The sweep that holds the convention above: no other project named anywhere, and no value, tracker or stack in any carrier root |
 
 The remaining eight roles land here as they are reconciled. A project that has not been migrated
 keeps working throughout — that is a safety property of the migration, not an acceptable end state.
@@ -110,11 +110,12 @@ public plugin cited as [prior art](docs/configuration-surface.md#prior-art), whi
 rather than a project in scope. Nothing under `skills/` carries a value.
 
 That is a **search** rather than a reading of the procedure, and the search is the check:
-[`tools/check_no_project_names.py`](tools/check_no_project_names.py) runs in the `Checks`
-workflow, reads the one permitted slug out of `.claude/mjolnir.yaml` and the forbidden value set
-out of the example configurations, and holds `skills/` and `hooks/` to a stricter rule than the
-rest of the tree. Its exceptions are in the script, and what it deliberately leaves to a reviewer
-is in [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-second-sweep-naming-no-other-project).
+[`tools/check_no_project_names.py`](tools/check_no_project_names.py) runs in the `Names no other
+project` workflow, reads the one permitted slug out of `.claude/mjolnir.yaml` and the forbidden
+value set out of the configurations themselves — this project's own included — and holds every
+carrier root, whether it holds skills, commands or hooks, to a stricter rule than the rest of the
+tree. Its exceptions are in the script, and what it deliberately leaves to a reviewer is in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-second-sweep-naming-no-other-project).
 
 Projects referred to in the documentation are lettered A–F. The counts are what carry the argument.
 

@@ -1,10 +1,14 @@
 name: Checks
 
 # This repository's own gate. The shell and Python that extraction brings in are read by
-# nothing until #50 adds its linters as further jobs of this workflow. #19's sweep is the
-# second job below. This file is keyed by its workflow name in `host.checks`, never by a
-# job name — so the two jobs here are one `checks` entry that can state one mirrored
-# command, which is the divergence #58 owns and which `.claude/mjolnir.yaml` records.
+# nothing until #50 adds its linters as further jobs of this workflow. This file is keyed by
+# its workflow name in `host.checks`, never by a job name.
+#
+# ⚠️ #19's sweep is NOT a job here, though an earlier plan said it would be. A `host.checks`
+# entry states one mirrored local command, so a second job here would be a second command
+# with nowhere on the surface to live — the divergence #58 records, created on purpose in the
+# one repository required to self-host. It is its own workflow and its own entry instead:
+# .github/workflows/names-no-project.yml. ⛔ Whatever #50 adds has the same choice to make.
 
 on:
   pull_request:
@@ -30,16 +34,3 @@ jobs:
       # `host.checks` declares this run mirrors, so the two cannot drift.
       - name: Assert each check can fail, then hold every document to the surface
         run: python3 tools/check_single_source.py --self-test
-
-  names-no-project:
-    name: Names no other project
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      # The sweep reads the tracked file list from git, so the checkout's full working
-      # tree is what it holds — not a glob that could quietly stop matching.
-      - name: Assert each check can fail, then sweep the tree for another project's names
-        run: python3 tools/check_no_project_names.py --self-test
