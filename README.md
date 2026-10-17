@@ -169,7 +169,10 @@ stated, rather than noting it and carrying on; and no change merges carrying an 
 against it. The
 [completeness rule](plugins/mjolnir/config/schema.md#nothing-is-deferred) is the single statement
 of it, the exception for genuinely separate work, and the test that tells the two apart. It is
-held by the `Nothing deferred` workflow rather than by a reviewer noticing.
+held by the `Nothing deferred` workflow rather than by a reviewer noticing, and what it
+deliberately leaves to a reviewer is in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-gate-on-the-change-nothing-is-deferred)
+— a comment finding, a `None.` that is not true, and the closing half of the rule.
 
 ⛔ **The only author is the authenticated user** — here and in every project the toolkit drives.
 The [authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration)

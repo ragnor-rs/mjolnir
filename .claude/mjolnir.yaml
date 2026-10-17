@@ -51,10 +51,7 @@ host:
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
-    # ⚠️ This entry understates its workflow, and the gap is filed as #82 rather than carried
-    # here: the run also fires on an edited body, which pushes no commit, and `triggers` states
-    # the event and the base but never the event types. It is the only entry with no push
-    # trigger — the rule it holds is about a pull request, and the default branch has none.
+    # ⚠️ What this entry cannot state about its workflow is #82, and is stated there.
     - workflow: "Nothing deferred"
       mirrors: "python3 tools/check_nothing_deferred.py --self-test"
       triggers: ["pull_request -> *"]

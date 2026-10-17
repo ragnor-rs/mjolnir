@@ -17,12 +17,13 @@ second command with nowhere on the surface to live. It is recorded in
 [its own section](#the-second-sweep-naming-no-other-project) below, because the two claims share
 this document's discipline of stating every limit and not its subject.
 
-A third, `tools/check_nothing_deferred.py`, holds a claim about the change rather than about the
-tree: that nothing in it was deferred. It runs in its own `Nothing deferred` workflow and has its
-own `host.checks` entry, for the same reason the second does, and is recorded in
-[its own section](#the-third-gate-nothing-is-deferred) below. It is the only one of the three
-that reaches off the tree, and the only one granted a token scope — stated there rather than
-discovered in a workflow file.
+`tools/check_nothing_deferred.py` holds a claim about the change rather than about the tree: that
+nothing in it was deferred. It runs in its own `Nothing deferred` workflow and has its own
+`host.checks` entry, for the same reason the sweep does, and is recorded in
+[its own section](#the-gate-on-the-change-nothing-is-deferred) below. It is the one that reaches
+off the tree, and the one granted a token scope — stated there rather than discovered in a
+workflow file. (No count of the gates is given, here or below: a count in prose is a copy that
+goes stale on the next gate, green.)
 
 ## Why this is a check rather than a convention
 
@@ -85,6 +86,13 @@ Check 3 permits a third, partial home. A ruling whose outcome is split between t
 skill that carries it may name `the skill` **alongside** a section — ruling 6 does — but never
 instead of one. That carve-out is in the script, so it is stated here too.
 
+⚠️ **Check 3 recognises a numbered home only**, because the cell's form is `[schema § N](…#a)`
+and the number and the anchor are required to agree. A procedure rule sitting under an unnumbered
+`##` section — [*Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred),
+under the loop — therefore cannot be named as a ruling's outcome at all, and a ruling that needed
+to would have to name its work item instead. Nothing needs to today; it is recorded because the
+alternative is discovering it from a red build on whichever divergence first rules that way.
+
 ## The check must not become one more copy of the principles
 
 ⛔ A check that hardcoded the loop's role count, the list of axes, or which facets have an absent
@@ -143,9 +151,12 @@ Stated, because an unstated limit reads later as coverage.
   [§ 3](../plugins/mjolnir/config/schema.md#3-tracker-port), so a deeper comparison would need an
   exception per tracker kind. A bounded check that is sound beats a deep one that needs
   carve-outs, and `tracker.labels` being undeclared is the known consequence.
-- **Issues and pull requests.** That store is not a file and cannot be swept from a gate at all,
-  which is the same reason [#19](https://github.com/ragnor-rs/mjolnir/issues/19) records for
-  lettering projects A–F in the documentation.
+- **Issues and pull requests.** Not from *this* workflow, which holds no credential — reading
+  that store needs a token scope, and per [#50](https://github.com/ragnor-rs/mjolnir/issues/50)
+  this one is granted none. ⚠️ It is not unreachable in principle, and this document used to say
+  it was: the gate on the change below does read it, with a scope of its own. What stays true
+  here is the trade, not the impossibility. The lettering of projects A–F in the documentation
+  rests on the same reason [#19](https://github.com/ragnor-rs/mjolnir/issues/19) records.
 - **Configurations outside the globs.** A configuration added where `CONFIG_GLOBS` does not look
   is skipped. Check 0's loud-residue argument covers documents; for configurations the guard
   asserts only that each glob matched something, which catches a moved directory but not a new
@@ -291,7 +302,7 @@ exempted the whole directory and so would have read straight past it.
 - **Issues and pull requests**, for the same reason check 3 above cannot read issue state: that
   store is not a file, the workflow holds no credential, and a reviewer covers it.
 
-## The third gate: nothing is deferred
+## The gate on the change: nothing is deferred
 
 The surface rules that a work item is delivered whole — a role that cannot answer a question asks
 rather than noting it, and no change merges with an open item against it:
@@ -305,19 +316,34 @@ threads the host records a resolution for — and names each one it finds.
 
 | # | Check | Scope | Kind |
 |---|---|---|---|
-| 0 | A pull request was resolved, and it has a body | the change | computed |
-| 1 | The body states its open items, and the answer is that there are none | the body | computed |
+| 0 | The pull request has a body | the change | computed |
+| 1 | The body states its open items, once, and the answer is that there are none | the body | forbidding |
 | 2 | No thread on the change is unresolved | every thread, following the cursor | computed |
 | 3 | No unticked item in the body | the body | forbidding |
-| 4 | No deferral marker on a line this change adds | the added lines of the diff | forbidding |
+| 4 | Every changed file was read, and no deferral marker is on a line this change adds | the diff's added lines | forbidding |
 
-Check 1 is the one that reddens the shape the rule was written against. A body that lists what it
-knows is unfinished under a heading reading as diligence — the measured case — carries no
-statement at all, and the absence is what fails: the section is required, and `None.` is the only
-answer that closes it. Check 2 is what a reviewer cannot be, and ⚠️ it follows the cursor rather
-than reading a first page, because a review that ran long is exactly the change this gate is for.
+⚠️ **Check 1 is *forbidding*, not computed, and the distinction is the one this document draws
+above.** The heading `Open items` and the answer `None.` are a grammar the gate publishes, so the
+check reddens on a reword — `Open questions` is not that heading and `Nothing outstanding.` is not
+that answer. That is sound only while the forbidden thing is stable, which a grammar the gate
+itself fixes is; it is not a *quoting* check, because nothing here is compared against the text it
+came from. Making both strings configuration, in the repository's own language, is
+[#51](https://github.com/ragnor-rs/mjolnir/issues/51)'s, and this script is the implementation
+that item would call rather than a second one.
 
-⛔ **This gate holds a token scope, and that is a departure from its two siblings** rather than an
+**The grammar check 1 enforces, in full**, because the refusal names the items and not the shape:
+an ATX heading whose text is `Open items` at any level, appearing **once**; the section running to
+the next heading of any level; and, inside it, nothing but the answer — `None.` or `None`, in any
+case, optionally as a list item or emphasised. Blank lines, horizontal rules and single-line HTML
+comments are not content. Anything else in that section is an open item and is named as one.
+
+Check 2 is what a reviewer cannot be, and ⚠️ it follows the cursor rather than reading a first
+page, because a review that ran long is exactly the change this gate is for. Check 1 is the one
+that reddens the shape the rule was written against: a body that lists what it knows is unfinished
+under a heading reading as diligence — the measured case — carries no statement at all, and the
+absence is what fails.
+
+⛔ **This gate holds a token scope, and that is a departure from its siblings** rather than an
 oversight in one workflow file. They read files in the tree and reach nothing; this one reads a
 resolution the host records and an author cannot describe, and the surface's own rule that a
 finding goes where its resolution can be read back
@@ -325,6 +351,17 @@ finding goes where its resolution can be read back
 stating if something reads it. The scope is `pull-requests: read`, the narrowest the host offers;
 nothing writes; the checkout still persists no credential, and the token is handed to the one step
 that needs it rather than left in the git config.
+
+⚠️ **What that scope did not buy, measured rather than assumed.** At the moment the gate was
+written, `reviewThreads.totalCount` was **zero on every pull request this repository had ever
+had**, and every review finding it had ever produced was an issue comment, which the query does
+not return. So on the history to that point, body-only and body-plus-threads were
+indistinguishable, and check 2 would have been green on the very pull request cited as the
+measured shape. What makes the scope worth holding is not that history but the rule beside it:
+a finding now goes in a thread, and the first review conducted under that rule put sixteen of them
+on this gate's own pull request. ⛔ The honest reading is that check 2 is **prospective** — it
+holds nothing retroactively, and a reader who takes the scope as evidence the threads were already
+there has it backwards.
 
 ### What this gate deliberately does not check
 
@@ -339,24 +376,27 @@ that needs it rather than left in the git config.
 - **A finding raised as a plain comment.** A comment carries no resolution state anywhere on the
   host, so nothing can report it unresolved — which is why the rule puts a finding in a thread.
   A finding posted where it cannot be read back is a reviewer's catch, and the one real hole in
-  check 2.
-- **Re-running when a thread is resolved.** Resolving a thread fires no workflow event, so a
-  verdict stands until the next push, body edit or manual re-run. Stated because a red check with
-  every thread resolved otherwise reads as a defect in the gate.
-- **A marker with no colon and no argument list.** A bare `TODO` in a sentence is prose, and both
-  spellings already sit innocently in this tree — in a comment quoting a status vocabulary, and in
-  this document. Sweeping prose for the words would redden on a reworded sentence, which is the
-  *quoting* failure ruled out above.
+  check 2. ⚠️ It was the whole of this repository's review record until this gate landed.
+- **A marker with no colon and no argument list.** A bare `TODO` in a sentence is prose, and it
+  already sits innocently in this tree — in a comment quoting a status vocabulary, and in this
+  document. Sweeping prose for the word would redden on a reworded sentence, which is the
+  *quoting* failure ruled out above. `FIXME` and `XXX` occur nowhere here and are carried for the
+  projects that arrive with them.
 - **A marker this change did not write.** Only added lines are read: somebody else's marker is
   somebody else's item.
+- **A marker in the script itself.** ⚠️ That one file, not all of `tools/` — it necessarily
+  writes
+  down every form it forbids, and its sibling needs no such licence, which matters because `tools/`
+  is where further scripts land. Both halves are asserted: the whole-change fixture carries a
+  marker in this file and stays green, and a plant puts one in a sibling tool and reddens.
+- **A setext heading.** `Open items` underlined with hyphens is an `h2` to the host and is not a
+  heading to this gate. The residue is narrow and the alternative is a second heading grammar.
 - **A pull request that does not exist yet.** Run by hand before one is opened, the gate has no
   answer and says so, and no answer is not green — the surface's rule for an absent run
   ([§ 2](../plugins/mjolnir/config/schema.md#2-code-host)) holds here for the same reason.
-- **The heading the body states its open items under.** `Open items` is hardcoded as grammar, in
-  the sense the two scripts above hardcode a citation form: a project whose repository language is
-  not English needs it configured, which is
-  [#51](https://github.com/ragnor-rs/mjolnir/issues/51)'s body-section gate. This script is the
-  implementation that item would call rather than a second one.
+- **A merge that happens between the last run and the button.** The verdict is about the change as
+  the last triggering event left it. The workflow listens to the review and thread events as well
+  as to the pull request's own, so the window is small; it is not nothing.
 
 ## Each check has a violation it is asserted to redden on
 
@@ -365,8 +405,9 @@ the workflow — before the tree is held to anything. The discipline is #28's: a
 before its break tends to match only the break its author imagined, and a check that cannot fail
 is not a check.
 
-Both scripts carry the mode and both are run through it by their workflow, as the first step,
-before the tree is held to anything. In each the plant count is well above the check count,
+Every script here carries the mode, and each is run through it by its workflow as the first step,
+before the tree — or, for the gate on the change, the pull request — is held to anything. In
+each the plant count is well above the check count,
 because the plant is per *branch that does real work* — a plant that reddens a check by the wrong
 route proves nothing about the branch it was written for. ⛔ The numbers are deliberately not
 written down here: a count in prose is a copy that has to be kept in sync, and the run prints its

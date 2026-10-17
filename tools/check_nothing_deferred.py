@@ -17,11 +17,10 @@ are read here:
     than the author describing it.
 
 That second one is why this gate holds a token scope where its siblings hold
-none. It is the narrowest the host offers -- read access to pull requests, with
-the checkout still told to persist nothing -- and the trade is stated in
-docs/single-source-of-truth.md rather than left as a quiet exception. Without
-it a finding raised in review is invisible here, and an item no gate can see
-reads as resolved.
+none. What the scope is, what it buys, and what it measurably did not buy on
+this repository's history are stated once, in
+docs/single-source-of-truth.md#the-gate-on-the-change-nothing-is-deferred, and
+are not repeated here or in the workflow file.
 
 Measured on this repository, which is what made the rule procedure: a pull
 request merged carrying its own list of unresolved items in its body and review
@@ -57,11 +56,17 @@ import urllib.request
 # Form, not content. Every one of these is a shape a body or a diff has, and
 # none of them is a fact about this project.
 
-# The section a body states its open items under, and the only answer that
-# closes it. A heading at any level, matched on its text alone and without
-# regard to case, because the level and the casing a body puts it at are
-# formatting. The spellings below are what a refusal quotes back, so what the
-# gate asks for and what the documents state are one string rather than two.
+# The section a body states its open items under, and the answer that closes
+# it. An ATX heading at any level, matched on its text alone and without regard
+# to case, because the level and the casing a body puts it at are formatting.
+# The spellings below are what a refusal quotes back, so what the gate asks for
+# and what the documents state are one string rather than two.
+#
+# ⚠️ This is a grammar the gate publishes, not a property it derives, so it
+# reddens on a reword -- `Open questions` is not this heading and `Nothing
+# outstanding.` is not this answer. That is why it is a *forbidding* check in
+# the document's table rather than a computed one, and why making the two
+# strings configuration, in the repository's own language, is #51's.
 HEADING_TEXT = "Open items"
 NO_OPEN_ITEMS_ANSWER = "None."
 OPEN_ITEMS = HEADING_TEXT.lower()
@@ -70,11 +75,20 @@ NO_OPEN_ITEMS = {NO_OPEN_ITEMS_ANSWER.lower(), NO_OPEN_ITEMS_ANSWER.lower().rstr
 HEADING = re.compile(r"^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$")
 UNTICKED = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+\[ \]\s*(?P<text>.*)")
 
+# A line under the heading that carries no claim: blank, a horizontal rule, a
+# single-line comment the host does not render. Stripping these is what lets a
+# body answer `- None.` or close the section with a rule and still be read as
+# having answered, rather than as listing the rule as an open item.
+NOISE = re.compile(r"^\s*(?:-{3,}|\*{3,}|_{3,}|<!--.*-->)?\s*$")
+LIST_MARKER = re.compile(r"^(?:[-*+]|\d+[.)])\s+")
+
 # A deferral marker, in the one form that is unambiguous: the word carrying a
 # colon or an argument list. A bare mention -- `TODO` in a sentence about this
 # rule, or in a comment quoting a status vocabulary -- is prose, and sweeping
-# prose for these words would redden on a reworded sentence. Both spellings
-# already live in this tree for exactly that innocent reason.
+# prose for these words would redden on a reworded sentence. `TODO` already
+# occurs innocently in this tree for exactly that reason; the other two
+# spellings occur nowhere, and carrying them costs nothing and covers the two
+# markers a migrating project is most likely to arrive with.
 MARKER = re.compile(r"\b(TODO|FIXME|XXX)\s*[:(]")
 
 # Only added lines are read. A marker this change did not write is somebody
@@ -115,12 +129,15 @@ class Unreadable(Exception):
 class Change:
     """One pull request, in memory, so a violation can be planted into it."""
 
-    def __init__(self, number: int | None, body: str | None,
-                 threads: list[dict], added: list[tuple[str, str]]):
+    def __init__(self, number: int | None, body: str | None, threads: list[dict],
+                 added: list[tuple[str, str]], unread: list[str] | None = None):
         self.number = number
         self.body = body
         self.threads = threads
         self.added = added
+        # Files the host returned without a patch, so check 4 can report what
+        # it did not read instead of reporting green over it.
+        self.unread = list(unread or [])
 
     def copy(self) -> "Change":
         return Change(
@@ -128,30 +145,50 @@ class Change:
             self.body,
             [dict(thread) for thread in self.threads],
             list(self.added),
+            list(self.unread),
         )
 
-    def section(self, name: str) -> list[str] | None:
-        """The lines under the heading named, or None where there is no such heading.
+    def sections(self, name: str) -> list[list[str]]:
+        """Every section under the heading named, in document order.
 
-        Runs to the next heading of any level, so a body that states its open
-        items and then carries on about something else is read correctly.
+        ⚠️ Fenced blocks are skipped by a line toggle rather than matched by a
+        paired regex, which is the correction both sibling scripts already
+        carry: one trailing space after a fence's language tag makes a paired
+        regex pair one block's closer with the next block's opener. Here that
+        would let a body quoting the required shape in an example hijack the
+        real section -- and this document tells authors what that shape is, so
+        a body showing it is the likely case rather than the exotic one.
+
+        Every match is returned, never the first, because a second section is
+        not a repeat of the first: a body stating `None.` and then listing
+        items further down reads as answered under any rule that takes one.
         """
         if self.body is None:
-            return None
-        out: list[str] | None = None
+            return []
+        found: list[list[str]] = []
+        current: list[str] | None = None
+        fenced = False
         for line in self.body.splitlines():
-            match = HEADING.match(line)
-            if match:
-                title = match.group(2).strip().strip("*_`:").strip().lower()
-                if title == name:
-                    out = []
-                    continue
-                if out is not None:
-                    break
+            if line.lstrip().startswith("```"):
+                fenced = not fenced
+                if current is not None:
+                    current.append(line)
                 continue
-            if out is not None:
-                out.append(line)
-        return out
+            if not fenced:
+                match = HEADING.match(line)
+                if match:
+                    title = match.group(2).strip().strip("*_`:").strip().lower()
+                    if current is not None:
+                        found.append(current)
+                        current = None
+                    if title == name:
+                        current = []
+                    continue
+            if current is not None:
+                current.append(line)
+        if current is not None:
+            found.append(current)
+        return found
 
 
 # --- reading the change off the host ---------------------------------------
@@ -226,23 +263,42 @@ def _where() -> tuple[str, str, int]:
     except ImportError as exc:
         raise Unreadable(f"the configuration reader could not be imported: {exc}") from exc
     try:
-        slug = reader.load(root).get("host.repo")
+        configuration = reader.load(root)
+        slug = configuration.get("host.repo")
+        code_root = configuration.code_root
     except Exception as exc:  # the reader names the key it refused
         raise Unreadable(f"the configuration could not be read: {exc}") from exc
     if not slug or "/" not in slug:
         raise Unreadable("the configuration states no `host.repo`, so there is nothing to ask.")
     owner, _, name = slug.partition("/")
 
+    # ⛔ The repository, the directory and the branch are each named rather
+    # than inherited. § 1 forbids inferring the code root, and a `gh` call
+    # that takes the working directory's remote reads the wrong repository on
+    # a fork -- a verdict about a different change, in the direction that
+    # answers. ⚠️ The branch has to be passed too: `pr view` infers it from the
+    # checkout, and naming `--repo` is what turns that inference off, so the
+    # two cannot both be left implicit and cannot both be named either.
     try:
+        branch = subprocess.run(
+            ["git", "-C", code_root, "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
         out = subprocess.run(
-            ["gh", "pr", "view", "--json", "number", "--jq", ".number"],
-            capture_output=True, text=True, check=True, cwd=root,
+            ["gh", "pr", "list", "--repo", slug, "--head", branch, "--state", "open",
+             "--json", "number", "--jq", ".[0].number"],
+            capture_output=True, text=True, check=True,
         )
     except (OSError, subprocess.CalledProcessError) as exc:
         raise Unreadable(
-            "no pull request for this branch. The rule is held against a pull request, so "
-            "this check has no answer until one exists -- which is not the same as green."
+            f"the host could not be asked for a pull request on `{slug}`: {exc}"
         ) from exc
+    if not out.stdout.strip():
+        raise Unreadable(
+            f"no open pull request for `{branch}` on `{slug}`. The rule is held against a "
+            "pull request, so this check has no answer until one exists -- which is not "
+            "the same as green."
+        )
     return owner, name, int(out.stdout.strip())
 
 
@@ -283,21 +339,44 @@ def _threads(owner: str, name: str, number: int, token: str) -> tuple[str | None
         after = page["pageInfo"]["endCursor"]
 
 
-def _added(owner: str, name: str, number: int, token: str) -> list[tuple[str, str]]:
-    """(path, added line) for every line this change writes, following pages."""
+# The host stops listing a change's files here, and a change that reaches it
+# has files nothing read.
+FILE_CEILING = 3000
+
+
+def _added(owner: str, name: str, number: int,
+           token: str) -> tuple[list[tuple[str, str]], list[str]]:
+    """(path, added line) for every line this change writes, and what went unread.
+
+    ⚠️ The host omits `patch` for a binary file, for a diff over its per-file
+    size limit, and for everything past its file ceiling. Those files are
+    returned as the second value rather than skipped: a marker in a file
+    nothing read is not an absence of markers, and absence of signal is not an
+    answer.
+    """
     out: list[tuple[str, str]] = []
+    unread: list[str] = []
     page = 1
     while True:
         files, _ = _request(
             f"{API}/repos/{owner}/{name}/pulls/{number}/files?per_page={PAGE}&page={page}", token
         )
         for entry in files:
-            for line in (entry.get("patch") or "").splitlines():
+            patch = entry.get("patch")
+            if patch is None:
+                unread.append(entry["filename"])
+                continue
+            for line in patch.splitlines():
                 match = DIFF_ADDED.match(line)
                 if match:
                     out.append((entry["filename"], match.group("text")))
         if len(files) < PAGE:
-            return out
+            return out, unread
+        if page * PAGE >= FILE_CEILING:
+            unread.append(
+                f"everything past the host's {FILE_CEILING}-file ceiling"
+            )
+            return out, unread
         page += 1
 
 
@@ -305,7 +384,8 @@ def read_change() -> Change:
     owner, name, number = _where()
     token = _token()
     body, threads = _threads(owner, name, number, token)
-    return Change(number, body, threads, _added(owner, name, number, token))
+    added, unread = _added(owner, name, number, token)
+    return Change(number, body, threads, added, unread)
 
 
 # --- the checks ------------------------------------------------------------
@@ -317,43 +397,53 @@ def read_change() -> Change:
 
 
 def check_the_change_was_read(change: Change) -> list[str]:
-    problems = []
-    if change.number is None:
-        problems.append(
-            "no pull request was resolved, so nothing below holds anything. Absence of "
-            "signal is not an answer, and it is never green."
-        )
-    if change.body is None:
-        problems.append(
+    """⛔ The number cannot be checked here: `_where()` returns an int or raises.
+
+    An unresolvable pull request is reported by the `Unreadable` handler in
+    `main()`, which is the only branch that can carry it, and a clause here
+    for the same fact would be a second mechanism with the live one dead.
+    What is reachable is an empty body -- the host returns `""` over GraphQL,
+    never null -- and that is what this holds.
+    """
+    if not change.body:
+        return [
             "the pull request has no body at all. A change states what it carries; an "
-            "empty body states nothing and cannot state that nothing is open."
-        )
-    return problems
+            "empty body states nothing, and cannot state that nothing is open."
+        ]
+    return []
 
 
 def check_the_body_states_its_open_items(change: Change) -> list[str]:
-    if change.body is None:
+    if not change.body:
         return []
-    lines = change.section(OPEN_ITEMS)
-    if lines is None:
+    found = change.sections(OPEN_ITEMS)
+    if not found:
         return [
             f"the body carries no `{HEADING_TEXT}` section. The statement that every item "
             "raised against this change is resolved is what the gate reads back, so a body "
             "that does not make it is not ready — write the section, and answer it "
             f"`{NO_OPEN_ITEMS_ANSWER}` where nothing is open."
         ]
-    content = [line.rstrip() for line in lines if line.strip()]
-    answer = " ".join(" ".join(content).split()).lower()
-    if answer in NO_OPEN_ITEMS:
+    if len(found) > 1:
+        return [
+            f"the body carries {len(found)} `{HEADING_TEXT}` sections. One of them answers and "
+            "the others are unread, whichever rule picks — so a body that answers once and "
+            "lists items further down reads as answered. State it once."
+        ]
+    content = [line.rstrip() for line in found[0] if not NOISE.match(line)]
+    text = " ".join(" ".join(content).split())
+    bare = LIST_MARKER.sub("", text).strip("*_` ").strip()
+    if bare.lower() in NO_OPEN_ITEMS:
         return []
     if not content:
         return [
             f"the body's `{HEADING_TEXT}` section is empty. An empty section is not an "
-            "answer: state what is open, or state that nothing is."
+            f"answer: list what is open, or answer `{NO_OPEN_ITEMS_ANSWER}`."
         ]
     return [
-        f"the body's `{HEADING_TEXT}` section carries {len(content)} open item(s), and "
-        "no change merges with one against it:"
+        f"the body's `{HEADING_TEXT}` section carries {len(content)} line(s) that are not "
+        f"the answer `{NO_OPEN_ITEMS_ANSWER}`, and no change merges with an open item "
+        "against it:"
     ] + [f"    {line.strip()}" for line in content]
 
 
@@ -371,8 +461,17 @@ def check_no_thread_is_unresolved(change: Change) -> list[str]:
 
 
 def check_no_unticked_item_in_the_body(change: Change) -> list[str]:
+    """Fenced blocks are skipped here too, and for the same reason as above:
+    a body illustrating the shape this gate forbids must not be refused for
+    illustrating it."""
     problems = []
+    fenced = False
     for line in (change.body or "").splitlines():
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
         match = UNTICKED.match(line)
         if match:
             problems.append(
@@ -382,7 +481,11 @@ def check_no_unticked_item_in_the_body(change: Change) -> list[str]:
 
 
 def check_no_deferral_marker_added(change: Change) -> list[str]:
-    problems = []
+    problems = [
+        f"{path}: the host supplied no patch for this file, so nothing below read it. "
+        "A marker in a file nothing read is not an absence of markers."
+        for path in change.unread
+    ]
     for path, line in change.added:
         if path == SELF:
             continue
@@ -395,8 +498,12 @@ def check_no_deferral_marker_added(change: Change) -> list[str]:
 
 
 # The one file that necessarily writes the markers down, for the same reason
-# its sibling sweep exempts itself: it spells out every form it forbids. The
-# exemption is this file and no other, so a marker in any other tool is read.
+# its sibling sweep exempts itself: it spells out every form it forbids. ⚠️ The
+# exemption is this file and no other -- a marker in any other tool is read,
+# which `tools/` being where further scripts land makes load-bearing rather
+# than theoretical. Both halves are asserted below: the whole-change fixture
+# carries a marker in this file and stays green, and a plant puts one in a
+# sibling tool and reddens.
 SELF = "tools/" + os.path.basename(__file__)
 
 
@@ -422,11 +529,21 @@ WHOLE = Change(
         "and refuses what the surface does not allow.\n\n"
         "### Test plan\n\n"
         "- [x] the self-test is green\n\n"
+        "```markdown\n"
         "## Open items\n\n"
         "None.\n"
+        "- [ ] the shape this gate refuses\n"
+        "```\n\n"
+        "## Open items\n\n"
+        "- None.\n\n"
+        "---\n"
     ),
     threads=[{"resolved": True, "outdated": False, "path": "a.py", "line": 3, "first": "Answered."}],
-    added=[("a.py", "    return value")],
+    # A marker in this file is exempt and a line in a sibling tool is not;
+    # the first half is asserted by this fixture staying green.
+    added=[("a.py", "    return value"),
+           ("tools/" + os.path.basename(__file__), "    # TODO: the forms this file forbids")],
+    unread=[],
 )
 
 # The shape this rule was written against, reproduced rather than described: a
@@ -450,13 +567,8 @@ def _plant_body(body: str):
     return apply
 
 
-def _plant_no_pull_request(change: Change) -> Change:
-    change.number = None
-    return change
-
-
 def _plant_no_body(change: Change) -> Change:
-    change.body = None
+    change.body = ""
     return change
 
 
@@ -476,33 +588,47 @@ def _plant_unresolved_outdated_thread(change: Change) -> Change:
     return change
 
 
-def _plant_marker(text: str):
+def _plant_marker(path: str, text: str):
     def apply(change: Change) -> Change:
-        change.added.append(("b.py", text))
+        change.added.append((path, text))
         return change
 
     return apply
 
 
+def _plant_unread_file(change: Change) -> Change:
+    change.unread.append("assets/large.bin")
+    return change
+
+
 VIOLATIONS = [
-    ("the change was read", "no pull request resolved", _plant_no_pull_request),
-    ("the change was read", "a body-less pull request", _plant_no_body),
+    ("the change was read", "an empty body", _plant_no_body),
     ("the body states its open items", "the measured shape: open items under another heading",
      _plant_body(THE_MEASURED_SHAPE)),
     ("the body states its open items", "a section listing what is open",
      _plant_body("## Open items\n\n- The wrap rule is unenforced here.\n")),
     ("the body states its open items", "a section answered with anything but none",
      _plant_body("## Open items\n\nSee the thread above.\n")),
+    ("the body states its open items", "an answer with an open item written after it",
+     _plant_body("## Open items\n\nNone.\n\nThe hook is not wired yet.\n")),
     ("the body states its open items", "an empty section", _plant_body("## Open items\n\n")),
+    ("the body states its open items", "a second section further down",
+     _plant_body("## Open items\n\nNone.\n\n## Notes\n\nx\n\n## Open items\n\n- open\n")),
+    ("the body states its open items", "a section quoted in a fence and never stated",
+     _plant_body("## Notes\n\n```markdown\n## Open items\n\nNone.\n```\n")),
     ("no thread on the change is unresolved", "an unresolved thread", _plant_unresolved_thread),
     ("no thread on the change is unresolved", "an unresolved thread on an outdated diff",
      _plant_unresolved_outdated_thread),
     ("no unticked item in the body", "an unticked item",
      _plant_body("## Open items\n\nNone.\n\n- [ ] drive it in the running application\n")),
     ("no deferral marker added by the change", "a marker with a colon",
-     _plant_marker("    # TODO: narrow this once the facet lands")),
+     _plant_marker("b.py", "    # TODO: narrow this once the facet lands")),
     ("no deferral marker added by the change", "a marker with an argument list",
-     _plant_marker("    // FIXME(someone): the wrong root")),
+     _plant_marker("b.py", "    // FIXME(someone): the wrong root")),
+    ("no deferral marker added by the change", "a marker in a sibling tool, which is not exempt",
+     _plant_marker("tools/check_single_source.py", "    # XXX: skip this for now")),
+    ("no deferral marker added by the change", "a file the host supplied no patch for",
+     _plant_unread_file),
 ]
 
 

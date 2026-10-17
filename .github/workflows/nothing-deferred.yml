@@ -5,19 +5,26 @@ name: Nothing deferred
 # states one mirrored local command, so two commands behind one workflow name could not be
 # stated on the surface at all.
 #
-# ⛔ This is the one workflow here that holds a token scope, and the reason is stated rather
-# than assumed. Its siblings read files in the tree and reach nothing. This one reads the
-# threads on the pull request, whose resolution the host records and the author cannot describe
-# — and a finding the gate cannot see reads as resolved. `pull-requests: read` is the narrowest
-# scope that answers it; nothing here writes, and the checkout still persists no credential.
-# The trade is recorded in docs/single-source-of-truth.md.
+# ⛔ This is the one workflow here that holds a token scope. Why that is a departure worth making,
+# and what it buys, is stated once in
+# docs/single-source-of-truth.md#the-gate-on-the-change-nothing-is-deferred — not repeated here.
 
 on:
+  # ⚠️ Three events, because the signal this gate exists for arrives on two of them. A review is
+  # submitted and a thread is resolved without any commit being pushed, so a workflow listening
+  # to `pull_request` alone goes green once and stays green while findings pile up against it —
+  # measured on this pull request, which reported green carrying sixteen unresolved threads.
+  # `edited` and `ready_for_review` are non-default types of the first event for the same reason:
+  # both change what the gate reads and neither pushes a commit.
+  #
+  # The surface's `triggers` facet states an event and a base, and cannot state a type or either
+  # of the other two events — #82.
   pull_request:
-    # ⚠️ `edited` is the one that is not default, and it is load-bearing: a body corrected in
-    # place pushes no commit, so without it the pull request stays red until an unrelated push.
-    # The surface's `triggers` facet states the event and the base, never the types — #82.
     types: [opened, edited, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
+  pull_request_review_thread:
+    types: [resolved, unresolved]
 
 permissions:
   pull-requests: read
