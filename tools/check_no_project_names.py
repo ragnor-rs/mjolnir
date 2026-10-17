@@ -89,6 +89,26 @@ PLUGIN_NON_CARRIER = [
     "plugins/*/scripts/",
 ]
 
+# The same distinction, keyed on what the file *is* rather than on which root its
+# carrier sits in: a script a carrier calls is implementation under every carrier
+# root, not only under this plugin's. Derived from the shapes above so a new
+# carrier root inherits it with no second list to keep in step -- the reason
+# `STRICT_SHAPES` is built by shape in the first place.
+#
+# ⛔ A hook is **not** implementation. A hook is the carrier: it is what runs, so
+# it is instructions and it is swept. So is a carrier's own file.
+#
+# ⚠️ What this lets through, stated rather than discovered: a script here may name
+# a status word. Measured on a backlog script whose two configured statuses were
+# `open` and `closed` -- which are also the two spellings the host uses for the
+# same fact, `Issue.closed` in its schema and `OPEN`/`CLOSED` in its state enum.
+# No spelling of that query satisfies the value rule, and reading the name out of
+# the configuration does not help, because the literal is the host's field name
+# rather than a value the script chose. The tree-wide checks still hold every one
+# of these files: no home directory, no address, no other repository, no tracker
+# identifier.
+CARRIER_IMPLEMENTATION = [f"{shape}*/scripts/" for shape in STRICT_SHAPES]
+
 # ⚠️ This file alone, not all of `tools/`. It necessarily writes down every token
 # it forbids -- its own grammars and its planted violations contain home paths,
 # addresses and foreign slugs. Its sibling needs no such exemption and is swept
@@ -339,6 +359,7 @@ class Tree:
             if self.inside(p, STRICT_SHAPES)
             and p != SELF_FILE
             and not self.inside(p, DATA_ROOTS)
+            and not self.inside(p, CARRIER_IMPLEMENTATION)
         ]
 
     def unswept_shapes(self) -> list[str]:
@@ -735,6 +756,16 @@ def _plant_in_a_carrier(text: str):
     return apply
 
 
+def _plant_in_a_carrier_implementation(text: str):
+    """Into a script a carrier calls, which is implementation and not swept."""
+    def apply(tree: Tree) -> Tree:
+        shape = STRICT_SHAPES[0]
+        tree.text[f"{shape}planted/scripts/planted.py"] = "#!/usr/bin/env python3\n" + text
+        return tree
+
+    return apply
+
+
 def _plant_in_a_hook(text: str):
     def apply(tree: Tree) -> Tree:
         tree.text["hooks/planted.sh"] = "#!/usr/bin/env bash\n" + text
@@ -906,6 +937,19 @@ VIOLATIONS = [
 ]
 
 
+# Assertions in the other direction: a plant each check must *not* redden on.
+# A check whose scope is wider than it was written for is as broken as one that
+# cannot fail, and the only thing that catches a scope widening is asserting the
+# green side of it. Each entry names the exemption it holds, so tightening one
+# makes a named assertion fail rather than silently sweeping more of the tree.
+EXEMPTIONS: list[tuple[str, str, object]] = [
+    ("no value is carried in the strict set", "a status word in a script a carrier calls",
+     _plant_in_a_carrier_implementation("STATES = ('open', 'closed')\n")),
+    ("no stack is named in the strict set", "a language named in a script a carrier calls",
+     _plant_in_a_carrier_implementation("# python3, called by the carrier beside it\n")),
+]
+
+
 def _plant_upper_case_status(tree: Tree) -> Tree:
     """An all-caps status in a real configuration is a value, not a placeholder."""
     tree.text[OWN_CONFIG] += '\nstatuses:\n  - { name: "IN_PROGRESS", role: in_flight }\n'
@@ -928,8 +972,15 @@ def self_test(tree: Tree) -> int:
         else:
             print(f"  STAYED GREEN           {name}: {label}")
             failures += 1
+    for name, label, plant in EXEMPTIONS:
+        if by_name[name](plant(tree.copy())):
+            print(f"  REDDENED ON EXEMPTION  {name}: {label}")
+            failures += 1
+        else:
+            print(f"  green on exemption     {name}: {label}")
     if failures:
-        print(f"\n{failures} assertion(s) did not hold. A check that cannot fail is not a check.")
+        print(f"\n{failures} assertion(s) did not hold. A check that cannot fail is not a check, "
+              "and one that reddens past its scope is not this check.")
     return 1 if failures else 0
 
 
@@ -943,7 +994,8 @@ def main(argv: list[str]) -> int:
     tree = Tree(root)
 
     if "--self-test" in argv:
-        print(f"Asserting each check reddens on its planted violations ({len(VIOLATIONS)}):")
+        print(f"Asserting each check reddens on its planted violations ({len(VIOLATIONS)}) "
+              f"and stays green on its exemptions ({len(EXEMPTIONS)}):")
         if self_test(tree):
             return 1
         print()
