@@ -380,8 +380,16 @@ there has it backwards.
   and that nothing it can read contradicts it. A known cost written into the summary as a feature
   reads as green — the *fidelity* limit this document already states one gate over, in a second
   place.
-- **A thread resolved to clear the gate.** Resolution is the host's record of somebody's
-  judgement. The gate reads the record, never the judgement.
+- **A thread resolved to clear the gate, and on one author's repository that is sharper than it
+  sounds.** Resolution is the host's record of somebody's judgement, and the gate reads the
+  record rather than the judgement. ⛔ Where the author and the reviewer are the same person,
+  nobody else holds the record either: check 2 is then a ratchet against *forgetting* and not a
+  guard against *intent*, exactly as check 1's `None.` is. Measured on this gate's own pull
+  request, where the sixteen threads raised against it were resolved by the person who raised
+  them. What it still buys is the part worth having — a finding cannot be silently absent, and
+  clearing one is an act with a name and a timestamp on it — and what closes the rest is a second
+  person, which is the `revisit_when` already written against `estimate` in this project's own
+  configuration.
 - **A finding raised as a plain comment.** A comment carries no resolution state anywhere on the
   host, so nothing can report it unresolved — which is why the rule puts a finding in a thread.
   A finding posted where it cannot be read back is a reviewer's catch, and the one real hole in
