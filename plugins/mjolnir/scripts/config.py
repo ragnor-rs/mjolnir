@@ -415,6 +415,8 @@ REQUIRED = [
     ("branch_model.parallel_trees", "whether two trees may be live at once (§ 10)"),
     ("branch_model.exclusive_resources",
      "what the trees cannot all help themselves to; `[]` states that nothing contends (§ 10)"),
+    ("context.artifacts.carrier",
+     "what carries what one role hands the next, or `none` with an `absent_reason` (§ 11)"),
 ]
 
 # Keys the surface used to declare and no longer does, each with where the fact
@@ -440,6 +442,7 @@ ABSENT_REASON_REQUIRED = [
     "work_item.type",
     "work_item.estimate",
     "work_item.template",
+    "context.artifacts",
 ]
 
 # Alternations the surface states for a *context* rather than for a key of its

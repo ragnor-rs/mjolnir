@@ -137,3 +137,11 @@ branch_model:
     # One stack for the whole project, and the ticket belongs to the tree: two sessions in one
     # tree share a place, two trees queue against each other.
     - { name: "<the local service stack>", cap: 1, subject: tree }
+context:
+  artifacts:
+    carrier: file
+    # The other legal combination: in-tree, and safe only because it is committed — the tree's
+    # teardown takes whatever git does not have. It also puts the plan in the pull request,
+    # where a wrong plan is cheapest to catch.
+    dir: ".claude/artifacts"
+    committed: true

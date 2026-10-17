@@ -114,3 +114,11 @@ branch_model:
     # state. The instance is one per project; the build daemon runs two in flight.
     - { name: "<the local application instance>", cap: 1, subject: tree }
     - { name: "<the build daemon's slots>",       cap: 2, subject: call }
+context:
+  artifacts:
+    # Research, plan and progress artifacts: what one role hands the next (schema § 11).
+    carrier: file
+    # Outside every tree, because this project tears trees down and does not commit its
+    # working papers — the two keys below are what make that combination legal.
+    dir: "$TMPDIR/<project>/artifacts"
+    committed: false

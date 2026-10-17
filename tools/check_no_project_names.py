@@ -102,6 +102,8 @@ SELF_FILE = "tools/check_no_project_names.py"
 # saying why, which is the point of its being a table.
 PRIOR_ART = {
     "nesquikm/dev-process-toolkit": "the public MIT plugin cited as prior art",
+    "humanlayer/advanced-context-engineering-for-coding-agents":
+        "the published practice the window-as-a-resource measurements are drawn from",
 }
 
 # --- the grammars ----------------------------------------------------------

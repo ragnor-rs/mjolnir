@@ -149,9 +149,11 @@ directory. Three things are not that:
 [`plugins/mjolnir/config/examples/`](plugins/mjolnir/config/examples/), which is example *data*
 rather than procedure and uses placeholders throughout; this repository's own slug and
 backlog, which the install command, `.claude/mjolnir.yaml` and the documents cite because the
-toolkit [builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/27); and the
-public plugin cited as [prior art](docs/configuration-surface.md#prior-art), which is an artifact
-rather than a project in scope. Nothing under `skills/` carries a value.
+toolkit [builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/27); and the two
+public artifacts cited as evidence — the plugin cited as
+[prior art](docs/configuration-surface.md#prior-art), and the published practice the
+[window-as-a-resource measurements](docs/configuration-surface.md#the-window-is-a-resource-the-loop-spends)
+are drawn from — each an artifact rather than a project in scope. Nothing under `skills/` carries a value.
 
 That is a **search** rather than a reading of the procedure, and the search is the check:
 [`tools/check_no_project_names.py`](tools/check_no_project_names.py) runs in the `Names no other

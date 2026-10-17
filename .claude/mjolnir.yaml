@@ -157,3 +157,15 @@ branch_model:
   # Nothing contends. The only check this project runs is a python script with no daemon, no
   # service and no machine-wide lock, so no lease is taken and none is synthesised.
   exclusive_resources: []
+context:
+  artifacts:
+    # ⚠️ Measured rather than chosen: the one artifact concurrent sessions here coordinated
+    # through was a plan file written beside the repository, carried in no configuration and
+    # committed nowhere — and it is gone, while the convention that names it by path is not.
+    # That is the absence this facet makes statable.
+    carrier: file
+    # Outside every tree: `kind: worktree` with `work_in_shared_checkout: never` means every
+    # item's work happens in a tree that is then removed, and nothing here is committed —
+    # so an in-tree store would be torn down with the tree it was planning (schema § 11).
+    dir: "$TMPDIR/mjolnir/artifacts"
+    committed: false
