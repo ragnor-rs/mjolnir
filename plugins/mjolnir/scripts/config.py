@@ -10,14 +10,23 @@ allow, naming the key so the person reading the failure knows what to write.
 
 Three things it deliberately does not do:
 
-  * **It carries no default and no vocabulary of its own.** Every default is read
-    at run time from the `# default:` marker on a key's line in the surface's
-    fenced blocks, and every closed set of values -- status roles, status
-    writers, readiness checks, each `carrier` -- is read from the same blocks.
-    A value restated here would be a second statement of one fact, which is the
-    defect this toolkit exists to delete rather than a maintenance burden to
-    absorb. Adding a status role to the surface therefore changes what this
-    reader accepts without changing this reader.
+  * **It carries no default and no closed set of its own.** Every default is
+    read at run time from the `# default` marker on a key's line in the
+    surface's fenced blocks, and every closed set of values -- status roles,
+    status writers, readiness checks, each `carrier`, and every other
+    alternation the surface states -- is read from the same blocks and enforced
+    at the key that states it. A value restated here would be a second
+    statement of one fact, which is the defect this toolkit exists to delete
+    rather than a maintenance burden to absorb. Adding a status role to the
+    surface therefore changes what this reader accepts without changing this
+    reader.
+
+    ⚠️ It does carry four *sentinels* -- `none` for an absent carrier or
+    tracker, `never` for a writer the procedure may not use -- because which
+    member of a set means "absent" is not something an alternation states.
+    Those are held to the surface by the self-test rather than by inspection,
+    so renaming one in the surface reddens the build instead of silently
+    turning off the report that depends on it.
   * **It infers no root.** `roots.code` is read, never derived from the working
     directory or from `git rev-parse` -- both would do something plausible first
     and be wrong wherever the two roots differ.
@@ -63,6 +72,13 @@ PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SURFACE = os.path.join(PLUGIN_ROOT, "config", "schema.md")
 EXAMPLES = os.path.join(PLUGIN_ROOT, "config", "examples")
 
+# The tree the plugin sits in. Where the plugin is installed into a project
+# that is itself configured -- this toolkit building itself is the case that
+# matters -- the self-test holds that configuration too. An adopter who
+# installs the plugin from elsewhere simply has no file here, and the check is
+# skipped rather than failed.
+REPO_ROOT = os.path.dirname(os.path.dirname(PLUGIN_ROOT))
+
 # Where a project's own configuration sits under its skills root. Stated once
 # here because the surface states it in prose rather than as a key: a project
 # does not get to move it, or a role would have to be told where to look.
@@ -103,7 +119,7 @@ class ConfigError(Exception):
 
 def _literal(text: str):
     """Read a marker's value the way the configuration itself would be read."""
-    return yaml.safe_load(text)
+    return _load_yaml(text, os.path.relpath(SURFACE, PLUGIN_ROOT))
 
 
 def _fences(surface_text: str) -> list[str]:
@@ -192,24 +208,50 @@ def _get(data, path: str, default=None):
     return node
 
 
+_ABSENT = object()
+
+
 def _has(data, path: str) -> bool:
-    sentinel = object()
-    return _get(data, path, sentinel) is not sentinel
+    return _get(data, path, _ABSENT) is not _ABSENT
+
+
+def _load_yaml(text: str, where: str):
+    """Parse YAML, turning a parser error into the refusal this module promises.
+
+    A one-space indentation slip is the likeliest thing to go wrong in a
+    hand-written configuration, and a traceback out of the parser names no key
+    and tells the person reading it nothing they can act on.
+    """
+    try:
+        return yaml.safe_load(text)
+    except yaml.YAMLError as error:
+        detail = " ".join(str(error).split())
+        raise ConfigError(where, f"is not valid YAML -- {detail}") from None
 
 
 def _set_default(data: dict, path: str, value) -> None:
+    """Apply one marked default, creating the blocks it needs on the way down.
+
+    A parent that is absent -- or present and empty, which is how YAML reads a
+    key with nothing under it -- gets created so the default can land. A parent
+    that is present and is some *other* kind of value is refused here: it used
+    to be skipped silently on the grounds that validation would catch it, which
+    was untrue for every `day_log` key, so a block written as a string dropped
+    five defaults and loaded clean.
+    """
     parts = path.split(".")
     node = data
-    for part in parts[:-1]:
+    for depth, part in enumerate(parts[:-1]):
         child = node.get(part)
-        if not isinstance(child, dict):
-            # A parent that is absent gets created so the default can land; a
-            # parent that is present but not a mapping is the caller's error and
-            # is reported by validation rather than silently overwritten here.
-            if child is not None:
-                return
+        if child is None:
             child = {}
             node[part] = child
+        elif not isinstance(child, dict):
+            raise ConfigError(
+                ".".join(parts[: depth + 1]),
+                f"is {type(child).__name__}, and has to be a block of keys for "
+                f"`{path}` to be read.",
+            )
         node = child
     node.setdefault(parts[-1], value)
 
@@ -272,6 +314,17 @@ class Config:
                 "The host runs no checks, so every verdict is local. An empty "
                 "check list reads as no answer, never as green."
             )
+        # A role's own unset key. `day_log.script` is the first absence in this
+        # toolkit that is load-bearing rather than theoretical: the day-log role
+        # cannot run without it, and reporting that -- naming the key -- is what
+        # keeps an absence a configuration instead of a crash downstream.
+        if self.get("day_log.script") is None:
+            out.append(
+                "`day_log.script` is not set, so the day-log role cannot run "
+                "here. It names the project's evidence script, which is "
+                "transitional until the script is extracted into the plugin."
+            )
+
         for role, status in (
             (s.get("role"), s) for s in (self.get("statuses") or [])
         ):
@@ -328,28 +381,33 @@ ABSENT_REASON_REQUIRED = [
     "work_item.template",
 ]
 
-# Keys whose value must come from a set the surface states inline. The path is
-# both where the value lives in a configuration and where the surface states the
-# alternation, because the surface states each one on the key's own line.
-#
-# `commit.trailer` is deliberately absent: it admits a literal trailer line
-# beside its alternation, so the set is open and there is nothing to enforce.
-ENUM_KEYS = [
-    "tracker.kind",
-    "work_item.type.carrier",
-    "work_item.estimate.carrier",
-    "work_item.template.carrier",
-    "commit.staging",
-]
+# Alternations the surface states for a *context* rather than for a key of its
+# own: a status's `role` and `writer`, a readiness entry's `check` and
+# `on_fail`, and the carrier any role may take. Each is enforced where that
+# context occurs, below, so these are the only alternation paths this module
+# names. Everything else the surface states as an alternation is enforced at
+# the key that states it, derived rather than listed -- otherwise the surface's
+# "the reader accepts what the alternation states and nothing else" would hold
+# only as far as whoever last remembered to extend a list here. It did not:
+# `day_log.round_ties`, `day_log.sections` and `work_item.estimate.unit` were
+# each stated as a closed set and accepted anything.
+CONTEXTUAL = {"role", "writer", "check", "on_fail", "carriers.day_log"}
 
 
 def validate(data: dict, facts: dict) -> None:
     for path, what in REQUIRED:
         if not _has(data, path):
             raise ConfigError(path, f"required -- {what}.")
+        # Present and empty is not present. YAML reads a key with nothing after
+        # it as null, which satisfied a presence test and then arrived in a
+        # path join as None -- a traceback naming no key, out of the one module
+        # whose whole promise is naming the key.
+        if _get(data, path) is None:
+            raise ConfigError(path, f"is empty -- {what}.")
 
-    for path in ENUM_KEYS:
-        allowed = vocabulary(facts, path, f"`{path}`")
+    for path, allowed in sorted(facts["enums"].items()):
+        if path in CONTEXTUAL or not _has(data, path):
+            continue
         value = _get(data, path)
         if value not in allowed:
             raise ConfigError(
@@ -445,9 +503,9 @@ def load(skills_root: str = ".", *, check_paths: bool = True) -> Config:
             "the path is not configurable.",
         )
     with open(path, encoding="utf-8") as handle:
-        data = yaml.safe_load(handle)
+        data = _load_yaml(handle.read(), CONFIG_PATH)
     if not isinstance(data, dict):
-        raise ConfigError(CONFIG_PATH, "is empty or is not a mapping.")
+        raise ConfigError(CONFIG_PATH, "is empty or is not a block of keys.")
 
     return _resolve(data, skills_root, facts, check_paths)
 
@@ -456,9 +514,9 @@ def load_text(text: str, skills_root: str, *, check_paths: bool = False) -> Conf
     """Resolve a configuration already in hand. Used to load the examples."""
     with open(SURFACE, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
-    data = yaml.safe_load(text)
+    data = _load_yaml(text, CONFIG_PATH)
     if not isinstance(data, dict):
-        raise ConfigError(CONFIG_PATH, "is empty or is not a mapping.")
+        raise ConfigError(CONFIG_PATH, "is empty or is not a block of keys.")
     return _resolve(data, skills_root, facts, check_paths)
 
 
@@ -557,9 +615,157 @@ def self_test() -> int:
         f"reported {missing_root!r}",
     )
 
+    # Every marked default is applied. Nothing used to assert this: emptying
+    # `_set_default` left the whole suite green, because every example spells
+    # its defaults out and so exercises the one path the defaults do not take.
+    with open(SURFACE, encoding="utf-8") as handle:
+        marked = surface_facts(handle.read())["defaults"]
+    check("the surface marks defaults for this reader to apply", bool(marked))
+    for path, value in sorted(marked.items()):
+        got = _default_applied(path)
+        check(
+            f"the marked default for `{path}` is applied when the key is absent",
+            got == value,
+            f"got {got!r}, surface marks {value!r}",
+        )
+
+    # The sentinels this reader spells out, held to the surface so that renaming
+    # one there reddens the build rather than silently disabling the report it
+    # drives. `none` and `never` are members of sets the surface states; which
+    # member means "absent" is the part an alternation cannot say.
+    for member, path in (("none", "tracker.kind"), ("never", "writer")):
+        states = facts_for(path)
+        check(
+            f"the surface still states `{member}` in its `{path}` set",
+            member in states,
+            f"states {states!r}",
+        )
+
+    # One planted violation per refusal branch that does real work, which is the
+    # standard tools/check_single_source.py sets and this suite did not meet: it
+    # covered three of sixteen, so most of `validate` could not fail.
+    for label, key, mutate in _planted_violations():
+        broken = _refused(mutate(_a_valid_example()))
+        check(f"{label} is refused, with the key named", broken == key,
+              f"reported {broken!r}")
+
+    # The two refusals that happen before there is a configuration to validate.
+    for label, text in (
+        ("a configuration that is not valid YAML", "host:\n  kind: github\n   repo: x\n"),
+        ("a configuration that is not a block of keys", "- just\n- a list\n"),
+    ):
+        try:
+            load_text(text, EXAMPLES)
+            reported = None
+        except ConfigError as error:
+            reported = error.key
+        check(f"{label} is refused, naming the file", reported == CONFIG_PATH,
+              f"reported {reported!r}")
+
+    # The repository this plugin sits in, when it has a configuration of its
+    # own. Without this the one config the project actually runs on is held by
+    # nothing: corrupting it left both gates green while the reader refused it.
+    own = os.path.join(REPO_ROOT, CONFIG_PATH)
+    if os.path.exists(own):
+        try:
+            config = load(REPO_ROOT)
+            print(f"  ok    this repository's own {CONFIG_PATH} loads")
+            reported = config.unavailable()
+            check(
+                "it reports every absence that stops a role, naming the key",
+                all(
+                    any(key in line for line in reported)
+                    for key in _load_bearing_absences(config)
+                ),
+                f"reported {reported!r}",
+            )
+        except ConfigError as error:
+            failures += 1
+            print(f"  FAIL  this repository's own {CONFIG_PATH}: {error}")
+
     if failures:
         print(f"\n{failures} assertion(s) did not hold.")
     return 1 if failures else 0
+
+
+def facts_for(path: str) -> list[str]:
+    with open(SURFACE, encoding="utf-8") as handle:
+        return surface_facts(handle.read())["enums"].get(path, [])
+
+
+def _load_bearing_absences(config: Config) -> list[str]:
+    """Keys whose absence stops a role this project maps a carrier for."""
+    carriers = config.get("carriers") or {}
+    absent = []
+    if carriers.get("day_log") and config.get("day_log.script") is None:
+        absent.append("day_log.script")
+    return absent
+
+
+def _default_applied(path: str):
+    """Resolve an example with `path` removed, and return what the reader gave."""
+    data = _a_valid_example()
+    node, parts = data, path.split(".")
+    for part in parts[:-1]:
+        node = node.get(part, {})
+    node.pop(parts[-1], None)
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    return _resolve(data, EXAMPLES, facts, False).get(path)
+
+
+def _planted_violations():
+    """(label, the key the refusal must name, how to break a valid example).
+
+    One per branch of `validate` that does real work. A branch with no plant is
+    a branch nothing asserts can fail.
+    """
+
+    def at(path: str, value):
+        def mutate(data: dict) -> dict:
+            node, parts = data, path.split(".")
+            for part in parts[:-1]:
+                node = node.setdefault(part, {})
+            node[parts[-1]] = value
+            return data
+
+        return mutate
+
+    return [
+        ("a value outside an alternation", "tracker.kind", at("tracker.kind", "gitlab")),
+        ("a carrier outside its alternation", "work_item.type.carrier",
+         at("work_item.type.carrier", "telepathy")),
+        ("a staging mode outside its alternation", "commit.staging",
+         at("commit.staging", "sometimes")),
+        ("a unit outside its alternation", "work_item.estimate.unit",
+         at("work_item.estimate.unit", "furlongs")),
+        ("a rounding tie outside its alternation", "day_log.round_ties",
+         at("day_log.round_ties", "sideways")),
+        ("a sections mode outside its alternation", "day_log.sections",
+         at("day_log.sections", "everything")),
+        ("a required key present but empty", "host.repo", at("host.repo", None)),
+        ("a statuses list that is not a list", "statuses", at("statuses", "open")),
+        ("a status entry that is not a block", "statuses[0]", at("statuses", ["open"])),
+        ("a status with no name", "statuses[0].name",
+         at("statuses", [{"role": "initial", "writer": "procedure"}])),
+        ("a status role outside the vocabulary", "statuses[0].role",
+         at("statuses", [{"name": "x", "role": "sideways", "writer": "procedure"}])),
+        ("a status writer outside the vocabulary", "statuses[0].writer",
+         at("statuses", [{"name": "x", "role": "initial", "writer": "the cat"}])),
+        ("a readiness list that is not a list", "readiness", at("readiness", "all")),
+        ("a readiness entry that is not a block", "readiness[0]", at("readiness", ["x"])),
+        ("a readiness entry with no check", "readiness[0].check",
+         at("readiness", [{"stop": "…"}])),
+        ("a check outside the library", "readiness[0].check",
+         at("readiness", [{"check": "vibes", "stop": "…"}])),
+        ("an on_fail outside its alternation", "readiness[0].on_fail",
+         at("readiness", [{"check": "state_is", "on_fail": "shout", "stop": "…"}])),
+        ("a carriers block that is not a block", "carriers", at("carriers", ["skill"])),
+        ("a carrier outside the vocabulary", "carriers.day_log",
+         at("carriers", {"day_log": "telepathy"})),
+        ("a block written where keys belong", "day_log",
+         at("day_log", "see tools/day_log.py")),
+    ]
 
 
 def _a_valid_example() -> dict:
@@ -616,7 +822,8 @@ def main(argv: list[str]) -> int:
         "--skills-root",
         default=".",
         help="the root the configuration is resolved relative to; defaults to the "
-        "working directory, and a role states it rather than relying on that",
+        "working directory, which is where a role invoked inside a project "
+        "finds it",
     )
     parser.add_argument(
         "--no-check-paths",

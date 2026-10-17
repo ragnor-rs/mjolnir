@@ -85,7 +85,7 @@ already have been given.
 ```yaml
 roots:
   skills: "."              # where this config lives; default
-  code: "."                # the path every git and gh call addresses; required
+  code: "."                # the path every git and gh call addresses
   code_is_own_repo: false  # true when `code` is its own repository; default
 ```
 
@@ -422,11 +422,11 @@ one.
 ```yaml
 day_log:
   out_dir: "$TMPDIR/<project>"
-  day_start: "05:00"
+  day_start: "05:00"           # default
   round_to: 0.5                # default
   round_ties: down | up        # default: down
   enforce_grid: true           # default
-  script: "<path to the evidence script>"
+  script: "<path to the evidence script>"   # null where the project has none
   streams: [sessions, commits, telegram, meetings, host_activity]
   attribute_to: null           # default
   exclusions: [contractual, other_projects, log_upkeep, rework, overhead]   # default
@@ -458,3 +458,9 @@ day_log:
 procedure can be shared before the script is. Extracting the script into the plugin is the next
 piece of this role; until then, `script` is how a project that has not been migrated keeps
 working.
+
+⛔ **An unset `script` stops the day-log role, and the reader says so rather than letting the
+role run into it.** A project that maps a `day_log` carrier and leaves `script` null has an
+absence that is load-bearing: the role has no evidence to read. The reader reports it by name,
+so the absence reaches the role as a stated configuration rather than as a null substituted
+into a command.

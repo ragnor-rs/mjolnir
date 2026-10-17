@@ -21,9 +21,13 @@ marks, and refuses a configuration the surface does not allow — naming the key
 of defaults, and two sets drift apart without anything noticing.
 
 Every figure, path, stream, exclusion and audience below comes from the `day_log` block of the
-reader's output; this file holds the procedure and none of the values. Defaults are applied
-there, so a key the project left out still arrives with its value, and the `unavailable` list
-names what this project cannot support — each entry a stated decision rather than a gap.
+reader's output; this file holds the procedure and none of the values. A key the surface marks
+with a default arrives with that value even when the project left it out.
+
+⛔ **Read the `unavailable` list before doing anything else, and stop if it names a key this
+role needs.** An entry there is a stated absence, not a fault — but `day_log.script` unset
+means there is no evidence to read, and the role reports that and stops rather than running a
+command with a null in it.
 
 Write the two values to `<day_log.out_dir>/day-report-<YYYY-MM-DD>.txt` and say the path.
 
