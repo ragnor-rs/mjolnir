@@ -4,14 +4,18 @@
 # reviewed through the loop this repository ships. That is a correctness requirement, not a
 # nicety — a procedure whose own repository cannot run it is not finished.
 #
-# ⚠️ NOTHING READS THIS FILE YET. The configuration reader is #1 and the tracker behind
-# `kind: github-issues` is #27. Until both land, this file is a declaration of what
-# self-hosting needs, and the loop here runs by hand.
+# ⚠️ NO SKILL READS THIS FILE'S VALUES YET. The configuration reader is #1 and the tracker
+# behind `kind: github-issues` is #27. Until both land, this file is a declaration of what
+# self-hosting needs, and the loop here runs by hand. One consumer does exist as of the
+# single-source-of-truth gate: it holds this file's top-level keys to the schema on every
+# change, so a key invented here reddens the build even though nothing acts on its value.
 #
-# ⛔ This is the one file in the repository that names a repository slug, and it is correct
-# that it does: it is this project's own configuration, the same file every adopter writes.
-# The names-no-particular-project guard (#19) must exclude it, exactly as it excludes
-# config/examples/.
+# ⛔ The repository slug is named here, and it is correct that it is: this is the project's own
+# configuration, the same file every adopter writes. It is not the only such place — README.md
+# carries the install command and an issue link, and docs/single-source-of-truth.md cites this
+# backlog — so the names-no-particular-project guard (#19) excludes this project's own slug
+# everywhere, and config/examples/ as example data. What #19 still asserts without exception:
+# nothing under skills/ carries a value, and no OTHER project is ever named.
 version: 1
 
 roots:
@@ -23,13 +27,13 @@ host:
   kind: github
   repo: "ragnor-rs/mjolnir"
   # ⚠️ The first entry this facet has ever been written for (#47), and the cheapest place to
-  # find out whether its shape survives contact with a real workflow. Keyed by the workflow
-  # name and never by a job name — the job here is `single-source-of-truth`, and nothing may
-  # key on that. `paths` is omitted: the workflow filters none, so every change runs it.
+  # find out whether its shape survives contact with a real workflow. It did not survive
+  # unchanged: this workflow has two triggers, which the single-string form could not state,
+  # so the schema now declares a list. `paths` is omitted — the workflow filters none.
   checks:
     - workflow: "Checks"
-      mirrors: "python3 tools/check_single_source.py"
-      triggers: "pull_request + push:main"
+      mirrors: "python3 tools/check_single_source.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
 
 tracker:
   # Plain GitHub issues with no project board — the cheapest real configuration, and one

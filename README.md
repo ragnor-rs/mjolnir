@@ -62,7 +62,7 @@ Skills are addressed **namespaced, with no alias**:
 ```
 
 The rule, and why it is procedure rather than a setting, is
-[`schema.md § 10`](plugins/mjolnir/config/schema.md#10-invocation).
+[`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
 
 ## Where the rules live
 
@@ -90,17 +90,22 @@ found between the old copies and the decision that settled it.
 | [`plugins/mjolnir/config/`](plugins/mjolnir/config/) | The configuration surface: the schema, and a whole example per tracker including a deliberately trackerless one |
 | [`docs/configuration-surface.md`](docs/configuration-surface.md) | Why the surface has this shape — the measurements behind every schema section |
 | [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) | Every divergence found between the old copies and which behaviour was kept, including where a ruling overrode a stated counter-argument |
+| [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) | How the single-authority claim is held: the checks, their kinds, and what each deliberately leaves alone |
+| [`tools/check_single_source.py`](tools/check_single_source.py) | The check itself, run by the `Checks` workflow on every change |
 
 The remaining eight roles land here as they are reconciled. A project that has not been migrated
 keeps working throughout — that is a safety property of the migration, not an acceptable end state.
 
 ## Conventions
 
-**This repository names no particular project, anywhere, ever** — no repository slug, board or card
+**This repository names no *other* project, anywhere, ever** — no repository slug, board or card
 id, tracker account, label, milestone, assignee, host, service name, or path under anyone's home
-directory. The one exception is
+directory. Two things are not that:
 [`plugins/mjolnir/config/examples/`](plugins/mjolnir/config/examples/), which is example *data*
-rather than procedure and uses placeholders throughout. Nothing under `skills/` carries a value.
+rather than procedure and uses placeholders throughout; and this repository's own slug and
+backlog, which the install command, `.claude/mjolnir.yaml` and the documents cite because the
+toolkit [builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/27). Nothing
+under `skills/` carries a value.
 
 Projects referred to in the documentation are lettered A–F. The counts are what carry the argument.
 

@@ -13,10 +13,12 @@ recent**, and a decision nobody wrote down reads later as an oversight.
 not yet extracted, **the numbered work item** that will carry it — and each ruling below names
 where its outcome lives. Where this record and that statement disagree, this record is stale.
 
-Those two are the only homes a ruling's outcome may have, and the `Checks` workflow holds the
+Those are the only two homes a ruling's outcome may have, and the `Checks` workflow holds the
 table to it: a cell naming a document instead is this record becoming a second authority for the
 rule, and a cell naming an unnumbered work item cannot be resolved by anyone asking whether the
-outcome has moved yet.
+outcome has moved yet. One ruling below adds `the skill` **beside** a section, for an outcome
+split between the surface and the skill that carries it; that is permitted alongside a home and
+never instead of one.
 
 Projects are referred to as A–F. Naming them is forbidden here.
 
@@ -95,7 +97,7 @@ Present in one or two copies each, and true for every project:
 | 6 | Cut work | **Disclosed, not hidden** — a `Not billed (N h):` section, one figure on the heading and none per item, omitted rather than written empty. Bookkeeping and contractual time appear in neither section, having never bought hours. A synthesis of the three observed positions, not one of them | [schema § 9](../plugins/mjolnir/config/schema.md#9-day-log), the skill |
 | 7 | Dirty tree at start | **Derived from the branch model, not configured.** Worktree mode reports and continues; in-place mode aborts. One axis already configured decides it, so it costs no setting | [schema § 6](../plugins/mjolnir/config/schema.md#6-commit-behaviour) |
 | 8 | A duplicate at filing | **Rewrite the body** to what the work now is; no dated appends. Provenance goes in a comment where the tracker has them, otherwise in the run report | #7, until extracted |
-| 9 | Invocation names | **Namespaced, no alias.** A project-level alias would be one file per project per skill, reintroducing in miniature the duplication this toolkit exists to delete. The namespace also makes a deliberate local override read as a *different* name rather than the same one, which matters because one skill name already denotes two unrelated roles | [schema § 10](../plugins/mjolnir/config/schema.md#10-invocation) |
+| 9 | Invocation names | **Namespaced, no alias.** A project-level alias would be one file per project per skill, reintroducing in miniature the duplication this toolkit exists to delete. The namespace also makes a deliberate local override read as a *different* name rather than the same one, which matters because one skill name already denotes two unrelated roles | [schema § 7](../plugins/mjolnir/config/schema.md#invocation) |
 | 10 | Deployment | **A thin skeleton only**: confirm intent and name the target, with an explicit go required for a live environment *for this deploy*; read-only preflight; invoke the project's own script; verify health; report what was rebuilt and what failed with its log tail. Hosts, services, secrets, build steps and tier selection stay local | #13, until extracted |
 
 ### Where a ruling overrode a stated counter-argument
