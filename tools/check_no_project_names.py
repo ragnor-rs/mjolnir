@@ -70,11 +70,24 @@ STRICT_SHAPES = [f"plugins/*/{c}/" for c in CARRIERS] + [f"{c}/" for c in CARRIE
 # this script reads the forbidden set *from*.
 DATA_ROOTS = [EXAMPLES]
 
-# Everything under a plugin is a carrier, its configuration, or its manifest.
-# Anything else is unclassified and fails rather than being skipped: a carrier in
-# a directory nobody anticipated is exactly what a shape-matched strict set
-# misses, and a typo in a directory name is how one gets there.
-PLUGIN_NON_CARRIER = ["plugins/*/config/", "plugins/*/.claude-plugin/"]
+# Everything under a plugin is a carrier, its configuration, its manifest, or the
+# implementation a carrier calls. Anything else is unclassified and fails rather
+# than being skipped: a carrier in a directory nobody anticipated is exactly what
+# a shape-matched strict set misses, and a typo in a directory name is how one
+# gets there.
+#
+# ⚠️ `scripts/` is classified rather than swept, and the distinction is not
+# convenience. A carrier is instructions a role follows, and the strict rules
+# hold those to naming no tracker and no stack because one role is shared across
+# projects whose trackers and stacks differ. An implementation a carrier calls is
+# the toolkit's own code: it is written in some language, and saying so names the
+# toolkit's stack rather than any project's. A sweep that forbade it would forbid
+# the shared reader telling a user which package to install.
+PLUGIN_NON_CARRIER = [
+    "plugins/*/config/",
+    "plugins/*/.claude-plugin/",
+    "plugins/*/scripts/",
+]
 
 # ⚠️ This file alone, not all of `tools/`. It necessarily writes down every token
 # it forbids -- its own grammars and its planted violations contain home paths,
@@ -177,7 +190,12 @@ DIRECTORY_CHANGE = re.compile(r"(?:^|[;&|]\s*)cd\s+\S")
 DIRECTORY_FLAGS = re.compile(
     r"(?:^|\s)(?:-C|--cwd|--prefix|--directory|--project-dir|--workspace|--chdir)(?:[=\s]|$)"
 )
-ABSOLUTE_PATH = re.compile(r"(?<![\w.$])/(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+")
+# ⚠️ `}` is in the lookbehind because a path that follows a `${…}` expansion is
+# rooted at that variable and is not absolute. The harness substitutes the
+# plugin's own location into a carrier that way -- it is the only means a role
+# has of naming a file the plugin ships -- and reading it as an absolute path
+# forbids the one form the rule is satisfied by.
+ABSOLUTE_PATH = re.compile(r"(?<![\w.$}])/(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+")
 
 # Which leaf key of a configuration carries a project's fact. Grammar, because
 # the surface does not mark its keys as project-supplied or procedure-supplied --

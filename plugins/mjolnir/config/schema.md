@@ -51,6 +51,16 @@ from one that did not exist when the file was written — the two read identical
 only the revision separates them. It is the only key that describes the file rather than the
 project.
 
+**A default is marked, never described.** A key whose line in a block below carries `# default`
+has the value shown as its default; `# default: <value>` states one the line does not show. A key
+with neither is required, or legitimately unset. The marker is the single statement of a default:
+prose beside a block says why a default is what it is and never repeats the value, and the reader
+applies what it finds here rather than carrying a copy.
+
+**A closed set of values is written as an alternation** — `a | b | c` — either as the key's value
+or as a comment beside it. The reader accepts what the alternation states and nothing else, so a
+value added here is accepted without the reader changing.
+
 ## The loop — nine roles
 
 File a work item · gate it into committed work · start it · finish it · review it · deploy ·
@@ -76,9 +86,9 @@ added. The measurements that forced each to be independent are in
 
 ```yaml
 roots:
-  skills: "."              # where this config lives; default "."
+  skills: "."              # where this config lives; default
   code: "."                # the path every git and gh call addresses
-  code_is_own_repo: false  # true when `code` is a separate repository from `skills`
+  code_is_own_repo: false  # true when `code` is its own repository; default
 ```
 
 ⛔ **The code root is configured, never inferred.** `git rev-parse --show-toplevel` from the
@@ -121,6 +131,19 @@ live state: which runs exist for this commit, and how each concluded.
 identically, and a job-keyed map refused a build on the strength of a check that only validated a
 title.
 
+⚠️ **An entry states one mirrored command, and a workflow may run more than one.** A workflow
+whose jobs mirror two local commands has no form here — the entry would carry two `mirrors`
+behind one workflow name — and a second command written in a comment beside the facet is a fact
+the surface does not hold. The gap is #58's, and it is real for an adopting project whose
+workflows already exist and are not the toolkit's to reshape.
+
+⛔ **Where a project does control its own workflows, each mirrored command takes a workflow of
+its own.** Not because one job per workflow is better continuous integration, but because the
+alternative is a configuration this facet cannot state, and the project required to run this
+procedure on itself is the worst place to keep a shape the surface cannot express. The cost is a
+checkout per command; what it buys is `checks` remaining the single statement of what the host
+runs, with nothing carried beside it.
+
 ⚠️ **`triggers` takes two forms, and a list where a workflow has both.** They are
 `pull_request -> <base pattern>`, with `*` for any base, and `push -> <branch>`. A single string
 was the first shape this facet had; the first entry ever written against it ran on every pull
@@ -137,11 +160,15 @@ legitimately runs nothing on a change outside its paths. An empty or silent chec
 
 ```yaml
 tracker:
-  kind: github-projects | jira | trello | none
+  kind: github-projects | github-issues | jira | trello | none
 ```
 
 The shared procedure names **the port and never a tracker**. Each `kind` carries its own block;
-see `examples/`. Three properties of the port the procedure depends on:
+see `examples/`. `github-issues` is plain issues with no board, no status field and no
+`in_flight` role — the cheapest real configuration, named here because this repository runs on
+it; the adapter behind it is #27, and the examples do not yet cover it.
+
+Three properties of the port the procedure depends on:
 
 - **Capabilities are queried, not assumed.** Comment, delete-a-checklist-item,
   set-labels-atomically and assign-a-member are each unavailable on at least one tracker. The
@@ -201,18 +228,25 @@ statuses:
   - { name: "…", role: dropped,     writer: procedure }
 ```
 
-Roles: `initial`, `ready`, `in_flight`, `code_landed`, `deployed`, `accepted`, `terminal`,
-`dropped`. **A project maps a subset; an absent role is legitimate.** Vocabularies differ in
-length and in meaning, not merely in wording.
+The two vocabularies, stated once:
+
+```yaml
+    role:   initial | ready | in_flight | code_landed | deployed | accepted | terminal | dropped
+    writer: procedure | automation | deploy | orderer | sweep | never
+```
+
+**A project maps a subset; an absent role is legitimate.** Vocabularies differ in length and in
+meaning, not merely in wording.
 
 ⛔ **The writer is what makes this correct rather than merely configurable.** The procedure asks
 the port to advance to a *role*, and is **refused** when the configured writer is not
-`procedure`. Writers observed: `procedure`, `automation` (off a merge), `deploy`, `orderer` (the
-person who ordered the work), `sweep` (a mechanical path-based test needing no judgement).
+`procedure`. Of the others, `automation` fires off a merge, `deploy` belongs to the deploy role,
+`orderer` is the person who ordered the work, and `sweep` is a mechanical path-based test needing
+no judgement.
 
-`writer: never` is supported and is the strictest real case: a project whose tracker credential
-is a person's own account, where every write reads as that person speaking, so the procedure
-writes nothing at all and reports instead.
+`never` is the strictest real case: a project whose tracker credential is a person's own account,
+where every write reads as that person speaking, so the procedure writes nothing at all and
+reports instead.
 
 ### 4.3 Estimate
 
@@ -268,18 +302,19 @@ readiness:
 ```
 
 The copies this was reconciled from **share no single check**, so a fixed sequence would be
-wrong for every project. Checks are drawn from a shared library: `state_is`, `no_open_blockers`,
-`field_present`, `label_absent`, `ref_exists`, `queue_position`, `assignee_matches_role`.
+wrong for every project. Checks are drawn from a shared library, and a failure is either flagged
+or quiet:
+
+```yaml
+    check:   state_is | no_open_blockers | field_present | label_absent | ref_exists | queue_position | assignee_matches_role
+    on_fail: flag | stop_quietly
+```
 
 - ⛔ **The list runs whole.** An item with four problems hears about four, rather than being
   bounced once per round trip.
 - **A dependency's bar depends on what the dependency produced.** A code dependency is satisfied
   when its code is on the integration branch; a non-code dependency only when it is finished.
   Requiring the stronger bar of both stops every dependent item.
-
-```yaml
-    on_fail: flag | stop_quietly
-```
 
 - **Some failures are not defects.** An item that is correct and merely early, or one whose
   board automation did not fire, stops without being flagged. A gate that flags those flags an
@@ -404,14 +439,14 @@ one.
 ```yaml
 day_log:
   out_dir: "$TMPDIR/<project>"
-  day_start: "05:00"
-  round_to: 0.5
-  round_ties: down | up
-  enforce_grid: true
-  script: "<path to the evidence script>"
+  day_start: "05:00"           # default
+  round_to: 0.5                # default
+  round_ties: down | up        # default: down
+  enforce_grid: true           # default
+  script: "<path to the evidence script>"   # null where the project has none
   streams: [sessions, commits, telegram, meetings, host_activity]
-  attribute_to: null
-  exclusions: [contractual, other_projects, log_upkeep, rework, overhead]
+  attribute_to: null           # default
+  exclusions: [contractual, other_projects, log_upkeep, rework, overhead]   # default
   extra_exclusions:
     - { name: "…", rule: "…" }
   sections: billed_only | billed_and_not_billed
@@ -422,14 +457,14 @@ day_log:
     calendars: []
 ```
 
-- `round_to` and `enforce_grid` are **separate** settings. Three positions were observed: a half
-  hour with the grid asserted, a half hour with ties going the other way, and one decimal with no
-  grid assertion at all. The default is `0.5` with `round_ties: down` and `enforce_grid: true`.
+- `round_to` and `enforce_grid` are **separate** settings, each with its own default marked
+  above. Three positions were observed: a half hour with the grid asserted, a half hour with ties
+  going the other way, and one decimal with no grid assertion at all.
 - `exclusions` is an **ordered list of named exclusions** drawn from a shared library, which a
-  project may extend through `extra_exclusions`. The default set above is a decision — the log
-  measures delivered work, so rework and overhead leave the hours as well as the wording — not
-  the only possible set.
-- `attribute_to` is absent by default. Set it where the repository has more than one committer
+  project may extend through `extra_exclusions`. Its default is a decision — the log measures
+  delivered work, so rework and overhead leave the hours as well as the wording — not the only
+  possible set.
+- `attribute_to` is marked absent above. Set it where the repository has more than one committer
   and the log is one person's: an author filter belongs in the script, never a subtraction by
   hand.
 - `host_activity` is available only where the code host has an API for it. On a project whose
@@ -440,6 +475,12 @@ day_log:
 procedure can be shared before the script is. Extracting the script into the plugin is the next
 piece of this role; until then, `script` is how a project that has not been migrated keeps
 working.
+
+⛔ **An unset `script` stops the day-log role, and the reader says so rather than letting the
+role run into it.** A project that maps a `day_log` carrier and leaves `script` null has an
+absence that is load-bearing: the role has no evidence to read. The reader reports it by name,
+so the absence reaches the role as a stated configuration rather than as a null substituted
+into a command.
 
 ## 10. Branch model
 
