@@ -68,6 +68,9 @@ host:
     - workflow: "Port contract"
       mirrors: "python3 plugins/mjolnir/scripts/port.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Prose width"
+      mirrors: "python3 tools/check_prose_width.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Reply register"
       mirrors: "python3 plugins/mjolnir/scripts/check_reply_register.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -141,6 +144,12 @@ carriers:
 language:
   work_item: en
   repo: en
+  # Measured, not declared: the habit in this tree was already ~100 columns everywhere, and
+  # writing it down is what makes it readable by a role rather than by whoever typed last. It
+  # governs files here and nothing on the host — a body and a pull request are never wrapped,
+  # which is procedure and carries no key. ⚠️ Absence would mean no wrapping at all, so the
+  # check below holds nothing if this line is deleted and says so rather than passing.
+  prose_width: 100
   artifacts:
     day_log: { language: en, register: technical, audience: "whoever maintains this toolkit" }
 

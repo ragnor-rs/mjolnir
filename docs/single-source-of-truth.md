@@ -29,6 +29,12 @@ nothing in it was deferred. It runs in its own `Nothing deferred` workflow and h
 off the tree, and the one granted a token scope — stated there rather than discovered in a
 workflow file.
 
+`tools/check_prose_width.py` holds the documents to a shape rather than to a claim about their
+content: the line width this project's configuration states. It has its own `Prose width`
+workflow and its own `host.checks` entry, and is recorded in
+[its own section](#prose-line-width-held-on-the-gate-for-files-and-nowhere-for-bodies) below —
+where the half of its rule that no check reaches is stated with it.
+
 `plugins/mjolnir/scripts/check_reply_register.py` holds the register of a role's reply, and it is
 the one here that does not run on the gate at all. It is in
 [its own section](#the-replys-register-held-in-the-session-not-on-the-gate) too, and for the same
@@ -436,9 +442,10 @@ there has it backwards.
 ## Beside the document checks: the tracker port's own contract
 
 ⚠️ No count of the scripts is carried here. The two above hold a document claim and are what this
-document was written for; the rest hold a module or a rule — `plugins/mjolnir/scripts/config.py`,
-the configuration reader, whose own checks are its work item's; the reply-register hook recorded
-in the next section; and the port contract recorded in this one. Each carries its own workflow and
+document was written for; the rest hold a module, a shape or a rule — the configuration reader
+`plugins/mjolnir/scripts/config.py`, whose own checks are its work item's; the prose-width sweep,
+which reads the same documents and holds none of their content; the reply-register hook recorded
+two sections on; and the port contract recorded in this one. Each carries its own workflow and
 its own `host.checks` entry, for the reason the sweep above does: one entry states one mirrored
 command.
 
@@ -712,6 +719,62 @@ calls and asserts it is this script. See
   non-zero exit that would break every turn — the same absence-is-not-an-answer rule
   [§ 2](../plugins/mjolnir/config/schema.md#2-code-host) states for the host's own runs.
 
+## Prose line width: held on the gate for files, and nowhere for bodies
+
+`tools/check_prose_width.py --self-test` runs in the `Prose width` workflow, with no credential
+and no network. ⛔ The rule is
+[schema § 8 → Prose line width](../plugins/mjolnir/config/schema.md#prose-line-width) and this
+document states none of it: what is recorded here is the reach of the check, which is narrower
+than the rule in one direction the rule itself does not mention.
+
+What it holds: every tracked markdown file — documents, the README, the surface, the skills and
+the configuration examples alike — against the width **this project's own configuration states**.
+The script carries no number. It reads `language.prose_width` through the shared reader, so a
+project that states another width, or states none, changes this gate's verdict by editing a
+configuration and nothing else. The kind is **computed**, for that reason. A tree whose
+configuration carries no width makes the check hold nothing, and it says so and reddens rather
+than passing — the same rule the document checks apply to a glob that matches no file.
+
+⚠️ **It plants both sides, as the reply-register check does.** Four violations must redden — an
+overlong paragraph, an overlong list continuation, a tree with no width configured, a tree with
+nothing tracked — and eight exemptions must stay green: a table row, a fenced line, an indented
+code line, a link destination, an autolink, a bare URL, an inline-code span, and a frontmatter
+field. Each exemption plant was then verified by **disabling its own exclusion** and watching that
+plant redden, because an exemption nothing can fail is an exemption nobody checked, and an
+exemption list is exactly where a check quietly stops holding anything.
+
+⚠️ The plants are compared against the tree's **own** result rather than against zero. A whole-file
+assertion reads every plant as red while one real overrun is still in the tree, which would make
+the exemptions untestable precisely in the change that is removing those overruns — which is the
+change that introduced them here.
+
+### What this check deliberately does not hold
+
+- **A body, a pull request or a review comment.** The half of the rule that is *procedure* — the
+  half every adopting project inherits — is held by nobody. Those surfaces are not files, so this
+  sweep cannot see them, and the gate that does read a pull request could only guess: a
+  hard-wrapped body is distinguishable from a short one by heuristic alone — line breaks falling
+  mid-sentence — which reddens on a deliberate break, a pasted quotation and a list. ⚠️ The cost is
+  stated rather than papered over: the rendered half is a convention again, held by the writer,
+  and the only thing standing behind it is that it costs nothing to follow.
+- **Anything that is not markdown.** Measured when the width was ruled: this repository's Python
+  carries tens of lines past the width and its longest is half as long again, so a sweep over code
+  would have been a reformat of every script on day one. A programming language's line width is
+  that language's business, and the comments inside a configuration example are annotation on a
+  line of data rather than prose a reader reads straight through.
+- **Whether a wrapped paragraph is wrapped *well*.** A line of twenty columns beside one of
+  ninety-nine passes, because the rule is a ceiling and not a measure of raggedness. This is the
+  *fidelity* limit the document checks have, one claim over.
+- **A document outside the repository.** The ordering document and the per-item working papers
+  live in the session store outside every tree (§ 11), where `git ls-files` cannot reach them and
+  no width is stated for them.
+- **The width as a configured *value*.** The sweep that forbids a configured value from appearing
+  in a carrier root is keyed on key names, and `prose_width` is deliberately not among them: a
+  width is a bare integer, and a value list that matched one would redden on every count,
+  threshold and year in the tree. What that leaves unguarded is a role's text stating a width
+  instead of reading it — which no role does today, because the rule's reader is the writer of a
+  document rather than a skill.
+
 ## Each check has a violation it is asserted to redden on
 
 `--self-test` plants one violation per check and asserts that check goes red, as the first step of
@@ -739,13 +802,16 @@ first phase names it — *Assert each check can fail, then …* — and a run wi
 to name, so it says only what it holds. ⛔ A step name is not evidence that a suite plants: both
 families plant, and the run prints what it planted.
 
-⚠️ **The reply-register check's plants carry two things its siblings' do not**, because what it
-holds afterwards is a rule rather than a tree. It plants replies that must stay **green** as well
-as ones that must redden — a check that flags an arrow inside a fenced block, an indented block or
-a quotation is not the check it claims to be, and each of those was a measured false red rather
-than a hypothesis. And it runs its turn-guard assertions against a state directory of its own,
-after a second run of the self-test read the first run's markers and reported that a blocking
-finding does not block.
+⚠️ **Two of the checks plant the green side as well as the red**, and both are checks whose scope
+has a hole in it by design. The reply-register check plants replies that must stay green — a check
+that flags an arrow inside a fenced block, an indented block or a quotation is not the check it
+claims to be, and each of those was a measured false red rather than a hypothesis. The width check
+plants a line of each unbreakable kind, for the same reason one claim over: its exclusion list is
+where it would quietly stop holding anything. ⛔ A red-only suite says nothing about either.
+
+⚠️ The reply-register check carries one more thing its siblings do not: it runs its turn-guard
+assertions against a state directory of its own, after a second run of the self-test read the
+first run's markers and reported that a blocking finding does not block.
 
 ⚠️ **A plant may not name the file it plants into.** The sweep's first draft hardcoded the one
 skill's path, so moving or renaming a carrier root made `--self-test` — the command the workflow

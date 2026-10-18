@@ -116,8 +116,8 @@ The rule, and why it is procedure rather than a setting, is
 [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the nine-role loop and
 its axes, the tracker port and its capabilities, the work-item facets with their absent
 cases, the status writers, the readiness gate, commit behaviour, the day log, the branch model and
-the session's context. Everything else written about the procedure, in this repository or on a work item,
-explains or records; none of it is a second authority.
+the session's context. Everything else written about the procedure, in this repository or on a
+work item, explains or records; none of it is a second authority.
 
 That is enforced rather than asserted: the `Single source of truth` workflow holds every document
 to it on every change — see [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md)
@@ -144,6 +144,7 @@ found between the old copies and the decision that settled it.
 | [`tools/check_single_source.py`](tools/check_single_source.py) | The single-authority check, run by the `Single source of truth` workflow on every change |
 | [`tools/check_no_project_names.py`](tools/check_no_project_names.py) | The sweep that holds the convention above: no other project named anywhere, and no value, tracker or stack in any carrier root |
 | [`tools/check_nothing_deferred.py`](tools/check_nothing_deferred.py) | The gate that refuses a merge while any item raised against the change is unresolved, counted in the body and in the threads on it |
+| [`tools/check_prose_width.py`](tools/check_prose_width.py) | The sweep that holds every tracked markdown file to the line width the configuration states, excluding the lines the format forbids breaking |
 | [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) — today, a `Stop` hook holding a role's reply to the register |
 
 The remaining six roles land here as they are reconciled. A project that has not been migrated
@@ -184,6 +185,15 @@ held by the `Nothing deferred` workflow rather than by a reviewer noticing, and 
 deliberately leaves to a reviewer is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-gate-on-the-change-nothing-is-deferred)
 — a comment finding, a `None.` that is not true, and the closing half of the rule.
+
+⛔ **Prose here wraps at the width this repository's own configuration states, and nothing
+written to the host is wrapped at all.** The
+[width rule](plugins/mjolnir/config/schema.md#prose-line-width) is the single statement of which
+surface answers how, what it excludes and why one half is configuration while the other is
+procedure. The files half is held by the `Prose width` workflow, reading the width from
+`.claude/mjolnir.yaml` rather than carrying one; the bodies half is held by nobody, which is
+stated with the check in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#prose-line-width-held-on-the-gate-for-files-and-nowhere-for-bodies).
 
 ⛔ **The only author is the authenticated user** — here and in every project the toolkit drives.
 The [authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration)

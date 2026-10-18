@@ -97,6 +97,8 @@ carriers:
 language:
   work_item: ru
   repo: en
+  # No `prose_width`, which is the commoner habit and an answer rather than an omission: this
+  # project does not hard-wrap its files, so a role leaves the paragraphs it writes unwrapped.
   artifacts:
     day_log: { language: en, register: business, audience: "the person the hours are reported to" }
 

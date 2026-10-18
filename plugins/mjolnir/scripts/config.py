@@ -600,6 +600,21 @@ def validate(data: dict, facts: dict) -> None:
                 f"is {carrier!r}; the surface allows {' | '.join(allowed)}.",
             )
 
+    # § 8. A width is a count of columns, and absence is the answer "this
+    # project does not hard-wrap" rather than a missing setting -- so the key is
+    # not required, and a value that is present is held to being a positive
+    # whole number. `true` is an int in Python and would otherwise resolve to a
+    # width of one column.
+    width = _get(data, "language.prose_width")
+    if width is not None and (
+        isinstance(width, bool) or not isinstance(width, int) or width <= 0
+    ):
+        raise ConfigError(
+            "language.prose_width",
+            f"is {width!r}; it takes a positive number of columns, or is absent "
+            "where the project does not hard-wrap its files (§ 8).",
+        )
+
 
 def load(skills_root: str = ".", *, check_paths: bool = True) -> Config:
     """Resolve a project's configuration relative to its skills root.
@@ -944,6 +959,8 @@ def _planted_violations():
          at("context.artifacts.committed", "definitely not")),
         ("an in-tree store a tree's teardown would take", "context.artifacts.dir",
          _in_tree_and_uncommitted),
+        ("a prose width that is not a count of columns", "language.prose_width",
+         at("language.prose_width", "wide")),
     ]
 
 
