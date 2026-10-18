@@ -183,10 +183,10 @@ branch_model:
   # serving the procedure while a branch is in flight beside it.
   work_in_shared_checkout: never
   parallel_trees: true
-  # A sibling of the shared checkout rather than a directory inside it: the checkout is what the
-  # registered marketplace path points at, and a tree nested under it would be swept by this
-  # repository's own gates as tracked content. The leaf is the item's number and is derived, not
-  # stated here — § 10.
+  # A sibling of the shared checkout rather than a directory inside it: that checkout is the
+  # registered marketplace path every session serves, so nesting a per-item tree under it would
+  # put one branch's working files inside the path that is supposed to be serving main. The leaf
+  # is the item's own number and is derived rather than stated here — § 10.
   tree_dir: "../mjolnir-wt"
   # Null because there is nothing to point at: a tree here needs no dependency install, no asset
   # copy, no port, no container, and nothing to tear down. The cheapest proof that a project

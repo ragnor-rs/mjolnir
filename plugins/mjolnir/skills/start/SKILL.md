@@ -138,7 +138,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" take \
 - ⛔ **Never force, and never a second checkout of a branch already checked out somewhere.** Git
   refuses the second checkout by name, and that refusal is a stop: the session holding it may be
   mid-task.
-- A cheap pre-filter avoids pointless attempts — `claim.py status` with the same arguments. ⛔ The
+- A cheap pre-filter avoids pointless attempts — `claim.py status` on the same root and branch. ⛔ The
   attempt is still the authority, and a filter that came back clean is **not** evidence the claim
   was free: the window between the two is exactly the race, and it has been observed closing
   inside one pass.
