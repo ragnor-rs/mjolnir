@@ -735,13 +735,13 @@ configuration and nothing else. The kind is **computed**, for that reason. A tre
 configuration carries no width makes the check hold nothing, and it says so and reddens rather
 than passing — the same rule the document checks apply to a glob that matches no file.
 
-⚠️ **It plants both sides, as the reply-register check does.** Four violations must redden — an
+⚠️ **It plants both sides, as the reply-register check does.** Violations that must redden — an
 overlong paragraph, an overlong list continuation, a tree with no width configured, a tree with
-nothing tracked — and eight exemptions must stay green: a table row, a fenced line, an indented
-code line, a link destination, an autolink, a bare URL, an inline-code span, and a frontmatter
-field. Each exemption plant was then verified by **disabling its own exclusion** and watching that
-plant redden, because an exemption nothing can fail is an exemption nobody checked, and an
-exemption list is exactly where a check quietly stops holding anything.
+nothing tracked, a tracked file it cannot read, a frontmatter marker that never closes — and one
+exemption plant per excluded kind, each of which must stay green. Each exemption was then verified
+by **disabling its own exclusion** and watching that plant redden, because an exemption nothing can
+fail is an exemption nobody checked, and an exemption list is exactly where a check quietly stops
+holding anything. The run prints what it planted; no count of either is written down here.
 
 ⚠️ The plants are compared against the tree's **own** result rather than against zero. A whole-file
 assertion reads every plant as red while one real overrun is still in the tree, which would make
@@ -765,6 +765,13 @@ change that introduced them here.
 - **Whether a wrapped paragraph is wrapped *well*.** A line of twenty columns beside one of
   ninety-nine passes, because the rule is a ceiling and not a measure of raggedness. This is the
   *fidelity* limit the document checks have, one claim over.
+- **A line made long by several short unbreakable runs.** Every run is set aside before the
+  measurement, so a line of four code spans and a few words passes at well over the width while
+  being perfectly breakable between them. ⚠️ Reproduced rather than reasoned about — a planted
+  144-column line of that shape is not reported — and left open deliberately: the stricter
+  reading, *one* run, reddens the ordinary citation line this repository carries by the dozen.
+  Nothing in the tree is exempt by this route today, which was measured and is why the looser
+  rule is the stated one rather than a discovered hole.
 - **A document outside the repository.** The ordering document and the per-item working papers
   live in the session store outside every tree (§ 11), where `git ls-files` cannot reach them and
   no width is stated for them.

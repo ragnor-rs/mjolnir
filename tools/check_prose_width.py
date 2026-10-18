@@ -13,11 +13,11 @@ states `language.prose_width` or states nothing and does not wrap. A tree whose
 configuration carries no width makes this check hold nothing, and it says so and
 reddens rather than passing, because a check that holds nothing reports green.
 
-What is held: every tracked markdown file, including the skills and the
+What is held: every tracked `*.md` file, including the skills and the
 examples. What is excluded is excluded **by the rule**, not by forbearance --
-fenced and indented code, table rows, YAML frontmatter, and any line whose
-overrun is a single unbreakable token (a link destination, an autolink, or an
-inline-code span). Each exclusion has a plant below asserting it stays green,
+fenced and indented code, table rows, YAML frontmatter, and any line that fits
+once the unbreakable runs in it are set aside (a link destination, an autolink,
+a bare URL, an inline-code span). Each exclusion has a plant below asserting it stays green,
 and each of those plants was verified by disabling its exclusion and watching
 the plant redden; an exemption nothing can fail is an exemption nobody checked.
 
@@ -69,7 +69,14 @@ def overruns(text: str, width: int) -> list[tuple[int, int, str]]:
     lines = text.splitlines()
     # Frontmatter is the file's own metadata and its fields are single-line by
     # the harness's grammar: a skill's `description` is one line however long.
-    in_frontmatter = bool(lines) and lines[0].strip() == FRONTMATTER
+    # ⛔ It counts as frontmatter only where it **closes**. An opening marker
+    # with no closing one would otherwise exempt the whole file in silence,
+    # which is the loudest way a sweep can stop holding something.
+    in_frontmatter = (
+        bool(lines)
+        and lines[0].strip() == FRONTMATTER
+        and any(line.strip() == FRONTMATTER for line in lines[1:])
+    )
     fenced = False
     for number, line in enumerate(lines, 1):
         stripped = line.strip()
@@ -121,9 +128,19 @@ class Tree:
         )
         return sorted(p for p in out.stdout.split("\n") if p)
 
-    def _read(self, relative: str) -> str:
-        with open(os.path.join(self.root, relative), encoding="utf-8") as handle:
-            return handle.read()
+    def _read(self, relative: str):
+        """The file's text, or the reason it could not be read.
+
+        ⛔ A tracked file missing from the working tree, or one that is not
+        text, is a problem this check reports -- never a traceback out of the
+        command a workflow runs. A file deleted without `git rm` is the common
+        one, and it arrives mid-edit rather than in a broken tree.
+        """
+        try:
+            with open(os.path.join(self.root, relative), encoding="utf-8") as handle:
+                return handle.read()
+        except (OSError, UnicodeDecodeError) as exc:
+            return exc
 
     def _width(self):
         """The width this project states, through the one reader (§ 8)."""
@@ -161,7 +178,15 @@ def check_prose_fits_the_configured_width(tree: Tree) -> list[str]:
         ]
     problems = []
     for path in sorted(tree.text):
-        for number, length, line in overruns(tree.text[path], tree.width):
+        text = tree.text[path]
+        if isinstance(text, Exception):
+            problems.append(
+                f"{path}: is tracked and could not be read ({text}). A file the sweep "
+                "cannot open is unheld, which is the one state this check may not report "
+                "as green."
+            )
+            continue
+        for number, length, line in overruns(text, tree.width):
             problems.append(
                 f"{path}:{number}: {length} columns, over the configured {tree.width}. "
                 f"Rewrap the paragraph: {' '.join(line.split())[:60]}…"
@@ -171,15 +196,27 @@ def check_prose_fits_the_configured_width(tree: Tree) -> list[str]:
 
 CHECKS = [("prose fits the configured width", check_prose_fits_the_configured_width)]
 
-A_DOCUMENT = "README.md"
-
 
 # --- the planted violations -------------------------------------------------
+#
+# ⛔ No plant names a file. The sweep's own first draft hardcoded one path and a
+# rename turned `--self-test` -- the command the workflow runs -- into a
+# `KeyError` instead of a verdict, so a plant takes whatever file is there and
+# synthesises one where the set is empty.
+
+
+def _a_document(tree: Tree) -> str:
+    for path in sorted(tree.text):
+        if not isinstance(tree.text[path], Exception):
+            return path
+    tree.text["planted.md"] = "# Planted\n"
+    return "planted.md"
 
 
 def _plant(line: str):
     def apply(tree: Tree) -> Tree:
-        tree.text[A_DOCUMENT] += f"\n{line}\n"
+        path = _a_document(tree)
+        tree.text[path] = tree.text[path] + f"\n{line}\n"
         return tree
 
     return apply
@@ -208,12 +245,29 @@ def _plant_nothing_tracked(tree: Tree) -> Tree:
     return tree
 
 
+def _plant_unreadable_file(tree: Tree) -> Tree:
+    tree.text["docs/deleted-without-git-rm.md"] = FileNotFoundError("no such file")
+    return tree
+
+
+def _plant_unclosed_frontmatter(tree: Tree) -> Tree:
+    """An opening marker with no closing one exempts nothing."""
+    tree.text["docs/planted-frontmatter.md"] = (
+        "---\nname: planted\n\n" + _long("word ", (tree.width or 0) + 20) + "\n"
+    )
+    return tree
+
+
 VIOLATIONS = [
     ("prose fits the configured width", "an overlong paragraph", _plant_overlong_prose),
     ("prose fits the configured width", "an overlong continuation line",
      _plant_overlong_indented_prose),
     ("prose fits the configured width", "no width configured", _plant_no_width_configured),
     ("prose fits the configured width", "nothing tracked to hold", _plant_nothing_tracked),
+    ("prose fits the configured width", "a tracked file that cannot be read",
+     _plant_unreadable_file),
+    ("prose fits the configured width", "a frontmatter marker that never closes",
+     _plant_unclosed_frontmatter),
 ]
 
 

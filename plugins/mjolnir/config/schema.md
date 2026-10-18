@@ -713,11 +713,16 @@ which is a thing projects differ on in fact and not only in principle
 `prose_width` does not hard-wrap, which is the commoner habit of the two; a role writing a document
 there leaves its paragraphs unwrapped rather than picking a width of its own.
 
-**Four kinds of line are excluded by the rule itself**, rather than by the forbearance of whoever
-reads it, because each is a line the format forbids breaking: fenced and indented code, table rows,
-the document's YAML frontmatter, and any line whose overrun is a single unbreakable token — a link
-destination, an autolink, or an inline-code span. A width rule without them is a rule that cannot
-be met, since a table row has no legal break at all.
+**What the width cannot reach is excluded by the rule itself**, rather than by the forbearance of
+whoever reads it, because each is a line the format forbids breaking: fenced and indented code,
+table rows, and the document's YAML frontmatter, where a field is one line however long it is. A
+width rule without them is a rule that cannot be met, since a table row has no legal break at all.
+
+**The width is measured over what a line can be broken at.** A run with no legal break inside it —
+a link destination, an autolink, a bare URL, an inline-code span — is set aside first, and the
+line is over only if what is left is. ⚠️ Stated this way rather than as *one* unbreakable run, and
+measured: the stricter reading flags a citation that could only be met by breaking before the link
+text, which is a line this repository's own documents carry by the dozen.
 
 ⛔ **The width binds prose written after it is set.** Rewrapping what predates it would repaint
 every line of every file and destroy the line-granular diff that is the whole argument for
