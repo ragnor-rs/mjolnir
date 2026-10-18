@@ -51,6 +51,24 @@ PROPERTY_TABLE_ANCHOR = "the-reply-to-the-person-running-a-role"
 
 CITATION = "schema § 8 → The reply to the person running a role"
 
+# What every answer asks for, in one string because every answer asks for the
+# same thing. ⛔ Whether the turn is handed back decides who pays the re-read,
+# not whether the defect is fixed: the reply just sent is the one carrying the
+# findings, so a branch that told the writer the *next* reply would be better
+# would be licensing a deferral — measured, and obeyed, on the branch that fires
+# when a density reports and nothing blocks. `--self-test` holds every answer
+# this can return to carrying this sentence and to promising nothing about a
+# later reply — four shapes over three branches, because the last one fires both
+# for a spent hand-back and for findings that only report.
+#
+# ⚠️ `DEFERRALS` is a closed list, and it is the *quoting* weakness this
+# repository rules out elsewhere -- safe only because what it sweeps is the four
+# strings authored below rather than arbitrary text. A reworded licence passes
+# it; what catches that is the absent `RESTATE`, which is the arm that matters.
+RESTATE = ("Re-send this reply corrected, in this turn — a finding against the reply just sent "
+           "is not carried forward to a later one.")
+DEFERRALS = ("the next reply", "a later reply", "written knowing", "next time")
+
 BLOCKS, REPORTS = "blocks", "reports"
 
 # The carrier that calls this script, and the event it registers for. Grammar:
@@ -580,18 +598,18 @@ def context(blocking: list[str], reported: list[str], block: bool, unguarded: st
     lines += [f"- {f}" for f in blocking + reported]
     if block:
         lines.append(
-            "Restate the reply so each holds. This turn is handed back once only; a second "
-            "reply is not blocked, so get it right here."
+            f"This turn is handed back once only; a second reply is not blocked. {RESTATE}"
         )
     elif blocking and unguarded:
         lines.append(
-            f"Nothing is blocked, and not because these findings are weak: {unguarded}. "
-            "Restate the reply anyway."
+            f"Nothing is blocked, and not because these findings are weak: {unguarded}. {RESTATE}"
         )
     else:
+        why = ("this turn has had its one hand-back" if blocking
+               else "these findings are read at a density")
         lines.append(
-            "Nothing is blocked: these findings are read at a density, or this turn has had "
-            "its one hand-back. The next reply is written knowing them."
+            f"Nothing is blocked — {why}, which is this guard's reach rather than permission to "
+            f"defer. {RESTATE}"
         )
     return "\n".join(lines)
 
@@ -921,6 +939,30 @@ def self_test() -> int:
     else:
         print("  FAIL                   a turn carrying no reply produced an answer")
         failures += 1
+
+    # ⛔ Every branch of the answer asks for this reply, not a later one. The
+    # branch that fires when a density reports used to close on "the next reply
+    # is written knowing them", which is a deferral stated by the guard that
+    # holds the rule against deferring — and it was obeyed.
+    print("\nAsserting no branch defers the fix to a later reply:")
+    branches = [
+        ("handed back", dict(blocking=["a: b"], reported=[], block=True, unguarded="")),
+        ("blocking, unguarded", dict(blocking=["a: b"], reported=[], block=False,
+                                     unguarded="no turn is named")),
+        ("hand-back already spent", dict(blocking=["a: b"], reported=[], block=False,
+                                         unguarded="")),
+        ("reported at a density", dict(blocking=[], reported=["a: b"], block=False,
+                                       unguarded="")),
+    ]
+    for label, kwargs in branches:
+        said = context(**kwargs)
+        deferred = [phrase for phrase in DEFERRALS if phrase in said.lower()]
+        if RESTATE in said and not deferred:
+            print(f"  ok                     {label}: asks for this reply")
+        else:
+            missing = "carries no restatement" if RESTATE not in said else f"defers: {deferred}"
+            print(f"  FAIL                   {label}: {missing}")
+            failures += 1
 
     # ⛔ The fail-open branch, asserted rather than claimed. It was stated with
     # the binding marker in two places and exercised by nothing.
