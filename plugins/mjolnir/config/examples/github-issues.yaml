@@ -1,0 +1,116 @@
+# Plain GitHub issues: no board, no status field, no `in_flight` role.
+# The cheapest real tracker there is, and what a new adopter has on their first day.
+# Example data — not any project's facts.
+version: 1
+
+roots:
+  code: "."
+  code_is_own_repo: false
+
+host:
+  kind: github
+  # The tracker and the code host are the same system here, and this is the one key
+  # that says which repository the items live in.
+  repo: "OWNER/REPO"
+  checks:
+    - workflow: "CI"
+      mirrors: "npm test"
+      triggers: "pull_request -> main"
+
+tracker:
+  # No further keys: there is no board to address, no status field to resolve and no
+  # option ids to read. That emptiness is the point — compare github-projects.yaml.
+  kind: github-issues
+  # Classification rides labels, since plain issues have no fields to carry it.
+  labels: [bug, feature, chore]
+
+work_item:
+  type:
+    carrier: label
+    label_prefix: "type:"
+    values: [bug, feature, chore]
+  type_branch_prefix:
+    bug: bugfix
+    feature: feature
+    chore: feature
+  estimate:
+    carrier: none
+    absent_reason: >-
+      Plain issues have no estimate field, and nothing here is committed to anyone outside
+      the build.
+    revisit_when: >-
+      A second person starts taking work from this backlog, or someone outside it begins
+      asking when a given item lands.
+  template:
+    carrier: file
+    dir: ".claude/templates"
+    by_type:
+      bug: "bug.md"
+      feature: "feature.md"
+      chore: "feature.md"
+    sections:
+      outcome: "Outcome"
+      acceptance: "Acceptance check"
+      reproduction: "Reproduction"
+
+# ⛔ Two statuses, because an issue has two states and there is no field to carry a third.
+# No `in_flight` role at all: nothing on this tracker can hold "someone is working on it",
+# which is a legitimate configuration (§ 4.2) rather than a gap to work around. A session's
+# claim therefore rides on something else entirely — see #70.
+statuses:
+  - { name: "open",   role: initial,  writer: procedure }
+  # `automation`: the host closes the item itself when a pull request carrying a closing
+  # reference merges, so the procedure is refused this move and asks `advance_on_merge`
+  # whether it happened.
+  - { name: "closed", role: terminal, writer: automation }
+
+readiness:
+  - { check: state_is, roles: [initial], stop: "The issue is already closed." }
+  - { check: no_open_blockers, stop: "An issue this one depends on has not landed yet." }
+
+commit:
+  staging: explicit
+  trailer: read_from_history
+
+carriers:
+  day_log: skill
+  file: skill
+  start: skill
+  finish: skill
+  review: skill
+
+language:
+  work_item: en
+  repo: en
+  artifacts:
+    day_log: { language: en, register: technical, audience: "whoever maintains this project" }
+
+day_log:
+  out_dir: "$TMPDIR/<project>"
+  day_start: "05:00"
+  round_to: 0.5
+  round_ties: down
+  enforce_grid: true
+  script: ".claude/skills/day-report/scripts/active_time.py"
+  streams: [sessions, commits]
+  attribute_to: null
+  exclusions: [log_upkeep, rework, overhead]
+  sections: billed_only
+  evidence:
+    chat_patterns: []
+    chat_exclude: []
+    mixed_chats: []
+    calendars: []
+
+branch_model:
+  kind: worktree
+  work_in_shared_checkout: never
+  parallel_trees: true
+  mechanics: null
+  exclusive_resources: []
+
+context:
+  artifacts:
+    carrier: file
+    dir: "$TMPDIR/<project>/artifacts"
+    committed: false

@@ -245,7 +245,7 @@ tracker:
 The shared procedure names **the port and never a tracker**. Each `kind` carries its own block;
 see `examples/`. `github-issues` is plain issues with no board, no status field and no
 `in_flight` role — the cheapest real configuration, named here because this repository runs on
-it; the adapter behind it is #27, and the examples do not yet cover it.
+it, and the first kind whose adapter is built.
 
 Three properties of the port the procedure depends on:
 
@@ -309,8 +309,18 @@ in the procedure reports it as one.
 
 ⚠️ A configured kind whose **implementation is not installed** behaves identically and is not the
 same fact, so the port reports the two apart: one is a project that decided it needs no tracker,
-the other is an adapter that has not been built yet. This repository is the second case today —
-its `github-issues` adapter is #27 — which is why the distinction is not theoretical.
+the other is an adapter that has not been built yet. `github-projects` (#3), `jira` (#4) and
+`trello` (#5) are the second case today, which is why the distinction is not theoretical — a
+project pointed at one of them gets every fallback and a report naming the kind, rather than a
+broken install.
+
+⛔ **An implementation's presence is its installation.** One module per kind, in the port's
+`adapters/` package, naming the `kind` it answers for; the port discovers what is there on the
+first capability query. There is deliberately no list of installed adapters anywhere, for the
+reason stated above about capabilities: a list is a second statement allowed to disagree with
+what is actually built, and *installed* must not come to mean that some caller remembered an
+import. A module in that package that names no kind is refused rather than skipped — it is a
+built implementation nothing can address, which is the toolkit's own mistake and not an absence.
 
 ### A write forbidden by policy rather than by capability
 
@@ -407,6 +417,12 @@ meaning, not merely in wording.
 two status words answering one role leave the move undefined — and there is no first-match rule to
 fall back on, because picking the earlier row would be a choice the configuration never made. The
 port refuses it naming `statuses` rather than acting on the first.
+
+⚠️ **The port resolves the role to its status word and hands that word to the implementation.**
+Which is the only place the mapping may be read: a role naming the word would be the thing § 3
+forbids, and an implementation re-deriving it would read `statuses` a second time and be allowed
+to disagree. A word the tracker cannot hold is refused by the implementation naming `statuses` —
+a project may map a subset of the roles, never invent a state its tracker has no room for.
 
 ⛔ **The writer is what makes this correct rather than merely configurable.** The procedure asks
 the port to advance to a *role*, and is **refused** when the configured writer is not

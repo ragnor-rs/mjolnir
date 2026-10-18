@@ -259,10 +259,22 @@ class Adapter:
 # never as a broken install.
 TRACKERLESS = Adapter()
 
-# Installed implementations, by `tracker.kind`. Empty today: the three adapters
-# and this repository's own are separate work items, and the contract is what
-# they register against. A role never reads this -- it asks a `Port`.
+# Installed implementations, by `tracker.kind`. Populated by discovery rather
+# than by a list written here, for the reason § 3 already gives about
+# capabilities: a written list is a second statement allowed to disagree with
+# what is actually built. A role never reads this -- it asks a `Port`.
 ADAPTERS: dict[str, Adapter] = {}
+
+# Where an implementation lives. ⛔ A directory, because naming the modules would
+# name the trackers, which this file is held to not doing; the package's own
+# docstring carries the half of the convention a reader needs.
+ADAPTER_PACKAGE = "adapters"
+ADAPTER_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ADAPTER_PACKAGE)
+
+# Discovery runs once per process. A second sweep would re-import nothing -- the
+# module cache holds -- but would hand `register` the same kind twice and be
+# refused, turning a later capability query into an error.
+_discovered = False
 
 
 def register(kind: str, adapter: Adapter) -> None:
@@ -275,6 +287,53 @@ def register(kind: str, adapter: Adapter) -> None:
         )
     adapter.hold_to(surface_operations())
     ADAPTERS[kind] = adapter
+
+
+def load_adapters() -> dict[str, Adapter]:
+    """Import every implementation beside this file and install it.
+
+    **The module's presence is the install.** § 3 draws a line between a project
+    that needs no tracker and an adapter that has not been built yet; nothing can
+    hold that line if *installed* means somebody remembered an import, so the
+    directory answers instead and a role that imports no adapter still gets the
+    right report.
+
+    ⚠️ Imported here rather than at module scope: an adapter imports this module
+    for `Adapter`, so an eager import would be a cycle. Deferring it to the first
+    capability query is what breaks that, and is the whole reason this is a
+    function rather than a constant.
+
+    An adapter that fails to import is **not** silently skipped. A module that is
+    present and broken is the toolkit's own mistake -- the one thing § 3 holds
+    apart from an absence -- and swallowing it would report a kind that was built
+    as a kind that never was.
+    """
+    global _discovered
+    if _discovered:
+        return ADAPTERS
+    _discovered = True
+    if not os.path.isdir(ADAPTER_DIR):
+        return ADAPTERS
+    import importlib
+
+    if os.path.dirname(ADAPTER_DIR) not in sys.path:
+        sys.path.insert(0, os.path.dirname(ADAPTER_DIR))
+    for entry in sorted(os.listdir(ADAPTER_DIR)):
+        if not entry.endswith(".py") or entry.startswith("_"):
+            continue
+        module = importlib.import_module(f"{ADAPTER_PACKAGE}.{entry[:-3]}")
+        try:
+            kind, adapter = module.KIND, module.ADAPTER
+        except AttributeError:
+            raise ConfigError(
+                f"tracker.adapters.{entry}",
+                "is in the adapters package and states no `KIND` and `ADAPTER`, "
+                "so there is nothing to install it as. An implementation names "
+                "the kind it answers for; discovery does not guess one from a "
+                "filename.",
+            ) from None
+        register(kind, adapter)
+    return ADAPTERS
 
 
 class Outcome:
@@ -342,11 +401,17 @@ class Port:
         an adapter that has not been built yet. Both leave every operation
         unavailable and they are **not** the same fact, so they are reported
         apart (§ 3).
+
+        Discovery happens here, on the first ask, and only where a tracker is
+        actually configured: a trackerless project has no reason to import an
+        implementation, and an adapter handed in directly is the caller saying
+        which one answers.
         """
         if self._given is not None:
             return self._given
         if not self.config.has_tracker:
             return TRACKERLESS
+        load_adapters()
         return ADAPTERS.get(self.kind)
 
     # -- the capability query. Never assumed, never read from a configuration.
@@ -451,7 +516,19 @@ class Port:
                 f"written by `{writer}` here, not by the procedure. The move is "
                 "reported for that writer to make rather than made.",
             )
-        return self.invoke("set_state", *args, **kwargs)
+        # ⛔ The resolved status word is handed to the adapter, which is the
+        # whole point of asking for a role: the caller names a **role**, this
+        # layer turns it into the one status word the project mapped to it, and
+        # the implementation writes that word.
+        #
+        # ⚠️ Measured by building the first adapter against this method: the
+        # word used to be resolved here for the writer checks and then dropped,
+        # so `set_state` reached the adapter with no target. The only ways out
+        # were an adapter re-deriving the mapping the port had just read, or a
+        # role passing the status word itself -- and that second one is exactly
+        # what § 3 forbids. An absent capability stayed correct throughout,
+        # which is why nothing before an implementation existed could catch it.
+        return self.invoke("set_state", *args, status=status.get("name"), **kwargs)
 
     # -- what this configuration cannot do, as a report and never as a fault
 
@@ -714,8 +791,22 @@ def self_test() -> int:
     # the verdict belongs -- dead exactly when it was needed.
     check("an example configures a tracker", bool(with_tracker))
     check("an example configures no tracker", bool(trackerless))
-    if with_tracker:
-        uninstalled = Port(with_tracker[0], stated=stated)
+    # ⛔ An example whose kind has **no implementation installed**, found by
+    # asking the registry rather than by taking the first example in the
+    # directory. Indexing `[0]` was right only while no adapter existed at all:
+    # the first example whose kind acquired one turned the check below -- which
+    # *invokes every operation* -- into real calls against a live tracker. It
+    # survived on an arity error, one default argument away from filing an issue
+    # on somebody's host from a test run.
+    load_adapters()
+    unbuilt = [c for c in with_tracker if c.tracker_kind not in ADAPTERS]
+    check(
+        "an example states a kind with no implementation, for the two checks below",
+        bool(unbuilt),
+        "every example's kind is installed, so the not-built-yet path is not exercised here",
+    )
+    if unbuilt:
+        uninstalled = Port(unbuilt[0], stated=stated)
         check(
             "an operation with no implementation installed falls back too, and does not raise",
             all(
@@ -840,7 +931,7 @@ def self_test() -> int:
     # A configured kind with no implementation installed: the same unavailability,
     # reported as the different fact it is.
     trackerless_line = Port(trackerless[0], stated=stated).report()[0] if trackerless else ""
-    for configuration in with_tracker[:1]:
+    for configuration in unbuilt[:1]:
         port = Port(configuration, stated=stated)
         reported = port.report()
         check(
@@ -877,6 +968,46 @@ def self_test() -> int:
             == "tracker.operations.telepathy",
         )
         ADAPTERS.pop(kind)
+
+    # Discovery: the directory is the install list, so what is checked is that
+    # the sweep installs what is there, runs once, and refuses a module that
+    # does not say what it answers for.
+    check(
+        "discovery installs at least one implementation from the package",
+        bool(load_adapters()),
+        f"{ADAPTER_DIR} yielded nothing",
+    )
+    installed = dict(ADAPTERS)
+    check(
+        "a second sweep installs nothing twice rather than refusing",
+        load_adapters() == installed,
+    )
+    # ⛔ Planted in a temporary directory, never in the live package. A probe
+    # module written beside the real adapters would be imported by every later
+    # run in this tree -- and by any other session sharing it.
+    import tempfile
+    import types
+
+    with tempfile.TemporaryDirectory() as planted:
+        open(os.path.join(planted, "probe.py"), "w").close()
+        # Seeded into the module cache so the import resolves without the
+        # temporary directory having to be an importable package.
+        sys.modules[f"{ADAPTER_PACKAGE}.probe"] = types.ModuleType("probe")
+        was_dir, was_done = ADAPTER_DIR, _discovered
+        try:
+            globals()["ADAPTER_DIR"], globals()["_discovered"] = planted, False
+            # Captured once: the sweep marks itself done before it can refuse,
+            # so asking a second time for the detail string would come back
+            # clean and report `None` where the key belongs.
+            refusal = _refused(load_adapters)
+            check(
+                "an implementation stating no kind is refused, naming the module",
+                refusal == "tracker.adapters.probe.py",
+                f"reported {refusal!r}",
+            )
+        finally:
+            globals()["ADAPTER_DIR"], globals()["_discovered"] = was_dir, was_done
+            sys.modules.pop(f"{ADAPTER_PACKAGE}.probe", None)
 
     # The two sentinels this module spells out, held to the surface so that
     # renaming one there reddens the build instead of silently turning a refusal
@@ -925,12 +1056,35 @@ def self_test() -> int:
             port, refused = None, str(error)
         check(f"this repository's own {config.CONFIG_PATH} loads", port is not None, refused or "")
         if port is not None:
+            # ⛔ Asserted as a **relation** and never as a list of names or a
+            # count: the lines a report carries are exactly the operations the
+            # installed implementation leaves alone. Spelling either side out
+            # would put a tracker's capabilities in the contract -- which the
+            # sweep above forbids -- and would need editing every time an
+            # adapter grew an operation.
+            own_adapter = port.adapter
             check(
-                "its port reports every operation unavailable and no fault",
-                not any(port.implements(operation) for operation in stated)
-                and len(port.report()) == len(stated) + 1,
-                f"reported {port.report()!r}",
+                "this repository's own configuration gets an installed implementation",
+                own_adapter is not None and own_adapter is not TRACKERLESS,
+                "resolved to the trackerless adapter"
+                if own_adapter is TRACKERLESS
+                else "no implementation is installed for its kind",
             )
+            if own_adapter is not None and own_adapter is not TRACKERLESS:
+                absent = sorted(op for op in stated if not port.implements(op))
+                check(
+                    "and performs at least one operation, so the install is load-bearing",
+                    len(absent) < len(stated),
+                )
+                check(
+                    "its report names the absent operations and nothing else -- no fault line",
+                    len(port.report()) == len(absent)
+                    and all(
+                        line.startswith(f"`{operation}` is unavailable: ")
+                        for operation, line in zip(absent, port.report())
+                    ),
+                    f"reported {port.report()!r}",
+                )
 
     if failures:
         print(f"\n{failures} assertion(s) did not hold.")
