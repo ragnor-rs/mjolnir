@@ -59,6 +59,7 @@ ROLES = {
     "plugins/mjolnir/skills/day-report/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/file-work-item/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/finish/SKILL.md": PROCEDURE,
+    "plugins/mjolnir/skills/start/SKILL.md": PROCEDURE,
 }
 
 MAY_NOT_STATE_A_RULE = (EXPLAINS, RECORDS)
@@ -468,28 +469,53 @@ def _plant_orphan_section(tree: Tree) -> Tree:
     return tree
 
 
+def _outcome_table(tree: Tree) -> tuple[str, str]:
+    """The rulings document split at its outcome table, so a plant breaks a cell.
+
+    ⚠️ The three plants below substituted into the whole document, on the unstated
+    assumption that the outcome form `[schema § N](…#a)` occurs nowhere but a cell.
+    It is an ordinary citation shape, and the first one written in prose *above*
+    § 4 took all three plants: each mutated a sentence, every cell stayed valid,
+    and three checks reported STAYED GREEN. A plant that reddens nothing is the
+    cheaper failure; a plant that silently stops reaching its branch is the one
+    that leaves a check believed and unexercised.
+
+    The split is derived the same way the check derives it -- the header carrying
+    the outcome column -- so a renumbered or moved table needs no edit here.
+    """
+    lines = tree.text[RULINGS].splitlines(keepends=True)
+    header = next(
+        i for i, line in enumerate(lines)
+        if line.strip().startswith("|") and OUTCOME_COLUMN in line
+    )
+    return "".join(lines[:header]), "".join(lines[header:])
+
+
 def _plant_outcome_with_no_home(tree: Tree) -> Tree:
-    tree.text[RULINGS] = OUTCOME_IN_SURFACE.sub(
-        "A planted document § Somewhere", tree.text[RULINGS], count=1
+    above, table = _outcome_table(tree)
+    tree.text[RULINGS] = above + OUTCOME_IN_SURFACE.sub(
+        "A planted document § Somewhere", table, count=1
     )
     return tree
 
 
 def _plant_outcome_with_a_second_home(tree: Tree) -> Tree:
     """Keep a valid home and add a document beside it -- the residue branch."""
-    match = OUTCOME_IN_SURFACE.search(tree.text[RULINGS])
-    tree.text[RULINGS] = tree.text[RULINGS].replace(
+    above, table = _outcome_table(tree)
+    match = OUTCOME_IN_SURFACE.search(table)
+    tree.text[RULINGS] = above + table.replace(
         match.group(0), match.group(0) + ", README § Somewhere", 1
     )
     return tree
 
 
 def _plant_outcome_number_against_wrong_anchor(tree: Tree) -> Tree:
-    match = OUTCOME_IN_SURFACE.search(tree.text[RULINGS])
+    above, table = _outcome_table(tree)
+    match = OUTCOME_IN_SURFACE.search(table)
     other = next(
         a for _, _, a in headings(tree.text[SURFACE]) if a != match.group("anchor")
     )
-    tree.text[RULINGS] = tree.text[RULINGS].replace(
+    tree.text[RULINGS] = above + table.replace(
         match.group(0),
         f"[schema § {match.group('number')}]({match.group('path')}#{other})",
         1,

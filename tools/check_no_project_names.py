@@ -262,6 +262,8 @@ VALUE_KEYS = [
     "ref",
     "out_dir",       # where the day log is written
     "script",        # the evidence script's path
+    "tree_dir",      # where a working tree is cut (§ 10)
+    "command",       # what prints the ordering (§ 12)
     "audience",      # who an artifact is written for
 ]
 

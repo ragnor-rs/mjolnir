@@ -129,11 +129,12 @@ day_log:
 
 branch_model:
   # The tree pairs with the nested code checkout (§1), so both halves are cut per card and the
-  # outer one carries the cwd. Where a tree goes, and what must be copied into it before the
-  # stack's first boot, is the pointer's — not the shared procedure's.
+  # outer one carries the cwd. Where a tree goes is `tree_dir`; what must be copied into it
+  # before the stack's first boot is the pointer's — not the shared procedure's.
   kind: worktree
   work_in_shared_checkout: when_free
   parallel_trees: true
+  tree_dir: "../<project>-trees"
   mechanics: ".claude/worktrees.md"
   exclusive_resources:
     # One stack for the whole project, and the ticket belongs to the tree: two sessions in one
@@ -149,3 +150,10 @@ context:
     # sits outside every tree instead.
     dir: "$TMPDIR/<project>/artifacts"
     committed: false
+
+ordering:
+  # A list on the board is the queue, read top to bottom. ⚠️ This project's readiness gate also
+  # configures `queue_position` (§ 5) — the gate asks whether this card is far enough forward,
+  # and this says which card to offer. One statement of the order, read by two roles.
+  carrier: command
+  command: "<the command that prints the queue list top to bottom, one card id per line>"

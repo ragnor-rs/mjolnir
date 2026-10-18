@@ -11,8 +11,13 @@ The whole graph arrives in one GraphQL call (`Issue.blockedBy`), which returns w
 
   plan-status.py              read and report; the snapshot is left alone
   plan-status.py --stamp      same, then write the snapshot as the new baseline
+  plan-status.py --queue      the takeable items and nothing else, in row order, one per line
   plan-status.py --bootstrap  the one run that proceeds with no plan: report the live state and
                               the graph's layers so the document can be drafted, and write nothing
+
+--queue is what this project's `ordering.command` names: the ordering facet fixes the output —
+the takeable items, most takeable first, one identifier per line — and leaves where the order
+came from to whoever states it, which here is the row table this script already parses.
 
 Every value is derived rather than written down: the repository from the working tree's own
 remote, the plan and its snapshot from the session store this tree resolves to. Override any of
@@ -25,6 +30,7 @@ import argparse
 import collections
 import glob
 import hashlib
+import io
 import json
 import os
 import re
@@ -319,6 +325,8 @@ def main():
     ap.add_argument("--tested", default="",
                     help="issue numbers whose require-versus-tolerate test was run and answered "
                          "'no edge'; recorded on --stamp so they stop being re-flagged")
+    ap.add_argument("--queue", action="store_true",
+                    help="print the takeable items in row order, one per line, and nothing else")
     ap.add_argument("--bootstrap", action="store_true",
                     help="report the live state and the graph's layers for a store that has no "
                          "ordering document yet, and write nothing")
@@ -328,15 +336,30 @@ def main():
         # Opt-in rather than automatic recovery, and this is why: a run from a branch worktree
         # resolves a different session store, where a plan is absent for a reason that is not
         # "this project has none". Drafting on that refusal would write a second ordering.
-        if args.plan or args.snapshot or args.stamp or args.tested:
+        if args.plan or args.snapshot or args.stamp or args.tested or args.queue:
             raise SystemExit("--bootstrap writes nothing and addresses no plan, so --plan, "
-                             "--snapshot, --stamp and --tested have nothing to act on here")
+                             "--snapshot, --stamp, --tested and --queue have nothing to act "
+                             "on here")
         found = plans()
         if found:
             raise SystemExit("this store already orders this backlog, and an ordering document is "
                              "under no version control, so nothing here overwrites one:\n  "
                              + "\n  ".join(found) + "\nRun without --bootstrap.")
         return bootstrap(args.repo or resolve_repo())
+    if args.queue:
+        if args.stamp or args.tested:
+            raise SystemExit("--queue reports a queue and writes nothing, so --stamp and "
+                             "--tested have nothing to act on here")
+        # The report below is suppressed rather than made conditional on a flag threaded through
+        # forty prints: a consumer reading this as data gets the items and nothing else, and a
+        # second printing path would be a second answer to the same question.
+        #
+        # ⚠️ The pass's own verdict is deliberately NOT carried out of this mode. A run exits 1
+        # on coverage, ordering or acyclicity drift, and a queue consumer asking "which item is
+        # next" has no use for that: the queue it was handed is correct either way, and a
+        # non-zero exit would read as "there is no queue". Exit status here answers whether the
+        # queue could be produced, which is what the ordering facet says a consumer reads.
+        sys.stdout = io.StringIO()
     args.repo = args.repo or resolve_repo()
     args.plan = args.plan or resolve_plan()
     args.snapshot = args.snapshot or os.path.join(os.path.dirname(args.plan), SNAPSHOT_NAME)
@@ -452,6 +475,11 @@ def main():
     ready = sorted((n for n in live_items
                     if not any(not closed for _b, closed in issues[n]["blocked_by"])),
                    key=lambda n: (queue_row(n) is None, queue_row(n) or 0, n))
+    if args.queue:
+        sys.stdout = sys.__stdout__
+        for number in ready:
+            print(number)
+        return
     print(f"\nunblocked now        : {len(ready)}")
     for number in ready:
         row = queue_row(number)

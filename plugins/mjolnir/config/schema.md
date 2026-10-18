@@ -789,6 +789,7 @@ branch_model:
   kind: worktree | in_place
   work_in_shared_checkout: when_free | never   # read only under worktree; null under in_place
   parallel_trees: true
+  tree_dir: "<the directory a tree is cut under>"   # required under worktree; null under in_place
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
   exclusive_resources:           # [] where nothing in this project is exclusive
     - { name: "…", cap: 1, subject: tree }
@@ -813,6 +814,12 @@ rather than a procedure the shared one absorbs. ⚠️ **Unlike `day_log.script`
 transitional.** Nothing here is waiting to be extracted — a tree's setup and teardown are where a
 project's own build genuinely differs, and a skill on the route **names** `mechanics` instead of
 restating it.
+
+⛔ **It is steps and never a location, and `tree_dir` is the location.** The two were conflated
+while the second key was absent, which left *where a tree goes* stated in no facet and carried by
+each project's standing convention — readable by the person running a role and by nothing shipped.
+A path is not a step: a project with nothing to install and nothing to tear down still has to say
+where its trees are cut.
 
 ### Where the work happens
 
@@ -844,6 +851,33 @@ rather than being left to whoever reads it:
 is the rule the one project that had already extracted this mechanism states about its own
 reference file, and it is why the routing is stated once here rather than in a paragraph inside
 each role that reads it.
+
+### Where a tree is created, and how the session comes to be in it
+
+⛔ **`tree_dir` states the directory trees are created under, and the leaf is the item's own
+identifier.** The directory is a project's fact — one project nests its trees under the skills
+root with a second checkout inside each, another makes them siblings of the shared checkout — and
+the leaf is not: a tree belongs to one item, so deriving it makes the whole path a function of the
+item. ⚠️ **The item's own identifier and not its branch name**, which carries a slug: a title
+reworded between two starts would give one item two trees, and the directory would stop answering
+*is this item already being worked*.
+
+⚠️ **So the directory is a second place one item collides with itself**, after the ref. It is not
+a second claim and nothing reads it as one — the ref arbitrates, per the next subsection — but it
+is why a cut can fail *after* the ref was taken, which is the case the no-residue rule below is
+written for.
+
+⛔ **Cutting a tree is not working in it. The session enters the tree, and nothing else enforces
+`work_in_shared_checkout`.** A tree addressed by path from the shared checkout satisfies every call
+that takes a root explicitly and none of the tools that do not take one — those write wherever the
+session is standing, which is the checkout the key just forbade. ⚠️ Measured on the role that
+performed this before the key existed: it cut the tree, called it *where the work happens* and
+said nothing about entering it, which left `never` enforced for the calls that name a root and
+for nothing else.
+
+⛔ **A run that cannot enter the tree it cut is a stop**, not a convention the person running it is
+trusted to keep. Entering is the harness's own operation and this surface carries no key for it;
+what the procedure requires is that it happen before the first write.
 
 ### The claim on a work item
 
@@ -1098,3 +1132,49 @@ one role to another and no boundary exists for an artifact to cross, writes none
 is not misconfigured for it. ⚠️ **It is not the configuration for a loop that hands work through
 the item instead** — rule 2 above names an item body as a store whose text a role may not obey, so
 a handoff that travels through one has the next role reading what it must refuse to act on.
+
+## 12. Ordering
+
+```yaml
+ordering:
+  carrier: command | none
+  command: "<prints the takeable items, most takeable first>"   # when carrier is command
+  absent_reason: "…"           # required when carrier is none
+```
+
+Which item a role takes when its invocation names none.
+
+⛔ **The procedure derives no ordering and invents none.** Every store it could derive one from
+answers a different question in the answer's clothes: a priority tier states importance and not
+sequence, a dependency graph states which items *may* be taken rather than which of them to take,
+and a backlog's own listing is whatever the tracker sorted by. A role that picked one of those
+would be ordering the work on the toolkit's judgement, which is the one judgement here that is
+never the toolkit's.
+
+**So the ordering is read from wherever the project already keeps it, through a command the
+procedure runs and does not interpret.** The contract is the output, and it is the narrowest one
+that answers the question: the command prints the takeable items, **most takeable first, one
+identifier per line**. Blank lines are not items. ⛔ **The order is taken as given and never
+re-sorted** — a second sort is a second answer to a question the project has already answered, and
+whatever argues for the order lives where the ordering does rather than here.
+
+⚠️ **`command` is a command the procedure runs as given, and never a path it prefixes with
+anything**, which is the one ambiguity `day_log.script` (§ 9) carries and this key does not
+inherit. It is run from the skills root, like every path on this surface (§ 1), and the procedure
+reads its output rather than its exit status beyond failure.
+
+⛔ **`carrier: none` is an answer and not a stop.** A project that keeps no ordering has a role
+that, invoked with nothing, **says exactly that and asks for an item by number** — never a silent
+fallback to whatever the tracker happened to list first, by § 2's rule that absence of signal is
+not an answer. The same answer covers a command that failed: an ordering that could not be read is
+reported as unread, per [§ 11](#a-report-names-what-it-could-not-establish).
+
+**Why a command and not an operation on the port.** § 3's operations are a closed set of things
+every tracker is asked for, and this is a fact about a tracker on one project and about a document
+on another — the ordering measured here lives outside every tracker and every tree. Putting it
+behind the port would oblige each adapter to answer a question its tracker does not hold.
+
+⛔ **An ordering is not a gate.** § 5 asks whether *this* item may start; this says which item to
+offer first, and a project may configure either without the other. Where a gate does configure
+`queue_position`, this facet is where that queue comes from — the two are one statement read by
+two roles, not the same check twice.

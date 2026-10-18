@@ -208,13 +208,20 @@ the three that are obvious. The measurements that forced each to be independent:
      this facet's.** One project waits a long time for a build slot and deliberately far less for
      a service stack, on the recorded grounds that a build is certain to finish while a stack can
      stay up indefinitely.
-   - **Placement and setup are irreducibly local.** One project nests the tree under its skills
-     root with a second checkout inside it; another makes it a sibling of the main checkout. One
-     must copy a four-gigabyte untracked asset directory with copy-on-write and make three
-     separations in the tree's environment file before the stack's first boot, or the new stack
-     silently rebinds the shared checkout's volumes. None of that generalises, and
-     [`schema.md § 10`](../plugins/mjolnir/config/schema.md#10-branch-model) keeps it behind the
-     pointer.
+   - **Placement and setup are both local, and they are local in different ways.** One project
+     nests the tree under its skills root with a second checkout inside it; another makes it a
+     sibling of the main checkout. One must copy a four-gigabyte untracked asset directory with
+     copy-on-write and make three separations in the tree's environment file before the stack's
+     first boot, or the new stack silently rebinds the shared checkout's volumes. The setup does
+     not generalise and stays behind the `mechanics` pointer; the **placement** is a path, and the
+     two measurements differ in the value rather than in the steps — so it is a key,
+     [`schema.md § 10 → Where a tree is created`](../plugins/mjolnir/config/schema.md#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it).
+     ⚠️ Until that key existed the two were one pointer, which left the location stated in no
+     facet at all: every project that cut a tree carried its own standing convention, readable by
+     the person running a role and by nothing shipped. The same subsection carries what was
+     measured one step further on — that **cutting a tree is not working in it**, and a role
+     that stops at the cut leaves the session standing in the checkout the branch model just
+     forbade.
 
 ## Prose width is a habit, and the habits differ
 
@@ -315,6 +322,35 @@ scope-of-engagement rule no other project has, and it is the one that does most 
 there — hence the named, extensible list in
 [`schema.md § 9`](../plugins/mjolnir/config/schema.md#9-day-log), whose default set is a
 decision rather than the only possible one.
+
+## Which item is next is read, never derived
+
+[`schema.md § 12`](../plugins/mjolnir/config/schema.md#12-ordering) is the thinnest facet on the
+surface, and what it rests on is worth stating before the argument: two shapes, not a count across
+the six projects.
+
+- **One surveyed copy of the starting role checks an item's position in a priority queue** — the
+  eight-check copy named in the readiness-gate section above. That check reads an order, and
+  neither the copy nor the surface said where the order comes from. A gate whose input is a
+  convention is the shape this whole document exists to catch.
+- **This repository's own ordering is a row table in a document outside every tree**, in the agent
+  harness's per-project store, with the argument for each row written beside it. Nothing shipped
+  from a plugin can reach that file. The role that needed it read it through a carrier only this
+  project resolves, which is the duplication the extraction is for, one level up.
+
+The two have nothing in common but their output, and that is the whole reason the facet is a
+pointer. A tracker query answers it on one project and a document answers it on another, so an
+operation on the port ([`schema.md § 3`](../plugins/mjolnir/config/schema.md#3-tracker-port))
+would oblige every adapter to answer a question its tracker does not hold — and a rule in the
+procedure would have the toolkit ordering somebody's work, which is the one judgement here that is
+never the toolkit's.
+
+**The absent case is the one that was easy to get wrong.** A project with no ordering is not a
+project whose next item is the first row of whatever the tracker listed: that reading turns
+*nobody decided* into *this was decided*, which is
+[`schema.md § 2`](../plugins/mjolnir/config/schema.md#2-code-host)'s absence-of-signal rule one
+store over. So `carrier: none` makes a role ask for an item by number, and the plain-issues
+example is written that way rather than given a query to look tidy.
 
 ## The four facets, and the absent case
 

@@ -353,6 +353,13 @@ class Config:
             )
         if not self.get("readiness"):
             out.append("The readiness gate is empty, so there is nothing to gate.")
+        if self.get("ordering.carrier") == "none":
+            reason = self.get("ordering.absent_reason")
+            out.append(
+                "No ordering is carried (`ordering.carrier: none`), so a role "
+                "invoked with no item asks for one by number rather than "
+                f"choosing: {' '.join(str(reason).split())}"
+            )
         if not self.get("host.checks"):
             out.append(
                 "The host runs no checks, so every verdict is local. An empty "
@@ -425,6 +432,8 @@ REQUIRED = [
      "what the trees cannot all help themselves to; `[]` states that nothing contends (§ 10)"),
     ("context.artifacts.carrier",
      "what carries what one role hands the next, or `none` with an `absent_reason` (§ 11)"),
+    ("ordering.carrier",
+     "what states which item is next, or `none` with an `absent_reason` (§ 12)"),
 ]
 
 # Keys the surface used to declare and no longer does, each with where the fact
@@ -451,6 +460,7 @@ ABSENT_REASON_REQUIRED = [
     "work_item.estimate",
     "work_item.template",
     "context.artifacts",
+    "ordering",
 ]
 
 # Alternations the surface states for a *context* rather than for a key of its
@@ -543,6 +553,35 @@ def validate(data: dict, facts: dict) -> None:
                 "go with the tree it was planning: commit the store, or put it "
                 "outside every tree (§ 11).",
             )
+
+    # § 10. Where a tree is created is required under the mode that creates trees
+    # and meaningless under the mode that does not, which is the shape
+    # `work_in_shared_checkout` already has. It is required rather than defaulted
+    # because the two measured placements -- beside the shared checkout and
+    # nested under the skills root -- are a project's fact, and a default would
+    # pick one of them for every project that did not notice the key.
+    if _get(data, "branch_model.kind") == "worktree" and not _get(
+        data, "branch_model.tree_dir"
+    ):
+        raise ConfigError(
+            "branch_model.tree_dir",
+            "required under `kind: worktree`: a role that cuts a tree has "
+            "nowhere to cut it, and the standing convention that used to answer "
+            "this is readable by a person and by nothing shipped (§ 10).",
+        )
+
+    # § 12. A command carrier owes a command, for the reason § 11's `file`
+    # carrier owes a directory: the absence surfaces at the moment a role needs
+    # the answer, which is the one moment it cannot be asked for.
+    if _get(data, "ordering.carrier") == "command" and not _get(
+        data, "ordering.command"
+    ):
+        raise ConfigError(
+            "ordering.command",
+            "required when the carrier is `command`: there is nothing to run, "
+            "and a role invoked with no item would have to invent an ordering "
+            "rather than report one it could not read (§ 12).",
+        )
 
     statuses = _get(data, "statuses")
     if not isinstance(statuses, list):
@@ -961,7 +1000,24 @@ def _planted_violations():
          _in_tree_and_uncommitted),
         ("a prose width that is not a count of columns", "language.prose_width",
          at("language.prose_width", "wide")),
+        ("a worktree model with nowhere to cut a tree", "branch_model.tree_dir",
+         _cuts_trees_nowhere),
+        ("a `command` ordering with no command", "ordering.command",
+         at("ordering", {"carrier": "command"})),
     ]
+
+
+def _cuts_trees_nowhere(data: dict) -> dict:
+    """§ 10's placement rule, which needs both keys to be wrong together.
+
+    `kind` is set as well as `tree_dir` cleared, because the examples are not
+    all `worktree` and a plant that only cleared the path would pass against
+    whichever one the fixture happened to pick.
+    """
+    model = data.setdefault("branch_model", {})
+    model["kind"] = "worktree"
+    model["tree_dir"] = None
+    return data
 
 
 def _in_tree_and_uncommitted(data: dict) -> dict:
