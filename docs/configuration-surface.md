@@ -86,8 +86,9 @@ the three that are obvious. The measurements that forced each to be independent:
 
 1. **Work-item tracker.** Four models were in play — GitHub Projects in three projects, Jira in
    one, Trello in one, and **none** in one, whose work items were entries in a specification tree
-   on disk. The port ships with three implementations; the trackerless project moves onto a real
-   tracker rather than the toolkit growing a filesystem adapter — and the trackerless case was
+   on disk. The port's implementations are one module per kind, built as their items land; the
+   trackerless project moves onto a real tracker rather than the toolkit growing a filesystem
+   adapter — and the trackerless case was
    proved against a deliberately trackerless scratch config anyway, because the next project to
    adopt this may have no tracker on its first day.
 2. **Code host.** The same host in all six, including both projects whose cards are elsewhere —

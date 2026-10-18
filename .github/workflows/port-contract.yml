@@ -15,9 +15,12 @@ on:
   push:
     branches: [main]
 
-# No credential of any kind: the contract reads the surface and the examples in the tree, and
-# reaches no tracker — which is the one thing a port with no implementation installed certainly
-# cannot do.
+# No credential of any kind. ⚠️ This used to be justified by there being no implementation to
+# reach a tracker with; an implementation exists now and the self-test imports it, so the reason
+# has to be the stronger one: no branch of the suite performs an operation against a host. Every
+# one of them runs against a double or against a registry the test states as empty, and the
+# implementations make no call at import. Withholding the credential is the belt to that brace —
+# a stray call fails here instead of writing, which is the protection a local run does not have.
 permissions: {}
 
 jobs:

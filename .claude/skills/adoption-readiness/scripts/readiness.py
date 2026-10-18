@@ -558,7 +558,12 @@ def main(argv: list[str]) -> int:
             "the plugin ships a carrier vocabulary.yaml does not classify: "
             + ", ".join(shipped["unclassified"])
         )
-    print(line("adapters registered", ", ".join(sorted(port.ADAPTERS)) or "none"))
+    # ⛔ The sweep is asked for, not assumed to have run. Installation is the
+    # module's presence in the port's adapters package and discovery is lazy, so
+    # reading the registry before anything built a `Port` reported `none` while
+    # an implementation was installed -- and three lines further down this same
+    # report named it. One fact, two answers, the wrong one in the summary.
+    print(line("adapters registered", ", ".join(sorted(port.load_adapters())) or "none"))
 
     # ⛔ A list nobody passed is reported rather than resolved to nothing. An empty run that
     # printed a summary and exited 0 would read as "every target is ready". Answered before the
