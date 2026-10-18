@@ -9,14 +9,17 @@ filed, what landed, and which relations were added or removed since.
 The whole graph arrives in one GraphQL call (`Issue.blockedBy`), which returns what polling
 `dependencies/blocked_by` per issue returns at a fraction of the calls.
 
-  plan-status.py            read and report; the snapshot is left alone
-  plan-status.py --stamp    same, then write the snapshot as the new baseline
+  plan-status.py              read and report; the snapshot is left alone
+  plan-status.py --stamp      same, then write the snapshot as the new baseline
+  plan-status.py --bootstrap  the one run that proceeds with no plan: report the live state and
+                              the graph's layers so the document can be drafted, and write nothing
 
 Every value is derived rather than written down: the repository from the working tree's own
 remote, the plan and its snapshot from the session store this tree resolves to. Override any of
 them with --repo, --plan, --snapshot.
 
-Exit 0 when nothing needs an edit, 1 when coverage, ordering or acyclicity is off.
+Exit 0 when nothing needs an edit, 1 when coverage, ordering or acyclicity is off — and 1 from
+--bootstrap, where the ordering document itself is the edit the run is reporting.
 """
 import argparse
 import collections
@@ -85,12 +88,23 @@ def session_store():
                         working_tree().replace(os.sep, "-"))
 
 
+def plans():
+    """Every ordering document in the session store, which is nought, one, or a collision."""
+    return sorted(glob.glob(os.path.join(session_store(), PLAN_GLOB)))
+
+
+def today():
+    return subprocess.run(["date", "+%Y-%m-%d"], capture_output=True, text=True).stdout.strip()
+
+
 def resolve_plan():
     """The one ordering document in the session store. Refuses on none and on several."""
     store = session_store()
-    found = sorted(glob.glob(os.path.join(store, PLAN_GLOB)))
+    found = plans()
     if not found:
-        raise SystemExit(f"no {PLAN_GLOB} in {store} — pass --plan")
+        raise SystemExit(f"no {PLAN_GLOB} in {store} — the ordering document for this tree does "
+                         "not exist yet, so there is nothing to hold the backlog and the graph to. "
+                         "Draft it with --bootstrap, or address an existing one with --plan")
     if len(found) > 1:
         raise SystemExit(f"{len(found)} plans in {store}; name one with --plan:\n  "
                          + "\n  ".join(os.path.basename(f) for f in found))
@@ -185,6 +199,102 @@ def same_row_order(cell, blocker, dependent):
     return "stated" if ("→" in cell[lo:hi] or "->" in cell[lo:hi]) else "reading"
 
 
+def layers(live_items, live_edges):
+    """The graph's hard constraints: layer 1 is what nothing live blocks, and each later layer is
+    what its own blockers all sit above. Also the acyclicity answer — whatever no layer can take
+    is in or behind a cycle, which is exactly the set a topological pass cannot order.
+
+    ⛔ A layer is not a row. The order *inside* one is yield and nothing here derives it.
+    """
+    blockers = collections.defaultdict(set)
+    for b, n in live_edges:
+        blockers[n].add(b)
+    found, settled, left = [], set(), set(live_items)
+    while left:
+        layer = sorted(n for n in left if not blockers[n] - settled)
+        if not layer:
+            break
+        found.append(layer)
+        settled |= set(layer)
+        left -= set(layer)
+    return found, sorted(left), blockers
+
+
+def report_tiers(issues, live_items):
+    """The `P:` tiers, counted and never inferred. Returns the items outside the acceptable set."""
+    tiers = collections.Counter()
+    offenders, unlabelled = [], []
+    for number in live_items:
+        labels = [l for l in issues[number]["labels"] if l.startswith("P: ")]
+        tier = labels[0] if labels else "none"
+        tiers[tier] += 1
+        if tier == "none":
+            unlabelled.append(number)
+        elif tier not in TIERS:
+            offenders.append((number, tier))
+    print("  P: tiers           : " + ", ".join(
+        f"{tier} {count}" for tier, count in sorted(tiers.items())))
+    print(f"  unlabelled         : {unlabelled}  (a legitimate state)")
+    if offenders:
+        print("  ⛔ BELOW P: High    : " + ", ".join(f"#{n} {t}" for n, t in offenders)
+              + "   — ask; never add or raise a label to close the gap")
+    return offenders
+
+
+def report_graph(issues, live_items, edges, live_edges, baseline, tested):
+    """The relations, acyclicity, and the items whose require-not-tolerate test is still unrun."""
+    print(f"relations (all)      : {len(edges)}   live (blocker still live): {len(live_edges)}")
+    strata, behind_cycle, blockers = layers(live_items, live_edges)
+    print(f"acyclic              : {'YES' if not behind_cycle else f'NO — {len(behind_cycle)} issues in or behind a cycle'}")
+    if behind_cycle:
+        print(f"  IN OR BEHIND CYCLE : {behind_cycle}")
+    # Edge-free is a legitimate and common state, so this is scoped to what is new: an issue
+    # filed since the baseline with no relation either way is the one that needs the test run.
+    no_relation = [n for n in live_items
+                   if not issues[n]["blocked_by"] and not any(b == n for b, _ in edges)]
+    if baseline is None:
+        print(f"  isolated (no edge) : {len(no_relation)}  — scoped to new filings once a baseline exists")
+    else:
+        fresh = [n for n in no_relation if n not in baseline and n not in tested]
+        print(f"  isolated (no edge) : {len(no_relation)}, of them filed since the last pass: {fresh or 'none'}"
+              + ("  — apply the require-not-tolerate test to each, then say the answer" if fresh else ""))
+    return strata, behind_cycle, blockers, no_relation
+
+
+def bootstrap(repo):
+    """The first pass, with no ordering document: report what one would have to order, and the
+    constraints any ordering of it has to satisfy. ⛔ Writes nothing — the document is drafted,
+    summarised and approved by the person running the role, and a row is theirs to approve
+    because nothing derives yield."""
+    store = session_store()
+    issues = live(repo)
+    live_items = sorted(issues)
+    edges = sorted((b, n) for n in live_items for b, _closed in issues[n]["blocked_by"])
+    live_edges = sorted((b, n) for n in live_items
+                        for b, closed in issues[n]["blocked_by"] if not closed)
+
+    print(f"no plan in           : {store}")
+    print(f"  draft it at        : {os.path.join(store, f'execution-plan-{today()}.md')}")
+    print(f"live items           : {len(live_items)}")
+    report_tiers(issues, live_items)
+    strata, behind_cycle, blockers, _no_relation = report_graph(
+        issues, live_items, edges, live_edges, None, set())
+
+    print(f"\nlayers               : {len(strata)}  — the hard constraints; ⛔ a layer is not a row,"
+          " and the order inside one is yield to argue")
+    for rank, layer in enumerate(strata, 1):
+        print(f"  layer {rank} ({len(layer)} item{'s' if len(layer) != 1 else ''})")
+        for number in layer:
+            held = sorted(blockers[number])
+            behind = ("← " + ", ".join(f"#{b}" for b in held) + "  ") if held else ""
+            print(f"      #{number}  {behind}{issues[number]['title'][:60]}")
+    if behind_cycle:
+        print(f"  unorderable        : {behind_cycle}  — break the cycle before drafting a row for any of them")
+    print("\n⛔ nothing written. Draft the document from this report, summarise it, and write it"
+          "\n   only once the person running this has approved the ordering.")
+    return 1
+
+
 def digest(path):
     with open(path, "rb") as handle:
         return hashlib.sha256(handle.read()).hexdigest()[:12]
@@ -209,8 +319,24 @@ def main():
     ap.add_argument("--tested", default="",
                     help="issue numbers whose require-versus-tolerate test was run and answered "
                          "'no edge'; recorded on --stamp so they stop being re-flagged")
+    ap.add_argument("--bootstrap", action="store_true",
+                    help="report the live state and the graph's layers for a store that has no "
+                         "ordering document yet, and write nothing")
     args = ap.parse_args()
     tested_now = {int(n) for n in re.findall(r"\d+", args.tested)}
+    if args.bootstrap:
+        # Opt-in rather than automatic recovery, and this is why: a run from a branch worktree
+        # resolves a different session store, where a plan is absent for a reason that is not
+        # "this project has none". Drafting on that refusal would write a second ordering.
+        if args.plan or args.snapshot or args.stamp or args.tested:
+            raise SystemExit("--bootstrap writes nothing and addresses no plan, so --plan, "
+                             "--snapshot, --stamp and --tested have nothing to act on here")
+        found = plans()
+        if found:
+            raise SystemExit("this store already orders this backlog, and an ordering document is "
+                             "under no version control, so nothing here overwrites one:\n  "
+                             + "\n  ".join(found) + "\nRun without --bootstrap.")
+        return bootstrap(args.repo or resolve_repo())
     args.repo = args.repo or resolve_repo()
     args.plan = args.plan or resolve_plan()
     args.snapshot = args.snapshot or os.path.join(os.path.dirname(args.plan), SNAPSHOT_NAME)
@@ -242,53 +368,12 @@ def main():
     print(f"live items           : {len(live_items)}")
 
     # --- priority tiers: counted, never inferred, never fixed here ---
-    tiers = collections.Counter()
-    offenders, unlabelled = [], []
-    for number in live_items:
-        labels = [l for l in issues[number]["labels"] if l.startswith("P: ")]
-        tier = labels[0] if labels else "none"
-        tiers[tier] += 1
-        if tier == "none":
-            unlabelled.append(number)
-        elif tier not in TIERS:
-            offenders.append((number, tier))
-    print("  P: tiers           : " + ", ".join(
-        f"{tier} {count}" for tier, count in sorted(tiers.items())))
-    print(f"  unlabelled         : {unlabelled}  (a legitimate state)")
-    if offenders:
-        print("  ⛔ BELOW P: High    : " + ", ".join(f"#{n} {t}" for n, t in offenders)
-              + "   — ask; never add or raise a label to close the gap")
+    offenders = report_tiers(issues, live_items)
 
     # --- the graph ---
-    print(f"relations (all)      : {len(edges)}   live (blocker still live): {len(live_edges)}")
-    adj = collections.defaultdict(list)
-    indeg = collections.Counter()
-    for b, n in live_edges:
-        adj[b].append(n)
-        indeg[n] += 1
-    queue = [n for n in live_items if indeg[n] == 0]
-    seen = 0
-    while queue:
-        node = queue.pop()
-        seen += 1
-        for nxt in adj[node]:
-            indeg[nxt] -= 1
-            if indeg[nxt] == 0:
-                queue.append(nxt)
-    cyclic = seen != len(live_items)
-    print(f"acyclic              : {'YES' if not cyclic else f'NO — {len(live_items) - seen} issues in or behind a cycle'}")
-    if cyclic:
-        print(f"  IN OR BEHIND CYCLE : {sorted(set(live_items) - set(n for n in live_items if indeg[n] <= 0))}")
-    # Edge-free is a legitimate and common state, so this is scoped to what is new: an issue
-    # filed since the baseline with no relation either way is the one that needs the test run.
-    no_relation = [n for n in live_items
-                   if not issues[n]["blocked_by"] and not any(b == n for b, _ in edges)]
-    if baseline is None:
-        print(f"  isolated (no edge) : {len(no_relation)}  — scoped to new filings once a baseline exists")
-    else:
-        fresh = [n for n in no_relation if n not in baseline and n not in tested]
-        print(f"  isolated (no edge) : {len(no_relation)}, of them filed since the last pass: {fresh or 'none'}"
-              + ("  — apply the require-not-tolerate test to each, then say the answer" if fresh else ""))
+    _strata, behind_cycle, _blockers, no_relation = report_graph(
+        issues, live_items, edges, live_edges, baseline, tested)
+    cyclic = bool(behind_cycle)
 
     # --- coverage of the row table ---
     unplaced = [n for n in live_items if n not in placement]
