@@ -58,6 +58,12 @@ KIND = "github-issues"
 OPEN = "open"
 CLOSED = "closed"
 
+# Resolved once per process. Several operations read the item back after writing
+# it, so a single role call reaches `_repo()` three or four times, and each one
+# was re-reading and re-validating the whole configuration from disk. A role's
+# configuration does not change underneath it, so one read is the right number.
+_cached_repo: str | None = None
+
 
 class HostError(Exception):
     """The host did not answer.
@@ -79,6 +85,9 @@ def _repo() -> str:
     the statement the project actually made, and the two differing is exactly the
     case a fork or a mirror produces.
     """
+    global _cached_repo
+    if _cached_repo is not None:
+        return _cached_repo
     configuration = config.load(os.environ.get("MJOLNIR_SKILLS_ROOT", "."))
     repo = configuration.get("host.repo")
     if not repo:
@@ -89,6 +98,7 @@ def _repo() -> str:
             "code host are the same system here, and this is the one key that "
             "says which one.",
         )
+    _cached_repo = repo
     return repo
 
 
@@ -211,10 +221,25 @@ def comment(number: int, body: str) -> dict:
 
 
 def set_labels(number: int, labels: list[str]) -> dict:
-    """Every label in one call, so there is no partial set to report."""
+    """Every label in one call, so there is no partial set to report.
+
+    ⛔ **Set, not add.** The host's verbs are `--add-label` and
+    `--remove-label`, so adding alone would leave whatever was already there and
+    `set_labels(n, ["a"])` on an item labelled `b` would answer `[a, b]` -- a
+    role asking for a set and getting a union. Both verbs go in **one** `gh`
+    call, which is what the operation asks for and what keeps a partial set from
+    existing at all: there is no window in which the additions have landed and
+    the removals have not.
+    """
+    wanted = set(labels)
+    current = {label["name"] for label in read_item(number)["labels"]}
+    if wanted == current:
+        return read_item(number)
     args = ["issue", "edit", str(number), "--repo", _repo()]
-    for label in labels:
+    for label in sorted(wanted - current):
         args += ["--add-label", label]
+    for label in sorted(current - wanted):
+        args += ["--remove-label", label]
     _gh(args, parse=False)
     return read_item(number)
 
