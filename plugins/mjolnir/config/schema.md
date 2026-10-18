@@ -829,7 +829,10 @@ claim live forever, and then the ordinary cleanup after a merge has to use the o
 for breaking somebody else's work, which empties the override of its meaning.
 
 ⛔ **A landed claim is neither live nor orphaned.** It is finished: releasing it is bookkeeping and
-needs no override and no asking. ⚠️ The residue is a claim squash-merged **and** then built on top
+needs no override and no asking. ⛔ **So the release's test is *landed or held here*, never
+*live*** — an orphaned candidate is a claim somebody may be a minute into, and a release keyed on
+liveness deletes it in silence, which is the two-sessions-on-one-item failure arriving through the
+other end. ⚠️ The residue is a claim squash-merged **and** then built on top
 of, which matches no row above except the weakest and so reads as live without the host's record to
 settle it. That errs towards refusing a start rather than towards taking a held claim.
 

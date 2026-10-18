@@ -510,6 +510,7 @@ broken; and that a root with no remote claims locally and says so.
 | 7 | The integration branch is derived from the remote's default, overridable, and named as underivable rather than guessed | three repositories | computed |
 | 8 | A process **below** a tree's root reads as occupying it | a real process two directories down | computed |
 | 9 | A squash-merged claim reads **landed** rather than live, and releases with no override | a real squash merge, after asserting the same ref read live before it | computed |
+| 10 | A claim that is neither landed nor held in a tree here is refused by `release`, fresh ones included | two clones | computed |
 
 ⚠️ **Check 0 is run once per arm, and that is the finding this suite was written by rather than
 for.** The surface states two arms because the first draft of the script shipped only the second —
@@ -551,6 +552,12 @@ arm is what lets the race through.
   the decision as a person's; it cannot hold that the person was right. ⛔ That is the *fidelity*
   limit this document states one claim over, and the reason the override is a flag rather than a
   heuristic.
+- **A branch whose own commits cancel out.** The content half of the landed test asks whether the
+  ref differs from the integration branch, and work that adds something and takes it away again
+  differs in nothing — so it reads *landed* having never merged. ⚠️ The host's record of a merge
+  does not rescue this one, since there is no merge to find; what bounds it is that a claim with a
+  net-empty diff has nothing to lose by being released. Recorded because it is the one case where
+  this reading errs towards *releasing* rather than towards refusing.
 - **A claim squash-merged and then built on top of.** Check 9 holds the plain squash case. Where
   other work lands on the integration branch afterwards, the ref is an ancestor of nothing and
   differs from the branch in that other work, so only the host's record of the merge settles it —

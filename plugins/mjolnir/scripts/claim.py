@@ -577,11 +577,18 @@ def release(
     """
     if not force and remote_url(root, remote):
         held = status(root, branch, remote, integration)
-        if held.taken and held.liveness and held.liveness.live and not tree_for_branch(root, branch):
+        # ⛔ The test is **landed or held here**, not *live*. Keying on live left the orphan case
+        # open, and the orphan case includes a claim somebody took a minute ago: from any other
+        # clone a fresh claim has no commits and no tree, so it reads as an orphaned candidate --
+        # and a release keyed on live would delete it in silence. That is the two-sessions-on-one
+        # -item failure the claim exists to prevent, reintroduced through the other end.
+        spent = held.liveness is not None and held.liveness.landed
+        if held.taken and not spent and not tree_for_branch(root, branch):
             raise ClaimError(
-                f"refused: the claim on `{branch}` is live and is not held in a tree here.\n"
+                f"refused: the claim on `{branch}` is not spent and is not held in a tree here.\n"
                 f"{held.report()}\n"
-                "Breaking a live claim is a person's call: pass --force to say so."
+                "Breaking a claim that is neither landed nor yours is a person's call: pass "
+                "--force to say so."
             )
 
     done = []
@@ -887,6 +894,23 @@ def self_test() -> int:
         suite.ok("and says it is a person's call", "person's call" in refusal, refusal)
         suite.ok("and the claim survives the refusal",
                  remote_ref_sha(two, "origin", "feature/s2") is not None)
+
+        # ⛔ The orphan case, which a guard keyed on `live` left open: a claim taken a minute ago
+        # has no commits and no tree anywhere but its own clone, so from here it reads as an
+        # orphaned candidate -- and releasing it would be one session ending another's claim.
+        take(one, "feature/s3", str(Path(tmp) / "t4"))
+        orphan_refusal = ""
+        try:
+            release(two, "feature/s3", None, "origin")
+        except ClaimError as exc:
+            orphan_refusal = str(exc)
+        suite.ok(
+            "a fresh claim held elsewhere is refused too, not only a live one",
+            "refused" in orphan_refusal,
+            orphan_refusal,
+        )
+        suite.ok("and that claim survives as well",
+                 remote_ref_sha(two, "origin", "feature/s3") is not None)
         suite.ok("while the clone that holds the tree releases it with no force",
                  "ref deleted" in release(one, "feature/s2", str(Path(tmp) / "t3")))
 
