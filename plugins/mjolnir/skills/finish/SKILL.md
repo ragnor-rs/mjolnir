@@ -40,7 +40,9 @@ file cites it.
 
 Throughout, `<work-root>` is the tree the work is in — which
 [`§ 10`](../../config/schema.md#where-the-work-happens) decides and this file does not — and every
-`git` call names it, per § 1.
+`git` call names it, per § 1. ⚠️ **`§ N` always names a section of the surface, never one of this
+file**; the steps below are referred to by number, because the surface has a § 6 and a § 7 of its
+own and a bare number would resolve to the wrong one.
 
 ## 2. The argument and the branch must agree
 
@@ -127,11 +129,13 @@ on the change the host can report unresolved — and the gate refuses the merge 
 3. the run **executed steps**;
 4. it concluded green.
 
-⛔ **Absence of signal is not green, and it is not a failure either — it is no answer**, which is
-[`§ 2`](../../config/schema.md#2-code-host)'s rule and the reason precondition 3 exists separately
-from 4. A run whose billing is suspended fails in seconds having started no step, and a conflicted
-pull request produces no run at all. ⚠️ **No checks reported** is almost always the second of
-those, and reads as *nothing to wait for* to anyone who has not been told.
+Precondition 3 is listed apart from 4 because
+[`§ 2`](../../config/schema.md#2-code-host) rules what silence may be read as, and the two ways of
+producing it are both live: a run whose billing is suspended fails in seconds having started no
+step, and a conflicted pull request produces no run at all. ⛔ **So neither verdict may be
+reported as the other** — a precondition that fails is reported as the step it was, rather than
+folded into the conclusion. ⚠️ **No checks reported** is almost always the conflicted case, and
+reads as *nothing to wait for* to anyone who has not been told.
 
 Which runs should exist, which local command each one mirrors, and which paths each watches are
 `host.checks`'s to state ([`§ 2`](../../config/schema.md#2-code-host)) — ⛔ **never this file's, and
@@ -194,8 +198,8 @@ What is released once the work has landed is [`§ 10`](../../config/schema.md#10
 and a project's own setup and teardown are its `mechanics` pointer — ⛔ **named here, never
 absorbed.** Where it is null there is nothing to run, and that is an answer.
 
-⛔ **Confirm the landing from the host before removing anything**, per § 7 — the tree and the
-branch are the only copies of the work until the merge is read back.
+⛔ **Confirm the landing from the host before removing anything**, per step 7 above — the tree and
+the branch are the only copies of the work until the merge is read back.
 
 ⚠️ **A tree takes everything git does not track with it, and nothing records what that was.** Read
 those files out before the removal or lose them; this is also why
@@ -211,7 +215,7 @@ sentence, then the facts, with a table where the content enumerates.
 
 - the three read-back facts: the merge, the item's move, the release — each with what was read
   rather than what was attempted;
-- every precondition of § 6 that ran, and its verdict;
+- every precondition of step 6 above that ran, and its verdict;
 - which port fallback was taken, where one was;
 - ⛔ anything that could not be established, **named rather than omitted** —
   [`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)'s rule, which has no
