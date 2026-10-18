@@ -309,18 +309,31 @@ in the procedure reports it as one.
 
 ⚠️ A configured kind whose **implementation is not installed** behaves identically and is not the
 same fact, so the port reports the two apart: one is a project that decided it needs no tracker,
-the other is an adapter that has not been built yet. `github-projects` (#3), `jira` (#4) and
-`trello` (#5) are the second case today, which is why the distinction is not theoretical — a
-project pointed at one of them gets every fallback and a report naming the kind, rather than a
-broken install.
+the other is an adapter that has not been built yet. Both cases are live — the kinds stated above
+are built one work item at a time — which is why the distinction is not theoretical: a project
+pointed at an unbuilt kind gets every fallback and a report naming the kind, rather than a broken
+install.
 
 ⛔ **An implementation's presence is its installation.** One module per kind, in the port's
 `adapters/` package, naming the `kind` it answers for; the port discovers what is there on the
-first capability query. There is deliberately no list of installed adapters anywhere, for the
-reason stated above about capabilities: a list is a second statement allowed to disagree with
-what is actually built, and *installed* must not come to mean that some caller remembered an
-import. A module in that package that names no kind is refused rather than skipped — it is a
-built implementation nothing can address, which is the toolkit's own mistake and not an absence.
+first capability query. There is deliberately **no list of installed adapters anywhere** — not on
+this surface, not in the contract, and not in a document — for the reason stated above about
+capabilities: a list is a second statement allowed to disagree with what is actually built, and
+*installed* must not come to mean that some caller remembered an import. A module in that package
+that names no kind, or that cannot be imported, is refused rather than skipped, on every ask and
+not only the first: it is a built implementation nothing can address, which is the toolkit's own
+mistake and not an absence.
+
+⛔ **The port hands the implementation the configuration before every operation.** An
+implementation therefore resolves no project for itself and holds none between calls. The reason
+is § 1's: a role addresses a project it is not standing in, so an implementation that read the
+configuration from the working directory would address the wrong repository — and would have done
+something plausible first.
+
+⚠️ **A host that does not answer is a fifth outcome**, and not an absence. A timeout, a credential
+or a repository that is not there is reported as a *failed* operation naming the host's own words;
+the stated fallback answers a tracker that **cannot** do something, never one that did not. A role
+must not take the fallback on a failure, because that is acting on a decision nobody made.
 
 ### A write forbidden by policy rather than by capability
 
@@ -419,10 +432,16 @@ fall back on, because picking the earlier row would be a choice the configuratio
 port refuses it naming `statuses` rather than acting on the first.
 
 ⚠️ **The port resolves the role to its status word and hands that word to the implementation.**
-Which is the only place the mapping may be read: a role naming the word would be the thing § 3
-forbids, and an implementation re-deriving it would read `statuses` a second time and be allowed
-to disagree. A word the tracker cannot hold is refused by the implementation naming `statuses` —
-a project may map a subset of the roles, never invent a state its tracker has no room for.
+The port is the only place the *mapping* is read: a role naming the word would be the thing § 3
+forbids, and an implementation re-deriving role-to-word would be a second reader of `statuses`
+allowed to disagree with the first.
+
+⛔ **Whether the tracker can hold the word is the implementation's to answer, and it refuses
+naming `statuses`.** That is not a second reading of the mapping — it is the one question the port
+cannot answer, there being no key on this surface for how many states a tracker has (§ 3: a
+capability is the adapter's fact). A project may map a subset of the roles; it may not invent a
+state its tracker has no room for, and that refusal is a defect in the text rather than a
+capability that is absent.
 
 ⛔ **The writer is what makes this correct rather than merely configurable.** The procedure asks
 the port to advance to a *role*, and is **refused** when the configured writer is not

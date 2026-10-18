@@ -18,11 +18,11 @@ host:
       triggers: "pull_request -> main"
 
 tracker:
-  # No further keys: there is no board to address, no status field to resolve and no
+  # ⛔ The kind and nothing else: no board to address, no status field to resolve and no
   # option ids to read. That emptiness is the point — compare github-projects.yaml.
+  # Classification rides labels here, and the facet that states which labels is
+  # `work_item.type` below, so this block carries no second vocabulary to disagree with it.
   kind: github-issues
-  # Classification rides labels, since plain issues have no fields to carry it.
-  labels: [bug, feature, chore]
 
 work_item:
   type:

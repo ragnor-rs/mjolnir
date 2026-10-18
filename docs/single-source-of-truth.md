@@ -465,16 +465,19 @@ trackers.
 
 ### What it deliberately does not check
 
-- **That an adapter is correct.** No implementation is installed yet — the three are their own
-  work items — so the available-capability branch is proved against a double that implements a
-  subset, not against a tracker. What the contract holds is the shape: a declared operation is
-  performed by the implementation, an undeclared one falls back.
+- **That an adapter is correct.** One implementation is installed, and the gate imports it: what
+  it asserts about it is that the install is load-bearing and that the report names exactly the
+  operations the implementation leaves alone. ⛔ It performs no operation against a host — the
+  job carries no credential, and every branch that invokes an operation runs against a double or
+  a stated-empty registry rather than against whatever happens to be built. So whether a call
+  actually does what the tracker's API documents is held by nothing here; it is held by running
+  it, and the measurements live on the work item. The remaining kinds are their own items.
 - **Any module but the contract.** `plugins/*/scripts/` sits outside the sweep's strict set,
   which that sweep argues in stack terms — an implementation is written in some language and
   saying so names the toolkit's stack rather than a project's. It gives no reason to exempt a
   module from the *tracker*-name rule; that exemption is an artifact of the strict set being
   path-shaped. So the contract asserts the rule of **itself**, and nothing holds the reader beside
-  it or an adapter module to come — where a kind's name is legitimate anyway. A carrier root,
+  it or the adapter modules — where a kind's name is legitimate anyway. A carrier root,
   where a role's text lives, is still swept by check 6 above, which is the half of this that
   matters for a shared role.
 - **That a fallback is the right fallback.** Whether writing a gate result into a description is

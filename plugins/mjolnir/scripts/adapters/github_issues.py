@@ -8,13 +8,14 @@ nobody's problem.
 
 What it implements, and what it deliberately does not:
 
-  * **Ten of the thirteen operations** § 3 states. The three it leaves alone are
-    the checklist ones, and that absence is a fact about the tracker rather than
-    a shortcut here -- plain issues have no check-item object at all. A task list
-    is markdown inside the body, which is *precisely* what `checklist_write`'s
-    stated fallback already says to do, so implementing them against body text
-    would dress the fallback up as a capability and cost a role the knowledge
-    that it is reading prose.
+  * **Every operation § 3 states except the checklist ones.** That absence is a
+    fact about the tracker rather than a shortcut here -- plain issues have no
+    check-item object at all. A task list is markdown inside the body, which is
+    *precisely* what `checklist_write`'s stated fallback already says to do, so
+    implementing them against body text would dress the fallback up as a
+    capability and cost a role the knowledge that it is reading prose. ⛔ No
+    count of them is carried: the list is closed and stated once, in § 3, and a
+    number here would be wrong the next time it grows.
   * **`set_state` writes `open` or `closed` and refuses any other word.** A
     project whose `statuses` name a third state has written something plain
     issues cannot hold, and that is a statement the surface has to answer rather
@@ -28,13 +29,21 @@ What it implements, and what it deliberately does not:
   * **`advance_on_merge` confirms rather than asserts.** The host's own
     automation closes an issue when a pull request carrying a closing reference
     merges, so the capability is present and the procedure does not make the
-    move itself. The callable therefore *reads the item back* and reports
-    whether the host actually did it -- a declaration nothing can observe would
-    leave a role unable to tell automation that worked from automation that was
-    never wired.
+    move itself. The callable therefore *asks the host what happened* and reports
+    whether it actually did it -- a declaration nothing can observe would leave a
+    role unable to tell automation that worked from automation that was never
+    wired.
+  * **Every operation taking an item number resolves it through `read_item`
+    first**, which is what makes the pull-request guard there cover them rather
+    than cover one. ⚠️ Measured: an earlier draft claimed that coverage while
+    `comment` and `link_dependency` went straight to the host, so both could
+    write against a pull request. The two that make no call at all --
+    `item_number` and `link_for_close` -- are named as such where they are
+    defined.
 
 Every call goes through `gh`, which holds the credential and the host's base URL,
-so an enterprise host needs no key here.
+so an enterprise host needs no key here. The configuration arrives from the port
+through `bind`; nothing here resolves a project for itself.
 """
 
 from __future__ import annotations
@@ -44,9 +53,13 @@ import os
 import subprocess
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# The package's parent, appended rather than prepended: this module is imported
+# as `adapters.github_issues`, so the contract beside it is not otherwise on the
+# path, and putting it first would shadow a standard-library name.
+_SCRIPTS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _SCRIPTS not in sys.path:
+    sys.path.append(_SCRIPTS)
 
-import config  # noqa: E402
 import port  # noqa: E402
 
 KIND = "github-issues"
@@ -58,66 +71,78 @@ KIND = "github-issues"
 OPEN = "open"
 CLOSED = "closed"
 
-# Resolved once per process. Several operations read the item back after writing
-# it, so a single role call reaches `_repo()` three or four times, and each one
-# was re-reading and re-validating the whole configuration from disk. A role's
-# configuration does not change underneath it, so one read is the right number.
-_cached_repo: str | None = None
+# The configuration the port last handed down, and the only place one comes from.
+# ⛔ Never resolved here, and never from the working directory: which repository
+# an item lives in is `host.repo`'s to say (§ 2), and a process serving more than
+# one project -- which the adoption-readiness run already is -- must address each
+# one's own. An earlier draft read it from the invocation directory and cached it
+# process-wide, which pinned every later project to the first one's repository.
+_bound = None
 
 
-class HostError(Exception):
-    """The host did not answer.
+def bind(configuration) -> None:
+    """Take the configuration for the operation about to run.
 
-    ⚠️ Deliberately **not** an absent capability. An absence is a stated
-    decision that comes back as an `Outcome` naming its fallback; this is the
-    network, the credential or the repository being wrong, and a role that
-    treated the two alike would report a missing feature where it should report a
-    broken call. The command is named in the message so the failure is
-    reproducible by hand.
+    `Port.invoke` calls this before every operation, so it is per call rather
+    than per process and switching projects needs no reset.
     """
+    global _bound
+    _bound = configuration
 
 
 def _repo() -> str:
-    """The repository the configuration addresses, read once per call chain.
+    """The repository the bound configuration addresses.
 
-    ⛔ Read from the configuration rather than from the working tree's remote.
-    A role runs in a worktree whose remote happens to agree today; `host.repo` is
-    the statement the project actually made, and the two differing is exactly the
-    case a fork or a mirror produces.
+    `host.repo` is `REQUIRED` in the reader, so a configuration that reached here
+    states one; what this refuses is the shape, which nothing else checks.
     """
-    global _cached_repo
-    if _cached_repo is not None:
-        return _cached_repo
-    configuration = config.load(os.environ.get("MJOLNIR_SKILLS_ROOT", "."))
-    repo = configuration.get("host.repo")
-    if not repo:
-        raise config.ConfigError(
-            "host.repo",
-            "is not stated, so there is no repository to address the tracker "
-            "against. Plain issues live in a repository: the tracker and the "
-            "code host are the same system here, and this is the one key that "
-            "says which one.",
+    if _bound is None:
+        raise port.ConfigError(
+            "tracker.adapters.github_issues",
+            "was asked for an operation before the port bound a configuration to "
+            "it. Every operation is reached through `Port.invoke`, which binds "
+            "first; a direct call bypasses the one place the project is stated.",
         )
-    _cached_repo = repo
+    repo = _bound.get("host.repo")
+    if repo.count("/") != 1:
+        raise port.ConfigError(
+            "host.repo",
+            f"is `{repo}`, which is not `owner/name`. Plain issues live in one "
+            "repository and every call here addresses it by that pair, so a URL "
+            "or a bare name has no reading this tracker could act on.",
+        )
     return repo
 
 
 def _gh(args: list[str], *, parse: bool = True):
+    """One host call. Every failure comes back as the contract's own exception.
+
+    ⛔ `port.HostUnavailable` rather than a class of this module's: the port
+    turns it into a `failed` outcome, and a role must be able to tell a broken
+    call from a missing capability without knowing which tracker answered. The
+    command is in every message, so a failure is reproducible by hand.
+    """
+    shown = "gh " + " ".join(args)
     try:
         done = subprocess.run(
             ["gh"] + args, capture_output=True, text=True, timeout=30, check=True
         )
     except FileNotFoundError:
-        raise HostError(f"`gh` is not on PATH, so `gh {' '.join(args)}` could not run") from None
+        raise port.HostUnavailable(f"`gh` is not on PATH, so `{shown}` could not run") from None
     except subprocess.TimeoutExpired:
-        raise HostError(f"`gh {' '.join(args)}` timed out after 30s") from None
+        raise port.HostUnavailable(f"`{shown}` timed out after 30s") from None
     except subprocess.CalledProcessError as error:
-        raise HostError(
-            f"`gh {' '.join(args)}` failed: {error.stderr.strip() or 'no stderr'}"
+        raise port.HostUnavailable(
+            f"`{shown}` failed: {error.stderr.strip() or 'no stderr'}"
         ) from None
     if not parse:
         return done.stdout.strip()
-    return json.loads(done.stdout or "null")
+    # ⚠️ An empty body is refused rather than parsed to `None`. It used to become
+    # `null`, and the next `.get` on it raised an `AttributeError` -- a traceback
+    # where a verdict belongs, from the one path meant to report cleanly.
+    if not done.stdout.strip():
+        raise port.HostUnavailable(f"`{shown}` answered with nothing where a body was expected")
+    return json.loads(done.stdout)
 
 
 # --- the operations ---------------------------------------------------------
@@ -132,26 +157,35 @@ def read_item(number: int) -> dict:
     ⛔ **Guarded against a pull request number.** Issues and pull requests share
     one number sequence on this host, and the issue lookup *answers for a pull
     request* rather than refusing: measured on this repository, asking for item
-    111 returned pull request 111 with `state: MERGED`. Every operation in this
-    module reads the item back, so without this guard a role that passed a pull
-    request number would get a confident wrong answer from all of them --
-    `advance_on_merge` worst of all, since a merged pull request is not a closed
-    item and the state word is one the surface's `statuses` never contains.
+    111 returned pull request 111 with `state: MERGED`. Every operation here that
+    takes a number resolves it through this function, which is what makes one
+    guard cover all of them -- two of them write, so the alternative was a
+    comment posted on a pull request and a dependency relation recorded against
+    one, neither of them erroring.
 
-    The `url` path is what separates them; the state word cannot, because a
-    reopened pull request and an open issue both read `OPEN`.
+    The `url` path is what separates the two; the state word cannot, because a
+    reopened pull request and an open issue both read `OPEN`. ⚠️ An answer
+    carrying no `url` is refused rather than passed: the absent signal used to
+    read as *not a pull request*, which is the green answer from the one guard
+    everything else leans on.
     """
     item = _gh([
         "issue", "view", str(number), "--repo", _repo(),
         "--json", "number,title,body,state,labels,assignees,url",
     ])
-    if "/pull/" in item.get("url", ""):
-        raise HostError(
-            f"#{number} is a pull request, not a work item -- the host numbers "
-            "both in one sequence and answered the item lookup with the pull "
-            f"request ({item['url']}). A role holding a pull request number has "
-            "the wrong identifier, which is a different fault from an item that "
-            "does not exist."
+    url = item.get("url")
+    if not url:
+        raise port.HostUnavailable(
+            f"`gh issue view {number}` answered with no `url`, so whether #{number} "
+            "is an item or a pull request cannot be told. An unreadable answer is "
+            "not the same as a clean one."
+        )
+    if "/pull/" in url:
+        raise port.HostUnavailable(
+            f"`gh issue view {number}` answered with pull request #{number} "
+            f"({url}), not a work item -- the host numbers both in one sequence. "
+            "A role holding a pull request number has the wrong identifier, which "
+            "is a different fault from an item that does not exist."
         )
     return item
 
@@ -160,23 +194,35 @@ def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
     """A new item, from the body the filing role wrote.
 
     Labels go on at creation -- one call, unlike the tracker that cannot set them
-    until the card exists. The created item is read back rather than parsed out of
-    the returned URL, so what a role carries onward is the same shape
+    until the card exists. The number is taken from the URL the host returns and
+    the item is then read back, so what a role carries onward is the same shape
     `read_item` gives it and `item_number` can read either.
     """
     args = ["issue", "create", "--repo", _repo(), "--title", title, "--body", body]
     for label in labels or []:
         args += ["--label", label]
     url = _gh(args, parse=False)
-    return read_item(int(url.rstrip("/").rsplit("/", 1)[-1]))
+    tail = url.rstrip("/").rsplit("/", 1)[-1]
+    if not tail.isdigit():
+        # A keyed refusal rather than a bare `ValueError` out of `int()`: the
+        # host answered, so this is its answer not matching its documented shape.
+        raise port.HostUnavailable(
+            f"`gh issue create` answered `{url!r}`, whose last path segment is not "
+            "a number, so the created item cannot be addressed."
+        )
+    return read_item(int(tail))
 
 
 def item_number(item: dict | int) -> int:
     """The identifier the branch name and the pull request carry.
 
-    Plain issues have a short number and it is the same one everywhere -- no
-    parsing a URL for want of a short-id field. An `int` is accepted so a role
-    holding only the number it was given can ask without first reading the item.
+    ⚠️ Makes **no host call**, so the pull-request guard does not apply: an
+    `int` is returned as given. A role that hands this a pull request number gets
+    it back, which is correct -- the operation reads an identifier out of what it
+    was given and never asserts the thing exists.
+
+    Plain issues have a short number and it is the same one everywhere, so there
+    is no URL to parse for want of a short-id field.
     """
     return item if isinstance(item, int) else int(item["number"])
 
@@ -189,35 +235,41 @@ def set_state(number: int, *, status: str) -> dict:
     it. A word that is neither of the two is a configuration this tracker cannot
     hold, refused with the key named rather than coerced to the nearer state.
     """
-    if status in (OPEN, CLOSED):
-        # ⛔ Idempotent, by reading before writing. The host's two verbs are
-        # transitions rather than assignments: closing a closed item and
-        # reopening an open one both **fail**, so a role advancing to a role the
-        # item already holds would get a host error where the operation had in
-        # fact already happened. A `set_` operation that cannot be asked twice
-        # is one every caller has to guard, so it is guarded once, here.
-        item = read_item(number)
-        if item["state"].lower() == status:
-            return item
-    if status == CLOSED:
-        _gh(["issue", "close", str(number), "--repo", _repo()], parse=False)
-    elif status == OPEN:
-        _gh(["issue", "reopen", str(number), "--repo", _repo()], parse=False)
-    else:
-        raise config.ConfigError(
+    # ⛔ Refused before anything is read or written. A word this tracker has no
+    # room for is a defect in the text, not a value to coerce to the nearer
+    # state, and checking it first keeps a mis-mapped project from spending a
+    # host call to find out.
+    if status not in (OPEN, CLOSED):
+        raise port.ConfigError(
             "statuses",
             f"names `{status}`, which plain issues cannot hold: an issue is "
             f"`{OPEN}` or `{CLOSED}` and there is no status field to carry a "
             "third word. Map the roles this project needs onto those two, or "
             "state a tracker that has more states.",
         )
+    # ⛔ Idempotent, by reading before writing -- which is also the pull-request
+    # guard for this operation. The host's two verbs are transitions rather than
+    # assignments: closing a closed item and reopening an open one both **fail**,
+    # so a role advancing to a role the item already holds would get a failure
+    # for something that had in fact already happened.
+    item = read_item(number)
+    if item["state"].lower() == status:
+        return item
+    verb = "close" if status == CLOSED else "reopen"
+    _gh(["issue", verb, str(number), "--repo", _repo()], parse=False)
     return read_item(number)
 
 
 def comment(number: int, body: str) -> dict:
-    """A note on the item -- one call, and a gate result is the measured case."""
+    """A note on the item -- a gate result being the measured case.
+
+    Read first, so the pull-request guard covers this too: a comment is a write,
+    and posting one on a pull request because the numbers share a sequence is the
+    failure the guard exists for.
+    """
+    item = read_item(number)
     _gh(["issue", "comment", str(number), "--repo", _repo(), "--body", body], parse=False)
-    return {"number": number, "commented": True}
+    return {"number": item["number"], "url": item["url"], "commented": True}
 
 
 def set_labels(number: int, labels: list[str]) -> dict:
@@ -269,8 +321,16 @@ def link_dependency(blocked: int, blocked_by: int) -> dict:
     ⚠️ The relation bumps neither item's `updated_at`, so nothing that polls for
     modified issues can see it afterwards. That is why the close-out role reads
     the graph in full rather than asking what changed.
+
+    ⛔ **Both numbers go through `read_item` first.** The id lookup below uses the
+    REST issues endpoint, which answers for pull requests too, so without this a
+    pull request number recorded a real relation against a pull request and
+    returned as though it had worked. This is a write, and it was the worst of
+    the two the guard was missing.
     """
     repo = _repo()
+    read_item(blocked)
+    read_item(blocked_by)
     blocker_id = _gh(["api", f"repos/{repo}/issues/{blocked_by}", "--jq", ".id"], parse=False)
     _gh([
         "api", "--method", "POST",
@@ -286,6 +346,10 @@ def link_for_close(number: int) -> str:
     Declarative: the text goes in the pull request body and the host does the
     rest on merge. Returned rather than written, because the body belongs to the
     role opening the pull request and this adapter has no business composing it.
+
+    ⚠️ Makes **no host call**, so the pull-request guard does not apply here
+    either -- this composes a string out of the number it was given and asserts
+    nothing about what that number names.
     """
     return f"Closes #{number}"
 
@@ -325,13 +389,22 @@ def advance_on_merge(number: int) -> dict:
     the answer a role needs: the item is off the board, and the automation this
     capability claims did not do it.
     """
-    owner, name = _repo().split("/")
+    repo = _repo()
+    # Read first, so this operation is guarded too. The query below addresses
+    # `issue(number:)`, which answers null for a pull request rather than
+    # refusing, and null is indistinguishable here from an item that is not
+    # there -- so the clearer refusal has to come from the guard.
+    read_item(number)
+    owner, name = repo.split("/")
     issue = _gh([
         "api", "graphql", "-f", f"query={CLOSED_BY_QUERY}",
         "-f", f"owner={owner}", "-f", f"name={name}", "-F", f"number={number}",
     ])["data"]["repository"]["issue"]
     if issue is None:
-        raise HostError(f"#{number} is not an item in {_repo()}")
+        raise port.HostUnavailable(
+            f"`gh api graphql` (closedByPullRequestsReferences) answered null for "
+            f"#{number} in {repo}, so what closed it could not be read."
+        )
     merged = [
         node for node in issue["closedByPullRequestsReferences"]["nodes"] if node["merged"]
     ]
@@ -346,7 +419,7 @@ def advance_on_merge(number: int) -> dict:
     }
 
 
-ADAPTER = port.Adapter({
+ADAPTER = port.Adapter(binder=bind, operations={
     "read_item": read_item,
     "create_item": create_item,
     "item_number": item_number,

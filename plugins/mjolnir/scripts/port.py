@@ -5,8 +5,9 @@ The shared procedure names **the port and never a tracker**. This module is that
 port: it reads the operation list and the absent case out of the surface beside
 it -- `../config/schema.md` § 3 -- answers whether a given operation is available
 here, and resolves the one that is not into the fallback the surface states for
-it. An implementation per tracker registers itself; the contract itself knows
-none of them by name.
+it. One implementation per tracker is **discovered** -- a module in the package
+beside this one, naming the kind it answers for -- so the contract itself knows
+none of them by name and nothing has to remember an import.
 
 Three things it deliberately does not do:
 
@@ -16,19 +17,28 @@ Three things it deliberately does not do:
     reworded everywhere. The self-test holds this file to naming no tracker the
     surface declares, so a branch on one reddens the build rather than being
     noticed in review.
-  * **It never raises on an absence.** A capability that is missing, a role no
-    status maps, a configuration with no tracker at all and a tracker whose
-    adapter has not been built yet are four different outcomes and none of them
-    is an error. Every one of them comes back as an `Outcome` naming the
-    fallback taken. What raises -- always with the key named, the way
-    `config.py` refuses a configuration the surface does not allow -- is a
-    statement that is **missing or ambiguous rather than absent**: § 3's table
-    stating no operation, two tables stating it, an operation stated twice or in
-    a row with a cell missing, an operation whose absent case is blank, an
-    operation asked for or implemented that the surface does not state, two
-    adapters for one kind, and a role mapped to two status words. None of those
-    is a tracker that cannot do something; each is a text that does not say what
-    the procedure is supposed to do.
+  * **It never raises on an absence, and never on the host being unreachable.**
+    A capability that is missing, a role no status maps, a configuration with no
+    tracker at all and a tracker whose adapter has not been built yet are four
+    different outcomes and none of them is an error. Every one of them comes
+    back as an `Outcome` naming the fallback taken. A **fifth** outcome is the
+    host refusing to answer -- a timeout, a credential, a repository that is not
+    there -- which is neither an absence nor the toolkit's mistake: it comes
+    back as an `Outcome` too, with `failed` set so a role cannot read a broken
+    call as a missing feature. An implementation reports it by raising
+    `HostUnavailable`, which is declared here rather than per tracker.
+
+    What raises -- always with the key named, the way `config.py` refuses a
+    configuration the surface does not allow -- is a statement that is
+    **missing or ambiguous rather than absent**: § 3's table stating no
+    operation, two tables stating it, an operation stated twice or in a row
+    with a cell missing, an operation whose absent case is blank, an operation
+    asked for or implemented that the surface does not state, two adapters for
+    one kind, a module in the adapters package naming no kind or failing to
+    import, a status word the configuration maps that its tracker cannot hold,
+    and a role mapped to two status words. None of those is a tracker that
+    cannot do something; each is a text that does not say what the procedure is
+    supposed to do.
   * **It does not decide what a role then does.** The port reports which
     fallback was taken; whether that stops the role is the role's business, the
     way `config.py` reports what a configuration cannot support without acting
@@ -81,6 +91,24 @@ OPERATION_NAME = re.compile(r"^`(?P<name>[a-z][a-z0-9_]*)`$")
 # name a writer that does not exist.
 PROCEDURE = "procedure"
 NEVER = "never"
+
+
+class HostUnavailable(Exception):
+    """The tracker did not answer.
+
+    ⛔ **Declared by the contract, not by an implementation**, so a role can tell
+    a broken call from a missing capability without knowing which tracker it is
+    talking to. An implementation raises this and `Port.invoke` turns it into an
+    `Outcome` with `failed` set; that is the one exception the port converts
+    rather than letting through, because the alternative is the traceback this
+    module exists to keep away from a role.
+
+    ⚠️ It is **not** an absence. An absence is a stated decision with a stated
+    fallback; this is the network, the credential or the repository being wrong,
+    and a role that retried the fallback here would be answering a question
+    nobody could ask. The message names the command, so the failure is
+    reproducible by hand.
+    """
 
 # A table row's cells, split on its **unescaped** pipes -- the grammar
 # `tools/check_single_source.py` already reads markdown tables with. A pipe
@@ -235,11 +263,28 @@ class Adapter:
     operation that no role could portably call.
     """
 
-    def __init__(self, operations: dict[str, object] | None = None):
+    def __init__(self, operations: dict[str, object] | None = None, *, binder=None):
         self.operations = dict(operations or {})
+        self._binder = binder
 
     def implements(self, operation: str) -> bool:
         return operation in self.operations
+
+    def bind(self, configuration) -> None:
+        """Hand the implementation the configuration it is answering for.
+
+        ⛔ Called by `Port.invoke` before every operation, so an implementation
+        never resolves a project for itself. Which project a write lands on is
+        the configuration's to say and the port's to pass; an implementation that
+        read it from the working directory would address the wrong repository
+        wherever a role is not standing in the project it is acting on -- and
+        would have done something plausible first.
+
+        An implementation with no `binder` needs nothing, which is every double
+        in the suite and the trackerless adapter.
+        """
+        if self._binder is not None:
+            self._binder(configuration)
 
     def hold_to(self, stated: dict[str, str]) -> None:
         for name in sorted(self.operations):
@@ -259,10 +304,11 @@ class Adapter:
 # never as a broken install.
 TRACKERLESS = Adapter()
 
-# Installed implementations, by `tracker.kind`. Populated by discovery rather
-# than by a list written here, for the reason § 3 already gives about
-# capabilities: a written list is a second statement allowed to disagree with
-# what is actually built. A role never reads this -- it asks a `Port`.
+# Installed implementations, by `tracker.kind`, populated by discovery -- § 3
+# states why there is no written list and this file does not restate it. ⛔ Not
+# read directly: a role asks a `Port`, and anything needing the set itself calls
+# `load_adapters()`, since reading this before a sweep has run reports every kind
+# as unbuilt. One report did exactly that.
 ADAPTERS: dict[str, Adapter] = {}
 
 # Where an implementation lives. ⛔ A directory, because naming the modules would
@@ -271,10 +317,15 @@ ADAPTERS: dict[str, Adapter] = {}
 ADAPTER_PACKAGE = "adapters"
 ADAPTER_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ADAPTER_PACKAGE)
 
-# Discovery runs once per process. A second sweep would re-import nothing -- the
-# module cache holds -- but would hand `register` the same kind twice and be
-# refused, turning a later capability query into an error.
+# Discovery runs once per process, and the flag is set **after** a sweep that
+# finished. ⚠️ Setting it first was a measured defect: a module that raised left
+# discovery marked done over a half-filled registry, so every later query
+# returned early and a kind that *was* built reported as one that never was --
+# the single distinction § 3 asks this module to keep. A failure is remembered
+# instead and re-raised on every call, because a broken implementation does not
+# become an absence by being asked twice.
 _discovered = False
+_discovery_failed: ConfigError | None = None
 
 
 def register(kind: str, adapter: Adapter) -> None:
@@ -292,57 +343,83 @@ def register(kind: str, adapter: Adapter) -> None:
 def load_adapters() -> dict[str, Adapter]:
     """Import every implementation beside this file and install it.
 
-    **The module's presence is the install.** § 3 draws a line between a project
-    that needs no tracker and an adapter that has not been built yet; nothing can
-    hold that line if *installed* means somebody remembered an import, so the
-    directory answers instead and a role that imports no adapter still gets the
-    right report.
+    **The module's presence is the install**, per § 3 -- which also states why no
+    list of them is written anywhere, so this does not restate it.
 
     ⚠️ Imported here rather than at module scope: an adapter imports this module
     for `Adapter`, so an eager import would be a cycle. Deferring it to the first
     capability query is what breaks that, and is the whole reason this is a
     function rather than a constant.
 
-    An adapter that fails to import is **not** silently skipped. A module that is
-    present and broken is the toolkit's own mistake -- the one thing § 3 holds
-    apart from an absence -- and swallowing it would report a kind that was built
-    as a kind that never was.
+    An adapter that fails to import is **not** silently skipped, and not on the
+    second ask either. A module that is present and broken is the toolkit's own
+    mistake -- the one thing § 3 holds apart from an absence -- and swallowing it
+    would report a kind that was built as a kind that never was. The refusal is
+    remembered and re-raised, with the module named in both cases: failing to
+    import and naming no kind are the same class of mistake, and neither is a
+    tracker that cannot do something.
+
+    Re-entrant: a sweep that runs again installs the same module objects, which
+    is not two adapters for one kind. A *different* adapter for a kind already
+    installed is still refused by `register`.
     """
-    global _discovered
+    global _discovered, _discovery_failed
+    if _discovery_failed is not None:
+        raise _discovery_failed
     if _discovered:
-        return ADAPTERS
-    _discovered = True
+        return dict(ADAPTERS)
     if not os.path.isdir(ADAPTER_DIR):
-        return ADAPTERS
+        _discovered = True
+        return dict(ADAPTERS)
     import importlib
 
-    if os.path.dirname(ADAPTER_DIR) not in sys.path:
-        sys.path.insert(0, os.path.dirname(ADAPTER_DIR))
+    # ⛔ Appended, not prepended, and the package's parent rather than the
+    # package: a sweep pointed at a temporary directory used to leave the shared
+    # temp root ahead of the standard library for the rest of the process.
+    parent = os.path.dirname(ADAPTER_DIR)
+    if parent not in sys.path:
+        sys.path.append(parent)
     for entry in sorted(os.listdir(ADAPTER_DIR)):
         if not entry.endswith(".py") or entry.startswith("_"):
             continue
-        module = importlib.import_module(f"{ADAPTER_PACKAGE}.{entry[:-3]}")
         try:
+            module = importlib.import_module(f"{ADAPTER_PACKAGE}.{entry[:-3]}")
             kind, adapter = module.KIND, module.ADAPTER
-        except AttributeError:
-            raise ConfigError(
+        except ConfigError:
+            raise
+        except Exception as error:
+            # The import itself, or a module that states neither name. Both come
+            # back keyed on the module, because a raw traceback out of here is
+            # the thing this file refuses to hand a role.
+            _discovery_failed = ConfigError(
                 f"tracker.adapters.{entry}",
-                "is in the adapters package and states no `KIND` and `ADAPTER`, "
-                "so there is nothing to install it as. An implementation names "
-                "the kind it answers for; discovery does not guess one from a "
-                "filename.",
-            ) from None
-        register(kind, adapter)
-    return ADAPTERS
+                "is in the adapters package and could not be installed "
+                f"({type(error).__name__}: {error}). An implementation states a "
+                "`KIND` and an `ADAPTER` and imports cleanly; a module that is "
+                "present and broken is a built implementation nothing can "
+                "address, which is this toolkit's own mistake and never a "
+                "tracker that cannot do something.",
+            )
+            raise _discovery_failed from None
+        if ADAPTERS.get(kind) is not adapter:
+            register(kind, adapter)
+    _discovered = True
+    return dict(ADAPTERS)
 
 
 class Outcome:
     """What the port did about one operation, or did not do and why.
 
     Returned for every outcome that is not the toolkit's own mistake: performed,
-    fallen back, or refused by a status's writer. A role reads `performed` and,
-    where that is false, says `detail` out loud -- which is how an absence
-    reaches a person as a stated decision rather than as a traceback.
+    fallen back, refused by a status's writer, or **failed at the host**. A role
+    reads `performed` and, where that is false, says `detail` out loud -- which
+    is how an absence reaches a person as a stated decision rather than as a
+    traceback.
+
+    ⛔ `failed` is read apart from the other three. A fallback says *this tracker
+    cannot do that, here is what happens instead*; `failed` says *it can, and the
+    call did not go through*. A role that retried the fallback on a failure would
+    be acting on a decision nobody made, so the two never share a branch.
     """
 
     def __init__(
@@ -354,6 +431,7 @@ class Outcome:
         result: object = None,
         refused: bool = False,
         writer: str | None = None,
+        failed: bool = False,
     ):
         self.operation = operation
         self.performed = performed
@@ -361,6 +439,7 @@ class Outcome:
         self.result = result
         self.refused = refused
         self.writer = writer
+        self.failed = failed
 
     def __bool__(self) -> bool:
         return self.performed
@@ -378,6 +457,7 @@ class Port:
         *,
         adapter: Adapter | None = None,
         stated: dict[str, str] | None = None,
+        installed: dict[str, Adapter] | None = None,
     ):
         self.config = configuration
         self.stated = stated if stated is not None else surface_operations()
@@ -387,6 +467,13 @@ class Port:
         if adapter is not None:
             adapter.hold_to(self.stated)
         self._given = adapter
+        # ⛔ The registry this port resolves against, defaulting to the installed
+        # one. A seam rather than a convenience: § 3 requires *configured kind
+        # with no implementation* to read apart from *no tracker* permanently,
+        # and that property was only provable while some real kind happened to be
+        # unbuilt -- so it would have stopped being testable exactly when the
+        # toolkit was finished. `installed={}` states the condition directly.
+        self._installed = installed
 
     @property
     def kind(self) -> str:
@@ -411,6 +498,8 @@ class Port:
             return self._given
         if not self.config.has_tracker:
             return TRACKERLESS
+        if self._installed is not None:
+            return self._installed.get(self.kind)
         load_adapters()
         return ADAPTERS.get(self.kind)
 
@@ -435,16 +524,40 @@ class Port:
             ) from None
 
     def invoke(self, operation: str, *args, **kwargs) -> Outcome:
-        """Perform an operation, or come back with the fallback stated for it."""
+        """Perform an operation, or come back with the fallback stated for it.
+
+        Three answers, never a traceback: the fallback where the capability is
+        absent, the result where it is present, and a `failed` outcome naming the
+        host's own words where the call did not go through.
+        """
         fallback = self._stated(operation)
         adapter = self.adapter
         if adapter is None or not adapter.implements(operation):
             return Outcome(operation, performed=False, detail=fallback)
+        # ⛔ The configuration goes to the implementation here, every time, and
+        # the implementation keeps none of its own. An adapter that resolved the
+        # project itself would read it from the working directory -- which § 2
+        # forbids for exactly this reason -- and a `Port` built over one project
+        # would then address whichever project the process happened to stand in.
+        adapter.bind(self.config)
+        try:
+            result = adapter.operations[operation](*args, **kwargs)
+        except HostUnavailable as error:
+            return Outcome(
+                operation,
+                performed=False,
+                failed=True,
+                detail=f"The `{self.kind}` host did not answer, so `{operation}` "
+                f"did not happen: {error}. This is the capability working and "
+                "the call failing, which is not the absence below it -- the "
+                "stated fallback answers a tracker that cannot, not one that "
+                "did not.",
+            )
         return Outcome(
             operation,
             performed=True,
             detail=f"performed by the `{self.kind}` implementation of the port.",
-            result=adapter.operations[operation](*args, **kwargs),
+            result=result,
         )
 
     # -- the one operation the surface guards with more than a capability
@@ -791,30 +904,40 @@ def self_test() -> int:
     # the verdict belongs -- dead exactly when it was needed.
     check("an example configures a tracker", bool(with_tracker))
     check("an example configures no tracker", bool(trackerless))
-    # ⛔ An example whose kind has **no implementation installed**, found by
-    # asking the registry rather than by taking the first example in the
-    # directory. Indexing `[0]` was right only while no adapter existed at all:
-    # the first example whose kind acquired one turned the check below -- which
-    # *invokes every operation* -- into real calls against a live tracker. It
-    # survived on an arity error, one default argument away from filing an issue
-    # on somebody's host from a test run.
-    load_adapters()
-    unbuilt = [c for c in with_tracker if c.tracker_kind not in ADAPTERS]
+    # ⛔ The registry is **stated**, not taken from whatever happens to be built.
+    # Two earlier shapes were both wrong: indexing `with_tracker[0]` turned this
+    # check -- which *invokes every operation* -- into real calls against a live
+    # tracker the moment that example's kind had an adapter, and filtering the
+    # examples by what is installed made the property untestable the day the last
+    # adapter lands, which is a gate that reddens on the project finishing.
+    # `installed={}` says *configured kind, nothing built* with no dependence on
+    # either.
+    uninstalled = Port(with_tracker[0], stated=stated, installed={})
     check(
-        "an example states a kind with no implementation, for the two checks below",
-        bool(unbuilt),
-        "every example's kind is installed, so the not-built-yet path is not exercised here",
+        "a configured kind with no implementation resolves to no adapter",
+        uninstalled.adapter is None,
     )
-    if unbuilt:
-        uninstalled = Port(unbuilt[0], stated=stated)
-        check(
-            "an operation with no implementation installed falls back too, and does not raise",
-            all(
-                not uninstalled.invoke(operation).performed
-                and uninstalled.invoke(operation).detail == stated[operation]
-                for operation in stated
-            ),
-        )
+    check(
+        "an operation with no implementation installed falls back too, and does not raise",
+        all(
+            not uninstalled.invoke(operation).performed
+            and uninstalled.invoke(operation).detail == stated[operation]
+            for operation in stated
+        ),
+    )
+    # And the seam itself is held: a registry that *does* carry the kind answers
+    # from it, so `installed={}` above is proving an absence rather than a
+    # parameter nothing reads.
+    seam = Adapter({"read_item": lambda *a, **k: "seam"})
+    stocked = Port(
+        with_tracker[0],
+        stated=stated,
+        installed={with_tracker[0].tracker_kind: seam},
+    )
+    check(
+        "a stated registry carrying the kind answers from it",
+        stocked.adapter is seam and stocked.invoke("read_item").result == "seam",
+    )
 
     half = sorted(stated)[: max(1, len(stated) // 2)]
     performed = Port(
@@ -825,6 +948,38 @@ def self_test() -> int:
     check(
         "a declared capability is performed by the implementation",
         all(performed.invoke(name).performed for name in half),
+    )
+
+    # The host refusing to answer: a capability that exists and a call that did
+    # not go through. ⛔ Held apart from an absence, because the two share
+    # `performed: false` and a role that read a broken call as a missing feature
+    # would take the fallback -- acting on a decision nobody made.
+    def _unreachable(*_args, **_kwargs):
+        raise HostUnavailable("`gh issue view 1` timed out after 30s")
+
+    one = sorted(stated)[0]
+    broke = Port(_any_example(), adapter=Adapter({one: _unreachable}), stated=stated)
+    failure = broke.invoke(one)
+    check(
+        "a host that does not answer comes back as an outcome, not a traceback",
+        not failure.performed and failure.failed,
+        f"got {str(failure)!r}",
+    )
+    check(
+        "and names the host's own words rather than the stated fallback",
+        "timed out" in failure.detail and failure.detail != stated[one],
+        f"got {failure.detail!r}",
+    )
+    check(
+        "while a genuine absence is not marked failed",
+        not nothing.invoke(one).failed,
+    )
+    # The capability is still declared: a failure is not an absence, so the query
+    # must keep answering yes. Reading it the other way would have a role give up
+    # on an operation its tracker has because one call timed out.
+    check(
+        "and the capability still reads as present after a failure",
+        broke.implements(one),
     )
     check(
         "the capability query answers from the implementation, not a configuration",
@@ -877,16 +1032,34 @@ def self_test() -> int:
                 f"got {str(outcome)!r}",
             )
 
+    # ⛔ The double **returns what it was handed**, rather than a constant. A
+    # fixture of `lambda *a, **k: "moved"` swallowed the resolved status word, so
+    # the hand-off below could be deleted and this suite stayed green -- the one
+    # defect building the first adapter against this method found, held by
+    # nothing. What is asserted is the word the configuration mapped, not that a
+    # call happened.
     through = Port(
         _with_statuses([{"name": "a status", "role": a_role, "writer": PROCEDURE}]),
-        adapter=Adapter({"set_state": lambda *a, **k: "moved"}),
+        adapter=Adapter({"set_state": lambda *a, **k: k.get("status", "<no status>")}),
         stated=stated,
     )
     advanced = through.advance_to(a_role)
     check(
         "an advance the procedure may write goes through the capability",
-        advanced.performed and advanced.result == "moved" and not advanced.refused,
+        advanced.performed and not advanced.refused,
         f"got {str(advanced)!r}",
+    )
+    check(
+        "and the implementation is handed the status word the role resolved to",
+        advanced.result == "a status",
+        f"the implementation received {advanced.result!r}, not the mapped word",
+    )
+    # The role name is never what arrives: a double that got `a_role` would pass
+    # the check above if the two ever coincided, and they must not.
+    check(
+        "and never the role name in its place",
+        advanced.result != a_role,
+        f"received the role `{a_role}` where its status word belongs",
     )
     twice = _with_statuses(
         [
@@ -930,9 +1103,12 @@ def self_test() -> int:
 
     # A configured kind with no implementation installed: the same unavailability,
     # reported as the different fact it is.
+    # ⛔ `installed={}` again, for the same reason as above: the two reports have
+    # to read apart permanently, and that property must not stop being provable
+    # the day every kind the surface states has an implementation.
     trackerless_line = Port(trackerless[0], stated=stated).report()[0] if trackerless else ""
-    for configuration in unbuilt[:1]:
-        port = Port(configuration, stated=stated)
+    for configuration in with_tracker[:1]:
+        port = Port(configuration, stated=stated, installed={})
         reported = port.report()
         check(
             "a kind whose implementation is not installed reports that, not an absent tracker",
@@ -945,10 +1121,26 @@ def self_test() -> int:
     # The seam the three adapters register against. The kind is taken from the
     # surface rather than written here, for the same reason the fixtures are
     # taken from the examples directory: nothing in this file names a tracker.
+    # ⛔ A kind **nothing is installed for**, asked of the registry rather than
+    # taken as `kinds[0]`. The index was the same defect this suite fixed one
+    # block up: `register` refuses a kind already present, so the day the
+    # first-listed kind had an adapter this raised an uncaught refusal and killed
+    # every assertion after it -- and `ADAPTERS.pop` would have uninstalled a
+    # real implementation mid-run, leaving the checks below reading a registry
+    # this suite had corrupted. The order of two words in a markdown alternation
+    # was the only thing holding it.
     kinds = _real_tracker_kinds()
+    load_adapters()
+    free = [kind for kind in kinds if kind not in ADAPTERS]
     check("the surface states a tracker kind to register against", bool(kinds))
-    if kinds:
-        kind = kinds[0]
+    check(
+        "and one with nothing installed, to register a double against",
+        bool(free),
+        "every kind the surface states already has an implementation; this block "
+        "needs one that does not, so it cannot evict a real one",
+    )
+    if free:
+        kind = free[0]
         register(kind, Adapter({"read_item": lambda *a, **k: "read"}))
         registered = _any_example()
         registered.data["tracker"]["kind"] = kind
@@ -957,10 +1149,11 @@ def self_test() -> int:
             "a registered implementation answers the capability query for its kind",
             port.adapter is ADAPTERS[kind] and port.invoke("read_item").result == "read",
         )
+        refusal = _refused(lambda: register(kind, Adapter()))
         check(
             "a second implementation for one kind is refused, naming the kind",
-            _refused(lambda: register(kind, Adapter())) == f"tracker.kind.{kind}",
-            f"reported {_refused(lambda: register(kind, Adapter()))!r}",
+            refusal == f"tracker.kind.{kind}",
+            f"reported {refusal!r}",
         )
         check(
             "an implementation of an unstated operation is refused at registration",
@@ -970,17 +1163,43 @@ def self_test() -> int:
         ADAPTERS.pop(kind)
 
     # Discovery: the directory is the install list, so what is checked is that
-    # the sweep installs what is there, runs once, and refuses a module that
-    # does not say what it answers for.
+    # a sweep installs what is there, that a sweep run again is not refused, and
+    # that a module which cannot be installed is refused rather than skipped --
+    # on the second ask as well as the first.
+    #
+    # ⛔ Through `check`, not beside it. A bare `load_adapters()` here was the one
+    # place in this suite where a broken module made the gate exit on a traceback
+    # with no verdict and no count, which is what the surface read twenty lines
+    # into this function is wrapped to avoid.
+    swept, sweep_refused = {}, None
+    try:
+        swept = load_adapters()
+    except ConfigError as error:
+        sweep_refused = str(error)
     check(
         "discovery installs at least one implementation from the package",
-        bool(load_adapters()),
-        f"{ADAPTER_DIR} yielded nothing",
+        bool(swept),
+        sweep_refused or f"{ADAPTER_DIR} yielded nothing",
     )
-    installed = dict(ADAPTERS)
+    # ⛔ A **real** second sweep, with the flag cleared, rather than a second read
+    # of the first one's result. `load_adapters() == dict(ADAPTERS)` was the
+    # earlier shape and could not fail -- it compared a dict to a copy of itself
+    # taken on the line before. What this holds is that re-entry installs the
+    # same module objects rather than handing `register` a kind it already has,
+    # which would be refused and turn a later capability query into an error.
+    was_done, was_failed = _discovered, _discovery_failed
+    globals()["_discovered"] = False
+    try:
+        again = load_adapters()
+        resweep_refused = None
+    except ConfigError as error:
+        again, resweep_refused = None, str(error)
+    finally:
+        globals()["_discovered"], globals()["_discovery_failed"] = was_done, was_failed
     check(
-        "a second sweep installs nothing twice rather than refusing",
-        load_adapters() == installed,
+        "a sweep run again installs the same implementations rather than being refused",
+        again == swept,
+        resweep_refused or f"the second sweep gave {again!r}, not {swept!r}",
     )
     # ⛔ Planted in a temporary directory, never in the live package. A probe
     # module written beside the real adapters would be imported by every later
@@ -993,20 +1212,28 @@ def self_test() -> int:
         # Seeded into the module cache so the import resolves without the
         # temporary directory having to be an importable package.
         sys.modules[f"{ADAPTER_PACKAGE}.probe"] = types.ModuleType("probe")
-        was_dir, was_done = ADAPTER_DIR, _discovered
+        was_dir, was_done, was_failed = ADAPTER_DIR, _discovered, _discovery_failed
         try:
-            globals()["ADAPTER_DIR"], globals()["_discovered"] = planted, False
-            # Captured once: the sweep marks itself done before it can refuse,
-            # so asking a second time for the detail string would come back
-            # clean and report `None` where the key belongs.
-            refusal = _refused(load_adapters)
+            globals()["ADAPTER_DIR"] = planted
+            globals()["_discovered"], globals()["_discovery_failed"] = False, None
             check(
-                "an implementation stating no kind is refused, naming the module",
-                refusal == "tracker.adapters.probe.py",
-                f"reported {refusal!r}",
+                "an implementation that cannot be installed is refused, naming the module",
+                _refused(load_adapters) == "tracker.adapters.probe.py",
+            )
+            # ⛔ And refused *again*. The flag used to be set before the sweep,
+            # so a module that raised left discovery marked done over a half-full
+            # registry and every later ask came back clean -- reporting a kind
+            # that was built as a kind that never was, which is the single
+            # distinction § 3 asks this module to keep.
+            check(
+                "and refused on the second ask, not quietly skipped",
+                _refused(load_adapters) == "tracker.adapters.probe.py",
+                "the second ask came back clean, so a broken implementation "
+                "would read as an absence from then on",
             )
         finally:
             globals()["ADAPTER_DIR"], globals()["_discovered"] = was_dir, was_done
+            globals()["_discovery_failed"] = was_failed
             sys.modules.pop(f"{ADAPTER_PACKAGE}.probe", None)
 
     # The two sentinels this module spells out, held to the surface so that

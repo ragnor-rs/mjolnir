@@ -4,17 +4,17 @@
 # reviewed through the loop this repository ships. That is a correctness requirement, not a
 # nicety — a procedure whose own repository cannot run it is not finished.
 #
-# ⚠️ THIS FILE'S VALUES ARE READ, BUT NOTHING YET ACTS ON MOST OF THEM. The shared reader
+# ⚠️ THIS FILE'S VALUES ARE READ, AND NOT EVERY ROLE ACTS ON THEM YET. The shared reader
 # (#1) resolves this file, applies the surface's defaults and refuses a configuration the
 # surface does not allow — `plugins/mjolnir/scripts/config.py`, held to the examples on
-# every change. The tracker behind `kind: github-issues` is still #27, so no tracker
-# operation runs here and the loop is driven by hand. The port contract (#2) says exactly
-# that out loud: it reads `tracker.kind` below, finds no implementation registered for it,
-# and reports every operation as taking its stated fallback — a distinct report from a
-# project that needs no tracker at all. The other readers of this file are the single-source
-# gate, which holds its top-level keys to the schema so a key invented here reddens the
-# build, and the names-no-project sweep below. ⛔ No count of them is carried: the readers
-# are named where they are, and a number here would be wrong by the next one.
+# every change. The tracker behind `kind: github-issues` **is** implemented (#27): the port
+# finds its implementation, every operation but the three checklist ones is available, and
+# a role that asks for one of those is given the fallback the surface states. What is still
+# driven by hand is the loop *around* the port — the roles that would call it are their own
+# items. The other readers of this file are the single-source gate, which holds its
+# top-level keys to the schema so a key invented here reddens the build, and the
+# names-no-project sweep below. ⛔ No count of them is carried: the readers are named where
+# they are, and a number here would be wrong by the next one.
 #
 # ⛔ The repository slug is named here, and it is correct that it is: this is the project's own
 # configuration, the same file every adopter writes. It is not the only such place — README.md
@@ -76,8 +76,8 @@ host:
       triggers: ["pull_request -> *", "push -> main"]
 
 tracker:
-  # Plain GitHub issues with no project board — the cheapest real configuration, and one
-  # none of the examples covered. Found by writing this file; tracked as #27.
+  # Plain GitHub issues with no project board — the cheapest real configuration. The gap was
+  # found by writing this file, and `config/examples/github-issues.yaml` now covers the kind.
   kind: github-issues
   labels: [role, port, infra, hooks, migration, utility, decision]
 
