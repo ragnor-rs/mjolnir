@@ -90,9 +90,9 @@ an idea raised and dropped is exactly the duplicate worth finding, and it is the
 query hides. Where the tracker holds archived items behind a separate flag, that is a second pass,
 not an option.
 
-⚠️ **Where `search_items` is unavailable**, its stated fallback governs: this role **asks** before
-writing and never reports a check it could not perform. An unsearchable tracker is not a tracker
-with no duplicates.
+⚠️ **Where `search_items` is unavailable, its absence governs this whole section** rather than
+weakening one layer of it. Take what it does from the table and do exactly that — it is the one
+fallback this role's outcome turns on, which is why it is named here and not described.
 
 **2a. Keyword axes — derive the queries, never improvise synonyms.** Decompose the request into
 four axes and derive terms per axis:
@@ -163,9 +163,10 @@ checklists of every open item the request could belong under.** A condition nobo
 parent, and the wording will not match — a condition states an outcome where a request states a
 task.
 
-⚠️ **Where the checklist capability is unavailable**, the parent outcome takes that operation's
-stated fallback, and ⛔ **an unreadable checklist is never read as an empty one.** A parent whose
-checklist could not be read is reported as unchecked, not as absent.
+⚠️ **Where the checklist capabilities are unavailable**, the parent outcome takes their stated
+fallbacks — the read and the write have different ones. ⛔ **This step turns on the read's**, so
+take it from the table literally: concluding there is no parent because a checklist could not be
+read is the exact failure this section exists to prevent.
 
 **A child item is the exception and it needs a reason said out loud:** the piece is independently
 shippable, somebody else owns it, or it is large enough that the parent cannot be sized while it is
@@ -181,9 +182,9 @@ reader's output say what answers it.
 **The template is the project's data, and this role renders it.**
 [`§ 4.4`](../../config/schema.md#44-template) names the **semantic** sections the procedure depends
 on — the outcome, the acceptance condition, the reproduction — and each template declares which of
-its own headings fills each. ⛔ **Never write a heading this file names.** The heading text, and its
-language, are the project's; what this role requires is that the semantic sections be present and
-filled.
+its own headings fills each. ⛔ **Never invent a heading where the template declares one.** The
+heading text, and its language, are the project's; what this role requires is that the semantic
+sections be present and filled.
 
 ⛔ **The type and the template the body uses must agree, and a mismatch stops.** Nothing downstream
 refuses one: it surfaces later as a branch under the wrong prefix, and a branch name is the thing
