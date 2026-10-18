@@ -844,10 +844,32 @@ exit is covered by being **detectable** rather than by being released:
 
 | the ref | the reading |
 |---|---|
-| carries commits beyond the integration branch | **live** — work exists against it |
+| carries commits of its own **and** differs from the integration branch in nothing | **landed** — the claim is spent |
+| the host records a merged pull request for it | **landed** |
 | is checked out in a tree on this machine with a live process **at or below** it | **live** |
-| is referenced by an open pull request | **live** |
+| the host records an open pull request for it | **live** |
+| carries commits of its own | **live** |
 | none of the above | **orphaned-candidate** |
+
+⛔ **Landed needs both halves: that the ref carried work, and that the work is now in the
+integration branch.** Ancestry supplies only the first, and ⚠️ **ancestry is not the landed test** —
+a ref just claimed points at the integration tip, so it is an ancestor too, and reading ancestry as
+*landed* makes every fresh claim read as spent and releasable by anyone. The second half is read
+from **content**, because ancestry is trustworthy in one direction only: a true answer proves work
+landed, a false one proves nothing, since a squash or a rebase writes new commits and the old
+hashes become unreachable.
+
+⚠️ **So the last row is the weakest and is read last.** Reading it first makes every squash-merged
+claim live forever, and then the ordinary cleanup after a merge has to use the override reserved
+for breaking somebody else's work, which empties the override of its meaning.
+
+⛔ **A landed claim is neither live nor orphaned.** It is finished: releasing it is bookkeeping and
+needs no override and no asking. ⛔ **So the release's test is *landed or held here*, never
+*live*** — an orphaned candidate is a claim somebody may be a minute into, and a release keyed on
+liveness deletes it in silence, which is the two-sessions-on-one-item failure arriving through the
+other end. ⚠️ The residue is a claim squash-merged **and** then built on top
+of, which matches no row above except the weakest and so reads as live without the host's record to
+settle it. That errs towards refusing a start rather than towards taking a held claim.
 
 ⛔ **At or below the tree, never equal to it.** A session's working directory is routinely a
 subdirectory of its tree, so a test matching the tree's own path alone answers *nobody there* for

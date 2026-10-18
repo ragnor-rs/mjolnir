@@ -251,10 +251,19 @@ def host_slug(url: str) -> str | None:
 class Liveness:
     """§ 10's table, read in order. `live` is a disjunction: any one arm is enough, and the arms
     that need no host are checked first so a claim is not called orphaned merely because the host
-    was unreachable."""
+    was unreachable.
+
+    ⛔ **`landed` is a third reading and not a flavour of the other two.** A claim whose work
+    reached the integration branch is neither live nor orphaned: it is finished, and releasing it
+    is routine rather than a judgement. Without it, a squash-merged claim reads *live* forever --
+    its commits are not ancestors of anything, because the merge wrote a new one -- and giving it
+    up then needs the override reserved for breaking somebody else's work, which empties that
+    override of its meaning.
+    """
 
     live: bool
     reason: str
+    landed: bool = False
     unestablished: list[str] = field(default_factory=list)
 
 
@@ -310,26 +319,58 @@ def read_liveness(
     root: str | Path, remote: str, branch: str, integration: str, ref_sha: str
 ) -> Liveness:
     unestablished: list[str] = []
+    carries_own_commits = False
 
-    # Arm 1: the ref carries work of its own. Needs the ref's sha locally to compare, so it is
-    # fetched into a detached name rather than onto any branch.
+    # The ref's own object is needed locally to compare against anything, so it is fetched
+    # without a destination refspec rather than onto any branch.
     git(root, "fetch", "--quiet", remote, f"{REFS_PREFIX}{branch}", check=False)
     integration_sha = git(root, "rev-parse", integration, check=False)
-    if integration_sha.returncode == 0:
-        ancestor = git(
-            root,
-            "merge-base",
-            "--is-ancestor",
-            ref_sha,
-            integration_sha.stdout.strip(),
-            check=False,
-        )
-        if ancestor.returncode == 1:
-            return Liveness(True, "the ref carries commits beyond the integration branch")
-        if ancestor.returncode not in (0, 1):
-            unestablished.append("whether the ref carries its own commits")
-    else:
+
+    if integration_sha.returncode != 0:
         unestablished.append(f"the integration branch `{integration}` could not be resolved")
+    else:
+        tip = integration_sha.stdout.strip()
+
+        # ⛔ **Ancestry answers one question only: does the ref carry work of its own.** It is
+        # *not* the landed test, and reading it as one is wrong in the direction that matters --
+        # a ref just claimed points at the integration tip, so it is an ancestor too, and a
+        # brand-new claim would read as spent. Measured: the first attempt at this fix did
+        # exactly that and the suite caught it on the orphan case.
+        ancestor = git(root, "merge-base", "--is-ancestor", ref_sha, tip, check=False)
+        if ancestor.returncode not in (0, 1):
+            unestablished.append("whether the ref carries commits of its own")
+        carries_own_commits = ancestor.returncode == 1
+
+        # ⛔ **Landed needs both halves: the ref carried work, and that work is now in the
+        # integration branch.** Ancestry cannot supply the second half, because ancestry is
+        # trustworthy in one direction only -- a true answer proves content landed, a false one
+        # proves nothing, since a squash or a rebase writes new commits and the old hashes become
+        # unreachable. So the second half is read from **content**: where a ref that carries its
+        # own commits differs from the integration branch in nothing, its work is in there
+        # whatever the hashes say.
+        #
+        # The defect this replaces: non-ancestry alone was read as *live*, so every
+        # squash-merged claim read as in flight forever and the ordinary cleanup after a merge
+        # had to pass the override meant for breaking somebody else's work. Found on this
+        # module's own branch one minute after it merged.
+        if carries_own_commits:
+            same = git(root, "diff", "--quiet", ref_sha, tip, check=False)
+            if same.returncode == 0:
+                return Liveness(
+                    False,
+                    "the ref carries its own commits and differs from the integration branch in "
+                    "nothing, so its work has landed",
+                    landed=True,
+                )
+            if same.returncode not in (0, 1):
+                unestablished.append(
+                    "whether the ref's content is already on the integration branch"
+                )
+
+        # ⛔ Nothing is concluded from `carries_own_commits` here. It is the weakest signal in
+        # this function and the one that was wrong, so it is carried to the end and read only
+        # after every arm that could overturn it -- the host's record of a merge sits two arms
+        # below, and an early return made it unreachable.
 
     # Arm 2: a tree on this machine, with someone in it.
     tree = tree_for_branch(root, branch)
@@ -340,27 +381,52 @@ def read_liveness(
         if occupied is None:
             unestablished.append("whether a process occupies the tree holding this branch")
 
-    # Arm 3: an open pull request. Needs the host, so its absence is named rather than assumed.
+    # Arm 3: the host's own record of this branch's pull requests. It answers both readings -- a
+    # merged one lands the claim, an open one keeps it live -- and it is the only thing that
+    # settles the residue the two tests above leave.
     url = remote_url(root, remote)
     slug = host_slug(url) if url else None
     if slug and shutil.which("gh"):
         proc = subprocess.run(
-            ["gh", "pr", "list", "--repo", slug, "--head", branch, "--state", "open", "--json", "number"],
+            ["gh", "pr", "list", "--repo", slug, "--head", branch, "--state", "all",
+             "--json", "number,state"],
             capture_output=True,
             text=True,
         )
         if proc.returncode == 0:
             try:
-                if json.loads(proc.stdout or "[]"):
-                    return Liveness(True, "an open pull request references the ref")
+                requests = json.loads(proc.stdout or "[]")
             except json.JSONDecodeError:
-                unestablished.append("whether an open pull request references the ref")
+                requests = None
+                unestablished.append("what the host records about this branch's pull requests")
+            if requests is not None:
+                merged = [r["number"] for r in requests if r.get("state") == "MERGED"]
+                if merged:
+                    return Liveness(
+                        False,
+                        f"the host records pull request #{merged[0]} for this ref as merged",
+                        landed=True,
+                    )
+                if [r for r in requests if r.get("state") == "OPEN"]:
+                    return Liveness(True, "an open pull request references the ref")
         else:
-            unestablished.append("whether an open pull request references the ref")
+            unestablished.append("what the host records about this branch's pull requests")
     else:
-        unestablished.append("whether an open pull request references the ref")
+        unestablished.append("what the host records about this branch's pull requests")
 
-    return Liveness(False, "no arm of the liveness test answered yes", unestablished)
+    # ⚠️ The weakest signal, read last and stated with its residue. A claim that was
+    # squash-merged *and* then had other work land on top of it differs from the integration
+    # branch in that other work, so neither landed test fires; without a credential the host
+    # cannot say it merged either, and this reads it as live. That errs towards refusing a start
+    # rather than towards taking a held claim, which is the direction to be wrong in.
+    if carries_own_commits:
+        return Liveness(
+            True, "the ref carries commits beyond the integration branch", unestablished=unestablished
+        )
+
+    return Liveness(
+        False, "no arm of the liveness test answered yes", unestablished=unestablished
+    )
 
 
 # --------------------------------------------------------------------------------------------
@@ -382,7 +448,14 @@ class Status:
             return f"free: no ref named this exists {where}."
         lines = [f"taken: the ref exists at {self.ref_sha[:7]}, {self.holder.describe()}."]
         if self.liveness:
-            if self.liveness.live:
+            if self.liveness.landed:
+                # Neither live nor orphaned: finished. Releasing it is bookkeeping, so it is
+                # said plainly rather than handed to anyone as a judgement.
+                lines.append(
+                    f"landed: {self.liveness.reason}. The claim is spent and releasing it "
+                    "needs no override."
+                )
+            elif self.liveness.live:
                 lines.append(f"live: {self.liveness.reason}.")
             else:
                 # ⛔ Reported, never broken. The two readings are stated because they are
@@ -496,14 +569,26 @@ def release(
     is mid-item. So liveness is read first, and a live claim with no tree *here* needs `--force`,
     which is a person saying it. The local-only case needs none of this: there is no ref to
     publish and nothing another machine could be holding.
+
+    ⛔ **A claim whose work has landed is not live and needs no override.** That is what makes the
+    rule above affordable: without the landed reading, every squash-merged claim reached this
+    guard as live, and the ordinary cleanup after a merge had to pass the flag reserved for
+    breaking somebody else's work -- which is how an override stops meaning anything.
     """
     if not force and remote_url(root, remote):
         held = status(root, branch, remote, integration)
-        if held.taken and held.liveness and held.liveness.live and not tree_for_branch(root, branch):
+        # ⛔ The test is **landed or held here**, not *live*. Keying on live left the orphan case
+        # open, and the orphan case includes a claim somebody took a minute ago: from any other
+        # clone a fresh claim has no commits and no tree, so it reads as an orphaned candidate --
+        # and a release keyed on live would delete it in silence. That is the two-sessions-on-one
+        # -item failure the claim exists to prevent, reintroduced through the other end.
+        spent = held.liveness is not None and held.liveness.landed
+        if held.taken and not spent and not tree_for_branch(root, branch):
             raise ClaimError(
-                f"refused: the claim on `{branch}` is live and is not held in a tree here.\n"
+                f"refused: the claim on `{branch}` is not spent and is not held in a tree here.\n"
                 f"{held.report()}\n"
-                "Breaking a live claim is a person's call: pass --force to say so."
+                "Breaking a claim that is neither landed nor yours is a person's call: pass "
+                "--force to say so."
             )
 
     done = []
@@ -809,8 +894,83 @@ def self_test() -> int:
         suite.ok("and says it is a person's call", "person's call" in refusal, refusal)
         suite.ok("and the claim survives the refusal",
                  remote_ref_sha(two, "origin", "feature/s2") is not None)
+
+        # ⛔ The orphan case, which a guard keyed on `live` left open: a claim taken a minute ago
+        # has no commits and no tree anywhere but its own clone, so from here it reads as an
+        # orphaned candidate -- and releasing it would be one session ending another's claim.
+        take(one, "feature/s3", str(Path(tmp) / "t4"))
+        orphan_refusal = ""
+        try:
+            release(two, "feature/s3", None, "origin")
+        except ClaimError as exc:
+            orphan_refusal = str(exc)
+        suite.ok(
+            "a fresh claim held elsewhere is refused too, not only a live one",
+            "refused" in orphan_refusal,
+            orphan_refusal,
+        )
+        suite.ok("and that claim survives as well",
+                 remote_ref_sha(two, "origin", "feature/s3") is not None)
         suite.ok("while the clone that holds the tree releases it with no force",
                  "ref deleted" in release(one, "feature/s2", str(Path(tmp) / "t3")))
+
+    print("\na claim whose work has landed:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, two = _bare_world(stack)
+        t1 = Path(tmp) / "t1"
+        take(one, "feature/merged", str(t1))
+        for key, value in (("user.email", "one"), ("user.name", "One")):
+            git(t1, "config", key, value)
+        (t1 / "work.txt").write_text("work\n")
+        git(t1, "add", "work.txt")
+        git(t1, "commit", "--quiet", "-m", "work")
+        git(t1, "push", "--quiet", "origin", "feature/merged")
+
+        before = status(two, "feature/merged")
+        suite.ok(
+            "before the merge it reads live",
+            before.liveness is not None and before.liveness.live,
+            before.report(),
+        )
+        # ⛔ The regression the first attempt at this introduced: a ref just claimed points at
+        # the integration tip, so it is an ancestor of it, and reading ancestry as *landed* made
+        # every fresh claim read as spent -- releasable with no override, by anyone.
+        take(one, "feature/fresh", str(Path(tmp) / "tf"))
+        fresh = status(two, "feature/fresh")
+        suite.ok(
+            "a claim with no work of its own does NOT read as landed",
+            fresh.liveness is not None and not fresh.liveness.landed,
+            fresh.report(),
+        )
+
+        # The squash merge, which is what rewrites the hashes: a new commit on the integration
+        # branch carrying the ref's content, and the ref's own commit reachable from nothing.
+        git(two, "fetch", "--quiet", "origin", "feature/merged")
+        git(two, "checkout", "--quiet", "main")
+        git(two, "merge", "--squash", "FETCH_HEAD", check=False)
+        for key, value in (("user.email", "two"), ("user.name", "Two")):
+            git(two, "config", key, value)
+        git(two, "commit", "--quiet", "-m", "squashed")
+        git(two, "push", "--quiet", "origin", "main")
+
+        after = status(two, "feature/merged")
+        suite.ok(
+            "after a squash merge it reads landed, not live",
+            after.liveness is not None and after.liveness.landed,
+            after.report(),
+        )
+        suite.ok(
+            "and it is not an ancestor of the integration branch, which is why the hash test alone was wrong",
+            git(two, "merge-base", "--is-ancestor",
+                remote_ref_sha(two, "origin", "feature/merged"), "main", check=False).returncode == 1,
+        )
+        suite.ok("the report says the claim is spent", "landed:" in after.report(), after.report())
+        suite.ok(
+            "and releasing it needs no override",
+            "ref deleted" in release(two, "feature/merged", None, "origin"),
+        )
 
     print("\nthe integration branch, derived rather than named:")
 
