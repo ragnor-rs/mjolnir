@@ -235,10 +235,10 @@ not read the verdict of whatever already holds the place, and does not take the 
 holds it may be another session's live work. A check that could not have the resource is reported
 **blocked rather than skipped**, naming what holds it.
 
-⚠️ **A tier that could not run at all is not a tier that passed.** A missing credential, a stack that
-never came up, material a run needed and did not have, a case set silently narrowed: each reports
-less than it looks like. ⛔ **Report by name which checks ran, and say plainly when one did not and
-why** — the surface holds no facet for a tier's own preconditions yet, which is
+⚠️ **A tier that could not run at all is not a tier that passed.** A missing credential, a service
+that never came up, material a run needed and did not have, a case set silently narrowed: each
+reports less than it looks like. ⛔ **Report by name which checks ran, and say plainly when one did
+not and why** — the surface holds no facet for a tier's own preconditions yet, which is
 [#60](https://github.com/ragnor-rs/mjolnir/issues/60)'s, so until it lands this is procedure held by
 the report rather than by a key.
 
@@ -285,11 +285,11 @@ needed, in this order:
 
 1. **How to get the thing up**, as the commands to run, and ⛔ **which checkout each one is bound
    to** — a service serving another branch answers about somebody else's code.
-2. **Every item, in order**, as an act and an observation: load this, do this, look for this. ⚠️ **An
-   item copied over verbatim is not an instruction** — the plan is written for a reader who already
-   has the context and this is written for someone starting cold.
-3. **What is already known**, so the same ground is not covered twice: which checks ran and what they
-   returned, what the review found and fixed, and anything step 3 or step 5 can already say.
+2. **Every item, in order**, as an act and an observation: load this, do this, look for this.
+   ⚠️ **An item copied over verbatim is not an instruction** — the plan is written for a reader who
+   already has the context and this is written for someone starting cold.
+3. **What is already known**, so the same ground is not covered twice: which checks ran and what
+   they returned, what the review found and fixed, and anything step 3 or step 5 can already say.
 4. **How to finish**, naming the role that merges rather than a merge command of this one's.
 
 ⛔ **Name the items that cannot be reached the way the rest are** and say what each needs instead. An
