@@ -55,6 +55,7 @@ ROLES = {
     "docs/configuration-surface.md": EXPLAINS,
     "docs/single-source-of-truth.md": EXPLAINS,
     RULINGS: RECORDS,
+    "docs/building-itself.md": RECORDS,
     "plugins/mjolnir/skills/day-report/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/file-work-item/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/finish/SKILL.md": PROCEDURE,

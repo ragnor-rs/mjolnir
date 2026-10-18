@@ -141,6 +141,7 @@ found between the old copies and the decision that settled it.
 | [`docs/configuration-surface.md`](docs/configuration-surface.md) | Why the surface has this shape — the measurements behind every schema section |
 | [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) | Every divergence found between the old copies and which behaviour was kept, including where a ruling overrode a stated counter-argument |
 | [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) | How the single-authority claim is held: the checks, their kinds, and what each deliberately leaves alone |
+| [`docs/building-itself.md`](docs/building-itself.md) | The bootstrap record: which pieces could not be built through the loop, and the command that derives what the loop carries here |
 | [`tools/check_single_source.py`](tools/check_single_source.py) | The single-authority check, run by the `Single source of truth` workflow on every change |
 | [`tools/check_no_project_names.py`](tools/check_no_project_names.py) | The sweep that holds the convention above: no other project named anywhere, and no value, tracker or stack in any carrier root |
 | [`tools/check_nothing_deferred.py`](tools/check_nothing_deferred.py) | The gate that refuses a merge while any item raised against the change is unresolved, counted in the body and in the threads on it |
