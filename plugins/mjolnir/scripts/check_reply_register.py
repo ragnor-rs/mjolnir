@@ -518,7 +518,7 @@ def findings(reply: str) -> tuple[list[str], list[str]]:
     return blocking, reported
 
 
-def already_blocked(turn: str) -> tuple[bool, str]:
+def already_blocked(turn: str, *, record: bool) -> tuple[bool, str]:
     """Has this turn been handed back once already? And if unknown, why.
 
     The guard is per turn and not per session: a reply restated once has had its
@@ -527,6 +527,13 @@ def already_blocked(turn: str) -> tuple[bool, str]:
     the harness's own turn id, and a payload without one falls back to the
     session, which blocks once per session rather than once per turn — the
     conservative direction.
+
+    ⛔ **The marker records a hand-back and not a fire**, which is what `record`
+    is for: the caller passes it only where this answer would hand the turn back,
+    so an answer that reports spends nothing. While every answer asked for a
+    restatement the two were the same event; once one of them stopped asking, a
+    density would have spent the turn's one hand-back and the blocking finding
+    after it would have been told, falsely, that it had already had one.
 
     ⛔ Where the state cannot be kept, this reports rather than blocks, because
     a guard that cannot read itself cannot promise to stop — but it **says
@@ -545,7 +552,8 @@ def already_blocked(turn: str) -> tuple[bool, str]:
         marker = seen / re.sub(r"[^A-Za-z0-9_-]", "-", turn)[:120]
         if marker.exists():
             return True, ""
-        marker.touch()
+        if record:
+            marker.touch()
     except OSError as error:
         return True, f"the turn guard could not keep state ({type(error).__name__}: {seen})"
     # ⚠️ Pruning is best-effort and separate: a marker another process unlinked
@@ -580,7 +588,11 @@ def answer(payload: dict) -> dict:
         # had no hand-back, and the message to the person must not say it has.
         handed_back, block = False, False
     else:
-        handed_back, unguarded = already_blocked(turn)
+        # ⚠️ `record` is the blocking findings and not `block`, which is derived
+        # from the answer this call returns: a hand-back is recorded exactly
+        # where there is something to hand back for and the turn has not had
+        # one, which is the same condition as `block` without the circle.
+        handed_back, unguarded = already_blocked(turn, record=bool(blocking))
         block = bool(blocking) and not handed_back
 
     # ⛔ Asked of the writer only where a hand-back is warranted *and* a
@@ -974,6 +986,18 @@ def self_test() -> int:
         print("  ok                     a reported finding asks nothing and names itself")
     else:
         print("  FAIL                   a reported finding asked for a restatement, or named nothing")
+        failures += 1
+    # ⛔ A density spends nothing, asserted by the hand-back it must leave
+    # available. The first shape of this change recorded a marker on every fire,
+    # so a density first in a turn made the blocking finding after it report —
+    # and report that the turn had had a hand-back it never had.
+    spent = "self-test-density-then-block"
+    answer({"last_assistant_message": reporting_reply, "prompt_id": spent})
+    after = answer({"last_assistant_message": blocking_reply, "prompt_id": spent})
+    if after.get("decision") == "block":
+        print("  ok                     a density leaves the turn's hand-back unspent")
+    else:
+        print("  FAIL                   a density spent the turn's hand-back")
         failures += 1
     # ⚠️ A reporting finding on a payload naming no turn: the one shape that
     # reaches the person's message by a route where nothing was handed back and

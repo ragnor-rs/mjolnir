@@ -637,7 +637,10 @@ once per turn**, keyed on the harness's own turn id under `CLAUDE_PLUGIN_DATA`, 
 also blocked the restatement would hold the session open on a judgement a forbidding check cannot
 make. A payload carrying no turn at all cannot be guarded, so a finding that would have been handed
 back is asked for anyway and the answer **says that it could not guard**, rather than returning the
-same answer as a turn that has had its hand-back.
+same answer as a turn that has had its hand-back. ⚠️ **The marker records a hand-back and not a
+fire.** While every answer asked for a restatement the two were the same event; once one of them
+stopped asking, a density first in a turn would have spent that turn's one hand-back and the
+blocking finding after it would have been told, falsely, that it had already had one.
 
 ⛔ **What costs the reader the reply a second time is asking for it, and `decision` is not what
 decides that** — a statement about how
