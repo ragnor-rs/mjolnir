@@ -440,12 +440,22 @@ def main():
             print("  ⚠️ the plan file changed since that pass — possibly a sibling session; re-read before editing")
 
     # --- what is takeable ---
-    ready = sorted(n for n in live_items
-                   if not any(not closed for _b, closed in issues[n]["blocked_by"]))
+    # Printed in row order, because row order is the whole answer to *which item is next* and the
+    # start role reads this block as the queue. Sorted by number, the first line was whatever
+    # issue happened to be filed earliest among the unblocked — an item several rows of ordering
+    # argument say should wait. An unplaced item has no row to be ordered by, so it sorts and
+    # prints last rather than ahead of row 0; `unplaced` above is where it gets reported.
+    def queue_row(number):
+        rows = placement.get(number)
+        return min(rows) if rows else None
+
+    ready = sorted((n for n in live_items
+                    if not any(not closed for _b, closed in issues[n]["blocked_by"])),
+                   key=lambda n: (queue_row(n) is None, queue_row(n) or 0, n))
     print(f"\nunblocked now        : {len(ready)}")
     for number in ready:
-        row = min(placement.get(number, [-1]))
-        print(f"  row {row!s:>3}  #{number}  {issues[number]['title'][:66]}")
+        row = queue_row(number)
+        print(f"  row {'—' if row is None else row!s:>3}  #{number}  {issues[number]['title'][:66]}")
 
     dirty = bool(violations or unplaced or twice or closed_placed or cyclic or offenders
                  or verdicts["contradicted"])
