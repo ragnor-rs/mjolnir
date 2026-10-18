@@ -522,10 +522,10 @@ register (§8).
 - **The body is held to [*Nothing is deferred*](#nothing-is-deferred)**, which is where the
   open-items statement and what reads it back are ruled.
 
-**The reconciled shape of the summary and the test plan is transitional.** It still lives in the
-five copies of the finishing role, and extracting that role moves the shape into its skill. The
-rules above are the part already shared; nothing in a copy that contradicts them survives the
-extraction.
+**The reconciled shape of the summary and the test plan lives in the finishing role's skill**, at
+[`skills/finish/`](../skills/finish/) — it was the one part of this subsection that was ever
+transitional, and extracting the role moved it there. The rules above are what is shared; nothing
+in an old copy that contradicted them survived.
 
 ## 7. Carrier
 

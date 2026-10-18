@@ -102,6 +102,7 @@ in [`.claude/mjolnir.yaml`](.claude/mjolnir.yaml).
 Skills are addressed **namespaced, with no alias**:
 
 ```
+/mjolnir:finish
 /mjolnir:day-report
 ```
 
@@ -130,6 +131,7 @@ found between the old copies and the decision that settled it.
 
 | | |
 |---|---|
+| [`plugins/mjolnir/skills/finish/`](plugins/mjolnir/skills/finish/) | Take a finished branch to a landed pull request: the commit, the push, the pull request, the host's answer about it, the merge read back from state, the item's move through the port, and the tree released |
 | [`plugins/mjolnir/skills/day-report/`](plugins/mjolnir/skills/day-report/) | Build a working day's time-log entry from session transcripts, git, the code host, chat and the calendar |
 | [`plugins/mjolnir/config/`](plugins/mjolnir/config/) | The configuration surface: the schema, and a whole example per tracker including a deliberately trackerless one |
 | [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) | What a role runs on rather than reimplements: the configuration reader, and the tracker port behind [`schema.md § 3`](plugins/mjolnir/config/schema.md#3-tracker-port) |
@@ -141,7 +143,7 @@ found between the old copies and the decision that settled it.
 | [`tools/check_nothing_deferred.py`](tools/check_nothing_deferred.py) | The gate that refuses a merge while any item raised against the change is unresolved, counted in the body and in the threads on it |
 | [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) — today, a `Stop` hook holding a role's reply to the register |
 
-The remaining eight roles land here as they are reconciled. A project that has not been migrated
+The remaining seven roles land here as they are reconciled. A project that has not been migrated
 keeps working throughout — that is a safety property of the migration, not an acceptable end state.
 
 ## Conventions

@@ -17,6 +17,7 @@
     "trello"
   ],
   "skills": [
-    "./skills/day-report"
+    "./skills/day-report",
+    "./skills/finish"
   ]
 }
