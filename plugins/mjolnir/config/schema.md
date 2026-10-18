@@ -777,14 +777,28 @@ exit is covered by being **detectable** rather than by being released:
 | the ref | the reading |
 |---|---|
 | carries commits beyond the integration branch | **live** — work exists against it |
-| is checked out in a tree on this machine that a live process is in | **live**, by § 10's own liveness test |
+| is checked out in a tree on this machine with a live process **at or below** it | **live** |
 | is referenced by an open pull request | **live** |
 | none of the above | **orphaned-candidate** |
 
+⛔ **At or below the tree, never equal to it.** A session's working directory is routinely a
+subdirectory of its tree, so a test matching the tree's own path alone answers *nobody there* for
+a claim somebody is actively working. ⚠️ And the arm has **three** answers rather than two: where
+the machine's open-file table cannot be read at all, the reading is *unestablished* and not
+*idle* — the two are the same answer otherwise, and the wrong one of them is what lets a claim be
+taken.
+
 ⛔ **An orphaned candidate is reported and never broken automatically.** A session that died holds
 the same ref as one that is about to commit into it, and the two are indistinguishable from
-outside; so the sweep that finds one states both readings and asks. Breaking a claim is the one
-step here that is a person's.
+outside; so the sweep that finds one states both readings and asks. ⛔ **That binds the release
+too**: releasing a claim that is live and held in no tree here is refused, and a person overriding
+the refusal is the only thing that breaks it. A release that deletes whatever ref it is pointed at
+*is* the automatic breaker this rule forbids.
+
+**The integration branch a claim is cut from is derived, not configured.** This surface carries no
+key naming it, so it is read from what the remote advertises as its default — and where that
+cannot be read, the role is told by name rather than handed a guess. ⚠️ A claim cut from the wrong
+base reads as a successful start.
 
 **The absent case is derived rather than configured.** A code root with no remote cannot publish a
 ref, so the claim is local-only there and the role says so — the claim still holds against every

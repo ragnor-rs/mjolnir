@@ -506,6 +506,9 @@ broken; and that a root with no remote claims locally and says so.
 | 3 | A claim releases, and the item is claimable again | one clone | computed |
 | 4 | Liveness answers from each of its arms, and otherwise reports an orphaned candidate | both clones | computed |
 | 5 | A root with no remote claims locally rather than failing | a remoteless repository | computed |
+| 6 | Releasing a live claim held in no tree here is refused; the holder's own clone releases it freely | two clones | computed |
+| 7 | The integration branch is derived from the remote's default, overridable, and named as underivable rather than guessed | three repositories | computed |
+| 8 | A process **below** a tree's root reads as occupying it | a real process two directories down | computed |
 
 ⚠️ **Check 0 is run once per arm, and that is the finding this suite was written by rather than
 for.** The surface states two arms because the first draft of the script shipped only the second —
@@ -536,10 +539,17 @@ arm is what lets the race through.
   credential, so in the suite that arm reports itself unestablished and the first two carry the
   verdict. On a project whose claims are all fresh refs with no commits, that leaves liveness
   resting on the occupied-tree arm alone.
-- **Whether a process occupies a tree, where the open-file table cannot be read.** The arm answers
-  *no* and the report names it unestablished — never *the tree is idle*. It is
+- **Whether a process occupies a tree, where the open-file table cannot be read.** The arm has
+  three answers and the third is *unestablished*, never *the tree is idle*. ⚠️ Check 8 holds the
+  at-or-below half against a real process; what no check here holds is the **unreadable** branch,
+  because a machine where the table cannot be read is not a fixture this suite can build. On such a
+  machine the arm reports rather than answers, which is the safe direction. It is
   [#34](https://github.com/ragnor-rs/mjolnir/issues/34)'s test called rather than a second one, and
   [#31](https://github.com/ragnor-rs/mjolnir/issues/31)'s sweep is its other consumer.
+- **A claim broken with the override.** Check 6 holds that the refusal happens and that it names
+  the decision as a person's; it cannot hold that the person was right. ⛔ That is the *fidelity*
+  limit this document states one claim over, and the reason the override is a flag rather than a
+  heuristic.
 - **A claim on a project sharing no remote.** Two machines with no remote between them cannot be
   arbitrated by anything, and the surface states that rather than guarding it.
 

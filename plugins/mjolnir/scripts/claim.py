@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -89,6 +90,48 @@ def remote_url(root: str | Path, remote: str) -> str | None:
     """
     proc = git(root, "remote", "get-url", remote, check=False)
     return proc.stdout.strip() or None if proc.returncode == 0 else None
+
+
+def integration_branch(root: str | Path, remote: str, stated: str | None = None) -> str:
+    """The branch a claim is cut from, derived rather than named.
+
+    ⛔ **This surface carries no key for it, and this module does not invent one.** § 10 speaks of
+    "the integration branch" throughout and no facet states which it is -- so a command taking it
+    as a required argument would push a value with no home on the surface into every role that
+    calls it, which is the defect the sweep exists for one layer down. It is derived from what git
+    already records, with an explicit value accepted as an override.
+
+    ⚠️ Where it cannot be derived the role is told so by name. A guess here is a claim cut from
+    the wrong base, which reads as a successful start.
+    """
+    if stated:
+        return stated
+
+    # What the remote advertised as its default when this clone was made.
+    proc = git(root, "symbolic-ref", "--short", f"refs/remotes/{remote}/HEAD", check=False)
+    if proc.returncode == 0 and proc.stdout.strip():
+        name = proc.stdout.strip()
+        return name[len(remote) + 1 :] if name.startswith(remote + "/") else name
+
+    # The clone may predate the remote having a default, so ask the remote itself.
+    proc = git(root, "ls-remote", "--symref", remote, "HEAD", check=False)
+    if proc.returncode == 0:
+        for line in proc.stdout.splitlines():
+            if line.startswith("ref:"):
+                ref = line[len("ref:") :].split()[0].strip()
+                if ref.startswith(REFS_PREFIX):
+                    return ref[len(REFS_PREFIX) :]
+
+    # No remote at all: the claim is local-only and this checkout's own branch is the base.
+    if not remote_url(root, remote):
+        proc = git(root, "rev-parse", "--abbrev-ref", "HEAD", check=False)
+        if proc.returncode == 0 and proc.stdout.strip() not in ("", "HEAD"):
+            return proc.stdout.strip()
+
+    raise ClaimError(
+        "the integration branch could not be derived from the remote's default or this "
+        "checkout's own branch; state it explicitly rather than having one guessed."
+    )
 
 
 def _push_created_ref(porcelain: str, branch: str) -> bool:
@@ -227,20 +270,40 @@ def tree_for_branch(root: str | Path, branch: str) -> str | None:
     return None
 
 
-def process_in(path: str) -> bool:
-    """Whether any live process has `path` as its working directory.
+def process_in(path: str) -> bool | None:
+    """Whether any live process is working *at or below* `path`. None where it cannot be read.
 
     ⚠️ This is the one liveness arm that reads the machine rather than the repository, and it is
     #34's test rather than a second one: a tree another live session occupies is read from the
-    open-file table. Where that table cannot be read the arm answers *no* and the caller records
-    it as unestablished -- never as proof the tree is idle.
+    open-file table.
+
+    ⛔ **At or below, not equal.** A session's working directory is often a subdirectory of the
+    tree rather than its root, and filtering the open-file table by the tree's own path matches
+    only an exact cwd -- so a session two directories down reads as nobody there, and the claim it
+    is actively working reads as an orphaned candidate. The table is therefore enumerated and the
+    prefix compared here, rather than handed to the tool as a filter.
+
+    ⛔ Three answers, not two: *yes*, *no*, and **unreadable**. The caller records the third as
+    unestablished, because "the table could not be read" and "the tree is idle" are the same
+    answer otherwise, and the wrong one of the two is the one that lets a claim be taken.
     """
     if not shutil.which("lsof"):
-        return False
+        return None
+    # `-F n` prints one field per line, each tagged; `n` is the name. Failure is expected and
+    # routine here -- lsof exits non-zero when it merely skipped something it could not stat --
+    # so the output is read regardless and only an empty result counts as unreadable.
     proc = subprocess.run(
-        ["lsof", "-a", "-d", "cwd", "--", path], capture_output=True, text=True
+        ["lsof", "-a", "-d", "cwd", "-F", "n"], capture_output=True, text=True
     )
-    return proc.returncode == 0 and len(proc.stdout.splitlines()) > 1
+    names = [line[1:] for line in proc.stdout.splitlines() if line.startswith("n")]
+    if not names:
+        return None
+    root = os.path.realpath(path)
+    for name in names:
+        cwd = os.path.realpath(name)
+        if cwd == root or cwd.startswith(root + os.sep):
+            return True
+    return False
 
 
 def read_liveness(
@@ -271,9 +334,10 @@ def read_liveness(
     # Arm 2: a tree on this machine, with someone in it.
     tree = tree_for_branch(root, branch)
     if tree:
-        if process_in(tree):
-            return Liveness(True, f"a live process is working in {tree}")
-        if not shutil.which("lsof"):
+        occupied = process_in(tree)
+        if occupied:
+            return Liveness(True, f"a live process is working at or below {tree}")
+        if occupied is None:
             unestablished.append("whether a process occupies the tree holding this branch")
 
     # Arm 3: an open pull request. Needs the host, so its absence is named rather than assumed.
@@ -335,8 +399,11 @@ class Status:
         return "\n".join(lines)
 
 
-def status(root: str | Path, branch: str, remote: str = "origin", integration: str = "main") -> Status:
+def status(
+    root: str | Path, branch: str, remote: str = "origin", integration: str | None = None
+) -> Status:
     url = remote_url(root, remote)
+    integration = integration_branch(root, remote, integration)
     if not url:
         # Local-only: the branch itself is the whole claim, and it still arbitrates every session
         # on this machine -- which is every session there can be, with no remote to reach.
@@ -367,7 +434,7 @@ def take(
     branch: str,
     tree: str,
     remote: str = "origin",
-    integration: str = "main",
+    integration: str | None = None,
     *,
     _lease: bool = True,
     _require_created: bool = True,
@@ -379,6 +446,7 @@ def take(
     suite plants each arm away in turn, to show that the race is held by the arm it is attributed
     to and that the no-residue rule is held by the release rather than by luck.
     """
+    integration = integration_branch(root, remote, integration)
     base = git(root, "rev-parse", integration).stdout.strip()
     url = remote_url(root, remote)
     published = False
@@ -407,13 +475,37 @@ def take(
     return f"claimed `{branch}`: {where}, tree at {tree}."
 
 
-def release(root: str | Path, branch: str, tree: str | None = None, remote: str = "origin") -> str:
+def release(
+    root: str | Path,
+    branch: str,
+    tree: str | None = None,
+    remote: str = "origin",
+    integration: str | None = None,
+    *,
+    force: bool = False,
+) -> str:
     """Give the claim up: the ref first, then the tree and the local branch.
 
     Order mirrors `take`: the published ref is what another machine reads, so it is what stops
     being true first. A release is idempotent -- each half reports what was already gone, since a
     half-released claim is exactly the state a failed release leaves and it has to be re-runnable.
+
+    ⛔ **A live claim held somewhere else is refused rather than released.** § 10 states that a
+    claim is never broken automatically, and a release that deletes any ref it is pointed at makes
+    this command the automatic breaker -- one argument away from ending a session's claim while it
+    is mid-item. So liveness is read first, and a live claim with no tree *here* needs `--force`,
+    which is a person saying it. The local-only case needs none of this: there is no ref to
+    publish and nothing another machine could be holding.
     """
+    if not force and remote_url(root, remote):
+        held = status(root, branch, remote, integration)
+        if held.taken and held.liveness and held.liveness.live and not tree_for_branch(root, branch):
+            raise ClaimError(
+                f"refused: the claim on `{branch}` is live and is not held in a tree here.\n"
+                f"{held.report()}\n"
+                "Breaking a live claim is a person's call: pass --force to say so."
+            )
+
     done = []
     if remote_url(root, remote):
         proc = git(root, "push", remote, "--delete", branch, check=False)
@@ -432,7 +524,9 @@ def release(root: str | Path, branch: str, tree: str | None = None, remote: str 
     return f"released `{branch}`: " + ", ".join(done) + "."
 
 
-def claim_free(root: str | Path, branch: str, remote: str = "origin", integration: str = "main") -> tuple[bool, str]:
+def claim_free(
+    root: str | Path, branch: str, remote: str = "origin", integration: str | None = None
+) -> tuple[bool, str]:
     """§ 5's predicate. One statement of one question: is this ref taken.
 
     ⛔ Not `assignee_matches_role`, which asks whether the person on the item is the one the role
@@ -675,6 +769,102 @@ def self_test() -> int:
         suite.ok("so the item can be claimed again after a release",
                  "claimed" in take(two, "feature/r", str(Path(tmp) / "t2")))
 
+    print("\nreleasing somebody else's live claim:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, two = _bare_world(stack)
+        t1 = str(Path(tmp) / "t1")
+        take(one, "feature/s", t1)
+        # Make it live in the way another machine can see: commits of its own.
+        for key, value in (("user.email", "one"), ("user.name", "One")):
+            git(t1, "config", key, value)
+        (Path(t1) / "work.txt").write_text("work\n")
+        git(t1, "add", "work.txt")
+        git(t1, "commit", "--quiet", "-m", "work")
+        git(t1, "push", "--quiet", "origin", "feature/s")
+
+        # Plant: `force` on, which is what the command does without the guard -- the live claim
+        # goes, from a clone that never held it.
+        release(two, "feature/s", None, "origin", force=True)
+        suite.ok(
+            "with force a live claim held elsewhere is deleted (so the guard is what holds it)",
+            remote_ref_sha(two, "origin", "feature/s") is None,
+        )
+
+        # And the rule: the same call without force is refused.
+        take(one, "feature/s2", str(Path(tmp) / "t3"))
+        for key, value in (("user.email", "one"), ("user.name", "One")):
+            git(str(Path(tmp) / "t3"), "config", key, value)
+        (Path(tmp) / "t3" / "work.txt").write_text("work\n")
+        git(str(Path(tmp) / "t3"), "add", "work.txt")
+        git(str(Path(tmp) / "t3"), "commit", "--quiet", "-m", "work")
+        git(str(Path(tmp) / "t3"), "push", "--quiet", "origin", "feature/s2")
+        refusal = ""
+        try:
+            release(two, "feature/s2", None, "origin")
+        except ClaimError as exc:
+            refusal = str(exc)
+        suite.ok("a live claim held elsewhere is refused instead", "refused" in refusal, refusal)
+        suite.ok("and says it is a person's call", "person's call" in refusal, refusal)
+        suite.ok("and the claim survives the refusal",
+                 remote_ref_sha(two, "origin", "feature/s2") is not None)
+        suite.ok("while the clone that holds the tree releases it with no force",
+                 "ref deleted" in release(one, "feature/s2", str(Path(tmp) / "t3")))
+
+    print("\nthe integration branch, derived rather than named:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _ = _bare_world(stack)
+        suite.ok("it is derived from the remote's own default",
+                 integration_branch(one, "origin") == "main")
+        suite.ok("an explicit value overrides the derivation",
+                 integration_branch(one, "origin", "release") == "release")
+        # A root with a remote that advertises nothing and no local branch of its own: the one
+        # state where a guess would be a claim cut from the wrong base.
+        orphanage = Path(tmp) / "no-default"
+        subprocess.run(["git", "init", "--quiet", "--bare", str(orphanage)], check=True)
+        blank = Path(tmp) / "blank"
+        subprocess.run(["git", "clone", "--quiet", str(orphanage), str(blank)], check=True)
+        git(blank, "checkout", "--quiet", "--detach", check=False)
+        derived = None
+        try:
+            derived = integration_branch(blank, "origin")
+        except ClaimError as exc:
+            derived = str(exc)
+        suite.ok("and where it cannot be derived the caller is told, not given a guess",
+                 "could not be derived" in (derived or ""), str(derived))
+
+    print("\nliveness reads a session below the tree's own root:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _ = _bare_world(stack)
+        t1 = Path(tmp) / "t1"
+        take(one, "feature/deep", str(t1))
+        deep = t1 / "a" / "b"
+        deep.mkdir(parents=True)
+        # A real process, working two directories below the tree root. Filtering the open-file
+        # table by the tree's own path would not match this cwd, which is the false negative the
+        # prefix comparison exists for: an actively worked claim reading as an orphan.
+        held = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(30)"],
+            cwd=str(deep),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            occupied = process_in(str(t1))
+            if occupied is None:
+                suite.ok("the open-file table is unreadable here, and that is reported as such",
+                         True, "lsof absent: the arm reports unestablished rather than idle")
+            else:
+                suite.ok("a process below the tree root reads as occupying it", occupied is True)
+        finally:
+            held.kill()
+            held.wait()
+
     print("\nthe derived absent case:")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -724,9 +914,20 @@ def main(argv: list[str]) -> int:
         node.add_argument("--repo-root", required=True, help="the code root, stated and never inherited")
         node.add_argument("--branch", required=True)
         node.add_argument("--remote", default="origin")
-        node.add_argument("--integration", default="main")
+        node.add_argument(
+            "--integration",
+            default=None,
+            help="override; derived from the remote's default branch when omitted",
+        )
         if name in ("take", "release"):
             node.add_argument("--tree", required=(name == "take"))
+        if name == "release":
+            # ⛔ A person saying it, which is the only thing § 10 permits to break a live claim.
+            node.add_argument(
+                "--force",
+                action="store_true",
+                help="break a live claim held elsewhere; refused without it",
+            )
 
     args = parser.parse_args(argv)
     if args.self_test:
@@ -739,7 +940,16 @@ def main(argv: list[str]) -> int:
         if args.command == "take":
             print(take(args.repo_root, args.branch, args.tree, args.remote, args.integration))
         elif args.command == "release":
-            print(release(args.repo_root, args.branch, getattr(args, "tree", None), args.remote))
+            print(
+                release(
+                    args.repo_root,
+                    args.branch,
+                    getattr(args, "tree", None),
+                    args.remote,
+                    args.integration,
+                    force=args.force,
+                )
+            )
         else:
             print(status(args.repo_root, args.branch, args.remote, args.integration).report())
     except ClaimError as exc:

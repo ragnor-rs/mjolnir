@@ -98,8 +98,7 @@ three of them by hand has a claim that passes review and races.
 
 ```bash
 python3 plugins/mjolnir/scripts/claim.py take \
-  --repo-root <code-root> --branch <prefix>/<number>-<slug> --tree <tree> \
-  --integration <integration branch>
+  --repo-root <code-root> --branch <prefix>/<number>-<slug> --tree <tree>
 git -C <code-root> worktree list
 ```
 
