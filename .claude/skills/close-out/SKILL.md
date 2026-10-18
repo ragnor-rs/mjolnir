@@ -1,6 +1,6 @@
 ---
 name: close-out
-description: Bring this project's backlog, dependency graph and execution plan back into agreement after work has landed — one read of the live state, then the edits it names. Use after a batch of issues closes or is filed, at the end of a session, or when asked to update the plan, check the graph, or say what is takeable next.
+description: Bring this project's backlog, dependency graph and execution plan back into agreement after work has landed — one read of the live state, then the edits it names. Use after a batch of issues closes or is filed, at the end of a session, or when asked to update the plan, check the graph, say what is takeable next, or draft the ordering document for a project that has none yet.
 ---
 
 # Close out a batch
