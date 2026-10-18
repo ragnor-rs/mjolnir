@@ -103,6 +103,7 @@ Skills are addressed **namespaced, with no alias**:
 
 ```
 /mjolnir:file-work-item
+/mjolnir:start
 /mjolnir:finish
 /mjolnir:day-report
 ```
@@ -115,9 +116,9 @@ The rule, and why it is procedure rather than a setting, is
 **The single statement of every rule and flow is
 [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the nine-role loop and
 its axes, the tracker port and its capabilities, the work-item facets with their absent
-cases, the status writers, the readiness gate, commit behaviour, the day log, the branch model and
-the session's context. Everything else written about the procedure, in this repository or on a
-work item, explains or records; none of it is a second authority.
+cases, the status writers, the readiness gate, commit behaviour, the day log, the branch model,
+the session's context and the ordering. Everything else written about the procedure, in this
+repository or on a work item, explains or records; none of it is a second authority.
 
 That is enforced rather than asserted: the `Single source of truth` workflow holds every document
 to it on every change — see [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md)
@@ -133,6 +134,7 @@ found between the old copies and the decision that settled it.
 | | |
 |---|---|
 | [`plugins/mjolnir/skills/file-work-item/`](plugins/mjolnir/skills/file-work-item/) | Turn a request into work items: the split confirmed, a three-layer duplicate check with a human gate, the parent case where the request is a piece of an open item, and the body rendered from the project's own template |
+| [`plugins/mjolnir/skills/start/`](plugins/mjolnir/skills/start/) | Take a work item: the one named or the next the project's ordering offers, the readiness gate run whole, the claim published as the item's ref, and the branch cut into a tree the session then works in |
 | [`plugins/mjolnir/skills/finish/`](plugins/mjolnir/skills/finish/) | Take a finished branch to a landed pull request: the commit, the push, the pull request, the host's answer about it, the merge read back from state, the item's move through the port, and the tree released |
 | [`plugins/mjolnir/skills/day-report/`](plugins/mjolnir/skills/day-report/) | Build a working day's time-log entry from session transcripts, git, the code host, chat and the calendar |
 | [`plugins/mjolnir/config/`](plugins/mjolnir/config/) | The configuration surface: the schema, and a whole example per tracker including a deliberately trackerless one |
@@ -148,7 +150,7 @@ found between the old copies and the decision that settled it.
 | [`tools/check_prose_width.py`](tools/check_prose_width.py) | The sweep that holds every tracked markdown file to the line width the configuration states, excluding the lines the format forbids breaking |
 | [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) — today, a `Stop` hook holding a role's reply to the register |
 
-The remaining six roles land here as they are reconciled. A project that has not been migrated
+The remaining five roles land here as they are reconciled. A project that has not been migrated
 keeps working throughout — that is a safety property of the migration, not an acceptable end state.
 
 ## Conventions

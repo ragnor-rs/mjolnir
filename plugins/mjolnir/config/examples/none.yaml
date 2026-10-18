@@ -87,6 +87,8 @@ branch_model:
   # Not read under in_place: there is one checkout, so there is nothing to route.
   work_in_shared_checkout: null
   parallel_trees: false                # one checkout cannot hold two branches
+  # Not read under in_place either: no tree is ever created, so there is nowhere to create it.
+  tree_dir: null
   mechanics: null
   exclusive_resources: []
 context:
@@ -98,3 +100,13 @@ context:
       The only mapped role reads evidence and writes its own entry outside the repository.
       No role hands work to another here, so no artifact crosses a boundary.
     revisit_when: A second role is mapped.
+
+ordering:
+  # Absent for the reason everything else here is: there is no tracker to hold work, so there
+  # is no set of items for an ordering to order. Not a broken install — the one mapped role
+  # never asks which item is next.
+  carrier: none
+  absent_reason: >-
+    No tracker is configured, so there is no backlog to order and nothing that could print a
+    takeable item.
+  revisit_when: A tracker is configured.

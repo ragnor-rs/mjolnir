@@ -502,6 +502,13 @@ def status(
     )
 
 
+def _local_branch(root: str | Path, branch: str) -> bool:
+    """Whether this machine already has the branch, ref name and all."""
+    return git(
+        root, "rev-parse", "--verify", "--quiet", REFS_PREFIX + branch, check=False
+    ).returncode == 0
+
+
 def take(
     root: str | Path,
     branch: str,
@@ -536,10 +543,23 @@ def take(
         published = True
 
     # The local half. Atomic too, but only against this machine -- which is why it is second.
+    #
+    # ⚠️ The cut fails in two shapes and only one of them fails cleanly, measured 2026-10-19. A
+    # *branch name* already taken fails before anything is created. A *tree directory* already
+    # taken fails after the branch is created -- `Preparing worktree (new branch …)`, then
+    # `fatal: … already exists` -- so the refusal leaves a local branch pointing at the base with
+    # no tree and no commits. That residue is a false claim rather than cosmetic: a pre-filter
+    # matching the item's number against the ref tail reads it as *taken* forever, including
+    # after the real claim lands and its tree is removed, so the item is skipped on behalf of a
+    # session that never held it. Hence the branch existing *before* is what decides whether it
+    # may be deleted after: deleting unconditionally would delete somebody else's.
+    existed = _local_branch(root, branch)
     cut = git(root, "worktree", "add", str(tree), "-b", branch, base, check=False)
     if cut.returncode != 0:
         if published and _release_on_tree_failure:
             git(root, "push", remote, "--delete", branch, check=False)
+        if not existed and _release_on_tree_failure and _local_branch(root, branch):
+            git(root, "branch", "-D", branch, check=False)
         raise ClaimError(
             f"refused: the ref was claimed but no tree could be cut: {cut.stderr.strip()}"
         )
@@ -602,7 +622,7 @@ def release(
         done.append(f"tree {held} removed")
     git(root, "worktree", "prune", check=False)
 
-    if git(root, "rev-parse", "--verify", "--quiet", REFS_PREFIX + branch, check=False).returncode == 0:
+    if _local_branch(root, branch):
         proc = git(root, "branch", "-D", branch, check=False)
         done.append("local branch deleted" if proc.returncode == 0 else "local branch kept")
 
@@ -755,6 +775,15 @@ def self_test() -> int:
             "without the rollback a failed cut leaves the ref behind (so the release is what holds it)",
             remote_ref_sha(one, "origin", "feature/y") is not None,
         )
+        # The second half of the same rollback, planted away by the same flag and asserted
+        # separately because it is a second residue with a second consequence. `worktree add -b`
+        # creates the branch and *then* fails on the path, so the loser keeps a local branch
+        # pointing at the base -- and a pre-filter matching the item's number against the ref
+        # tail reads that as the item being held.
+        suite.ok(
+            "without the rollback it leaves the local branch behind too",
+            _local_branch(one, "feature/y"),
+        )
 
     # ---- Phase two: the rule. ----
     print("\nthe claim:")
@@ -794,6 +823,57 @@ def self_test() -> int:
             "and does not disturb the claim it lost to",
             remote_ref_sha(two, "origin", "feature/x") is not None,
         )
+
+    # The other shape of a refused cut, and the one the ref race never reaches: the branch name
+    # is free and the *tree directory* is taken, so the push succeeds and the local half is what
+    # fails. Both residues are the loser's own clone, which is why this is a fresh world.
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _ = _bare_world(stack)
+        occupied = Path(tmp) / "occupied"
+        occupied.mkdir()
+        (occupied / "something").write_text("a directory somebody else is using\n")
+
+        refused = False
+        try:
+            take(one, "feature/d", str(occupied))
+        except ClaimError:
+            refused = True
+        suite.ok("a cut refused on the tree directory is a refusal", refused)
+        suite.ok(
+            "and leaves no local branch, so the number pre-filter reads the item as free",
+            not _local_branch(one, "feature/d"),
+        )
+        suite.ok(
+            "and leaves no published ref",
+            remote_ref_sha(one, "origin", "feature/d") is None,
+        )
+        suite.ok(
+            "and the directory it could not take is untouched",
+            (occupied / "something").exists(),
+        )
+
+        # The opposite direction, because the rollback must not delete what it did not create:
+        # a branch that was already here before the attempt is somebody's, not this call's.
+        git(one, "branch", "feature/pre-existing")
+        try:
+            take(one, "feature/pre-existing", str(occupied))
+        except ClaimError:
+            pass
+        suite.ok(
+            "a failed cut leaves a branch that existed before it alone",
+            _local_branch(one, "feature/pre-existing"),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, two = _bare_world(stack)
+        t1 = str(Path(tmp) / "t1")
+        take(one, "feature/x", t1)
+        try:
+            take(two, "feature/x", str(Path(tmp) / "t2"))
+        except ClaimError:
+            pass
 
         # § 5's predicate, over the same store and no second one.
         free_before, _ = claim_free(two, "feature/x")

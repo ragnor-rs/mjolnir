@@ -512,7 +512,7 @@ broken; and that a root with no remote claims locally and says so.
 |---|---|---|---|
 | 0 | A second session claiming a taken item is refused, by **each arm separately** | two clones of one bare repository | computed |
 | 1 | A refusal names the holder and the time, or names the half it could not establish | the refusal's own text | forbidding |
-| 2 | A refused start leaves no ref, no local branch and no tree | the loser's clone | computed |
+| 2 | A refused start leaves no ref, no local branch and no tree, in **both** shapes of a refusal | the loser's clone, and a clone whose tree directory is taken | computed |
 | 3 | A claim releases, and the item is claimable again | one clone | computed |
 | 4 | Liveness answers from each of its arms, and otherwise reports an orphaned candidate | both clones | computed |
 | 5 | A root with no remote claims locally rather than failing | a remoteless repository | computed |
@@ -531,6 +531,16 @@ the push at all: exit zero, no update attempted, the lease never consulted. The 
 caught it, with the second session cheerfully claiming an item the first already held. ⛔ So each
 arm is planted away while the other stays, and the check is believed only where removing *that*
 arm is what lets the race through.
+
+⚠️ **Check 2 has two shapes for the same reason, and the second one hid behind the first.** A
+refusal on the *branch name* never reaches the local half at all — the push is what refuses — so
+the no-residue assertion was exercised only where nothing local had been attempted. Where the name
+is free and the *tree directory* is taken, git creates the branch and then fails on the path, and
+the refusal left a local branch pointing at the base with no tree and no commits: a false claim,
+and a durable one, since a pre-filter matching the item's number against the ref tail reads it as
+held forever. The suite now refuses in each shape separately, and asserts the opposite direction
+too — a branch that existed *before* the attempt is left alone, because a rollback that deletes
+whatever it finds deletes somebody else's work.
 
 ### What this check deliberately does not hold
 
@@ -846,6 +856,15 @@ where it would quietly stop holding anything. ⛔ A red-only suite says nothing 
 ⚠️ The reply-register check carries one more thing its siblings do not: it runs its turn-guard
 assertions against a state directory of its own, after a second run of the self-test read the
 first run's markers and reported that a blocking finding does not block.
+
+⚠️ **A plant has to reach the branch it was written for, and nothing reports it when it stops.**
+The three plants against the outcome column substituted into the rulings document as a whole, on
+the unstated assumption that an outcome cell's link shape occurs nowhere else in it. It is an
+ordinary citation shape: the first one written in prose above that table took all three, every
+cell stayed valid, and three checks that had been shown to fail quietly stopped being shown
+anything. They now split the document at the header the check itself derives the table from. ⚠️
+The failure was loud only because the mode reports a plant that stayed green — without that, a
+check believed on an assertion that no longer exercises it reads exactly like a check that holds.
 
 ⚠️ **A plant may not name the file it plants into.** The sweep's first draft hardcoded the one
 skill's path, so moving or renaming a carrier root made `--self-test` — the command the workflow
