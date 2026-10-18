@@ -1,0 +1,86 @@
+# The vocabulary the readiness check classifies a project's carriers with.
+#
+# ⛔ NO PROJECT AND NO PATH IS NAMED HERE, which is what lets this file be tracked. This file
+# sits in a carrier root, where the strictest rule in the repository applies — no other project,
+# no tracker, no stack, no value a configuration supplies, no path under anyone's home directory.
+# Every one of those arrives on the invocation instead: the projects to check, their tracker
+# kinds, the adapter work item per kind and the migration's roots are all arguments, and the
+# answer is only as good as the list whoever runs the check hands it.
+#
+# What is left is vocabulary of two kinds. The role keys are the loop's own, held to the surface
+# both ways by the check. The carrier map is the one thing here that was *measured* from the
+# projects rather than derived from the surface — it is carrier basenames and no project's name —
+# and #104's decision 4 is where it gives way to each project's own `carriers:` block.
+
+# The nine roles of the loop, by the key a `carriers:` block uses for each.
+#
+# ⚠️ The surface states the loop in prose (schema.md § "The loop — nine roles") and states no
+# key per role, so this list is the only place the keys are written down — and the check holds
+# it to the surface both ways: the heading's count word and the number of `·`-separated phrases
+# in the paragraph under it must both equal the length of this list. A tenth role added to the
+# surface reddens this check rather than being silently uncounted.
+roles:
+  - file
+  - gate
+  - start
+  - finish
+  - review
+  - deploy
+  - day_log
+  - session
+  - deliverables
+
+# How a carrier's own name maps to a role. Keyed by the carrier's basename — a skill directory,
+# a command file without its extension, a hook script.
+#
+# `role:` is one of the nine above. `class:` is for a carrier that is not one of them:
+#   beside   — a role that travels beside the loop without being part of it
+#   utility  — project-local tooling the loop does not contain
+#   guard    — a hook enforcing the loop rather than carrying a role (§ 7, #16)
+#   library  — implementation a carrier calls, not a carrier itself
+#   notes    — a loose document in a carrier root, which is not a carrier at all
+#
+# ⛔ A carrier matching nothing here is reported as unclassified and makes the verdict
+# "cannot establish" rather than being skipped. An uncounted role reads as a role that does not
+# exist, which is the one error this check must not make.
+carriers:
+  create-issue:   { role: file }
+  pick-issue:     { role: gate }        # gates the card, dates it from priority, refuses an
+                                        # item with higher-priority work ahead of it (#8, #46)
+  start-issue:    { role: start }
+  finish-issue:   { role: finish }
+  review-issue:   { role: review }
+  deploy:         { role: deploy }
+  deploy-prod:    { role: deploy }
+  deploy-staging: { role: deploy }
+  deploy-stand:   { role: deploy }
+  day-report:     { role: day_log }
+  save:           { role: session }
+  ship:           { role: session, partial: "commit third only — the shape #12 names" }
+  deliverables:   { role: deliverables }   # itself three roles sharing one name (#14)
+
+  design-prd:     { class: beside }     # turn raw sources into a specification (#29)
+
+  db-stats:                  { class: utility }
+  mem-stats:                 { class: utility }
+  proxy-chrome:              { class: utility }
+  processor-monitor:         { class: utility }
+  scraper-monitor:           { class: utility }
+  edit-idea-workspace-xml:   { class: utility }   # one of the two #17 names
+
+  check_reply_register:         { class: guard }  # the one hook carrier the plugin ships
+  app-instance-capacity:        { class: guard }
+  capacity-and-merge-guard:     { class: guard }
+  capacity-ticket-release:      { class: guard }
+  ci-mirror-guard:              { class: guard }  # refuses a check the host already ran (#33)
+  command-heads:                { class: guard }
+  drop-merged-stack:            { class: guard }
+  gradle-capacity:              { class: guard }
+  merge-review-gate:            { class: guard }
+  post-merge-instance-teardown: { class: guard }
+  prune-merged-worktrees:       { class: guard }  # destructive, and "clean" is not the oracle (#34)
+  lib:                          { class: library }
+
+  roles:      { class: notes }
+  worktrees:  { class: notes }
+
