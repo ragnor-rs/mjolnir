@@ -609,9 +609,9 @@ for a defect that was not there.
   it, and a preamble form is a phrase rather than a judgement.
 - **Length** reports every chain it finds and blocks only where the count is over a density of the
   reply's own prose lines: compression as the reply's *texture* rather than one line to restate. One
-  chain is told to the writer and costs the reader nothing. ⚠️ That density is not the weakness the
-  three below have — what it counts is a form the text either carries or does not, so the threshold
-  decides whether a re-read is warranted rather than standing in for the rule.
+  chain is told to the person and asks the writer for nothing. ⚠️ That density is not the weakness
+  the three below have — what it counts is a form the text either carries or does not, so the
+  threshold decides whether a re-read is warranted rather than standing in for the rule.
 
 ⚠️ **A chain is two arrows sharing an operand, and sharing is not a token count.** The first form
 read one or two tokens between the arrows as the shared operand, so
@@ -635,20 +635,36 @@ the findings as `additionalContext`, which the harness's documented contract mak
 writer reads back; the `reason` beside it is shown to the person instead. ⚠️ **It blocks at most
 once per turn**, keyed on the harness's own turn id under `CLAUDE_PLUGIN_DATA`, because a hook that
 also blocked the restatement would hold the session open on a judgement a forbidding check cannot
-make. A payload carrying no turn at all cannot be guarded, so it reports and **says that it could
-not guard** rather than returning the same answer as a turn that has had its hand-back.
+make. A payload carrying no turn at all cannot be guarded, so a finding that would have been handed
+back is asked for anyway and the answer **says that it could not guard**, rather than returning the
+same answer as a turn that has had its hand-back.
 
-⛔ **What blocking decides is who pays the re-read, not whether the defect is fixed.** Every
-answer the hook returns — handed back, unguarded, hand-back already spent, or a density that only
-reports — asks for the reply just sent to be re-sent corrected inside the same turn, because that
-is the reply carrying the findings and
-[*Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred) admits no
-deferred work. The sentence that
-asks for it is one string shared by all four, and `--self-test` holds each of them to carrying it
-and to promising nothing about a later reply. ⚠️ Measured: the branch that fires when a density
-reports used to close on *the next reply is written knowing them*, a deferral stated by the guard
-that holds the rule against deferring — and a session obeyed it, answering a finding with a promise
-instead of a corrected reply.
+⛔ **What costs the reader the reply a second time is asking for it, and `decision` is not what
+decides that** — a statement about how
+[schema § 8 → The reply to the person running a role](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role)
+is held here, which is this document's half of that rule rather than the surface's. Context handed
+back on a `Stop` is read by the writer whether or not the answer also
+blocks, so for as long as every answer carried context, the two kinds in the table above were never
+the two prices they read as. ⚠️ Measured over the sixteen answers this check has carried context on,
+across thirteen sessions of a project with the plugin enabled: every one of them recorded
+`preventedContinuation: false` — the two that set `decision: block` included — and every one was
+followed by a further reply. Thirteen of the sixteen were a density that only reported, and fourteen
+of the sixteen were *Emphasis* alone. In the shape before this was read, those density answers
+closed on *the next reply is written knowing them* — a deferral stated by the guard that holds the
+rule against deferring, which a session obeyed with a promise in place of a corrected reply; in the
+shape after it, the one that fired brought the whole reply back for one line of bold.
+
+**So an answer that does not block asks the writer for nothing, and tells the person instead.** The
+findings reach whoever ran the role as the session message, named rather than counted, and the turn
+ends there — which is the whole of what `reports` costs in the table above. Two answers still ask,
+and both ask for the reply just sent to be re-sent corrected inside the same turn, because that is
+the reply carrying the findings and
+[*Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred) admits no deferred
+work: the turn that is handed back, and a finding that would have been handed back on a payload the
+guard could not be kept for. The sentence that asks is one string shared by both, and `--self-test`
+holds each of them to carrying it and to promising nothing about a later reply — and holds the other
+two to carrying **neither** it nor a promise, because dropping the ask is a licence to defer unless
+what replaces it is silence towards the writer.
 
 It derives what it can, for the reason the gate's own scripts do:
 
@@ -683,6 +699,14 @@ calls and asserts it is this script. See
   an operand in meaning and is two mappings in form, and form is what a check reads. ⚠️ A finding
   missed rather than a finding invented, which is the direction the one check here that still hands
   turns back on a form has to err in.
+- **A reported finding, in the reply it was found in.** Nothing is asked of the writer, so the
+  reply the person has already read is the reply that stands. ⚠️ Measured on the same sixteen
+  answers: three of the thirteen sessions carried two, and in one of those both were the same
+  *Emphasis* density — the second after the first had been read and acknowledged in that session.
+  So the ask the arm used to carry did not buy compliance either, and what it did buy was the
+  re-read. ⛔ What is left unheld is a density that nothing fixes — stated plainly, because the
+  alternative measured against it was a whole restatement for one line of bold, and an arm that
+  costs nothing and holds nothing is not the same as one that holds something.
 - **Whether the reply was a role's at all.** The hook fires on every reply in a session where this
   plugin is enabled, and nothing in a `Stop` payload says whether a role was running. So the
   register is held more widely than the surface states it — in the safe direction here, and stated
