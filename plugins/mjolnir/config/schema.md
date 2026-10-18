@@ -585,7 +585,8 @@ register (§8).
   tracker, a bracketed number in the title and never a hash on another, and legitimately absent on
   a third, where the item moves separately and neither title nor body carries a closing form.
 - **Title and body are written in the repository's language and register (§8)** — which one
-  project's split-by-audience rule makes different from its tracker's.
+  project's split-by-audience rule makes different from its tracker's — and neither is
+  hard-wrapped, by [§ 8 → Prose line width](#prose-line-width).
 - **The authorship rule above binds the pull request as it binds the commit**: no generated-by
   marker, no tool credited.
 - **The body is held to [*Nothing is deferred*](#nothing-is-deferred)**, which is where the
@@ -631,6 +632,7 @@ directions. A carrier of `hook` has no invocation name at all.
 language:
   work_item: ru
   repo: en
+  prose_width: 100           # columns, for files in the repository; absent means no wrapping
   artifacts:
     day_log:   { language: en, register: business,  audience: "…" }
     deliverables: { language: ru, register: technical, audience: "…" }
@@ -681,6 +683,56 @@ reported without being held, and which are left to a reader are stated once in
 [`docs/single-source-of-truth.md § The reply's register`](../../../docs/single-source-of-truth.md#the-replys-register-held-in-the-session-not-on-the-gate)
 — beside the gate's own checks and under the same discipline, because an unstated limit reads
 later as coverage.
+
+### Prose line width
+
+Where prose is wrapped is a property of **the surface it lands on**, and the two kinds of surface
+a role writes to answer differently.
+
+⛔ **A surface that renders is never hard-wrapped** — a work-item body, a pull request title or
+body, a review comment, and the reply above. Procedure, no setting: the renderer reflows at a
+width the writer cannot know, so a hard break survives as a ragged line at whatever the reader's
+viewport is not, and a sentence split by a newline defeats text selection and in-page search.
+Wrapping there costs the reader and buys nothing, and the reader of those surfaces is no more a
+project's to nominate than the reply's is.
+
+⚠️ **The test is whether the surface renders, not what it is called.** Every tracker and host this
+surface names reflows the text it is given, which is why the rule above reads as *a body is never
+wrapped*; a project whose items live somewhere that shows the text exactly as written has a file
+by this test and wraps it at the configured width. What to ask of a surface nobody has met yet is
+whether the reader's viewport decides where a line ends, or the writer's own line break does.
+
+**A file in the repository is wrapped at the width that project states**, and that is
+configuration, because wrapping a file does buy something: a diff is line-granular, so a reworded
+sentence is one changed line rather than a repainted paragraph, and a check reports against a line
+a reader can find. How much that is worth depends on how the project's prose is read and reviewed,
+which is a thing projects differ on in fact and not only in principle
+([the measurement](../../../docs/configuration-surface.md#prose-width-is-a-habit-and-the-habits-differ)).
+
+⛔ **Absent is no limit, and not a default of some number.** A project that writes no
+`prose_width` does not hard-wrap, which is the commoner habit of the two; a role writing a document
+there leaves its paragraphs unwrapped rather than picking a width of its own.
+
+**What the width cannot reach is excluded by the rule itself**, rather than by the forbearance of
+whoever reads it, because each is a line the format forbids breaking: fenced and indented code,
+table rows, and the document's YAML frontmatter, where a field is one line however long it is. A
+width rule without them is a rule that cannot be met, since a table row has no legal break at all.
+
+**The width is measured over what a line can be broken at.** A run with no legal break inside it —
+a link destination, an autolink, a bare URL, an inline-code span — is set aside first, and the
+line is over only if what is left is. ⚠️ Stated this way rather than as *one* unbreakable run, and
+measured: the stricter reading flags a citation that could only be met by breaking before the link
+text, which is a line this repository's own documents carry by the dozen.
+
+⛔ **The width binds prose written after it is set.** Rewrapping what predates it would repaint
+every line of every file and destroy the line-granular diff that is the whole argument for
+wrapping; a paragraph that predates the width is rewrapped when it is edited anyway, and not
+before.
+
+Whether a project holds this mechanically is the project's own business, as with every rule the
+surface states. This repository holds it on the gate, and what that check does not reach is stated
+with it in
+[`docs/single-source-of-truth.md § Prose line width`](../../../docs/single-source-of-truth.md#prose-line-width-held-on-the-gate-for-files-and-nowhere-for-bodies).
 
 ## 9. Day log
 
@@ -1008,14 +1060,14 @@ to ask for.
 
 ⛔ **A role's report names what it could not establish, rather than omitting it.** An absence
 reads as a non-problem, and the next role inherits a guess as a fact — the cheapest way a wrong
-premise enters work and is then referenced from both sides of a boundary. § 5 holds a gate's *input* to the same shape — the list runs whole — but
-lets a project mark a failure quiet with `on_fail: stop_quietly`, because an item that is merely
-early has nothing for its author to fix. ⚠️ **This rule has no quiet form**: it binds a role's
-*output*, where the reader is the next role rather than the item's author, and an unestablished
-fact silently omitted is the premise that gets acted on. It is the same property § 8 holds for the
-**reply** a role writes in the session — [the reply's own
-subsection](#the-reply-to-the-person-running-a-role) — stated there for what a person reads and
-here for what the next role does.
+premise enters work and is then referenced from both sides of a boundary. § 5 holds a gate's
+*input* to the same shape — the list runs whole — but lets a project mark a failure quiet with
+`on_fail: stop_quietly`, because an item that is merely early has nothing for its author to fix.
+⚠️ **This rule has no quiet form**: it binds a role's *output*, where the reader is the next role
+rather than the item's author, and an unestablished fact silently omitted is the premise that
+gets acted on. It is the same property § 8 holds for the **reply** a role writes in the session —
+[the reply's own subsection](#the-reply-to-the-person-running-a-role) — stated there for what a
+person reads and here for what the next role does.
 
 ### The store, and when an in-tree store is safe
 
@@ -1026,10 +1078,11 @@ in the outer — so a committed plan there is reviewable with the engagement mat
 the pull request. Both are legal; which one a project gets is not a property of `committed` alone.
 
 ⛔ **An in-tree store is safe under `branch_model.kind: worktree` only with
-`committed: true`, and the reader refuses the combination.** The teardown takes everything git does not have, and the plan for the work
-is inside the thing being torn down. `committed: true` also puts the plan in front of a reviewer
-with the change, which is where a wrong plan is cheapest to catch; `committed: false` keeps the
-repository free of per-item working papers and then owes the store a home outside every tree.
+`committed: true`, and the reader refuses the combination.** The teardown takes everything git
+does not have, and the plan for the work is inside the thing being torn down. `committed: true`
+also puts the plan in front of a reviewer with the change, which is where a wrong plan is
+cheapest to catch; `committed: false` keeps the repository free of per-item working papers and
+then owes the store a home outside every tree.
 
 ⚠️ **A store under a system temp directory does not survive a reboot**, and a pointer to it
 outlives the file in silence.

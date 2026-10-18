@@ -13,8 +13,8 @@ kind, and which of the loop's **roles** it carries against which the plugin ship
 directory names a project, a directory, a tracker or a path — that is what lets it be tracked under
 a carrier root, where the strictest rule in the repository applies (README.md § Conventions, held by
 `tools/check_no_project_names.py`). The list lives with whoever runs the check, and ⚠️ **the answer
-is only as good as the list they pass**: a target left off the invocation is not reported as missing,
-because nothing here knows it exists.
+is only as good as the list they pass**: a target left off the invocation is not reported as
+missing, because nothing here knows it exists.
 
 ## 1. One read
 

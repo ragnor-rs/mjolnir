@@ -171,5 +171,5 @@ beats prose.
 - the four figures after the final run — open, relations, placed, violations;
 - every edit made, by row;
 - ⛔ anything that needs a decision, **asked with the options** — a label below `P: High`, a
-  contradicted cell, a row whose argument you cannot write. Nothing is deferred and nothing is noted as
-  "to do later": the pass is not finished while a question it raised is open.
+  contradicted cell, a row whose argument you cannot write. Nothing is deferred and nothing is
+  noted as "to do later": the pass is not finished while a question it raised is open.

@@ -135,6 +135,8 @@ the three that are obvious. The measurements that forced each to be independent:
    another writes it in a business register for a reader outside the build. Three settings, not
    one — hence
    [`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project).
+   A seventh setting landed in the same axis later, measured rather than stated by any project:
+   [prose width](#prose-width-is-a-habit-and-the-habits-differ).
 
    **One artifact in that map is fixed rather than configured.** The measurement that forced it
    is an absence: the reply a role writes in the session is an artifact like the day log, and for
@@ -213,6 +215,39 @@ the three that are obvious. The measurements that forced each to be independent:
      silently rebinds the shared checkout's volumes. None of that generalises, and
      [`schema.md § 10`](../plugins/mjolnir/config/schema.md#10-branch-model) keeps it behind the
      pointer.
+
+## Prose width is a habit, and the habits differ
+
+The seventh thing axis 5 turned out to carry. Where prose wraps was never in any copy of any role
+and in no project's written conventions, so unlike the six axes above it could not be read off
+what the projects *state* — only off what they do. Measured over every tracked markdown file in
+the six, counting lines of prose with fenced code, table rows and indented blocks removed:
+
+| project | prose lines | p50 | p90 | over 100 columns |
+|---|---|---|---|---|
+| A | 3777 | 99 | 374 | 45% |
+| B | 1708 | 94 | 257 | 29% |
+| C | 1907 | 77 | 259 | 36% |
+| D | 1735 | 83 | 359 | 40% |
+| E | 1200 | 96 | 107 | 28% |
+| F | 4978 | 87 | 97 | 2% |
+
+Two shapes, and the gap between them is not a matter of degree. Where a project hard-wraps, nine
+prose lines in ten land under 100 columns and the overruns are a tail of tens; where it does not,
+the ninetieth percentile is a *paragraph* — 257 to 374 columns — because an unwrapped paragraph is
+one line however long it is. F wraps and this repository wraps; four of the six do not. There is
+no project in the middle, and the one that looks closest, E, is a wrapped habit at a slightly
+wider column with a quarter of its lines just over.
+
+So a single shared number would have been one habit imposed on four projects that never chose it,
+and the absent case is the **commoner** of the two rather than a degenerate one — which is why
+[`schema.md § 8 → Prose line width`](../plugins/mjolnir/config/schema.md#prose-line-width) makes
+`prose_width` configuration with absence meaning no wrapping at all.
+
+⚠️ **What the same measurement does *not* support is a second setting for bodies.** It covers
+files, because files are what a checkout holds; the rendered surfaces were argued from the
+renderer rather than from a count, and the rule there is procedure. A reader who wants the
+counting to carry that half too will not find it here.
 
 ## The tracker port
 
@@ -372,7 +407,8 @@ so what forced its shape is worth recording in both directions.
   lossy, which is why § 11 makes the artifact the handoff rather than the summary.
   <https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents>
 - The published practice this loop's shape is closest to keeps a window at **40–60 %** of its
-  capacity — its own qualifier is that the figure depends on the problem's complexity — separates research from planning from implementation into different windows, writes
+  capacity — its own qualifier is that the figure depends on the problem's complexity —
+  separates research from planning from implementation into different windows, writes
   each phase's output to a file that is the real handoff, and spends human review on the plan
   rather than on the diff — *a bad line of a plan leads to hundreds of bad lines of code; a bad
   line of research, thousands*. Its ranking of what hurts is the reason § 11 is about what enters

@@ -82,6 +82,9 @@ carriers:
 language:
   work_item: en
   repo: en
+  # Files here are hard-wrapped, so the width is stated and a role writing a document reads it
+  # from here. Bodies and pull requests are never wrapped and carry no key: that is procedure.
+  prose_width: 100
   artifacts:
     day_log: { language: en, register: technical, audience: "whoever maintains this project" }
 
