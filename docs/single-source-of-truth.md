@@ -481,6 +481,68 @@ trackers.
   what a project wants where comments are impossible is a judgement the measurement behind it
   carries, not something a check can read. This is the *fidelity* limit one claim over.
 
+## Beside them: the claim on a work item
+
+`plugins/mjolnir/scripts/claim.py --self-test` runs in the `Claim carrier` workflow, with no
+credential and no network. It is recorded here for the reason the port contract is: its subject is
+a claim about the tree that a reviewer would otherwise be the only thing holding — and in this case
+a reviewer could not hold it at all, because what is being asserted is that an operation *races*
+correctly.
+
+The rule is
+[schema § 10 → The claim on a work item](../plugins/mjolnir/config/schema.md#the-claim-on-a-work-item),
+and ⛔ this document states none of it. What the suite holds: that a second session starting an
+item already claimed is refused; that the refusal names who holds it and since when, or names
+whichever half it could not establish; that a refused start leaves no ref, no branch and no tree;
+that a released claim is takeable again and a release is re-runnable; that a claim with no work
+and no occupied tree reads as an *orphaned candidate* carrying both readings rather than being
+broken; and that a root with no remote claims locally and says so.
+
+| # | Check | Scope | Kind |
+|---|---|---|---|
+| 0 | A second session claiming a taken item is refused, by **each arm separately** | two clones of one bare repository | computed |
+| 1 | A refusal names the holder and the time, or names the half it could not establish | the refusal's own text | forbidding |
+| 2 | A refused start leaves no ref, no local branch and no tree | the loser's clone | computed |
+| 3 | A claim releases, and the item is claimable again | one clone | computed |
+| 4 | Liveness answers from each of its arms, and otherwise reports an orphaned candidate | both clones | computed |
+| 5 | A root with no remote claims locally rather than failing | a remoteless repository | computed |
+
+⚠️ **Check 0 is run once per arm, and that is the finding this suite was written by rather than
+for.** The surface states two arms because the first draft of the script shipped only the second —
+a lease requiring the ref not to exist — and the first live probe of it pushed a *differing* sha to
+an existing ref, which exercises that arm, passes, and says nothing about the arm that actually
+fires. Two sessions claiming one item push the **same** integration tip, so git declines to send
+the push at all: exit zero, no update attempted, the lease never consulted. The suite's first run
+caught it, with the second session cheerfully claiming an item the first already held. ⛔ So each
+arm is planted away while the other stays, and the check is believed only where removing *that*
+arm is what lets the race through.
+
+### What this check deliberately does not hold
+
+- **True simultaneity.** The second arm's real trigger is a ref appearing between one session's
+  read of the refs and its write, and nothing here reproduces that window. The arm is exercised
+  directly instead — an update to a ref the lease was told must not exist — and the two arms
+  together cover the two orders. ⚠️ What is untested is the *interleaving*, not either mechanism.
+- **The host's own record.** Who pushed a ref and when is read from the host, and the suite's
+  remote is a bare repository that records neither. So the half the surface requires be *named as
+  unestablished* is what gets asserted, and the populated half is proved against the host by hand.
+  ⚠️ That read is also bounded by a page of the host's activity, so a claim older than the window
+  reports the time as unestablished rather than reporting the ref free — stated because the
+  failure direction worth knowing is the one that is safe.
+- **That an orphaned candidate is genuinely orphaned.** It cannot be known from outside: a session
+  that died holds the same ref as one about to commit. The check holds that both readings are
+  stated and that nothing is broken automatically, which is the whole of what is decidable.
+- **The third liveness arm, against a host.** An open pull request referencing the ref needs a
+  credential, so in the suite that arm reports itself unestablished and the first two carry the
+  verdict. On a project whose claims are all fresh refs with no commits, that leaves liveness
+  resting on the occupied-tree arm alone.
+- **Whether a process occupies a tree, where the open-file table cannot be read.** The arm answers
+  *no* and the report names it unestablished — never *the tree is idle*. It is
+  [#34](https://github.com/ragnor-rs/mjolnir/issues/34)'s test called rather than a second one, and
+  [#31](https://github.com/ragnor-rs/mjolnir/issues/31)'s sweep is its other consumer.
+- **A claim on a project sharing no remote.** Two machines with no remote between them cannot be
+  arbitrated by anything, and the surface states that rather than guarding it.
+
 ## The reply's register: held in the session, not on the gate
 
 The surface fixes the register of the reply a role writes in the session, as procedure with no

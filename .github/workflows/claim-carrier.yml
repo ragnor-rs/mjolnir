@@ -1,0 +1,34 @@
+name: Claim carrier
+
+# The claim on a work item: that taking one is a real test-and-set, and not merely described as
+# one. Its own workflow rather than a job of a sibling, for the reason its siblings are: a
+# `host.checks` entry states one mirrored local command, so two commands behind one workflow name
+# could not be stated on the surface at all.
+#
+# No credential and no network. The suite builds a bare repository on disk and two clones of it,
+# and has them race for one item — which is the whole of what the claim needs to arbitrate. What
+# a bare repository cannot supply is the host's record of who pushed and when, and that absence
+# is a fixture rather than a gap: the surface requires the unestablished half be named, so the
+# suite asserts it is.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  claim-carrier:
+    name: Claim carrier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command — the string `host.checks` states this run mirrors. Each arm of the
+      # test-and-set is planted away in turn before the rule is held, because an arm attributed
+      # to the wrong mechanism is the defect this suite exists to have caught once already.
+      - name: Assert each check can fail, then hold the claim to the rule
+        run: python3 plugins/mjolnir/scripts/claim.py --self-test

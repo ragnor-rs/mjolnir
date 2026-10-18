@@ -271,7 +271,7 @@ covers the operations the survey reached and says which it did not.
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
 | `set_labels` | every label set in one call | one call per label, and a set that is left partial is reported rather than retried silently |
-| `assign` | the item assigned to the person the role acts for | the report names who holds the item; what a session's **claim** rides on is #70's, not this fallback |
+| `assign` | the item assigned to the person the role acts for | the report names who holds the item; a session's **claim** is not this operation and does not fall back to it — it rides the branch ref ([§ 10](#the-claim-on-a-work-item)) |
 | `checklist_read` | the item's check items, and which of them are ticked | the role has **no answer** about the checklist and says so; an unreadable checklist is never read as an empty one, by § 2's rule that absence of signal is not an answer |
 | `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
 | `checklist_item_delete` | a check item removed | the item is reworded and ticked instead |
@@ -436,6 +436,7 @@ readiness:
   - { check: label_absent,      label: "…",        stop: "…" }
   - { check: ref_exists,        ref: "…",          stop: "…" }
   - { check: queue_position,    ahead_allowed: 0,  stop: "…" }
+  - { check: claim_free,                           stop: "…" }
 ```
 
 The copies this was reconciled from **share no single check**, so a fixed sequence would be
@@ -443,7 +444,7 @@ wrong for every project. Checks are drawn from a shared library, and a failure i
 or quiet:
 
 ```yaml
-    check:   state_is | no_open_blockers | field_present | label_absent | ref_exists | queue_position | assignee_matches_role
+    check:   state_is | no_open_blockers | field_present | label_absent | ref_exists | queue_position | assignee_matches_role | claim_free
     on_fail: flag | stop_quietly
 ```
 
@@ -723,6 +724,78 @@ rather than being left to whoever reads it:
 is the rule the one project that had already extracted this mechanism states about its own
 reference file, and it is why the routing is stated once here rather than in a paragraph inside
 each role that reads it.
+
+### The claim on a work item
+
+⛔ **The claim is the branch, and *publishing the ref* is what makes it a claim rather than a
+local fact.** Starting an item pushes the integration branch's tip to the item's branch name, and
+the claim is taken only where that push **created** the ref. Procedure with no key — the same
+placement the authorship rule has under § 6, the invocation rule under § 7 and the reply's
+register under § 8: stated inside the axis it would otherwise be a value of, because a claim a
+project can configure away is two sessions on one item.
+
+⛔ **The test-and-set has two arms, and neither one covers both orders.** Stated here because a
+procedure carrying one of them reads as atomic and is not:
+
+| the order | what refuses the second session |
+|---|---|
+| the ref already existed when this session connected | the push **created no ref** — it is reported as up to date, exit zero, and no lease is consulted because no update is attempted |
+| the ref appeared after this session read the refs and before it wrote | a lease requiring the ref **not to exist**, which the receiving end refuses the create against |
+
+⚠️ **The first is the common order, not the exotic one**, because two sessions claiming one item
+push the *same* integration tip — so the push git declines to send is the push that would have
+collided. ⛔ **A probe that pushes a different sha to an existing ref exercises the second arm
+only**, passes, and reads as proof of a mechanism that is holding nothing in the first.
+
+**Why the ref and nothing on the work item.** The claim has to be a test-and-set, and every
+carrier the item itself offers is read-then-write: two sessions both read *free*, both write, and
+the second write wins in silence. ⚠️ Three of them fail for a second reason as well, so this is
+not a preference between equivalents — § 4.2's `in_flight` role is absent on the cheapest real
+tracker and unwritable wherever the configured writer is not `procedure`, § 3's `policy` may bar a
+branch name from ever reaching an item, and `assign` says *taken* without saying by whom wherever
+every session authenticates as one user.
+
+⛔ **The ref is claimed before the tree is cut, and a failure after it is claimed releases it.**
+The ref is the only half another machine can see, so it is the half that arbitrates; the local
+cut is an atomic test-and-set too, but only against this machine. A tree that cannot be cut after
+the ref was taken leaves the ref behind otherwise — ⛔ **a refused start leaves no ref, no branch
+and no tree.**
+
+⛔ **A refusal names who holds the claim and since when, and names whichever of the two it could
+not establish** — § 11's rule for a report, which this is. The ref itself carries neither, so both
+are read from the host's own record of the ref being created. ⚠️ Where the host has no such record,
+or is not reachable, the refusal still stands: the ref exists, which is the whole of what the claim
+asserts, and the unestablished half is stated rather than dropped.
+
+**Release is on the item's own exit, not on a call's.** ⛔ A claim is **long-lived by
+construction** — it spans every call the item takes — so the six exit paths an `exclusive_resources`
+lease is released on do not apply to it, and a claim wired to them would release itself mid-item.
+What the two share is the failure: a claim released on the happy path alone leaks. So the claim is
+released where the item leaves — the branch landing, or the work being abandoned — and every other
+exit is covered by being **detectable** rather than by being released:
+
+| the ref | the reading |
+|---|---|
+| carries commits beyond the integration branch | **live** — work exists against it |
+| is checked out in a tree on this machine that a live process is in | **live**, by § 10's own liveness test |
+| is referenced by an open pull request | **live** |
+| none of the above | **orphaned-candidate** |
+
+⛔ **An orphaned candidate is reported and never broken automatically.** A session that died holds
+the same ref as one that is about to commit into it, and the two are indistinguishable from
+outside; so the sweep that finds one states both readings and asks. Breaking a claim is the one
+step here that is a person's.
+
+**The absent case is derived rather than configured.** A code root with no remote cannot publish a
+ref, so the claim is local-only there and the role says so — the claim still holds against every
+session on that machine, which is every session there can be. ⚠️ That is the one configuration in
+which two machines could claim one item, and it is stated rather than guarded: nothing can
+arbitrate between two machines that share no remote.
+
+⛔ **The predicate that reads this is one statement, not two.** § 5's `claim_free` asks whether the
+ref is taken; `assignee_matches_role` asks whether the person on the item is the one the role acts
+for. Different questions on different stores, and a gate configuring both is not asking one thing
+twice.
 
 ### Which tree a verdict belongs to
 
