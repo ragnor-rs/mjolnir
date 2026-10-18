@@ -56,9 +56,15 @@ CITATION = "schema § 8 → The reply to the person running a role"
 # not whether the defect is fixed: the reply just sent is the one carrying the
 # findings, so a branch that told the writer the *next* reply would be better
 # would be licensing a deferral — measured, and obeyed, on the branch that fires
-# when a density reports and nothing blocks. `--self-test` holds all three
-# branches to carrying this sentence and to promising nothing about a later
-# reply.
+# when a density reports and nothing blocks. `--self-test` holds every answer
+# this can return to carrying this sentence and to promising nothing about a
+# later reply — four shapes over three branches, because the last one fires both
+# for a spent hand-back and for findings that only report.
+#
+# ⚠️ `DEFERRALS` is a closed list, and it is the *quoting* weakness this
+# repository rules out elsewhere -- safe only because what it sweeps is the four
+# strings authored below rather than arbitrary text. A reworded licence passes
+# it; what catches that is the absent `RESTATE`, which is the arm that matters.
 RESTATE = ("Re-send this reply corrected, in this turn — a finding against the reply just sent "
            "is not carried forward to a later one.")
 DEFERRALS = ("the next reply", "a later reply", "written knowing", "next time")
