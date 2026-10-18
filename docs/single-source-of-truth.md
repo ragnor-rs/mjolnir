@@ -547,6 +547,18 @@ also blocked the restatement would hold the session open on a judgement a forbid
 make. A payload carrying no turn at all cannot be guarded, so it reports and **says that it could
 not guard** rather than returning the same answer as a turn that has had its hand-back.
 
+⛔ **What blocking decides is who pays the re-read, not whether the defect is fixed.** Every
+answer the hook returns — handed back, unguarded, hand-back already spent, or a density that only
+reports — asks for the reply just sent to be re-sent corrected inside the same turn, because that
+is the reply carrying the findings and
+[*Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred) admits no
+deferred work. The sentence that
+asks for it is one string shared by all four, and `--self-test` holds each of them to carrying it
+and to promising nothing about a later reply. ⚠️ Measured: the branch that fires when a density
+reports used to close on *the next reply is written knowing them*, a deferral stated by the guard
+that holds the rule against deferring — and a session obeyed it, answering a finding with a promise
+instead of a corrected reply.
+
 It derives what it can, for the reason the gate's own scripts do:
 
 | Derived, at run time | Hardcoded |

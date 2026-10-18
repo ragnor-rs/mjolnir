@@ -107,6 +107,12 @@ mechanism.
 resolvable thread from a plain comment, a finding is posted as the first: a comment nothing can
 mark resolved is an item no gate can see, and an item no gate can see reads as resolved.
 
+⛔ **It reaches a role's own reply, not only its work item.** A finding raised against a reply —
+by a check the loop runs over it ([§ 8](#the-reply-to-the-person-running-a-role)) or by the person
+reading it — is answered by re-sending that reply corrected, in the same turn. *The next reply
+will hold* is this rule's smallest violation: the reader is told the defect is there and handed it
+anyway, and a guard that cannot force the correction has still named one.
+
 **The narrow exception is separate work.** Work that genuinely belongs to a **different** outcome
 is a separate numbered item, filed before the merge and linked from it. ⛔ **The test is whether
 the current item's stated acceptance check passes without it** — where it does not, the work is
