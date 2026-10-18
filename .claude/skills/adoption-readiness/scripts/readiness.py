@@ -560,6 +560,16 @@ def main(argv: list[str]) -> int:
         )
     print(line("adapters registered", ", ".join(sorted(port.ADAPTERS)) or "none"))
 
+    # ⛔ A list nobody passed is reported rather than resolved to nothing. An empty run that
+    # printed a summary and exited 0 would read as "every target is ready". Answered before the
+    # host is read, since there is nothing for a closure to be reported against.
+    if not targets:
+        print("\nno project was named, so nothing was measured. Pass each target's checkout, "
+              "with\nits tracker kind after a colon where it has written no configuration of "
+              "its own.")
+        print(line("could not establish", "no target list was passed"))
+        return 2
+
     # The host is read once, before the projects, so each project's own adapter item can be
     # reported against the closure rather than beside it.
     repo, closure, closure_notes = None, {}, []
@@ -574,15 +584,6 @@ def main(argv: list[str]) -> int:
 
     not_ready: list[str] = []
     ready: list[str] = []
-
-    # ⛔ A list nobody passed is reported rather than resolved to nothing. An empty run that
-    # printed a summary and exited 0 would read as "every target is ready".
-    if not targets:
-        print("\nno project was named, so nothing was measured. Pass each target's checkout, "
-              "with\nits tracker kind after a colon where it has written no configuration of "
-              "its own.")
-        print(line("could not establish", "no target list was passed"))
-        return 2
 
     for target in targets:
         name = target["name"]
@@ -609,13 +610,16 @@ def main(argv: list[str]) -> int:
         # the reader found in it, which is the stronger of the two and is never overwritten by
         # the argument. ⛔ Read off a probe it would be the probe's kind, so it is read off the
         # project's own configuration only.
-        kind = target["kind"]
-        if own_config and loaded is not None:
-            kind = loaded.tracker_kind or kind
-        print(line("tracker kind", (f"{kind} — " + ("the project's own file" if own_config and
-                                                    loaded is not None else "passed on the "
-                                                    "invocation")) if kind
-                                   else "none passed, and the project wrote no file"))
+        kind, from_own_file = target["kind"], False
+        if own_config and loaded is not None and loaded.tracker_kind:
+            kind, from_own_file = loaded.tracker_kind, True
+        if kind:
+            said = "the project's own file" if from_own_file else "passed on the invocation"
+            print(line("tracker kind", f"{kind} — {said}"))
+        elif own_config:
+            print(line("tracker kind", "the project's own file states none, and none was passed"))
+        else:
+            print(line("tracker kind", "none passed, and the project wrote no file"))
         print(line("tracker in carriers", tracker_evidence(claude_dir)))
 
         adapter = None
@@ -623,8 +627,17 @@ def main(argv: list[str]) -> int:
             adapter, available, total, detail = tracker(loaded)
             print(line("tracker port", f"{detail} — {available} of {total} operations available"))
 
+        # ⚠️ Four cases kept apart, because three of them are absences and an absence reported as
+        # the wrong one is a false statement: no kind to look an item up by, no item passed for
+        # the kind, an item nobody read the host for, and an item read.
         item = adapter_items.get(kind) if kind else None
-        if item and repo:
+        if not kind:
+            pass                         # the line above already said why there is nothing to say
+        elif item is None:
+            print(line("adapter work item", f"none passed for `{kind}`"))
+        elif not repo:
+            print(line("adapter work item", f"#{item} — the host was not read"))
+        else:
             found = issue(repo, item)
             if found is None:
                 print(line("adapter work item", f"#{item} — the host did not answer"))
@@ -636,11 +649,6 @@ def main(argv: list[str]) -> int:
                     flag = ("  ⚠️ open, and no migration item depends on it" if closure
                             else "  ⚠️ open; no closure was read to say what depends on it")
                 print(line("adapter work item", f"#{item} {state} — {title}{flag}"))
-        elif kind:
-            # Stated rather than omitted: a line that simply disappears reads as an adapter
-            # with nothing outstanding against it.
-            print(line("adapter work item", f"none passed for `{kind}`"
-                                            + ("" if repo else ", and the host was not read")))
 
         carried = classify(project_carriers(claude_dir), vocabulary)
         matchers = registered_hook_matchers(claude_dir)
