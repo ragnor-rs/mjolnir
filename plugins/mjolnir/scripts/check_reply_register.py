@@ -263,8 +263,8 @@ def check_no_compression(reply: str) -> list[str]:
     if len(findings) > 3:
         dropped = len(findings) - 3
         findings = findings[:3] + [
-            f"Length: {dropped} further compressed line(s) are not listed; the whole reply "
-            "needs restating rather than patching line by line."
+            f"Length: {dropped} further compressed line(s) are not listed; compression is "
+            "spread through the reply rather than sitting in one line."
         ]
     return findings
 
@@ -705,7 +705,7 @@ STAY_GREEN = [
     ("shortening is by selection", "two mappings a clause apart, sharing no operand",
      "Writing is decided per key: `FRESH` or `OURS` → write; `CHANGED` → report the key and "
      "leave the value alone.\n"),
-    ("compression is not the texture", "one chain, which is one line to restate rather than a texture",
+    ("compression is not the texture", "one chain, which is a line to restate and not a texture",
      "The sweep reads: file → region → span and nothing else does.\n"),
     ("compression is not the texture", "arrows inside a fenced block",
      "The mapping is stated once.\n\n```\nfile -> region -> span -> value\n```\n"),
