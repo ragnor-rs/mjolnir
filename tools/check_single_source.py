@@ -56,6 +56,7 @@ ROLES = {
     "docs/single-source-of-truth.md": EXPLAINS,
     RULINGS: RECORDS,
     "plugins/mjolnir/skills/day-report/SKILL.md": PROCEDURE,
+    "plugins/mjolnir/skills/file-work-item/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/finish/SKILL.md": PROCEDURE,
 }
 

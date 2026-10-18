@@ -262,6 +262,7 @@ covers the operations the survey reached and says which it did not.
 
 | Operation | What the procedure asks for | When the capability is absent |
 |---|---|---|
+| `search_items` | the items matching a query — terms, or a field's value with no terms at all — across every state the tracker holds, the closed ones included | the duplicate check cannot run, so the filing role **asks** before writing and never reports a check it did not perform; an unsearchable tracker is not a tracker with no duplicates, by § 2's rule that absence of signal is not an answer |
 | `create_item` | a new work item, from the body the filing role wrote | nothing is filed, and the run report carries the body and says what it would have created |
 | `read_item` | the item's own facts: its body, its state, its fields | the role proceeds on what its argument and its branch already state, and the report names what could not be read |
 | `set_state` | an advance to a **role**, never to a status word (§ 4.2) | the move is reported for whoever does make it; § 4.2's writer refusal is the second, stricter reason the same move is not made |
@@ -320,6 +321,32 @@ reaching a card. Where a fact is barred, it goes in the run report instead.
 operations: it says what may reach an item, never which operations exist. A role meeting a policy
 refusal has a capability it may not use here, which reads differently from an absence and is
 reported differently.
+
+### A duplicate is the item rewritten, never a second item filed
+
+⛔ **A confirmed duplicate is the existing item's body rewritten to what the work now is.** No
+second item is created, no dated block is appended, and no record is kept of what the body used to
+say. The item states the work as it now stands, and `search_items` above is what finds the item to
+rewrite.
+
+Two items describing one job both sit open and both read as work nobody did, and closing one closes
+nothing. An appended addendum avoids that but costs the other half: the item's current scope stops
+being readable off the item and has to be reconstructed by reading its body in order of writing,
+which is the same defect one level down.
+
+**Where the provenance goes** — what the new material was and where it came from — follows the
+`comment` capability and nothing else: a note on the item where that capability exists, and the run
+report where it does not, which is `comment`'s own fallback above rather than a second rule.
+
+⚠️ **Rewriting is not a licence to drop what the item already stated.** The test is the work, not
+the prose: a constraint, an acceptance condition or a dependency the old body carried is still true
+unless the new material replaced it, and a rewrite that quietly narrows the item is the one failure
+this is worse at than appending.
+
+Procedure rather than configuration, and there is no setting that turns it off — the same
+placement authorship has under § 6 and the reply's register under § 8, stated inside the axis it
+would otherwise be a value of. A project that could configure this would be choosing whether its
+own tracker is allowed to hold two statements of one job.
 
 ## 4. Work-item facets
 
