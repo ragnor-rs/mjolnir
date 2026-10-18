@@ -468,7 +468,15 @@ def _bare_world(stack: tempfile.TemporaryDirectory) -> tuple[str, str, str]:
     """
     root = Path(stack.name)
     origin = root / "origin.git"
-    subprocess.run(["git", "init", "--quiet", "--bare", str(origin)], check=True)
+    # ⚠️ The integration branch is named explicitly rather than inherited. A bare repository's
+    # HEAD follows whatever this machine's default branch name is, and where that differs from
+    # the name the seed pushes, HEAD points at a ref nothing created -- so every clone checks
+    # out nothing, has no local integration branch, and the suite dies resolving it instead of
+    # testing anything. Measured: green on a machine configured one way, a crash on a runner
+    # configured the other.
+    subprocess.run(
+        ["git", "init", "--quiet", "--bare", "--initial-branch=main", str(origin)], check=True
+    )
 
     seed = root / "seed"
     subprocess.run(["git", "clone", "--quiet", str(origin), str(seed)], check=True)
