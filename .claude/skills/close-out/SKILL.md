@@ -1,6 +1,6 @@
 ---
 name: close-out
-description: Bring this project's backlog, dependency graph and execution plan back into agreement after work has landed — one read of the live state, then the edits it names. Use after a batch of issues closes or is filed, at the end of a session, or when asked to update the plan, check the graph, or say what is takeable next.
+description: Bring this project's backlog, dependency graph and execution plan back into agreement after work has landed — one read of the live state, then the edits it names. Use after a batch of issues closes or is filed, at the end of a session, or when asked to update the plan, check the graph, say what is takeable next, or draft the ordering document for a project that has none yet.
 ---
 
 # Close out a batch
@@ -39,6 +39,40 @@ the unblocked queue in row order.
 Exit 1 means something needs an edit. The `since the last pass` block is the only cheap way to see
 a **relation** change: a dependency edit bumps no `updated_at`, so `GET /issues?since=` cannot find
 it, and the snapshot diff can.
+
+### No ordering document yet
+
+The read refuses on a store that holds none, because the four things that have to agree have
+nothing to agree with. ⛔ **The refusal is not a bootstrap**: a run from a branch worktree resolves
+a *different* store, where a plan is absent for a reason that is not "this project has none", so a
+draft taken on that refusal writes a second ordering nobody reads. Check that the store the refusal
+names is the primary checkout's, then opt in:
+
+```bash
+python3 .claude/skills/close-out/scripts/plan-status.py --bootstrap
+```
+
+It reads the same live state, ⛔ **writes nothing**, and reports the path the document goes to and
+the graph's **layers** — layer 1 is what nothing live blocks, each later layer is what its own
+blockers all sit above, and every item carries the blockers that hold it.
+
+1. **Draft the document** from that report and from nothing recalled: the title, the set being
+   ordered with its figures, § 6's live-status line, and the row table.
+2. ⛔ **A layer is not a row.** The layers are the hard constraints and a row is a yield
+   subpriority inside them, which nothing derives — so every row carries its argument in the why
+   column, and items whose relative order is yield share a row, with an arrow wherever the graph
+   states an order. This is the one pass that **creates** rows; every placement in § 4 is into a
+   row that already exists.
+3. ⛔ **Summarise, then ask — the file is written on approval and not before.** The ordering is the
+   person's to approve, and the summary is the figures, the rows with their one-line arguments, and
+   every call that was judgement rather than a constraint. ⛔ Not the document's text, which is what
+   the file is for.
+4. On approval, write it at the path the report named and run § 1's read against it. The coverage
+   block is the check on the draft — `N/N placed`, zero ordering violations, every same-row edge
+   carrying an arrow — and § 6's `--stamp` sets the first baseline.
+
+⛔ **A drafted document carries no account of having been drafted**, by the rule at the top of this
+file: it states the ordering that is true now.
 
 ## 2. Priority — count, never infer
 
