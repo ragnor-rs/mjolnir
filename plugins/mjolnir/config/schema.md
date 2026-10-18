@@ -235,6 +235,44 @@ billing-suspended run fails in seconds having started no steps; a path-filtered 
 legitimately runs nothing on a change outside its paths. An empty or silent check list reads as
 *no answer* — never as green, and never as coverage.
 
+### Reading a run's answer, and what a failure is
+
+Procedure rather than configuration, and stated here rather than in each role, because more than one
+role reads these runs: the reviewing role drives them green and the finishing role refuses to merge
+without them. A rule read by two roles and written in one of their skills is a second authority for
+the other.
+
+⛔ **Four preconditions, in order, and all four are required before anything here reads as green.**
+
+1. the tree is clean — an uncommitted edit was never pushed, so the host never saw it;
+2. a run exists **for this commit**, not for the branch and not for an earlier push;
+3. the run **executed steps**;
+4. it concluded green.
+
+Precondition 3 stands apart from 4 because of the rule above it: a run whose billing is suspended
+fails in seconds having started no step, and a conflicted change produces no run at all. ⛔ **A
+precondition that fails is reported as the step it was**, never folded into the conclusion. ⚠️ **No
+checks reported** is almost always the conflicted case, and reads as *nothing to wait for* to anyone
+who has not been told.
+
+⛔ **An environment failure is not a finding.** A run that could not start, an absent credential, a
+service the runner cannot reach: each is a fact about where the check ran and none is a fact about
+the change. ⚠️ **Their remedies are opposite** — one is fixed in the diff and the other outside it —
+and in a log they look alike. So a role says which of the two it has, and ⛔ **an environment
+failure consumes no fix cycle**.
+
+⛔ **A cap of three fix cycles against the same red answer, then stop and ask**, with the options and
+what each costs. A fourth attempt is a role that has stopped learning from the answer, while the
+person running it can see what the check cannot say.
+
+⛔ **Never sleep, and watch rather than poll.** The host's own client blocks until the runs settle,
+which costs nothing and cannot miss a transition between two polls. A sleep long enough to be worth
+writing is refused at the start of a command anyway, so a role that polls is a role that spins.
+
+⛔ **An up-to-date verdict is not a run.** A job reporting nothing to do and a cached pass have both
+answered about an earlier state; by the rule above that is *no answer* for this commit, and the
+honest report is that the check did not run.
+
 ## 3. Tracker port
 
 ```yaml

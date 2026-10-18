@@ -121,37 +121,29 @@ on the change the host can report unresolved — and the gate refuses the merge 
 
 ## 6. The host's answer about the change
 
-⛔ **Four preconditions, in order, and all four are required before any of this reads as green.**
-⚠️ **The second of the four:** one copy had these and the other four treated silence as success.
-
-1. the tree is clean;
-2. a run exists **for this commit** — not for the branch, and not for an earlier push;
-3. the run **executed steps**;
-4. it concluded green.
-
-Precondition 3 is listed apart from 4 because
-[`§ 2`](../../config/schema.md#2-code-host) rules what silence may be read as, and the two ways of
-producing it are both live: a run whose billing is suspended fails in seconds having started no
-step, and a conflicted pull request produces no run at all. ⛔ **So neither verdict may be
-reported as the other** — a precondition that fails is reported as the step it was, rather than
-folded into the conclusion. ⚠️ **No checks reported** is almost always the conflicted case, and
-reads as *nothing to wait for* to anyone who has not been told.
+⛔ **Four preconditions, in order, and all four are required before any of this reads as green** —
+[`§ 2 → Reading a run's answer`](../../config/schema.md#reading-a-runs-answer-and-what-a-failure-is),
+which states them, what a precondition's failure may not be reported as, and what separates an
+environment failure from a finding. ⛔ **This file restates none of it**: the reviewing role reads
+the same runs, and a rule written in one role's skill is a second authority for the other. ⚠️ **The
+second of the four:** one copy of this role had those preconditions and the other four treated
+silence as success.
 
 Which runs should exist, which local command each one mirrors, and which paths each watches are
 `host.checks`'s to state ([`§ 2`](../../config/schema.md#2-code-host)) — ⛔ **never this file's, and
 never derived from what the host happens to report.** A run's name does not say which command it
 duplicates.
 
-⛔ **Never sleep, and watch rather than poll.** The host's own client blocks until the runs settle,
-which costs nothing and cannot miss a transition between two polls:
+Watching rather than polling is the same subsection's, and the client blocks until the runs settle:
 
 ```bash
 gh pr checks <number> --watch
 ```
 
-⛔ **A cap of three fix cycles, then stop and ask**, with the options and what each costs. A fourth
-attempt at the same red check is a role that has stopped learning from the answer, and the person
-running it can see something the check cannot say.
+⛔ **A red answer is not this role's to fix.** The fix loop and its cap belong to the reviewing role
+at [`skills/review/`](../review/), whose subject is a finding; what this role owes is to **not
+merge** while one stands, and to say which precondition failed. A finishing pass that starts fixing
+is the review happening with none of its record kept.
 
 ## 7. The merge, and reading it back
 
