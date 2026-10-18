@@ -1,7 +1,2 @@
 .DS_Store
 __pycache__/
-
-# A local readiness check for the adoption targets. It has to name them to check them, and this
-# repository names no other project in tracked content — so the rule is the ignore, not a reviewer
-# remembering. The skill states the same thing in its own first section.
-/.claude/skills/adoption-readiness/
