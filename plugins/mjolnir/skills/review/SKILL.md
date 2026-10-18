@@ -16,9 +16,10 @@ an answer, and a stated record of whether a person is going to look at the diff.
 owned the item's board move with it — which is the single largest divergence between the five and
 the one the shipped boundary settles rather than averages.
 
-⚠️ **The five copies ran 92 to 295 lines.** Line count that far apart is divergent behaviour: four
-delegated the whole review to a reviewing carrier of their own and never read the diff; one read the
-diff itself, drove a browser, and merged. Steps 4, 8 and 9 are where that divergence lands.
+⚠️ **The five copies disagreed about what this role does, not about how to word it.** Four delegated
+the whole review to a reviewing carrier of their own and never read the diff; one read the diff
+itself, drove a browser against a running instance, and merged. Steps 4, 8 and 9 are where that
+divergence lands, and the spread that measures it is the decision record's.
 
 ## 1. Resolve, and say what was resolved
 
@@ -167,10 +168,10 @@ implied by *review this*, the second commit is the better record of what the rev
 squash merge collapses both anyway.
 
 ⚠️ **A fix invalidates the observations made before it**, so the re-run is scoped to what the fix
-actually changed rather than to everything — and ⛔ **a verdict that reports up-to-date has not run**,
-which is [`§ 2 → Reading a run's
-answer`](../../config/schema.md#reading-a-runs-answer-and-what-a-failure-is)'s rule and the reason
-scoping is safe at all.
+actually changed rather than to everything. ⛔ **What makes the scoping safe is that the re-run is a
+real run** — [`§ 2 → Reading a run's
+answer`](../../config/schema.md#reading-a-runs-answer-and-what-a-failure-is)'s last rule, which this
+file does not restate and which a narrowed re-run is the commonest way to violate.
 
 ## 6. Answer every thread
 
@@ -214,10 +215,14 @@ duplicates.
 ⛔ **A local run of a command the host has already run for this commit adds nothing**, to this role
 or to whoever reads the change: it spends a shared machine for no new information. The complement is
 the legitimate case — ⛔ **a check no `host.checks` entry mirrors is the one that must be run
-locally**, because nothing else will ever answer it. What counts as done, which of those checks are
-the procedure's to answer and which a person's, and the misconfiguration of a local check
-duplicating a mirrored one are [#41](https://github.com/ragnor-rs/mjolnir/issues/41)'s — ⚠️ **so
-today this role reports the verdicts it has and does not define done.**
+locally**, because nothing else will ever answer it. ⚠️ **Already mirrored is not a string match**:
+one workflow can run several commands while its entry states one, so a check colliding with the
+second of them is as duplicated as one colliding with the first, and reading that is
+[#58](https://github.com/ragnor-rs/mjolnir/issues/58)'s shape to settle. What counts as done, which
+of those checks are the procedure's to answer and which a person's, and the misconfiguration of a
+local check duplicating a mirrored one are
+[#41](https://github.com/ragnor-rs/mjolnir/issues/41)'s — ⚠️ **so today this role reports the
+verdicts it has and does not define done.**
 
 ⛔ **A verdict belongs to the tree that produced it**
 ([`§ 10`](../../config/schema.md#which-tree-a-verdict-belongs-to)): a local check run where another

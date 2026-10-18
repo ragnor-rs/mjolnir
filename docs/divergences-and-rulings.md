@@ -160,21 +160,22 @@ diff, while the fifth read the diff itself, drove a browser against a running in
 **Two hard contradictions, neither settled by majority:**
 
 - **Who merges.** One copy merged, moved the item and deleted the branch; four left the change
-  merge-ready and said so. ⛔ **Settled by the boundary rather than by weighing the two**: the
+  merge-ready and said so. It was **settled by the boundary rather than by weighing the two**: the
   finishing role already owns the merge, reading it back from state, the item's move and the tree's
   release, so the merging copy's last section is a second home for a role that had already landed.
   The reviewing role records; it never merges and never waives.
-- **Who performs the review.** ⛔ **Both, which is a synthesis and not one of the two positions.**
-  A delegated pass is invoked where the project has one, *and* the diff is read regardless, because
-  a delegated pass that found nothing is not a verdict. ⚠️ **The accepted cost is that a project
-  whose reviewer is a delegated pass now pays a diff read as well** — which is the cost the two
-  measurements below buy.
+- **Who performs the review.** Ruled **both**, which is a synthesis and not one of the two
+  positions. A delegated pass is invoked where the project has one, *and* the diff is read
+  regardless, because a delegated pass that found nothing is not a verdict. ⚠️ **The accepted cost
+  is that a project whose reviewer is a delegated pass now pays a diff read as well** — which is the
+  cost the measurements below buy.
 
 **The open question that role raised, now ruled.** Two copies enforced part of it through a hook
 rather than carrying it as procedure — one recorded the human-review answer that way, one refused a
-merge that had no such answer. ⛔ **Procedure produces a record and enforcement reads it.** The role
-asks whether a person is going to look whether or not a hook is installed, and says which of the two
-situations it was in; what refuses an act on the strength of that record is #16's.
+merge that had no such answer. The ruling is that **procedure produces a record and enforcement
+reads it**: the role asks whether a person is going to look whether or not a hook is installed, and
+says which of the two situations it was in, while what refuses an act on the strength of that record
+is #16's.
 
 **One copy knew strictly more, in five places:**
 
@@ -193,7 +194,7 @@ own changes:
   defect in a change that *was* a gate, and each returned the same middling confidence for the same
   reason: verified, will be hit, but the tree is green today. The confidence cut would have reported
   *no issues found* on a new file carrying fourteen reproduced defects. So *real* and *firing* are
-  separated and both reported — and ⛔ **a reproduction is the score**, which removes the confidence
+  separated and both reported, and **a reproduction is the score** — which removes the confidence
   number from the decision entirely.
 - **A probing reviewer needs an isolated copy.** Parallel verifiers told to probe in memory planted
   files into the live tree, whose branch is another session's claim. Naming the mechanism is what

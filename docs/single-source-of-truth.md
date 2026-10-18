@@ -157,6 +157,13 @@ Stated, because an unstated limit reads later as coverage.
   work item landed without its outcome moving into the schema is caught by a reader, not by the
   gate — the one gap in check 3 worth knowing about, and a deliberate trade against holding a
   credential to close it.
+- **A binding marker that does not open a line.** Check 4 reads a statement as one that **opens** a
+  line, optionally as a list item, which is the grammar the script states: mid-sentence the marker is
+  prose *about* a rule rather than a statement of one. ⚠️ So a rule written mid-line in a document
+  that may not state one passes — measured when the decision record first acquired markers of that
+  shape and this gate stayed green; they were removed rather than cited. The alternative grammar
+  reddens on every table cell and every sentence that merely mentions the marker, which is why the
+  line-start form is the sound one and the residue is a reviewer's.
 - **Key subtrees.** Check 5 holds the top level only. Per-tracker blocks live in `examples/` by
   the schema's own
   [§ 3](../plugins/mjolnir/config/schema.md#3-tracker-port), so a deeper comparison would need an
