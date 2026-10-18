@@ -77,10 +77,11 @@ depends on is still live — read it from there rather than asking the host twic
 
 ## 4. The claim is the branch
 
-**Cutting the branch is the claim.** Measured rather than assumed: `git worktree add` with `-b` on
-a branch name that already exists fails **before creating the directory**, so the host needs no
-write for the claim to be atomic, and every session on this machine can see it through
-`git worktree list`.
+**The branch is the claim, and publishing the ref is what makes it one.** The rule, both arms of
+its test-and-set, what a refusal has to name and how an orphaned claim is read are
+[`schema.md § 10 → The claim on a work item`](../../../plugins/mjolnir/config/schema.md#the-claim-on-a-work-item)
+— ⛔ **named here and not restated**, because a copy of a concurrency rule in a role's text is a
+copy that is allowed to disagree with the one thing performing it.
 
 The branch name is `(prefix, number, slug)`:
 
@@ -90,42 +91,46 @@ The branch name is `(prefix, number, slug)`:
 | number | the item's own number |
 | slug | the item's title, slugged — and a **translation** where the item's language differs from the repository's, never a transliteration ([`schema.md § 8`](../../../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project)) |
 
+⛔ **One command takes the claim, and the role does not assemble it out of git calls.** It
+publishes the ref, reads back whether the push *created* it, cuts the tree, and releases the ref
+again where the cut fails — ⛔ **which is four steps whose ordering is the rule**, so a role doing
+three of them by hand has a claim that passes review and races.
+
 ```bash
-git -C <code-root> worktree add <tree> -b <prefix>/<number>-<slug>
+python3 plugins/mjolnir/scripts/claim.py take \
+  --repo-root <code-root> --branch <prefix>/<number>-<slug> --tree <tree>
 git -C <code-root> worktree list
 ```
 
-⛔ **Both arguments come from somewhere rather than from this file.** `<code-root>` is what § 1
-resolved — § 1 is why `git` names its root instead of inheriting a working directory — and
-`<tree>` is where this project puts a tree, which is the third of § 7's three unread values.
+⛔ **Every argument comes from somewhere rather than from this file.** `<code-root>` is what § 1
+resolved — § 1 is why the root is named instead of inherited — and `<tree>` is where this project
+puts a tree, which is the third of § 7's three unread values.
 
-- **Refused** ⇒ the item is taken. Auto-picked: go back to § 2 and take the next candidate. Named:
-  stop and say who holds it is unknowable from here — the branch says *taken*, never *by which
-  session*.
+- **Refused** ⇒ the item is taken, and the refusal already carries who holds it and since when, or
+  names whichever half it could not establish. Auto-picked: go back to § 2 and take the next
+  candidate. Named: stop and report the refusal as it came back.
 - ⛔ **Never `--force`, and never a second checkout of a branch already checked out somewhere.**
   Git refuses the second checkout by name, and that refusal is a stop: the session holding it may
   be mid-task. Work in the tree that holds it or not at all.
-- Before cutting, a cheap pre-filter avoids pointless attempts —
-  `git -C <code-root> branch --list "*<number>-*"` and
-  `git -C <code-root> ls-remote --heads origin "*<number>-*"`, since a sibling session may have
-  pushed a branch this machine has never had. ⚠️ Measured, because the pattern rule is easy to get
-  backwards: a slashless pattern is matched against the ref's tail, so `*<number>-*` finds
-  `<prefix>/<number>-<slug>` without the prefix being known — which is the point, since the prefix
-  is a configured value. The attempt is still the authority; the filter only saves one.
-- ⛔ **An orphaned claim is not takeable by this role.** A branch whose tree no live process has as
-  its cwd, with no commits ahead of the integration branch, looks exactly like one a session is
-  about to commit into. **Ask**, with the two readings stated. Improvising the judgement is how two
-  sessions end up on one item.
+- A cheap pre-filter avoids pointless attempts — `claim.py status` with the same arguments, or
+  `git -C <code-root> branch --list "*<number>-*"` for the local half alone. ⚠️ Measured, because
+  the pattern rule is easy to get backwards: a slashless pattern is matched against the ref's
+  tail, so `*<number>-*` finds `<prefix>/<number>-<slug>` without the prefix being known — which
+  is the point, since the prefix is a configured value. ⛔ The attempt is still the authority, and
+  a filter that came back clean is **not** evidence the claim was free: the window between the two
+  is exactly the race, and it has been observed closing inside one pass.
+- ⛔ **An orphaned claim is not takeable by this role.** `status` reports one as an
+  orphaned-candidate with both readings stated; it is a person's call, never this role's. **Ask.**
 
-**Then make the claim visible off this machine**, which the branch cannot do:
+**The assignee is written beside the claim, and is not part of it:**
 
 ```bash
 gh issue edit <number> --add-assignee @me
 ```
 
 ⚠️ Every session here authenticates as the same user, so the assignee carries *taken* and nothing
-more. It is the half a session on another machine can read; the branch is the half that is atomic.
-Neither replaces the other.
+more — it says on the item what the ref already says on the host, for whoever is reading the item
+rather than the branch namespace. ⛔ It is not the claim and nothing reads it as one.
 
 ## 5. The tree, and the push hazard
 
@@ -146,6 +151,11 @@ A branch with no upstream is the wanted state: the first push names its own remo
 explicitly and sets tracking then. An upstream pointing at the base is the hazard — clear it
 before pushing, and say in the reply that it was found set.
 
+⚠️ **The claim already published a ref of the same name**, so the first push is an update to the
+session's own claim rather than a creation. That is why the hazard above is about the *upstream*
+and not about the ref existing: a remote branch that is there because § 4 put it there is the
+expected state, and a bare push with no upstream is still what must not happen.
+
 ## 6. The reply
 
 Reference register: the outcome in the first sentence, then the facts. A short table beats prose.
@@ -161,7 +171,7 @@ Reference register: the outcome in the first sentence, then the facts. A short t
 
 ## 7. What this prototype is not
 
-⚠️ **Three things it reads that no key defines**, stated so none of them later reads as covered:
+⚠️ **Two things it reads that no key defines**, stated so neither later reads as covered:
 
 1. **The ordering.** `unblocked now` comes from the close-out role's one read, and the row table it
    parses is a document outside every tree. A role shipped from the plugin cannot reach either — so
@@ -171,10 +181,12 @@ Reference register: the outcome in the first sentence, then the facts. A short t
    the shared one is ever worked in; it states no location, and `mechanics` is setup and teardown
    rather than a path. So `<tree>` in § 4 resolves to this repository's standing convention, which
    is carried in the ordering document and is a value nothing reads.
-3. **The claim itself.** That cutting the branch *is* the claim, that the assignee is its
-   off-machine half, and that an orphaned one is escalated rather than taken, are a convention this
-   repository measured and wrote down. The carrier, the writer, the release and the
-   live-versus-orphaned test are unsettled on the surface.
+
+⚠️ **The claim was the third and is no longer one.** Its carrier, both arms of its test-and-set,
+what a refusal names, how it is released and how a live claim is told from an orphaned one are all
+[`schema.md § 10`](../../../plugins/mjolnir/config/schema.md#the-claim-on-a-work-item), performed
+by the one command § 4 calls. What is left of the gap is the half above it: the claim says which
+items are **taken** and nothing here says which to **take**.
 
 ⚠️ **No tracker operation runs here beyond the assignee write.** This project's tracker has no
 implementation registered behind the port, so every operation reports its stated fallback. A

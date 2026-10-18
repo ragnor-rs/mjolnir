@@ -52,6 +52,9 @@ host:
   # its single job's name, so there is no key here that can be got wrong. ⛔ Nothing reads
   # either property — holding this facet to those files mechanically is #49.
   checks:
+    - workflow: "Claim carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/claim.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Config reader"
       mirrors: "python3 plugins/mjolnir/scripts/config.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
