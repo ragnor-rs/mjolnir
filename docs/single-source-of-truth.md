@@ -509,6 +509,7 @@ broken; and that a root with no remote claims locally and says so.
 | 6 | Releasing a live claim held in no tree here is refused; the holder's own clone releases it freely | two clones | computed |
 | 7 | The integration branch is derived from the remote's default, overridable, and named as underivable rather than guessed | three repositories | computed |
 | 8 | A process **below** a tree's root reads as occupying it | a real process two directories down | computed |
+| 9 | A squash-merged claim reads **landed** rather than live, and releases with no override | a real squash merge, after asserting the same ref read live before it | computed |
 
 ⚠️ **Check 0 is run once per arm, and that is the finding this suite was written by rather than
 for.** The surface states two arms because the first draft of the script shipped only the second —
@@ -550,6 +551,14 @@ arm is what lets the race through.
   the decision as a person's; it cannot hold that the person was right. ⛔ That is the *fidelity*
   limit this document states one claim over, and the reason the override is a flag rather than a
   heuristic.
+- **A claim squash-merged and then built on top of.** Check 9 holds the plain squash case. Where
+  other work lands on the integration branch afterwards, the ref is an ancestor of nothing and
+  differs from the branch in that other work, so only the host's record of the merge settles it —
+  and that needs a credential the suite holds none of. ⚠️ Without one the reading is *live*, which
+  refuses a start rather than taking a held claim. ⛔ This is the limit the whole ordering of that
+  table exists for, and it is recorded rather than reported clean because the first version of
+  this module read the weakest signal first and called every merged claim live — found on its own
+  branch one minute after it merged, not by the suite.
 - **A claim on a project sharing no remote.** Two machines with no remote between them cannot be
   arbitrated by anything, and the surface states that rather than guarding it.
 
