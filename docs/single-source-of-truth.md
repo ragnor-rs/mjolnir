@@ -500,15 +500,34 @@ place the finished reply is available, and it hands the text over directly, so
 | Property | What is checked | Kind | A finding |
 |---|---|---|---|
 | Opening | The first line carrying the reply's own words is not one of a closed set of preamble forms | forbidding | **blocks**, once per turn |
-| Length | No text is compressed into an arrow chain — two arrows sharing an operand | forbidding | **blocks**, once per turn |
+| Length | No text is compressed into an arrow chain — two arrows sharing an operand, with no clause between them | forbidding, over a density | reports every chain; **blocks** where compression is the texture, once per turn |
 | Emphasis | Emphasised spans against the reply's own prose line count | computed | reports |
 | Register | A closed list of dramatic words, and exclamations, over a density | forbidding, over a density | reports |
 | Uncertainty | A closed list of hedges, over a density | forbidding, over a density | reports |
 | Structure | — | — | nothing; see below |
 
-**What blocks, and why the rest does not.** The first two forbid a thing whose form is stable and
-whose presence is the defect: a preamble form is a phrase, and a chain is two arrows sharing an
-operand. A finding there is a fact about the text, so it hands the turn back.
+**What blocks, and what a hand-back costs.** A finding blocks where it is a fact about the text
+*and* worth what handing the turn back costs — which is the reply a second time. The writer
+restates it whole, so a person who has read it reads it again. ⚠️ Measured on the two hand-backs of
+one session in a project with this plugin enabled: thirteen of twenty-one prose lines came back byte
+for byte in the one, eight of thirteen in the other, and each paid that for two reworded clauses.
+Nothing in the first shape of this check accounted for that price, and in one of the two it was paid
+for a defect that was not there.
+
+- **Opening** blocks on one instance. It is the first thing read and the frame for everything under
+  it, and a preamble form is a phrase rather than a judgement.
+- **Length** reports every chain it finds and blocks only where the count is over a density of the
+  reply's own prose lines: compression as the reply's *texture* rather than one line to restate. One
+  chain is told to the writer and costs the reader nothing. ⚠️ That density is not the weakness the
+  three below have — what it counts is a form the text either carries or does not, so the threshold
+  decides whether a re-read is warranted rather than standing in for the rule.
+
+⚠️ **A chain is two arrows sharing an operand, and sharing is not a token count.** The first form
+read one or two tokens between the arrows as the shared operand, so
+`FRESH` or `OURS` → write; `CHANGED` → report — two mappings that share nothing — was read as a
+chain and handed a turn back. A clause between the arrows now says they are two mappings:
+clause-ending punctuation, a dash, or a coordinator. A dot inside a token ends no clause, so a chain
+of file paths is still a chain.
 
 The other three are weaker in two different ways, and neither weakness is a threshold alone.
 *Emphasis* is genuinely **computed** — a density derived from the reply's own length, so no word
@@ -557,6 +576,10 @@ calls and asserts it is this script. See
   length threshold would punish exactly the content the rule's own first clause protects. Only the
   compression half is held — which is also the distinction the rule turns on: shortening by
   selection against shortening by compression.
+- **A chain whose operand is repeated across a clause.** `open → closed; closed → archived` shares
+  an operand in meaning and is two mappings in form, and form is what a check reads. ⚠️ A finding
+  missed rather than a finding invented, which is the direction the one check here that still hands
+  turns back on a form has to err in.
 - **Whether the reply was a role's at all.** The hook fires on every reply in a session where this
   plugin is enabled, and nothing in a `Stop` payload says whether a role was running. So the
   register is held more widely than the surface states it — in the safe direction here, and stated

@@ -90,11 +90,36 @@ PREAMBLE = re.compile(
 # ⚠️ The unit is the chain and not the line. A per-line budget was the first
 # shape this check had and it was wrong in the direction that blocks: a reply's
 # paragraph is one unwrapped line, so `#6 → #77 and separately #80 → #82` -- two
-# unrelated legitimate mappings in one sentence -- read as a chain. The operand
-# between the two arrows is what separates them: a chain's is one or two tokens,
-# and two mappings in a sentence have a clause between them.
-ARROW = r"(?:→|⇒|->|=>)"
-CHAIN = re.compile(ARROW + r"\s*\S+(?:\s+\S+)?\s*" + ARROW)
+# unrelated legitimate mappings in one sentence -- read as a chain.
+ARROW = re.compile(r"→|⇒|->|=>")
+
+# What may sit between two arrows and leave them still sharing an operand. The
+# length arm came first: a chain's operand is a word or two, and two mappings in
+# a sentence have a clause between them.
+OPERAND = re.compile(r"^\s*\S+(?:\s+\S+)?\s*$")
+
+# ⛔ The length arm alone is not enough, because a clause can be one token.
+# Measured on a reply this check handed back in a session of a project that has
+# the plugin enabled: `FRESH` or `OURS` → write; `CHANGED` → report puts `write;`
+# between its arrows, which share no operand at all, and the finding's own quoted
+# span -- `'→ write;   →'` -- carried the semicolon that says so. The turn was
+# handed back and the whole reply came back, eight of its thirteen lines byte for
+# byte, for a compression that was not there.
+#
+# ⚠️ Clause-ending punctuation counts only where a clause ends: followed by
+# whitespace, or ending the span between the arrows. A dot inside a token is not
+# a boundary, so a chain of file paths stays a chain.
+CLAUSE_BOUNDARY = re.compile(
+    r"[.;:,!?](?=\s|$)|[—–]|\b(?:and|or|but|then|while|whereas|plus|versus|vs)\b",
+    re.I,
+)
+
+# Where compression stops being one line to restate and becomes the reply's
+# texture. The floor is one, because a single chain is a finding and no reply is
+# textured by one line; the other arm scales with the reply, so a long reply is
+# not handed back at a density a short one is only told about.
+CHAIN_FLOOR = 1
+CHAIN_LINES = 6
 
 # Emphasis as a default texture rather than as a mark on a load-bearing fact.
 EMPHASIS = re.compile(r"\*\*[^*\n]+\*\*|__[^_\n]+__")
@@ -191,6 +216,22 @@ def opening(reply: str) -> str:
     return ""
 
 
+def chains(line: str) -> list[str]:
+    """Every pair of arrows in one line that shares an operand, as the span it spans.
+
+    Read pair by pair rather than by a single pattern over the line, because
+    *sharing* is a property of the text between two particular arrows: four
+    arrows in a sentence can be one chain, two chains, or two mappings and a
+    chain, and a pattern that matched the line could say only which.
+    """
+    found, arrows = [], list(ARROW.finditer(line))
+    for left, right in zip(arrows, arrows[1:]):
+        between = line[left.end():right.start()]
+        if OPERAND.match(between) and not CLAUSE_BOUNDARY.search(between):
+            found.append(line[left.start():right.end()])
+    return found
+
+
 # --- the checks ------------------------------------------------------------
 #
 # Each returns a list of findings. A finding is one sentence naming the property
@@ -211,9 +252,9 @@ def check_opening_is_the_finding(reply: str) -> list[str]:
 def check_no_compression(reply: str) -> list[str]:
     findings = []
     for line in prose(reply):
-        for chain in CHAIN.finditer(line):
+        for chain in chains(line):
             findings.append(
-                f"Length: text is compressed into an arrow chain — {chain.group(0).strip()[:60]!r}. "
+                f"Length: text is compressed into an arrow chain — {chain.strip()[:60]!r}. "
                 "Shortening is by selection, never by compression."
             )
     # ⚠️ Three is enough to act on and a wall of them is not, but the cap is
@@ -226,6 +267,19 @@ def check_no_compression(reply: str) -> list[str]:
             "needs restating rather than patching line by line."
         ]
     return findings
+
+
+def check_compression_is_not_the_texture(reply: str) -> list[str]:
+    lines = prose(reply)
+    found = sum(len(chains(line)) for line in lines)
+    allowed = max(CHAIN_FLOOR, len(lines) // CHAIN_LINES)
+    if found > allowed:
+        return [
+            f"Length: {found} arrow chains across {len(lines)} prose lines is compression as the "
+            f"reply's texture rather than one line to restate (over {allowed}), which is what "
+            "hands the turn back."
+        ]
+    return []
 
 
 def check_emphasis_is_not_the_texture(reply: str) -> list[str]:
@@ -266,13 +320,20 @@ def check_uncertainty_is_stated_once(reply: str) -> list[str]:
 
 
 # Which property of the surface's table each check holds, and what a finding on
-# it does. ⛔ `BLOCKS` is only for a check whose finding is a fact about the
-# text; a check read at a density reports, because a density is a proxy for the
-# rule rather than the rule. The keys are asserted against the surface below, in
-# both directions.
+# it does. ⛔ `BLOCKS` is for a finding that is a fact about the text *and* worth
+# what handing a turn back costs, which is the whole reply a second time -- the
+# writer restates it entire and the person reads a reply they have already read.
+# So the opening blocks on one instance, being the first thing read and the frame
+# for everything under it; compression blocks where it is the reply's texture
+# rather than one line, which is a density; and a check whose rule is reached
+# only through a word list or a density reports. The keys are asserted against
+# the surface below, in both directions.
 HELD = {
     "Opening": [("the opening is the finding", BLOCKS, check_opening_is_the_finding)],
-    "Length": [("shortening is by selection", BLOCKS, check_no_compression)],
+    "Length": [
+        ("shortening is by selection", REPORTS, check_no_compression),
+        ("compression is not the texture", BLOCKS, check_compression_is_not_the_texture),
+    ],
     "Emphasis": [("emphasis is not the texture", REPORTS, check_emphasis_is_not_the_texture)],
     "Register": [("the register is reference", REPORTS, check_register_is_reference)],
     "Uncertainty": [("uncertainty is stated once", REPORTS, check_uncertainty_is_stated_once)],
@@ -587,6 +648,10 @@ REDDENS = [
      "The sweep reads: file → region → span → value.\n"),
     ("shortening is by selection", "an ascii arrow chain",
      "Order is row 0 -> row 1 -> row 8.\n"),
+    ("shortening is by selection", "a chain of file paths, whose dots sit inside tokens",
+     "The sweep walks tools/a.py -> tools/b.py -> tools/c.py in that order.\n"),
+    ("compression is not the texture", "compression as the reply's texture",
+     "Reading is a → b → c.\nWriting is d → e → f.\nRefusing is g → h → i.\n"),
     ("emphasis is not the texture", "emphasis as a default texture",
      "The **sweep** holds **nine** checks over **two** scopes, and **seven** of them are "
      "**forbidding**, which is **most** of the script.\n"),
@@ -635,6 +700,15 @@ STAY_GREEN = [
      "> you said a -> b -> c\n\nThat mapping is now stated on the surface.\n"),
     ("shortening is by selection", "two unrelated mappings in one sentence",
      "Dependencies: #6 → #77 and separately #80 → #82.\n"),
+    # ⚠️ The measured false red, kept as the plant that holds the carve-out it
+    # cost. One token between the arrows, and that token ends a clause.
+    ("shortening is by selection", "two mappings a clause apart, sharing no operand",
+     "Writing is decided per key: `FRESH` or `OURS` → write; `CHANGED` → report the key and "
+     "leave the value alone.\n"),
+    ("compression is not the texture", "one chain, which is one line to restate rather than a texture",
+     "The sweep reads: file → region → span and nothing else does.\n"),
+    ("compression is not the texture", "arrows inside a fenced block",
+     "The mapping is stated once.\n\n```\nfile -> region -> span -> value\n```\n"),
     ("the register is reference", "an inequality and an image, which are not exclamations",
      "The guard compares a != b and c != d.\n\n![one](a.png) ![two](b.png) ![three](c.png)\n"),
 ]
@@ -719,17 +793,24 @@ CARRIER_PLANTS = [
 
 
 def _plant_for(kind: str) -> str:
-    """A planted reply whose finding is of the given kind.
+    """A planted reply whose findings are of the given kind, and of no other.
 
-    ⚠️ Chosen by kind rather than by position in `REDDENS`. The first draft
-    indexed the list, so inserting a plant silently repointed the assertions
-    about what blocks and what reports to whichever plants had moved into those
-    slots.
+    ⚠️ Chosen by what `findings()` answers rather than by position in `REDDENS`.
+    The first draft indexed the list, so inserting a plant silently repointed the
+    assertions about what blocks and what reports to whichever plants had moved
+    into those slots. ⛔ And keying on the plant's own label is not enough
+    either, now that one property is held by two checks: a line crushed into
+    chains is reported per line *and* blocks as a texture, so a plant labelled
+    for the reporting check can carry a blocking finding too — which would make
+    `a reported finding blocks nothing` assert the opposite of what it says.
     """
-    for name, _, reply in REDDENS:
-        if any(k == kind for tests in HELD.values() for n, k, _ in tests if n == name):
+    for _, _, reply in REDDENS:
+        blocking, reported = findings(reply)
+        if kind == BLOCKS and blocking:
             return reply
-    raise AssertionError(f"no planted reply produces a {kind} finding")
+        if kind == REPORTS and reported and not blocking:
+            return reply
+    raise AssertionError(f"no planted reply produces a {kind} finding alone")
 
 
 def self_test() -> int:
