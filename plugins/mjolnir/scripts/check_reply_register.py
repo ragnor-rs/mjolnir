@@ -109,6 +109,11 @@ OPERAND = re.compile(r"^\s*\S+(?:\s+\S+)?\s*$")
 # ⚠️ Clause-ending punctuation counts only where a clause ends: followed by
 # whitespace, or ending the span between the arrows. A dot inside a token is not
 # a boundary, so a chain of file paths stays a chain.
+#
+# ⚠️ The coordinators are a closed list, which is the *quoting* weakness this
+# repository rules out elsewhere -- and it is safe here in the one direction that
+# matters: a conjunction the list does not carry leaves a chain red. A finding
+# kept rather than a finding invented.
 CLAUSE_BOUNDARY = re.compile(
     r"[.;:,!?](?=\s|$)|[—–]|\b(?:and|or|but|then|while|whereas|plus|versus|vs)\b",
     re.I,
@@ -217,12 +222,12 @@ def opening(reply: str) -> str:
 
 
 def chains(line: str) -> list[str]:
-    """Every pair of arrows in one line that shares an operand, as the span it spans.
+    """Each pair of arrows in one line that shares an operand, from the one to the other.
 
-    Read pair by pair rather than by a single pattern over the line, because
-    *sharing* is a property of the text between two particular arrows: four
-    arrows in a sentence can be one chain, two chains, or two mappings and a
-    chain, and a pattern that matched the line could say only which.
+    Read pair by pair rather than by one pattern over the line, because *sharing*
+    is a property of the text between two particular arrows: four arrows in a
+    sentence can be one chain, two chains, or a mapping and a chain, and a match
+    against the whole line cannot say which of those it found.
     """
     found, arrows = [], list(ARROW.finditer(line))
     for left, right in zip(arrows, arrows[1:]):
@@ -271,11 +276,11 @@ def check_no_compression(reply: str) -> list[str]:
 
 def check_compression_is_not_the_texture(reply: str) -> list[str]:
     lines = prose(reply)
-    found = sum(len(chains(line)) for line in lines)
+    count = sum(len(chains(line)) for line in lines)
     allowed = max(CHAIN_FLOOR, len(lines) // CHAIN_LINES)
-    if found > allowed:
+    if count > allowed:
         return [
-            f"Length: {found} arrow chains across {len(lines)} prose lines is compression as the "
+            f"Length: {count} arrow chains across {len(lines)} prose lines is compression as the "
             f"reply's texture rather than one line to restate (over {allowed}), which is what "
             "hands the turn back."
         ]
@@ -793,7 +798,8 @@ CARRIER_PLANTS = [
 
 
 def _plant_for(kind: str) -> str:
-    """A planted reply whose findings are of the given kind, and of no other.
+    """A planted reply whose answer carries the given kind — and, for a reported
+    finding, carries nothing that blocks, since that is what the assertion is about.
 
     ⚠️ Chosen by what `findings()` answers rather than by position in `REDDENS`.
     The first draft indexed the list, so inserting a plant silently repointed the
