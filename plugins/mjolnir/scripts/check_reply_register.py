@@ -239,11 +239,10 @@ HEDGES_ALLOWED = 3
 # ⛔ The ruling is kept where it was measured -- the shape each form was named for
 # stays red -- and `--self-test` holds every form in both directions.
 PARKED = re.compile(
-    # `open items`: a section of them the reply carries, or one asserted to
-    # stand. ⚠️ Not the count a gate reads, which is the rule's own mechanism.
-    r"^\s{0,3}#{1,6}\s*open items?\b"
-    r"|(?:\*\*|__)\s*open items?\s*(?:\*\*|__)"
-    r"|\bopen items? (?:remains?|stands?|(?:is|are) (?:listed|below|outstanding))\b"
+    # `open items`: one asserted to stand. ⚠️ Not the count a gate reads, which
+    # is the rule's own mechanism, and not a *section* of them — that form is
+    # read with its answer, below, since the answer can be that there are none.
+    r"\bopen items? (?:remains?|stands?|(?:is|are) (?:listed|below|outstanding))\b"
     r"|\b(?:remains?|stands?) (?:as )?(?:an |one )?open item\b"
     r"|\b(?:leaves?|leaving|left) (?:behind )?(?:an |one |two |three |four |\d+ )?open items?\b"
     # `deliberately`: an absence of work excused rather than filled. ⚠️ Not
@@ -278,6 +277,22 @@ PARKED = re.compile(
     re.I,
 )
 PARKED_FLOOR = 1
+
+# ⛔ The one ruled form that is read with its answer rather than as a span. A
+# section of open items is a finding where it lists any, and the gate on the
+# change's body already holds the same section to being answered with one
+# string and nothing else -- so a reply carrying that answer states that it
+# parked nothing, and handing it back is the false red this arm is being
+# narrowed to stop. ⚠️ The spellings are that gate's, deliberately alike: a
+# reply and a body answering the same question differently would be two
+# conventions for one rule. The heading is matched on its text at any level,
+# and the label form carries its answer on the same line.
+OPEN_ITEMS_SECTION = re.compile(
+    r"^\s{0,3}(?:#{1,6}\s*|(?:\*\*|__)\s*)?open items?\s*(?:\*\*|__)?"
+    r"\s*(?::\s*(?P<answer>\S.*?))?\s*$",
+    re.I,
+)
+NO_OPEN_ITEMS = re.compile(r"^\s*(?:[-*+]\s+)?none\.?\s*$", re.I)
 
 # ⚠️ A fence is matched with its marker captured, not as a bare ```` ``` ````.
 # A toggle on any fence line inverts on the *nested* fence that showing a
@@ -461,11 +476,23 @@ def check_nothing_is_parked(reply: str) -> list[str]:
     writer puts in a cell as readily as in a paragraph -- a `verdict` column
     saying *next steps* parks exactly what a sentence would.
     """
+    lines = prose(reply, tables=True)
     found = []
-    for line in prose(reply, tables=True):
+    for index, line in enumerate(lines):
         for match in PARKED.finditer(line):
             start = max(0, match.start() - 24)
             found.append(line[start:match.end() + 24].strip())
+        section = OPEN_ITEMS_SECTION.match(line)
+        if not section:
+            continue
+        # ⚠️ The answer is on the label's own line or on the next line of prose,
+        # blanks having been dropped already. A section with nothing after it at
+        # all has answered nothing, which is the heading's own finding.
+        answer = section.group("answer")
+        if answer is None:
+            answer = lines[index + 1] if index + 1 < len(lines) else ""
+        if not NO_OPEN_ITEMS.match(answer):
+            found.append(line.strip())
     if len(found) < PARKED_FLOOR:
         return []
     # ⚠️ Bounded like the compression arm, and for the same reason: three spans
@@ -892,6 +919,10 @@ REDDENS = [
      "The guard is wired and its plants are green.\n\n## Open items\n\n- the skill's own wording\n"),
     ("nothing is parked", "a ruled phrase asserting that one of them stands",
      "The arm is narrowed. One open item remains against this change.\n"),
+    ("nothing is parked", "the same section as a label, answered with work",
+     "The guard is wired.\n\nOpen items: the skill's own wording\n"),
+    ("nothing is parked", "the same section answered with nothing at all",
+     "The guard is wired and its plants are green.\n\n## Open items\n"),
     ("nothing is parked", "a ruled phrase stating a gap in place of closing it",
      "The second arm's cost is stated plainly rather than fixed, and the first covers the "
      "measured case.\n"),
@@ -958,6 +989,10 @@ STAY_GREEN = [
     ("nothing is parked", "the mechanism the no-deferral rule states, described",
      "The gate counts the open items raised against the change and refuses the merge while one "
      "stands.\n"),
+    ("nothing is parked", "the section carrying the answer the sibling gate asks for",
+     "The guard is wired and its plants are green.\n\n## Open items\n\nNone.\n"),
+    ("nothing is parked", "the same answer under a label rather than a heading",
+     "The guard is wired and its plants are green.\n\nOpen items: none\n"),
     ("nothing is parked", "the register's own Uncertainty row, cited",
      "That row asks for uncertainty stated plainly, once, and this reply carries one hedge.\n"),
     ("nothing is parked", "this check's own finding for that row, relayed",

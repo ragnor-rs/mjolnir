@@ -857,6 +857,12 @@ nothing in the other. Nothing in the first shape of this check accounted for tha
   separates them. ⛔ The direction the rest of the list errs in is the opposite one — a reworded
   parking passes — and `deliberately not written`, which two documents here use to state a limit,
   is excluded for that reason and misses a parking that would say it that way.
+- ⛔ **One of the forms is read with its answer rather than as a span**: a section of open items is
+  a finding where it lists any, and not where it answers `None.` — the same heading text and the
+  same answer the gate on the change's body holds that section to, so that a reply and a body
+  answering one question do not answer it in two conventions. ⚠️ Found in the change that narrowed
+  the rest: the heading alone had been a finding, which hands back a reply for carrying the very
+  answer the convention asks for.
 - Every form is planted in both directions, and the green plants are the sentences this repository
   actually writes: the shape each ruled form was named for stays red, while a design intent
   reported, a heading cited, a limit stated, the gate described, and this check's own finding
