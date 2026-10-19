@@ -430,7 +430,7 @@ covers the operations the survey reached and says which it did not.
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
 | `set_labels` | every label set in one call | one call per label, and a set that is left partial is reported rather than retried silently |
-| `set_field` | a value written to the field a facet names — § 4.3's estimate wherever its carrier is not a label, and § 4.5's date | the value is reported for whoever does write it, and the gating role leaves the item where it stands: an item advanced without the commitment it was meant to carry reads as gated to every role after it |
+| `set_field` | a value written onto the item where a facet states where it goes — § 4.3's estimate wherever its carrier is not a label, and § 4.5's date | the value is reported for whoever does write it, and the gating role leaves the item where it stands: an item advanced without the commitment it was meant to carry reads as gated to every role after it |
 | `assign` | the item assigned to the person the role acts for | the report names who holds the item; a session's **claim** is not this operation and does not fall back to it — it rides the branch ref ([§ 10](#the-claim-on-a-work-item)) |
 | `checklist_read` | the item's check items, and which of them are ticked | the role has **no answer** about the checklist and says so; an unreadable checklist is never read as an empty one, by § 2's rule that absence of signal is not an answer |
 | `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
@@ -680,9 +680,10 @@ work_item:
     revisit_when: "…"
 ```
 
-The date an item is committed for. ⛔ **It is written by the gating role and by nothing else**
-(§ The loop): filing writes the item before anyone has committed to it, and starting is downstream
-of the commitment, so a date set in either place is a promise made where nobody was asked for one.
+The date an item is committed for. **Which role writes it is § The loop's statement and is not
+restated here**; what belongs here is why that role and no other: filing writes the item before
+anyone has committed to it and starting is downstream of the commitment, so a date set in either
+place is a promise made where nobody was asked for one.
 
 `native` is the tracker's own due date and `field` is a named field where the tracker has none.
 ⚠️ **The carrier says where a date is written, never what the date is.** What computes one is not
