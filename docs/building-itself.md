@@ -155,8 +155,7 @@ the unstopped run would have branched a defect under the feature's.
 The write was never entered on the passing run — the probe's tracker block still addresses this
 backlog and a probe does not write to it, so the cross-check being upstream of the write is why
 nothing was lost, and this instance says nothing about filing. And it is the role's prose performed
-and reported rather than a test asserting it; what would make it the latter is a carrier for the
-check, which no item owns today.
+and reported rather than a test asserting it.
 
 ## The absent facets this repository depends on
 
