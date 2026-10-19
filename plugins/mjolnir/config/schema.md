@@ -29,9 +29,8 @@ It is never a special case in the toolkit.
 **Absence is a configuration, not a gap.** Several of these facets have a real absent case, and
 no count of them is written here — a count in prose is a copy that goes stale on the next facet,
 green. A facet that is deliberately absent carries `absent_reason` and, where one exists,
-`revisit_when`:
-a stated decision with a trigger rather than an unset value. A skill must run against a config
-whose tracker is `none`, and must not report that as a broken install.
+`revisit_when`: a stated decision with a trigger rather than an unset value. A skill must run
+against a config whose tracker is `none`, and must not report that as a broken install.
 
 **Where the values live.** No value in this file appears anywhere under `skills/`. The
 `examples/` directory beside it holds whole configurations for each tracker and is data rather
@@ -634,12 +633,18 @@ work_item:
       outcome: "…"
       acceptance: "…"
       reproduction: "…"
+    absent_reason: "…"           # required when carrier is none
+    revisit_when: "…"
 ```
 
 The procedure names the **semantic** sections it depends on — `outcome`, `acceptance`,
 `reproduction` — and each template declares which of its own headings fills each. That keeps the
 heading text, and its language, out of the procedure while letting the procedure still check a
 section is present and tick its items later.
+
+**`carrier: none` with a stated reason is a first-class setting here as in § 4.3**, and an unset
+carrier is a misconfiguration. A project whose items already state the sections above has no
+template file to name, and `revisit_when` carries the trigger that would give it one.
 
 ## 5. Readiness gate — an ordered predicate list
 
