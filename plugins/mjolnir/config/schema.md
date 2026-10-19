@@ -808,9 +808,11 @@ language:
 
 One project writes its cards in one language and its repository in another and states the split
 is by audience; its branch slug must be a **translation** of the item title, never a
-transliteration. Another writes the day log in a technical register for itself where a third
-writes it in a business register for someone outside the build. These are three settings, not
-one.
+transliteration. ⚠️ What that costs a claim — a name two sessions are not guaranteed to agree on,
+and what resolves the item instead — is
+[§ 10 → The branch name a claim is taken on](#the-branch-name-a-claim-is-taken-on). Another
+writes the day log in a technical register for itself where a third writes it in a business
+register for someone outside the build. These are three settings, not one.
 
 ### The reply to the person running a role
 
@@ -1117,6 +1119,21 @@ read it**, for the reason given there: the method is a project's convention rath
 about a given ref, so a reading keyed on it would be wrong about the first ref somebody merges by
 hand.
 
+⛔ **The two rows read from the host's pull requests are keyed on a branch *name*, and a name
+outlives the ref that wore it — so a merged pull request lands a ref only where the ref already
+existed when it merged.** Measured 2026-10-19: a ref published at 14:47:34 read back as **landed**
+on a pull request that had merged sixteen and a half hours earlier, against a deleted ref that had
+held the same name. ⚠️ Of the two misreadings a reused name can produce this is the dangerous one,
+because *landed* says the claim is spent and that releasing it needs no override — on an item
+another session had taken thirty-three seconds before. ⚠️ **Where the ref's own creation cannot be
+read the arm declines rather than asserting**: an unreadable creation is not evidence that the ref
+predates the merge, and declining costs a reading of *live*, which refuses a start and asks for an
+override to release.
+
+⚠️ **The window is between the publish and the cut**, which is why it had not been seen: once the
+tree exists the occupied-tree arm answers first. That interval is exactly the one a start performs
+as a single operation and anything reading afterwards does not.
+
 ⚠️ **So the last row is the weakest and is read last.** Reading it first makes every squash-merged
 claim live forever, and then the ordinary cleanup after a merge has to use the override reserved
 for breaking somebody else's work, which empties the override of its meaning.
@@ -1158,6 +1175,50 @@ arbitrate between two machines that share no remote.
 ref is taken; `assignee_matches_role` asks whether the person on the item is the one the role acts
 for. Different questions on different stores, and a gate configuring both is not asking one thing
 twice.
+
+### The branch name a claim is taken on
+
+The name is `(prefix, number, slug)` — the prefix a function of the item's type
+([§ 4.1](#41-type)), the number the item's own identifier, and the slug derived from its title.
+
+⛔ **The derivation is performed by the carrier and is not a rule a role applies.** A slug
+described in prose is a description two readers follow differently, and that is measured rather
+than feared: on 2026-10-19 three items were started twice under two names each — one session
+carrying the first few words of the title, the other the whole of it — and each time the push
+**created** the ref, so the common arm of the test-and-set above never engaged and the tree
+directory arbitrated a step later. ⚠️ **All three divergences were length rather than spelling**,
+so a derivation stating only a character mapping would have licensed every one of them: the bound,
+and where it cuts, are as much the rule as the mapping is.
+
+What the derivation does: normalise the title, lowercase it, replace every run of characters that
+is neither a letter nor a number with one separator, trim, and cut to a stated bound at a
+separator so no word is halved. A title that leaves nothing behind leaves the number standing
+alone rather than a trailing separator.
+
+⚠️ **§ 8's translation stands outside the identity.** Where the item's language differs from the
+repository's, [§ 8](#8-language-register-audience--per-artifact-not-per-project) requires the slug
+to be a translation of the title and never a transliteration — and a translation is not something
+two sessions are guaranteed to produce alike. The derivation is therefore a function of *the
+string it is handed*, which is the title as written in the common case and a translation in that
+one, and the ref's name is consequently not what the claim is resolved on.
+
+⛔ **The claim is resolved on the work item.** Before the ref is published and again after, every
+ref whose last segment names this item is read and the readings above are applied to each. A ref
+that is neither landed nor this session's own refuses the start; one that appears between the two
+reads takes this session's ref back off the host. ⚠️ Where two sessions reach the second read
+together, both give their refs up and the item is left free — a refusal reported to two people
+rather than one item held by two, which is the direction to fail in, and a re-run takes it.
+
+⛔ **A ref whose name matches the item is a candidate and never an answer.** The item's number sits
+in the name exactly as much after the work lands as before it, so a filter that stopped at the
+match would hold the item for as long as the ref outlives the merge.
+
+⚠️ **A read taken before the attempt is advisory and stays advisory.** Two misses were measured on
+2026-10-19 and they are different failures: one filter was asked about a *name* the sibling had
+not used, which asking about the item fixes, and the other was asked about the right name at a
+moment when the answer genuinely was *free* and was overtaken before the push, which nothing asked
+beforehand can fix. ⛔ The attempt is the authority, and the resolution above is part of it rather
+than a thing a role does first.
 
 ### Which tree a verdict belongs to
 
