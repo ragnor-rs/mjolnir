@@ -20,8 +20,8 @@ whole of the bootstrap — not three pieces picked for being difficult.
 | the first carrier of the issue loop, its starting half | `e9e8e0f`, [#107](https://github.com/ragnor-rs/mjolnir/pull/107) | the role that starts a work item cannot be started by the role that starts a work item |
 
 ⚠️ **The third row names the *issue* loop, and the distinction is not cosmetic.** The day-log
-carrier shipped in this repository's first commit, `6410f34` — so the earliest carrier of any of
-the nine roles was never hand-built in this sense at all; it predates the loop it belongs to. It
+carrier shipped in this repository's first commit, `6410f34` — so the earliest carrier of any role
+of the loop was never hand-built in this sense at all; it predates the loop it belongs to. It
 is excluded here for the reason the `day_log.script` bullet below gives: the one role whose
 carrier shipped first is the one role this project cannot run.
 
