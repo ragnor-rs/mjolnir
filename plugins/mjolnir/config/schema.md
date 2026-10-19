@@ -322,7 +322,8 @@ down — what is absent there is the project's *choice* and not the fact, and a 
 under a project without the project noticing. A method imposed by a **policy outside the
 repository** is written down too, which is `checks`'s own shape one level on: the configuration
 states the fact a role reads, and where the decision was made elsewhere this is a copy of it rather
-than a second authority over it — nothing shipped can reach an organisation's policy store.
+than a second authority over it. **What imposed a fact is not where a role reads it** — the same
+reason `checks` names a workflow rather than restating what it runs.
 
 ⛔ **What the host permits is read from the host and never restated here.** A host's allow-flags say
 which methods are *available*; this key says which one the project lands by. Measured here: all
@@ -333,17 +334,19 @@ The converse is the ordinary case and is no finding: a host permitting more than
 is what makes the stated fact load-bearing rather than redundant. ⚠️ **No gate holds that
 comparison**, the answer being on the host and free to change while the tree does not; the reader
 holds the *value* to the alternation above and nothing further, and the comparison belongs to the
-role that merges, inside the host read it is already making. ⛔ **The procedure does not write the
-host's setting either** — narrowing what a host permits is repository administration, not a step of
-landing a change.
+role that merges. ⚠️ **It is a read of the repository and not of the change**, a pull request
+carrying no merge-permission field at all, so it is one read more than the preconditions above
+rather than a field already in hand. ⛔ **The procedure does not write the host's setting either** —
+narrowing what a host permits is repository administration, not a step of landing a change.
 
 **`delete_branch` names which of the two acts, because both acting is an error and neither acting
-is a configuration.** Where the host deletes on merge the procedure must not also ask: the second
-deletion fails on a ref that is already gone, and a failed call reads as a merge that did not
-finish. Where the host does not delete, nothing happens unless the procedure does. ⛔ **`never` is
-a real value rather than a degenerate one** — the host's flag off and the procedure not deleting is
-the state a repository is in before anybody decides, and a two-valued key would have made
-*somebody always deletes* a rule nobody wrote.
+is a configuration.** Where the host deletes on merge the procedure must not also ask: ⚠️ **a
+second deletion is refused**, measured as `422 Reference does not exist` against a ref deleted a
+moment earlier, and a refused call reads as a merge that did not finish. Where the host does not
+delete, nothing happens unless the procedure does. ⛔ **`never` is a real value rather than a
+degenerate one** — the host's flag off and the procedure not deleting is the state a repository is
+in before anybody decides, and a two-valued key would have made *somebody always deletes* a rule
+nobody wrote.
 
 ⚠️ **It reaches the remote ref and nothing else.** The local branch and the tree are
 [§ 10](#the-claim-on-a-work-item)'s release, which no host setting touches, so nothing reads this

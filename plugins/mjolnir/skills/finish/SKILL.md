@@ -173,8 +173,9 @@ which the last of the four is the measured violation of.
 the three values, why no reader derives one from the shape of the integration branch, and what the
 key does *not* restate. ⛔ **The stated method is checked against what the host permits before the
 merge, and that check runs one way only**: a method the host forbids is a stop naming both, while a
-host permitting more than the project lands by is the ordinary case and no finding. It costs no
-extra call — the host read above already carries it.
+host permitting more than the project lands by is the ordinary case and no finding. ⚠️ **It is one
+read more, and of the repository rather than of the change** — a pull request carries no
+merge-permission field, so nothing read in step 6 answers it.
 
 ⛔ **Who deletes the branch is that section's `delete_branch` and is not this role's to decide.**
 Under `procedure` this role asks for the deletion; under `host` it must **not**, the host's own

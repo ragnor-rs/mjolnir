@@ -104,9 +104,17 @@ the three that are obvious. The measurements that forced each to be independent:
    survey.** How a pull request lands — squash, a merge commit, or rebase — was read in three
    places in this backlog and decided in none of them: the role that performs the merge, the
    commit-message hook that has to survive a concatenated message, and the role that prunes a
-   landed tree and deletes its branch. The words `squash`, `merge_method` and `linear` returned
-   **zero** hits across the surface, this repository's own configuration, every document under
-   `docs/` and every file under `config/examples/`.
+   landed tree and deletes its branch.
+
+   ⚠️ **The item's own zero-hits measurement was true when it was taken and false by the time it
+   was acted on**, which is recorded rather than restated, being an instance of the thing this
+   document keeps catching. On 2026-10-17, at `f40785e`, `squash`, `merge_method` and `linear`
+   returned **zero** hits across the surface, this repository's configuration, every document under
+   `docs/` and every file under `config/examples/`. Two days later, at `756ab7a`, `squash` had six
+   hits in those same files. ⛔ **Not one of the six states the fact**, which is why the gap
+   survived its own measurement going stale: every one is the landed reading explaining why a
+   rewritten hash defeats ancestry — the one reader this facet does not simplify — and no key, and
+   no sentence anywhere, said which method a project lands by.
 
    ⚠️ **Three rather than the four the item claimed, and the direction of the defect was not
    uniform either** — recorded because the correction is the kind of thing this document exists to
@@ -121,7 +129,11 @@ the three that are obvious. The measurements that forced each to be independent:
 
    - **A landing picked a method with nothing to read.** `main` was linear and the previous change
      had landed as a single commit, so squash was inferred. A linear history is equally consistent
-     with rebase, so the inference was a coin toss that read as a reading.
+     with rebase, so the inference was a coin toss that read as a reading. ⚠️ **It happened to be
+     right, and the evidence for that is not the shape it was read off**: every landing on this
+     integration branch is one commit carrying the `(#N)` the host appends *only* to a subject it
+     generates itself, which a rebase merge does not do — so the convention was in the history to
+     be read correctly, and nothing said it.
    - **The host constrains nothing.** `allow_squash_merge`, `allow_merge_commit` and
      `allow_rebase_merge` are all true, and `delete_branch_on_merge` is false — so every method is
      available, nothing on the host enforces the convention the history implies, and the branch
