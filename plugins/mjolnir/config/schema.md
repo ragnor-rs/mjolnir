@@ -143,6 +143,53 @@ statement; it carries no count, because a count restated elsewhere drifts the mo
 added. The measurements that forced each to be independent are in
 [`docs/configuration-surface.md`](../../../docs/configuration-surface.md).
 
+### What carries the item forward, and the two places the loop asks
+
+⛔ **Each leg after the first is entered by the leg before it**, and a person naming the next role is
+not what the route runs on. A role that waits to be asked is a role that is skipped whenever nobody
+asks, and ⚠️ **a skipped role reads exactly like one that ran** — the change lands either way, and
+what is lost is every check the skipped role owns. Measured on this repository, in
+[`docs/configuration-surface.md`](../../../docs/configuration-surface.md#the-loop-does-not-continue-itself).
+
+| leg | entered by | on |
+|---|---|---|
+| the starting role | a person, or the ordering (§ 12) | an item the project makes available |
+| the work itself | the starting role, as its last act | the tree cut and entered |
+| the first finishing pass | the session holding the item | the work **implemented**, below |
+| the reviewing role | the first finishing pass | a change open on the host |
+| the second finishing pass | the reviewing role | the review recorded |
+
+⚠️ **The hand-off a red forces, stated above, is one of these legs and not a second rule**: what a
+red changes is which role fixes the change, never which role is entered.
+
+⛔ **The leg no role owns is the implementing one, and it is where the route breaks.** The roles
+named at the top of this section are the whole list, so nothing there names the state the finishing
+role is entered on. **Implemented** is therefore stated here: the item's own acceptance check
+(§ 4.4) is answered in the tree, and nothing that check raised is waiting on a person. ⚠️ **It is
+not the diff looking finished** — an item whose acceptance check nobody can answer yet has not
+reached this state, and the session says so rather than continuing.
+
+⚠️ **A leg whose role a project does not map is not a stop.** §7's `carriers` says which roles exist
+there, and an absent one hands the item to the next leg that does: a project mapping no reviewing
+role continues from the first finishing pass into the second, rather than waiting for a role nobody
+installed.
+
+⛔ **Two of the legs stop to ask, and both ask rather than deciding** — in the form
+[*Nothing is deferred*](#nothing-is-deferred) fixes, which is not restated here:
+
+- **How far the reviewing pass goes**, asked by the reviewing role before it reads the change and
+  after the conversation it reads first — which is not optional, and is what makes the question
+  answerable. ⛔ **The depth is what is asked and never whether the gate runs**: the host's runs and
+  §13's list are answered whatever comes back, so the shallowest answer is a person declining a
+  reading rather than a change admitted unread.
+- **Whether the merge happens now**, asked by the finishing role before the merge and before
+  anything else irreversible. ⚠️ **Later is an answer rather than a failure**: the change stays
+  open, the item stays where it is, and the reply says which.
+
+⛔ **Neither ask is configuration**, for the reason §6 gives for authorship: a project that could
+turn one off is a project whose loop merges unasked. ⛔ **And both answers are recorded rather than
+reported**, by the division stated above.
+
 ### Nothing is deferred
 
 ⛔ **A work item is delivered whole.** A role that reaches a question it cannot answer **asks**,

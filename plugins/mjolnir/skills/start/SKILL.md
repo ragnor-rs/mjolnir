@@ -8,7 +8,11 @@ argument-hint: "[<item number or item url>]"
 
 Four things happen in one pass and in this order: the configuration is **resolved** and said out
 loud, the item is **chosen**, the gate runs **whole**, and the claim is taken **by publishing the
-item's ref**. Nothing after the tree is cut belongs to this role.
+item's ref**. The work itself does not belong to this role — but ⛔ **the leg out of here does**,
+because it is the one leg of the route no role owns:
+[`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-the-two-places-the-loop-asks)
+states what *implemented* means and that the session holding the item enters the finishing role on
+it, and step 6 is where this role says so.
 
 ⛔ **The gate and the claim are the whole of what this role is for, so neither is skipped for an
 item somebody asked for by name.** An item named on the invocation changes which item, and nothing
@@ -238,6 +242,15 @@ first sentence, then the facts, with a table where the content enumerates.
 - ⛔ anything that could not be established, **named rather than omitted**
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)), which has no
   quiet form;
+- ⛔ **what happens when the work is done, named rather than left to whoever reads this later**:
+  the item's acceptance check answered in the tree is what the finishing role is entered on, and
+  the session holding the item is what enters it —
+  [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-the-two-places-the-loop-asks).
+  ⛔ **It also goes where the next role reads**, not only into this reply: a window is summarised
+  without being asked, so the leg is written to this project's artifact store
+  ([`§ 11`](../../config/schema.md#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it)),
+  whose path § 11 keeps clear of the branch model's teardown — ⚠️ **and where that store's carrier
+  is `none`, this reply is the whole of the handoff**, which the reply then says;
 - ⛔ anything that needs the person running this, **asked with the options**
   ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): an orphaned claim, a
   stop whose remedy is a decision, an item whose type has no prefix, an ordering that could not be

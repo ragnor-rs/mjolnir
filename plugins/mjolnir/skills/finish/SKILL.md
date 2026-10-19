@@ -1,6 +1,6 @@
 ---
 name: finish
-description: Take a finished branch to a landed pull request — the commit, the push, the pull request, the host's answer about it, what this project counts as done and who answers each of those checks, the merge read back from state, the work item's own move, and the tree released. Use when asked to finish a work item, open or land its pull request, or merge the branch for an item.
+description: Take a finished branch to a landed pull request — the commit, the push, the pull request, the host's answer about it, what this project counts as done and who answers each of those checks, the merge read back from state, the work item's own move, and the tree released. Use as soon as a work item's implementation is done — the session holding the item enters this role itself, rather than waiting to be asked — and whenever asked to finish a work item, open or land its pull request, or merge the branch for an item.
 argument-hint: "[<item number, item url, or pull request url>]"
 ---
 
@@ -16,6 +16,18 @@ one of whose checks may be a person's to answer and not this role's.
 ⚠️ **Four of the steps below were in one copy of this role and in none of the other four**, and
 each is marked where it falls. They are not refinements: in every one of them the obvious
 procedure reports the opposite of what happened.
+
+⛔ **This role is entered by the route and not only by being asked, and it is entered twice.** Which
+leg enters it, what each leg is entered on, and what *implemented* means are
+[`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-the-two-places-the-loop-asks)'s
+— ⛔ **named here and not restated**, since the reviewing role is entered by the same statement and a
+route written in one role's skill is a second authority for the other. What this file holds is where
+each pass begins and ends: the first runs steps 1 to 6 and hands over; the second ⛔ **resolves
+again** — step 1, since a pass may be a new window entirely — and then resumes at step 7.
+⚠️ **Where a reviewing role is mapped, a pass that walks this file end to end has merged a change
+nothing reviewed**, which is the failure the hand-over in step 6 exists to prevent. ⛔ **Where one is
+not, walking it through is correct**, and that is read from `carriers` rather than from this role
+finding no review.
 
 ## 1. Resolve, and say what was resolved
 
@@ -193,6 +205,17 @@ than either role's; what this role owes is to **not merge** while a red stands, 
 precondition failed. A finishing pass that starts fixing is the review happening with none of its
 record kept.
 
+⛔ **The first pass ends here, and this role enters the reviewing role itself** — the leg and what it
+is entered on are
+[`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-the-two-places-the-loop-asks)'s,
+read at the top of this file. ⚠️ **Not only on a red.** A green change with no review recorded
+against it is the ordinary case and the one that reads as finished, so the hand-over is on the
+change being *open and unreviewed* rather than on anything being wrong with it. ⛔ **Where the
+project maps no reviewing role**, that section's absent-leg rule applies and this pass continues
+into step 7 instead — ⛔ **read from `carriers`, never from this role finding no review on the
+change**: a review nobody has done yet and a role nobody installed are the same silence, and only
+the configuration tells them apart.
+
 ## 7. What counts as done
 
 ⛔ **A green gate is not a definition of done, and which checks are is the project's statement** —
@@ -240,6 +263,27 @@ whoever just produced them is
 own list, and this file does not carry a second copy of it.
 
 ## 8. The merge, and reading it back
+
+⛔ **The merge is asked for before it is taken, and the ask comes before the four preconditions
+below.** The question, that *later* is an answer rather than a failure, and that it is procedure no
+project can turn off are
+[`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-the-two-places-the-loop-asks)'s
+— ⛔ **not restated here**, and the asking form is the same section's citation of
+[`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred).
+
+- ⛔ **It is not the reviewing role's two questions**, which are that role's step 9: those ask who
+  reads the change and who runs its plan. This one asks whether the change goes in now, and it is
+  asked by whoever is about to merge.
+- ⛔ **Read that role's record rather than asking for it again**, and say what it holds in the same
+  message as the ask — ⚠️ **including where it records that the reading was declined.** The person
+  deciding the merge is the person owed what was and was not read; an ask that presents a green gate
+  and omits that nobody read the diff has collected permission for something else.
+- ⛔ **Nothing answering is not a yes.** An ask that reached no person leaves the change open and the
+  reply says it is waiting — [`§ 2`](../../config/schema.md#2-code-host)'s rule that absence of
+  signal is not an answer, arriving where it is irreversible.
+- ⚠️ **Later costs nothing here and is reported as an outcome**, not as a stop: the change stays
+  open, the item stays where it is, step 10 does not run, and what is left is named the way step 7
+  names it.
 
 ⛔ **Four things are established before the merge, because each of them is cheap now and expensive
 after.** Every one was in a single copy of a role and in none of the rest, and ⛔ **this step is

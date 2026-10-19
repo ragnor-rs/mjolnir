@@ -1,6 +1,6 @@
 ---
 name: review
-description: Review an open change and drive its gate green — the whole conversation read first, the diff read whatever else reads it, every finding reproduced and fixed under the same work item, the change's own plan driven rather than published, every thread answered, the host's runs read against their preconditions, and a record of who verified what. Use when asked to review a pull request, address review comments, fix what a review found, work a change's test plan, or get the checks green on an open change.
+description: Review an open change and drive its gate green — the whole conversation read first, the diff read whatever else reads it, every finding reproduced and fixed under the same work item, the change's own plan driven rather than published, every thread answered, the host's runs read against their preconditions, and a record of who verified what. Use as soon as a change is open on the host with no review recorded against it — the first finishing pass enters this role itself, rather than waiting to be asked — and whenever asked to review a pull request, address review comments, fix what a review found, work a change's test plan, or get the checks green on an open change.
 argument-hint: "[<pull request url or number, item number, or item url>]"
 ---
 
@@ -123,9 +123,41 @@ decisions were respected. The acceptance check for this role is that the pass re
 
 ## 4. The review itself
 
-⛔ **The diff is read here, whatever else also reads it.** Where the project has a reviewing carrier
-of its own it is invoked and its findings are taken seriously — but ⛔ **a delegated pass that found
-nothing is not a verdict**, for two measured reasons:
+**4a. How far this pass goes, asked before the change is read.** ⛔ **Asked rather than assumed**,
+and ⛔ **asked before the diff is read** — a question put afterwards is a reading already spent, and
+the answer could then only license what has already happened. ⚠️ **It comes after step 3 and not
+before it**: the conversation is read whatever the answer here, and a question asked with none of
+that context is one nobody can answer well. That this leg asks at all, and the form it
+asks in, are
+[`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-the-two-places-the-loop-asks)'s.
+
+| the answer | what this role does about the diff |
+|---|---|
+| **delegated**, the recommended answer | 4b and step 5 whole, the project's own reviewing carrier beside this role's own read |
+| **quick** | 4b and step 5, read by this role alone with no delegated pass beside it |
+| **skip** | 4b and step 5 are not run: no reading of the diff, and no finding raised from one |
+
+⛔ **Only those two steps are what this question governs. Steps 6 to 12 run unchanged on every
+answer** — the change's own plan, the threads, the gate, step 9's two questions, and the record.
+⚠️ **Which is why the answer cannot be taken as a shortcut through the pass**: `skip` removes one
+reading and leaves every obligation that does not depend on it standing.
+
+- ⛔ **`skip` is a person declining a reading and is never a waiver.** This role waives nothing, so
+  step 8's machine tiers are still driven to an answer, nothing is ticked, and step 11's record says
+  the reading was declined and by whom. ⚠️ **It is step 9a's second row, one question earlier**:
+  there the plan's items go to the person, here the diff does, and in both the gate is unaffected.
+  ⛔ **It does not answer step 9b either** — whether a *person* is going to look is that question's,
+  asked of a person about themselves, where this one is about what this role does.
+- ⛔ **Delegated is the default where no answer arrives**, which is step 9b's own warning about an
+  ask that never reaches a person — and ⛔ **the reply says the default took effect** rather than
+  reporting an answer nobody gave.
+- ⚠️ **Delegated does not replace this role's own read.** The two measured reasons below are why a
+  delegated pass that found nothing is not a verdict, and a person choosing delegation does not
+  weaken either of them.
+
+**4b. The diff.** ⛔ **The diff is read here, whatever else also reads it.** Where the project has a
+reviewing carrier of its own it is invoked and its findings are taken seriously — but ⛔ **a
+delegated pass that found nothing is not a verdict**, for two measured reasons:
 
 - **A latent defect scores as a non-defect.** Reviewing a change that *was* a gate, every
   independent scorer reproduced a real defect and every one returned the same middling confidence,
@@ -549,3 +581,18 @@ role writes to: the change's body, a review comment, and this reply.
   quiet form;
 - ⛔ anything needing the person running this, **asked with the options**. The pass is not finished
   while a question it raised is open.
+
+⛔ **Then this role enters the second finishing pass itself**, which is the leg
+[`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-the-two-places-the-loop-asks)
+states it is entered on — the review recorded. ⚠️ **The reply above is not the hand-over**: by
+[`§ 11`](../../config/schema.md#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it)
+what the next pass reads is the record on the change, so a verdict that reached only this reply
+hands over nothing. ⛔ **And entering it is not merging** — the merge is that role's act, behind that
+role's own ask, and the two things this role may never do are unchanged by its being the leg that
+enters it.
+
+⛔ **Held, handed over, or stopped on a refusal, this role enters nothing**, and says what the change
+is waiting on instead. A pass that enters the merging leg on anything but a recorded review has
+handed a red forward dressed as a verdict. ⛔ **An outstanding answer to step 9b is one of those
+cases**: a question asked and not yet answered is not a record, so the pass waits with the change
+open rather than entering a leg whose own ask would then be the second one put to the same person.
