@@ -121,43 +121,56 @@ on the change the host can report unresolved — and the gate refuses the merge 
 
 ## 6. The host's answer about the change
 
-⛔ **Four preconditions, in order, and all four are required before any of this reads as green.**
-⚠️ **The second of the four:** one copy had these and the other four treated silence as success.
-
-1. the tree is clean;
-2. a run exists **for this commit** — not for the branch, and not for an earlier push;
-3. the run **executed steps**;
-4. it concluded green.
-
-Precondition 3 is listed apart from 4 because
-[`§ 2`](../../config/schema.md#2-code-host) rules what silence may be read as, and the two ways of
-producing it are both live: a run whose billing is suspended fails in seconds having started no
-step, and a conflicted pull request produces no run at all. ⛔ **So neither verdict may be
-reported as the other** — a precondition that fails is reported as the step it was, rather than
-folded into the conclusion. ⚠️ **No checks reported** is almost always the conflicted case, and
-reads as *nothing to wait for* to anyone who has not been told.
+⛔ **Four preconditions, in order, and all four are required before any of this reads as green** —
+[`§ 2 → Reading a run's answer`](../../config/schema.md#reading-a-runs-answer-and-what-a-failure-is),
+which states them, what a precondition's failure may not be reported as, and what separates an
+environment failure from a finding. ⛔ **This file restates none of it**: the reviewing role reads
+the same runs, and a rule written in one role's skill is a second authority for the other. ⚠️ **The
+second of the four:** one copy of this role had those preconditions and the other four treated
+silence as success.
 
 Which runs should exist, which local command each one mirrors, and which paths each watches are
 `host.checks`'s to state ([`§ 2`](../../config/schema.md#2-code-host)) — ⛔ **never this file's, and
 never derived from what the host happens to report.** A run's name does not say which command it
 duplicates.
 
-⛔ **Never sleep, and watch rather than poll.** The host's own client blocks until the runs settle,
-which costs nothing and cannot miss a transition between two polls:
+Watching rather than polling is the same subsection's:
 
 ```bash
 gh pr checks <number> --watch
 ```
 
-⛔ **A cap of three fix cycles, then stop and ask**, with the options and what each costs. A fourth
-attempt at the same red check is a role that has stopped learning from the answer, and the person
-running it can see something the check cannot say.
+⛔ **A red answer is not this role's to fix.** The fix loop is the reviewing role's at
+[`skills/review/`](../review/), whose subject is a finding, and the cap on it is § 2's above rather
+than either role's; what this role owes is to **not merge** while a red stands, and to say which
+precondition failed. A finishing pass that starts fixing is the review happening with none of its
+record kept.
 
 ## 7. The merge, and reading it back
 
-⛔ **Read the merge back from state. Never from the exit status.** ⚠️ **The third of the four:**
-both success and refusal can print nothing, and one copy reported a merge that *had* landed as not
-having.
+⛔ **Four things are established before the merge, because each of them is cheap now and expensive
+after.** Every one was in a single copy of a role and in none of the rest, and ⛔ **this step is
+ordered so that nothing irreversible happens before the thing that would have stopped it** —
+which the last of the four is the measured violation of.
+
+1. ⛔ **Whether anything is based on this branch.** Retarget-on-merge does **not** fire reliably:
+   deleting the head branch **closes** every change based on it instead of moving it to this one's
+   base. ⚠️ **Recovering one is not a reopen** — a host refuses to reopen a change whose base ref no
+   longer exists, so the branch has to be pushed back at its old tip, the change reopened,
+   retargeted, and the branch deleted again. **Retarget the dependents first, then delete.**
+2. ⛔ **That the merge target is the change's own base**, which is not necessarily the default
+   branch. A change based on the wrong one is a mistake to report, not to merge.
+3. ⛔ **That the tree is clean here too.** Asking for the branch to be deleted moves the working
+   tree off it, so [`§ 6`](../../config/schema.md#6-commit-behaviour)'s dirty-tree derivation
+   applies at the merge and not only at the commit.
+4. ⛔ **That the tracker answers at all.** ⚠️ **A merge whose item never moved is invisible work**,
+   and step 8 is where that is discovered — after the irreversible act. So the port is reached for
+   a read **before** the merge, and an unreachable tracker holds it; `§ 3`'s fallback covers a
+   capability that is *absent*, which is a different thing from a host that is not answering.
+
+⛔ **Read the merge back from state. Never from the exit status.** ⚠️ **The third of the four
+single-copy steps:** both success and refusal can print nothing, and one copy reported a merge that
+*had* landed as not having.
 
 ```bash
 gh pr view <number> --json state,mergedAt,mergeCommit
@@ -166,7 +179,19 @@ gh pr view <number> --json state,mergedAt,mergeCommit
 ⚠️ **Measured, and the sharpest form of the same rule:** asking for the branch to be deleted as
 part of the merge, run from the tree that holds that branch, **lands the merge and then fails on
 the deletion** — a non-zero exit for an operation that succeeded. A role trusting the status
-retries a merge that is already in.
+retries a merge that is already in. ⛔ **So how far it got is read rather than inferred from the
+error, which can be absent entirely**: the change's own state *and* whether the branch ref still
+exists on the remote, which is the second half of the read-back and the only thing that says
+whether the server-side deletion happened. Then finish whatever those two say is left.
+
+⛔ **The squash subject carries the references, and a host appends none of them to a subject it was
+given.** Where the project's convention puts the item's number, or the change's own, in the subject
+line of what lands, ⛔ **that subject is passed explicitly** — a host adds the change reference only
+to a subject it generates itself, and omitting the subject on a one-commit branch squashes under
+*that commit's* message instead, dropping the item reference. ⚠️ **No title check can catch
+either**: it reads the change, and the squash happens after it passed. The subject is permanent on
+the integration branch, so this is also the last chance to correct a title that overstates what
+the change does.
 
 ⛔ **Ancestry answers in one direction only.** ⚠️ **The fourth of the four.** A true answer proves
 the content landed; a false answer proves **nothing**, because a squashed or rebased merge rewrites
@@ -192,6 +217,15 @@ and the item moves separately; where the advance is unavailable the role asks fo
 unavailable too, the move is **reported for whoever does make it**. Say which fallback was taken,
 rather than reporting the item as moved.
 
+⛔ **An item carrying more than one change does not advance until all of them have landed.** One
+copy carried this and the rest moved the item on the first merge, which says the item's work is in
+when a sibling change is still open. ⚠️ **The count is taken after this merge rather than before
+it** — the change just merged no longer answers, and one that reports itself still open is one the
+merge did not complete. ⛔ **Match the item's own reference rather than searching for its number**:
+a host's search normalises away the punctuation a convention relies on, so a branch whose name
+contains those digits answers a search for a different item entirely. Where a sibling is open,
+**leave the item where it is and name the open changes in the reply.**
+
 ## 9. Release the tree
 
 What is released once the work has landed is [`§ 10`](../../config/schema.md#10-branch-model)'s,
@@ -214,9 +248,13 @@ Register, and the language, are
 sentence, then the facts, with a table where the content enumerates.
 
 - the three read-back facts: the merge, the item's move, the release — each with what was read
-  rather than what was attempted;
-- every precondition of step 6 above that ran, and its verdict;
-- which port fallback was taken, where one was;
+  rather than what was attempted, and for the merge **both** reads: the change's state and whether
+  the branch ref is gone;
+- every one of § 2's preconditions that ran, and its verdict;
+- which of step 7's four pre-merge establishments held, and what each found — the dependents, the
+  base, the tree, and whether the tracker answered;
+- which port fallback was taken, where one was, and any sibling change that is holding the item
+  where it is;
 - ⛔ anything that could not be established, **named rather than omitted** —
   [`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)'s rule, which has no
   quiet form;

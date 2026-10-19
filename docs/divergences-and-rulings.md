@@ -114,6 +114,7 @@ Present in one or two copies each, and true for every project:
 | 8 | A duplicate at filing | **Rewrite the body** to what the work now is; no dated appends. Provenance goes in a comment where the tracker has them, otherwise in the run report | [schema § 3](../plugins/mjolnir/config/schema.md#a-duplicate-is-the-item-rewritten-never-a-second-item-filed), the skill |
 | 9 | Invocation names | **Namespaced, no alias.** A project-level alias would be one file per project per skill, reintroducing in miniature the duplication this toolkit exists to delete. The namespace also makes a deliberate local override read as a *different* name rather than the same one, which matters because one skill name already denotes two unrelated roles | [schema § 7](../plugins/mjolnir/config/schema.md#invocation) |
 | 10 | Deployment | **A thin skeleton only**: confirm intent and name the target, with an explicit go required for a live environment *for this deploy*; read-only preflight; invoke the project's own script; verify health; report what was rebuilt and what failed with its log tail. Hosts, services, secrets, build steps and tier selection stay local | #13, until extracted |
+| 11 | Reading the host's answer, and what a failure is | **One subsection, read by every role that reads a run.** The four preconditions, a precondition's failure never being folded into the conclusion, an **environment failure consuming no fix cycle**, the cap on fix cycles, and watching rather than polling. It was written in the finishing role's skill while that role was the only reader; the reviewing role reads the same runs, and a rule stated in one role's skill is a second authority for the other | [schema § 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is) |
 
 ### Where a ruling overrode a stated counter-argument
 
@@ -162,7 +163,107 @@ Read after the first design pass. None of it reverses a ruling; two items extend
   because a second collaborator commits to the same repository. Its rule is that an author filter
   belongs in the script, never a subtraction by hand. Hence `attribute_to`, absent by default.
 
-## 6. Still open
+## 6. What the five review copies added
+
+Read when that role was reconciled. Its copies ran **92 to 295 lines**, and the spread is one
+question: four delegated the review to a shared reviewing carrier and read no code themselves — one
+of those four reads the changed-file *list* and nothing in it — while the fifth read the diff itself
+and drove a browser against a running instance.
+
+**Two hard contradictions, neither settled by majority:**
+
+- **Who merges.** **Two** copies reach a merge, and one of those also moves the item and deletes the
+  branch; of the other three, none mentions the merge at all. It was **settled by the boundary
+  rather than by weighing the positions**: the finishing role already owns the merge, reading it
+  back from state, the item's move and the tree's release, so a merging copy's last section is a
+  second home for a role that had already landed. The reviewing role records; it never merges and
+  never waives.
+- **Who performs the review.** Ruled **both**, which is a synthesis and not one of the two
+  positions. A delegated pass is invoked where the project has one, *and* the diff is read
+  regardless, because a delegated pass that found nothing is not a verdict. ⚠️ **The accepted cost
+  is that a project whose reviewer is a delegated pass now pays a diff read as well** — which is the
+  cost the measurements below buy.
+
+**The open question that role raised, now ruled.** Two copies enforce part of it through a hook
+rather than carrying it as procedure, and ⚠️ **the two are not the halves the question said they
+were** — the item's body split them across the copies, and both halves turn out to be **one** copy's
+pair: it records the answer through a hook on the asking tool and refuses the merge where no record
+exists for that repository and number. The other copy's hook is not the second half of that: it
+holds every merge behind an unconditional ask that reads no record and that no review can silence.
+The ruling is that **procedure produces a record and enforcement reads it** — which the first pair
+is an instance of and the second is the case for, since enforcement reading nothing is what leaves
+the asking to procedure. The role asks whether a person is going to look whether or not a hook is
+installed, and says which of the two situations it was in; what refuses an act on the strength of
+that record is #16's.
+
+**What one or two copies knew and the rest lost** — the wording § 2 above is careful about, because
+no single copy holds this whole list:
+
+| Capability | Copies that had it | What the others lost |
+|---|---|---|
+| **The hand-over** — instructions somebody can follow, each item an act and an observation, with what is already known and which checkout a service is bound to | 1 of 5 | A summary of what would have been checked, handed to someone starting cold |
+| **A document the change contradicts and does not update** is a finding against that change | 1, and a different one | A change landing against a stated behaviour nothing records any more |
+| **The declinable inspection** — whether a person is going to look is asked, and the answer is what licenses a merge with nobody's eyes on the diff | 1 | Merging unasked, and holding a change nobody intends to look at — the same failure in two directions |
+| **An empty check list has causes worth telling apart** | 1 | Absence of signal read as green. ⚠️ [schema § 2](../plugins/mjolnir/config/schema.md#2-code-host) bars the *conclusion* and enumerates different causes, so a workflow configured to skip an uninspected change is in neither it nor the role |
+| **A local run of a command the host already ran adds nothing**, and its complement: a check no workflow mirrors is the one that *must* run locally | 2, each stating it in procedure **and** enforcing it in a hook | Either a shared machine spent twice for one answer, or a tier nothing ever runs |
+
+**Measurements this repository contributed**, each from reviewing its own changes. ⚠️ **The last of
+them is a mechanism rather than a rule**: four copies already forbade a force push, and what is new
+is why an amend is refused and why the second commit costs nothing.
+
+- **A latent defect scores as a non-defect.** Reviewing a change that *was* a gate, every
+  independent scorer reproduced a real defect and every one returned the same middling confidence,
+  for the same stated reason: verified, will be hit, but the tree is green today. Applied
+  mechanically, the confidence cut would have reported *no issues found* on a new file carrying
+  fourteen reproduced defects. So *real* and *firing* are separated and both reported, and **a
+  reproduction is the score** — which removes the confidence number from the decision entirely.
+  ⚠️ **The scorer count rests on a session record rather than on anything in the tree or on the
+  host**, so it is not written here; the fourteen is on the change itself.
+- **A probing reviewer needs an isolated copy.** Parallel verifiers told to probe in memory planted
+  files into the live tree, whose branch is another session's claim. Naming the mechanism is what
+  worked; *in memory or a scratch copy* was not enough.
+- **A reviewer reads the head the host reports**, never the sha the session remembers: readers given
+  a branch's first commit reported an already-retracted claim as live text.
+- **A fix after the push is a second commit.** An amend and a force push is refused as destructive,
+  and the second commit is the better record anyway.
+- **A local check reads the working tree, which is not what a commit takes.** Edits a merge had
+  staged, verified green by every local check and then edited again, were left out of the commit —
+  so the gates had answered about a tree that never landed, and the pushed change carried a
+  duplicate key its own reader resolves in silence. It is
+  [schema § 10](../plugins/mjolnir/config/schema.md#which-tree-a-verdict-belongs-to)'s wrong-tree
+  rule one level down, and the measurement is this role's own reconciliation.
+- **Convergence is evidence about a finding, not about its reasoning.** Three of five independent
+  readers agreed on one that was false; what their agreement established was that the surrounding
+  prose did not say which project each clause referred to.
+- **A delegated reviewing carrier inherits none of the delegating role's context**, which three
+  copies had already discovered and written down — so every requirement a role places on a finding
+  travels *in* the delegation rather than beside it.
+- **A reproduction is the score**, which is the latent-defect measurement's consequence and is
+  listed here because the role states it as a rule: the figures above are what it rests on.
+
+**What a delegated review of the reconciliation recovered.** Five passes over the extracted role
+found that it had dropped corrections one copy had paid for, and ⚠️ **the largest was structural
+rather than a rule**: the role had no step that *executed* the change's plan, which four of the five
+copies had — and with it went what counts as an observation, ticking only what was observed,
+re-running from the top after a fix, never ticking an item that could not be run, and writing the
+observation onto the item's own line. The second was that one copy asked **two** questions, who
+*runs* the plan and who *looks* at the result, of which only the second is declinable; the
+reconciliation had collapsed them into the declinable one. Both are now in the role, and the losses
+that belong to the finishing role rather than this one — the squash subject's references,
+retargeting dependents before deleting a branch, an item not advancing while a sibling change is
+open, and an unreachable tracker holding the merge rather than being discovered after it — are in
+that role, because a loss found by reviewing this change is this change's to repair wherever it
+landed.
+
+Two things needed no ruling because an existing one already struck them: **four** of the five copies
+credited a tool as a co-author on the fix commit and **the same four** put a generated-by marker in
+the comment they post, both barred by
+[schema § 6](../plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration); and
+three different commit-message mechanisms appeared across the five, settled by ruling (2). ⚠️ **The
+fifth copy carries no message template at all**, which is why it does neither — not a project that
+had already adopted the rule.
+
+## 7. Still open
 
 - Read the remaining five deploy copies, to confirm or revise ruling (10).
 - Probe whether the permission-allowlist defect behind ruling (2) still reproduces.

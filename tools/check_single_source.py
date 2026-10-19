@@ -59,6 +59,7 @@ ROLES = {
     "plugins/mjolnir/skills/day-report/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/file-work-item/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/finish/SKILL.md": PROCEDURE,
+    "plugins/mjolnir/skills/review/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/start/SKILL.md": PROCEDURE,
 }
 

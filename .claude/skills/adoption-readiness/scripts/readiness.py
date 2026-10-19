@@ -541,6 +541,22 @@ def main(argv: list[str]) -> int:
     except CannotEstablish as error:
         unestablished.append(str(error))
 
+    # ⛔ And every `role:` value against that list, which nothing held. The file's own header
+    # claims the role keys are held to the surface both ways, and that was true of the *count*
+    # only: a misspelled `role:` was accepted silently, classified a shipped carrier under a role
+    # that does not exist, and then reported the real role as unshipped — a wrong NOT READY with
+    # no line anywhere saying why. The reverse direction is held too: an entry nothing ships and
+    # no project carries is stale data, and stale data is what made this check refuse a verdict
+    # once already.
+    for name, entry in sorted(declared["carriers"].items()):
+        role = entry.get("role")
+        if role is not None and role not in role_keys:
+            unestablished.append(
+                f"vocabulary.yaml maps the carrier `{name}` to the role `{role}`, which is not "
+                f"one of the {len(role_keys)} the loop declares. A role nothing declares reads "
+                "as a role that does not exist, in both directions at once."
+            )
+
     vocabulary = declared["carriers"]
     shipped = classify(shipped_carriers(), vocabulary)
     shipped_roles = set(shipped["roles"])
