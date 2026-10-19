@@ -90,6 +90,11 @@ STATEMENT = re.compile(r"^\s*(?:[-*]\s+)?" + BINDING)
 # both, because what a citation costs is not the file's length alone: a document
 # of directives is read differently from a document of the same size that
 # explains, and the count is the only part of that a machine can report.
+#
+# ⚠️ The advisory marker is its emoji form, variation selector included. The bare
+# codepoint would also match it, and would then count the one bare instance in
+# this tree -- a script's output quoted inside a code span, which is a marker
+# being shown rather than a marker directing anybody.
 DIRECTIVE = (BINDING, "⚠️")
 
 # A citation of the surface: a link whose target is the surface and whose
@@ -540,7 +545,7 @@ def coarse_citations(tree: Tree) -> list[tuple[str, list[str], list[tuple[str, i
             by_anchor[cited][path] = by_anchor[cited].get(path, 0) + 1
     return [
         (cited, shape[cited][1], sorted(docs.items(), key=lambda d: (-d[1], d[0])))
-        for cited, docs in sorted(by_anchor.items(), key=lambda a: -sum(a[1].values()))
+        for cited, docs in sorted(by_anchor.items(), key=lambda a: (-sum(a[1].values()), a[0]))
     ]
 
 

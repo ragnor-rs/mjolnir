@@ -88,8 +88,8 @@ Check 2 is the one that does the most work, because it runs in the direction nob
 check by hand: a section added to the schema with nothing recording why it has that shape fails
 the build at the moment it is added, rather than being noticed a year later by someone wondering
 whether it is load-bearing. ⚠️ **It used to hold `##` sections only**, so a `###` subsection that
-no document motivated passed — two did, one of them carrying a ⛔ rule of its own, and the
-direction was enforced one level less deeply than it read. It now holds **every level the schema
+no document motivated passed — two did, **each carrying a ⛔ rule of its own**, and the direction
+was enforced one level less deeply than it read. It now holds **every level the schema
 uses**: the depth is read from the headings rather than written down, so a `####` added tomorrow
 is held the day it exists. No number of them is given here on purpose: a count is a fact about the
 schema, and a copy of it in this document would go stale on the next subsection either way, green.
@@ -134,7 +134,10 @@ nothing was reporting it.
 - **A per-file footprint** — lines, characters and ⛔/⚠️ markers, for every file the checks
   already walk. A role that doubles in size is then visible in the diff of a build log rather
   than noticed when a window runs short. Check 7 is what stops the report shrinking in silence:
-  a file the checks read and the footprint skips is a cost reported by nothing.
+  a file the checks read and the footprint skips is a cost reported by nothing. ⚠️ The marker
+  count is of the emoji form anywhere in the file, code spans included, and the advisory marker
+  **without** its variation selector is not counted — which is what keeps the tree's one bare
+  instance, a script's output quoted inside a code span, out of a count of directives.
 - **A count of coarse citations** — every citation naming a section that states something itself
   *and* has subsections, grouped by section with the documents that cite it. Check 6 holds the
   decidable end of this and nothing holds the rest.

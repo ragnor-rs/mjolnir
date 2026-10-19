@@ -362,11 +362,11 @@ Three of these measurements each forced a property of the port, stated in
 ⚠️ **Every impossibility in that table is a property of the tracker's API rather than of the
 project using it**, which is the measurement behind
 [`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability).
-No comment action, no short-id field, no label at creation time: a project cannot configure its way
-out of any of them, and **three of the six run on one tracker**, so each of those three meets
-whatever that tracker cannot do. What the survey found projects differing in is which mechanism
-carries the type, the estimate and the template — a facet below, never a capability, and already
-with a home of its own.
+No comment action, no short-id field, no label at creation time — each of those is one tracker's
+API and not one project's choice, and no configuration a project writes can reach any of them.
+⚠️ **And three of the six run on a single tracker**, so where those three differ the difference
+cannot be a capability: what the survey found projects differing in is which mechanism carries the
+type, the estimate and the template, which is a facet below and already has a home of its own.
 
 ## What is an ordered list of named checks rather than procedure
 
@@ -438,9 +438,9 @@ Hence the ordered list and its per-check answerer, in
 ⚠️ **And hence the refusal of a check the host already runs**
 ([`§ 13 → A done: check the host already runs`](../plugins/mjolnir/config/schema.md#a-done-check-the-host-already-runs-is-a-misconfiguration)):
 every check in the table above is mirrored by no workflow at all — a hand test on the running
-application, and an acceptance suite needing it up — which is the shape the facet was derived from.
-A check that *is* mirrored needs no entry, because the host has already answered it, and the two
-measurements supply no example of one.
+application, an acceptance suite needing it up, and a checklist carried on the pull request —
+which is the shape the facet was derived from. A check that *is* mirrored needs no entry, because
+the host has already answered it, and these two measurements supply no example of one.
 ⚠️ **What this measurement does not support is a definition of done for every project.** A project
 whose deliverable is a library has nothing to drive, so the absent case is `[]` and is first-class
 rather than degenerate. ⚠️ **How common it is was not measured** — unlike the prose-width table
