@@ -81,7 +81,7 @@ file it came from fails in both directions. Every check below is one of the firs
 | 0 | Every markdown document that may cite the schema has a declared role in the script | root `*.md`, `docs/**`, `plugins/**` | forbidding |
 | 1 | Every citation of the schema resolves — **both its path and its fragment** | every document with a role | computed |
 | 2 | Every `##`-level schema section is cited by at least one document | `##` only, not `###` | computed |
-| 3 | Every ruling's outcome cell resolves, and its § number and its link agree | the `Outcome lives in` column | computed |
+| 3 | Every ruling's outcome cell resolves, and the section it names — by number or by heading — agrees with its link | the `Outcome lives in` column | computed |
 | 4 | A ⛔ statement carries a citation naming a **section** | documents that explain or record | forbidding |
 | 5 | Every configuration's top-level key set equals the one the schema declares | top level only | computed |
 
@@ -106,12 +106,19 @@ Check 3 permits a third, partial home. A ruling whose outcome is split between t
 skill that carries it may name `the skill` **alongside** a section — ruling 6 does — but never
 instead of one. That carve-out is in the script, so it is stated here too.
 
-⚠️ **Check 3 recognises a numbered home only**, because the cell's form is `[schema § N](…#a)`
-and the number and the anchor are required to agree. A procedure rule sitting under an unnumbered
-`##` section — [*Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred),
-under the loop — therefore cannot be named as a ruling's outcome at all, and a ruling that needed
-to would have to name its work item instead. Nothing needs to today; it is recorded because the
-alternative is discovering it from a red build on whichever divergence first rules that way.
+⚠️ **Check 3 recognised a numbered home only until a ruling needed an unnumbered one**, and this
+is the divergence that paragraph was recorded in advance of. The limit was real: the cell's form
+was `[schema § N](…#a)` with the number and the anchor required to agree, so a procedure rule
+sitting under an unnumbered `##` section could not be named as an outcome at all.
+
+**The remedy was the grammar rather than the predicted workaround.** What was recorded here was that
+such a ruling would have to name its work item instead — and that would have been false of the
+thing it described: naming a work item says the outcome has *not* moved into the surface yet, while
+this one had. So the cell now reads `[schema § <N or heading>](…#a)`, and where the section is
+named rather than numbered the heading's own title is what ties the cell to it, there being no
+number to cross-check. ⚠️ **That is a change of grammar**, which is the one residue this script is
+allowed to carry — and it is held the same way the rest is: a named section whose link points at a
+different heading is a planted violation the build reddens on.
 
 ## The check must not become one more copy of the principles
 

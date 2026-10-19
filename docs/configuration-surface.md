@@ -738,11 +738,11 @@ records.
 **Classified against the ruling, every row reads the same way: the key would not have moved.** The
 revision is retired, so no row is an instance of a revision that should have been bumped and was
 not — each is a configuration refused with the key named, which is what the marker beside that key
-already does. The last three rows are why the alternative of absorbing a new key with a default was
-not available: `host.landing.method` has no default by design, since one would pick a merge method
-for every project that did not notice the key, and `done: []` and `environment.inherits: []` are
-decisions the surface states in as many words are *not* unset keys — so a default there would
-manufacture the very decision those facets refuse to infer.
+already does. `host.landing.method`, `done` and `environment.inherits` are why the alternative of
+absorbing a new key with a default was not available: the first has no default by design, since one
+would pick a merge method for every project that did not notice the key, and the other two are
+facets whose `[]` the surface states in as many words is a decision and *not* an unset key — so a
+default there would manufacture the very decision those facets refuse to infer.
 
 **What settled it is `e62a1d9` (#137), which moved requiredness onto the surface and deleted the
 reader's own list of it.** Before that, a reader met a missing key with no way to say whether the
@@ -753,11 +753,12 @@ with the key named. That is the whole of what the revision was introduced to sep
 where the key is declared rather than by a number describing the file.
 
 ⚠️ **What the retirement gives up, measured rather than assumed.** A refusal on a file written
-before a key existed reads exactly like one on a file that left the key out. Across all seven rows
-the remedy is identical — write what the marker declares — so what is lost is a diagnostic during a
-phase of rapid surface change, not a behaviour, and no reader is left with a revision it does not
-act on. ⛔ The honest cost is that an adopter migrating a months-old configuration is told *which*
-keys are missing and never *that they are new*.
+before a key existed reads exactly like one on a file that left the key out. On every row the
+remedy is the same act — make the file match the markers, writing what is marked required and
+deleting what is marked retired — so what is lost is a diagnostic during a phase of rapid surface
+change, not a behaviour, and no reader is left with a revision it does not act on. ⛔ The honest
+cost is that an adopter migrating a months-old configuration is told *which* keys are missing and
+never *that they are new*.
 
 **The retirement is held in both directions, and the arm that holds the set was missing until this
 change.** The reader refuses a retired key and its self-test asserts both that the surface declares
@@ -766,5 +767,11 @@ assertions was generated from the reader's own list, so deleting an entry delete
 its only assertion together. Measured: with the `version` entry removed the suite stayed green on
 every assertion and the reader accepted `version: 1` again. That is exactly the defect the retired
 `REQUIRED` table demonstrated, surviving in the one list still shaped like it, and it is now closed
-by deriving the retired set from the surface's own statements and holding the reader's list to it
-both ways.
+by marking each retirement on the surface as a `# retired: <key>` clause of its own and holding the
+reader's list to the marked set in both directions.
+
+⚠️ **That clause is a token because the first attempt at it was not.** Reading the retired set out
+of the surface's prose — a grammar matching `` `<key>` is retired `` — read `host.repo` out of a
+sentence stating it is retired *in no sense*: a live required key turned retired by a negation the
+grammar cannot see. A machine-read fact lives in a clause and the prose beside it says why, which
+is what every other marker on this surface already does.

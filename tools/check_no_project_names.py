@@ -281,6 +281,12 @@ PLACEHOLDER_IN_DATA = re.compile(r"^[A-Z][A-Z0-9_]*(?:/[A-Z][A-Z0-9_]*)?$")
 # Newlines are normalised away before matching, because this repository
 # hard-wraps its prose and a value whose wrap falls inside it is still a value.
 CODE_SPAN = re.compile(r"`([^`]+)`")
+# ⛔ Taken out before the single-backtick form, for the reason fenced blocks are:
+# a ``…`` span's own backticks shift the pairing of every span after it, so a
+# value written as a span lands inside a span the document never had. Measured
+# on this repository -- one `` `<key>` is retired `` in a document turned the
+# two value-context plants below green, which is the arm silently off.
+DOUBLE_CODE_SPAN = re.compile(r"``(.+?)``", re.S)
 QUOTED_ANY = re.compile(r"\"([^\"]*)\"|«([^»]*)»|“([^”]*)”")
 QUOTED_SINGLE = re.compile(r"'([^']*)'")
 
@@ -435,6 +441,16 @@ class Tree:
                 regions.extend(CODE_SPAN.findall(line))
         return regions
 
+    @staticmethod
+    def _spans_out(text: str, out: list[str]) -> str:
+        """Collect every ``…`` span as a context, and take it out of the text.
+
+        Returned so the single-backtick pass runs on what is left: the whole
+        point is that these backticks must not pair with the ones around them.
+        """
+        out += [match.group(1).strip() for match in DOUBLE_CODE_SPAN.finditer(text)]
+        return DOUBLE_CODE_SPAN.sub(" ", text)
+
     def value_contexts(self, path: str) -> list[str]:
         """Whole spans and whole quoted strings, per rule 2.
 
@@ -442,6 +458,9 @@ class Tree:
         fence's own backticks otherwise shift the pairing of every span after it,
         so a value written as a span lands inside a span the document never had.
         A line of a fence is a context in its own right.
+
+        ⛔ ``…`` spans come out next, for exactly that reason one level down:
+        they are the other construct whose backticks are not a span's delimiters.
         """
         body = self.text[path]
         if path.endswith(".md"):
@@ -455,10 +474,12 @@ class Tree:
                 (out if fenced else prose).append(line.strip() if fenced else line)
             # The wrap is not part of the value.
             flat = re.sub(r"\n\s*", " ", "\n".join(prose))
+            flat = self._spans_out(flat, out)
             out += CODE_SPAN.findall(flat)
             out += [g for match in QUOTED_ANY.finditer(flat) for g in match.groups() if g is not None]
             return out
         out = [line.strip() for line in body.splitlines()]
+        body = self._spans_out(body, out)
         out += CODE_SPAN.findall(body)
         for pattern in (QUOTED_ANY, QUOTED_SINGLE):
             out += [g for match in pattern.finditer(body) for g in match.groups() if g is not None]

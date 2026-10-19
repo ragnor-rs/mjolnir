@@ -89,7 +89,9 @@ CITATION = re.compile(r"\]\((?P<path>[^)\s#]*" + re.escape(SURFACE_NAME) + r")#(
 # alongside one of them, for a role whose outcome is split between the surface
 # and the skill that carries it.
 OUTCOME_IN_SURFACE = re.compile(
-    r"\[schema § (?P<number>\d+)\]\((?P<path>[^)#]*" + re.escape(SURFACE_NAME) + r")#(?P<anchor>[^)]+)\)"
+    r"\[schema § (?P<section>[^\]]+)\]\((?P<path>[^)#]*"
+    + re.escape(SURFACE_NAME)
+    + r")#(?P<anchor>[^)]+)\)"
 )
 OUTCOME_IN_WORK_ITEM = re.compile(r"#(?P<number>\d+), until extracted")
 OUTCOME_ALSO_IN_SKILL = "the skill"
@@ -312,6 +314,11 @@ def check_outcomes_live_in_one_of_two_places(tree: Tree) -> list[str]:
 
     sections = tree.sections()
     section_of = tree.section_of()
+    unnumbered = {
+        slug: title
+        for _, title, slug in tree.headings(2)
+        if not re.match(r"\d+\.\s", title)
+    }
     problems = []
     for row in rows:
         cells = split_row(row)
@@ -322,20 +329,41 @@ def check_outcomes_live_in_one_of_two_places(tree: Tree) -> list[str]:
         found = False
         for match in OUTCOME_IN_SURFACE.finditer(cell):
             found = True
-            number, target, slug = match.group("number"), match.group("path"), match.group("anchor")
+            section = match.group("section")
+            target, slug = match.group("path"), match.group("anchor")
             resolved = os.path.normpath(
                 os.path.join(os.path.dirname(RULINGS), target)
             ).replace(os.sep, "/")
-            if number not in sections:
+            if section.isdigit():
+                if section not in sections:
+                    problems.append(
+                        f"{RULINGS}: ruling {ruling} names schema § {section}, "
+                        "which is not a section of the surface."
+                    )
+                elif resolved == SURFACE and section_of.get(slug) != section:
+                    problems.append(
+                        f"{RULINGS}: ruling {ruling} names schema § {section} but links "
+                        f"`{slug}`, which belongs to "
+                        f"§ {section_of.get(slug) or 'no numbered section'}. "
+                        "The number and the link must name the same home."
+                    )
+            # ⛔ An unnumbered `##` section is a home as well. Every numbered
+            # section is a configuration facet, so a ruling whose outcome is
+            # procedure -- how the file itself is written, rather than a key in
+            # it -- lands in a section with no number, and refusing that would
+            # push the outcome into a document instead, which is the one thing
+            # this check exists to stop. ⚠️ With no number to cross-check, the
+            # heading's own title is what ties the cell to the section.
+            elif resolved == SURFACE and unnumbered.get(slug) != section:
+                here = unnumbered.get(slug)
                 problems.append(
-                    f"{RULINGS}: ruling {ruling} names schema § {number}, "
-                    "which is not a section of the surface."
-                )
-            elif resolved == SURFACE and section_of.get(slug) != number:
-                problems.append(
-                    f"{RULINGS}: ruling {ruling} names schema § {number} but links `{slug}`, "
-                    f"which belongs to § {section_of.get(slug) or 'no numbered section'}. "
-                    "The number and the link must name the same home."
+                    f"{RULINGS}: ruling {ruling} names schema § {section}, which is "
+                    + (
+                        f"not what `{slug}` links to -- that is § {here}."
+                        if here
+                        else f"not an unnumbered `##` section of the surface, and "
+                        f"`{slug}` is not one either."
+                    )
                 )
         if OUTCOME_IN_WORK_ITEM.search(cell):
             found = True
@@ -518,7 +546,34 @@ def _plant_outcome_number_against_wrong_anchor(tree: Tree) -> Tree:
     )
     tree.text[RULINGS] = above + table.replace(
         match.group(0),
-        f"[schema § {match.group('number')}]({match.group('path')}#{other})",
+        f"[schema § {match.group('section')}]({match.group('path')}#{other})",
+        1,
+    )
+    return tree
+
+
+def _plant_outcome_named_section_against_wrong_anchor(tree: Tree) -> Tree:
+    """The unnumbered branch: a named section whose link goes elsewhere.
+
+    ⛔ Planted on a cell that already names an unnumbered section, so the plant
+    reaches the branch rather than the numeric one beside it. A table with no
+    such cell would leave this arm unexercised, so that is said rather than
+    silently skipped.
+    """
+    above, table = _outcome_table(tree)
+    match = next(
+        (m for m in OUTCOME_IN_SURFACE.finditer(table) if not m.group("section").isdigit()),
+        None,
+    )
+    if match is None:
+        raise AssertionError(
+            "no ruling names an unnumbered section of the surface, so the branch "
+            "that reads one cannot be planted. Give this plant a cell to break."
+        )
+    other = next(a for _, _, a in headings(tree.text[SURFACE]) if a != match.group("anchor"))
+    tree.text[RULINGS] = above + table.replace(
+        match.group(0),
+        f"[schema § {match.group('section')}]({match.group('path')}#{other})",
         1,
     )
     return tree
@@ -560,6 +615,7 @@ VIOLATIONS = [
     ("outcomes live in the surface or a work item", "a cell with no home", _plant_outcome_with_no_home),
     ("outcomes live in the surface or a work item", "a cell with a second home", _plant_outcome_with_a_second_home),
     ("outcomes live in the surface or a work item", "a number against the wrong anchor", _plant_outcome_number_against_wrong_anchor),
+    ("outcomes live in the surface or a work item", "a named section against the wrong anchor", _plant_outcome_named_section_against_wrong_anchor),
     ("binding statements cite the surface", "a statement citing nothing", _plant_uncited_binding_statement),
     ("binding statements cite the surface", "a statement citing no section", _plant_binding_statement_citing_no_section),
     ("configurations match the surface", "an undeclared key in this project's own config", _plant_undeclared_key),

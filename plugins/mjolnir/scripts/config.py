@@ -301,12 +301,13 @@ def surface_keys(surface_text: str) -> set[str]:
 # the surface's blocks is what retiring it means -- so it is stated as a clause
 # of its own, inside the block the key was declared in.
 #
-# ⛔ A token, and never the English beside it. A grammar that read the prose
-# statement would be reading the one part of the surface written for people: the
-# same shape was measured on #99, where `required when <key> is <value>` claimed
-# four sentences that were never markers and stopped every example loading. The
-# prose says why the key is retired and this clause is what the reader performs,
-# which is the division every other marker on the surface already has.
+# ⛔ A token, and never the English beside it. A grammar over the prose reads
+# what the prose says rather than what it means -- measured on this surface: one
+# matching `` `<key>` is retired `` read `host.repo` out of a sentence stating it
+# is retired *in no sense*, a live required key turned retired by a negation no
+# grammar of that shape can see. The prose says why the key is retired and this
+# clause is what the reader performs, which is the division every other marker
+# on the surface already has.
 RETIRED_CLAUSE = re.compile(r"^#\s*retired:\s*(?P<key>[A-Za-z0-9_.]+)$")
 
 

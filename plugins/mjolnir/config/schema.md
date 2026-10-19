@@ -78,8 +78,12 @@ value added here is accepted without the reader changing.
 **A key the surface has stopped declaring is marked `# retired: <key>`**, as a clause of its own
 inside the block that key was declared in — a retired key has no line left to carry a marker,
 which is what retiring it means. The clause is what the reader performs, and the prose beside it
-says why; ⛔ **the reader reads the clause and never that prose**, a grammar matching English having
-been measured claiming four sentences that were never markers.
+says why.
+
+⛔ **The reader reads the clause and never that prose**, because a grammar over English reads what
+English says rather than what it means. Measured on this file: a grammar matching
+`` `<key>` is retired `` read `host.repo` out of a sentence stating it is retired *in no sense* — a
+live required key turned into a retired one by a negation no grammar of that shape can see.
 
 ```yaml
 # retired: version
