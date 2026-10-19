@@ -1217,9 +1217,19 @@ procedure's rather than a project's.
 
 ⛔ **A removal asked for from at or below the tree is refused rather than attempted**, and the
 refusal names the tree and says that leaving clears it. This is the same reading the claim's
-liveness arm already performs one subsection down — a process at or below a tree — turned on the
-caller instead of on a stranger, and it is the only half of this rule a carrier can enforce; the
-ordering above is text.
+liveness arm already performs one subsection down — a process at or below a tree — and it is the
+only half of this rule a carrier can enforce; the ordering above is text.
+
+⛔ **The reading is taken twice, on the caller and on everyone else, and a tree a *different* live
+session occupies is refused too.** The two are not one test: a reading of this process cannot see
+a sibling, and a reading of every process cannot tell the caller apart from one, so a carrier
+holding only the second would refuse itself forever. ⚠️ **Their remedies differ, which is why
+their refusals must**: nothing the caller can do clears its own occupancy except leaving, while a
+sibling's is a person's call — so an override covers the second and may not cover the first, and
+⛔ **what an override costs here is named in the refusal**, a tree being the only copy of
+everything in it that version control does not track. ⚠️ **Where the machine cannot be asked at
+all the removal is refused**, that arm having three answers and not two: unreadable is not idle,
+and reading it as idle removes the tree it could not clear.
 
 ⚠️ **Where the session cannot leave, the skip is correct and the tree is somebody else's to
 remove.** A session that was pinned to a tree when it was launched has no exit to perform, and the
