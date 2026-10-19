@@ -182,11 +182,12 @@ Stated, because an unstated limit reads later as coverage.
   commit takes. ⚠️ Measured on the change that added this bullet: edits staged by a merge were
   verified green, then edited again and left out of the commit, so the gate's verdict was about a
   tree that never landed. The host's own run closes it afterwards; nothing here closes it before.
-- **Key subtrees.** Check 5 holds the top level only. Per-tracker blocks live in `examples/` by
-  the schema's own
-  [§ 3](../plugins/mjolnir/config/schema.md#3-tracker-port), so a deeper comparison would need an
-  exception per tracker kind. A bounded check that is sound beats a deep one that needs
-  carve-outs, and `tracker.labels` being undeclared is the known consequence.
+- **Key subtrees.** Check 5 holds the top level only, so a key inside a block is this check's
+  blind spot whether or not the surface declares it — and `tracker.labels`, which it does not, is
+  the known consequence. ⚠️ A per-tracker block is **no longer** the reason: the schema's own
+  [§ 3](../plugins/mjolnir/config/schema.md#what-each-kinds-block-carries) states each kind's keys
+  and marks which its kind requires, and the reader refuses a block that omits one — which is a
+  deeper comparison than this check performs, held somewhere else and per kind.
 - **Issues and pull requests.** Not from *this* workflow, which holds no credential — reading
   that store needs a token scope, and per [#50](https://github.com/ragnor-rs/mjolnir/issues/50)
   this one is granted none. ⚠️ It is not unreachable in principle, and this document used to say

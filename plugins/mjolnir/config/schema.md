@@ -70,11 +70,20 @@ insofar as the keys under it are, and marking both would state one fact twice. T
 the key a project actually writes a value for, and on a list or block that **is** the value, as
 `carriers` and `host.checks` are.
 
-⚠️ **Requiredness that depends on another key is not this marker's.** `tree_dir` is required under
-`worktree` and null under `in_place`; a condition like that is stated in prose beside the key and
-enforced by the rule in the section that states it, because *must this be written at all* and
-*must this be written given that* are different questions and one marker answering both would
-refuse every project that correctly left the key out.
+⚠️ **Requiredness that turns on another key's value is marked too, with its condition.**
+`# required_when: <key> = <value>` names the key the condition reads — absolutely, from the top of
+the file — and the value that turns it on. [§ 3](#3-tracker-port)'s per-kind tracker blocks are
+what it is for: a key that addresses one tracker is required there and meaningless everywhere else,
+which the bare marker cannot say and a list in the reader cannot either. ⛔ **The condition must be
+one some configuration can meet** — a key this surface declares, and a value that key's own
+alternation states — because a condition that never fires is a requirement nothing enforces while
+reading exactly like one that does.
+
+A condition that marker cannot state stays in prose beside the key, enforced by the rule in the
+section that states it: `tree_dir` is required under `worktree` and null under `in_place`, and its
+refusal carries an argument about where a tree is cut that no marker's message would. Either way,
+*must this be written at all* and *must this be written given that* are different questions, and
+the bare `# required` answers only the first.
 
 **A facet with a real absent case marks its carrier `# absent_reason`.** `carrier: none` is then
 accepted only with a reason stated beside it, and the facet is named in what a reader reports as
@@ -388,10 +397,10 @@ tracker:
   kind: github-projects | github-issues | jira | trello | none # required
 ```
 
-The shared procedure names **the port and never a tracker**. Each `kind` carries its own block;
-see `examples/`. `github-issues` is plain issues with no board, no status field and no
-`in_flight` role — the cheapest real configuration, named here because this repository runs on
-it, and the first kind whose adapter is built.
+The shared procedure names **the port and never a tracker**. Each `kind` carries its own block,
+stated below and shown in full in `examples/`. `github-issues` is plain issues with no board, no
+status field and no `in_flight` role — the cheapest real configuration, named here because this
+repository runs on it, and the first kind whose adapter is built.
 
 Three properties of the port the procedure depends on:
 
@@ -402,6 +411,55 @@ Three properties of the port the procedure depends on:
   in a pull request body closes the item on merge in one system; another needs an explicit
   transition and no keyword; a third has no link at all and the item moves separately.
 - **A write may be forbidden by policy rather than by capability.**
+
+### What each kind's block carries
+
+⛔ **A key here is required by the `kind` beside it and not by every project**, which is why the
+marker carries the condition — `# required_when: tracker.kind = trello` — rather than the bare
+`# required` a key every configuration writes takes. The reader enforces exactly the lines below:
+a block whose kind requires a key it does not carry is refused at configuration time, naming the
+key and the kind, instead of loading clean and failing at the first operation.
+
+```yaml
+tracker:
+  kind: github-projects
+  project:
+    owner: "OWNER"              # required_when: tracker.kind = github-projects
+    number: 0                   # required_when: tracker.kind = github-projects
+  status_field:
+    name: "Status"
+    resolve: by_name
+```
+
+```yaml
+tracker:
+  kind: jira
+  project_key: "KEY"            # required_when: tracker.kind = jira
+  transitions: { resolve: by_name }
+```
+
+```yaml
+tracker:
+  kind: trello
+  board: "<board id>"           # required_when: tracker.kind = trello
+  lists: { resolve: by_name }
+```
+
+`github-issues` and `none` carry **no block beyond the kind**, and that is a complete
+configuration rather than a half-written one: the first addresses the repository the host facet
+already names, and the second addresses nothing at all
+([`The trackerless adapter`](#the-trackerless-adapter-and-a-kind-with-no-implementation) below).
+
+**The test a new kind's block is written against**: a key is required when the adapter cannot
+address the right tracker without it. An address this reader accepts and the tracker rejects is
+the one failure a configuration can be read for; everything past the address, the adapter learns
+by asking, which is the port's business and not this surface's.
+
+⚠️ **What is deliberately not required, in each block above**: `status_field`, `transitions` and
+`lists` map a project's own states onto the tracker's, and whether a project needs one is
+[§ 4.2](#42-status--an-ordered-set-of-name-role-writer)'s question rather than this one — a state
+nobody moves needs no mapping, so an absent one is a decision this reader cannot tell from an
+oversight and does not try to. `policy` states content rather than an address, and it is below.
 
 ### The operations, and what an absent capability does
 

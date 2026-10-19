@@ -28,9 +28,9 @@ tracker:
   project_key: "KEY"
   # Transitions are found by name; there is no closing keyword on this tracker.
   transitions: { resolve: by_name }
-  capabilities:
-    link_for_close: false
-    advance_on_merge: true      # an automation off a webhook does it; the procedure must not
+  # ⛔ No capability is stated here, by § 3's `Who declares a capability`: which
+  # operations this tracker has is the adapter's to declare by implementing them,
+  # and the port is what tells a role which fallback it took.
   policy:
     forbid_on_item: []
 

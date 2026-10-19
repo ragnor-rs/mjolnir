@@ -30,13 +30,10 @@ tracker:
   board: "<board id>"
   lists:                        # a Trello state is a list
     resolve: by_name
-  capabilities:
-    comment: false              # no comment action exists; results go in the description
-    delete_checklist_item: false   # reword and tick instead
-    set_labels_at_creation: false  # one attach per label, after creation
-    link_for_close: false       # no link; the card moves separately
-    advance_on_merge: false
-    item_number: parse_from_url # there is no short-id field
+  # ⛔ No capability is stated here, by § 3's `Who declares a capability`. A
+  # project restating one would be a second statement allowed to disagree with
+  # what the adapter implements — and the project would lose, having no way to
+  # make a tracker do what it cannot.
   policy:
     # A third-party service holding someone else's material.
     forbid_on_item: [source_code, credentials, hosting_details, file_paths, branch_names]

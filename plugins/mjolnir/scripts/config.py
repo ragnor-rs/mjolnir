@@ -108,12 +108,36 @@ CONFIG_PATH = os.path.join(".claude", "mjolnir.yaml")
 DEFAULT_CLAUSE = re.compile(r"^default(?:\s*:\s*(?P<literal>.+))?$")
 
 # `# required` means every project writes the key, and its absence is refused.
-# ⛔ Matched as the *bare* clause on purpose. A key whose requiredness depends
-# on another key's value states that condition in prose beside it -- `# required
-# under worktree` -- and is enforced by the rule in its own section, which is a
+# ⛔ Matched as the *bare* clause on purpose. A key whose requiredness depends on
+# another key's value says so with the conditional marker below, or -- where the
+# refusal carries an argument a marker's message cannot, as §§ 10, 11 and 12's
+# each do -- in prose beside the key and in a rule of its own. Either way it is a
 # different question from "must this key be written at all" and must not be
 # answered by this marker. A key with neither marker is legitimately unset.
 REQUIRED_CLAUSE = re.compile(r"^required$")
+
+# `# required_when: <key> = <value>` means the key is required exactly where that
+# other key holds that value, and refused as missing only then. It is what a flat
+# list of required paths cannot express: § 3's per-kind tracker blocks are each
+# required by one `tracker.kind` and meaningless under the others, so a bare
+# `# required` would refuse every project on every other tracker, and nothing at
+# all is what they did instead -- a block naming a kind and omitting the keys that
+# address it loaded clean and failed at the first operation.
+#
+# ⚠️ Written as a token and not as the English the surface already uses beside
+# four `absent_reason` lines: `# required when carrier is none` is prose about a
+# rule that another marker performs, and a grammar matching it would have turned
+# every one of those into a condition on a sibling key no dotted path resolves.
+# Measured -- it did, and every example stopped loading.
+#
+# ⛔ The condition is read, so it cannot be a condition nothing can meet: the
+# referenced key must be one the surface declares, and the value one its
+# alternation states where it states one. Both are refused below rather than
+# skipped, because a marker whose condition never fires is a requirement nobody
+# enforces that reads exactly like one somebody does.
+REQUIRED_WHEN_CLAUSE = re.compile(
+    r"^required_when\s*:\s*(?P<on>[A-Za-z_][\w.]*)\s*=\s*(?P<value>[\w-]+)$"
+)
 
 # `# absent_reason` beside a `carrier` marks the facet as having a real absent
 # case: `carrier: none` is then accepted only with a stated reason, and the
@@ -216,10 +240,13 @@ def surface_facts(surface_text: str) -> dict:
     defaults: dict[str, object] = {}
     enums: dict[str, list[str]] = {}
     required: dict[str, str] = {}
+    required_when: dict[tuple[str, str, str], str] = {}
     absent_reason: dict[str, str] = {}
+    declared: set[str] = set()
 
     for heading, block in _fences(surface_text):
         for path, rest in _walk_keys(block):
+            declared.add(path)
             value, _, comment = rest.partition("#")
             clauses = [c.strip() for c in comment.split(";")]
 
@@ -233,6 +260,14 @@ def surface_facts(surface_text: str) -> dict:
                     # marked where it is declared, and a later fence showing one
                     # facet of it must not be able to unmark it.
                     required.setdefault(path, heading)
+                found = REQUIRED_WHEN_CLAUSE.match(clause)
+                if found:
+                    # Keyed by the whole condition, so one key required under two
+                    # values of another is two requirements rather than one that
+                    # the second statement silently replaces.
+                    required_when.setdefault(
+                        (path, found.group("on"), found.group("value")), heading
+                    )
                 if ABSENT_REASON_CLAUSE.match(clause):
                     # ⛔ Refused rather than ignored where it is not on a
                     # `carrier`: the rule it marks reads `carrier: none`, so a
@@ -269,6 +304,7 @@ def surface_facts(surface_text: str) -> dict:
             ("default", defaults),
             ("alternation", enums),
             ("required key", required),
+            ("conditionally required key", required_when),
             ("absent-capable facet", absent_reason),
         )
         if not found
@@ -280,10 +316,32 @@ def surface_facts(surface_text: str) -> dict:
             "Either the surface changed shape or its markers were dropped.",
         )
 
+    # Each condition held to the surface that states it, now that every block has
+    # been walked. A condition on a key nobody declares, or on a value outside the
+    # set that key states, is one no configuration can ever meet -- so the keys it
+    # guards would be required nowhere while reading as required here.
+    for (path, on, value), heading in sorted(required_when.items()):
+        if on not in declared:
+            raise ConfigError(
+                path,
+                f"carries `# required_when: {on} = {value}` under § {heading}, and "
+                f"`{on}` is a key the surface declares nowhere. A condition "
+                "nothing can meet is a requirement nothing enforces.",
+            )
+        allowed = enums.get(on)
+        if allowed and value not in allowed:
+            raise ConfigError(
+                path,
+                f"carries `# required_when: {on} = {value}` under § {heading}, and "
+                f"`{on}` states {' | '.join(allowed)}. A condition outside that "
+                "set never fires, so the key would be required nowhere.",
+            )
+
     return {
         "defaults": defaults,
         "enums": enums,
         "required": required,
+        "required_when": required_when,
         "absent_reason": absent_reason,
     }
 
@@ -673,6 +731,22 @@ def validate(data: dict, facts: dict) -> None:
         # it as null, which satisfied a presence test and then arrived in a
         # path join as None -- a traceback naming no key, out of the one module
         # whose whole promise is naming the key.
+        if _get(data, path) is None:
+            raise ConfigError(path, f"is empty -- {where}.")
+
+    # The same question asked where the surface states a condition for it. ⛔ A
+    # configuration that does not meet the condition is not merely unchecked
+    # here: the key is meaningless under any other value, so its absence is
+    # correct and its presence is somebody else's business (§ 3's blocks are the
+    # case this is for -- `board` addresses a Trello board and nothing else).
+    for (path, on, value), section in sorted(facts["required_when"].items()):
+        if _get(data, on) != value:
+            continue
+        where = f"marked `# required_when: {on} = {value}` under § {section}"
+        if not _has(data, path):
+            raise ConfigError(
+                path, f"required where `{on}` is `{value}` -- {where}."
+            )
         if _get(data, path) is None:
             raise ConfigError(path, f"is empty -- {where}.")
 
@@ -1144,6 +1218,22 @@ MARKED_REQUIRED = [
     "work_item.type.carrier",
 ]
 
+# The conditional requirements, stated here for the reason the list above is:
+# derived assertions would assert whatever the surface happened to say. Each entry
+# is (the key, the key its requiredness turns on, the value that turns it on).
+#
+# ⚠️ These name tracker kinds, where the fixtures below deliberately do not. The
+# two are different things: which example a plant is broken against must not
+# depend on a kind this code picked, while *what the surface marks* cannot be
+# stated without the values it marks it under -- the surface names every kind, and
+# an inventory that would not would be an inventory of nothing.
+MARKED_REQUIRED_WHEN = [
+    ("tracker.board", "tracker.kind", "trello"),
+    ("tracker.project.number", "tracker.kind", "github-projects"),
+    ("tracker.project.owner", "tracker.kind", "github-projects"),
+    ("tracker.project_key", "tracker.kind", "jira"),
+]
+
 MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
     "ordering",
@@ -1213,6 +1303,11 @@ def self_test() -> int:
         surface = surface_facts(handle.read())
     for label, derived, expected in (
         ("required", set(surface["required"]), set(MARKED_REQUIRED)),
+        (
+            "conditionally required",
+            set(surface["required_when"]),
+            set(MARKED_REQUIRED_WHEN),
+        ),
         ("absent-capable", set(surface["absent_reason"]), set(MARKED_ABSENT_CAPABLE)),
     ):
         check(
@@ -1235,12 +1330,62 @@ def self_test() -> int:
         check(f"a config missing `{path}` is refused, with the key named",
               broken == path, f"reported {broken!r}")
 
+    # § 3's per-kind blocks, each broken against an example that meets its own
+    # condition. ⛔ The example is found by the condition rather than named, so
+    # a kind whose block nothing illustrates fails here instead of being tested
+    # against whichever file this code happened to pick. That an example carries
+    # every key its own kind requires is asserted by the loads above: a key
+    # deleted from one leaves the reader refusing it, and the file stops loading.
+    for path, on, value in MARKED_REQUIRED_WHEN:
+        data = _example_meeting(on, value)
+        check(
+            f"an example states `{on}: {value}`, so its block is exercised",
+            data is not None,
+        )
+        if data is None:
+            continue
+        broken = _refused(_without(data, path))
+        check(
+            f"a `{on}: {value}` config missing `{path}` is refused, with the key named",
+            broken == path,
+            f"reported {broken!r}",
+        )
+        empty = _refused(_with(_example_meeting(on, value), path, None))
+        check(
+            f"a `{on}: {value}` config whose `{path}` is empty is refused the same way",
+            empty == path,
+            f"reported {empty!r}",
+        )
+
+    # The two ways a condition can be written so that it never fires, each
+    # planted on the surface itself. A requirement nobody can meet reads exactly
+    # like one somebody does, and the keys it guards go unenforced in silence.
+    for on, value in sorted({(o, v) for _, o, v in MARKED_REQUIRED_WHEN}):
+        guarded = sorted(p for p, o, v in MARKED_REQUIRED_WHEN if (o, v) == (on, value))
+        for label, planted in (
+            ("a key the surface declares nowhere", f"required_when: {on}_no_such = {value}"),
+            ("a value outside that key's own set", f"required_when: {on} = no-such-value"),
+        ):
+            with open(SURFACE, encoding="utf-8") as handle:
+                text = handle.read().replace(f"required_when: {on} = {value}", planted)
+            try:
+                surface_facts(text)
+                reported = None
+            except ConfigError as error:
+                reported = error.key
+            check(
+                f"a condition on {label} is refused, naming the key it guards",
+                reported in guarded,
+                f"reported {reported!r}",
+            )
+
     # The marker itself, planted away in each direction. ⛔ A surface that
     # states no requiredness must redden rather than accept anything: without
     # this, dropping every `# required` would leave the reader applying no
     # requiredness rule at all and every example still loading clean.
     for label, marker in (
         ("requiredness", REQUIRED_CLAUSE),
+        ("conditional requiredness", REQUIRED_WHEN_CLAUSE),
         ("absent-capable facets", ABSENT_REASON_CLAUSE),
     ):
         try:
@@ -1670,6 +1815,42 @@ def _a_valid_example() -> dict:
         return _load_yaml(handle.read(), CONFIG_PATH)
 
 
+def _example_meeting(on: str, value) -> dict | None:
+    """The first example whose `on` holds `value`, or None where none does.
+
+    Found rather than named, for the reason `_a_valid_example` is: a fixture this
+    code pointed at one tracker would be the toolkit naming a tracker, and a kind
+    whose block no example illustrates has to fail rather than quietly borrow
+    another kind's file.
+    """
+    for path in _examples():
+        with open(path, encoding="utf-8") as handle:
+            data = _load_yaml(handle.read(), CONFIG_PATH)
+        if isinstance(data, dict) and _get(data, on) == value:
+            return data
+    return None
+
+
+def _without(data: dict, path: str) -> dict:
+    """The same configuration with one key removed, parents left as they are."""
+    node, parts = data, path.split(".")
+    for part in parts[:-1]:
+        node = node.get(part)
+        if not isinstance(node, dict):
+            return data
+    node.pop(parts[-1], None)
+    return data
+
+
+def _with(data: dict, path: str, value) -> dict:
+    """The same configuration with one key written back into it."""
+    node, parts = data, path.split(".")
+    for part in parts[:-1]:
+        node = node.setdefault(part, {})
+    node[parts[-1]] = value
+    return data
+
+
 def _refused(data: dict, *, check_paths: bool = False) -> str | None:
     """The key a resolution refuses on, or None where it is accepted."""
     with open(SURFACE, encoding="utf-8") as handle:
@@ -1710,12 +1891,7 @@ def _refuses_missing_code_root() -> str | None:
 
 def _a_valid_example_with(path: str, value) -> dict:
     """A complete example with one key written back into it."""
-    data = _a_valid_example()
-    node, parts = data, path.split(".")
-    for part in parts[:-1]:
-        node = node.setdefault(part, {})
-    node[parts[-1]] = value
-    return data
+    return _with(_a_valid_example(), path, value)
 
 
 def _refuses_a_root_with_no_config() -> tuple[str | None, bool]:
