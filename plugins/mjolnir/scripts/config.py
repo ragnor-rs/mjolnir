@@ -107,28 +107,35 @@ CONFIG_PATH = os.path.join(".claude", "mjolnir.yaml")
 # had one. `RETIRED_CLAUSE` is declared with the reader that uses it; the
 # procedure-only pair is here, because `surface_facts` below is what reads it.
 #
-# `# procedure: <key>` means the surface will never declare that key, the rule it
-# would turn off being procedure, and a configuration stating it is refused.
-# ⛔ No list of those keys lives in this module: the clause is the statement and
-# this reader reads it, so a rule that becomes procedure is one marker on the
-# surface and no edit here -- the division every other marker has, and the one
-# the retired `REQUIRED` table lost by keeping a copy. ⚠️ It names a **bare** key
-# rather than a dotted path, unlike every marker that hangs on a key line: a key
-# that was never declared sits at no path, so the refusal reads the name wherever
-# a configuration puts it.
-PROCEDURE_CLAUSE = re.compile(r"^#\s*procedure:\s*(?P<key>[A-Za-z_][\w-]*)$")
+# `# procedure: <key>` is the clause the surface states under § The file itself,
+# which says what it means and why it names a bare key; this reader performs it.
+# ⛔ No list of those keys lives in this module: the clause is the statement, so
+# a rule that becomes procedure is one marker on the surface and no edit here --
+# the division every other marker has, and the one the retired `REQUIRED` table
+# lost by keeping a copy.
+PROCEDURE_CLAUSE = re.compile(r"^#\s*procedure\s*:\s*(?P<key>[A-Za-z_][\w-]*)$")
 
 # ⛔ And a clause that means to be that marker and does not parse is refused
-# rather than dropped, which is the hole the retirement class still carries: a
-# mistyped clause leaves the surface reading as refusing a key and this reader
-# refusing nothing, green. ⚠️ What it must not reach is English: a fence comment
-# saying a thing is procedure is ordinary on this surface, so the near miss fires
-# only on a colon with something other than one bare key after it, or on one bare
-# key with the colon missing -- never on `# procedure, no setting`.
-PROCEDURE_NEAR_MISS = re.compile(
-    r"^#\s*procedure\s*:(?!\s*[A-Za-z_][\w-]*$)"
-    r"|^#\s*procedure\s+[A-Za-z_][\w-]*\s*$"
-)
+# rather than dropped: a mistyped clause leaves the surface reading as refusing
+# a key and this reader refusing nothing, green. ⚠️ The retirement class is not
+# that exposed -- a mistyped `# retired:` clause for a key already in `RETIRED`
+# reddens the set arms below -- so the hole is specific to a *newly* marked key
+# whose clause is mistyped, which is this class's whole state.
+#
+# ⛔ The guard is the **complement** of the clause and not a second grammar of
+# near misses, because the two spellings that slipped between the first draft's
+# pair were the obvious ones: a space before the colon, which the clause rejected
+# and the guard exempted, and a capitalised keyword, which neither read. Any
+# own-line comment inside a fence opening with the marker word and not parsing is
+# refused, case included.
+#
+# ⚠️ **What that costs is stated rather than discovered**: a fence comment of its
+# own whose first word is *procedure* is refused even where it meant to be
+# English, and the remedy is to write that sentence in the prose beside the
+# block, where every other sentence on this surface already lives. Measured
+# before taking it: of the own-line comments inside this surface's fences, every
+# one is a marker and none is prose.
+PROCEDURE_NEAR_MISS = re.compile(r"^#\s*procedure\b", re.I)
 #
 # `# default` means the value shown on the line is the default, and
 # `# default: <value>` states one the line does not show -- which is how a key
@@ -350,6 +357,20 @@ def surface_facts(surface_text: str) -> dict:
                         "`# required_when: <key> = <value>`, the key written "
                         "absolutely and the value bare. Left unparsed this key "
                         "reads as marked and is enforced nowhere.",
+                    )
+                # ⛔ The procedure marker is a clause of its own and is read
+                # nowhere else, so one written here -- hanging off a key line,
+                # the way every marker that *does* hang off one is written -- is
+                # refused rather than dropped. It is the likeliest place an
+                # author habituated to this surface would put it, and the one
+                # place the own-line scan above cannot see.
+                if PROCEDURE_NEAR_MISS.match(f"# {clause}"):
+                    raise ConfigError(
+                        path,
+                        f"carries `# {clause}` as a clause of this key's comment. The "
+                        "procedure marker is a comment line of its own inside a block, "
+                        "the key it names never having had a line; read as a clause here "
+                        "it states a rule nothing performs.",
                     )
                 if ABSENT_REASON_CLAUSE.match(clause):
                     # ⛔ Refused rather than ignored where it is not on a
@@ -863,14 +884,16 @@ def _mirrored_commands(data: dict) -> dict[str, str]:
 def _every_key(data, prefix: str = ""):
     """Yield (bare key, the path it sits at) for every key in a configuration.
 
-    At any depth and through lists, because the marker this feeds names a key
-    the surface declares nowhere: there is no path to look it up at, and a
-    project reaching for a switch is as likely to nest it under the facet it
-    means to affect as to write it at the top of the file.
+    At any depth and through lists, which is what the marker's own statement on
+    the surface asks for.
     """
     if isinstance(data, dict):
         for key, value in data.items():
-            path = f"{prefix}{key}"
+            # ⚠️ A non-string key is quoted in the path, because YAML admits one
+            # and `on:` reads back as `True`: a refusal naming `True.audit_trail`
+            # sends a reader to a key their file does not contain, out of the one
+            # module whose whole promise is naming the key.
+            path = f"{prefix}{key}" if isinstance(key, str) else f"{prefix}{key!r}"
             yield str(key), path
             yield from _every_key(value, f"{path}.")
     elif isinstance(data, list):
@@ -1807,21 +1830,69 @@ def self_test() -> int:
             f"it was still refused on {released!r}",
         )
 
+        # ⛔ The guard planted in five spellings and not one. A single plant —
+        # the colon dropped — left the whole first alternative of the first
+        # draft's grammar asserted by nothing, and two spellings slipped
+        # between the pair: a space before the colon, which the clause rejected
+        # and the guard exempted, and a capitalised keyword, which neither read.
+        # Both shipped a marker that states a rule nothing performs, green.
+        # ⚠️ `marked` is the expectation and not a verdict shape: one of these
+        # must **parse**, which is the direction a guard widened to everything
+        # fails in.
+        marker = f"# procedure: {MARKED_PROCEDURE[0]}"
         with open(SURFACE, encoding="utf-8") as handle:
-            mistyped = handle.read().replace(
-                f"# procedure: {MARKED_PROCEDURE[0]}",
-                f"# procedure {MARKED_PROCEDURE[0]}",
-                1,
-            )
+            surface_text = handle.read()
+        for label, planted, expected in (
+            ("the colon dropped", f"# procedure {MARKED_PROCEDURE[0]}", "refused"),
+            ("a capitalised keyword", f"# Procedure: {MARKED_PROCEDURE[0]}", "refused"),
+            ("a dotted path where a bare key belongs",
+             f"# procedure: tracker.{MARKED_PROCEDURE[0]}", "refused"),
+            ("two keys in one clause",
+             f"# procedure: {MARKED_PROCEDURE[0]} history", "refused"),
+            ("a space before the colon", f"# procedure : {MARKED_PROCEDURE[0]}", "parsed"),
+        ):
+            try:
+                derived = surface_facts(surface_text.replace(marker, planted, 1))
+                got = "parsed" if MARKED_PROCEDURE[0] in derived["procedure"] else "dropped"
+            except ConfigError as error:
+                got = "refused" if "procedure marker" in str(error) else f"refused: {error}"
+            check(f"{label} is {expected}", got == expected, f"was {got}")
+
+        # The same marker written where every marker that hangs on a key is
+        # written, which the own-line scan cannot see.
+        hung = surface_text.replace(
+            "  kind: github                               # required",
+            "  kind: github                               # required; procedure: audit_trail",
+            1,
+        )
         try:
-            surface_facts(mistyped)
-            reported = None
+            surface_facts(hung)
+            where = None
         except ConfigError as error:
-            reported = str(error)
+            where = error.key
         check(
-            "a clause meaning to be the procedure marker and not parsing is refused",
-            reported is not None and "procedure marker" in reported,
-            f"reported {reported!r}",
+            "the procedure marker hung on a key line is refused, with the key named",
+            where == "host.kind",
+            f"reported {where!r}",
+        )
+
+        # ⛔ The green side of the guard, which a grammar reading every line
+        # would fail: the clause is read inside a fence and nowhere else, so the
+        # same text in the prose beside a block is prose. Without this arm, a
+        # guard widened to the whole document reads every sentence of this
+        # surface about procedure as a mistyped marker.
+        outside = surface_text.replace(
+            "## 1. Roots", f"# procedure: planted_outside_a_fence\n\n## 1. Roots", 1
+        )
+        try:
+            loose = surface_facts(outside)["procedure"]
+            reported = sorted(loose)
+        except ConfigError as error:
+            reported = f"refused: {error}"
+        check(
+            "the same clause in the prose beside a block is read by nothing",
+            reported == sorted(MARKED_PROCEDURE),
+            f"derived {reported!r}",
         )
 
     # A root with no configuration stops, and names the root it looked in --

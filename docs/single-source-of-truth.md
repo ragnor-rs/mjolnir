@@ -38,9 +38,9 @@ where the half of its rule that no check reaches is stated with it.
 `tools/check_no_audit_trail.py` holds a claim about the prose a change writes rather than about
 the tree it writes it into: that no artifact carries a record of the pass that wrote it. It has its
 own `No audit trail` workflow and its own `host.checks` entry, and is recorded in
-[its own section](#an-artifact-states-what-is-true-now-held-on-the-lines-a-change-adds) below. It
-is the only one here whose scope is a **diff** — the rule's own carve-out leaves the past alone —
-and the only one with no `push` arm, there being no merge base to read on the integration branch.
+[its own section](#an-artifact-states-what-is-true-now-held-on-the-lines-a-change-adds) below. Its
+scope is a **diff** rather than a tree — the rule's own carve-out leaves the past alone — which it
+shares with the gate above, as it shares having no `push` arm.
 
 `plugins/mjolnir/scripts/check_reply_register.py` holds the register of a role's reply, and it is
 the one here that does not run on the gate at all. It is in
@@ -1035,20 +1035,23 @@ change that introduced them here.
 
 ## An artifact states what is true now: held on the lines a change adds
 
-`tools/check_no_audit_trail.py --self-test` runs in the `No audit trail` workflow, with no
-credential and no network. ⛔ The rule is
+`tools/check_no_audit_trail.py --self-test` runs in the `No audit trail` workflow with no
+credential. ⚠️ **Not with no network**, unlike its siblings, and the exception is worth stating: the
+base derivation reads the remote's advertised default where the checkout records none, so a run
+whose base branch the host did not state can reach `ls-remote`. ⛔ The rule is
 [schema § The loop → An artifact states what is true now](../plugins/mjolnir/config/schema.md#an-artifact-states-what-is-true-now)
 and this document states none of it: what is recorded here is the reach of the check, which is
-narrower than the rule in three directions the rule does not mention.
+narrower than the rule, in the directions the list below names.
 
-What it holds: the lines this change **adds** to tracked markdown, read off a diff against the
-merge base with the integration branch — derived through `claim.integration_branch`, the one
-derivation this repository has for which branch that is. Table rows are in scope deliberately: the
-measured habit lived in an ordering document's `why` column, which is exactly the place a sweep of
-this kind would think to exclude. A document's fenced blocks and frontmatter are out, and so is any
-marker **shown** rather than used — an inline-code span or a double-quoted run — because the
-section of the surface that states this rule has to spell out every form it forbids, and so does
-the check.
+What it holds: the lines this change **adds** to tracked markdown, read off a diff against the merge
+base with the branch the change is **against** — the base the run states where it states one, and
+otherwise `claim.integration_branch`, the one derivation this repository has for which branch that
+is. ⚠️ A base that resolves to this change's own head is refused rather than read as nothing added,
+which is the state a checkout with no remote lands in. Table rows are in scope deliberately: the
+measured habit lived in an ordering document's argument column, which is exactly the place a sweep
+of this kind would think to exclude. A document's fenced blocks and frontmatter are out, and so is
+any marker **shown** rather than used — an inline-code span or a quoted run — because the section of
+the surface that states this rule has to spell out every form it forbids, and so does the check.
 
 The kind is **forbidding**, not computed, and the run says so in its own output rather than leaving
 a green verdict to imply completeness. Three shapes are matched: a dated record of a pass, a figure
@@ -1056,34 +1059,40 @@ stated beside a former value, and a clause whose subject is the pass before this
 shape the rule names — a per-pass paragraph appended where a line should have been overwritten — is
 held only insofar as it carries one of those three markers.
 
-⚠️ **It plants both sides**, as the width and reply-register checks do. Violations that must redden
-— a dated revalidation heading, a dated heading with no verb in it, a dated pass record in prose,
-a parenthetical former value, a `Was:` label, a figure stated as a movement, the word the rule
-names, a pass as the subject of a clause, a line pointing back at the pass before it, what a
-document stated earlier, and a touched document the sweep cannot open — and one exemption per
-exclusion, each
-of which must stay green. Each exemption was then verified by **disabling its own exclusion** and
-watching that plant redden, including the carve-out that is this check's whole shape: with the
-added-line filter removed, the plant carrying a violation the change did not write goes red.
+⚠️ **It plants both sides**, as the width and reply-register checks do, and the run prints what it
+planted rather than a count being written here. ⛔ **The green plants are of two kinds and the
+difference is load-bearing.** An **exclusion** is something the check sets aside — the lines a
+change did not write, a marker shown in a code span or a quotation, a document's frontmatter, a
+fence shown inside a longer fence — and each of those was verified by **disabling that exclusion**
+and watching its plant redden; the carve-out that is this check's whole shape goes red the moment
+the added-line filter comes out. An **omission** is a shape the grammar simply does not carry — a
+landed record, a dated measurement, today's figures beside today's date, a release heading, a role's
+instruction about the pass before it — and there is nothing to disable: what those plants assert is
+that the grammar stays narrow, and each of them reddens the moment the vocabulary grows.
 
 ### What this check deliberately does not hold
 
-- **The two artifacts outside every tree.** The ordering document and the day log live in the
-  session store (§ 11), where no diff reaches them. That is not a small gap: the
-  seven dated paragraphs the rule was written against were in the ordering document, and what holds
-  the rule there is the close-out role stating it locally. A check on the gate cannot read a file
-  the gate never sees.
+- **The ordering document, which is where the rule was measured.** It lives outside every tree —
+  § 12's carrier resolves it, as § 9's `out_dir` resolves the day log — so no diff reaches either,
+  and a check on the gate cannot read a file the gate never sees. What holds the rule there is the
+  close-out role, whose own text carries the forbidden forms for that reason. ⚠️ The day log is a
+  different case rather than a second gap: its content **is** an account of work, which the rule's
+  own carve-out for an artifact the procedure exists to produce covers.
 - **A work item body, a pull request body or a review comment.** The same half of the same rule the
   width check cannot reach, and for the same reason: those surfaces are not files. The nothing-
   deferred gate does read a body, so an arm there is possible — what stopped it here is that this
   grammar is lexical, and a body is where an author's own account of a pass is most likely to be
   exactly what was asked for.
 - **A record phrased without any of the markers.** The shapes are lexical, so a paragraph narrating
-  a pass in words the grammar does not carry passes. ⚠️ Two of the four words the rule names are
-  held only in compound forms: `was` and `corrected` occur constantly in honest prose —
+  a pass in words the grammar does not carry passes. ⚠️ Two words the shapes are commonly phrased
+  with are held only in compound forms: `was` and `corrected` occur constantly in honest prose —
   `the divergence was 71 lines`, `the finding was corrected under the same item` — and a sweep for
   the bare words hands a change back for the honest form of a sentence. What is read instead is
-  `(was …)`, a `Was:` label, and a pass as the subject of a clause.
+  `(was …)`, a `Was:` label, `down from`, `formerly` and `previously` before a figure, and a pass as
+  the subject of a clause. ⛔ `pass` and `audit` are out of the dated-pass vocabulary for the same
+  reason, each measured: *the gate passes on every document as of 2026-10-20* and
+  *#100 landed 2026-10-20 as the audit-trail rule* both reddened while they were in, the second
+  turning this rule's own name against the landed-record carve-out.
 - **Anything that is not markdown.** A Python docstring narrating a pass is prose a reader reads,
   and nothing here holds it. The same boundary the width check draws, for the weaker of its two
   reasons: a comment is annotation on code rather than a document somebody opens.

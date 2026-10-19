@@ -62,9 +62,8 @@ host:
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
-    # ⚠️ No `push -> main` arm, and that is the rule's own carve-out rather than an omission: the
-    # check reads the lines a change adds against the merge base, and on the integration branch
-    # there is none to read.
+    # ⚠️ Why this entry has no `push -> main` arm is stated with the check, in
+    # docs/single-source-of-truth.md.
     - workflow: "No audit trail"
       mirrors: "python3 tools/check_no_audit_trail.py --self-test"
       triggers: ["pull_request -> *"]

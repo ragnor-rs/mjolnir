@@ -102,7 +102,7 @@ something a refusal would catch.
 rule it would turn off — a clause of its own for the reason a retirement is one, there being no key
 line to hang a marker on. It is for a rule that is procedure everywhere: the key does not exist, a
 configuration stating it is refused, and the refusal is a clause the reader performs rather than a
-sentence somebody has to notice. ⚠️ **It names a bare key and not a dotted path**, unlike every
+sentence a reader is left to notice. ⚠️ **It names a bare key and not a dotted path**, unlike every
 other marker here: a key that was never declared sits at no path, so the reader refuses one of that
 name wherever a configuration puts it.
 
@@ -336,6 +336,12 @@ the line states something still true — this item landed as that commit, these 
 or states what a pass did to the document. The same words can be either, and which of the two it is
 decides it.
 
+⛔ **And an artifact the procedure exists to produce is content, not annotation.** Where a role's
+whole output is an account of work — § 9's day log is a day's, and § 13's record of who answered a
+check is a pass's — that account **is** the artifact somebody asked for by mapping the role, and the
+rule above bites on what such a file accumulates *beside* its own content rather than on the content
+itself. Read otherwise, the rule would forbid two of the loop's roles from producing anything.
+
 ⛔ **It is not an invariant over the past.** Existing artifacts stand as they are, by the carve-out
 § 6 makes for commit history and [§ 8](#prose-line-width) makes for prose that predates a width: a
 document comes under this rule where somebody is editing it anyway. Nothing here licenses a sweep
@@ -357,10 +363,9 @@ figure in them stale and every standing fact in them already argued in a row of 
 # procedure: audit_trail
 ```
 
-⛔ **`audit_trail` is a key this surface will never declare, and a configuration carrying one of
-that name at any depth is refused with its path named.** A rule that is procedure everywhere is the
-rule an adopting project is likeliest to reach for a switch on, and a key accepted in silence is the
-rule gone with nothing refusing it.
+⛔ **`audit_trail` is the key this surface will never declare.** A rule that is procedure everywhere
+is the rule an adopting project is likeliest to reach for a switch on, and a key accepted in silence
+is the rule gone with nothing refusing it.
 
 ## 1. Roots
 
@@ -1150,9 +1155,7 @@ a session and never again, which is the one escape route the measured violations
 
 ⚠️ **This is also the one artifact an account of the run belongs in**, by
 [§ The loop → An artifact states what is true now](#an-artifact-states-what-is-true-now) — stated
-there and not restated here. Every other artifact a role writes states what is true now, so what a
-pass did, moved or found has exactly one home, and it is the artifact that is read once and kept
-nowhere.
+there and not restated here.
 
 ⚠️ **Readable and short are different things, and readable wins.** There are two ways to shorten
 and only one of them is this table's: **selection** drops what does not change the reader's next

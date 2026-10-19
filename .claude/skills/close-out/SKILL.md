@@ -20,8 +20,8 @@ paragraph, no "was", no "previously", no "re-derived rather than recalled", and 
 beyond the landed record a row already carries. Everything about the pass itself goes in the reply
 (§ 7).
 
-⚠️ **The gate holding that rule cannot reach this document**, which lives outside every tree, so
-here the rule is held by the role alone. That is the one artifact the habit was measured on.
+⚠️ **No gate reaches this document**, which is why the forms are written out above rather than
+cited.
 
 ## 1. One read
 

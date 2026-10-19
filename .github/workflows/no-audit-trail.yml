@@ -15,7 +15,10 @@ on:
   # either hold nothing or hold the whole history to a rule that does not bind it.
   pull_request:
 
-# No credential of any kind: the diff is read out of the checkout with git, not off the host.
+# No credential of any kind: the diff is read out of the checkout with git, not off the host. ⚠️ Not
+# the same as no network — the base derivation can reach `ls-remote` where the checkout records no
+# default branch, which is stated with the check in docs/single-source-of-truth.md. On this event the
+# host names the base branch in the environment, so that path is not taken here.
 permissions: {}
 
 jobs:

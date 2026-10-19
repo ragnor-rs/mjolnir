@@ -102,4 +102,3 @@ never read a project fact off a probe.
 - ⛔ No audit trail, by
   [`schema § The loop → An artifact states what is true now`](../../../plugins/mjolnir/config/schema.md#an-artifact-states-what-is-true-now):
   a run's own account of what moved belongs nowhere, because this report states what is true now.
-  ⚠️ The reply is the one artifact where that costs nothing — it is read once and kept nowhere.
