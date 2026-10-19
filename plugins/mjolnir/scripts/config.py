@@ -823,6 +823,24 @@ def validate(data: dict, facts: dict) -> None:
                     "the leak the section exists to prevent.",
                 )
 
+    # § 4.5. A `field` carrier owes the field's name, for the reason § 12's
+    # `command` carrier owes a command: the one role that writes a date would
+    # discover the gap holding a date it has nowhere to put, and the item is by
+    # then the only thing left saying what was committed to.
+    #
+    # ⚠️ Only `field` is held. `native` names the tracker's own date and has no
+    # name to state, and whether the tracker in fact has one is the adapter's
+    # answer rather than this reader's (§ 3).
+    if _get(data, "work_item.due_date.carrier") == "field" and not _get(
+        data, "work_item.due_date.field"
+    ):
+        raise ConfigError(
+            "work_item.due_date.field",
+            "required when the carrier is `field`: there is nowhere to write the "
+            "date, and the gating role is the only thing on this surface that "
+            "writes one (§ 4.5).",
+        )
+
     # § 12. A command carrier owes a command, for the reason § 11's `file`
     # carrier owes a directory: the absence surfaces at the moment a role needs
     # the answer, which is the one moment it cannot be asked for.
@@ -1139,6 +1157,7 @@ MARKED_REQUIRED = [
     "statuses",
     "tracker.kind",
     "version",
+    "work_item.due_date.carrier",
     "work_item.estimate.carrier",
     "work_item.template.carrier",
     "work_item.type.carrier",
@@ -1147,6 +1166,7 @@ MARKED_REQUIRED = [
 MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
     "ordering",
+    "work_item.due_date",
     "work_item.estimate",
     "work_item.template",
     "work_item.type",
@@ -1565,6 +1585,8 @@ def _planted_violations():
          _cuts_trees_nowhere),
         ("a `command` ordering with no command", "ordering.command",
          at("ordering", {"carrier": "command"})),
+        ("a field-carried date with no field named", "work_item.due_date.field",
+         at("work_item.due_date", {"carrier": "field"})),
         ("a type the branch-prefix map does not cover",
          "work_item.type_branch_prefix.epic", _a_type_with_no_prefix),
         ("a template keyed to a type the project cannot assign",
