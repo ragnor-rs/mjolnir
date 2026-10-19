@@ -1691,8 +1691,13 @@ def self_test() -> int:
         try:
             os.chdir(tree)
             suite.ok("a process in the tree reads as standing in it", standing_in(tree))
-            suite.ok("a release from inside the tree is refused",
-                     _raises(lambda: release(one, "feature/e", tree)))
+            # ⛔ On the message, not on the fact of a refusal. The caller is also a live process
+            # at or below the tree, so the sibling guard below would refuse here too -- and with
+            # `standing_in` dead these three assertions passed on *its* refusal, proving nothing
+            # about the arm they are named for. Measured while adding that guard.
+            suite.ok("a release from inside the tree is refused, as the caller and not a sibling",
+                     "standing in" in (_message(
+                         lambda: release(one, "feature/e", tree)) or ""))
             # ⚠️ The refusal has to leave the claim whole: it runs before the ref deletion, so a
             # pass that meets it has lost nothing and can leave and re-run.
             suite.ok("and the refusal leaves the published ref alone",
