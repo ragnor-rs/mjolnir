@@ -1,6 +1,6 @@
 ---
 name: review
-description: Review an open change and drive its gate green — the whole conversation read first, the diff read whatever else reads it, every finding reproduced and fixed under the same work item, the change's own plan driven rather than published, every thread answered, the host's runs read against their preconditions, and a record of who verified what. Use when asked to review a pull request, address review comments, fix what a review found, work a change's test plan, or get the checks green on an open change.
+description: Review an open change and drive its gate green — the whole conversation read first, the diff read whatever else reads it, every finding reproduced and fixed under the same work item, the change's own plan driven rather than published, every thread answered, the host's runs read against their preconditions, and a record of who verified what. Use as soon as a change is open on the host with no review recorded against it — the first finishing pass enters this role itself, rather than waiting to be asked — and whenever asked to review a pull request, address review comments, fix what a review found, work a change's test plan, or get the checks green on an open change.
 argument-hint: "[<pull request url or number, item number, or item url>]"
 ---
 
@@ -18,7 +18,7 @@ five, and the one the shipped boundary settles rather than averages.
 
 ⚠️ **The five copies disagreed about what this role does, not about how to word it.** Four delegated
 the review to a shared reviewing carrier and read no code themselves; one read the diff itself and
-drove a browser against a running instance. Steps 4, 6 and 9 are where that divergence lands, and
+drove a browser against a running instance. Steps 4b, 6 and 9 are where that divergence lands, and
 the spread that measures it is the decision record's.
 
 ## 1. Resolve, and say what was resolved
@@ -123,9 +123,57 @@ decisions were respected. The acceptance check for this role is that the pass re
 
 ## 4. The review itself
 
-⛔ **The diff is read here, whatever else also reads it.** Where the project has a reviewing carrier
-of its own it is invoked and its findings are taken seriously — but ⛔ **a delegated pass that found
-nothing is not a verdict**, for two measured reasons:
+**4a. How far this pass goes, asked before the change is read.** ⛔ **Asked rather than assumed**,
+and ⛔ **asked before the diff is read** — a question put afterwards is a reading already spent, and
+the answer could then only license what has already happened. ⚠️ **It comes after step 3 and not
+before it**: the conversation is read whatever the answer here, and a question asked with none of
+that context is one nobody can answer well. That this leg asks at all, and the form the question
+takes, are
+[`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s.
+
+| the answer | what this role does about the diff | what it costs |
+|---|---|---|
+| **delegated**, the recommended answer | 4b whole, the project's own reviewing carrier beside this role's own read | the most window and wall-clock; the only answer carrying an independent check on this role's reading |
+| **quick** | 4b read by this role alone, with no delegated pass beside it | cheap; one reader, and no second lens on what that reader does not see |
+| **skip** | 4b is not run: the diff is not read here, and no finding is raised from a reading | cheapest; the change reaches the gate with nobody having read it, and the record says so |
+
+⛔ **This question governs 4b and nothing else. Steps 5 to 12 run unchanged on every answer** — the
+fixes, the change's own plan, the threads, the gate, step 9's questions and the record. ⚠️ **Step 5
+is not switched off by `skip`**: step 6 routes a failed plan item back into it and step 8 routes a
+red there, and neither of those findings comes from a reading of the diff.
+
+- ⛔ **There is no default here, because the question can only narrow what this role already owes.**
+  The deepest answer is this role's standing obligation, so an ask that reaches nobody leaves
+  **delegated** in force — not a default picked on the person's behalf but an obligation nobody
+  lifted, which is
+  [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s
+  rule that silence may narrow the work and never license an act. ⛔ **The reply says the question
+  went unanswered**, rather than reporting an answer nobody gave.
+- ⛔ **`skip` is a person declining a reading and is never a waiver.** This role waives nothing, so
+  step 8's machine tiers are still driven to an answer, and the answer here is **recorded under
+  step 9's rule** — ⛔ **written where the next leg reads, not only into the reply**, because the
+  finishing role is required to carry it into the merge ask.
+- ⛔ **Where 4b did not run, this role recommends a person's eyes at 9b and may not recommend
+  otherwise.** Step 9 states what makes a merge without them defensible, the diff read adversarially
+  among it — so a pass that never read the diff has no ground to tell anybody nobody needs to look.
+  The person may still decide otherwise, and that is their decision recorded rather than this
+  role's.
+- ⛔ **It is neither of step 9's questions, and answers neither.** 9a asks who *runs the plan*; 9b
+  asks whether a **person** is going to look, of a person about themselves. ⚠️ **9a is put at the
+  same moment as this one**, as two parts of one question: they decide the same thing about the same
+  pass, both must be asked before their own act, and asking them apart spends two interruptions on
+  one decision.
+- ⚠️ **Delegated does not replace this role's own read.** The two measured reasons below are why a
+  delegated pass that found nothing is not a verdict, and a person choosing delegation does not
+  weaken either of them. ⚠️ **Where the project has no reviewing carrier of its own**, `delegated`
+  and `quick` are the same pass — reported as a capability absent, the way
+  [`§ 3`](../../config/schema.md#the-operations-and-what-an-absent-capability-does) reports one,
+  rather than two answers silently collapsing into one.
+
+**4b. The diff.** ⛔ **Unless 4a came back `skip`, the diff is read here, whatever else also reads
+it.** Where the project has a reviewing carrier of its own it is invoked and its findings are taken
+seriously — but ⛔ **a delegated pass that found nothing is not a verdict**, for two measured
+reasons:
 
 - **A latent defect scores as a non-defect.** Reviewing a change that *was* a gate, every
   independent scorer reproduced a real defect and every one returned the same middling confidence,
@@ -237,7 +285,7 @@ committed**: nothing unstaged when they run, or the verdict belongs to
 
 ⚠️ **A fix invalidates every observation made before it**, because it changed the thing they were
 made against — which is why step 6 re-runs **from the top** rather than only over what the fix
-touched. Both copies that had a plan said so explicitly, and the measured counter-case is in step 4:
+touched. Both copies that had a plan said so explicitly, and the measured counter-case is in 4b:
 the check a boundary fix breaks is the one the finding never named.
 
 ## 6. Drive the change's own plan
@@ -404,9 +452,11 @@ past a rule that has already refused something.** One copy carried both and sepa
 sentence worth keeping: *this question is who runs the items; that one is who looks at the result* —
 and **only the second is declinable**.
 
-**9a. Who runs the plan.** ⛔ **Asked before a single item of step 6 is executed.** The plan is the
-part of the verification a person might want to make themselves, and running it unasked spends that
-observation silently and in this role's favour.
+**9a. Who runs the plan.** ⛔ **Asked before a single item of step 6 is executed**, which ⛔ **in
+practice means asked with 4a, as the second part of one question** — the two decide the same thing
+about the same pass, and put separately they spend two of a person's interruptions where one would
+do. The plan is the part of the verification a person might want to make themselves, and running it
+unasked spends that observation silently and in this role's favour.
 
 | the answer | what this role does |
 |---|---|
@@ -448,7 +498,11 @@ where no record exists — so a question that names the change ambiguously recor
 the merge blocked no matter how it was answered. ⛔ **Name the change the way the record is keyed**,
 repository included: a bare number names a different change in every repository the route carries.
 
-⛔ **The answer is written where something else can read it, not only into this reply.**
+⛔ **The answers are written where something else can read them, not only into this reply** —
+⛔ **this step's two, and 4a's depth answer with them.** The depth answer is here because this is
+the only rule in this file that says *where* an answer goes, and because the finishing role is
+required to carry it into the merge ask: a declined reading that reached no record is a declined
+reading the merging leg cannot disclose.
 [`§ 11`](../../config/schema.md#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it)
 rules that the next role reads what this one wrote, and a window is summarised without being asked.
 ⛔ **So the answer goes where the next role and a hook can actually reach it** — which an artifact
@@ -507,7 +561,7 @@ silence.
 
 | | |
 |---|---|
-| **This role** | conducts the review, reproduces and fixes what it finds, drives the change's plan, answers the threads, drives the host's runs to an answer, and **records** the verdicts and both answers of step 9 |
+| **This role** | conducts the review, reproduces and fixes what it finds, drives the change's plan, answers the threads, drives the host's runs to an answer, and **records** the verdicts and the answer to every ask it made — 4a's depth and step 9's two |
 | **The finishing role** | the merge, reading it back from state, the item's move through the port, and the tree released — [`skills/finish/`](../finish/) |
 | **A hook** | **refusing** an act on what the record says: a merge with no recorded answer, a local check the host has already run, a resource over its cap — [`§ 7`](../../config/schema.md#7-carrier)'s hook carrier |
 
@@ -529,7 +583,8 @@ sentence, then the facts, with a table where the content enumerates. It is not h
 role writes to: the change's body, a review comment, and this reply.
 
 - the verdict, first line: green and waiting on a person · green and nobody is going to look ·
-  the plan handed over · held, and why;
+  green and **the diff read by nobody, by the person's decision** · the plan handed over · held,
+  and why;
 - what was read in step 3, as counts, and which prior decisions were respected;
 - every finding, whether it was reproduced, whether it is firing, what was done about it, and the
   commit that did it;
@@ -540,7 +595,8 @@ role writes to: the change's body, a review comment, and this reply.
   did not run, said as not run** rather than omitted, with what it was waiting on, and every skip
   named apart from the count;
 - every environment failure, as such, and that it consumed no fix cycle;
-- how each question of step 9 was answered, and where the second answer was recorded;
+- how each ask was answered — 4a's depth and step 9's two — where each answer was recorded, and
+  ⛔ **any of them that nothing answered, said as unanswered** rather than reported as an answer;
 - whether any exclusive resource is still held, and by what;
 - on a hand-over: the instructions themselves, and plainly that nothing was ticked, nothing was
   recorded as inspected and nothing was merged;
@@ -549,3 +605,27 @@ role writes to: the change's body, a review comment, and this reply.
   quiet form;
 - ⛔ anything needing the person running this, **asked with the options**. The pass is not finished
   while a question it raised is open.
+
+⛔ **Then this role enters the second finishing pass itself**, which is the leg
+[`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
+states it is entered on — the review recorded. ⚠️ **The reply above is not the hand-over**: by
+[`§ 11`](../../config/schema.md#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it)
+what the next pass reads is the record on the change, so a verdict that reached only this reply
+hands over nothing. ⛔ **And entering it is not merging** — the merge is that role's act, behind that
+role's own ask, and the two things this role may never do are unchanged by its being the leg that
+enters it.
+
+- ⛔ **Read `carriers` before entering it, the way the finishing role reads it before entering this
+  one.** Where the project maps no finishing role, that section's rule is that the route *ends*
+  rather than handing past it: say so, name the change as open, and enter nothing. A role that
+  enters a role nobody installed has reported a hand-over that did not happen.
+- ⛔ **Held, handed over, or stopped on a refusal, this role enters nothing** and says what the
+  change is waiting on instead. A pass that enters the merging leg on anything but a recorded
+  review has handed a red forward dressed as a verdict.
+- ⛔ **An unanswered 9b is recorded as unanswered and does not hold the change.** By
+  [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
+  silence may narrow the work and never license an act: no person reading the diff is less assurance
+  rather than more, so the record says nobody has read it and none is expected, and the leg is
+  entered. ⚠️ **Waiting here instead would strand the change where nothing resumes it** — no leg is
+  entered on *an open change with an unanswered question* — and the merging leg's own ask is where
+  silence does stop things, which is the one place it can stop them safely.

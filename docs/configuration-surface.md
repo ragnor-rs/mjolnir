@@ -46,6 +46,38 @@ have reached, is already
 [`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)'s
 rule and is read there rather than restated.
 
+### The loop does not continue itself
+
+Measured on this repository from the harness's own session records and the integration branch's
+history, over a window stated closed because a day still running is a figure that grows after it is
+written — 2026-10-19 UTC, 00:00 to 20:23: **sixteen changes landed, the finishing role was invoked
+six times, and the reviewing role three.** Eight sessions invoked the starting role and five of
+those went on to invoke the finishing one. One session is the clean instance — it implemented item
+[#8](https://github.com/ragnor-rs/mjolnir/issues/8), landed it as `b9e8fd7` through pull request
+[#147](https://github.com/ragnor-rs/mjolnir/pull/147), wrote its bookkeeping and asked what was
+next, with the finishing role neither invoked nor its procedure read. ⚠️ **What that session had of
+that role is worth being exact about**, since the weaker claim is the one that survives: its
+frontmatter, read eight lines at a time while the session was authoring another role's frontmatter,
+and eight scattered body lines returned by a `grep` across every skill. No read ever named the file,
+and no invocation preamble for it was ever injected.
+
+What the figures are evidence for is not that the roles are wrong but that **nothing carried the
+item between them.** Each role's description was keyed on being asked; the route was stated in prose
+that named no mechanism; and the leg from implemented work to an open change belonged to no role in
+the pattern above, implementing being absent from the list this section's own opening cites. A
+session that had just finished the work therefore had nothing instructing it to continue, and every
+role it skipped was skipped silently.
+
+⚠️ **A count of invocations is a floor, and the direction it errs in is against this argument rather
+than for it.** It reads the harness's record of a *carrier* being invoked, so a session that opened
+a role's file and followed it by hand counts here as a skip, and a session's record can be pruned
+with the tree it worked in — observed within this same day. Both inflate how often the route looks
+uncarried. What neither touches is the landings, which are the integration branch's own history, nor
+the instance above, where what the session read is itself on the record.
+
+The route is stated, with each leg and what enters it, in
+[`schema.md § The loop → What carries the item forward`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask).
+
 ## Three findings that reshaped the surface rather than confirming it
 
 ### A role's carrier is an axis beside its name
@@ -617,8 +649,9 @@ tree changes, silently and green. This subsection's first draft carried a three-
 bytes and markers. It was already two commits stale when it was written — and it understated by a
 fifth the one file the same change grows, so the argument it was offered as evidence for was
 weaker in the document than in reality. **Deleted rather than synchronised**, which is this
-repository's standing remedy; [#91](https://github.com/ragnor-rs/mjolnir/issues/91) is filed to
-have the gate print the live figure instead.
+repository's standing remedy — and the gate prints the live figure instead as of
+[#91](https://github.com/ragnor-rs/mjolnir/issues/91), which made each file's footprint part of its
+own run's output.
 
 What is stable enough to state without a number going stale: **a single role runs to thousands of
 tokens and carries dozens of ⛔ and ⚠️ markers, and the loop has nine roles.** A window largely
@@ -630,10 +663,13 @@ Two consequences, both already true of this tree rather than predicted of it. A 
 loaded only when the role runs, and only its frontmatter — a name and a description — is always
 resident: that is the right shape, and it was not arrived at deliberately. And a role that cites
 the surface to settle one sentence resolves the whole of it to do so, which is the argument for a
-citation naming the narrowest section that states the fact — held today only at `##` level, as
-[`single-source-of-truth.md`](single-source-of-truth.md#the-three-kinds-and-why-one-of-them-is-absent)
-already records against itself and [#91](https://github.com/ragnor-rs/mjolnir/issues/91) exists to
-close.
+citation naming the narrowest section that states the fact. Since
+[#91](https://github.com/ragnor-rs/mjolnir/issues/91) closed, every heading of the surface is held
+to being motivated by a document whatever its level, and a citation resolving to a `##` section with
+no text of its own is refused by name; what stays a count rather than a verdict is the coarser case,
+which
+[`single-source-of-truth.md`](single-source-of-truth.md#what-the-granularity-check-deliberately-does-not-hold)
+records against itself.
 
 ### Why there is no threshold on the surface
 

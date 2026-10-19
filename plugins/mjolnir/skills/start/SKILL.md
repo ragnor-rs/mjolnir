@@ -8,7 +8,11 @@ argument-hint: "[<item number or item url>]"
 
 Four things happen in one pass and in this order: the configuration is **resolved** and said out
 loud, the item is **chosen**, the gate runs **whole**, and the claim is taken **by publishing the
-item's ref**. Nothing after the tree is cut belongs to this role.
+item's ref**. The work itself does not belong to this role — but ⛔ **naming the leg *after* the
+work does**, because that is the one leg of the route no role owns:
+[`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
+states what *implemented* means and that the session holding the item enters the finishing role on
+it, and step 6 is where this role says so.
 
 ⛔ **The gate and the claim are the whole of what this role is for, so neither is skipped for an
 item somebody asked for by name.** An item named on the invocation changes which item, and nothing
@@ -238,6 +242,18 @@ first sentence, then the facts, with a table where the content enumerates.
 - ⛔ anything that could not be established, **named rather than omitted**
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)), which has no
   quiet form;
+- ⛔ **what happens when the work is done, named rather than left to whoever reads this later**:
+  the item's stated acceptance condition answered in the tree is what the finishing role is entered
+  on, and the session holding the item is what enters it —
+  [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask).
+  ⚠️ **What carries that across a dead session is the published claim and not this reply**: the ref
+  is outside every tree and outlives the window, while a session that ends mid-item leaves it
+  standing. ⛔ **So the reply also says what reading it back will look like** — an orphaned claim,
+  which step 4 makes a person's call rather than this role's, and which is the one case on this
+  route a person still has to resume by hand;
+- ⛔ **where the project maps no finishing role**, that the route ends with the work in the tree and
+  nothing to open a change — § The loop's absent-leg rule, said here because a route that ends
+  silently is what this statement exists to prevent;
 - ⛔ anything that needs the person running this, **asked with the options**
   ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): an orphaned claim, a
   stop whose remedy is a decision, an item whose type has no prefix, an ordering that could not be
