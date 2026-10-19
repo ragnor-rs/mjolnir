@@ -81,8 +81,9 @@ host:
   # argument for the key existing at all: `main` is linear, which is equally consistent with
   # squash and with rebase, so every landing before this line picked a method by reading the
   # shape of the history. Squash is what the landings have in fact been, and the evidence is not
-  # that shape: each one is a single commit carrying the `(#N)` the host appends only to a subject
-  # it generates itself, which a rebase merge does not do.
+  # that shape: a six-commit branch and a three-commit branch each added exactly ONE commit to a
+  # `main` carrying no merge commit, which neither a rebase merge nor a merge commit can do.
+  # ⚠️ Not the `(#N)` in the subjects — the finishing role passes those itself.
   #
   # ⛔ What the host permits is NOT restated here, per § 2 — and the gap is the point: the host
   # allows all three methods and this project uses one, so a history that drifts is a history

@@ -130,10 +130,20 @@ the three that are obvious. The measurements that forced each to be independent:
    - **A landing picked a method with nothing to read.** `main` was linear and the previous change
      had landed as a single commit, so squash was inferred. A linear history is equally consistent
      with rebase, so the inference was a coin toss that read as a reading. ⚠️ **It happened to be
-     right, and the evidence for that is not the shape it was read off**: every landing on this
-     integration branch is one commit carrying the `(#N)` the host appends *only* to a subject it
-     generates itself, which a rebase merge does not do — so the convention was in the history to
-     be read correctly, and nothing said it.
+     right, and what establishes that is not the shape it was read off**: a branch of six commits
+     and one of three each added **exactly one** commit to a `main` that carries no merge commit
+     at all, which a rebase merge cannot do and a merge commit cannot do either. So the convention
+     was in the history to be read correctly, and nothing said it.
+
+     ⚠️ **The first attempt at that evidence was wrong, and wrong in the direction this whole
+     document is about.** It read the `(#N)` suffix on 26 of the 33 commits as the host's own
+     squash marker. It is nothing of the kind: this project's finishing role **passes** that
+     subject itself, precisely because a host appends the reference only to a subject it generates
+     — so the suffix is evidence of the convention and not of the merge method. The seven commits
+     without it are not the exceptions it implied either: six predate the loop running on itself,
+     and one is a merged pull request whose subject was passed without its reference, which is the
+     defect the finishing role's squash-subject rule exists for, sitting unnoticed in the history
+     of the repository that states the rule.
    - **The host constrains nothing.** `allow_squash_merge`, `allow_merge_commit` and
      `allow_rebase_merge` are all true, and `delete_branch_on_merge` is false — so every method is
      available, nothing on the host enforces the convention the history implies, and the branch
