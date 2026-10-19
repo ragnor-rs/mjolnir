@@ -79,11 +79,23 @@ Present in one or two copies each, and true for every project:
 - Entering a worktree accepts an arbitrary path only on a session's first entry.
 - The working directory resets between calls, so an absolute root on every git invocation is
   mandatory.
+- Those two are what
+  [schema § 10 → Where a tree is created](../plugins/mjolnir/config/schema.md#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it)
+  reads: the second is why addressing a tree by path is not working in it, and the first is why
+  the entering has to happen at the start of the role rather than whenever a write comes up.
 - A worktree serves the skills **committed on its own branch** — for skills the project carries at
   `.claude/skills/`, so a tree cut before one existed does not have it. It does **not** hold for a
   skill shipped in a plugin: every session serves the single registered marketplace path, whichever
   worktree it runs in — measured 2026-10-17, see
   [*Working on the toolkit itself*](../README.md#working-on-the-toolkit-itself).
+- A plugin's `skills/` directory is **discovered**, so the manifest's own inventory of it is read
+  by nothing. Measured 2026-10-19 against a plugin installed under a config directory of its own:
+  the list complete, one entry missing, the key absent altogether, and the key naming a directory
+  that does not exist all served the same set. The key is therefore not carried here — a list
+  allowed to disagree with what is built is the defect
+  [schema § 3](../plugins/mjolnir/config/schema.md#the-trackerless-adapter-and-a-kind-with-no-implementation)
+  refuses for adapters, one manifest over. It is recorded rather than merely deleted, because the
+  obvious reading of an inventory key is that something needs it.
 - Resolve today's date from the harness context, never from the shell.
 
 ---

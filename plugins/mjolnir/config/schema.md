@@ -623,7 +623,8 @@ register (§8).
   tracker, a bracketed number in the title and never a hash on another, and legitimately absent on
   a third, where the item moves separately and neither title nor body carries a closing form.
 - **Title and body are written in the repository's language and register (§8)** — which one
-  project's split-by-audience rule makes different from its tracker's.
+  project's split-by-audience rule makes different from its tracker's — and neither is
+  hard-wrapped, by [§ 8 → Prose line width](#prose-line-width).
 - **The authorship rule above binds the pull request as it binds the commit**: no generated-by
   marker, no tool credited.
 - **The body is held to [*Nothing is deferred*](#nothing-is-deferred)**, which is where the
@@ -669,6 +670,7 @@ directions. A carrier of `hook` has no invocation name at all.
 language:
   work_item: ru
   repo: en
+  prose_width: 100           # columns, for files in the repository; absent means no wrapping
   artifacts:
     day_log:   { language: en, register: business,  audience: "…" }
     deliverables: { language: ru, register: technical, audience: "…" }
@@ -719,6 +721,56 @@ reported without being held, and which are left to a reader are stated once in
 [`docs/single-source-of-truth.md § The reply's register`](../../../docs/single-source-of-truth.md#the-replys-register-held-in-the-session-not-on-the-gate)
 — beside the gate's own checks and under the same discipline, because an unstated limit reads
 later as coverage.
+
+### Prose line width
+
+Where prose is wrapped is a property of **the surface it lands on**, and the two kinds of surface
+a role writes to answer differently.
+
+⛔ **A surface that renders is never hard-wrapped** — a work-item body, a pull request title or
+body, a review comment, and the reply above. Procedure, no setting: the renderer reflows at a
+width the writer cannot know, so a hard break survives as a ragged line at whatever the reader's
+viewport is not, and a sentence split by a newline defeats text selection and in-page search.
+Wrapping there costs the reader and buys nothing, and the reader of those surfaces is no more a
+project's to nominate than the reply's is.
+
+⚠️ **The test is whether the surface renders, not what it is called.** Every tracker and host this
+surface names reflows the text it is given, which is why the rule above reads as *a body is never
+wrapped*; a project whose items live somewhere that shows the text exactly as written has a file
+by this test and wraps it at the configured width. What to ask of a surface nobody has met yet is
+whether the reader's viewport decides where a line ends, or the writer's own line break does.
+
+**A file in the repository is wrapped at the width that project states**, and that is
+configuration, because wrapping a file does buy something: a diff is line-granular, so a reworded
+sentence is one changed line rather than a repainted paragraph, and a check reports against a line
+a reader can find. How much that is worth depends on how the project's prose is read and reviewed,
+which is a thing projects differ on in fact and not only in principle
+([the measurement](../../../docs/configuration-surface.md#prose-width-is-a-habit-and-the-habits-differ)).
+
+⛔ **Absent is no limit, and not a default of some number.** A project that writes no
+`prose_width` does not hard-wrap, which is the commoner habit of the two; a role writing a document
+there leaves its paragraphs unwrapped rather than picking a width of its own.
+
+**What the width cannot reach is excluded by the rule itself**, rather than by the forbearance of
+whoever reads it, because each is a line the format forbids breaking: fenced and indented code,
+table rows, and the document's YAML frontmatter, where a field is one line however long it is. A
+width rule without them is a rule that cannot be met, since a table row has no legal break at all.
+
+**The width is measured over what a line can be broken at.** A run with no legal break inside it —
+a link destination, an autolink, a bare URL, an inline-code span — is set aside first, and the
+line is over only if what is left is. ⚠️ Stated this way rather than as *one* unbreakable run, and
+measured: the stricter reading flags a citation that could only be met by breaking before the link
+text, which is a line this repository's own documents carry by the dozen.
+
+⛔ **The width binds prose written after it is set.** Rewrapping what predates it would repaint
+every line of every file and destroy the line-granular diff that is the whole argument for
+wrapping; a paragraph that predates the width is rewrapped when it is edited anyway, and not
+before.
+
+Whether a project holds this mechanically is the project's own business, as with every rule the
+surface states. This repository holds it on the gate, and what that check does not reach is stated
+with it in
+[`docs/single-source-of-truth.md § Prose line width`](../../../docs/single-source-of-truth.md#prose-line-width-held-on-the-gate-for-files-and-nowhere-for-bodies).
 
 ## 9. Day log
 
@@ -775,6 +827,7 @@ branch_model:
   kind: worktree | in_place
   work_in_shared_checkout: when_free | never   # read only under worktree; null under in_place
   parallel_trees: true
+  tree_dir: "<the directory a tree is cut under>"   # required under worktree; null under in_place
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
   exclusive_resources:           # [] where nothing in this project is exclusive
     - { name: "…", cap: 1, subject: tree }
@@ -799,6 +852,12 @@ rather than a procedure the shared one absorbs. ⚠️ **Unlike `day_log.script`
 transitional.** Nothing here is waiting to be extracted — a tree's setup and teardown are where a
 project's own build genuinely differs, and a skill on the route **names** `mechanics` instead of
 restating it.
+
+⛔ **It is steps and never a location, and `tree_dir` is the location.** The two were conflated
+while the second key was absent, which left *where a tree goes* stated in no facet and carried by
+each project's standing convention — readable by the person running a role and by nothing shipped.
+A path is not a step: a project with nothing to install and nothing to tear down still has to say
+where its trees are cut.
 
 ### Where the work happens
 
@@ -830,6 +889,33 @@ rather than being left to whoever reads it:
 is the rule the one project that had already extracted this mechanism states about its own
 reference file, and it is why the routing is stated once here rather than in a paragraph inside
 each role that reads it.
+
+### Where a tree is created, and how the session comes to be in it
+
+⛔ **`tree_dir` states the directory trees are created under, and the leaf is the item's own
+identifier.** The directory is a project's fact — one project nests its trees under the skills
+root with a second checkout inside each, another makes them siblings of the shared checkout — and
+the leaf is not: a tree belongs to one item, so deriving it makes the whole path a function of the
+item. ⚠️ **The item's own identifier and not its branch name**, which carries a slug: a title
+reworded between two starts would give one item two trees, and the directory would stop answering
+*is this item already being worked*.
+
+⚠️ **So the directory is a second place one item collides with itself**, after the ref. It is not
+a second claim and nothing reads it as one — the ref arbitrates, per the next subsection — but it
+is why a cut can fail *after* the ref was taken, which is the case the no-residue rule below is
+written for.
+
+⛔ **Cutting a tree is not working in it. The session enters the tree, and nothing else enforces
+`work_in_shared_checkout`.** A tree addressed by path from the shared checkout satisfies every call
+that takes a root explicitly and none of the tools that do not take one — those write wherever the
+session is standing, which is the checkout the key just forbade. ⚠️ Measured on the role that
+performed this before the key existed: it cut the tree, called it *where the work happens* and
+said nothing about entering it, which left `never` enforced for the calls that name a root and
+for nothing else.
+
+⛔ **A run that cannot enter the tree it cut is a stop**, not a convention the person running it is
+trusted to keep. Entering is the harness's own operation and this surface carries no key for it;
+what the procedure requires is that it happen before the first write.
 
 ### The claim on a work item
 
@@ -1046,14 +1132,14 @@ to ask for.
 
 ⛔ **A role's report names what it could not establish, rather than omitting it.** An absence
 reads as a non-problem, and the next role inherits a guess as a fact — the cheapest way a wrong
-premise enters work and is then referenced from both sides of a boundary. § 5 holds a gate's *input* to the same shape — the list runs whole — but
-lets a project mark a failure quiet with `on_fail: stop_quietly`, because an item that is merely
-early has nothing for its author to fix. ⚠️ **This rule has no quiet form**: it binds a role's
-*output*, where the reader is the next role rather than the item's author, and an unestablished
-fact silently omitted is the premise that gets acted on. It is the same property § 8 holds for the
-**reply** a role writes in the session — [the reply's own
-subsection](#the-reply-to-the-person-running-a-role) — stated there for what a person reads and
-here for what the next role does.
+premise enters work and is then referenced from both sides of a boundary. § 5 holds a gate's
+*input* to the same shape — the list runs whole — but lets a project mark a failure quiet with
+`on_fail: stop_quietly`, because an item that is merely early has nothing for its author to fix.
+⚠️ **This rule has no quiet form**: it binds a role's *output*, where the reader is the next role
+rather than the item's author, and an unestablished fact silently omitted is the premise that
+gets acted on. It is the same property § 8 holds for the **reply** a role writes in the session —
+[the reply's own subsection](#the-reply-to-the-person-running-a-role) — stated there for what a
+person reads and here for what the next role does.
 
 ### The store, and when an in-tree store is safe
 
@@ -1064,10 +1150,11 @@ in the outer — so a committed plan there is reviewable with the engagement mat
 the pull request. Both are legal; which one a project gets is not a property of `committed` alone.
 
 ⛔ **An in-tree store is safe under `branch_model.kind: worktree` only with
-`committed: true`, and the reader refuses the combination.** The teardown takes everything git does not have, and the plan for the work
-is inside the thing being torn down. `committed: true` also puts the plan in front of a reviewer
-with the change, which is where a wrong plan is cheapest to catch; `committed: false` keeps the
-repository free of per-item working papers and then owes the store a home outside every tree.
+`committed: true`, and the reader refuses the combination.** The teardown takes everything git
+does not have, and the plan for the work is inside the thing being torn down. `committed: true`
+also puts the plan in front of a reviewer with the change, which is where a wrong plan is
+cheapest to catch; `committed: false` keeps the repository free of per-item working papers and
+then owes the store a home outside every tree.
 
 ⚠️ **A store under a system temp directory does not survive a reboot**, and a pointer to it
 outlives the file in silence.
@@ -1083,3 +1170,49 @@ one role to another and no boundary exists for an artifact to cross, writes none
 is not misconfigured for it. ⚠️ **It is not the configuration for a loop that hands work through
 the item instead** — rule 2 above names an item body as a store whose text a role may not obey, so
 a handoff that travels through one has the next role reading what it must refuse to act on.
+
+## 12. Ordering
+
+```yaml
+ordering:
+  carrier: command | none
+  command: "<prints the takeable items, most takeable first>"   # when carrier is command
+  absent_reason: "…"           # required when carrier is none
+```
+
+Which item a role takes when its invocation names none.
+
+⛔ **The procedure derives no ordering and invents none.** Every store it could derive one from
+answers a different question in the answer's clothes: a priority tier states importance and not
+sequence, a dependency graph states which items *may* be taken rather than which of them to take,
+and a backlog's own listing is whatever the tracker sorted by. A role that picked one of those
+would be ordering the work on the toolkit's judgement, which is the one judgement here that is
+never the toolkit's.
+
+**So the ordering is read from wherever the project already keeps it, through a command the
+procedure runs and does not interpret.** The contract is the output, and it is the narrowest one
+that answers the question: the command prints the takeable items, **most takeable first, one
+identifier per line**. Blank lines are not items. ⛔ **The order is taken as given and never
+re-sorted** — a second sort is a second answer to a question the project has already answered, and
+whatever argues for the order lives where the ordering does rather than here.
+
+⚠️ **`command` is a command the procedure runs as given, and never a path it prefixes with
+anything**, which is the one ambiguity `day_log.script` (§ 9) carries and this key does not
+inherit. It is run from the skills root, like every path on this surface (§ 1), and the procedure
+reads its output rather than its exit status beyond failure.
+
+⛔ **`carrier: none` is an answer and not a stop.** A project that keeps no ordering has a role
+that, invoked with nothing, **says exactly that and asks for an item by number** — never a silent
+fallback to whatever the tracker happened to list first, by § 2's rule that absence of signal is
+not an answer. The same answer covers a command that failed: an ordering that could not be read is
+reported as unread, per [§ 11](#a-report-names-what-it-could-not-establish).
+
+**Why a command and not an operation on the port.** § 3's operations are a closed set of things
+every tracker is asked for, and this is a fact about a tracker on one project and about a document
+on another — the ordering measured here lives outside every tracker and every tree. Putting it
+behind the port would oblige each adapter to answer a question its tracker does not hold.
+
+⛔ **An ordering is not a gate.** § 5 asks whether *this* item may start; this says which item to
+offer first, and a project may configure either without the other. Where a gate does configure
+`queue_position`, this facet is where that queue comes from — the two are one statement read by
+two roles, not the same check twice.

@@ -1,0 +1,40 @@
+name: Prose width
+
+# The gate that holds this repository's markdown to the width its own configuration states.
+# One mirrored command, so one workflow, per § 2 of plugins/mjolnir/config/schema.md — the rule
+# its siblings here cite too.
+#
+# ⚠️ The workflow name and the job name are deliberately the same string, as in every sibling:
+# `host.checks` is keyed by the workflow name and never by a job name, and identical names leave
+# no key to get wrong.
+#
+# ⛔ The width itself is in no line of this file: the check reads `language.prose_width` through
+# the shared reader, so a project that states another width, or none, changes this gate's verdict
+# by editing its configuration and nothing else.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: every scope of the automatic token is dropped, and the
+# checkout is told not to leave it behind in the git config. Nothing here reaches the
+# host or the tracker — the files in the checkout are the whole input.
+permissions: {}
+
+jobs:
+  prose-width:
+    name: Prose width
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command: the planted violations and the planted exemptions run first,
+      # and the tree is held only once the check has been shown it can both fail and pass.
+      # That command is also the string `host.checks` states this run mirrors — ⚠️ held
+      # together by eye and not by a check, since nothing here reads a workflow file. That
+      # is #49.
+      - name: Assert the check can fail and can pass, then hold every document to the width
+        run: python3 tools/check_prose_width.py --self-test

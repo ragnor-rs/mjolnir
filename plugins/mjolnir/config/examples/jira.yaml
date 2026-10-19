@@ -112,6 +112,7 @@ branch_model:
   kind: worktree
   work_in_shared_checkout: never
   parallel_trees: true
+  tree_dir: "../<project>-trees"       # beside the shared checkout; the leaf is the item's key
   mechanics: null                      # a tree here needs nothing installed or copied
   exclusive_resources: []              # nothing local is held; the checks run on the host
 context:
@@ -124,3 +125,10 @@ context:
     # cheapest to catch.
     dir: ".claude/artifacts"
     committed: true
+
+ordering:
+  # A saved filter in the tracker, printed as one key per line. The ordering is somebody's
+  # judgement either way; what this key settles is where the procedure reads it rather than
+  # whether a procedure may compute it.
+  carrier: command
+  command: "<the command that prints the sprint's ranked issues, one key per line>"

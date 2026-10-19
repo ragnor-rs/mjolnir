@@ -82,6 +82,9 @@ carriers:
 language:
   work_item: en
   repo: en
+  # Files here are hard-wrapped, so the width is stated and a role writing a document reads it
+  # from here. Bodies and pull requests are never wrapped and carry no key: that is procedure.
+  prose_width: 100
   artifacts:
     day_log: { language: en, register: technical, audience: "whoever maintains this project" }
 
@@ -106,6 +109,7 @@ branch_model:
   kind: worktree
   work_in_shared_checkout: never
   parallel_trees: true
+  tree_dir: "../<project>-trees"      # a sibling of the shared checkout; the leaf is the item
   mechanics: null
   exclusive_resources: []
 
@@ -114,3 +118,14 @@ context:
     carrier: file
     dir: "$TMPDIR/<project>/artifacts"
     committed: false
+
+ordering:
+  # The absent case, and what a new adopter has on their first day: issues in filing order and
+  # nothing that says which to take. A role invoked with no item says so and asks for a number.
+  carrier: none
+  absent_reason: >-
+    Plain issues with no board, no rank field and no ordering document. Which item is next is
+    decided in conversation, and a list sorted by number would read as an answer.
+  revisit_when: >-
+    A second person takes work from this backlog, or the issue count passes what one person
+    holds in their head.

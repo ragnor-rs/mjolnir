@@ -135,6 +135,8 @@ the three that are obvious. The measurements that forced each to be independent:
    another writes it in a business register for a reader outside the build. Three settings, not
    one — hence
    [`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project).
+   A seventh setting landed in the same axis later, measured rather than stated by any project:
+   [prose width](#prose-width-is-a-habit-and-the-habits-differ).
 
    **One artifact in that map is fixed rather than configured.** The measurement that forced it
    is an absence: the reply a role writes in the session is an artifact like the day log, and for
@@ -206,13 +208,53 @@ the three that are obvious. The measurements that forced each to be independent:
      this facet's.** One project waits a long time for a build slot and deliberately far less for
      a service stack, on the recorded grounds that a build is certain to finish while a stack can
      stay up indefinitely.
-   - **Placement and setup are irreducibly local.** One project nests the tree under its skills
-     root with a second checkout inside it; another makes it a sibling of the main checkout. One
-     must copy a four-gigabyte untracked asset directory with copy-on-write and make three
-     separations in the tree's environment file before the stack's first boot, or the new stack
-     silently rebinds the shared checkout's volumes. None of that generalises, and
-     [`schema.md § 10`](../plugins/mjolnir/config/schema.md#10-branch-model) keeps it behind the
-     pointer.
+   - **Placement and setup are both local, and they are local in different ways.** One project
+     nests the tree under its skills root with a second checkout inside it; another makes it a
+     sibling of the main checkout. One must copy a four-gigabyte untracked asset directory with
+     copy-on-write and make three separations in the tree's environment file before the stack's
+     first boot, or the new stack silently rebinds the shared checkout's volumes. The setup does
+     not generalise and stays behind the `mechanics` pointer; the **placement** is a path, and the
+     two measurements differ in the value rather than in the steps — so it is a key,
+     [`schema.md § 10 → Where a tree is created`](../plugins/mjolnir/config/schema.md#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it).
+     ⚠️ Until that key existed the two were one pointer, which left the location stated in no
+     facet at all: every project that cut a tree carried its own standing convention, readable by
+     the person running a role and by nothing shipped. The same subsection carries what was
+     measured one step further on — that **cutting a tree is not working in it**, and a role
+     that stops at the cut leaves the session standing in the checkout the branch model just
+     forbade.
+
+## Prose width is a habit, and the habits differ
+
+The seventh thing axis 5 turned out to carry. Where prose wraps was never in any copy of any role
+and in no project's written conventions, so unlike the six axes above it could not be read off
+what the projects *state* — only off what they do. Measured over every tracked markdown file in
+the six, counting lines of prose with fenced code, table rows and indented blocks removed:
+
+| project | prose lines | p50 | p90 | over 100 columns |
+|---|---|---|---|---|
+| A | 3777 | 99 | 374 | 45% |
+| B | 1708 | 94 | 257 | 29% |
+| C | 1907 | 77 | 259 | 36% |
+| D | 1735 | 83 | 359 | 40% |
+| E | 1200 | 96 | 107 | 28% |
+| F | 4978 | 87 | 97 | 2% |
+
+Two shapes, and the gap between them is not a matter of degree. Where a project hard-wraps, nine
+prose lines in ten land under 100 columns and the overruns are a tail of tens; where it does not,
+the ninetieth percentile is a *paragraph* — 257 to 374 columns — because an unwrapped paragraph is
+one line however long it is. F wraps and this repository wraps; four of the six do not. There is
+no project in the middle, and the one that looks closest, E, is a wrapped habit at a slightly
+wider column with a quarter of its lines just over.
+
+So a single shared number would have been one habit imposed on four projects that never chose it,
+and the absent case is the **commoner** of the two rather than a degenerate one — which is why
+[`schema.md § 8 → Prose line width`](../plugins/mjolnir/config/schema.md#prose-line-width) makes
+`prose_width` configuration with absence meaning no wrapping at all.
+
+⚠️ **What the same measurement does *not* support is a second setting for bodies.** It covers
+files, because files are what a checkout holds; the rendered surfaces were argued from the
+renderer rather than from a count, and the rule there is procedure. A reader who wants the
+counting to carry that half too will not find it here.
 
 ## The tracker port
 
@@ -280,6 +322,35 @@ scope-of-engagement rule no other project has, and it is the one that does most 
 there — hence the named, extensible list in
 [`schema.md § 9`](../plugins/mjolnir/config/schema.md#9-day-log), whose default set is a
 decision rather than the only possible one.
+
+## Which item is next is read, never derived
+
+[`schema.md § 12`](../plugins/mjolnir/config/schema.md#12-ordering) is the thinnest facet on the
+surface, and what it rests on is worth stating before the argument: two shapes, not a count across
+the six projects.
+
+- **One surveyed copy of the starting role checks an item's position in a priority queue** — the
+  eight-check copy named in the readiness-gate section above. That check reads an order, and
+  neither the copy nor the surface said where the order comes from. A gate whose input is a
+  convention is the shape this whole document exists to catch.
+- **This repository's own ordering is a row table in a document outside every tree**, in the agent
+  harness's per-project store, with the argument for each row written beside it. Nothing shipped
+  from a plugin can reach that file. The role that needed it read it through a carrier only this
+  project resolves, which is the duplication the extraction is for, one level up.
+
+The two have nothing in common but their output, and that is the whole reason the facet is a
+pointer. A tracker query answers it on one project and a document answers it on another, so an
+operation on the port ([`schema.md § 3`](../plugins/mjolnir/config/schema.md#3-tracker-port))
+would oblige every adapter to answer a question its tracker does not hold — and a rule in the
+procedure would have the toolkit ordering somebody's work, which is the one judgement here that is
+never the toolkit's.
+
+**The absent case is the one that was easy to get wrong.** A project with no ordering is not a
+project whose next item is the first row of whatever the tracker listed: that reading turns
+*nobody decided* into *this was decided*, which is
+[`schema.md § 2`](../plugins/mjolnir/config/schema.md#2-code-host)'s absence-of-signal rule one
+store over. So `carrier: none` makes a role ask for an item by number, and the plain-issues
+example is written that way rather than given a query to look tidy.
 
 ## The four facets, and the absent case
 
@@ -372,7 +443,8 @@ so what forced its shape is worth recording in both directions.
   lossy, which is why § 11 makes the artifact the handoff rather than the summary.
   <https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents>
 - The published practice this loop's shape is closest to keeps a window at **40–60 %** of its
-  capacity — its own qualifier is that the figure depends on the problem's complexity — separates research from planning from implementation into different windows, writes
+  capacity — its own qualifier is that the figure depends on the problem's complexity —
+  separates research from planning from implementation into different windows, writes
   each phase's output to a file that is the real handoff, and spends human review on the plan
   rather than on the diff — *a bad line of a plan leads to hundreds of bad lines of code; a bad
   line of research, thousands*. Its ranking of what hurts is the reason § 11 is about what enters

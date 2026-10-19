@@ -68,7 +68,21 @@ carriers:
   ship:           { role: session, partial: "commit third only — the shape #12 names" }
   deliverables:   { role: deliverables }   # itself three roles sharing one name (#14)
 
+  # The names a reconciled role is shipped under, which are the role's own rather than the
+  # issue-suffixed ones the surveyed copies used. ⚠️ A reconciliation renames the carrier, so
+  # landing one leaves this map describing only the copies it replaced: `finish` and
+  # `finish-issue` are one role under two names, and until both are here the check reports the
+  # shipped one as unclassified and refuses a verdict.
+  file-work-item: { role: file }         # the reconciled filing role (#7, shipped by #114)
+  finish:         { role: finish }       # the reconciled finishing role (#10, shipped by #113)
+  start:          { role: start }        # the starting half, still project-local (#9)
+
   design-prd:     { class: beside }     # turn raw sources into a specification (#29)
+
+  # Project-local tooling of the build itself, not carriers of the loop. Each has a work item
+  # that would make it a role; until one lands, what is on disk is tooling.
+  close-out:          { class: utility }  # backlog, graph and ordering reconciled (#98)
+  adoption-readiness: { class: utility }  # this check's own carrier (#104)
 
   db-stats:                  { class: utility }
   mem-stats:                 { class: utility }

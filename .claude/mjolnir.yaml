@@ -68,6 +68,9 @@ host:
     - workflow: "Port contract"
       mirrors: "python3 plugins/mjolnir/scripts/port.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Prose width"
+      mirrors: "python3 tools/check_prose_width.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Reply register"
       mirrors: "python3 plugins/mjolnir/scripts/check_reply_register.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -141,6 +144,12 @@ carriers:
 language:
   work_item: en
   repo: en
+  # Measured, not declared: the habit in this tree was already ~100 columns everywhere, and
+  # writing it down is what makes it readable by a role rather than by whoever typed last. It
+  # governs files here and nothing on the host — a body and a pull request are never wrapped,
+  # which is procedure and carries no key. ⚠️ Absence would mean no wrapping at all, so the
+  # check below holds nothing if this line is deleted and says so rather than passing.
+  prose_width: 100
   artifacts:
     day_log: { language: en, register: technical, audience: "whoever maintains this toolkit" }
 
@@ -174,6 +183,11 @@ branch_model:
   # serving the procedure while a branch is in flight beside it.
   work_in_shared_checkout: never
   parallel_trees: true
+  # A sibling of the shared checkout rather than a directory inside it: that checkout is the
+  # registered marketplace path every session serves, so nesting a per-item tree under it would
+  # put one branch's working files inside the path that is supposed to be serving main. The leaf
+  # is the item's own number and is derived rather than stated here — § 10.
+  tree_dir: "../mjolnir-wt"
   # Null because there is nothing to point at: a tree here needs no dependency install, no asset
   # copy, no port, no container, and nothing to tear down. The cheapest proof that a project
   # whose trees are free to create still has to state the model.
@@ -198,3 +212,11 @@ context:
     # to a reboot is replayable from the session transcript, which is #31's own finding.
     dir: "$TMPDIR/mjolnir/artifacts"
     committed: false
+
+ordering:
+  # ⚠️ The ordering here is a row table in a document that lives in the agent harness's per-project
+  # store — outside every tree, and reachable by nothing shipped from the plugin. That is why this
+  # facet is a command rather than a tracker query: the command is the project's, the contract on
+  # its output is the surface's, and the argument for the order stays in the document beside it.
+  carrier: command
+  command: "python3 .claude/skills/close-out/scripts/plan-status.py --queue"

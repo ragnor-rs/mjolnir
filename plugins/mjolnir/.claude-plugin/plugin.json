@@ -15,11 +15,5 @@
     "github-projects",
     "jira",
     "trello"
-  ],
-  "skills": [
-    "./skills/day-report",
-    "./skills/file-work-item",
-    "./skills/finish",
-    "./skills/review"
   ]
 }

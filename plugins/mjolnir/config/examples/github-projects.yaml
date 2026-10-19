@@ -108,6 +108,10 @@ branch_model:
   # The shared checkout is worked in when it is free; a tree is taken when it is not.
   work_in_shared_checkout: when_free
   parallel_trees: true
+  # The other measured placement: nested under the skills root rather than beside it, which is
+  # what a project whose tree carries a second checkout inside it does. A path, never a step —
+  # the steps are the pointer below.
+  tree_dir: ".worktrees"
   mechanics: ".claude/worktrees.md"   # the tree's own setup and teardown steps
   exclusive_resources:
     # Two resources in one project, with different caps — the shape a single name could not
@@ -123,3 +127,10 @@ context:
     # a teardown takes whatever git does not have.
     dir: "$TMPDIR/<project>/artifacts"
     committed: false
+
+ordering:
+  # The board already holds a rank, so the command is a query against it. What the surface
+  # fixes is the output — the takeable items, most takeable first, one identifier per line —
+  # and not where the project got the order from.
+  carrier: command
+  command: "<the command that prints the board's ranked column, one item id per line>"

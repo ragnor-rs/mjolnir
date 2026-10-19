@@ -51,24 +51,33 @@ PROPERTY_TABLE_ANCHOR = "the-reply-to-the-person-running-a-role"
 
 CITATION = "schema § 8 → The reply to the person running a role"
 
-# What every answer asks for, in one string because every answer asks for the
-# same thing. ⛔ Whether the turn is handed back decides who pays the re-read,
-# not whether the defect is fixed: the reply just sent is the one carrying the
-# findings, so a branch that told the writer the *next* reply would be better
-# would be licensing a deferral — measured, and obeyed, on the branch that fires
-# when a density reports and nothing blocks. `--self-test` holds every answer
-# this can return to carrying this sentence and to promising nothing about a
-# later reply — four shapes over three branches, because the last one fires both
-# for a spent hand-back and for findings that only report.
+# What an answer that asks for a fix asks for, in one string because both of the
+# answers that ask for one ask for the same thing: the reply just sent is the one
+# carrying the findings, so a branch that told the writer the *next* reply would
+# be better would be licensing a deferral — measured, and obeyed, when the arm
+# that fires on a density closed on one. `--self-test` holds both asking answers
+# to carrying this sentence and to promising nothing about a later reply.
+#
+# ⛔ **Asking is what costs the reader the reply a second time, and `decision` is
+# not what decides it.** Context handed back on a `Stop` is read by the writer
+# whether or not the answer also blocks, so an arm that reported a finding *and*
+# asked for a restatement spent a whole re-read on a density — measured, and the
+# price is recorded in the document rather than restated here. So an arm that
+# does not block asks the writer for nothing and reports to the person instead,
+# and `context` has a branch only where something is asked.
 #
 # ⚠️ `DEFERRALS` is a closed list, and it is the *quoting* weakness this
-# repository rules out elsewhere -- safe only because what it sweeps is the four
+# repository rules out elsewhere -- safe only because what it sweeps is the
 # strings authored below rather than arbitrary text. A reworded licence passes
 # it; what catches that is the absent `RESTATE`, which is the arm that matters.
 RESTATE = ("Re-send this reply corrected, in this turn — a finding against the reply just sent "
            "is not carried forward to a later one.")
 DEFERRALS = ("the next reply", "a later reply", "written knowing", "next time")
 
+# ⛔ What the two kinds now mean, which is narrower than it reads: `BLOCKS` hands
+# the turn back and asks for the reply again, `REPORTS` reaches the person who
+# ran the role and asks the writer for nothing at all. The second used to ask
+# too, which made the distinction cost the same as the first.
 BLOCKS, REPORTS = "blocks", "reports"
 
 # The carrier that calls this script, and the event it registers for. Grammar:
@@ -509,7 +518,7 @@ def findings(reply: str) -> tuple[list[str], list[str]]:
     return blocking, reported
 
 
-def already_blocked(turn: str) -> tuple[bool, str]:
+def already_blocked(turn: str, *, record: bool) -> tuple[bool, str]:
     """Has this turn been handed back once already? And if unknown, why.
 
     The guard is per turn and not per session: a reply restated once has had its
@@ -518,6 +527,13 @@ def already_blocked(turn: str) -> tuple[bool, str]:
     the harness's own turn id, and a payload without one falls back to the
     session, which blocks once per session rather than once per turn — the
     conservative direction.
+
+    ⛔ **The marker records a hand-back and not a fire**, which is what `record`
+    is for: the caller passes it only where this answer would hand the turn back,
+    so an answer that reports spends nothing. While every answer asked for a
+    restatement the two were the same event; once one of them stopped asking, a
+    density would have spent the turn's one hand-back and the blocking finding
+    after it would have been told, falsely, that it had already had one.
 
     ⛔ Where the state cannot be kept, this reports rather than blocks, because
     a guard that cannot read itself cannot promise to stop — but it **says
@@ -536,7 +552,8 @@ def already_blocked(turn: str) -> tuple[bool, str]:
         marker = seen / re.sub(r"[^A-Za-z0-9_-]", "-", turn)[:120]
         if marker.exists():
             return True, ""
-        marker.touch()
+        if record:
+            marker.touch()
     except OSError as error:
         return True, f"the turn guard could not keep state ({type(error).__name__}: {seen})"
     # ⚠️ Pruning is best-effort and separate: a marker another process unlinked
@@ -567,10 +584,24 @@ def answer(payload: dict) -> dict:
     if not turn:
         unguarded = "no turn or session is named in the payload, so the one-hand-back guard "\
                     "cannot be kept"
-        block = False
+        # ⚠️ Not handed back rather than unknown: a payload naming no turn has
+        # had no hand-back, and the message to the person must not say it has.
+        handed_back, block = False, False
     else:
-        handed_back, unguarded = already_blocked(turn)
+        # ⚠️ `record` is the blocking findings and not `block`, which is derived
+        # from the answer this call returns: a hand-back is recorded exactly
+        # where there is something to hand back for and the turn has not had
+        # one, which is the same condition as `block` without the circle.
+        handed_back, unguarded = already_blocked(turn, record=bool(blocking))
         block = bool(blocking) and not handed_back
+
+    # ⛔ Asked of the writer only where a hand-back is warranted *and* a
+    # restatement is still owed: either the turn is handed back, or a finding
+    # that would have been could not be guarded. A spent hand-back has had its
+    # restatement and a density was never worth one, and both of those reach the
+    # person instead -- which is the whole of what `REPORTS` costs now.
+    if not (block or (blocking and unguarded)):
+        return {"systemMessage": told(blocking, reported, handed_back)}
 
     out: dict = {
         "hookSpecificOutput": {
@@ -586,30 +617,46 @@ def answer(payload: dict) -> dict:
             + " — handed back once for restating."
         )
     else:
-        said = f"Reply register: {len(blocking) + len(reported)} finding(s) against {CITATION}."
-        if blocking and unguarded:
-            said += f" Nothing was handed back: {unguarded}."
-        out["systemMessage"] = said
+        out["systemMessage"] = (
+            f"Reply register: {len(blocking) + len(reported)} finding(s) against {CITATION}. "
+            f"Nothing was handed back: {unguarded}."
+        )
     return out
 
 
+def told(blocking: list[str], reported: list[str], handed_back: bool) -> str:
+    """What the person who ran the role reads when the writer is asked for nothing.
+
+    The findings themselves and not a count of them: this is the only place they
+    are said now, so a message carrying the number alone would report that the
+    register held something without saying what. ⚠️ A blocking finding reaching
+    this message says so, because a spent hand-back and a density are the same
+    answer to the writer and are not the same fact about the reply.
+    """
+    lines = [f"Reply register: {len(blocking) + len(reported)} finding(s) against {CITATION}."]
+    lines += [f"  - {f}" for f in blocking + reported]
+    if blocking and handed_back:
+        lines.append("  Nothing more is asked: this turn has had its one hand-back.")
+    return "\n".join(lines)
+
+
 def context(blocking: list[str], reported: list[str], block: bool, unguarded: str = "") -> str:
+    """What the writer is asked for, on the two answers that ask for anything.
+
+    ⛔ There is no third branch. One closed on *the next reply is written knowing
+    them*, which is a deferral stated by the guard that holds the rule against
+    deferring, and the shape that replaced it asked for a whole restatement on a
+    density. What those two arms do now is report to the person, above.
+    """
     lines = [f"The reply's register is procedure: {CITATION}. Findings against the reply just sent:"]
     lines += [f"- {f}" for f in blocking + reported]
     if block:
         lines.append(
             f"This turn is handed back once only; a second reply is not blocked. {RESTATE}"
         )
-    elif blocking and unguarded:
+    else:
         lines.append(
             f"Nothing is blocked, and not because these findings are weak: {unguarded}. {RESTATE}"
-        )
-    else:
-        why = ("this turn has had its one hand-back" if blocking
-               else "these findings are read at a density")
-        lines.append(
-            f"Nothing is blocked — {why}, which is this guard's reach rather than permission to "
-            f"defer. {RESTATE}"
         )
     return "\n".join(lines)
 
@@ -909,25 +956,58 @@ def self_test() -> int:
     else:
         print("  FAIL                   a blocking finding did not block")
         failures += 1
+    # ⛔ Asserted on the answer and not on `decision` alone. Context handed back
+    # on a `Stop` is read by the writer whether or not the answer blocks, so an
+    # arm that asks is an arm that costs the reply a second time -- which is why
+    # each assertion below reads `hookSpecificOutput` rather than trusting that
+    # an answer with no `decision` cost the reader nothing.
     again = answer({"last_assistant_message": blocking_reply, "prompt_id": "self-test-block"})
-    if "decision" not in again and again.get("systemMessage"):
-        print("  ok                     the same turn is handed back once only")
+    if ("decision" not in again and "hookSpecificOutput" not in again
+            and "one hand-back" in again.get("systemMessage", "")):
+        print("  ok                     the same turn is handed back once only, and asks nothing twice")
     else:
-        print("  FAIL                   the same turn was blocked twice")
+        print("  FAIL                   the same turn asked for a restatement it had already had")
         failures += 1
     unguardable = answer({"last_assistant_message": blocking_reply})
     if "decision" not in unguardable and "Nothing was handed back" in unguardable.get(
         "systemMessage", ""
-    ):
-        print("  ok                     a payload naming no turn reports, and says it could not guard")
+    ) and "additionalContext" in unguardable.get("hookSpecificOutput", {}):
+        print("  ok                     a payload naming no turn asks, and says it could not guard")
     else:
         print("  FAIL                   a payload naming no turn did not say the guard was absent")
         failures += 1
+    # ⛔ The two arms that report, and the whole of what the change to them is:
+    # no context at all, so the turn ends, and the findings themselves in the
+    # message, since that is now the only place they are said.
     reported = answer({"last_assistant_message": reporting_reply, "prompt_id": "self-test-report"})
-    if "decision" not in reported and reported.get("systemMessage"):
-        print("  ok                     a reported finding blocks nothing")
+    message = reported.get("systemMessage", "")
+    if ("decision" not in reported and "hookSpecificOutput" not in reported
+            and any(f in message for f in findings(reporting_reply)[1])):
+        print("  ok                     a reported finding asks nothing and names itself")
     else:
-        print("  FAIL                   a reported finding blocked")
+        print("  FAIL                   a reported finding asked for a restatement, or named nothing")
+        failures += 1
+    # ⛔ A density spends nothing, asserted by the hand-back it must leave
+    # available. The first shape of this change recorded a marker on every fire,
+    # so a density first in a turn made the blocking finding after it report —
+    # and report that the turn had had a hand-back it never had.
+    spent = "self-test-density-then-block"
+    answer({"last_assistant_message": reporting_reply, "prompt_id": spent})
+    after = answer({"last_assistant_message": blocking_reply, "prompt_id": spent})
+    if after.get("decision") == "block":
+        print("  ok                     a density leaves the turn's hand-back unspent")
+    else:
+        print("  FAIL                   a density spent the turn's hand-back")
+        failures += 1
+    # ⚠️ A reporting finding on a payload naming no turn: the one shape that
+    # reaches the person's message by a route where nothing was handed back and
+    # nothing could be guarded either, and the arm that must not claim one.
+    unguardable_density = answer({"last_assistant_message": reporting_reply})
+    if ("hookSpecificOutput" not in unguardable_density
+            and "hand-back" not in unguardable_density.get("systemMessage", "")):
+        print("  ok                     an unguardable density asks nothing and claims no hand-back")
+    else:
+        print("  FAIL                   an unguardable density asked, or claimed a hand-back")
         failures += 1
     if answer({"last_assistant_message": CLEAN, "prompt_id": "self-test-clean"}) == {}:
         print("  ok                     a reply in register produces no answer at all")
@@ -940,19 +1020,16 @@ def self_test() -> int:
         print("  FAIL                   a turn carrying no reply produced an answer")
         failures += 1
 
-    # ⛔ Every branch of the answer asks for this reply, not a later one. The
-    # branch that fires when a density reports used to close on "the next reply
-    # is written knowing them", which is a deferral stated by the guard that
-    # holds the rule against deferring — and it was obeyed.
-    print("\nAsserting no branch defers the fix to a later reply:")
+    # ⛔ Every branch that asks for anything asks for this reply, not a later
+    # one. The branch that fired when a density reported used to close on "the
+    # next reply is written knowing them", which is a deferral stated by the
+    # guard that holds the rule against deferring — and it was obeyed. It now
+    # asks for nothing instead, which is the arm asserted after this one.
+    print("\nAsserting no branch that asks defers the fix to a later reply:")
     branches = [
         ("handed back", dict(blocking=["a: b"], reported=[], block=True, unguarded="")),
         ("blocking, unguarded", dict(blocking=["a: b"], reported=[], block=False,
                                      unguarded="no turn is named")),
-        ("hand-back already spent", dict(blocking=["a: b"], reported=[], block=False,
-                                         unguarded="")),
-        ("reported at a density", dict(blocking=[], reported=["a: b"], block=False,
-                                       unguarded="")),
     ]
     for label, kwargs in branches:
         said = context(**kwargs)
@@ -962,6 +1039,26 @@ def self_test() -> int:
         else:
             missing = "carries no restatement" if RESTATE not in said else f"defers: {deferred}"
             print(f"  FAIL                   {label}: {missing}")
+            failures += 1
+
+    # ⛔ And the arm that asks for nothing asks for *nothing* — not a later reply
+    # either. Dropping the restatement is a licence to defer unless what replaces
+    # it is silence towards the writer: the message is addressed to the person,
+    # and a promise about a later reply in it would be the same deferral stated
+    # one reader over.
+    print("\nAsserting the message to the person asks the writer for nothing:")
+    for label, kwargs in [
+        ("hand-back already spent", dict(blocking=["a: b"], reported=[], handed_back=True)),
+        ("reported at a density", dict(blocking=[], reported=["a: b"], handed_back=False)),
+    ]:
+        message = told(**kwargs)
+        asked = [phrase for phrase in DEFERRALS if phrase in message.lower()]
+        if RESTATE not in message and not asked and "a: b" in message:
+            print(f"  ok                     {label}: states the finding and asks nothing")
+        else:
+            why = f"defers: {asked}" if asked else (
+                "asks for a restatement" if RESTATE in message else "does not state the finding")
+            print(f"  FAIL                   {label}: {why}")
             failures += 1
 
     # ⛔ The fail-open branch, asserted rather than claimed. It was stated with

@@ -29,6 +29,12 @@ nothing in it was deferred. It runs in its own `Nothing deferred` workflow and h
 off the tree, and the one granted a token scope — stated there rather than discovered in a
 workflow file.
 
+`tools/check_prose_width.py` holds the documents to a shape rather than to a claim about their
+content: the line width this project's configuration states. It has its own `Prose width`
+workflow and its own `host.checks` entry, and is recorded in
+[its own section](#prose-line-width-held-on-the-gate-for-files-and-nowhere-for-bodies) below —
+where the half of its rule that no check reaches is stated with it.
+
 `plugins/mjolnir/scripts/check_reply_register.py` holds the register of a role's reply, and it is
 the one here that does not run on the gate at all. It is in
 [its own section](#the-replys-register-held-in-the-session-not-on-the-gate) too, and for the same
@@ -443,9 +449,10 @@ there has it backwards.
 ## Beside the document checks: the tracker port's own contract
 
 ⚠️ No count of the scripts is carried here. The two above hold a document claim and are what this
-document was written for; the rest hold a module or a rule — `plugins/mjolnir/scripts/config.py`,
-the configuration reader, whose own checks are its work item's; the reply-register hook recorded
-in the next section; and the port contract recorded in this one. Each carries its own workflow and
+document was written for; the rest hold a module, a shape or a rule — the configuration reader
+`plugins/mjolnir/scripts/config.py`, whose own checks are its work item's; the prose-width sweep,
+which reads the same documents and holds none of their content; the reply-register hook recorded
+two sections on; and the port contract recorded in this one. Each carries its own workflow and
 its own `host.checks` entry, for the reason the sweep above does: one entry states one mirrored
 command.
 
@@ -512,7 +519,7 @@ broken; and that a root with no remote claims locally and says so.
 |---|---|---|---|
 | 0 | A second session claiming a taken item is refused, by **each arm separately** | two clones of one bare repository | computed |
 | 1 | A refusal names the holder and the time, or names the half it could not establish | the refusal's own text | forbidding |
-| 2 | A refused start leaves no ref, no local branch and no tree | the loser's clone | computed |
+| 2 | A refused start leaves no ref, no local branch and no tree, in **both** shapes of a refusal | the loser's clone, and a clone whose tree directory is taken | computed |
 | 3 | A claim releases, and the item is claimable again | one clone | computed |
 | 4 | Liveness answers from each of its arms, and otherwise reports an orphaned candidate | both clones | computed |
 | 5 | A root with no remote claims locally rather than failing | a remoteless repository | computed |
@@ -531,6 +538,16 @@ the push at all: exit zero, no update attempted, the lease never consulted. The 
 caught it, with the second session cheerfully claiming an item the first already held. ⛔ So each
 arm is planted away while the other stays, and the check is believed only where removing *that*
 arm is what lets the race through.
+
+⚠️ **Check 2 has two shapes for the same reason, and the second one hid behind the first.** A
+refusal on the *branch name* never reaches the local half at all — the push is what refuses — so
+the no-residue assertion was exercised only where nothing local had been attempted. Where the name
+is free and the *tree directory* is taken, git creates the branch and then fails on the path, and
+the refusal left a local branch pointing at the base with no tree and no commits: a false claim,
+and a durable one, since a pre-filter matching the item's number against the ref tail reads it as
+held forever. The suite now refuses in each shape separately, and asserts the opposite direction
+too — a branch that existed *before* the attempt is left alone, because a rollback that deletes
+whatever it finds deletes somebody else's work.
 
 ### What this check deliberately does not hold
 
@@ -616,9 +633,9 @@ for a defect that was not there.
   it, and a preamble form is a phrase rather than a judgement.
 - **Length** reports every chain it finds and blocks only where the count is over a density of the
   reply's own prose lines: compression as the reply's *texture* rather than one line to restate. One
-  chain is told to the writer and costs the reader nothing. ⚠️ That density is not the weakness the
-  three below have — what it counts is a form the text either carries or does not, so the threshold
-  decides whether a re-read is warranted rather than standing in for the rule.
+  chain is told to the person and asks the writer for nothing. ⚠️ That density is not the weakness
+  the three below have — what it counts is a form the text either carries or does not, so the
+  threshold decides whether a re-read is warranted rather than standing in for the rule.
 
 ⚠️ **A chain is two arrows sharing an operand, and sharing is not a token count.** The first form
 read one or two tokens between the arrows as the shared operand, so
@@ -642,20 +659,39 @@ the findings as `additionalContext`, which the harness's documented contract mak
 writer reads back; the `reason` beside it is shown to the person instead. ⚠️ **It blocks at most
 once per turn**, keyed on the harness's own turn id under `CLAUDE_PLUGIN_DATA`, because a hook that
 also blocked the restatement would hold the session open on a judgement a forbidding check cannot
-make. A payload carrying no turn at all cannot be guarded, so it reports and **says that it could
-not guard** rather than returning the same answer as a turn that has had its hand-back.
+make. A payload carrying no turn at all cannot be guarded, so a finding that would have been handed
+back is asked for anyway and the answer **says that it could not guard**, rather than returning the
+same answer as a turn that has had its hand-back. ⚠️ **The marker records a hand-back and not a
+fire.** While every answer asked for a restatement the two were the same event; once one of them
+stopped asking, a density first in a turn would have spent that turn's one hand-back and the
+blocking finding after it would have been told, falsely, that it had already had one.
 
-⛔ **What blocking decides is who pays the re-read, not whether the defect is fixed.** Every
-answer the hook returns — handed back, unguarded, hand-back already spent, or a density that only
-reports — asks for the reply just sent to be re-sent corrected inside the same turn, because that
-is the reply carrying the findings and
-[*Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred) admits no
-deferred work. The sentence that
-asks for it is one string shared by all four, and `--self-test` holds each of them to carrying it
-and to promising nothing about a later reply. ⚠️ Measured: the branch that fires when a density
-reports used to close on *the next reply is written knowing them*, a deferral stated by the guard
-that holds the rule against deferring — and a session obeyed it, answering a finding with a promise
-instead of a corrected reply.
+⛔ **What costs the reader the reply a second time is asking for it, and `decision` is not what
+decides that** — a statement about how
+[schema § 8 → The reply to the person running a role](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role)
+is held here, which is this document's half of that rule rather than the surface's. Context handed
+back on a `Stop` is read by the writer whether or not the answer also
+blocks, so for as long as every answer carried context, the two kinds in the table above were never
+the two prices they read as. ⚠️ Measured over the sixteen answers this check has carried context on,
+across thirteen sessions of a project with the plugin enabled: every one of them recorded
+`preventedContinuation: false` — the two that set `decision: block` included — and every one was
+followed by a further reply. Thirteen of the sixteen were a density that only reported, and fourteen
+of the sixteen were *Emphasis* alone. In the shape before this was read, those density answers
+closed on *the next reply is written knowing them* — a deferral stated by the guard that holds the
+rule against deferring, which a session obeyed with a promise in place of a corrected reply; in the
+shape after it, the one that fired brought the whole reply back for one line of bold.
+
+**So an answer that does not block asks the writer for nothing, and tells the person instead.** The
+findings reach whoever ran the role as the session message, named rather than counted, and the turn
+ends there — which is the whole of what `reports` costs in the table above. Two answers still ask,
+and both ask for the reply just sent to be re-sent corrected inside the same turn, because that is
+the reply carrying the findings and
+[*Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred) admits no deferred
+work: the turn that is handed back, and a finding that would have been handed back on a payload the
+guard could not be kept for. The sentence that asks is one string shared by both, and `--self-test`
+holds each of them to carrying it and to promising nothing about a later reply — and holds the other
+two to carrying **neither** it nor a promise, because dropping the ask is a licence to defer unless
+what replaces it is silence towards the writer.
 
 It derives what it can, for the reason the gate's own scripts do:
 
@@ -690,6 +726,14 @@ calls and asserts it is this script. See
   an operand in meaning and is two mappings in form, and form is what a check reads. ⚠️ A finding
   missed rather than a finding invented, which is the direction the one check here that still hands
   turns back on a form has to err in.
+- **A reported finding, in the reply it was found in.** Nothing is asked of the writer, so the
+  reply the person has already read is the reply that stands. ⚠️ Measured on the same sixteen
+  answers: three of the thirteen sessions carried two, and in one of those both were the same
+  *Emphasis* density — the second after the first had been read and acknowledged in that session.
+  So the ask the arm used to carry did not buy compliance either, and what it did buy was the
+  re-read. ⛔ What is left unheld is a density that nothing fixes — stated plainly, because the
+  alternative measured against it was a whole restatement for one line of bold, and an arm that
+  costs nothing and holds nothing is not the same as one that holds something.
 - **Whether the reply was a role's at all.** The hook fires on every reply in a session where this
   plugin is enabled, and nothing in a `Stop` payload says whether a role was running. So the
   register is held more widely than the surface states it — in the safe direction here, and stated
@@ -719,6 +763,69 @@ calls and asserts it is this script. See
   non-zero exit that would break every turn — the same absence-is-not-an-answer rule
   [§ 2](../plugins/mjolnir/config/schema.md#2-code-host) states for the host's own runs.
 
+## Prose line width: held on the gate for files, and nowhere for bodies
+
+`tools/check_prose_width.py --self-test` runs in the `Prose width` workflow, with no credential
+and no network. ⛔ The rule is
+[schema § 8 → Prose line width](../plugins/mjolnir/config/schema.md#prose-line-width) and this
+document states none of it: what is recorded here is the reach of the check, which is narrower
+than the rule in one direction the rule itself does not mention.
+
+What it holds: every tracked markdown file — documents, the README, the surface, the skills and
+the configuration examples alike — against the width **this project's own configuration states**.
+The script carries no number. It reads `language.prose_width` through the shared reader, so a
+project that states another width, or states none, changes this gate's verdict by editing a
+configuration and nothing else. The kind is **computed**, for that reason. A tree whose
+configuration carries no width makes the check hold nothing, and it says so and reddens rather
+than passing — the same rule the document checks apply to a glob that matches no file.
+
+⚠️ **It plants both sides, as the reply-register check does.** Violations that must redden — an
+overlong paragraph, an overlong list continuation, a tree with no width configured, a tree with
+nothing tracked, a tracked file it cannot read, a frontmatter marker that never closes — and one
+exemption plant per excluded kind, each of which must stay green. Each exemption was then verified
+by **disabling its own exclusion** and watching that plant redden, because an exemption nothing can
+fail is an exemption nobody checked, and an exemption list is exactly where a check quietly stops
+holding anything. The run prints what it planted; no count of either is written down here.
+
+⚠️ The plants are compared against the tree's **own** result rather than against zero. A whole-file
+assertion reads every plant as red while one real overrun is still in the tree, which would make
+the exemptions untestable precisely in the change that is removing those overruns — which is the
+change that introduced them here.
+
+### What this check deliberately does not hold
+
+- **A body, a pull request or a review comment.** The half of the rule that is *procedure* — the
+  half every adopting project inherits — is held by nobody. Those surfaces are not files, so this
+  sweep cannot see them, and the gate that does read a pull request could only guess: a
+  hard-wrapped body is distinguishable from a short one by heuristic alone — line breaks falling
+  mid-sentence — which reddens on a deliberate break, a pasted quotation and a list. ⚠️ The cost is
+  stated rather than papered over: the rendered half is a convention again, held by the writer,
+  and the only thing standing behind it is that it costs nothing to follow.
+- **Anything that is not markdown.** Measured when the width was ruled: this repository's Python
+  carries tens of lines past the width and its longest is half as long again, so a sweep over code
+  would have been a reformat of every script on day one. A programming language's line width is
+  that language's business, and the comments inside a configuration example are annotation on a
+  line of data rather than prose a reader reads straight through.
+- **Whether a wrapped paragraph is wrapped *well*.** A line of twenty columns beside one of
+  ninety-nine passes, because the rule is a ceiling and not a measure of raggedness. This is the
+  *fidelity* limit the document checks have, one claim over.
+- **A line made long by several short unbreakable runs.** Every run is set aside before the
+  measurement, so a line of four code spans and a few words passes at well over the width while
+  being perfectly breakable between them. ⚠️ Reproduced rather than reasoned about — a planted
+  144-column line of that shape is not reported — and left open deliberately: the stricter
+  reading, *one* run, reddens the ordinary citation line this repository carries by the dozen.
+  Nothing in the tree is exempt by this route today, which was measured and is why the looser
+  rule is the stated one rather than a discovered hole.
+- **A document outside the repository.** The ordering document and the per-item working papers
+  live in the session store outside every tree (§ 11), where `git ls-files` cannot reach them and
+  no width is stated for them.
+- **The width as a configured *value*.** The sweep that forbids a configured value from appearing
+  in a carrier root is keyed on key names, and `prose_width` is deliberately not among them: a
+  width is a bare integer, and a value list that matched one would redden on every count,
+  threshold and year in the tree. What that leaves unguarded is a role's text stating a width
+  instead of reading it — which no role does today, because the rule's reader is the writer of a
+  document rather than a skill.
+
 ## Each check has a violation it is asserted to redden on
 
 `--self-test` plants one violation per check and asserts that check goes red, as the first step of
@@ -746,13 +853,25 @@ first phase names it — *Assert each check can fail, then …* — and a run wi
 to name, so it says only what it holds. ⛔ A step name is not evidence that a suite plants: both
 families plant, and the run prints what it planted.
 
-⚠️ **The reply-register check's plants carry two things its siblings' do not**, because what it
-holds afterwards is a rule rather than a tree. It plants replies that must stay **green** as well
-as ones that must redden — a check that flags an arrow inside a fenced block, an indented block or
-a quotation is not the check it claims to be, and each of those was a measured false red rather
-than a hypothesis. And it runs its turn-guard assertions against a state directory of its own,
-after a second run of the self-test read the first run's markers and reported that a blocking
-finding does not block.
+⚠️ **Two of the checks plant the green side as well as the red**, and both are checks whose scope
+has a hole in it by design. The reply-register check plants replies that must stay green — a check
+that flags an arrow inside a fenced block, an indented block or a quotation is not the check it
+claims to be, and each of those was a measured false red rather than a hypothesis. The width check
+plants a line of each unbreakable kind, for the same reason one claim over: its exclusion list is
+where it would quietly stop holding anything. ⛔ A red-only suite says nothing about either.
+
+⚠️ The reply-register check carries one more thing its siblings do not: it runs its turn-guard
+assertions against a state directory of its own, after a second run of the self-test read the
+first run's markers and reported that a blocking finding does not block.
+
+⚠️ **A plant has to reach the branch it was written for, and nothing reports it when it stops.**
+The three plants against the outcome column substituted into the rulings document as a whole, on
+the unstated assumption that an outcome cell's link shape occurs nowhere else in it. It is an
+ordinary citation shape: the first one written in prose above that table took all three, every
+cell stayed valid, and three checks that had been shown to fail quietly stopped being shown
+anything. They now split the document at the header the check itself derives the table from. ⚠️
+The failure was loud only because the mode reports a plant that stayed green — without that, a
+check believed on an assertion that no longer exercises it reads exactly like a check that holds.
 
 ⚠️ **A plant may not name the file it plants into.** The sweep's first draft hardcoded the one
 skill's path, so moving or renaming a carrier root made `--self-test` — the command the workflow
