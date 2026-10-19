@@ -752,8 +752,13 @@ def validate(data: dict, facts: dict) -> None:
     type_values = _get(data, "work_item.type.values")
     if _get(data, "work_item.type.carrier") not in (None, "none") and type_values:
         known = list(type_values)
+        # ⛔ The map is read whole rather than through a dotted path per value: a
+        # type whose name carries a dot would have the path descend into a
+        # nesting that is not there and read as a prefix nobody wrote, which is a
+        # refusal against a configuration that is correct.
+        prefixes = _get(data, "work_item.type_branch_prefix") or {}
         for value in known:
-            if not _get(data, f"work_item.type_branch_prefix.{value}"):
+            if not prefixes.get(value):
                 raise ConfigError(
                     f"work_item.type_branch_prefix.{value}",
                     f"is missing, while `work_item.type.values` carries "
