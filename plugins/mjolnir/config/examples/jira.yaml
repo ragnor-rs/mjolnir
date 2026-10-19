@@ -61,6 +61,11 @@ work_item:
       outcome: "<this template's own heading>"
       acceptance: "<this template's own heading>"
       reproduction: "<this template's own heading>"
+  due_date:
+    carrier: none
+    absent_reason: >-
+      The sprint and the fix version carry the dates here, as they carry the sizing above;
+      a date per item would be a second commitment beside the one the sprint already states.
 
 statuses:
   - { name: "<not started>", role: initial,     writer: never }

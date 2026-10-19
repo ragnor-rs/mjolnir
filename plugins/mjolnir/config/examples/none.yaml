@@ -49,6 +49,11 @@ work_item:
     absent_reason: >-
       With no tracker there is no item body to template. A request is acted on directly, and
       the acceptance check is stated in the pull request instead.
+  due_date:
+    carrier: none
+    absent_reason: >-
+      There is no item to carry a date, and no gating role to write one: the only role mapped
+      below is the day log, which measures a day rather than committing to one.
 
 statuses: []
 # An empty status list is legitimate. Every role is absent, so the procedure never asks the
