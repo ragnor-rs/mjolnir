@@ -494,10 +494,11 @@ def standing_in(path: str) -> bool:
     session's working directory is routinely a subdirectory of its tree, and an equality test
     answers *not standing there* for a session that is.
 
-    ⚠️ This reads **this** process and `process_in` reads every other one; they answer different
-    questions and the caller needs both. A sibling session's tree is skipped, and the caller's own
-    is stopped on -- the stop being clearable by leaving, which is what makes it a refusal rather
-    than an exemption.
+    ⚠️ This reads **this** process and `process_in` reads every other one. They answer different
+    questions and `release` takes both: the caller's own tree is stopped on, with the stop
+    clearable by leaving, and a sibling's is refused until that session is done. ⛔ **Neither
+    substitutes for the other** -- this one cannot see a sibling, and `process_in` cannot tell the
+    caller apart from one, so a release holding only `process_in` would refuse itself forever.
     """
     try:
         here = os.path.realpath(os.getcwd())
@@ -972,6 +973,13 @@ def release(
     call; standing in the tree is not a call anybody can make, because forcing it removes the
     directory this process is in either way. § 10 orders the exit first, so leaving is what clears
     this and nothing else does.
+
+    ⛔ **A tree a *sibling* session is working in is refused too, and `--force` does cover that
+    one.** The two refusals are deliberately asymmetric: nothing the caller can do clears its own
+    occupancy except leaving, while a sibling's is a person's call -- the same call `--force`
+    already names. ⚠️ **What it costs is stated in the refusal rather than left to the flag**,
+    because forcing here destroys whatever the tree holds that git does not track, and everywhere
+    else `--force` costs only a ref.
     """
     doomed = tree or tree_for_branch(root, branch)
     # ⛔ Before the ref deletion and not beside the tree removal: a refusal has to leave the claim
@@ -984,6 +992,32 @@ def release(
             "--force does not cover this: it breaks another session's claim, and the tree would "
             "still go out from under this one."
         )
+
+    # ⛔ The caller is not the only session that can be in the tree, and the claim guard below
+    # does not reach a sibling: `spent` short-circuits it, so a *landed* claim whose tree somebody
+    # else is working in fell through both and was removed with `--force`. § 10 keeps a tree
+    # another live session occupies, and what it costs that session is not a ref but everything
+    # in the tree git does not track.
+    if doomed and not force and Path(doomed).exists():
+        occupied = process_in(doomed)
+        # ⛔ Three answers, not two, and the two that are not `False` both refuse. An unreadable
+        # open-file table is *unestablished*, never *idle* -- the arm's own rule, and here the
+        # direction that matters, since reading it as idle removes the tree it could not clear.
+        if occupied is True:
+            raise ClaimError(
+                f"refused: a live process is working at or below `{doomed}`, which this release "
+                "would remove.\n"
+                "§ 10 keeps a tree another session occupies. Wait for that session to finish, or "
+                "pass --force — which here destroys whatever the tree holds that git does not "
+                "track, not only a ref."
+            )
+        if occupied is None:
+            raise ClaimError(
+                f"refused: whether a live process is working in `{doomed}` could not be read, and "
+                "unreadable is not idle.\n"
+                "The machine's open-file table was unavailable, so the reading that protects a "
+                "sibling session could not be taken. Pass --force to remove the tree regardless."
+            )
 
     if not force and remote_url(root, remote):
         held = status(root, branch, remote, integration)
@@ -1680,6 +1714,58 @@ def self_test() -> int:
         suite.ok("so leaving is what clears the refusal, and nothing else does",
                  remote_ref_sha(one, "origin", "feature/e") is None, left)
 
+    print("\na tree a sibling session is working in:")
+
+    # ⛔ A real second process, not a stubbed reading: the defect was that `release` consulted the
+    # caller's cwd and nothing else, and only another live process proves the second reading is
+    # wired. Both sides again -- occupied refuses, unoccupied proceeds.
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+        tree = str(Path(tmp) / "sibling")
+        take(one, "feature/sib", tree)
+        held = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(30)"],
+            cwd=tree,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            seen = process_in(tree)
+            if seen is None:
+                # ⚠️ No open-file table here. That is the third answer, and it must refuse too --
+                # which is the arm this branch asserts instead.
+                suite.ok("unreadable is not idle: the release refuses rather than removing",
+                         _raises(lambda: release(one, "feature/sib", tree)))
+                suite.ok("and --force removes it regardless",
+                         "ref deleted" in release(one, "feature/sib", tree, "origin", force=True))
+            else:
+                suite.ok("a sibling process in the tree is seen", seen is True)
+                suite.ok("a release over a tree a sibling occupies is refused",
+                         _raises(lambda: release(one, "feature/sib", tree)))
+                suite.ok("and the refusal leaves the tree and the ref alone",
+                         Path(tree).exists()
+                         and remote_ref_sha(one, "origin", "feature/sib") is not None)
+                suite.ok("⛔ the refusal says what forcing would cost, not just that it is refused",
+                         "git does not track" in (_message(
+                             lambda: release(one, "feature/sib", tree)) or ""))
+                suite.ok("--force does cover a sibling, unlike the caller's own tree",
+                         "ref deleted" in release(one, "feature/sib", tree, "origin", force=True))
+        finally:
+            held.kill()
+            held.wait()
+
+    # The green side: the same release, same arguments, with nobody in the tree.
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+        tree = str(Path(tmp) / "empty")
+        take(one, "feature/nosib", tree)
+        suite.ok("nobody in the tree reads as unoccupied", process_in(tree) is not True)
+        quiet = release(one, "feature/nosib", tree)
+        suite.ok("and an unoccupied tree is released with no force",
+                 not Path(tree).exists(), quiet)
+
     print("\nreleasing somebody else's live claim:")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -1907,6 +1993,19 @@ def _raises(call) -> bool:
     except ClaimError:
         return True
     return False
+
+
+def _message(call) -> str | None:
+    """The refusal's text, for an assertion about what a refusal *says* rather than that it fired.
+
+    ⚠️ A guard that refuses without naming the cost is half a guard here: the sibling arm's whole
+    remedy is a person deciding, and they cannot decide from the word "refused".
+    """
+    try:
+        call()
+    except ClaimError as exc:
+        return str(exc)
+    return None
 
 
 def main(argv: list[str]) -> int:
