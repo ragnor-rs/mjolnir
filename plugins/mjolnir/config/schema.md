@@ -642,8 +642,8 @@ The procedure names the **semantic** sections it depends on — `outcome`, `acce
 heading text, and its language, out of the procedure while letting the procedure still check a
 section is present and tick its items later.
 
-**`carrier: none` with a stated reason is a first-class setting here as in § 4.3**, and an unset
-carrier is a misconfiguration. A project whose items already state the sections above has no
+**`carrier: none` with a stated reason is a first-class setting here, on § 4.3's terms rather than
+on a second statement of them.** A project whose items already state the sections above has no
 template file to name, and `revisit_when` carries the trigger that would give it one.
 
 ## 5. Readiness gate — an ordered predicate list
