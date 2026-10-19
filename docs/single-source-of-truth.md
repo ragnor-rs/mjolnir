@@ -471,6 +471,7 @@ threads the host records a resolution for — and names each one it finds.
 | 2 | No thread on the change is unresolved | every thread, following the cursor | computed |
 | 3 | No unticked item in the body | the body | forbidding |
 | 4 | Every changed file was read, and no deferral marker is on a line this change adds | the diff's added lines | forbidding |
+| 5 | No line this change adds names work with no owner | the diff's added lines | forbidding |
 
 ⚠️ **Check 1 is *forbidding*, not computed, and the distinction is the one this document draws
 above.** The heading `Open items` and the answer `None.` are a grammar the gate publishes, so the
@@ -486,6 +487,26 @@ an ATX heading whose text is `Open items` at any level, appearing **once**; the 
 the next heading of any level; and, inside it, nothing but the answer — `None.` or `None`, in any
 case, optionally as a list item or emphasised. Blank lines, horizontal rules and single-line HTML
 comments are not content. Anything else in that section is an open item and is named as one.
+
+⛔ **Check 5 reads prose, and it exists because the escape it closes was measured after checks 0 to
+4 were all green.** What it holds is the same section's statement that the rule binds every
+artifact a role produces, a file the change adds a line to among them
+([§ *Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred)). A change whose
+`Open items` section read exactly `None.`, with no unresolved thread and no marker, shipped a
+deferral as a clause in a document in this repository — a carrier named for a check, with no item
+owning it. The body, the threads and the markers are the three
+places a writer defers *knowingly*; prose is where it reads as diligence.
+
+⚠️ **What it reads is the unowned half and not the unfinished half**, and the line was drawn by
+counting: the three commonest ways this repository states a limit honestly appear across nine lines
+of tracked text, so an arm sweeping those hands a change back for the candid form of a sentence.
+What reddens instead is a line that names no owner for a cure. ⚠️ **The forms themselves are not
+written down here**, for the reason the register's densities are not either — a copy in prose has
+to be kept in sync, the run prints what it found, and this arm would in any case redden on its own
+list. The remedy for a hit is usually **deletion** rather than filing: a cure nobody measured is
+not a measured gap. ⛔ **And the green side is asserted rather than assumed** — the whole-change
+fixture carries three honest limit lines, taken from lines this repository already ships, and
+widening the arm to the unfinished half reddens that fixture.
 
 Check 2 is what a reviewer cannot be, and ⚠️ it follows the cursor rather than reading a first
 page, because a review that ran long is exactly the change this gate is for. Check 1 is the one
@@ -783,6 +804,7 @@ place the finished reply is available, and it hands the text over directly, so
 | Emphasis | Emphasised spans against the reply's own prose line count | computed | reports |
 | Register | A closed list of dramatic words, and exclamations, over a density | forbidding, over a density | reports |
 | Uncertainty | A closed list of hedges, over a density | forbidding, over a density | reports |
+| Completeness | A closed list of parking forms — work promised, offered, or excused rather than done | forbidding | **blocks** on one span, once per turn |
 | Structure | — | — | nothing; see below |
 
 **What blocks, and what a hand-back costs.** A finding blocks where it is a fact about the text
@@ -800,6 +822,20 @@ for a defect that was not there.
   chain is told to the person and asks the writer for nothing. ⚠️ That density is not the weakness
   the three below have — what it counts is a form the text either carries or does not, so the
   threshold decides whether a re-read is warranted rather than standing in for the rule.
+
+- **Completeness** is the one row here whose rule is not § 8's: it holds the reply to
+  [schema § Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred), the
+  surface's first rule, which already says that rule reaches a role's own reply. It blocks on a
+  single span, which no other arm here does, and the price is deliberate: the alternative is the
+  person reading parked work and having to say so, which is the thing the rule exists to spare
+  them. ⚠️ **It shares the closed-list weakness of *Register* and *Uncertainty* and does not share
+  their verdict** — a reworded parking passes, and what covers that is the reader, as it did
+  before. The difference is what a hit means: a dramatic word is a tone, while a parking form is an
+  act, and an act is worth the re-read a tone is not.
+- ⚠️ **Four of its forms are named by a ruling rather than derived**, and one of the four is matched
+  only in its parking senses. `left` is this repository's ordinary English for what a process or a
+  merge did, so a bare match would hand a turn back over text that parks nothing — and the plants
+  that hold that carve-out are two sentences of exactly that kind, asserted to stay green.
 
 ⚠️ **A chain is two arrows sharing an operand, and sharing is not a token count.** The first form
 read one or two tokens between the arrows as the shared operand, so

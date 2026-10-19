@@ -1,2 +1,8 @@
 .DS_Store
 __pycache__/
+
+# Working trees a harness cuts for its own helpers, which land inside the
+# checkout and are not this project's work trees -- `branch_model.tree_dir`
+# states where those go. Named here because this is the project's own file:
+# the toolkit's shared code may not name a harness's directory, and does not.
+.claude/worktrees/

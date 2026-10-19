@@ -51,6 +51,10 @@ PROPERTY_TABLE_ANCHOR = "the-reply-to-the-person-running-a-role"
 
 CITATION = "schema § 8 → The reply to the person running a role"
 
+# The rule the Completeness property carries, cited rather than restated: it is
+# the surface's first rule and this file holds one artifact of it.
+DEFERRAL_CITATION = "schema § Nothing is deferred"
+
 # What an answer that asks for a fix asks for, in one string because both of the
 # answers that ask for one ask for the same thing: the reply just sent is the one
 # carrying the findings, so a branch that told the writer the *next* reply would
@@ -181,6 +185,58 @@ HEDGE = re.compile(
     re.I,
 )
 HEDGES_ALLOWED = 3
+
+# Work the reply names and the turn does not do. The rule is § Nothing is
+# deferred's and is not restated here; what is written here is the grammar of the
+# forms it was measured escaping through, which are all first person or addressed
+# to the reader -- a reply parks work by promising it, offering it, or excusing
+# its absence, never by describing somebody else's.
+#
+# ⛔ **The floor is one and it blocks.** Every other density arm in this file
+# scales with the reply because a texture is the finding; here a single parked
+# sentence is the whole violation, and the reply is the cheapest place in the
+# loop to commit one -- no commit, no body, no thread, so no gate after it sees
+# what was named.
+#
+# ⚠️ A closed list, which is the *quoting* weakness this repository rules out
+# elsewhere, and safe in the one direction that matters: a reworded parking
+# passes and leaves a finding missed, never a finding invented. What covers the
+# rewordings is the person reading the reply, which is the mechanism this arm
+# narrows rather than replaces.
+#
+# ⛔ **Four of these are named rather than derived**, by a ruling of 2026-10-20:
+# `open items`, `deliberately`, `stated plainly`, and `left`. The first three are
+# matched as they were ruled, being distinctive enough that a reply has no other
+# use for them. ⚠️ **`left` is matched only in its parking senses**, and that is
+# a narrowing rather than a softening: the bare word is this repository's
+# ordinary English for what a process or a merge did -- *three trees left behind*
+# -- so matching it bare would hand a turn back over text that parks nothing,
+# which costs the reader the whole reply for a finding that is not there.
+PARKED = re.compile(
+    r"\bopen items?\b"
+    r"|\bdeliberately\b"
+    r"|\bstated plainly\b"
+    r"|\b(?:left|leaving|leave) (?:it |them |that |this |these |those )?"
+    r"(?:to|for|as) (?:a |the )?"
+    r"(?:later|future|follow-?up|next|another|somebody|someone|whoever|you)\b"
+    r"|\bleft (?:to do|undone|out|open|for later|for now)\b"
+    r"|\bwhat(?:'?s| is) left\b"
+    r"|\bI (?:have )?left\b"
+    r"|\bnext steps?\b"
+    r"|\bfollow-?ups?\b"
+    r"|\b(?:still|yet) to (?:be )?(?:done|built|written|fixed|run)\b"
+    r"|\bremain(?:s|ing) (?:to be )?(?:done|built|written|fixed)\b"
+    r"|\bout of scope\b"
+    r"|\b(?:for|in) (?:a |the )?later (?:pass|turn|reply|item|session|change)\b"
+    r"|\bsay the word\b"
+    r"|\btell me (?:to|if|which)\b[^.\n]{0,60}?\band I(?:'?ll| will)\b"
+    r"|\bif you(?:'?d like|'?d prefer| want)(?:,)? I can\b"
+    r"|\bI have(?:n'?t| not) (?:touched|done|built|run|fixed|started|implemented)\b"
+    r"|\bwhich I have(?:n'?t| not)\b"
+    r"|\bTODO\b",
+    re.I,
+)
+PARKED_FLOOR = 1
 
 # ⚠️ A fence is matched with its marker captured, not as a bare ```` ``` ````.
 # A toggle on any fence line inverts on the *nested* fence that showing a
@@ -351,6 +407,39 @@ def check_uncertainty_is_stated_once(reply: str) -> list[str]:
     return []
 
 
+def check_nothing_is_parked(reply: str) -> list[str]:
+    """Work the reply names and the turn does not do.
+
+    ⛔ The one check here whose rule is not § 8's. It holds this artifact to the
+    surface's first rule, which already says it reaches a role's own reply; what
+    the property adds is that the same hook holds it, rather than the writer
+    noticing at the time of writing -- which is the mechanism § 8 says is being
+    replaced for every other row of its table.
+
+    ⚠️ A table cell is swept like prose. The forms this arm reads are sentences a
+    writer puts in a cell as readily as in a paragraph -- a `verdict` column
+    saying *next steps* parks exactly what a sentence would.
+    """
+    found = []
+    for line in prose(reply, tables=True):
+        for match in PARKED.finditer(line):
+            start = max(0, match.start() - 24)
+            found.append(line[start:match.end() + 24].strip())
+    if len(found) < PARKED_FLOOR:
+        return []
+    # ⚠️ Bounded like the compression arm, and for the same reason: three spans
+    # are enough to act on, and a bounded list that reads as the whole truth is
+    # the defect a check is for.
+    shown = found[:3]
+    more = (f" {len(found) - 3} further span(s) are not listed." if len(found) > 3 else "")
+    return [
+        f"Completeness: the reply names work this turn does not do ({DEFERRAL_CITATION}) — "
+        + "; ".join(repr(s) for s in shown)
+        + f".{more} The work goes under the current branch, pull request and item, or the one "
+        "question that blocks it is asked instead."
+    ]
+
+
 # Which property of the surface's table each check holds, and what a finding on
 # it does. ⛔ `BLOCKS` is for a finding that is a fact about the text *and* worth
 # what handing a turn back costs, which is the whole reply a second time -- the
@@ -369,6 +458,11 @@ HELD = {
     "Emphasis": [("emphasis is not the texture", REPORTS, check_emphasis_is_not_the_texture)],
     "Register": [("the register is reference", REPORTS, check_register_is_reference)],
     "Uncertainty": [("uncertainty is stated once", REPORTS, check_uncertainty_is_stated_once)],
+    # ⛔ `BLOCKS` on one span, which no other arm here does. The cost of a
+    # hand-back is the whole reply a second time, and it is the right price for
+    # this one: the alternative is the person reading parked work and saying so,
+    # which is what the rule exists to stop them having to do.
+    "Completeness": [("nothing is parked", BLOCKS, check_nothing_is_parked)],
 }
 
 # What no check here holds, and whether that is the whole property or half of it.
@@ -742,6 +836,23 @@ REDDENS = [
      "| finding | verdict |\n|---|---|\n| the sweep | catastrophic, devastating, a disaster |\n"),
     ("emphasis is not the texture", "emphasis over the line-count arm rather than the floor",
      "".join(f"Line {i} carries **one** emphasised **span** pair.\n" for i in range(12))),
+    ("nothing is parked", "work named under a heading the writer does not act on",
+     "The three trees are gone.\n\n## Next steps\n\nDelete the five branches.\n"),
+    ("nothing is parked", "the measured shape: work named and the turn ended",
+     "Two things that follow, which I haven't touched: the skill's own wording, and the ignore "
+     "entry.\n"),
+    ("nothing is parked", "an offer in place of the work",
+     "The guard is written and its plants are green. Say the word and I will wire the carrier.\n"),
+    ("nothing is parked", "a conditional offer, which is the same parking",
+     "The arm reddens on one span. If you want, I can add the density arm as well.\n"),
+    ("nothing is parked", "an omission excused rather than filled",
+     "The second reading is deliberately absent, and the first covers the measured case.\n"),
+    ("nothing is parked", "a ruled phrase naming what the change carries",
+     "The body states one open item and the gate reads it.\n"),
+    ("nothing is parked", "parking in a table cell, where a sentence would be read",
+     "| part | verdict |\n|---|---|\n| the sweep arm | out of scope |\n"),
+    ("nothing is parked", "work handed to the reader",
+     "The branches are deleted. Tell me which of the two to narrow and I will.\n"),
 ]
 
 STAY_GREEN = [
@@ -781,6 +892,19 @@ STAY_GREEN = [
      "The mapping is stated once.\n\n```\nfile -> region -> span -> value\n```\n"),
     ("the register is reference", "an inequality and an image, which are not exclamations",
      "The guard compares a != b and c != d.\n\n![one](a.png) ![two](b.png) ![three](c.png)\n"),
+    # ⚠️ The narrowing the ruled word `left` cost, kept as the plants that hold
+    # it. Both of these are this repository's ordinary English for what a process
+    # or a merge did, and a bare word match hands the turn back over each.
+    ("nothing is parked", "the past tense of leaving a tree, which parks nothing",
+     "The sibling session left its tree and the release then succeeded.\n"),
+    ("nothing is parked", "a residue count, which is a fact and not a promise",
+     "Three worktrees remain registered and six branches survive the merge.\n"),
+    ("nothing is parked", "a ruled phrase inside a code span, which is a citation",
+     "The gate reads the body's `## Open items` section and the threads on the change.\n"),
+    ("nothing is parked", "a quoted parking, which is not the writer's text",
+     "> next steps: wire the guard\n\nThat work is in this change, under this item.\n"),
+    ("nothing is parked", "a reply that does the work and asks nothing",
+     CLEAN),
 ]
 
 

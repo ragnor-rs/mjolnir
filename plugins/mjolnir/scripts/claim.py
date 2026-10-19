@@ -431,15 +431,62 @@ class Liveness:
     unestablished: list[str] = field(default_factory=list)
 
 
+def a_work_tree(path: str, main_tree: str) -> bool:
+    """Is this registered worktree one a role could be working an item in?
+
+    ⛔ **A tree the harness cut for a helper is not a work tree**, and § 10's
+    session reading does not separate them: that reading tells a helper *process*
+    holding a directory from a session working in it, and this is a helper
+    *tree*, registered in the repository by whatever spawned it.
+
+    ⚠️ **Nesting is the test, because naming is not available.** § 10 refuses a
+    list of process names for the process case -- a helper belongs to whichever
+    harness ships it, so naming one puts a project's value in shared code -- and
+    a directory name is the same value under a different spelling. What is
+    structural instead: the main checkout is a work tree under `in_place`, where
+    the branch is held in the checkout itself; a tree cut at `tree_dir` is one
+    under `worktree`, and that is a location outside the checkout's own tree. A
+    registered worktree *nested below* the main checkout is therefore neither, in
+    either model.
+
+    ⚠️ **It fails in the direction that keeps a tree.** A project whose trees did
+    live inside its checkout would resolve none of them here and would name the
+    tree explicitly instead, which `take` already requires and `release` already
+    accepts -- a tree not found rather than the wrong tree removed.
+    """
+    here, main = os.path.realpath(path), os.path.realpath(main_tree)
+    if here == main:
+        return True
+    return not here.startswith(main + os.sep)
+
+
 def tree_for_branch(root: str | Path, branch: str) -> str | None:
-    """The working tree holding this branch on this machine, or None."""
+    """The working tree holding this branch on this machine, or None.
+
+    ⛔ A helper's tree is not an answer here. `git worktree list` reports every
+    registered worktree, which includes the per-agent trees a harness cuts inside
+    the checkout, and this function's answer is what `release` removes: pointed
+    at a finished helper's tree it removed it as though it were the item's, and
+    at a live one it demanded the override § 10 reserves for breaking another
+    session's work. `a_work_tree` above states which is which.
+    """
     proc = git(root, "worktree", "list", "--porcelain")
+    # ⚠️ The first entry is the main worktree, which is what the nesting test is
+    # taken against -- rather than `root`, which may be any worktree of the
+    # repository, including the one this process is standing in.
+    main_tree: str | None = None
     path: str | None = None
     for line in proc.stdout.splitlines():
         if line.startswith("worktree "):
             path = line[len("worktree ") :].strip()
+            if main_tree is None:
+                main_tree = path
         elif line.startswith("branch ") and line[len("branch ") :].strip() == REFS_PREFIX + branch:
-            return path
+            # A branch is checked out in at most one worktree, so this is the
+            # only candidate and there is nothing further to read.
+            if path and main_tree and a_work_tree(path, main_tree):
+                return path
+            return None
     return None
 
 
@@ -1969,6 +2016,52 @@ def self_test() -> int:
         quiet = release(one, "feature/nosib", tree)
         suite.ok("and an unoccupied tree is released with no force",
                  not Path(tree).exists(), quiet)
+
+    print("\na helper's tree is not a work tree:")
+
+    # ⛔ Both sides, and the red one with a real nested worktree rather than a stubbed scan:
+    # `git worktree list` is what reported the helper's tree as the item's, so a fixture that
+    # did not register one would be asserting against this file's own idea of the output.
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+
+        here = git(one, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+        suite.ok("the main checkout is a work tree, which is the `in_place` reading",
+                 tree_for_branch(one, here) is not None, here)
+
+        outside = str(Path(tmp) / "wt" / "7")
+        take(one, "feature/item-7", outside)
+        # ⚠️ Compared as real paths: the temporary directory is reached through a symlink on one
+        # of the two platforms this runs on, and git reports the resolved path either way.
+        found = tree_for_branch(one, "feature/item-7")
+        suite.ok("a tree cut outside the checkout, where `tree_dir` points, resolves",
+                 found is not None and os.path.realpath(found) == os.path.realpath(outside),
+                 str(found))
+        release(one, "feature/item-7", outside)
+
+        # The measured shape: a harness cuts a tree per helper inside the checkout, and the
+        # helper checks out the branch it was sent to read. ⛔ The directory is named nothing in
+        # particular on purpose -- the reading is about nesting, and a fixture spelling out one
+        # harness's path would put that harness's value in this file, which is what § 10 refuses
+        # for the process case and the same value under a different spelling.
+        nested = Path(one) / "helpers" / "one"
+        nested.parent.mkdir(parents=True, exist_ok=True)
+        git(one, "worktree", "add", str(nested), "-b", "feature/item-7", "HEAD")
+        suite.ok("⛔ and a tree nested below the checkout does not, whoever cut it",
+                 tree_for_branch(one, "feature/item-7") is None,
+                 str(tree_for_branch(one, "feature/item-7")))
+        # ⛔ The answer above has to come from the reading rather than from the tree being
+        # invisible: a fixture whose worktree never registered would assert the same thing for
+        # the wrong reason, and pass with the reading deleted. So the scan is read directly.
+        listed = git(one, "worktree", "list", "--porcelain").stdout
+        suite.ok("and the scan did carry it, so the reading is what withheld it",
+                 os.path.realpath(str(nested)) in listed
+                 and f"branch {REFS_PREFIX}feature/item-7" in listed, listed)
+        # ⚠️ Through `_message` so a refusal reddens this check rather than killing the suite.
+        said = _message(lambda: release(one, "feature/item-7"))
+        suite.ok("so the release that removed it as the item's tree removes nothing",
+                 nested.exists(), said or "")
 
     print("\nreleasing somebody else's live claim:")
 
