@@ -154,3 +154,10 @@ ordering:
   # whether a procedure may compute it.
   carrier: command
   command: "<the command that prints the sprint's ranked issues, one key per line>"
+
+environment:
+  # Two variables rather than one: this tracker authenticates as a person, so the credential
+  # and the account it belongs to are separate facts and both are read. ⚠️ Which is also why
+  # `writer: never` appears throughout this file — the same credential that makes the write
+  # possible is what makes it read as that person speaking.
+  inherits: [PATH, HOME, TRACKER_API_TOKEN, TRACKER_ACCOUNT]

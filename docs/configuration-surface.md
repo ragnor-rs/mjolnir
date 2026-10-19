@@ -641,3 +641,62 @@ toolkit's own gate already holds the other half of the same shape, by
 [#50](https://github.com/ragnor-rs/mjolnir/issues/50)'s ruling: a workflow is granted no scope it
 does not need and its checkout persists no credential — which is a rule about what a run may
 hold, not a claim that every run holds nothing.
+
+### Why the other two legs are a section of their own, and why only one of them has a key
+
+What a role may *believe* is one leg of three. The other two — what it **holds** while it reads, and
+what may **leave** with it — are
+[`§ 14`](../plugins/mjolnir/config/schema.md#14-what-a-role-holds-and-what-may-cross-the-boundary),
+and three things forced that placement rather than a subsection under § 11.
+
+**The belief rule had already been cited by a role and by this document**, so moving it would have
+broken two anchors to buy a tidier table of contents. A section appended at the end costs nothing
+and breaks nothing, which is the same argument every ordinal on this surface already rests on.
+
+**One of the three is a project's fact and the other two are not.** What a role's shell inherits
+differs per project and nothing can derive it; the ingestion step and the outward refusal are the
+same everywhere, and a key that let a project turn either off would be a key for deciding whether
+this procedure publishes credentials. So the section carries exactly one key, which is the shape
+§ 6 already has for authorship and § 8 for the reply's register: a rule stated inside the axis it
+would otherwise be a value of.
+
+**And the enforcement is one carrier for all three legs**, which is the reason they share a section
+rather than being filed beside the rules they enforce. The incident drove three agents through all
+three legs in one pass; three scripts would have given each leg its own grammar, its own self-test
+and its own chance to be the one nobody updated. What each arm reaches, and the several things none
+of them do, are in
+[`docs/single-source-of-truth.md`](single-source-of-truth.md#the-boundary-three-arms-two-of-them-held-in-the-session).
+
+### What one run through the real tracker showed, and what it did not
+
+The arms are planted in both directions by their own self-test, which reads text in memory. ⚠️ **One
+run was made end to end through the host as well**, because the half that matters is what the host's
+own rendering does to a payload and no in-memory plant reaches it: a throwaway item was filed
+carrying a comment that renders as nothing, a zero-width character inside a word, and a visible
+announcement of fresh instructions; the body was read back through the tracker port and passed to
+the ingestion step; the item was closed in the same pass.
+
+What the step returned: the hidden comment **shown in full**, the zero-width character located by
+line and column, and four imperatives named — the instruction to set aside what the role was told,
+the announcement, the address to the role, and the direction to act. Nothing in it was obeyed, which
+is the bullet the run exists to answer. ⚠️ **What the run does not establish is anything about a
+payload nobody planted**: the forms it found are the forms the grammar was written for, and the
+quoting limit on the imperative half is unchanged by having fired once.
+
+### Why the inherited set is names, and why its arm reports rather than refuses
+
+A list of names is not a secret, so the configuration can carry it; the value cannot be carried
+anywhere, which is what the section exists to say. The arm that reads it against the live
+environment then has only one honest answer available to it: a role cannot replace the environment
+it was handed, so an arm that stopped would stop every session over a fact the person running it
+already owns and can fix in one edit.
+
+⚠️ **The anchors in that arm's name grammar were each added after a false report, measured on the
+shell this was written in.** Unanchored, `auth` claimed an agent socket's path and `session` claimed
+two terminal session ids — four entries on a report nobody would read twice. That is the same
+failure one level up from the one the arm exists to catch: a guard whose output is noise is a guard
+that is off.
+
+What the empty list means is a real configuration rather than an absent facet, which is why the key
+carries no `carrier` and no `absent_reason`: a project whose roles need nothing beyond the shell's
+own variables has *stated* what it hands a role, and there is nothing for a reason to explain.

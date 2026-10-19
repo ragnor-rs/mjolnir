@@ -1,0 +1,43 @@
+name: Boundary
+
+# The boundary a role reads across, holds across and writes across is enforced where a role runs:
+# the ingestion step and the outward check are commands the roles invoke, and the outward refusal is
+# also a `PreToolUse` hook. So what a gate can hold is the carrier and its wiring: that every arm
+# still reddens on the violation it was written for, that each one stays green on the other side of
+# its own scope, that no report prints the value it refused, and that `hooks.json` still calls the
+# script on the event that precedes a tool call. An arm whose grammar has quietly stopped matching,
+# or a hook that is no longer called at all, reports green on every read and every write — which is
+# the failure this run catches, and the only one a gate can.
+#
+# ⚠️ What this cannot hold is the live boundary: whether a role actually ran the step before acting
+# on the text. Nothing in a workflow observes a session, and that residue is stated here rather than
+# left for a reader to assume away.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the
+# project controls its workflows, because a `host.checks` entry states one mirrored command.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind — and here that is the section's own rule applied to the gate that
+# holds it, not merely the house style: a run that holds the refusal on what may leave has no
+# business holding anything that could leave.
+permissions: {}
+
+jobs:
+  boundary:
+    name: Boundary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, planted violations first — and the same string `host.checks`
+      # states this run mirrors. ⚠️ Held together by eye and not by a check, since nothing
+      # here reads a workflow file. That is #49.
+      - name: Assert each arm can fail, stays green off its scope, and is still called
+        run: python3 plugins/mjolnir/scripts/boundary.py --self-test

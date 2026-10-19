@@ -125,3 +125,10 @@ ordering:
     No tracker is configured, so there is no backlog to order and nothing that could print a
     takeable item.
   revisit_when: A tracker is configured.
+
+environment:
+  # The empty list is a real statement and the cheapest one this facet has: the single mapped
+  # role reads evidence off the machine and writes a file, so its commands need nothing the
+  # shell does not already give every process. ⛔ Not an absent facet — there is no `carrier`
+  # here and no `absent_reason`, because the project has stated what it hands a role.
+  inherits: []

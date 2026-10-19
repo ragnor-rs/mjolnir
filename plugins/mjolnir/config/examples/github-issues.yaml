@@ -145,3 +145,10 @@ ordering:
   revisit_when: >-
     A second person takes work from this backlog, or the issue count passes what one person
     holds in their head.
+
+environment:
+  # The host credential in a variable, because the one command this procedure drives against
+  # the host reads it from there. ⛔ Names, never values: the value lives in the credential
+  # store or the session, and a configuration carrying it would be the leak § 14 exists to
+  # prevent.
+  inherits: [PATH, HOME, GH_TOKEN]
