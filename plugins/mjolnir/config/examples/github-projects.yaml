@@ -18,6 +18,11 @@ host:
       mirrors: "npm run lint"
       triggers: "pull_request -> main"
       paths: ["src/**", "package.json"]
+  # The other half of the same squash habit: the host's switch is off, so the deletion is the
+  # finishing role's — the remote ref only, the local branch and the tree being § 10's release.
+  landing:
+    method: squash
+    delete_branch: procedure
 
 tracker:
   kind: github-projects

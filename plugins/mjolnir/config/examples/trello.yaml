@@ -17,6 +17,13 @@ host:
     - workflow: "Tests"
       mirrors: "<the test command>"
       triggers: "pull_request -> <integration branch>"
+  # The third method, and this facet belongs to the INNER repository like everything else in this
+  # block (§ 1): the outer repository's own settings are read by nothing here. A rebase keeps the
+  # integration branch linear while rewriting the hashes, which is why § 10's landed reading is
+  # written against content rather than ancestry under this value as much as under squash.
+  landing:
+    method: rebase
+    delete_branch: procedure
 
 tracker:
   kind: trello

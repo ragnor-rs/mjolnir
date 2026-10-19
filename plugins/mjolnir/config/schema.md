@@ -44,7 +44,7 @@ examples of a shape rather than any project's facts.
 ## The file itself
 
 ```yaml
-version: 1
+version: 1                                   # required
 ```
 
 One key is not a facet. `version` states which revision of this surface a configuration was
@@ -54,10 +54,33 @@ only the revision separates them. It is the only key that describes the file rat
 project.
 
 **A default is marked, never described.** A key whose line in a block below carries `# default`
-has the value shown as its default; `# default: <value>` states one the line does not show. A key
-with neither is required, or legitimately unset. The marker is the single statement of a default:
-prose beside a block says why a default is what it is and never repeats the value, and the reader
-applies what it finds here rather than carrying a copy.
+has the value shown as its default; `# default: <value>` states one the line does not show. The
+marker is the single statement of a default: prose beside a block says why a default is what it is
+and never repeats the value, and the reader applies what it finds here rather than carrying a copy.
+
+**Requiredness is marked the same way, and for the same reason.** A key whose line carries
+`# required` must be written by every project, and a configuration missing it is refused with the
+key named. ⛔ **A key carrying neither marker is legitimately unset**, and the reader accepts its
+absence — so the two cases a reader cannot otherwise tell apart are separated here, where the key
+is declared, rather than in a list the reader carries. A key marked here is refused when it is
+missing **without the reader changing**; a marker dropped from here stops a refusal that nothing
+else was asserting.
+
+A block that merely holds other keys carries no marker of its own — `host:` is required exactly
+insofar as the keys under it are, and marking both would state one fact twice. The marker goes on
+the key a project actually writes a value for, and on a list or block that **is** the value, as
+`carriers` and `host.checks` are.
+
+⚠️ **Requiredness that depends on another key is not this marker's.** `tree_dir` is required under
+`worktree` and null under `in_place`; a condition like that is stated in prose beside the key and
+enforced by the rule in the section that states it, because *must this be written at all* and
+*must this be written given that* are different questions and one marker answering both would
+refuse every project that correctly left the key out.
+
+**A facet with a real absent case marks its carrier `# absent_reason`.** `carrier: none` is then
+accepted only with a reason stated beside it, and the facet is named in what a reader reports as
+unavailable. Several markers on one line are separated by `;`, in any order, and prose may sit
+among them: `# stated, never inherited from the working directory; required`.
 
 **A closed set of values is written as an alternation** — `a | b | c` — either as the key's value
 or as a comment beside it. The reader accepts what the alternation states and nothing else, so a
@@ -149,7 +172,7 @@ honest-looking version of the defect is the one that survives review.
 
 ```yaml
 roots:
-  code: "."                # the path every git and gh call addresses
+  code: "."                # the path every git and gh call addresses; required
   code_is_own_repo: false  # true when `code` is its own repository; default
 ```
 
@@ -200,9 +223,9 @@ statement discarded as well.
 
 ```yaml
 host:
-  kind: github
-  repo: "OWNER/NAME"       # stated, never inherited from the working directory
-  checks:                  # the host's own runs, keyed by workflow name — never job name
+  kind: github                               # required
+  repo: "OWNER/NAME"       # stated, never inherited from the working directory; required
+  checks:                  # the host's own runs, keyed by workflow name — never job name; required
     - workflow: "…"
       mirrors: "<local command>"   # the local command whose verdict this run duplicates
       triggers: "<pattern>"        # what starts it; a list when there is more than one
@@ -297,11 +320,73 @@ writing is refused at the start of a command anyway, so a role that polls is a r
 answered about an earlier state; by the rule above that is *no answer* for this commit, and the
 honest report is that the check did not run.
 
+### How a pull request lands
+
+```yaml
+host:
+  landing:
+    method: squash | merge_commit | rebase     # how a pull request lands; required
+    delete_branch: host | procedure | never    # which side deletes the remote ref afterwards; required
+```
+
+**Stated, because the roles that land a change read it and the shape of `main` is not a reading.**
+Each reader is named here: the finishing role names a method in the merge it performs and passes a
+squash subject under one of the three values and not the others, a commit-message check meets one
+message or many depending on which it is, and whatever prunes a landed branch reads
+`delete_branch`. ⛔ **None of them infers it.** A linear history
+is equally consistent with squash and with rebase, so the inference is a coin toss that reads as a
+reading — measured on this repository, where a landing's method was picked off the shape of `main`
+because there was nothing to read.
+
+⛔ **The facet is mandatory and has no absent case**, for § 10's reason: a project that lands
+changes some other way has a different `host` rather than a different shape of this key. The two
+cases that look like absences are not. A host offering **one** method only still writes the method
+down — what is absent there is the project's *choice* and not the fact, and a host setting changes
+under a project without the project noticing. A method imposed by a **policy outside the
+repository** is written down too, which is `checks`'s own shape one level on: the configuration
+states the fact a role reads, and where the decision was made elsewhere this is a copy of it rather
+than a second authority over it. **What imposed a fact is not where a role reads it** — the same
+reason `checks` names a workflow rather than restating what it runs.
+
+⛔ **What the host permits is read from the host and never restated here.** A host's allow-flags say
+which methods are *available*; this key says which one the project lands by. Measured here: all
+three are permitted and one is used, so they are not the same fact. What they make together is a
+one-directional check — ⛔ **the configured method has to be among the methods the host permits, and
+one the host forbids is reported before the merge is attempted rather than by the host's refusal.**
+The converse is the ordinary case and is no finding: a host permitting more than the project uses
+is what makes the stated fact load-bearing rather than redundant. ⚠️ **No gate holds that
+comparison**, the answer being on the host and free to change while the tree does not; the reader
+holds the *value* to the alternation above and nothing further, and the comparison belongs to the
+role that merges. ⚠️ **It is a read of the repository and not of the change**, a pull request
+carrying no merge-permission field at all, so it is one read more than the preconditions above
+rather than a field already in hand. ⛔ **The procedure does not write the host's setting either** —
+narrowing what a host permits is repository administration, not a step of landing a change.
+
+**`delete_branch` names which of the two acts, because both acting is an error and neither acting
+is a configuration.** Where the host deletes on merge the procedure must not also ask: ⚠️ **a
+second deletion is refused**, measured as `422 Reference does not exist` against a ref deleted a
+moment earlier, and a refused call reads as a merge that did not finish. Where the host does not
+delete, nothing happens unless the procedure does. ⛔ **`never` is a real value rather than a
+degenerate one** — the host's flag off and the procedure not deleting is the state a repository is
+in before anybody decides, and a two-valued key would have made *somebody always deletes* a rule
+nobody wrote.
+
+⚠️ **It reaches the remote ref and nothing else.** The local branch and the tree are
+[§ 10](#the-claim-on-a-work-item)'s release, which no host setting touches, so nothing reads this
+key as an answer about either; a ref the host deleted is one of the ways a landed claim stops
+existing, and that release's own test is *landed or held here* either way.
+
+⛔ **A reader of this key reads what to expect, never what it may refuse to handle.** The method is
+the project's convention and not a guarantee about a given ref: a check told `merge_commit` still
+meets a squashed message the first time somebody merges by hand. So § 10's landed reading keeps
+**both** of its tests — content, then the host's own record — and ⚠️ **gets no cheaper for the
+method being stated**, which is the one reader this facet does not simplify at all.
+
 ## 3. Tracker port
 
 ```yaml
 tracker:
-  kind: github-projects | github-issues | jira | trello | none
+  kind: github-projects | github-issues | jira | trello | none # required
 ```
 
 The shared procedure names **the port and never a tracker**. Each `kind` carries its own block;
@@ -446,7 +531,7 @@ own tracker is allowed to hold two statements of one job.
 ```yaml
 work_item:
   type:
-    carrier: native | label | none
+    carrier: native | label | none           # required; absent_reason
     label_prefix: "type:"        # when carrier is label
     values: [bug, feature, task]
     absent_reason: "…"           # required when carrier is none
@@ -468,7 +553,7 @@ test. A map, never a boolean.
 ### 4.2 Status — an ordered set of `(name, role, writer)`
 
 ```yaml
-statuses:
+statuses:                                    # required
   - { name: "…", role: initial,     writer: procedure }
   - { name: "…", role: in_flight,   writer: procedure }
   - { name: "…", role: code_landed, writer: automation }
@@ -520,7 +605,7 @@ reports instead.
 ```yaml
 work_item:
   estimate:
-    carrier: field | label | card_value | none
+    carrier: field | label | card_value | none # required; absent_reason
     unit: points | hours
     values: [1, 2, 5, 8, 13]
     label_prefix: "E:"           # when carrier is label
@@ -542,7 +627,7 @@ leaking onto the board, and an estimate copied into a log is a plan reported as 
 ```yaml
 work_item:
   template:
-    carrier: file | none
+    carrier: file | none                     # required; absent_reason
     dir: ".claude/templates"
     by_type: { bug: "…", feature: "…" }
     sections:                    # semantic name -> this template's own heading
@@ -559,7 +644,7 @@ section is present and tick its items later.
 ## 5. Readiness gate — an ordered predicate list
 
 ```yaml
-readiness:
+readiness:                                   # required
   - { check: state_is,          roles: [initial],  stop: "…" }
   - { check: no_open_blockers,                     stop: "…" }
   - { check: field_present,     field: "…",        stop: "…" }
@@ -592,8 +677,8 @@ or quiet:
 
 ```yaml
 commit:
-  staging: explicit | all
-  trailer: none | read_from_history | "<literal trailer line>"
+  staging: explicit | all                    # required
+  trailer: none | read_from_history | "<literal trailer line>" # required
 ```
 
 ### Authorship is procedure, not configuration
@@ -662,7 +747,7 @@ in an old copy that contradicted them survived.
 ## 7. Carrier
 
 ```yaml
-carriers:
+carriers:                                    # required
   day_log: skill             # skill | command | hook
   start: command
 ```
@@ -692,8 +777,8 @@ directions. A carrier of `hook` has no invocation name at all.
 
 ```yaml
 language:
-  work_item: ru
-  repo: en
+  work_item: ru                              # required
+  repo: en                                   # required
   prose_width: 100           # columns, for files in the repository; absent means no wrapping
   artifacts:
     day_log:   { language: en, register: business,  audience: "…" }
@@ -848,12 +933,12 @@ into a command.
 
 ```yaml
 branch_model:
-  kind: worktree | in_place
+  kind: worktree | in_place                  # required
   work_in_shared_checkout: when_free | never   # read only under worktree; null under in_place
-  parallel_trees: true
+  parallel_trees: true                       # required
   tree_dir: "<the directory a tree is cut under>"   # required under worktree; null under in_place
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
-  exclusive_resources:           # [] where nothing in this project is exclusive
+  exclusive_resources:           # [] where nothing in this project is exclusive; required
     - { name: "…", cap: 1, subject: tree }
     - { name: "…", cap: 2, subject: call }
 ```
@@ -1005,7 +1090,11 @@ a ref just claimed points at the integration tip, so it is an ancestor too, and 
 *landed* makes every fresh claim read as spent and releasable by anyone. The second half is read
 from **content**, because ancestry is trustworthy in one direction only: a true answer proves work
 landed, a false one proves nothing, since a squash or a rebase writes new commits and the old
-hashes become unreachable.
+hashes become unreachable. ⚠️ **Which of the three a project lands by is stated** —
+[§ 2 → How a pull request lands](#how-a-pull-request-lands) — **and this test deliberately does not
+read it**, for the reason given there: the method is a project's convention rather than a guarantee
+about a given ref, so a reading keyed on it would be wrong about the first ref somebody merges by
+hand.
 
 ⚠️ **So the last row is the weakest and is read last.** Reading it first makes every squash-merged
 claim live forever, and then the ordinary cleanup after a merge has to use the override reserved
@@ -1094,7 +1183,7 @@ are, and what holds a place.
 ```yaml
 context:
   artifacts:
-    carrier: file | none
+    carrier: file | none                     # required; absent_reason
     dir: "<path the branch model's teardown cannot take>"   # when carrier is file
     committed: false                                        # default
     absent_reason: "…"                                      # required when carrier is none
@@ -1199,7 +1288,7 @@ a handoff that travels through one has the next role reading what it must refuse
 
 ```yaml
 ordering:
-  carrier: command | none
+  carrier: command | none                    # required; absent_reason
   command: "<prints the takeable items, most takeable first>"   # when carrier is command
   absent_reason: "…"           # required when carrier is none
 ```
@@ -1244,7 +1333,7 @@ two roles, not the same check twice.
 ## 13. What counts as done — an ordered check list, and who answers each check
 
 ```yaml
-done:
+done:                                        # required
   - { check: gate_green,         answered_by: procedure, stop: "…" }
   - { check: local,              answered_by: procedure, stop: "…",
       run: "<a command no `host.checks` entry mirrors>" }   # required when the check is `local`
