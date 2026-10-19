@@ -125,15 +125,16 @@ to do.
 The sweep is not what caught #99 — an action-axis query reached it as well — so this measures the
 sweep *widening* coverage by 21 items, never the sweep being the only layer that could have found
 the candidate that mattered. And the layers were driven through the port by hand under this item
-rather than by the filing role being invoked, which is the weaker of the two readings this section's
-own heading distinguishes.
+rather than by the filing role being invoked — the distinction this section's opening draws, and the
+weaker side of it.
 
 ### The cross-check that needed a configuration this repository does not have
 
 The filing role holds an item's type against the template its body uses, and this repository carries
 **neither** facet — both absent by decision, with the reasons the reader reports. So the mismatch
-path had no configuration here to run against, and was recorded as stated-but-unexercised when the
-role landed.
+path had no configuration here to run against, and
+[#114](https://github.com/ragnor-rs/mjolnir/pull/114) (*"File a work item from one copy, with the
+duplicate search the richest copy had"*) recorded it as stated-but-unexercised when the role landed.
 
 ⚠️ **That turned out to be weaker than it read.** A probe skills root is enough: this project's own
 configuration with the two facets swapped in — a type over two values, and a `file` template with

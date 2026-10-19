@@ -191,10 +191,8 @@ refuses one: it surfaces later as a branch under the wrong prefix, and a branch 
 nobody goes back and corrects. State both values in the stop.
 
 ⛔ **Read which template a body uses from which semantic sections it carries, never from the heading
-text.** [`§ 4.4`](../../config/schema.md#44-template) is why: the headings are declared once for the
-project, so two templates give one section the same text and the text cannot tell them apart — what
-differs is which sections each template has at all. ⚠️ Measured on a body carrying a reproduction
-under a type whose template declares none, which is the mismatch this stop is for.
+text** — [`§ 4.4`](../../config/schema.md#44-template) states why the text cannot tell two
+templates apart.
 
 **Both facets have an absent case, and filing works in it.** Where no carrier states a type, there
 is no type to cross-check and the reply says so rather than reporting a check that passed. Where

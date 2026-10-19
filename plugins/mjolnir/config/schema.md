@@ -552,9 +552,7 @@ test. A map, never a boolean.
 ⛔ **A function is total over `values`, and the reader refuses a gap naming the type.** A type
 with no prefix is an item nobody can cut a branch for, and the gap surfaces at the one moment
 it is expensive: the branch is already named, and a branch name is the thing nobody goes back
-and corrects. ⚠️ **Not a `# required` marker** — requiredness here is conditional on another
-key's value, which that marker states it does not answer, so this is a rule carried by its own
-section and enforced as one.
+and corrects.
 
 ### 4.2 Status — an ordered set of `(name, role, writer)`
 
