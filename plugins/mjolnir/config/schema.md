@@ -75,15 +75,22 @@ the key a project actually writes a value for, and on a list or block that **is*
 the file — and the value that turns it on. [§ 3](#3-tracker-port)'s per-kind tracker blocks are
 what it is for: a key that addresses one tracker is required there and meaningless everywhere else,
 which the bare marker cannot say and a list in the reader cannot either. ⛔ **The condition must be
-one some configuration can meet** — a key this surface declares, and a value that key's own
-alternation states — because a condition that never fires is a requirement nothing enforces while
-reading exactly like one that does.
+one some configuration can meet** — a key this surface declares, and, **where that key states an
+alternation**, a value from it — because a condition that never fires is a requirement nothing
+enforces while reading exactly like one that does. ⚠️ **Two kinds of unmeetable condition get past
+that**, and they are stated rather than implied: the value is compared as the text written here, so
+a condition on a number or a boolean cannot fire; and a key this surface shows only inside a fence
+that opens at an indent is reachable by no absolute path. What catches both is the reader's own
+suite asserting that every marked condition is met by some example configuration.
 
-A condition that marker cannot state stays in prose beside the key, enforced by the rule in the
-section that states it: `tree_dir` is required under `worktree` and null under `in_place`, and its
-refusal carries an argument about where a tree is cut that no marker's message would. Either way,
-*must this be written at all* and *must this be written given that* are different questions, and
-the bare `# required` answers only the first.
+**A condition whose refusal needs an argument stays in prose** beside the key, enforced by the rule
+in the section that states it — `tree_dir`, `context.artifacts.dir` and `ordering.command` each do,
+and each refusal says something about trees, boundaries or orderings that `required where X is Y`
+would lose. ⚠️ **So the split is not expressible-versus-not**: two of those three could be marked,
+and `tree_dir` has a half no marker can state at all (null under `in_place`). What the marker is for
+is a condition stated the same way across many keys, where the generic message is the whole of what
+a reader needs. Either way, *must this be written at all* and *must this be written given that* are
+different questions, and the bare `# required` answers only the first.
 
 **A facet with a real absent case marks its carrier `# absent_reason`.** `carrier: none` is then
 accepted only with a reason stated beside it, and the facet is named in what a reader reports as
@@ -422,7 +429,7 @@ Three properties of the port the procedure depends on:
 
 ⛔ **A key here is required by the `kind` beside it and not by every project**, which is why the
 marker carries the condition — `# required_when: tracker.kind = trello` — rather than the bare
-`# required` a key every configuration writes takes. The reader enforces exactly the lines below:
+`# required` a key every configuration writes takes. The reader enforces **the marked lines** below:
 a block whose kind requires a key it does not carry is refused at configuration time, naming the
 key and the kind, instead of loading clean and failing at the first operation.
 
@@ -441,20 +448,30 @@ tracker:
 tracker:
   kind: jira
   project_key: "KEY"            # required_when: tracker.kind = jira
-  transitions: { resolve: by_name }
+  transitions:
+    resolve: by_name
 ```
 
 ```yaml
 tracker:
   kind: trello
   board: "<board id>"           # required_when: tracker.kind = trello
-  lists: { resolve: by_name }
+  lists:                        # a Trello state is a list
+    resolve: by_name
 ```
 
-`github-issues` and `none` carry **no block beyond the kind**, and that is a complete
-configuration rather than a half-written one: the first addresses the repository the host facet
-already names, and the second addresses nothing at all
+⚠️ **The three blocks are written at the same depth on purpose.** A key shown inline — `lists: {
+resolve: by_name }` — declares the block and not the key inside it, so the inline spelling would
+have left the surface declaring `status_field.resolve` and not its two counterparts, for no reason
+to do with the trackers.
+
+For `github-issues` and `none` this surface states **no block beyond the kind**, and a
+configuration naming either and stopping is complete rather than half-written: the first addresses
+the repository the host facet already names, and the second addresses nothing at all
 ([`The trackerless adapter`](#the-trackerless-adapter-and-a-kind-with-no-implementation) below).
+⚠️ **Nothing here refuses a key this surface does not declare**, so a project may carry one and
+some do — which is a gap in what holds configurations to this surface rather than a licence, and is
+recorded as such in [`docs/single-source-of-truth.md`](../../../docs/single-source-of-truth.md).
 
 **The test a new kind's block is written against**: a key is required when the adapter cannot
 address the right tracker without it. An address this reader accepts and the tracker rejects is

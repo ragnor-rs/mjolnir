@@ -125,19 +125,45 @@ REQUIRED_CLAUSE = re.compile(r"^required$")
 # address it loaded clean and failed at the first operation.
 #
 # ⚠️ Written as a token and not as the English the surface already uses beside
-# four `absent_reason` lines: `# required when carrier is none` is prose about a
-# rule that another marker performs, and a grammar matching it would have turned
-# every one of those into a condition on a sibling key no dotted path resolves.
-# Measured -- it did, and every example stopped loading.
+# every `absent_reason` line -- `# required when carrier is none`, prose about a
+# rule another marker performs. ⛔ No count of those lines is carried here: the
+# first form of this comment said *four*, there were five, and a facet landing
+# while the change was open made it six. A grammar matching that English reads
+# each of them as a condition on the bare sibling `carrier`, which no dotted path
+# from the top of the file resolves. Measured: with the guard below in place every
+# example then stops loading, and **with the guard removed the same conditions are
+# silently inert** -- which is the worse half and the reason the marker is a token
+# rather than the guard being the whole answer.
 #
 # ⛔ The condition is read, so it cannot be a condition nothing can meet: the
 # referenced key must be one the surface declares, and the value one its
 # alternation states where it states one. Both are refused below rather than
 # skipped, because a marker whose condition never fires is a requirement nobody
 # enforces that reads exactly like one somebody does.
+#
+# ⚠️ Neither guard is sufficient, and the limits are stated rather than implied.
+# The value is compared as the **text** the surface states, so a condition on a
+# number or a boolean cannot fire; and the surface declares some keys only inside
+# a fence that opens at an indent or shows one entry of a list, where no absolute
+# path reaches them at all. What catches both is the self-test asserting that each
+# marked condition is met by some example -- a condition no example meets is the
+# one thing a loader cannot tell from a condition no project happens to meet.
 REQUIRED_WHEN_CLAUSE = re.compile(
     r"^required_when\s*:\s*(?P<on>[A-Za-z_][\w.]*)\s*=\s*(?P<value>[\w-]+)$"
 )
+
+# ⛔ And a clause that *means* to be the marker and does not parse is refused
+# rather than dropped. Measured on this change: `= "trello"` (the value quoted,
+# as every other value on this surface is), `== trello`, `= trello.com` and
+# `required when: …` each left `re.match` empty, so the surface read as marking a
+# key and the reader enforced nothing for it -- and for a key not yet in the
+# inventory below, the whole suite stayed green. This is the same refusal
+# `# absent_reason` gets when it sits where nothing reads it.
+#
+# ⚠️ It demands the colon, which is what separates a mistyped marker from the
+# English prose above: `required when carrier is none` carries none and must stay
+# prose, while `required_when` on its own is a marker whoever wrote it meant.
+REQUIRED_WHEN_NEAR_MISS = re.compile(r"^(?:required[_ ]when\s*:|required_when\b)")
 
 # `# absent_reason` beside a `carrier` marks the facet as having a real absent
 # case: `carrier: none` is then accepted only with a stated reason, and the
@@ -268,6 +294,15 @@ def surface_facts(surface_text: str) -> dict:
                     required_when.setdefault(
                         (path, found.group("on"), found.group("value")), heading
                     )
+                elif REQUIRED_WHEN_NEAR_MISS.match(clause):
+                    raise ConfigError(
+                        path,
+                        f"carries `# {clause}`, which means to be the conditional "
+                        "marker and does not parse as one. The form is "
+                        "`# required_when: <key> = <value>`, the key written "
+                        "absolutely and the value bare. Left unparsed this key "
+                        "reads as marked and is enforced nowhere.",
+                    )
                 if ABSENT_REASON_CLAUSE.match(clause):
                     # ⛔ Refused rather than ignored where it is not on a
                     # `carrier`: the rule it marks reads `carrier: none`, so a
@@ -320,8 +355,21 @@ def surface_facts(surface_text: str) -> dict:
     # been walked. A condition on a key nobody declares, or on a value outside the
     # set that key states, is one no configuration can ever meet -- so the keys it
     # guards would be required nowhere while reading as required here.
+    #
+    # ⛔ The comparison is **suffix-tolerant in both directions**, and that is not
+    # laxity: `_walk_keys` yields a path relative to its own fence's first key, so
+    # a key shown in a fence that opens at an indent is declared here under a
+    # shorter path than the absolute one § 1 tells a marker to write. Measured: the
+    # absolute, surface-mandated spelling of such a key was refused as "declares
+    # nowhere" -- a load-time refusal of a legitimate marker, which is the
+    # direction this guard must never fail in. What it still catches is a key the
+    # surface declares under no path at all, which is the typo it exists for.
     for (path, on, value), heading in sorted(required_when.items()):
-        if on not in declared:
+        known = any(
+            on == shown or on.endswith(f".{shown}") or shown.endswith(f".{on}")
+            for shown in declared
+        )
+        if not known:
             raise ConfigError(
                 path,
                 f"carries `# required_when: {on} = {value}` under § {heading}, and "
@@ -1246,6 +1294,13 @@ MARKED_REQUIRED = [
 # depend on a kind this code picked, while *what the surface marks* cannot be
 # stated without the values it marks it under -- the surface names every kind, and
 # an inventory that would not would be an inventory of nothing.
+# A key the surface declares **relatively**, with the value to condition on — the
+# case the suffix-tolerant comparison in `surface_facts` exists for, stated here so
+# the assertion does not derive its own fixture from the surface. The surface shows
+# this key in a fence opening at `type_branch_prefix:`, so the walk yields two
+# segments where § 1 tells a marker to write three.
+RELATIVELY_DECLARED = ("work_item.type_branch_prefix.bug", "bugfix")
+
 MARKED_REQUIRED_WHEN = [
     ("tracker.board", "tracker.kind", "trello"),
     ("tracker.project.number", "tracker.kind", "github-projects"),
@@ -1398,6 +1453,36 @@ def self_test() -> int:
                 reported in guarded,
                 f"reported {reported!r}",
             )
+
+        # ⛔ And the direction that guard must never fail in. A mistyped clause is
+        # a round trip; a legitimate marker refused at load time is every role in
+        # the project stopping on a configuration that is correct. Both plants
+        # below ride the same marker line, replaced rather than appended, so a
+        # reworded surface takes the plant with it instead of leaving it green.
+        for label, planted, expected in (
+            (
+                "a clause that means to be the marker and does not parse",
+                f'required_when: {on} = "{value}"',
+                "refused",
+            ),
+            (
+                # Written out rather than derived: the surface declares this key
+                # inside a fence that opens at an indent, so the absolute spelling
+                # § 1 mandates is longer than the path the walk yields. If the
+                # surface stops declaring it, this assertion fails and says so.
+                "a condition naming a relatively-declared key the absolute way",
+                f"required_when: {RELATIVELY_DECLARED[0]} = {RELATIVELY_DECLARED[1]}",
+                "accepted",
+            ),
+        ):
+            with open(SURFACE, encoding="utf-8") as handle:
+                text = handle.read().replace(f"required_when: {on} = {value}", planted)
+            try:
+                surface_facts(text)
+                got = "accepted"
+            except ConfigError:
+                got = "refused"
+            check(f"{label} is {expected}", got == expected, f"was {got}")
 
     # The marker itself, planted away in each direction. ⛔ A surface that
     # states no requiredness must redden rather than accept anything: without

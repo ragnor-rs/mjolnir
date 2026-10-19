@@ -30,10 +30,7 @@ tracker:
   board: "<board id>"
   lists:                        # a Trello state is a list
     resolve: by_name
-  # ⛔ No capability is stated here, by § 3's `Who declares a capability`. A
-  # project restating one would be a second statement allowed to disagree with
-  # what the adapter implements — and the project would lose, having no way to
-  # make a tracker do what it cannot.
+  # No capability is stated here — schema § 3, `Who declares a capability`.
   policy:
     # A third-party service holding someone else's material.
     forbid_on_item: [source_code, credentials, hosting_details, file_paths, branch_names]
