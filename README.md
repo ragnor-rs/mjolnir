@@ -152,8 +152,12 @@ found between the old copies and the decision that settled it.
 | [`tools/check_prose_width.py`](tools/check_prose_width.py) | The sweep that holds every tracked markdown file to the line width the configuration states, excluding the lines the format forbids breaking |
 | [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) — today, a `Stop` hook holding a role's reply to the register |
 
-The remaining five roles land here as they are reconciled. A project that has not been migrated
-keeps working throughout — that is a safety property of the migration, not an acceptable end state.
+The loop's remaining roles land here as they are reconciled. ⛔ **No count of them is written
+here** — the table above says which are shipped, and
+[`docs/building-itself.md`](docs/building-itself.md) names the command that derives it; a figure in
+this sentence is a copy of that, and it had already drifted once. A project that has not been
+migrated keeps working throughout — that is a safety property of the migration, not an acceptable
+end state.
 
 ## Conventions
 

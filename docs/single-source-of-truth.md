@@ -172,6 +172,16 @@ Stated, because an unstated limit reads later as coverage.
   marker, which is the *quoting* failure, and it is what makes the line-start form the sound one. A
   table cell is not part of that argument — the check excludes cells by a separate condition the
   grammar does not reach — so the residue here is a reviewer's.
+- **A link between two carriers, and a link from the reader.** Check 1 resolves a citation of the
+  surface, which is what its pattern matches. A relative link from one skill to another, and a row
+  in the README pointing at a carrier directory, resolve against nothing — so renaming a carrier
+  and updating this script's role map leaves every such link dead and the build green. ⚠️ Measured
+  by doing exactly that: the one path that fails loudly is the role map itself, and the rest fail
+  in silence.
+- **Whatever is not committed.** Every check here reads the working tree, which is not what a
+  commit takes. ⚠️ Measured on the change that added this bullet: edits staged by a merge were
+  verified green, then edited again and left out of the commit, so the gate's verdict was about a
+  tree that never landed. The host's own run closes it afterwards; nothing here closes it before.
 - **Key subtrees.** Check 5 holds the top level only. Per-tracker blocks live in `examples/` by
   the schema's own
   [§ 3](../plugins/mjolnir/config/schema.md#3-tracker-port), so a deeper comparison would need an
@@ -323,9 +333,25 @@ exempted the whole directory and so would have read straight past it.
   script, so `# run npm run build first` in a hook is not read. That is the deliberate trade: a
   comment is prose, and sweeping it would redden on an ordinary English sentence. A command the
   procedure actually runs is not in a comment.
+- **A directory change, a directory flag or an absolute path written in prose.** Rule 1's
+  code-only scope is stated above for stack tokens, and the other three arms of the same check
+  inherit it — they read `code()` regions too. ⚠️ Measured: an absolute path in a sentence is not
+  read at all. The trade is rule 1's, for the same reason, and the live instance it allowed was a
+  shipped role citing this project's own backlog by URL, caught by a reader.
+- **This project's own slug, anywhere at all.** The second exception derives it rather than listing
+  it, and — unlike the third, which names the roots each cited artifact is permitted in — it is
+  scoped to nothing. ⚠️ So a carrier may name this repository's host, backlog and item numbers
+  while the sweep stays green, which the README's own convention does not permit: it enumerates
+  where the own slug may be cited, and a shipped carrier is not among them. Measured, and the
+  reason that role now cites no item at all.
 - **A bare all-caps value inside an example configuration**, per the first exception above. The
   residue is narrow — an example whose status words are upper-case — and the alternative was
   dropping `OWNER/REPO` and `KEY` out of the placeholder set.
+- **A build tool a project actually named a carrier after.** The fourth exception, and the
+  narrowest: a carrier-classification map is keyed by the basenames projects used, so a key naming
+  a build tool is a fact the map must carry — dropping it makes the role it classifies read as a
+  role that does not exist. ⛔ **The key is exempt and not the file and not the value beside it**,
+  both measured, and the exemption is asserted to stay green while disabling it reddens.
 - **Most carrier roots are empty, and the run still exits 0.** The shapes that match a file today
   are the skills root and — since the reply-register hook — the hooks root; the hooks that enforce
   the *loop* are still [#16](https://github.com/ragnor-rs/mjolnir/issues/16), and the command

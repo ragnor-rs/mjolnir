@@ -225,7 +225,35 @@ is why an amend is refused and why the second commit costs nothing.
 - **A reviewer reads the head the host reports**, never the sha the session remembers: readers given
   a branch's first commit reported an already-retracted claim as live text.
 - **A fix after the push is a second commit.** An amend and a force push is refused as destructive,
-  and the second commit is the better record anyway — a squash merge collapses both.
+  and the second commit is the better record anyway.
+- **A local check reads the working tree, which is not what a commit takes.** Edits a merge had
+  staged, verified green by every local check and then edited again, were left out of the commit —
+  so the gates had answered about a tree that never landed, and the pushed change carried a
+  duplicate key its own reader resolves in silence. It is
+  [schema § 10](../plugins/mjolnir/config/schema.md#which-tree-a-verdict-belongs-to)'s wrong-tree
+  rule one level down, and the measurement is this role's own reconciliation.
+- **Convergence is evidence about a finding, not about its reasoning.** Three of five independent
+  readers agreed on one that was false; what their agreement established was that the surrounding
+  prose did not say which project each clause referred to.
+- **A delegated reviewing carrier inherits none of the delegating role's context**, which three
+  copies had already discovered and written down — so every requirement a role places on a finding
+  travels *in* the delegation rather than beside it.
+- **A reproduction is the score**, which is the latent-defect measurement's consequence and is
+  listed here because the role states it as a rule: the figures above are what it rests on.
+
+**What a delegated review of the reconciliation recovered.** Five passes over the extracted role
+found that it had dropped corrections one copy had paid for, and ⚠️ **the largest was structural
+rather than a rule**: the role had no step that *executed* the change's plan, which four of the five
+copies had — and with it went what counts as an observation, ticking only what was observed,
+re-running from the top after a fix, never ticking an item that could not be run, and writing the
+observation onto the item's own line. The second was that one copy asked **two** questions, who
+*runs* the plan and who *looks* at the result, of which only the second is declinable; the
+reconciliation had collapsed them into the declinable one. Both are now in the role, and the losses
+that belong to the finishing role rather than this one — the squash subject's references,
+retargeting dependents before deleting a branch, an item not advancing while a sibling change is
+open, and an unreachable tracker holding the merge rather than being discovered after it — are in
+that role, because a loss found by reviewing this change is this change's to repair wherever it
+landed.
 
 Two things needed no ruling because an existing one already struck them: **four** of the five copies
 credited a tool as a co-author on the fix commit and **the same four** put a generated-by marker in

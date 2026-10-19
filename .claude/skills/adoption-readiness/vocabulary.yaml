@@ -44,15 +44,6 @@ roles:
 # "cannot establish" rather than being skipped. An uncounted role reads as a role that does not
 # exist, which is the one error this check must not make.
 carriers:
-  # The plugin's own shipped names. They are deliberately not the measured basenames below: a
-  # reconciled role is named for the role rather than for the tracker noun one project's copy used,
-  # so the two spellings coexist and both have to classify. ⛔ A role shipped under a name absent
-  # here reads as a role that does not exist, and the run says `could not establish` — which is
-  # what it said for the first two of these until the third was added.
-  file-work-item: { role: file }
-  finish:         { role: finish }
-  review:         { role: review }
-
   create-issue:   { role: file }
   pick-issue:     { role: gate }        # gates the card, dates it from priority, refuses an
                                         # item with higher-priority work ahead of it (#8, #46)
@@ -76,6 +67,7 @@ carriers:
   file-work-item: { role: file }         # the reconciled filing role (#7, shipped by #114)
   finish:         { role: finish }       # the reconciled finishing role (#10, shipped by #113)
   start:          { role: start }        # the starting half, still project-local (#9)
+  review:         { role: review }       # the reconciled reviewing role (#11)
 
   design-prd:     { class: beside }     # turn raw sources into a specification (#29)
 

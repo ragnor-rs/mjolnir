@@ -308,8 +308,23 @@ def deslugged(name: str) -> re.Pattern[str]:
     A tracker's name reaches the surface as a `kind:` slug and reaches prose as
     words. Matching only the slug would certify the check on the one spelling
     nobody writes.
+
+    ⛔ A hyphen or an underscore beside the name does **not** protect it. The
+    first form put `-` in both lookarounds, so `trello-sync`, `sync-trello` and
+    `trello_sync` all passed -- and a carrier is named in exactly that shape,
+    which is the one place this check looks. The word boundary is the word's,
+    so a compound naming a tracker names it.
+
+    ⚠️ `_` is spelled out rather than left to `\\w`, which contains it: the
+    second form of this pattern closed the hyphen hole and left the underscore
+    one open, measured by planting both.
     """
-    return re.compile(r"(?<![\w-])" + r"[-\s]?".join(map(re.escape, name.split("-"))) + r"(?![\w-])")
+    boundary = "[0-9A-Za-z]"
+    return re.compile(
+        f"(?<!{boundary})"
+        + r"[-\s]?".join(map(re.escape, name.split("-")))
+        + f"(?!{boundary})"
+    )
 
 
 # --- the tree --------------------------------------------------------------
@@ -615,6 +630,30 @@ def check_no_tracker_is_named_in_the_strict_set(tree: Tree) -> list[str]:
     return problems
 
 
+# A fourth exception, encoded rather than assumed, and the narrowest of them.
+#
+# A carrier-classification map is keyed by the basenames projects actually gave
+# their carriers, and a project that named a hook after its build tool is a fact
+# such a map has to carry: dropping the key makes the role it classifies read as
+# a role that does not exist, which is the one error that check must not make.
+# ⛔ It is the KEY that is exempt and not the file, and not the value beside it:
+# a line that does anything but map a name to a classification is swept like any
+# other. The map itself is data about other projects, in the sense
+# `config/examples/` is data rather than procedure.
+CARRIER_MAP_KEY = re.compile(r"^(?P<key>[A-Za-z0-9_.-]+):\s*\{[^}]*\b(?:role|class|partial)\b")
+
+
+def carrier_name_exception(path: str, region: str, token: str) -> bool:
+    """Is this token only in the *key* of a carrier-classification entry?"""
+    match = CARRIER_MAP_KEY.match(region.strip())
+    if not match:
+        return False
+    key = match.group("key")
+    if token not in re.split(r"[-_]", key) and token != key:
+        return False
+    return token not in region[match.end("key"):]
+
+
 def check_no_stack_is_named_in_the_strict_set(tree: Tree) -> list[str]:
     problems = []
     swept = 0
@@ -622,8 +661,19 @@ def check_no_stack_is_named_in_the_strict_set(tree: Tree) -> list[str]:
         for region in tree.code(path):
             swept += 1
             words = set(re.findall(r"[A-Za-z0-9_.-]+", region))
+            # ⛔ And the parts of each one. A token is split on the separators a
+            # name is compounded with, because the first form matched whole
+            # tokens only and so read straight past a build tool named inside
+            # one -- which is the shape a carrier's own name takes. A manifest
+            # or lockfile name keeps its dots, so the split is on `-` and `_`.
+            words |= {
+                part
+                for word in words
+                for part in re.split(r"[-_]", word)
+                if part
+            }
             for token, what in STACK:
-                if token in words:
+                if token in words and not carrier_name_exception(path, region, token):
                     problems.append(
                         f"{path}: the command `{region.strip()[:70]}` names {what} "
                         f"(`{token}`). A role reads the command it runs from configuration; a "
@@ -909,8 +959,16 @@ VIOLATIONS = [
     ("no tracker is named in the strict set", "a tracker named in its de-slugged spelling",
      _plant_in_a_carrier("\nOn GitHub Projects the item moves separately.\n")),
     ("no tracker is named in the strict set", "a surface declaring no tracker kinds", _plant_surface_with_no_tracker_kinds),
+    ("no tracker is named in the strict set", "a tracker inside a hyphenated compound",
+     _plant_in_a_carrier("\n  trello-sync:    { class: guard }\n")),
+    ("no tracker is named in the strict set", "a tracker inside an underscored compound",
+     _plant_in_a_carrier("\n  jira_sync:      { class: guard }\n")),
     ("no stack is named in the strict set", "a build tool invocation in a carrier",
      _plant_in_a_carrier("\nRun `npm run build` first.\n")),
+    ("no stack is named in the strict set", "a build tool inside a hyphenated compound",
+     _plant_in_a_carrier("\nRun `gradle-capacity --check` first.\n")),
+    ("no stack is named in the strict set", "a build tool in a carrier entry's value",
+     _plant_in_a_carrier("\nThe entry is `something: { class: guard, partial: \"npm only\" }`.\n")),
     ("no stack is named in the strict set", "a build tool inside a fenced block",
      _plant_in_a_carrier("\nThen:\n\n```sh \nnpm run build\n```\n")),
     ("no stack is named in the strict set", "a manifest name in a carrier",
@@ -949,6 +1007,13 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
      _plant_in_a_carrier_implementation("STATES = ('open', 'closed')\n")),
     ("no stack is named in the strict set", "a build tool a script a carrier calls invokes",
      _plant_in_a_carrier_implementation('subprocess.run(["npm", "run", "build"])\n')),
+    # The fourth exception, asserted in the direction that matters: a carrier
+    # map's KEY may name a build tool, because the key is the name a project
+    # actually gave that carrier. ⚠️ Verified by disabling `carrier_name_exception`
+    # and watching this plant redden -- an exemption nothing can fail is an
+    # exemption nobody checked.
+    ("no stack is named in the strict set", "a build tool in a carrier map's key",
+     _plant_in_a_carrier("\nThe entry is `gradle-capacity: { class: guard }`.\n")),
 ]
 
 

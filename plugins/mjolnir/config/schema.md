@@ -77,6 +77,21 @@ Gating is a role of its own, not a step of filing or of starting: it owns the da
 estimate (§4.3), and starting never re-runs it — re-gating recomputes a commitment somebody may
 already have been given.
 
+**Finishing and reviewing interleave, and the division between them and a hook is stated here
+rather than in either role**, because each of the three reads it and a rule read by two roles and
+written in one of their skills is a second authority for the other. ⛔ **Finishing is entered
+twice.** Its first pass takes the branch to an open change; the reviewing role then conducts the
+review, drives the change's own plan, fixes what it finds and drives the host's runs to an answer;
+the second finishing pass merges, moves the item and releases the tree. A finishing pass that meets
+an open change proceeds from there rather than opening a second one, and one that meets a red hands
+it to the reviewing role rather than fixing it.
+
+⛔ **Procedure produces a record and enforcement reads it.** A role that assumes it owns the gate
+fights the hooks; a role that assumes a hook will stop it skips the record the hook reads. So the
+reviewing role **records** — the verdicts, and whether a person is going to look at the diff — and
+**never merges and never waives**; a hook (§7) is what refuses an act on the strength of that
+record, and the record is written whether or not one is installed.
+
 **The surface's axes are independent, and there are more of them than the obvious three:** the
 work-item tracker (§3), the code host (§2), the code root (§1), each role's carrier (§7),
 language/register/audience per artifact (§8), and the branch model (§10). The list is the
@@ -198,7 +213,8 @@ Independent of the tracker. A project may keep its cards in one system and its c
 
 **`checks` is the single statement of the host's workflows and jobs** — which runs exist, which
 local command each one mirrors, what triggers it, and which paths it watches. Every consumer reads
-it and none carries the facts itself: the finishing role's CI-answer preconditions, and the guards
+it and none carries the facts itself: the preconditions the subsection below states, the reviewing
+role driving those runs green, the finishing role refusing to merge without them, and the guards
 that refuse a local check the host has already run. The facet is mandatory on a project whose host
 runs anything; `checks: []` is the one legitimate absence and means every verdict is local.
 
@@ -244,7 +260,11 @@ the other.
 
 ⛔ **Four preconditions, in order, and all four are required before anything here reads as green.**
 
-1. the tree is clean — an uncommitted edit was never pushed, so the host never saw it;
+1. nothing the change touches is uncommitted, and nothing committed is unpushed — an edit the host
+   never received is an edit no run answered about. ⚠️ **This is not the dirty-tree test**, which
+   § 6 derives from the branch model and which `worktree` mode answers by reporting and continuing:
+   a tree may legitimately carry files this change is not about, and what this precondition asks is
+   whether the host has seen everything that *is*;
 2. a run exists **for this commit**, not for the branch and not for an earlier push;
 3. the run **executed steps**;
 4. it concluded green.
@@ -261,9 +281,13 @@ the change. ⚠️ **Their remedies are opposite** — one is fixed in the diff 
 and in a log they look alike. So a role says which of the two it has, and ⛔ **an environment
 failure consumes no fix cycle**.
 
-⛔ **A cap of three fix cycles against the same red answer, then stop and ask**, with the options and
-what each costs. A fourth attempt is a role that has stopped learning from the answer, while the
-person running it can see what the check cannot say.
+⛔ **A cap of three fix cycles on the pass, then stop and ask**, with the options and what each
+costs. A fourth attempt is a role that has stopped learning from the answer, while the person
+running it can see what the check cannot say. ⚠️ **The cap counts the pass and not a particular red
+answer**, which is what all five copies it was reconciled from said: scoped to one answer, a loop
+that turns each red into a different red is unbounded, and that is the shape the cap exists to
+bound. An environment failure is the one thing that consumes no cycle, because its remedy is not in
+the diff.
 
 ⛔ **Never sleep, and watch rather than poll.** The host's own client blocks until the runs settle,
 which costs nothing and cannot miss a transition between two polls. A sleep long enough to be worth
