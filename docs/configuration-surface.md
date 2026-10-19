@@ -683,6 +683,18 @@ is the bullet the run exists to answer. ⚠️ **What the run does not establish
 payload nobody planted**: the forms it found are the forms the grammar was written for, and the
 quoting limit on the imperative half is unchanged by having fired once.
 
+⚠️ **The hook arm was reviewed separately and two defects came out of it**, both recorded here
+because each is a shape the next person writing a command-reading guard will reach for. The first:
+the git subcommand was found by dropping every word beginning with `-` and reading the next one,
+which left `-C`'s *value* standing where the subcommand should be — so no `git -C <root> push` was
+ever outward, and [§ 1](../plugins/mjolnir/config/schema.md#1-roots) **requires** that form, making
+it the shape every git call in this procedure takes. The arm was dead on its main case while its
+green plant passed, because that plant would have passed either way. The second: an argument to a
+flag that *can* name a file was read as a path unconditionally, so `-F title=hello` and
+`-d name=value` failed to open and the hook reported that a body could not be read — falsely, on
+two of the commonest outward calls there are, since that data is in the command text and had been
+read. Both now carry plants in both directions.
+
 ### Why the inherited set is names, and why its arm reports rather than refuses
 
 A list of names is not a secret, so the configuration can carry it; the value cannot be carried
