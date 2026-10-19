@@ -324,6 +324,15 @@ longer, and `advance_on_merge`, `set_labels`, `assign`, `checklist_read` and `ch
 argued below rather than in the table — stated because a reader comparing the two would otherwise
 read a missing row as an operation nobody had evidence for.
 
+⚠️ **`search_items` is the one operation on § 3's list the survey did not reach**, in the table or
+in the argument below it, and it is named here so that a reader holding the two lists against each
+other finds nothing unexplained. Its shapes were measured afterwards, against plain issues rather
+than against the three above: terms and a field's value with no terms, each across every state the
+tracker holds, and two ways an empty answer lies — a state qualifier carried in with the terms,
+which narrows the search while the all-states flag is still on the command line, and a label the
+repository does not have, which the host answers identically to a label nothing carries. Both are
+refused there rather than reported, because this is the one search the filing role performs.
+
 | Operation | GitHub Projects | Jira | Trello |
 |---|---|---|---|
 | `create_item` | create, add to project, set status | one call | create, then **one label attach per label** — labels cannot be set at creation |

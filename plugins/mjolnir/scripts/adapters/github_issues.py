@@ -33,6 +33,12 @@ What it implements, and what it deliberately does not:
     whether it actually did it -- a declaration nothing can observe would leave a
     role unable to tell automation that worked from automation that was never
     wired.
+  * **`search_items` answers across both states and takes no state argument.**
+    It is the one read here that needs no pull-request guard, because the host's
+    issue search excludes them outright -- measured, not assumed, and stated on
+    the operation itself. What it does guard is the two ways an empty answer
+    lies: a state qualifier hidden in the terms, and a label the repository does
+    not have.
   * **Every operation taking an item number resolves it through `read_item`
     first**, which is what makes the pull-request guard there cover them rather
     than cover one. ⚠️ Measured: an earlier draft claimed that coverage while
@@ -50,6 +56,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -70,6 +77,30 @@ KIND = "github-issues"
 # cannot invent a third and have this tracker hold it.
 OPEN = "open"
 CLOSED = "closed"
+
+# A term that would narrow the states searched. ⛔ Refused rather than honoured:
+# the search operation is stated across **every** state the tracker holds, and a
+# query carrying one of these silently answers for one of them -- measured,
+# `--search "prose width state:closed"` came back with the two closed items and
+# dropped the four open ones, with `--state all` still on the command line. A
+# duplicate check narrowed to one state is the failure § 2's absence-of-signal
+# rule describes, and it looks exactly like a clean answer.
+#
+# Deliberately a shade over-broad -- a leading `-`, any spacing -- because the
+# wrong direction here is the silent one, and the words are refused by name.
+STATE_QUALIFIER = re.compile(r"-?\b(?:state|is)\s*:\s*(?:open|closed)\b", re.IGNORECASE)
+
+# What the host's client writes to stderr when the thing asked for is not there.
+# ⛔ Carried as a constant rather than spelled into a condition, because *absent*
+# and *could not be established* are two different answers here and this string is
+# the whole of what separates them.
+NOT_FOUND = "(HTTP 404)"
+
+# What a search with no terms is ordered by. The keyword-independent layer of the
+# duplicate check reads titles rather than matches, so it asks for the most
+# recently updated under a bound; the host's own default order is relevance,
+# which means nothing to a query with no terms in it.
+RECENT_FIRST = "sort:updated-desc"
 
 # The configuration the port last handed down, and the only place one comes from.
 # ⛔ Never resolved here, and never from the working directory: which repository
@@ -188,6 +219,131 @@ def read_item(number: int) -> dict:
             "is a different fault from an item that does not exist."
         )
     return item
+
+
+def _label_exists(repo: str, label: str) -> bool:
+    """Whether the repository has this label, asked for by name.
+
+    ⛔ Not `_gh`, because the interesting answer here is a **failure**: the host's
+    `404` is what *absent* looks like, and `_gh` turns every non-zero exit into
+    the same refusal. So the three cases are separated here -- present, absent,
+    and could-not-be-established -- and only the third raises.
+    """
+    done = subprocess.run(
+        ["gh", "api", f"repos/{repo}/labels/{label}", "--jq", ".name"],
+        capture_output=True, text=True, timeout=30,
+    )
+    if done.returncode == 0:
+        return True
+    # ⚠️ Measured: the host's own body lands on stdout and `gh` writes `(HTTP 404)`
+    # to stderr, so this matches the latter rather than hunting `404` anywhere in
+    # either -- a digit sequence in an unrelated message would otherwise read as
+    # *absent*, which is the reading that invents an answer.
+    if NOT_FOUND in done.stderr:
+        return False
+    raise port.HostUnavailable(
+        f"`gh api repos/{repo}/labels/{label}` failed with neither a label nor a "
+        f"`404`: {done.stderr.strip() or 'no stderr'}. Whether this repository has "
+        "that label could not be established, which is not the same as it not "
+        "having it."
+    )
+
+
+def search_items(
+    terms: str | None = None, *, labels: list[str] | None = None, limit: int = 100
+) -> dict:
+    """The items a query matches, in both shapes § 3 states, across both states.
+
+    **Terms, or a field's value with no terms at all, or both.** Plain issues
+    have one field worth filtering on -- the labels classification rides -- so
+    the keyword-independent layer of the duplicate check filters by those and
+    falls back to recency where it has none.
+
+    ⛔ **No state argument, by construction.** § 3 states the operation across
+    every state the tracker holds and the filing role is forbidden from
+    narrowing, so `--state all` is not a default here but the only thing this
+    passes; there is no parameter to get wrong. The one way state could still be
+    narrowed is a qualifier smuggled in with the terms, which `STATE_QUALIFIER`
+    refuses.
+
+    ⚠️ **No pull-request guard, and that is measured rather than assumed.**
+    Every other read here needs one because the two share a number sequence, but
+    the host's *issue search* excludes pull requests: searching the exact title
+    of pull request #120 answers with nothing, while the same terms through the
+    pull-request listing answer with #120. So there is no shape here in which a
+    pull request can arrive dressed as an item, and a guard would be asserting
+    something this operation cannot be handed.
+
+    ⛔ **An unknown label is refused, not answered with an empty list.** The host
+    answers `[]` for a label that does not exist and `[]` for a label nothing
+    carries, with exit 0 and no warning in either -- and this is the one search
+    the filing role performs, so the two readings are a duplicate check that
+    found nothing and a duplicate check that never ran. The labels are only
+    checked where the answer *is* empty: a hit proves the label exists and spends
+    no call proving it.
+
+    ⚠️ **Each label is asked for by name rather than looked up in a listing.** A
+    listing takes a bound, and a label past that bound comes back absent from an
+    answer that reports no truncation -- so the guard would call a label the
+    repository *has* unknown and refuse a search that was fine. Measured by
+    shrinking the bound, which is what a repository with more labels than the
+    bound does by itself. ⛔ And three answers, not two: present, absent by the
+    host's own `404`, and **unestablished**, which is reported as a failure rather
+    than folded into either.
+
+    The answer carries its own bound, because the layer that uses it is required
+    to report one. ⚠️ `at_limit` says the host had at least this many, never that
+    it had more -- a result that exactly fills the bound is indistinguishable
+    from one the bound cut, and the honest reading of it is *this answer may be
+    short*.
+
+    Items come back in the host's own field names, the ones `read_item` returns,
+    so a candidate moves from this answer into that one with nothing renamed.
+    `body` is **not** among them: judging a candidate means reading its body, and
+    that is a `read_item` per candidate rather than a list call pulling every
+    body in the backlog.
+    """
+    repo = _repo()
+    query = (terms or "").strip()
+    if query and STATE_QUALIFIER.search(query):
+        raise port.ConfigError(
+            "tracker.operations.search_items",
+            f"was asked for `{query}`, whose state qualifier would narrow the "
+            "search to one state. The operation is stated across every state the "
+            "tracker holds -- a closed item answers the duplicate question as "
+            "well as an open one, and an idea raised and dropped is the duplicate "
+            "most worth finding. Drop the qualifier; the states are already all "
+            "of them.",
+        )
+    args = [
+        "issue", "list", "--repo", repo,
+        "--state", "all",
+        "--limit", str(limit),
+        "--json", "number,title,state,labels,updatedAt,url",
+    ]
+    for label in labels or []:
+        args += ["--label", label]
+    args += ["--search", query or RECENT_FIRST]
+    items = _gh(args)
+    if labels and not items:
+        unknown = [label for label in labels if not _label_exists(repo, label)]
+        if unknown:
+            raise port.HostUnavailable(
+                f"`gh issue list --label {' --label '.join(labels)}` answered with "
+                f"nothing, and {', '.join(repr(label) for label in unknown)} is not "
+                f"a label {repo} has -- so the empty answer is this search never "
+                "running, not this tracker holding no such item."
+            )
+    return {
+        # ⚠️ The query as **sent**, not as handed in: the filing role records every
+        # query against its hit count, and a record of the unstripped argument is a
+        # record of something the host was never asked.
+        "terms": query or RECENT_FIRST,
+        "labels": list(labels or []),
+        "limit": limit,
+        "at_limit": len(items) >= limit,
+        "items": items,
+    }
 
 
 def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
@@ -421,6 +577,7 @@ def advance_on_merge(number: int) -> dict:
 
 ADAPTER = port.Adapter(binder=bind, operations={
     "read_item": read_item,
+    "search_items": search_items,
     "create_item": create_item,
     "item_number": item_number,
     "set_state": set_state,
