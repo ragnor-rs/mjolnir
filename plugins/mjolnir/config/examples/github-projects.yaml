@@ -60,6 +60,14 @@ work_item:
       outcome: "Outcome"
       acceptance: "Acceptance check"
       reproduction: "Reproduction"
+  due_date:
+    # A board can hold a date field and this one does not write it: the loop below maps no
+    # gating role, and § 4.5 gives the date one writer. A field nothing writes is a column
+    # that reads as a commitment while carrying whatever somebody last typed.
+    carrier: none
+    absent_reason: >-
+      No gating role is mapped here, and the date has exactly one writer. Readiness is what
+      this board tracks; when an item is due is not a question it answers.
 
 statuses:
   - { name: "Todo",        role: initial,     writer: procedure }

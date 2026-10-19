@@ -23,6 +23,29 @@ starting re-run the gate — which is where the schema's no-re-gating rule comes
 Depth per project: **1, 7, 7, 8, 9, 9.** Five of six run the whole pattern; one runs a single
 role.
 
+**What the date needed, and what one copy does not support.** The estimate already had a facet and
+the date had none, so the role that owns both could state where one of them goes and not the other;
+[`schema.md § 4.5`](../plugins/mjolnir/config/schema.md#45-due-date) is that carrier, and it is
+deliberately narrower than the copy it was taken from. It says where a date is written and not what
+the date is, because the one derivation measured runs from a priority the surface does not yet
+carry — a facet that absorbed the arithmetic would have generalised a four-row table no second
+project was found to have, and settled a question
+[#46](https://github.com/ragnor-rs/mjolnir/issues/46) is open to settle.
+
+**Why the gate's own checks are not a third ordered list.** The readiness gate and what counts as
+done are configured lists because the copies of *those* roles diverge: the five starting copies
+share no single check (below), and the two statements of done could not be configured as each
+other
+([`schema.md § 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)).
+Gating has one copy, so there is nothing yet to diverge from. What that copy checks is the facets
+the surface already states — the type against the template, the estimate against its own rungs, the
+dependencies, what policy bars from an item — plus two judgements no key can carry: whether an
+acceptance condition is answerable without asking anyone, and whether the body leaves a question
+open where a decision belongs. The one genuinely per-project input, what bar a dependency has to
+have reached, is already
+[`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)'s
+rule and is read there rather than restated.
+
 ## Three findings that reshaped the surface rather than confirming it
 
 ### A role's carrier is an axis beside its name
@@ -332,6 +355,14 @@ tracker holds, and two ways an empty answer lies — a state qualifier carried i
 which narrows the search while the all-states flag is still on the command line, and a label the
 repository does not have, which the host answers identically to a label nothing carries. Both are
 refused there rather than reported, because this is the one search the filing role performs.
+
+⚠️ **`set_field` is newer than this survey, and the sentence above is bounded by that.** It arrived
+with the gating role: of the two values that role writes, the estimate reaches the item as a label
+on the copy measured, and the date
+([`schema.md § 4.5`](../plugins/mjolnir/config/schema.md#45-due-date)) reaches it as a field, which
+no operation carried. One copy performs that write; what it looks like on the other two
+implementations is unmeasured, which is why the operation has no row here rather than a row with a
+gap in it.
 
 | Operation | GitHub Projects | Jira | Trello |
 |---|---|---|---|
@@ -734,6 +765,12 @@ records.
 | `1a3789a` (#132) — § 2, how a pull request lands | added `host.landing.method` and `host.landing.delete_branch`, required with no marked default | stayed `1` |
 | `8461104` (#133) — § 13, what counts as done | added a required `done` with no default, `[]` legitimate — a *decision* the refusal cannot tell from the absence | stayed `1` |
 | `dbf4ef1` (#142) — § 14, what the shell inherits | added a required `environment.inherits`, `[]` again a decision rather than an omission | stayed `1` |
+| `b9e8fd7` (#147) — § 4.5, the date the gating role owns | added a required `work_item.due_date.carrier`, absent-capable, so a configuration written before it is refused with the key named and states its decision through `absent_reason` | stayed `1` |
+
+⚠️ **The last row landed while this change was open**, and was added to the table by merging `main`
+into it rather than by anyone revisiting the question. A revision that moved on every required key
+would have been stale in this very branch, which is the argument the table makes, made once more
+by the only means that can make it.
 
 **Classified against the ruling, every row reads the same way: the key would not have moved.** The
 revision is retired, so no row is an instance of a revision that should have been bumped and was

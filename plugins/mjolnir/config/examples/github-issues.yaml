@@ -58,6 +58,13 @@ work_item:
       outcome: "Outcome"
       acceptance: "Acceptance check"
       reproduction: "Reproduction"
+  due_date:
+    carrier: none
+    absent_reason: >-
+      Nothing here would write one: no gating role is mapped below, and the order of the
+      backlog is the whole of what this project commits to.
+    revisit_when: >-
+      The gating role is mapped, which is the only thing on this surface that writes a date.
 
 # ⛔ Two statuses, because an issue has two states and there is no field to carry a third.
 # No `in_flight` role at all: nothing on this tracker can hold "someone is working on it",

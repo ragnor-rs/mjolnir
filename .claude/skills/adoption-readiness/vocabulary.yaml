@@ -65,6 +65,7 @@ carriers:
   # `finish-issue` are one role under two names, and until both are here the check reports the
   # shipped one as unclassified and refuses a verdict.
   file-work-item: { role: file }         # the reconciled filing role (#7, shipped by #114)
+  gate-work-item: { role: gate }         # the reconciled gating role (#8)
   finish:         { role: finish }       # the reconciled finishing role (#10, shipped by #113)
   start:          { role: start }        # the starting half, still project-local (#9)
   review:         { role: review }       # the reconciled reviewing role (#11)

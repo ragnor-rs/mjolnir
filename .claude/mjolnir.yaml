@@ -135,6 +135,19 @@ work_item:
       already states its outcome and its acceptance check. A template would be imposed on
       issues that predate it.
     revisit_when: An issue is filed that states no acceptance check.
+  due_date:
+    # ⚠️ Absent for the same reason the gating role is unmapped below rather than as a second
+    # decision: § 4.5 gives the date one writer, and this project maps no `ready` status for
+    # that writer to move an item into. Plain issues have no due-date field either, but that
+    # is the weaker of the two reasons and is not the one stated.
+    carrier: none
+    absent_reason: >-
+      Nothing here would write one. There is no gating role to map — a plain issue is open or
+      closed, so there is no committed state between them — and the ordering document is what
+      this build commits to rather than a date per issue.
+    revisit_when: >-
+      Someone outside the build starts asking when a given issue lands, which is the same
+      trigger the estimate above carries and would be answered by the same role.
 
 statuses:
   # Two states, and that is the whole vocabulary: a plain issue is open or closed.
