@@ -726,11 +726,19 @@ class ItemStatus:
     local_only: bool
 
     def contending(self, mine: str | None = None) -> list[tuple[str, Status]]:
-        """Refs claiming this item that are neither spent nor this session's own."""
+        """Refs claiming this item that are neither spent nor this session's own.
+
+        ⛔ **`taken` first.** The candidates are listed and then read one at a time, so a ref
+        deleted in between answers `free` and would otherwise be counted as a claim: a refusal
+        naming a ref that does not exist, and a report saying `taken` and `free` about one name
+        two lines apart. ⚠️ The deletion that opens that window is this module's own -- the
+        post-check below rolls a losing sibling's ref back -- so the two sessions this guard is
+        for are the pair most likely to see it.
+        """
         return [
             (branch, held)
             for branch, held in self.readings
-            if branch != mine and not (held.liveness and held.liveness.landed)
+            if branch != mine and held.taken and not (held.liveness and held.liveness.landed)
         ]
 
     def report(self) -> str:
@@ -754,6 +762,11 @@ class ItemStatus:
         else:
             lines.append(f"taken: one ref claims item {self.item}.")
         for branch, held in self.readings:
+            if not held.taken:
+                # Listed a moment ago and gone now. Said as gone, rather than printed under its
+                # own `free:` line where it reads as a contradiction of the verdict above.
+                lines.append(f"  {branch} — gone since the refs were listed")
+                continue
             lines.append(f"  {branch}")
             for line in held.report().splitlines():
                 lines.append(f"    {line}")
@@ -1239,13 +1252,41 @@ def self_test() -> int:
             ],
         ),
     ]
-    # Plant: the name composed by whoever is starting, which is what the role did. One title,
-    # two readers, two refs -- and in each measured case the push created the second ref, so the
-    # arm that was meant to refuse never ran.
+    # Plant: **the bound removed**, which leaves a character mapping alone -- the rule the start
+    # role's "the item's title, slugged" amounted to. ⛔ The first form of this plant asserted
+    # that two hardcoded names differ, which reads only `MEASURED` and never the derivation: it
+    # stayed green with `slug_for` replaced by a function returning a constant, so it was not a
+    # plant at all. Found reviewing this branch.
+    #
+    # Without the bound the derivation answers the *longer* of the two names two sessions
+    # actually published, for two of the three items -- so the mapping admits the divergence and
+    # the bound is what closes it.
+    unbounded = {
+        item: f"feature/{item}-{slug_for(title, limit=None)}" for item, title, _ in MEASURED
+    }
+    reached = [item for item, _, names in MEASURED if unbounded[item] == names[1]]
     suite.ok(
-        "composed by hand, one title gives two names on all three measured items "
-        "(so the derivation is what holds it)",
-        all(len(set(names)) == 2 for _, _, names in MEASURED),
+        "with the bound removed the derivation answers a name two sessions actually published "
+        "(so the bound is what holds it)",
+        len(reached) >= 2,
+        f"reached {reached} of {[i for i, _, _ in MEASURED]}",
+    )
+    # ⚠️ And the third item is the stronger case rather than a miss: its sibling's longer name
+    # was *itself* a truncation, at a third length again. A rule with no bound does not admit
+    # two names, it admits every prefix -- which is why two sessions reached two different cuts
+    # of one title.
+    item41, title41, names41 = MEASURED[0]
+    suite.ok(
+        "and a mapping with no bound admits lengths neither session chose",
+        unbounded[item41] not in names41 and names41[1].startswith(unbounded[item41][:40]),
+        f"{unbounded[item41]} vs {names41[1]}",
+    )
+    suite.ok(
+        "while the bound answers one name, which is neither of the two",
+        all(
+            branch_for("feature", item, title) not in names and len(slug_for(title)) <= SLUG_MAX
+            for item, title, names in MEASURED
+        ),
     )
     suite.ok(
         "derived, each title answers one name however many times it is asked",
@@ -1442,6 +1483,26 @@ def self_test() -> int:
                  contested.report().startswith("contested:"), contested.report())
         suite.ok("and the report says it is a person's call",
                  "person's call" in contested.report(), contested.report())
+
+    # A ref listed and then gone before it could be read -- the window this module's own
+    # rollback opens. Plant: the `taken` arm removed, which is what counted it as a claim.
+    gone = Status(taken=False, ref_sha=None, holder=Holder(), liveness=None, local_only=False)
+    planted = ItemStatus(item="70", readings=[("feature/70-gone", gone)], local_only=False)
+    suite.ok(
+        "without the `taken` arm a vanished ref counts as a claim (so that arm is what holds it)",
+        [b for b, held in planted.readings if not (held.liveness and held.liveness.landed)]
+        == ["feature/70-gone"],
+    )
+    suite.ok(
+        "a ref gone since the refs were listed holds the item against nobody",
+        planted.contending() == [],
+    )
+    suite.ok(
+        "and the report says it is gone rather than printing `free` under a `taken` verdict",
+        "gone since the refs were listed" in planted.report()
+        and "free: no ref named this exists" not in planted.report(),
+        planted.report(),
+    )
 
     print("\na merged pull request found by branch name, against the ref standing there now:")
 

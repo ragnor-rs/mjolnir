@@ -556,11 +556,12 @@ broken; and that a root with no remote claims locally and says so.
 | 8 | A process **below** a tree's root reads as occupying it | a real process two directories down | computed |
 | 9 | A squash-merged claim reads **landed** rather than live, and releases with no override | a real squash merge, after asserting the same ref read live before it | computed |
 | 10 | A claim that is neither landed nor held in a tree here is refused by `release`, fresh ones included | two clones | computed |
-| 11 | The branch name is **derived**, and a second interpreter derives the same one from each of the three titles two sessions divided on | the derivation, in two processes | computed |
-| 12 | The derivation's **bound** cuts at a word boundary and leaves no trailing separator, and punctuation, case, digits, a non-Latin script and a decomposed title each slug as stated | the derivation | computed |
+| 11 | The branch name is **derived**, and a second interpreter derives the same one from each of the three titles two sessions divided on — planted by removing the **bound**, which answers a name a sibling actually published | the derivation, in two processes | computed |
+| 12 | The derivation's bound cuts at a word boundary and leaves no trailing separator, and punctuation, case, digits, a non-Latin script and a decomposed title each slug as stated | the derivation | computed |
 | 13 | Two sessions under **two names for one item** produce one claim, with each arm of the item guard attributed separately | two clones | computed |
 | 14 | A **landed** ref still matches the item's name and the item still reads free, and a start on it is not refused | two clones, after a real squash merge | computed |
 | 15 | A merged pull request that **predates the ref** does not land it, and either instant unreadable makes the arm decline | the comparison, with the measured timestamps | computed |
+| 16 | A ref **gone between the listing and the read** holds the item against nobody, and the report says it is gone rather than printing `free` under a `taken` verdict | one reading, constructed | computed |
 
 ⚠️ **Check 0 is run once per arm, and that is the finding this suite was written by rather than
 for.** The surface states two arms because the first draft of the script shipped only the second —
@@ -580,6 +581,16 @@ arbitrates as it was meant to; check 13 plants the derivation's agreement away a
 residue, which is § 8's translation case and anything named by hand. ⛔ Attributed separately for
 the reason check 0 is: with both the guard's arms removed, two sessions claim one item and the
 suite says so.
+
+⚠️ **Check 11's plant was wrong first, and the shape of the mistake is worth keeping.** It
+asserted that two hardcoded branch names differ — an expression reading only the table of
+measured names and never the derivation, which stayed green with the derivation replaced by a
+function returning a constant. ⛔ **A check whose planted violation does not reach the mechanism
+is a check believed and unexercised**, which is the failure the planting discipline exists to
+prevent and which the discipline does not catch by itself: the plant ran, something went red
+elsewhere, and the row read as covered. The plant that replaced it removes the **bound**, and
+what makes it a plant rather than an assertion is that the bound-free derivation answers the
+longer name a sibling session actually published, for two of the three items.
 
 ⚠️ **Check 15 is held without a host, and that is the whole of what can be held here.** The
 measured failure was a ref reading *landed* on a pull request that merged the day before against
