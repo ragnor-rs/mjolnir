@@ -65,6 +65,12 @@ work_item:
       outcome: "<this template's own heading>"
       acceptance: "<this template's own heading>"
       reproduction: "<this template's own heading>"
+  due_date:
+    # The one example that carries a date, and the one that maps a gating role (`carriers`
+    # below) — the two go together, § 4.5 giving the date exactly one writer. `native`: the
+    # tracker has a due date of its own, so no field is named. The readiness gate below reads
+    # it back as the mark that this card has been through the gate.
+    carrier: native
 
 statuses:
   - { name: "<backlog>",     role: initial,     writer: procedure }

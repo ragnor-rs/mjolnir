@@ -23,6 +23,29 @@ starting re-run the gate — which is where the schema's no-re-gating rule comes
 Depth per project: **1, 7, 7, 8, 9, 9.** Five of six run the whole pattern; one runs a single
 role.
 
+**What the date needed, and what one copy does not support.** The estimate already had a facet and
+the date had none, so the role that owns both could state where one of them goes and not the other;
+[`schema.md § 4.5`](../plugins/mjolnir/config/schema.md#45-due-date) is that carrier, and it is
+deliberately narrower than the copy it was taken from. It says where a date is written and not what
+the date is, because the one derivation measured runs from a priority the surface does not yet
+carry — a facet that absorbed the arithmetic would have generalised a four-row table no second
+project was found to have, and settled a question
+[#46](https://github.com/ragnor-rs/mjolnir/issues/46) is open to settle.
+
+**Why the gate's own checks are not a third ordered list.** The readiness gate and what counts as
+done are configured lists because the copies of *those* roles diverge: the five starting copies
+share no single check (below), and the two statements of done could not be configured as each
+other
+([`schema.md § 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)).
+Gating has one copy, so there is nothing yet to diverge from. What that copy checks is the facets
+the surface already states — the type against the template, the estimate against its own rungs, the
+dependencies, what policy bars from an item — plus two judgements no key can carry: whether an
+acceptance condition is answerable without asking anyone, and whether the body leaves a question
+open where a decision belongs. The one genuinely per-project input, what bar a dependency has to
+have reached, is already
+[`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)'s
+rule and is read there rather than restated.
+
 ## Three findings that reshaped the surface rather than confirming it
 
 ### A role's carrier is an axis beside its name
@@ -333,6 +356,14 @@ which narrows the search while the all-states flag is still on the command line,
 repository does not have, which the host answers identically to a label nothing carries. Both are
 refused there rather than reported, because this is the one search the filing role performs.
 
+⚠️ **`set_field` is newer than this survey, and the sentence above is bounded by that.** It arrived
+with the gating role: of the two values that role writes, the estimate reaches the item as a label
+on the copy measured, and the date
+([`schema.md § 4.5`](../plugins/mjolnir/config/schema.md#45-due-date)) reaches it as a field, which
+no operation carried. One copy performs that write; what it looks like on the other two
+implementations is unmeasured, which is why the operation has no row here rather than a row with a
+gap in it.
+
 | Operation | GitHub Projects | Jira | Trello |
 |---|---|---|---|
 | `create_item` | create, add to project, set status | one call | create, then **one label attach per label** — labels cannot be set at creation |
@@ -358,6 +389,16 @@ Three of these measurements each forced a property of the port, stated in
 - One project barring source code, credentials, hosting details, file paths and branch names from
   a third-party tracker holding someone else's material is why policy sits on the port beside
   capability — and why that project's branch name goes in the run report instead.
+
+⚠️ **Every impossibility in that table is a property of the tracker's API rather than of the
+project using it**, which is the measurement behind
+[`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability).
+No comment action, no short-id field, no label at creation time — each of those is one tracker's
+API and not one project's choice, and no configuration a project writes can reach any of them.
+⚠️ **And three of the six run on a single tracker**, so a difference between those three cannot be
+a capability difference at all — the API answering them is one API. What projects were found
+differing in is which mechanism carries the type, the estimate and the template, which is a facet
+below and already has a home of its own.
 
 ## What is an ordered list of named checks rather than procedure
 
@@ -424,8 +465,14 @@ acceptance suite is a machine reading a machine, mirrored by no workflow at all,
 human-answered it would stop every completion for a hand-over nobody needed — the gate somebody
 turns off.
 
-Hence the ordered list, its per-check answerer, and the refusal of a check the host already runs, in
+Hence the ordered list and its per-check answerer, in
 [`schema.md § 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check).
+⚠️ **And hence the refusal of a check the host already runs**
+([`§ 13 → A done: check the host already runs`](../plugins/mjolnir/config/schema.md#a-done-check-the-host-already-runs-is-a-misconfiguration)):
+every check in the table above is mirrored by no workflow at all — a hand test on the running
+application, an acceptance suite needing it up, and a checklist carried on the pull request —
+which is the shape the facet was derived from. A check that *is* mirrored needs no entry, because
+the host has already answered it, and these two measurements supply no example of one.
 ⚠️ **What this measurement does not support is a definition of done for every project.** A project
 whose deliverable is a library has nothing to drive, so the absent case is `[]` and is first-class
 rather than degenerate. ⚠️ **How common it is was not measured** — unlike the prose-width table
@@ -463,8 +510,10 @@ example is written that way rather than given a query to look tidy.
 
 ## The four facets, and the absent case
 
-Issue type, status, estimate and template
-([`schema.md § 4`](../plugins/mjolnir/config/schema.md#4-work-item-facets)) are each per-project,
+Issue type ([`schema.md § 4.1`](../plugins/mjolnir/config/schema.md#41-type)), status
+([`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)),
+estimate ([`§ 4.3`](../plugins/mjolnir/config/schema.md#43-estimate)) and template
+([`§ 4.4`](../plugins/mjolnir/config/schema.md#44-template)) are each per-project,
 and each was carried by a different mechanism depending on the project. Three of the four had a
 real absent case — which is where the schema's absence-is-a-configuration rule comes from: a
 procedure that treats absence as an unset value fails on a project that is correctly configured.

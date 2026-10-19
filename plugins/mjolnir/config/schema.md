@@ -104,9 +104,15 @@ A project maps a subset — an absent role is a legitimate configuration, not a 
 one adopting project runs a single role. Each role's carrier (skill, command or hook) is §7's
 axis.
 
-Gating is a role of its own, not a step of filing or of starting: it owns the date and the
+Gating is a role of its own, not a step of filing or of starting: it owns the date (§4.5) and the
 estimate (§4.3), and starting never re-runs it — re-gating recomputes a commitment somebody may
 already have been given.
+
+⛔ **The gate refuses its own second run on the date it would write, never on the state the item
+sits in.** The two come apart for an item moved into the committed set by hand: it carries no date,
+so a starting gate that reads one refuses it as ungated, while a gate keyed on the state refuses it
+as gated already — leaving it in the one state no role on the route accepts. The state's name is
+what invites the second reading, and the date is the only thing the refusal protects.
 
 **Finishing and reviewing interleave, and the division between them and a hook is stated here
 rather than in either role**, because each of the three reads it and a rule read by two roles and
@@ -482,6 +488,7 @@ covers the operations the survey reached and says which it did not.
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
 | `set_labels` | every label set in one call | one call per label, and a set that is left partial is reported rather than retried silently |
+| `set_field` | a value written onto the item where a facet states where it goes — § 4.3's estimate wherever its carrier is not a label, and § 4.5's date | the value is reported for whoever does write it, and the gating role leaves the item where it stands: an item advanced without the commitment it was meant to carry reads as gated to every role after it |
 | `assign` | the item assigned to the person the role acts for | the report names who holds the item; a session's **claim** is not this operation and does not fall back to it — it rides the branch ref ([§ 10](#the-claim-on-a-work-item)) |
 | `checklist_read` | the item's check items, and which of them are ticked | the role has **no answer** about the checklist and says so; an unreadable checklist is never read as an empty one, by § 2's rule that absence of signal is not an answer |
 | `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
@@ -720,6 +727,41 @@ cross-check above would be holding a body against a file no item can legitimatel
 on a second statement of them.** A project whose items already state the sections above has no
 template file to name, and `revisit_when` carries the trigger that would give it one.
 
+### 4.5 Due date
+
+```yaml
+work_item:
+  due_date:
+    carrier: native | field | none           # required; absent_reason
+    field: "…"                   # when carrier is field
+    absent_reason: "…"           # required when carrier is none
+    revisit_when: "…"
+```
+
+The date an item is committed for. **Which role writes it is § The loop's statement and is not
+restated here**; what belongs here is why that role and no other: filing writes the item before
+anyone has committed to it and starting is downstream of the commitment, so a date set in either
+place is a promise made where nobody was asked for one.
+
+`native` is the tracker's own due date and `field` is a named field where the tracker has none.
+⚠️ **The carrier says where a date is written, never what the date is.** What computes one is not
+on this surface: the one copy of this role that was measured derives it from the item's priority
+through a stated table, and priority is carried three ways by three projects with no facet of its
+own — #46's. So a project adopting the gate states the carrier here and supplies the date itself,
+through the ask the role owes it.
+
+⛔ **A date the item already states wins over anything computed for it.** An external commitment is
+recorded when the item is written, precisely so the gate can honour it; arithmetic that overwrote
+it would replace a promise somebody has already been given, which is § The loop's reason for this
+role existing at all arriving one level down.
+
+⚠️ **`carrier: none` is the ordinary setting here rather than the exceptional one** — most projects
+commit to no per-item date — and it carries its reason like every other absence on this surface.
+
+⛔ **The separation § 4.3 states binds this facet too**: the date written here is a commitment made
+before the work, the day the work actually landed is a measurement taken after, and neither number
+ever moves onto the other.
+
 ## 5. Readiness gate — an ordered predicate list
 
 ```yaml
@@ -751,6 +793,18 @@ or quiet:
 - **Some failures are not defects.** An item that is correct and merely early, or one whose
   board automation did not fire, stops without being flagged. A gate that flags those flags an
   item whose author has nothing to fix.
+
+### The mark that says an item is not ready, and the two roles that read it
+
+⛔ **`label_absent` is the single statement of which label stops an item starting, and the gating
+role is what puts the label there.** One statement and two readers: this list refuses an item
+carrying it, and the role that sends an item back for repair sets it. A second key naming the same
+label would be a configuration free to disagree with itself about which items are ready.
+
+⚠️ **An item sent back unmarked reads exactly like one nobody has looked at**, which is what makes
+the mark worth a rule rather than a habit. ⚠️ **Where a project configures no `label_absent`, or
+configures more than one, the gating role has no mark to set** — it says so and leaves its verdict
+on the item, rather than choosing between two labels or inventing a third.
 
 ## 6. Commit behaviour
 
