@@ -806,6 +806,8 @@ MARKED_REQUIRED = [
     "context.artifacts.carrier",
     "host.checks",
     "host.kind",
+    "host.landing.delete_branch",
+    "host.landing.method",
     "host.repo",
     "language.repo",
     "language.work_item",
