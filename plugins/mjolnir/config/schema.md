@@ -75,15 +75,17 @@ among them: `# stated, never inherited from the working directory; required`.
 or as a comment beside it. The reader accepts what the alternation states and nothing else, so a
 value added here is accepted without the reader changing.
 
-**A key the surface has stopped declaring is marked `# retired: <key>`**, as a clause of its own
-inside the block that key was declared in — a retired key has no line left to carry a marker,
-which is what retiring it means. The clause is what the reader performs, and the prose beside it
-says why.
+**A key the surface has stopped declaring is marked `# retired: <key>`**, in a block of its own
+beside the prose retiring it, in the section that used to declare the key — a retired key has no
+line left to carry a clause, which is what retiring it means. The clause is what the reader
+performs, and the prose beside it says why. ⚠️ **Where it sits is for whoever reads this file**: the
+reader takes the clause from any block on the surface, so the placement is a convention and not
+something a refusal would catch.
 
 ⛔ **The reader reads the clause and never that prose**, because a grammar over English reads what
-English says rather than what it means. Measured on this file: a grammar matching
-`` `<key>` is retired `` read `host.repo` out of a sentence stating it is retired *in no sense* — a
-live required key turned into a retired one by a negation no grammar of that shape can see.
+English says rather than what it means — measured against this file, where such a grammar read a
+live required key out of a sentence *denying* that it was retired
+([the measurement](../../../docs/configuration-surface.md#the-revision-key-never-moved-and-the-markers-took-its-job)).
 
 ```yaml
 # retired: version
@@ -102,9 +104,9 @@ each made an older configuration unreadable, because nothing read it
 
 ⚠️ **What retiring it gives up is stated here rather than discovered later.** A refusal on a file
 written before a key existed reads exactly like one on a file that left the key out, and names the
-key either way. The remedy is the same in both cases — write what the marker declares — so what is
-given up is a diagnostic, not a behaviour, and no reader has to be told what to do with a revision
-it can no longer read.
+key either way. The remedy is the same act in both cases — make the file match the markers, writing
+what is marked required and deleting what is marked retired — so what is given up is a diagnostic,
+not a behaviour, and no reader has to be told what to do with a revision it can no longer read.
 
 ## The loop — nine roles
 

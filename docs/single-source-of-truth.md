@@ -53,7 +53,7 @@ and each is the defect this repository was built to call a defect.
 
 Three were in the tree when the check was written, which is the argument for it:
 
-- `version` was in all five configurations and declared nowhere in the schema — a key every
+- `version` was in every configuration and declared nowhere in the schema — a key every
   adopter writes, that the single statement of the surface did not name. Declaring it is what
   exposed it: read by nothing and never moved, it is now **retired** at
   [schema § The file itself](../plugins/mjolnir/config/schema.md#the-file-itself), which is the
@@ -119,6 +119,14 @@ named rather than numbered the heading's own title is what ties the cell to it, 
 number to cross-check. ⚠️ **That is a change of grammar**, which is the one residue this script is
 allowed to carry — and it is held the same way the rest is: a named section whose link points at a
 different heading is a planted violation the build reddens on.
+
+**What that admits, stated rather than left to be inferred from the regex.** A cell names a
+section and links an anchor *within* it, and the anchor resolves through the section it sits
+under — so a `###` subsection is nameable by its enclosing section either way, numbered or not,
+which is what the case recorded above needed and what ruling 11 already relies on. `4.1` and the
+`N → Subsection` form the documents use in prose resolve on their leading ordinal. ⛔ **What is
+still refused is naming a `###` subsection as though it were the section**: the cell names the
+home and the link names the place in it, and the refusal says which of the two disagrees.
 
 ## The check must not become one more copy of the principles
 
@@ -258,7 +266,14 @@ check 0's argument one scope over.
    skill uses freely. ⚠️ The wrap is not part of the value — this repository hard-wraps its prose
    at about 95 columns and most forbidden values are multi-word, so newlines are normalised away
    before matching. A fenced block's own backticks are removed first, for the same reason as
-   rule 1: they would shift the pairing of every span after them.
+   rule 1: they would shift the pairing of every span after them. ⚠️ **A ``…`` span is removed on
+   the same ground and by the same means** — split on, never paired, since a paired form matches
+   one span's closer against the next span's opener and takes every value between them out of the
+   sweep. What is inside such a span is read as well as collected, because this repository's own
+   idiom for showing a literal span is a ``…`` around one. ⛔ Both are markdown constructs and the
+   removal is scoped to markdown: in a script the halves of two unrelated `` ``` `` literals pair
+   with each other across hundreds of lines, and taking that region out blinded the sweep over 722
+   lines of one module with a planted tracker key inside it going unreported.
 
 It derives what it can, for the reason stated above about the check not becoming one more copy:
 

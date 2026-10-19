@@ -746,6 +746,11 @@ own variables has *stated* what it hands a role, and there is nothing for a reas
 
 ## The revision key never moved, and the markers took its job
 
+What the surface now states is at
+[`schema.md § The file itself`](../plugins/mjolnir/config/schema.md#the-file-itself): the key is
+retired, a configuration still declaring it is refused, and a retirement is marked `# retired:`.
+What this section carries is the measurement that forced it.
+
 `version` was in every configuration from the first commit that carried one (`6410f34`) and the
 surface named it only at `9451882`, where this repository's own single-source gate found a key
 every adopter writes that the single statement of the surface did not declare. It was then read by
@@ -758,7 +763,7 @@ records.
 
 | Change | What it did to a configuration already written | `version` |
 |---|---|---|
-| `f40785e` — the branch model as the sixth axis | added three required keys | stayed `1` |
+| `f40785e` — § 10, the branch model | added three required keys | stayed `1` |
 | `1b11c52` (#83) — `roots.skills` retired | **refuses** any configuration still carrying the key | stayed `1` |
 | `31e50d4` (#92) — § 11, the session's context | added a required `context.artifacts.carrier` | stayed `1` |
 | `7f962c9` (#125) — § 12, the ordering, and `branch_model.tree_dir` | added a required `ordering.carrier`, and a `tree_dir` required under `kind: worktree` — so a configuration that already cut trees is **refused** | stayed `1` |
@@ -789,12 +794,10 @@ unset key carries no marker, and every facet with a real absent case carries a `
 with the key named. That is the whole of what the revision was introduced to separate, answered
 where the key is declared rather than by a number describing the file.
 
-⚠️ **What the retirement gives up, measured rather than assumed.** A refusal on a file written
-before a key existed reads exactly like one on a file that left the key out. On every row the
-remedy is the same act — make the file match the markers, writing what is marked required and
-deleting what is marked retired — so what is lost is a diagnostic during a phase of rapid surface
-change, not a behaviour, and no reader is left with a revision it does not act on. ⛔ The honest
-cost is that an adopter migrating a months-old configuration is told *which* keys are missing and
+⚠️ **What the retirement gives up is stated on the surface** beside the retirement itself, and the
+measurement behind it is this table: on every row the remedy an adopter faces is the same act, so
+what is lost is a diagnostic during a phase of rapid surface change rather than a behaviour. The
+cost falls on a configuration written months earlier, which is told *which* keys are missing and
 never *that they are new*.
 
 **The retirement is held in both directions, and the arm that holds the set was missing until this
@@ -803,12 +806,14 @@ no such key and that a configuration still carrying one is refused — but every
 assertions was generated from the reader's own list, so deleting an entry deleted the refusal and
 its only assertion together. Measured: with the `version` entry removed the suite stayed green on
 every assertion and the reader accepted `version: 1` again. That is exactly the defect the retired
-`REQUIRED` table demonstrated, surviving in the one list still shaped like it, and it is now closed
-by marking each retirement on the surface as a `# retired: <key>` clause of its own and holding the
-reader's list to the marked set in both directions.
+`REQUIRED` table demonstrated, surviving in the one list still shaped like it. What closes it is
+the marker the surface now declares, read against the reader's own list in both directions — and
+a third arm beneath those two, because the pair of them compare the derivation only against that
+list: replacing the derivation with a constant left both green until a plant stripped the clauses
+out of the surface and asserted the comparison notices.
 
-⚠️ **That clause is a token because the first attempt at it was not.** Reading the retired set out
-of the surface's prose — a grammar matching `` `<key>` is retired `` — read `host.repo` out of a
-sentence stating it is retired *in no sense*: a live required key turned retired by a negation the
-grammar cannot see. A machine-read fact lives in a clause and the prose beside it says why, which
-is what every other marker on this surface already does.
+⚠️ **That marker is a token because the first attempt at it was not.** The retired set was first
+read out of the surface's prose, by a grammar matching a backticked key followed by *is retired* —
+and it read `host.repo`, a live required key, out of a sentence stating it is retired **in no
+sense**. A negation is invisible to a grammar of that shape, and prose is where negations live, so
+a machine-read fact belongs in a clause with the prose beside it saying why.

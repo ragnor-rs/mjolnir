@@ -97,10 +97,14 @@ REPO_ROOT = os.path.dirname(os.path.dirname(PLUGIN_ROOT))
 # does not get to move it, or a role would have to be told where to look.
 CONFIG_PATH = os.path.join(".claude", "mjolnir.yaml")
 
-# The markers that make the surface machine-readable, each read as one
-# semicolon-separated clause of a key's trailing comment. Every clause of a
+# The markers that make the surface machine-readable. These are read as one
+# semicolon-separated clause of a key's trailing comment; every clause of a
 # comment is scanned, not just the last one, so a key that states prose and a
 # marker together -- `# stated, never inherited; required` -- carries both.
+#
+# ⚠️ One marker is not of that shape and is declared with the reader that uses
+# it rather than here: `RETIRED_CLAUSE`, which is a comment line of its own,
+# a retired key having no line left to hang a clause on.
 #
 # `# default` means the value shown on the line is the default, and
 # `# default: <value>` states one the line does not show -- which is how a key
@@ -301,13 +305,11 @@ def surface_keys(surface_text: str) -> set[str]:
 # the surface's blocks is what retiring it means -- so it is stated as a clause
 # of its own, inside the block the key was declared in.
 #
-# ⛔ A token, and never the English beside it. A grammar over the prose reads
-# what the prose says rather than what it means -- measured on this surface: one
-# matching `` `<key>` is retired `` read `host.repo` out of a sentence stating it
-# is retired *in no sense*, a live required key turned retired by a negation no
-# grammar of that shape can see. The prose says why the key is retired and this
-# clause is what the reader performs, which is the division every other marker
-# on the surface already has.
+# ⛔ A token, and never the English beside it: the prose says why a key is
+# retired and this clause is what this reader performs, which is the division
+# every other marker on the surface already has. The surface states the rule and
+# `docs/configuration-surface.md` carries the measurement behind it; neither is
+# restated here.
 RETIRED_CLAUSE = re.compile(r"^#\s*retired:\s*(?P<key>[A-Za-z0-9_.]+)$")
 
 
@@ -1238,6 +1240,23 @@ def _surface_without(marker: re.Pattern) -> str:
     return "\n".join(out)
 
 
+def _surface_without_retirements() -> str:
+    """The surface with every `# retired:` clause removed.
+
+    The counterpart of `_surface_without` for a marker written as a line of its
+    own rather than as a clause of a key's trailing comment, and planted for the
+    same reason: `retired_keys` replaced by a constant passes every assertion
+    that only compares it against this reader's own list, which is the shape
+    `MARKED_REQUIRED`'s comment names one marker class over.
+    """
+    with open(SURFACE, encoding="utf-8") as handle:
+        return "\n".join(
+            line
+            for line in handle.read().splitlines()
+            if not RETIRED_CLAUSE.match(line.strip())
+        )
+
+
 def self_test() -> int:
     failures = 0
 
@@ -1271,7 +1290,10 @@ def self_test() -> int:
     ]
     check("a deliberately absent facet loads silently", bool(silent))
 
-    # The surface's two marked sets, against the test's own statement of them.
+    # The surface's key-clause marked sets, against the test's own statement of
+    # them. ⚠️ The retirement class is held separately, below: it is marked by a
+    # line rather than by a key's clause, and its two statements are the reader's
+    # `RETIRED` and the surface's clauses rather than a list written here.
     # Both directions, and the difference is named rather than reported as a
     # count: a marker added to the surface and a marker dropped from it are
     # different problems with different fixes.
@@ -1380,6 +1402,18 @@ def self_test() -> int:
         "this reader refuses no key the surface does not state as retired",
         performed <= stated,
         f"it refuses {sorted(performed - stated)}, stated nowhere on the surface",
+    )
+    # ⛔ And the derivation itself is planted, because the two arms above compare
+    # it only against this reader's own list: `retired_keys` replaced by the
+    # constant `{"roots.skills", "version"}` left both of them green. Stripping
+    # the clauses from the surface is what tells a reader of the surface from a
+    # reader of itself.
+    stripped = retired_keys(_surface_without_retirements())
+    check(
+        "those arms are reading the surface, not a copy of their own answer",
+        not performed <= stripped,
+        "every `# retired:` clause was stripped and the reader's list was still "
+        f"satisfied by {sorted(stripped)}, so nothing there reads the surface",
     )
 
     for path, _ in RETIRED:

@@ -281,12 +281,14 @@ PLACEHOLDER_IN_DATA = re.compile(r"^[A-Z][A-Z0-9_]*(?:/[A-Z][A-Z0-9_]*)?$")
 # Newlines are normalised away before matching, because this repository
 # hard-wraps its prose and a value whose wrap falls inside it is still a value.
 CODE_SPAN = re.compile(r"`([^`]+)`")
-# ⛔ Taken out before the single-backtick form, for the reason fenced blocks are:
-# a ``…`` span's own backticks shift the pairing of every span after it, so a
-# value written as a span lands inside a span the document never had. Measured
-# on this repository -- one `` `<key>` is retired `` in a document turned the
-# two value-context plants below green, which is the arm silently off.
-DOUBLE_CODE_SPAN = re.compile(r"``(.+?)``", re.S)
+# The delimiter of a ``…`` span, split on rather than paired. ⛔ Not a regex, and
+# for the reason stated against fenced blocks in `code()`: a paired form matches
+# one span's closer against the next span's opener, so a single unbalanced
+# occurrence swallows everything between the two and every value in there stops
+# being read as a value -- the failure mode being hidden coverage rather than a
+# false red. Splitting makes an unclosed delimiter inert instead: its text stays
+# outside, and only a balanced pair takes anything out.
+DOUBLE_SPAN_DELIMITER = "``"
 QUOTED_ANY = re.compile(r"\"([^\"]*)\"|«([^»]*)»|“([^”]*)”")
 QUOTED_SINGLE = re.compile(r"'([^']*)'")
 
@@ -438,18 +440,44 @@ class Tree:
             if fenced:
                 regions.append(line)
             else:
-                regions.extend(CODE_SPAN.findall(line))
+                # ⛔ Both paths, for the reason the fence toggle is in both: a
+                # ``…`` span's backticks are not a span's delimiters, so leaving
+                # them in pairs them with the ones after and a real code span
+                # stops being read as one.
+                regions.extend(CODE_SPAN.findall(self._spans_out(line, regions)))
         return regions
 
     @staticmethod
     def _spans_out(text: str, out: list[str]) -> str:
-        """Collect every ``…`` span as a context, and take it out of the text.
+        """Take every ``…`` span out, and sweep what is inside it as well.
 
-        Returned so the single-backtick pass runs on what is left: the whole
-        point is that these backticks must not pair with the ones around them.
+        Returns what is left, so the single-backtick pass runs on text whose
+        backticks all pair the way the document means them to.
+
+        ⛔ **Split, never paired.** For the reason stated against fenced blocks
+        in `code()`: a paired form matches one span's closer against the next
+        span's opener, so a single unbalanced occurrence swallows every value
+        between the two and the sweep goes quiet over it. Splitting makes an
+        unclosed delimiter inert -- its text stays outside, where it is read.
+
+        ⛔ **And the inside is swept, not just collected.** This repository's own
+        idiom for showing a literal span is a ``…`` around one, so taking the
+        span out without reading into it hides exactly the values most likely to
+        be written there. Measured: ``…`In Progress`…`` passed while the same
+        value in a plain span reddened.
         """
-        out += [match.group(1).strip() for match in DOUBLE_CODE_SPAN.finditer(text)]
-        return DOUBLE_CODE_SPAN.sub(" ", text)
+        parts = text.split(DOUBLE_SPAN_DELIMITER)
+        balanced = (len(parts) - 1) % 2 == 0
+        kept = [parts[0]]
+        for index, part in enumerate(parts[1:], start=1):
+            # Odd segments are inside a span -- except a final odd one where the
+            # delimiters do not pair, which is not a span at all.
+            if index % 2 and (balanced or index != len(parts) - 1):
+                out.append(part.strip())
+                out += CODE_SPAN.findall(part)
+            else:
+                kept.append(part)
+        return " ".join(kept)
 
     def value_contexts(self, path: str) -> list[str]:
         """Whole spans and whole quoted strings, per rule 2.
@@ -460,7 +488,13 @@ class Tree:
         A line of a fence is a context in its own right.
 
         ⛔ ``…`` spans come out next, for exactly that reason one level down:
-        they are the other construct whose backticks are not a span's delimiters.
+        they are the other construct whose backticks are not a span's
+        delimiters. ⚠️ **Markdown only**, like the fence toggle above and for the
+        same reason — a double backtick is a markdown construct. In a script the
+        two halves of a `"```"` literal pair with each other across hundreds of
+        unrelated lines, and taking that region out blinds the sweep over it:
+        measured at 722 lines of one module, with a planted tracker key inside
+        it going unreported.
         """
         body = self.text[path]
         if path.endswith(".md"):
@@ -479,7 +513,6 @@ class Tree:
             out += [g for match in QUOTED_ANY.finditer(flat) for g in match.groups() if g is not None]
             return out
         out = [line.strip() for line in body.splitlines()]
-        body = self._spans_out(body, out)
         out += CODE_SPAN.findall(body)
         for pattern in (QUOTED_ANY, QUOTED_SINGLE):
             out += [g for match in pattern.finditer(body) for g in match.groups() if g is not None]
@@ -1041,6 +1074,10 @@ VIOLATIONS = [
      _plant_in_a_carrier("\nWrite it to `/var/log/day-report.txt`.\n")),
     ("no stack is named in the strict set", "a build tool in a hook, outside its comments",
      _plant_in_a_hook("# Make sure the task is still assigned.\nnpm run build\n")),
+    # The same construct against rule 1's reader: `code()` pairs spans per line,
+    # so a double span ahead of a command is where that pairing goes wrong.
+    ("no stack is named in the strict set", "a build tool after a double span",
+     _plant_in_a_carrier("\nMatching `` `x` is retired `` and then `npm run build` first.\n")),
     ("no value is carried in the strict set", "a status word in a carrier",
      _plant_in_a_carrier("\nMove the item to `In Progress` first.\n")),
     ("no value is carried in the strict set", "a status word whose wrap falls inside it",
@@ -1052,6 +1089,15 @@ VIOLATIONS = [
      lambda tree: _plant_in_a_hook("status='In Progress'\n")(tree)),
     ("no value is carried in the strict set", "a member of an inline list value",
      _plant_an_inline_list_member),
+    # ⛔ One per arm of the ``…`` handling, because each fails differently and
+    # the two plants above reach that handling only through prose some document
+    # happens to carry. The measured incident was the third of these.
+    ("no value is carried in the strict set", "a status word inside a double span",
+     _plant_in_a_carrier("\nWrite it as `` `In Progress` `` in the body.\n")),
+    ("no value is carried in the strict set", "a status word after an unclosed double span",
+     _plant_in_a_carrier("\nA span `` opened and never closed, then `In Progress`.\n")),
+    ("no value is carried in the strict set", "a status word between two double spans",
+     _plant_in_a_carrier("\n`` A `` then `In Progress` then `` B ``.\n")),
     ("no value is carried in the strict set", "a renamed value key", _plant_renamed_value_key),
     ("no value is carried in the strict set", "configurations with no concrete value left", _plant_configurations_with_no_concrete_value),
 ]

@@ -95,6 +95,13 @@ OUTCOME_IN_SURFACE = re.compile(
     + r")#(?P<anchor>[^)]+)\)"
 )
 OUTCOME_IN_WORK_ITEM = re.compile(r"#(?P<number>\d+), until extracted")
+# The ordinal a section label opens with, where it has one: `6`, `4.1`, and the
+# `10 → Where a tree is created` form the documents already use in prose. What
+# is cross-checked is the top-level number, which is what an anchor resolves to.
+# ⛔ Without this, `4.1` and the arrow form fall into the branch for sections
+# that carry no number at all and are refused as not existing, which is false of
+# the surface and points a reader at renaming a correctly-named section.
+LEADING_ORDINAL = re.compile(r"^(?P<number>\d+)(?:\.\d+)*(?:\s*(?:→|->)\s*.*)?$")
 OUTCOME_ALSO_IN_SKILL = "the skill"
 
 
@@ -208,6 +215,26 @@ class Tree:
                 out[slug] = current
         return out
 
+    def unnumbered_of(self) -> dict[str, str]:
+        """Anchor -> the title of the unnumbered `##` section it belongs to.
+
+        The counterpart of `section_of` for the sections carrying no number, and
+        ⛔ **deep anchors included for the same reason that one includes them**:
+        an outcome may live in a `###` subsection, as ruling 11's does inside a
+        numbered section. A map of each `##` heading's own anchor alone would be
+        narrower than the branch it mirrors, and would refuse the one case the
+        numbered-home limit was recorded against -- a procedure rule under the
+        loop, which is a `###` beneath an unnumbered `##`.
+        """
+        out: dict[str, str] = {}
+        current = None
+        for level, title, slug in self.headings():
+            if level <= 2:
+                current = None if re.match(r"(\d+)\.\s", title) else title
+            if current:
+                out[slug] = current
+        return out
+
     def declared_keys(self) -> set[str]:
         keys = set()
         for block in re.findall(r"```yaml\n(.*?)```", self.text[SURFACE], re.S):
@@ -315,11 +342,8 @@ def check_outcomes_live_in_one_of_two_places(tree: Tree) -> list[str]:
 
     sections = tree.sections()
     section_of = tree.section_of()
-    unnumbered = {
-        slug: title
-        for _, title, slug in tree.headings(2)
-        if not re.match(r"\d+\.\s", title)
-    }
+    unnumbered_of = tree.unnumbered_of()
+    unnumbered_titles = set(unnumbered_of.values())
     problems = []
     for row in rows:
         cells = split_row(row)
@@ -335,13 +359,15 @@ def check_outcomes_live_in_one_of_two_places(tree: Tree) -> list[str]:
             resolved = os.path.normpath(
                 os.path.join(os.path.dirname(RULINGS), target)
             ).replace(os.sep, "/")
-            if section.isdigit():
-                if section not in sections:
+            ordinal = LEADING_ORDINAL.match(section)
+            if ordinal:
+                number = ordinal.group("number")
+                if number not in sections:
                     problems.append(
                         f"{RULINGS}: ruling {ruling} names schema § {section}, "
-                        "which is not a section of the surface."
+                        f"whose § {number} is not a section of the surface."
                     )
-                elif resolved == SURFACE and section_of.get(slug) != section:
+                elif resolved == SURFACE and section_of.get(slug) != number:
                     problems.append(
                         f"{RULINGS}: ruling {ruling} names schema § {section} but links "
                         f"`{slug}`, which belongs to "
@@ -355,16 +381,19 @@ def check_outcomes_live_in_one_of_two_places(tree: Tree) -> list[str]:
             # push the outcome into a document instead, which is the one thing
             # this check exists to stop. ⚠️ With no number to cross-check, the
             # heading's own title is what ties the cell to the section.
-            elif resolved == SURFACE and unnumbered.get(slug) != section:
-                here = unnumbered.get(slug)
+            elif section not in unnumbered_titles:
                 problems.append(
                     f"{RULINGS}: ruling {ruling} names schema § {section}, which is "
-                    + (
-                        f"not what `{slug}` links to -- that is § {here}."
-                        if here
-                        else f"not an unnumbered `##` section of the surface, and "
-                        f"`{slug}` is not one either."
-                    )
+                    "neither a numbered section of the surface nor one of its "
+                    "unnumbered `##` headings."
+                )
+            elif resolved == SURFACE and unnumbered_of.get(slug) != section:
+                here = unnumbered_of.get(slug)
+                problems.append(
+                    f"{RULINGS}: ruling {ruling} names schema § {section} but links "
+                    f"`{slug}`, which belongs to "
+                    f"§ {here or 'no unnumbered section'}. "
+                    "The heading and the link must name the same home."
                 )
         if OUTCOME_IN_WORK_ITEM.search(cell):
             found = True
@@ -502,8 +531,11 @@ def _plant_orphan_section(tree: Tree) -> Tree:
 def _outcome_table(tree: Tree) -> tuple[str, str]:
     """The rulings document split at its outcome table, so a plant breaks a cell.
 
-    ⚠️ The three plants below substituted into the whole document, on the unstated
-    assumption that the outcome form `[schema § N](…#a)` occurs nowhere but a cell.
+    ⚠️ The plants below substituted into the whole document, on the unstated
+    assumption that the outcome form `[schema § <N or heading>](…#a)` occurs
+    nowhere but a cell. ⛔ No count of them is written here: one was added the
+    moment the cell grammar admitted a section named by its heading, and a
+    number in this sentence would have been wrong by that change, green.
     It is an ordinary citation shape, and the first one written in prose *above*
     § 4 took all three plants: each mutated a sentence, every cell stayed valid,
     and three checks reported STAYED GREEN. A plant that reddens nothing is the
@@ -540,8 +572,15 @@ def _plant_outcome_with_a_second_home(tree: Tree) -> Tree:
 
 
 def _plant_outcome_number_against_wrong_anchor(tree: Tree) -> Tree:
+    """⛔ Filtered to a *numbered* cell, which the first match is not by rule.
+
+    Once the cell grammar admitted a section named by its heading, a bare first
+    match made this plant exercise whichever branch happened to come first in
+    the table -- numeric today only because the one named cell sits eleven rows
+    in. The plant names the numeric branch, so it selects for it.
+    """
     above, table = _outcome_table(tree)
-    match = OUTCOME_IN_SURFACE.search(table)
+    match = next(m for m in OUTCOME_IN_SURFACE.finditer(table) if m.group("section").isdigit())
     other = next(
         a for _, _, a in headings(tree.text[SURFACE]) if a != match.group("anchor")
     )
@@ -556,22 +595,47 @@ def _plant_outcome_number_against_wrong_anchor(tree: Tree) -> Tree:
 def _plant_outcome_named_section_against_wrong_anchor(tree: Tree) -> Tree:
     """The unnumbered branch: a named section whose link goes elsewhere.
 
-    ⛔ Planted on a cell that already names an unnumbered section, so the plant
-    reaches the branch rather than the numeric one beside it. A table with no
-    such cell would leave this arm unexercised, so that is said rather than
-    silently skipped.
+    ⛔ Planted on a cell naming an unnumbered section, and **synthesised** where
+    the table has none. A plant that stopped on a missing cell would exit the
+    whole run on a traceback where a verdict belongs -- the failure this gate
+    has already paid for three times -- and one that fell through to a numeric
+    cell would assert about the branch beside the one it names.
     """
     above, table = _outcome_table(tree)
     match = next(
         (m for m in OUTCOME_IN_SURFACE.finditer(table) if not m.group("section").isdigit()),
         None,
     )
-    if match is None:
-        raise AssertionError(
-            "no ruling names an unnumbered section of the surface, so the branch "
-            "that reads one cannot be planted. Give this plant a cell to break."
+    named = next(
+        (title for _, title, slug in tree.headings(2) if not re.match(r"\d+\.\s", title)),
+        None,
+    )
+    if named is None:
+        # The surface carries no unnumbered `##` section at all, so the branch
+        # has nothing to be wrong about. Said, not skipped in silence.
+        tree.text[RULINGS] = above + table + (
+            "\n<!-- the surface has no unnumbered `##` section, so this plant "
+            "synthesised nothing -->\n"
         )
-    other = next(a for _, _, a in headings(tree.text[SURFACE]) if a != match.group("anchor"))
+        return tree
+    # ⛔ An anchor belonging to a *different* unnumbered section, so the plant
+    # lands on the title-agreement arm rather than on the one that reports an
+    # anchor belonging to no unnumbered section at all. Those are different
+    # failures and the realistic one is this.
+    elsewhere = tree.unnumbered_of()
+    other = next(
+        (slug for slug, title in elsewhere.items() if title != named),
+        next(a for _, _, a in headings(tree.text[SURFACE]) if a != anchor(named)),
+    )
+    if match is None:
+        # No ruling names one today. Synthesise the row rather than stopping:
+        # what is under test is the branch, not the table's present contents.
+        row = (
+            f"| planted | A synthesised divergence | Planted "
+            f"| [schema § {named}]({SURFACE_NAME}#{other}) |\n"
+        )
+        tree.text[RULINGS] = above + table.rstrip("\n") + "\n" + row
+        return tree
     tree.text[RULINGS] = above + table.replace(
         match.group(0),
         f"[schema § {match.group('section')}]({match.group('path')}#{other})",
