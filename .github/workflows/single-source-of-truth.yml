@@ -28,8 +28,10 @@ jobs:
           persist-credentials: false
 
       # One step, one command: the planted violations run first, and the tree is held
-      # only once each check has been shown it can fail. That command is also the string
-      # `host.checks` states this run mirrors — ⚠️ held together by eye and not by a check,
-      # since nothing here reads a workflow file. That is #49.
-      - name: Assert each check can fail, then hold every document to the surface
+      # only once each check has been shown it can fail — and once the one carve-out has
+      # been shown it can pass, which is the half a red-only suite says nothing about.
+      # That command is also the string `host.checks` states this run mirrors — ⚠️ held
+      # together by eye and not by a check, since nothing here reads a workflow file.
+      # That is #49.
+      - name: Assert each check can fail and the exemption can pass, then hold every document
         run: python3 tools/check_single_source.py --self-test
