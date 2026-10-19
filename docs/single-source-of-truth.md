@@ -99,8 +99,8 @@ whole content lives in its subsections states nothing of its own — § 4 is the
 there is no rule there for a document to motivate, and check 2 reads it through its subsections,
 each of which is held in its own right. Check 6 is the other face of the same fact: a citation of
 such a section resolves to a heading and a list, which is why it is a problem rather than a
-preference. ⚠️ That was check 6's one finding against the tree it was written for — a sentence
-naming the four facets cited the section holding them, and now cites the four. ⚠️ The exemption
+preference. That was check 6's one finding against the tree it was written for: a sentence naming
+the four facets cited the section holding them, and now cites the four. ⚠️ The exemption
 is planted on the **green** side and was verified by disabling it, because a carve-out nothing can
 fail is a carve-out nobody checked.
 
@@ -1091,9 +1091,10 @@ families plant, and the run prints what it planted.
 in it by design**, and each hole is an exclusion somebody wrote on purpose. The reply-register
 check plants replies that must stay green — a check that flags an arrow inside a fenced block, an
 indented block or a quotation is not the check it claims to be, and each of those was a measured
-false red rather than a hypothesis. The width check plants a line of each unbreakable kind, for
-the same reason one claim over. The single-authority check plants a container cited through its
-subsection, which is the one carve-out checks 2 and 6 share. ⛔ A red-only suite says nothing
+false red rather than a hypothesis. The width check plants a line of each unbreakable kind,
+because its exclusion list is where it would quietly stop holding anything. The single-authority
+check plants a container cited through its subsection, which is the one carve-out checks 2 and 6
+share. ⛔ A red-only suite says nothing
 about any of them, and each green plant is verified by **disabling its own exclusion** and
 watching it redden — an exemption that cannot fail is an exemption nobody checked.
 

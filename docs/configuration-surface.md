@@ -364,9 +364,10 @@ project using it**, which is the measurement behind
 [`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability).
 No comment action, no short-id field, no label at creation time — each of those is one tracker's
 API and not one project's choice, and no configuration a project writes can reach any of them.
-⚠️ **And three of the six run on a single tracker**, so where those three differ the difference
-cannot be a capability: what the survey found projects differing in is which mechanism carries the
-type, the estimate and the template, which is a facet below and already has a home of its own.
+⚠️ **And three of the six run on a single tracker**, so a difference between those three cannot be
+a capability difference at all — the API answering them is one API. What projects were found
+differing in is which mechanism carries the type, the estimate and the template, which is a facet
+below and already has a home of its own.
 
 ## What is an ordered list of named checks rather than procedure
 

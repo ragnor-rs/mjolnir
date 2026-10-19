@@ -33,5 +33,5 @@ jobs:
       # That command is also the string `host.checks` states this run mirrors — ⚠️ held
       # together by eye and not by a check, since nothing here reads a workflow file.
       # That is #49.
-      - name: Assert each check can fail and the exemption can pass, then hold every document
+      - name: Assert each check can fail and the exemption can pass, then hold every document to the surface
         run: python3 tools/check_single_source.py --self-test
