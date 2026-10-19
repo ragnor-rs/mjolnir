@@ -93,8 +93,8 @@ def bind(configuration) -> None:
 def _repo() -> str:
     """The repository the bound configuration addresses.
 
-    `host.repo` is `REQUIRED` in the reader, so a configuration that reached here
-    states one; what this refuses is the shape, which nothing else checks.
+    The surface marks `host.repo` `# required`, so a configuration that reached
+    here states one; what this refuses is the shape, which nothing else checks.
     """
     if _bound is None:
         raise port.ConfigError(

@@ -44,7 +44,7 @@ examples of a shape rather than any project's facts.
 ## The file itself
 
 ```yaml
-version: 1
+version: 1                                   # required
 ```
 
 One key is not a facet. `version` states which revision of this surface a configuration was
@@ -54,10 +54,33 @@ only the revision separates them. It is the only key that describes the file rat
 project.
 
 **A default is marked, never described.** A key whose line in a block below carries `# default`
-has the value shown as its default; `# default: <value>` states one the line does not show. A key
-with neither is required, or legitimately unset. The marker is the single statement of a default:
-prose beside a block says why a default is what it is and never repeats the value, and the reader
-applies what it finds here rather than carrying a copy.
+has the value shown as its default; `# default: <value>` states one the line does not show. The
+marker is the single statement of a default: prose beside a block says why a default is what it is
+and never repeats the value, and the reader applies what it finds here rather than carrying a copy.
+
+**Requiredness is marked the same way, and for the same reason.** A key whose line carries
+`# required` must be written by every project, and a configuration missing it is refused with the
+key named. ⛔ **A key carrying neither marker is legitimately unset**, and the reader accepts its
+absence — so the two cases a reader cannot otherwise tell apart are separated here, where the key
+is declared, rather than in a list the reader carries. A key marked here is refused when it is
+missing **without the reader changing**; a marker dropped from here stops a refusal that nothing
+else was asserting.
+
+A block that merely holds other keys carries no marker of its own — `host:` is required exactly
+insofar as the keys under it are, and marking both would state one fact twice. The marker goes on
+the key a project actually writes a value for, and on a list or block that **is** the value, as
+`carriers` and `host.checks` are.
+
+⚠️ **Requiredness that depends on another key is not this marker's.** `tree_dir` is required under
+`worktree` and null under `in_place`; a condition like that is stated in prose beside the key and
+enforced by the rule in the section that states it, because *must this be written at all* and
+*must this be written given that* are different questions and one marker answering both would
+refuse every project that correctly left the key out.
+
+**A facet with a real absent case marks its carrier `# absent_reason`.** `carrier: none` is then
+accepted only with a reason stated beside it, and the facet is named in what a reader reports as
+unavailable. Several markers on one line are separated by `;`, in any order, and prose may sit
+among them: `# stated, never inherited from the working directory; required`.
 
 **A closed set of values is written as an alternation** — `a | b | c` — either as the key's value
 or as a comment beside it. The reader accepts what the alternation states and nothing else, so a
@@ -149,7 +172,7 @@ honest-looking version of the defect is the one that survives review.
 
 ```yaml
 roots:
-  code: "."                # the path every git and gh call addresses
+  code: "."                # the path every git and gh call addresses; required
   code_is_own_repo: false  # true when `code` is its own repository; default
 ```
 
@@ -200,9 +223,9 @@ statement discarded as well.
 
 ```yaml
 host:
-  kind: github
-  repo: "OWNER/NAME"       # stated, never inherited from the working directory
-  checks:                  # the host's own runs, keyed by workflow name — never job name
+  kind: github                               # required
+  repo: "OWNER/NAME"       # stated, never inherited from the working directory; required
+  checks:                  # the host's own runs, keyed by workflow name — never job name; required
     - workflow: "…"
       mirrors: "<local command>"   # the local command whose verdict this run duplicates
       triggers: "<pattern>"        # what starts it; a list when there is more than one
@@ -301,7 +324,7 @@ honest report is that the check did not run.
 
 ```yaml
 tracker:
-  kind: github-projects | github-issues | jira | trello | none
+  kind: github-projects | github-issues | jira | trello | none # required
 ```
 
 The shared procedure names **the port and never a tracker**. Each `kind` carries its own block;
@@ -446,7 +469,7 @@ own tracker is allowed to hold two statements of one job.
 ```yaml
 work_item:
   type:
-    carrier: native | label | none
+    carrier: native | label | none           # required; absent_reason
     label_prefix: "type:"        # when carrier is label
     values: [bug, feature, task]
     absent_reason: "…"           # required when carrier is none
@@ -468,7 +491,7 @@ test. A map, never a boolean.
 ### 4.2 Status — an ordered set of `(name, role, writer)`
 
 ```yaml
-statuses:
+statuses:                                    # required
   - { name: "…", role: initial,     writer: procedure }
   - { name: "…", role: in_flight,   writer: procedure }
   - { name: "…", role: code_landed, writer: automation }
@@ -520,7 +543,7 @@ reports instead.
 ```yaml
 work_item:
   estimate:
-    carrier: field | label | card_value | none
+    carrier: field | label | card_value | none # required; absent_reason
     unit: points | hours
     values: [1, 2, 5, 8, 13]
     label_prefix: "E:"           # when carrier is label
@@ -542,7 +565,7 @@ leaking onto the board, and an estimate copied into a log is a plan reported as 
 ```yaml
 work_item:
   template:
-    carrier: file | none
+    carrier: file | none                     # required; absent_reason
     dir: ".claude/templates"
     by_type: { bug: "…", feature: "…" }
     sections:                    # semantic name -> this template's own heading
@@ -559,7 +582,7 @@ section is present and tick its items later.
 ## 5. Readiness gate — an ordered predicate list
 
 ```yaml
-readiness:
+readiness:                                   # required
   - { check: state_is,          roles: [initial],  stop: "…" }
   - { check: no_open_blockers,                     stop: "…" }
   - { check: field_present,     field: "…",        stop: "…" }
@@ -592,8 +615,8 @@ or quiet:
 
 ```yaml
 commit:
-  staging: explicit | all
-  trailer: none | read_from_history | "<literal trailer line>"
+  staging: explicit | all                    # required
+  trailer: none | read_from_history | "<literal trailer line>" # required
 ```
 
 ### Authorship is procedure, not configuration
@@ -662,7 +685,7 @@ in an old copy that contradicted them survived.
 ## 7. Carrier
 
 ```yaml
-carriers:
+carriers:                                    # required
   day_log: skill             # skill | command | hook
   start: command
 ```
@@ -692,8 +715,8 @@ directions. A carrier of `hook` has no invocation name at all.
 
 ```yaml
 language:
-  work_item: ru
-  repo: en
+  work_item: ru                              # required
+  repo: en                                   # required
   prose_width: 100           # columns, for files in the repository; absent means no wrapping
   artifacts:
     day_log:   { language: en, register: business,  audience: "…" }
@@ -848,12 +871,12 @@ into a command.
 
 ```yaml
 branch_model:
-  kind: worktree | in_place
+  kind: worktree | in_place                  # required
   work_in_shared_checkout: when_free | never   # read only under worktree; null under in_place
-  parallel_trees: true
+  parallel_trees: true                       # required
   tree_dir: "<the directory a tree is cut under>"   # required under worktree; null under in_place
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
-  exclusive_resources:           # [] where nothing in this project is exclusive
+  exclusive_resources:           # [] where nothing in this project is exclusive; required
     - { name: "…", cap: 1, subject: tree }
     - { name: "…", cap: 2, subject: call }
 ```
@@ -1094,7 +1117,7 @@ are, and what holds a place.
 ```yaml
 context:
   artifacts:
-    carrier: file | none
+    carrier: file | none                     # required; absent_reason
     dir: "<path the branch model's teardown cannot take>"   # when carrier is file
     committed: false                                        # default
     absent_reason: "…"                                      # required when carrier is none
@@ -1199,7 +1222,7 @@ a handoff that travels through one has the next role reading what it must refuse
 
 ```yaml
 ordering:
-  carrier: command | none
+  carrier: command | none                    # required; absent_reason
   command: "<prints the takeable items, most takeable first>"   # when carrier is command
   absent_reason: "…"           # required when carrier is none
 ```
