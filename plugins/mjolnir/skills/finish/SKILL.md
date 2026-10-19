@@ -176,8 +176,12 @@ step 6's verdict, and the reply says so.
   that matters: a check nobody could ask reads exactly like a check that passed.
 - ⛔ **The order is what decides whether the next step happens.** A check standing before `merged`
   that failed, or that nothing could answer, is a **stop** — the merge does not happen, and the
-  reply names which check and what it wants. `merged` and anything after it are answered by the
-  steps below.
+  reply names which check and what it wants.
+- ⛔ **`merged` is answered by step 8, and a check standing *after* it is answered once that read-back
+  is in** — then reported with the rest, by the same rules as the ones before it. ⚠️ **The list is
+  therefore walked twice where anything follows `merged`**, and a pass that walks it once has not
+  asked those checks at all while its reply claims every check: § 13 permits entries on either side
+  of `merged`, which is the whole reason it is a member of the list rather than the frame.
 
 ⛔ **Stopping here is not a failed pass and is not reported as one.** The change is not finished
 yet, and ⛔ **what is left is named rather than summarised**. Which near misses read as finished to
@@ -238,6 +242,10 @@ the commits and the branch's tip is then in no ancestry of the base. Trusting th
 reported five finished trees as carrying nine to twenty unpushed commits. So ancestry may confirm a
 landing and may never contradict one — which is why the state read above, and not this, is what
 settles whether the change is in.
+
+⛔ **Then take step 7's list up where it continues past `merged`.** That state read is what answers
+`merged`, so every check standing after it is answerable now and is asked here — never left for a
+reply to claim.
 
 ## 9. The item's move
 

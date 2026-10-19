@@ -118,9 +118,9 @@ The rule, and why it is procedure rather than a setting, is
 [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the nine-role loop and
 its axes, the tracker port and its capabilities, the work-item facets with their absent
 cases, the status writers, the readiness gate, what counts as done and who answers each of those
-checks, commit behaviour, the day log, the branch model,
-the session's context and the ordering. Everything else written about the procedure, in this
-repository or on a work item, explains or records; none of it is a second authority.
+checks, commit behaviour, the day log, the branch model, the session's context and the ordering.
+Everything else written about the procedure, in this repository or on a work item, explains or
+records; none of it is a second authority.
 
 That is enforced rather than asserted: the `Single source of truth` workflow holds every document
 to it on every change — see [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md)

@@ -516,14 +516,35 @@ def _mirrored_commands(data: dict) -> dict[str, str]:
     a list is read as the commands it holds, and when #58 lands only this
     function changes.
 
-    ⚠️ A `mirrors` this cannot read is refused rather than skipped. Skipping it
-    would empty this map in silence, and a collision check with nothing in its
-    map is a check that reports green -- the shape every guard here is written
-    against.
+    ⚠️ A shape this cannot read is refused rather than skipped -- the list, an
+    entry, and a `mirrors` alike. Skipping any of the three would empty this map
+    in silence, and a collision check with nothing in its map is a check that
+    reports green. Measured on this function's first form, which refused an
+    unreadable `mirrors` and then tolerated the two shapes one key up: a
+    `host.checks` written as a string or a mapping, or an entry written as a
+    bare command, each let every colliding `run` load clean. `host.checks` is
+    required and non-empty-checked and has never been type-checked, so the
+    shapes were harmless until something read the entries.
     """
     out: dict[str, str] = {}
-    for index, entry in enumerate(_get(data, "host.checks") or []):
-        if not isinstance(entry, dict) or entry.get("mirrors") is None:
+    checks = _get(data, "host.checks")
+    if not isinstance(checks, list):
+        raise ConfigError(
+            "host.checks",
+            f"is {type(checks).__name__}, and § 2 states it as the host's runs -- "
+            "a list of entries, or `[]` where every verdict is local. § 13's "
+            "refusal reads them to find a done check the host already runs, and "
+            "would hold nothing against a shape it cannot walk.",
+        )
+    for index, entry in enumerate(checks):
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                f"host.checks[{index}]",
+                f"is {entry!r}, and has to be a mapping stating at least a "
+                "`workflow` (§ 2). An entry this reader cannot walk takes "
+                "whatever it mirrors out of § 13's refusal in silence.",
+            )
+        if entry.get("mirrors") is None:
             continue
         mirrors = entry["mirrors"]
         commands = mirrors if isinstance(mirrors, list) else [mirrors]
@@ -1162,6 +1183,10 @@ def _planted_violations():
          _collides_with_a_workflows_second_command),
         ("a mirrored command this reader cannot read", "host.checks[0].mirrors",
          _unreadable_mirrors),
+        ("a host check list that is not a list", "host.checks",
+         at("host.checks", "a-mirrored-command")),
+        ("a host check entry that is not a block", "host.checks[0]",
+         at("host.checks", ["a-mirrored-command"])),
         ("a carriers block that is not a block", "carriers", at("carriers", ["skill"])),
         ("a carrier outside the vocabulary", "carriers.day_log",
          at("carriers", {"day_log": "telepathy"})),

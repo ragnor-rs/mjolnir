@@ -329,8 +329,11 @@ decision rather than the only possible one.
 ### A green gate is not a definition of done
 
 The third list, and the only one of the three whose evidence is a project's **written rule** rather
-than a reading of its role copies. Two of the six state it, and ⚠️ **neither could be configured as
-the other**, which is what made the entry a list with an answerer per check rather than a flag:
+than a reading of its role copies. ⚠️ **It is also the only one carrying no count**, and that is a
+property of the evidence rather than a style: two projects are known to state the rule and the
+source says *at least one* of the two positions below rather than enumerating the six, so a figure
+here would be wider than what was read. **Neither of the two could be configured as the other**,
+which is what made the entry a list with an answerer per check rather than a flag:
 
 | | what its rule says | what answers it |
 |---|---|---|
@@ -357,9 +360,10 @@ turns off.
 Hence the ordered list, its per-check answerer, and the refusal of a check the host already runs, in
 [`schema.md § 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check).
 ⚠️ **What this measurement does not support is a definition of done for every project.** A project
-whose deliverable is a library has nothing to drive, and four of the six state no such rule; the
-absent case is `[]`, and it is the commoner one — the same shape the prose-width measurement above
-has.
+whose deliverable is a library has nothing to drive, so the absent case is `[]` and is first-class
+rather than degenerate. ⚠️ **How common it is was not measured** — unlike the prose-width table
+above, which earns its *commoner* with a figure per project, this rests on two projects' stated
+rules and says nothing about the rest.
 
 ## Which item is next is read, never derived
 

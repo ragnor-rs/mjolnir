@@ -143,10 +143,9 @@ said *two* and the third arrived, which is the drift this record is supposed to 
 demonstrate.
 
 The last of the three carries one thing the first two do not, and it is the part a reader should not
-take for a refinement: **a check states who answers it**, because two projects whose rule is
-*a green gate is not done* split that rule differently — one needing a person at the keyboard, the
-other needing a command the procedure runs itself and a checklist a person works. A single
-human-answered flag would have been wrong for one of them in each direction.
+take for a refinement: **a check states who answers it.** What forced that — two projects splitting
+one rule in ways a single human-answered flag would have got wrong in opposite directions — is the
+measurement, and it stays where the measurements are.
 
 ## 5. What the last three day-log copies added
 
