@@ -411,6 +411,14 @@ REQUIRED = [
     ("host.kind", "the code host (§ 2)"),
     ("host.repo", "the repository, stated and never inherited from the working directory (§ 2)"),
     ("host.checks", "the host's runs; `[]` is the one legitimate absence and means every verdict is local (§ 2)"),
+    # § 2 makes this facet mandatory with no absent case, for § 10's reason: a project
+    # that lands changes some other way has a different host rather than a different
+    # shape of these keys. What the host *permits* is read from the host and is not
+    # restated here, so these two are the whole of what a configuration states.
+    ("host.landing.method",
+     "how a pull request lands, which no role infers from the shape of the integration branch (§ 2)"),
+    ("host.landing.delete_branch",
+     "which of the host and the procedure deletes the remote ref once a change has landed (§ 2)"),
     ("tracker.kind", "the tracker port, or `none` (§ 3)"),
     ("work_item.type.carrier", "what carries the type, or `none` with an `absent_reason` (§ 4.1)"),
     ("work_item.estimate.carrier", "what carries the estimate, or `none` with an `absent_reason` (§ 4.3)"),

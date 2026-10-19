@@ -99,6 +99,61 @@ the three that are obvious. The measurements that forced each to be independent:
    a conflicted pull request producing **zero** runs, which reads as green to anything that treats
    an empty check list as a pass. Hence `checks` keyed by workflow name, with
    absence-of-signal-is-not-an-answer stated beside it.
+
+   **A second facet landed inside the same axis later, and it was measured here rather than in the
+   survey.** How a pull request lands — squash, a merge commit, or rebase — was read in three
+   places in this backlog and decided in none of them: the role that performs the merge, the
+   commit-message hook that has to survive a concatenated message, and the role that prunes a
+   landed tree and deletes its branch.
+
+   ⚠️ **The item's own zero-hits measurement was true when it was taken and false by the time it
+   was acted on**, which is recorded rather than restated, being an instance of the thing this
+   document keeps catching. On 2026-10-17, at `f40785e`, `squash`, `merge_method` and `linear`
+   returned **zero** hits across the surface, this repository's configuration, every document under
+   `docs/` and every file under `config/examples/`. Two days later, at `756ab7a`, `squash` matched
+   six lines in those same files. ⛔ **Not one of the six states the fact**, which is why the gap
+   survived its own measurement going stale: every one is the landed reading explaining why a
+   rewritten hash defeats ancestry — the one reader this facet does not simplify — and no key, and
+   no sentence anywhere, said which method a project lands by.
+
+   ⚠️ **Three rather than the four the item claimed, and the direction of the defect was not
+   uniform either** — recorded because the correction is the kind of thing this document exists to
+   keep honest. Re-read against the bodies themselves, two of the item's four quotations were
+   attributed to the wrong items, and the fourth item reads the method nowhere: its single mention
+   is the cost of a full loop for a one-line fix, which reads no input. Of the three that do read
+   it, only two *tolerated* both shapes; the merging role silently **assumed** squash, which is the
+   worse half of the same gap and the one a tolerant reading hides.
+
+   Two measurements on this repository, 2026-10-17 and re-read 2026-10-19, are why the key exists
+   rather than the argument above:
+
+   - **A landing picked a method with nothing to read.** `main` was linear and the previous change
+     had landed as a single commit, so squash was inferred. A linear history is equally consistent
+     with rebase, so the inference was a coin toss that read as a reading. ⚠️ **It happened to be
+     right, and what establishes that is not the shape it was read off**: a branch of six commits
+     and one of three each added **exactly one** commit to a `main` that carries no merge commit
+     at all, which a rebase merge cannot do and a merge commit cannot do either. So the convention
+     was in the history to be read correctly, and nothing said it.
+
+     ⚠️ **The first attempt at that evidence was wrong, and wrong in the direction this whole
+     document is about.** It read the `(#N)` suffix on 26 of the 33 commits as the host's own
+     squash marker. It is nothing of the kind: this project's finishing role **passes** that
+     subject itself, precisely because a host appends the reference only to a subject it generates
+     — so the suffix is evidence of the convention and not of the merge method. The seven commits
+     without it are not the exceptions it implied either: six predate the loop running on itself,
+     and one is a merged pull request whose subject was passed without its reference, which is the
+     defect the finishing role's squash-subject rule exists for, sitting unnoticed in the history
+     of the repository that states the rule.
+   - **The host constrains nothing.** `allow_squash_merge`, `allow_merge_commit` and
+     `allow_rebase_merge` are all true, and `delete_branch_on_merge` is false — so every method is
+     available, nothing on the host enforces the convention the history implies, and the branch
+     deletion that *looks* like the host's job is nobody's until a project says whose it is.
+
+   Hence [`schema.md § 2 → How a pull request lands`](../plugins/mjolnir/config/schema.md#how-a-pull-request-lands),
+   which also rules what the host's own setting is for: read from the host as a constraint on the
+   stated method, never restated as a second copy of it. ⚠️ **What the same measurement does not
+   support is the facet making the landed reading cheaper**, which was the obvious reason to want
+   it: that reading keeps both of its tests, for the reason the section gives.
 3. **Code root.** One project's code is a git-ignored subdirectory that is its own repository
    under a different owner, not a submodule. Its skills write the root explicitly into every git
    call and stop if the directory is absent, because a fresh clone of the outer repository does

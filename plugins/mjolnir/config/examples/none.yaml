@@ -18,6 +18,14 @@ host:
   # The absent case: the host runs nothing, so every verdict is local. A consumer treats
   # this as "no answer", never as green.
   checks: []
+  # ⚠️ Stated although nothing here reads it: this project maps one role (`day_log` below), so no
+  # role of the loop opens a pull request or merges one. § 2 gives this facet no absent case for
+  # the reason `repo` and `checks` above have none either — the host block is stated whole, and a
+  # project that maps a finishing role later would otherwise inherit the inference the key exists
+  # to delete.
+  landing:
+    method: squash
+    delete_branch: never
 
 tracker:
   kind: none
