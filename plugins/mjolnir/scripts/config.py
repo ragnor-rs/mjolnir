@@ -739,6 +739,42 @@ def validate(data: dict, facts: dict) -> None:
                 "outside every tree (§ 11).",
             )
 
+    # §§ 4.1 and 4.4. The two keys that are functions of the type, held to its
+    # domain. Both are conditional on `type.values` being stated, which is why
+    # neither is a `# required` marker: that marker answers "must this key be
+    # written at all" and states it does not carry a condition.
+    #
+    # ⚠️ Only where the type is actually carried. A project whose `type.carrier`
+    # is `none` has no domain for either map to be total over, and `values` is
+    # then absent legitimately -- so a rule applied unconditionally here would
+    # refuse every configuration that deliberately carries no type, which is this
+    # repository's own.
+    type_values = _get(data, "work_item.type.values")
+    if _get(data, "work_item.type.carrier") not in (None, "none") and type_values:
+        known = list(type_values)
+        for value in known:
+            if not _get(data, f"work_item.type_branch_prefix.{value}"):
+                raise ConfigError(
+                    f"work_item.type_branch_prefix.{value}",
+                    f"is missing, while `work_item.type.values` carries "
+                    f"{value!r}. The prefix is a function of the type and a "
+                    "function is total over its domain (§ 4.1): an item of this "
+                    "type is one no role can cut a branch for, and the gap "
+                    "surfaces once the branch is already named.",
+                )
+        by_type = _get(data, "work_item.template.by_type") or {}
+        for keyed in by_type:
+            if keyed not in known:
+                raise ConfigError(
+                    f"work_item.template.by_type.{keyed}",
+                    f"keys a template to {keyed!r}, which is not one of "
+                    f"`work_item.type.values` ({', '.join(map(str, known))}). "
+                    "A template keyed to a type the project cannot assign is a "
+                    "template nothing selects, and the filing role's "
+                    "type-versus-template cross-check would hold a body against "
+                    "a file no item can legitimately have used (§ 4.4).",
+                )
+
     # § 10. Where a tree is created is required under the mode that creates trees
     # and meaningless under the mode that does not, which is the shape
     # `work_in_shared_checkout` already has. It is required rather than defaulted
@@ -1485,7 +1521,25 @@ def _planted_violations():
          _cuts_trees_nowhere),
         ("a `command` ordering with no command", "ordering.command",
          at("ordering", {"carrier": "command"})),
+        ("a type the branch-prefix map does not cover",
+         "work_item.type_branch_prefix.epic", _a_type_with_no_prefix),
+        ("a template keyed to a type the project cannot assign",
+         "work_item.template.by_type.epic",
+         at("work_item.template.by_type.epic", "epic.md")),
     ]
+
+
+def _a_type_with_no_prefix(data: dict) -> dict:
+    """A type added to `values` whose branch prefix nobody wrote.
+
+    Added rather than subtracted on purpose: dropping an existing prefix would
+    have the plant depend on which value the first example happens to carry,
+    and this is the shape the rule is for -- a type gains a value and the map
+    that is a function of it is not extended (§ 4.1).
+    """
+    node = data.setdefault("work_item", {}).setdefault("type", {})
+    node["values"] = list(node.get("values") or []) + ["epic"]
+    return data
 
 
 def _collides_with_a_mirrored_command(data: dict) -> dict:
