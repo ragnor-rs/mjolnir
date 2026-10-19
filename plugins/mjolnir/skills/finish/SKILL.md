@@ -364,8 +364,25 @@ step 8's, under
 ⚠️ **A tree takes everything git does not track with it, and nothing records what that was.** Read
 those files out before the removal or lose them; this is also why
 [`§ 11`](../../config/schema.md#the-store-and-when-an-in-tree-store-is-safe) refuses an uncommitted
-in-tree store under this branch model. ⛔ **A role cannot remove the tree it is standing in**: say
-what is left to remove and where, rather than reporting a release that did not happen.
+in-tree store under this branch model.
+
+⛔ **Leave the tree, then remove it — in that order.** A role cannot remove the tree it is standing
+in, and
+[`§ 10`](../../config/schema.md#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it)
+states the exit as the counterpart of the entry the starting role performs: the harness's own
+operation, with no key on the surface for either. ⚠️ **This file carried the first half of that as
+a stop and not the second**, which made this step's outcome unreachable for every session that had
+entered its tree — which, under `work_in_shared_checkout: never`, is every session.
+
+⛔ **A removal asked for from inside the tree is refused by the carrier**, naming the tree; the
+refusal is cleared by leaving rather than by forcing, and a pass that meets it has skipped the
+exit rather than found a fault.
+
+⚠️ **Where no exit is available the hand-off is still the answer**, and that case is now the only
+one it covers: a session pinned to its tree before this role ran has nothing to leave. ⛔ **Then
+say what is left to remove and where, rather than reporting a release that did not happen** — and
+say *why* it was left, since a tree reported this way by a session that could have exited is this
+step skipped and not this case.
 
 ## 11. The reply
 
@@ -375,7 +392,8 @@ sentence, then the facts, with a table where the content enumerates.
 
 - the three read-back facts: the merge, the item's move, the release — each with what was read
   rather than what was attempted, and for the merge **both** reads: the change's state and whether
-  the branch ref is gone;
+  the branch ref is gone; and for the release, ⛔ **that the tree was left before it was removed**,
+  or that no exit was available and the tree is therefore reported rather than released;
 - every one of § 2's preconditions that ran, and its verdict;
 - **every check the project's done list carries**, by name, with its verdict, who answered it and
   — for one carrying a command — the command and the tree it ran in; ⛔ every check that could not

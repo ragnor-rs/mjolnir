@@ -1178,6 +1178,29 @@ for nothing else.
 trusted to keep. Entering is the harness's own operation and this surface carries no key for it;
 what the procedure requires is that it happen before the first write.
 
+⛔ **And leaving is the counterpart of entering, on the same terms: the harness's operation, no key
+here, and required before the tree is removed rather than before the first write.** A session
+cannot remove the tree it is standing in and leave anything behind that still works — the removal
+either fails or succeeds into a session whose working directory no longer exists. ⚠️ **Stating the
+entry and not the exit is what made the release unperformable**: the role that releases a tree is
+the role standing in it, so the step that owns the third outcome of finishing could never reach it
+and handed off on every item that got a tree — which `work_in_shared_checkout` decides, and under
+`never` is all of them. The ordering is therefore **leave, then remove**, and it is the
+procedure's rather than a project's.
+
+⛔ **A removal asked for from at or below the tree is refused rather than attempted**, and the
+refusal names the tree and says that leaving clears it. This is the same reading the claim's
+liveness arm already performs one subsection down — a process at or below a tree — turned on the
+caller instead of on a stranger, and it is the only half of this rule a carrier can enforce; the
+ordering above is text.
+
+⚠️ **Where the session cannot leave, the skip is correct and the tree is somebody else's to
+remove.** A session that was pinned to a tree when it was launched has no exit to perform, and the
+two cases are not distinguishable by the tree: what distinguishes them is whether an exit operation
+is available at all. ⛔ **Such a run reports the tree as left to remove, with its path** — the one
+case the hand-off wording was always right about, now reached by the sessions it describes rather
+than by all of them.
+
 ### The claim on a work item
 
 ⛔ **The claim is the branch, and *publishing the ref* is what makes it a claim rather than a
