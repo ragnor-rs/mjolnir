@@ -140,10 +140,11 @@ Watching rather than polling is the same subsection's, and the client blocks unt
 gh pr checks <number> --watch
 ```
 
-⛔ **A red answer is not this role's to fix.** The fix loop and its cap belong to the reviewing role
-at [`skills/review/`](../review/), whose subject is a finding; what this role owes is to **not
-merge** while one stands, and to say which precondition failed. A finishing pass that starts fixing
-is the review happening with none of its record kept.
+⛔ **A red answer is not this role's to fix.** The fix loop is the reviewing role's at
+[`skills/review/`](../review/), whose subject is a finding, and the cap on it is § 2's above rather
+than either role's; what this role owes is to **not merge** while a red stands, and to say which
+precondition failed. A finishing pass that starts fixing is the review happening with none of its
+record kept.
 
 ## 7. The merge, and reading it back
 

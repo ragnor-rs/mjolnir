@@ -12,14 +12,14 @@ an answer, and a stated record of whether a person is going to look at the diff.
 
 ⛔ **This role does not merge, and does not waive anything.** The merge is the finishing role's at
 [`skills/finish/`](../finish/); the enforcement that holds a merge until a record exists is a hook's
-(step 10 below). What this role produces is the record. ⚠️ **One copy of this role merged** — and it
-owned the item's board move with it — which is the single largest divergence between the five and
-the one the shipped boundary settles rather than averages.
+(step 10 below). What this role produces is the record. ⚠️ **Two copies of this role reached a
+merge**, one of them moving the item and deleting the branch with it — the largest divergence
+between the five, and the one the shipped boundary settles rather than averages.
 
-⚠️ **The five copies disagreed about what this role does, not about how to word it.** Four delegated
-the whole review to a reviewing carrier of their own and never read the diff; one read the diff
-itself, drove a browser against a running instance, and merged. Steps 4, 8 and 9 are where that
-divergence lands, and the spread that measures it is the decision record's.
+⚠️ **The five copies disagreed about what this role does, not about how to word it.** Four
+delegated the review to a shared reviewing carrier and read no code themselves; one read the diff
+itself and drove a browser against a running instance. Steps 4, 8 and 9 are where that divergence
+lands, and the spread that measures it is the decision record's.
 
 ## 1. Resolve, and say what was resolved
 
@@ -69,9 +69,9 @@ the branch reviews code nobody asked about and reports it under the number they 
 
 ## 3. Read the whole conversation first
 
-⛔ **Every review, every thread and every comment on the change, before anything is touched.** Four
-of the five copies carried this and it is this role's first obligation: a thread answered by a later
-commit still needs an answer on the thread, and a thread nobody replied to is an open question.
+⛔ **Every review, every thread and every comment on the change, before anything is touched.** All
+five copies carried it and it is this role's first obligation: a thread answered by a later commit
+still needs an answer on the thread, and a thread nobody replied to is an open question.
 ⛔ **Carry the decisions already taken** — resolved, dismissed, *won't fix*, *out of scope*, an
 agreed alternative — into every step below. A pass that re-litigates a settled thread costs a round
 trip and reads as not having listened.
@@ -113,8 +113,10 @@ here were all measured rather than read — a table row with a missing cell sile
 column's value, an escaped delimiter truncating one, a fenced block not ending a table — and none of
 them is visible by reading.
 
-**Three classes the diff is read for beyond the code's own correctness**, each present in one copy
-and absent from the rest:
+**Three classes the diff is read for beyond the code's own correctness.** The first two came from
+one copy each and were absent from the rest; ⛔ **the third came from no copy at all** and is this
+repository's own, which is stated because a class with no copy behind it carries no project's
+experience:
 
 - **A document the change contradicts and does not update.** Where the project maintains documents
   that state its behaviour, a change whose behaviour no longer matches one of them is a finding
@@ -147,8 +149,9 @@ branch arriving.
 deferred*](../../config/schema.md#nothing-is-deferred) rules it: a finding is not a follow-up item,
 and the narrow exception is work belonging to a **different** outcome, tested by whether this item's
 acceptance check passes without it. ⚠️ **The measured failure is a change that merged carrying its
-own list of three open items and five reproduced findings** — which is why the completeness
-statement is read back by a gate rather than asserted here.
+own list of open items**, which is why the completeness statement is read back by a gate rather than
+asserted here. ⛔ **The figures are the item's and are not restated here** — the instance is #75,
+and a count copied into a role's text is a copy that drifts from the record it came from.
 
 - ⛔ **Only what the review flagged.** No adjacent refactor, no reformatting, no speculative
   abstraction — the minimum change that answers the finding.
@@ -301,9 +304,11 @@ output, and a hand-over that reads like a completed review is the one way this s
 
 ## 10. What this role does not own, and what a hook owns instead
 
-⛔ **Stated rather than left to be inferred, because two of the five copies enforced part of this
-role through a hook rather than carrying it as procedure** — one recorded the human-review answer
-through a hook, and one refused a merge that had no such answer.
+⛔ **Stated rather than left to be inferred, because two of the five copies enforce part of this role
+through a hook rather than carrying it as procedure.** ⚠️ **They are not two halves of one design**:
+one copy's pair of hooks records the answer and then refuses a merge where no record exists, and the
+other's single hook holds every merge behind an ask that reads no record and that no review can
+silence.
 
 | | |
 |---|---|

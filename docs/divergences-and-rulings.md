@@ -166,48 +166,59 @@ Read after the first design pass. None of it reverses a ruling; two items extend
 ## 6. What the five review copies added
 
 Read when that role was reconciled. Its copies ran **92 to 295 lines**, and the spread is one
-question: four delegated the whole review to a reviewing carrier of their own and never read the
-diff, while the fifth read the diff itself, drove a browser against a running instance, and merged.
+question: four delegated the review to a shared reviewing carrier and read no code themselves — one
+of those four reads the changed-file *list* and nothing in it — while the fifth read the diff itself
+and drove a browser against a running instance.
 
 **Two hard contradictions, neither settled by majority:**
 
-- **Who merges.** One copy merged, moved the item and deleted the branch; four left the change
-  merge-ready and said so. It was **settled by the boundary rather than by weighing the two**: the
-  finishing role already owns the merge, reading it back from state, the item's move and the tree's
-  release, so the merging copy's last section is a second home for a role that had already landed.
-  The reviewing role records; it never merges and never waives.
+- **Who merges.** **Two** copies reach a merge, and one of those also moves the item and deletes the
+  branch; of the other three, none mentions the merge at all. It was **settled by the boundary
+  rather than by weighing the positions**: the finishing role already owns the merge, reading it
+  back from state, the item's move and the tree's release, so a merging copy's last section is a
+  second home for a role that had already landed. The reviewing role records; it never merges and
+  never waives.
 - **Who performs the review.** Ruled **both**, which is a synthesis and not one of the two
   positions. A delegated pass is invoked where the project has one, *and* the diff is read
   regardless, because a delegated pass that found nothing is not a verdict. ⚠️ **The accepted cost
   is that a project whose reviewer is a delegated pass now pays a diff read as well** — which is the
   cost the measurements below buy.
 
-**The open question that role raised, now ruled.** Two copies enforced part of it through a hook
-rather than carrying it as procedure — one recorded the human-review answer that way, one refused a
-merge that had no such answer. The ruling is that **procedure produces a record and enforcement
-reads it**: the role asks whether a person is going to look whether or not a hook is installed, and
-says which of the two situations it was in, while what refuses an act on the strength of that record
-is #16's.
+**The open question that role raised, now ruled.** Two copies enforce part of it through a hook
+rather than carrying it as procedure, and ⚠️ **the two are not the halves the question said they
+were** — the item's body split them across the copies, and both halves turn out to be **one** copy's
+pair: it records the answer through a hook on the asking tool and refuses the merge where no record
+exists for that repository and number. The other copy's hook is not the second half of that: it
+holds every merge behind an unconditional ask that reads no record and that no review can silence.
+The ruling is that **procedure produces a record and enforcement reads it** — which the first pair
+is an instance of and the second is the case for, since enforcement reading nothing is what leaves
+the asking to procedure. The role asks whether a person is going to look whether or not a hook is
+installed, and says which of the two situations it was in; what refuses an act on the strength of
+that record is #16's.
 
-**One copy knew strictly more, in five places:**
+**What one or two copies knew and the rest lost** — the wording § 2 above is careful about, because
+no single copy holds this whole list:
 
 | Capability | Copies that had it | What the others lost |
 |---|---|---|
 | **The hand-over** — instructions somebody can follow, each item an act and an observation, with what is already known and which checkout a service is bound to | 1 of 5 | A summary of what would have been checked, handed to someone starting cold |
-| **A document the change contradicts and does not update** is a finding against that change | 1 | A change landing against a stated behaviour nothing records any more |
+| **A document the change contradicts and does not update** is a finding against that change | 1, and a different one | A change landing against a stated behaviour nothing records any more |
 | **The declinable inspection** — whether a person is going to look is asked, and the answer is what licenses a merge with nobody's eyes on the diff | 1 | Merging unasked, and holding a change nobody intends to look at — the same failure in two directions |
-| **An empty check list has three causes worth telling apart** | 1 | Absence of signal read as green, which [schema § 2](../plugins/mjolnir/config/schema.md#2-code-host) already bars |
-| **A local run of a command the host already ran adds nothing**, and its complement: a check no workflow mirrors is the one that *must* run locally | 1 explained it, 1 enforced it by hook | Either a shared machine spent twice for one answer, or a tier nothing ever runs |
+| **An empty check list has causes worth telling apart** | 1 | Absence of signal read as green. ⚠️ [schema § 2](../plugins/mjolnir/config/schema.md#2-code-host) bars the *conclusion* and enumerates different causes, so a workflow configured to skip an uninspected change is in neither it nor the role |
+| **A local run of a command the host already ran adds nothing**, and its complement: a check no workflow mirrors is the one that *must* run locally | 2, each stating it in procedure **and** enforcing it in a hook | Either a shared machine spent twice for one answer, or a tier nothing ever runs |
 
-**Four measurements this repository contributed, which no old copy had**, each from reviewing its
-own changes:
+**Measurements this repository contributed**, each from reviewing its own changes. ⚠️ **The last of
+them is a mechanism rather than a rule**: four copies already forbade a force push, and what is new
+is why an amend is refused and why the second commit costs nothing.
 
-- **A latent defect scores as a non-defect.** Eight independent scorers each reproduced a real
-  defect in a change that *was* a gate, and each returned the same middling confidence for the same
-  reason: verified, will be hit, but the tree is green today. The confidence cut would have reported
-  *no issues found* on a new file carrying fourteen reproduced defects. So *real* and *firing* are
-  separated and both reported, and **a reproduction is the score** — which removes the confidence
-  number from the decision entirely.
+- **A latent defect scores as a non-defect.** Reviewing a change that *was* a gate, every
+  independent scorer reproduced a real defect and every one returned the same middling confidence,
+  for the same stated reason: verified, will be hit, but the tree is green today. Applied
+  mechanically, the confidence cut would have reported *no issues found* on a new file carrying
+  fourteen reproduced defects. So *real* and *firing* are separated and both reported, and **a
+  reproduction is the score** — which removes the confidence number from the decision entirely.
+  ⚠️ **The scorer count rests on a session record rather than on anything in the tree or on the
+  host**, so it is not written here; the fourteen is on the change itself.
 - **A probing reviewer needs an isolated copy.** Parallel verifiers told to probe in memory planted
   files into the live tree, whose branch is another session's claim. Naming the mechanism is what
   worked; *in memory or a scratch copy* was not enough.
@@ -216,10 +227,13 @@ own changes:
 - **A fix after the push is a second commit.** An amend and a force push is refused as destructive,
   and the second commit is the better record anyway — a squash merge collapses both.
 
-Two things needed no ruling because an existing one already struck them: every copy credited a tool
-as a co-author on the fix commit and two put a generated-by marker in the comment, both barred by
+Two things needed no ruling because an existing one already struck them: **four** of the five copies
+credited a tool as a co-author on the fix commit and **the same four** put a generated-by marker in
+the comment they post, both barred by
 [schema § 6](../plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration); and
-three different commit-message mechanisms appeared across the five, settled by ruling (2).
+three different commit-message mechanisms appeared across the five, settled by ruling (2). ⚠️ **The
+fifth copy carries no message template at all**, which is why it does neither — not a project that
+had already adopted the rule.
 
 ## 7. Still open
 
