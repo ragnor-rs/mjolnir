@@ -248,6 +248,7 @@ VALUE_KEYS = [
     "repo",          # the host's slug
     "workflow",      # a run's name on the host
     "mirrors",       # the local command a run duplicates
+    "run",           # the command a done check is answered by (§ 13)
     "board",         # a Trello board
     "project_key",   # a Jira project
     "name",          # a status word, and a status field's own name

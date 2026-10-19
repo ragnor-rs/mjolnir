@@ -68,6 +68,14 @@ readiness:
   - { check: state_is, roles: [initial], stop: "The issue is already closed." }
   - { check: no_open_blockers, stop: "An issue this one depends on has not landed yet." }
 
+# ⛔ The cheapest real definition of done, and what a project that states nothing beyond the
+# gate already has: the host's runs green, and the change actually in. Both are the
+# procedure's to answer, so no completion here waits on a person — which is a statement
+# rather than an omission (§ 13). `merged` last is what makes the gate block the merge.
+done:
+  - { check: gate_green, answered_by: procedure, stop: "The host's runs are not green for this commit." }
+  - { check: merged, answered_by: procedure, stop: "The change has not landed." }
+
 commit:
   staging: explicit
   trailer: read_from_history

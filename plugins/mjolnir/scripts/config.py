@@ -353,6 +353,12 @@ class Config:
             )
         if not self.get("readiness"):
             out.append("The readiness gate is empty, so there is nothing to gate.")
+        if not self.get("done"):
+            out.append(
+                "The done list is empty, so what finished means here is the "
+                "merge and whatever the host already runs, and no further check "
+                "is asked for. That is a stated configuration (§ 13)."
+            )
         if self.get("ordering.carrier") == "none":
             reason = self.get("ordering.absent_reason")
             out.append(
@@ -417,6 +423,7 @@ REQUIRED = [
     ("work_item.template.carrier", "what carries the template, or `none` with an `absent_reason` (§ 4.4)"),
     ("statuses", "the status vocabulary; `[]` is legitimate (§ 4.2)"),
     ("readiness", "the readiness gate; `[]` is legitimate (§ 5)"),
+    ("done", "what counts as done, each check with its answerer; `[]` is legitimate (§ 13)"),
     ("commit.staging", "how changes are staged (§ 6)"),
     ("commit.trailer", "the commit trailer, or `none` (§ 6)"),
     ("carriers", "each mapped role's carrier (§ 7)"),
@@ -473,7 +480,64 @@ ABSENT_REASON_REQUIRED = [
 # only as far as whoever last remembered to extend a list here. It did not:
 # `day_log.round_ties`, `day_log.sections` and `work_item.estimate.unit` were
 # each stated as a closed set and accepted anything.
-CONTEXTUAL = {"role", "writer", "check", "on_fail", "carriers.day_log"}
+CONTEXTUAL = {
+    "role",
+    "writer",
+    "check",
+    "on_fail",
+    "carriers.day_log",
+    # § 13's two, written under the key they belong to rather than bare. That is
+    # not decoration: a second `check` alternation would have been read as the
+    # same context as § 5's and lost -- the first statement of a path wins -- so
+    # the done library would have been enforced as the readiness one.
+    "done.check",
+    "done.answered_by",
+}
+
+
+def _normalised_command(command) -> str:
+    """A command as written, with surrounding whitespace made irrelevant.
+
+    The whole of the normalisation, deliberately: § 13 states that the
+    comparison is the command as both sides wrote it, so a project writing one
+    command two different ways has two commands here. That errs towards
+    accepting a duplicate rather than towards refusing a legitimate check, which
+    is the direction a refusal has to err in.
+    """
+    return " ".join(str(command).split())
+
+
+def _mirrored_commands(data: dict) -> dict[str, str]:
+    """Normalised command -> the workflow whose run mirrors it (§ 2).
+
+    `mirrors` states one command per entry today, and a workflow that runs
+    several has no form on the surface -- #58's gap. So § 13's refusal reads
+    **whatever an entry mirrors** rather than comparing against a single string:
+    a list is read as the commands it holds, and when #58 lands only this
+    function changes.
+
+    ⚠️ A `mirrors` this cannot read is refused rather than skipped. Skipping it
+    would empty this map in silence, and a collision check with nothing in its
+    map is a check that reports green -- the shape every guard here is written
+    against.
+    """
+    out: dict[str, str] = {}
+    for index, entry in enumerate(_get(data, "host.checks") or []):
+        if not isinstance(entry, dict) or entry.get("mirrors") is None:
+            continue
+        mirrors = entry["mirrors"]
+        commands = mirrors if isinstance(mirrors, list) else [mirrors]
+        for command in commands:
+            if not isinstance(command, str):
+                raise ConfigError(
+                    f"host.checks[{index}].mirrors",
+                    f"is {mirrors!r}, which is neither the local command § 2 "
+                    "states nor a list of them. § 13's refusal reads this to "
+                    "find a done check the host already runs, and would hold "
+                    "nothing against a shape it cannot read.",
+                )
+            out.setdefault(_normalised_command(command), entry.get("workflow") or "unnamed")
+    return out
 
 
 def validate(data: dict, facts: dict) -> None:
@@ -625,6 +689,91 @@ def validate(data: dict, facts: dict) -> None:
                 f"{where}.on_fail",
                 f"is {entry['on_fail']!r}; the surface allows {' | '.join(on_fail)}.",
             )
+
+    # § 13. The same shape as `readiness` at the other end of the item, with two
+    # things that gate has no need of: who answers each check, and a refusal for
+    # a check whose command the host already runs.
+    done = _get(data, "done")
+    if not isinstance(done, list):
+        raise ConfigError(
+            "done", "must be a list; `[]` where the merge is the whole of it."
+        )
+    mirrored = _mirrored_commands(data)
+    for index, entry in enumerate(done):
+        where = f"done[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(where, "must be a mapping with a `check` and an `answered_by`.")
+        library = vocabulary(facts, "done.check", "a done check")
+        if "check" not in entry:
+            raise ConfigError(f"{where}.check", "required (§ 13).")
+        if entry["check"] not in library:
+            raise ConfigError(
+                f"{where}.check",
+                f"is {entry['check']!r}; the surface's library is "
+                f"{' | '.join(library)}.",
+            )
+        answerers = vocabulary(facts, "done.answered_by", "who answers a done check")
+        # Stated on every check and never defaulted. A default could only be
+        # `procedure`, and the configuration it would silently produce -- a check
+        # only a person can answer, answered by reasoning about it -- is the one
+        # failure here that reads exactly like success.
+        if "answered_by" not in entry:
+            raise ConfigError(
+                f"{where}.answered_by",
+                "required (§ 13): who answers a check is stated per check and "
+                "never defaulted, because the default that reads as harmless is "
+                "the one that lets a session answer a check it cannot.",
+            )
+        if entry["answered_by"] not in answerers:
+            raise ConfigError(
+                f"{where}.answered_by",
+                f"is {entry['answered_by']!r}; the surface states "
+                f"{' | '.join(answerers)}.",
+            )
+        if not entry.get("stop"):
+            raise ConfigError(
+                f"{where}.stop",
+                "required (§ 13): a done check that fails is handed to a person "
+                "in place of an answer, and one with no message hands over the "
+                "failure without what it wants.",
+            )
+        run = entry.get("run")
+        if entry["check"] == "local":
+            if not run:
+                raise ConfigError(
+                    f"{where}.run",
+                    "required when the check is `local` (§ 13): there is nothing "
+                    "to run, and the verdict would have to be reported from a "
+                    "command that was never named.",
+                )
+            if entry["answered_by"] != "procedure":
+                raise ConfigError(
+                    f"{where}.answered_by",
+                    f"is {entry['answered_by']!r} on a check carrying a command. "
+                    "A command is the procedure's to run (§ 13), and a "
+                    "machine-answerable check configured as a person's stops "
+                    "every completion for a hand-over nobody needed. What a "
+                    "command needs standing up before it can run at all is "
+                    "#60's axis, not an answerer here.",
+                )
+        elif run:
+            raise ConfigError(
+                f"{where}.run",
+                f"names {run!r} on a `{entry['check']}` check, whose verdict comes "
+                "from somewhere else (§ 13). A command nothing runs is a command "
+                "that reads as covered.",
+            )
+        if run:
+            collision = mirrored.get(_normalised_command(run))
+            if collision:
+                raise ConfigError(
+                    f"{where}.run",
+                    f"on the `{entry['check']}` check is {run!r}, which the "
+                    f"`{collision}` workflow already mirrors (§ 2). A done check "
+                    "colliding with a run the host owns asks a shared machine for "
+                    "an answer it already has; a check no entry mirrors is the one "
+                    "that must run locally.",
+                )
 
     carriers = _get(data, "carriers")
     if not isinstance(carriers, dict):
@@ -987,6 +1136,32 @@ def _planted_violations():
          at("readiness", [{"check": "vibes", "stop": "…"}])),
         ("an on_fail outside its alternation", "readiness[0].on_fail",
          at("readiness", [{"check": "state_is", "on_fail": "shout", "stop": "…"}])),
+        ("a done list that is not a list", "done", at("done", "green")),
+        ("a done entry that is not a block", "done[0]", at("done", ["merged"])),
+        ("a done entry with no check", "done[0].check",
+         at("done", [{"answered_by": "procedure", "stop": "…"}])),
+        ("a done check outside the library", "done[0].check",
+         at("done", [{"check": "vibes", "answered_by": "procedure", "stop": "…"}])),
+        ("a done check with no answerer", "done[0].answered_by",
+         at("done", [{"check": "merged", "stop": "…"}])),
+        ("an answerer outside its alternation", "done[0].answered_by",
+         at("done", [{"check": "merged", "answered_by": "the cat", "stop": "…"}])),
+        ("a done check with no stop message", "done[0].stop",
+         at("done", [{"check": "merged", "answered_by": "procedure"}])),
+        ("a local done check with no command", "done[0].run",
+         at("done", [{"check": "local", "answered_by": "procedure", "stop": "…"}])),
+        ("a machine-answerable check handed to a person", "done[0].answered_by",
+         at("done", [{"check": "local", "run": "a-command", "answered_by": "human",
+                      "stop": "…"}])),
+        ("a command on a check that runs none", "done[0].run",
+         at("done", [{"check": "merged", "run": "a-command", "answered_by": "procedure",
+                      "stop": "…"}])),
+        ("a done check the host already runs", "done[0].run",
+         _collides_with_a_mirrored_command),
+        ("a collision with the second command of a workflow that runs several", "done[0].run",
+         _collides_with_a_workflows_second_command),
+        ("a mirrored command this reader cannot read", "host.checks[0].mirrors",
+         _unreadable_mirrors),
         ("a carriers block that is not a block", "carriers", at("carriers", ["skill"])),
         ("a carrier outside the vocabulary", "carriers.day_log",
          at("carriers", {"day_log": "telepathy"})),
@@ -1005,6 +1180,57 @@ def _planted_violations():
         ("a `command` ordering with no command", "ordering.command",
          at("ordering", {"carrier": "command"})),
     ]
+
+
+def _collides_with_a_mirrored_command(data: dict) -> dict:
+    """§ 13's refusal, against whatever command the fixture's host already runs.
+
+    The command is read out of the example rather than written here, for the
+    reason the fixture itself is taken from the directory: a literal would be
+    this reader's own code naming a project's command, and it would stop
+    reaching this branch the moment the example was reworded.
+    """
+    checks = data.setdefault("host", {}).setdefault("checks", [])
+    if not checks or not isinstance(checks[0], dict) or not checks[0].get("mirrors"):
+        checks.insert(0, {"workflow": "Planted", "mirrors": "a-mirrored-command"})
+    mirrors = checks[0]["mirrors"]
+    command = mirrors[0] if isinstance(mirrors, list) else mirrors
+    data["done"] = [
+        {"check": "local", "run": command, "answered_by": "procedure", "stop": "…"}
+    ]
+    return data
+
+
+def _collides_with_a_workflows_second_command(data: dict) -> dict:
+    """The half of § 13's refusal that #58 is the open form of.
+
+    A workflow running several commands has no form on the surface yet, so this
+    plant writes the shape the refusal is read against rather than one an example
+    carries: a check colliding with the **second** of them has to be refused the
+    same way as one colliding with the first. Without this plant that clause is
+    claimed by a comment and exercised by nothing.
+    """
+    data.setdefault("host", {})["checks"] = [
+        {"workflow": "Planted", "mirrors": ["the-first-command", "the-second-command"]}
+    ]
+    data["done"] = [
+        {
+            "check": "local",
+            "run": "the-second-command",
+            "answered_by": "procedure",
+            "stop": "…",
+        }
+    ]
+    return data
+
+
+def _unreadable_mirrors(data: dict) -> dict:
+    """A `mirrors` that is neither a command nor a list of them."""
+    checks = data.setdefault("host", {}).setdefault("checks", [])
+    if not checks or not isinstance(checks[0], dict):
+        checks.insert(0, {"workflow": "Planted"})
+    checks[0]["mirrors"] = {"command": "a-command"}
+    return data
 
 
 def _cuts_trees_nowhere(data: dict) -> dict:

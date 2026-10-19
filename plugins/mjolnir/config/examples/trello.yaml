@@ -81,6 +81,17 @@ readiness:
   - { check: assignee_matches_role, stop: "The assignee does not match the role on the item." }
   - { check: queue_position, ahead_allowed: 0, on_fail: stop_quietly, stop: "Higher-priority work is ahead of this in the queue." }
 
+# ⛔ A person-answered check on the tracker with the fewest places to put the answer. There is
+# no comment action here, and `policy.forbid_on_item` above bars branch names from the card
+# anyway, so the record of who verified what goes on the **change** in the inner repository —
+# which is where § 13 wants it regardless: a record a gate must read has to be somewhere the
+# gate can read it, and a verdict that exists only in a role's reply is not.
+done:
+  - { check: gate_green, answered_by: procedure, stop: "The inner repository's runs are not green for this commit." }
+  - { check: human_verification, answered_by: human,
+      stop: "Drive the change by hand and record on the change what you saw." }
+  - { check: merged, answered_by: procedure, stop: "The change has not landed." }
+
 commit:
   staging: explicit
   trailer: read_from_history

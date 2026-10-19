@@ -1,6 +1,6 @@
 ---
 name: finish
-description: Take a finished branch to a landed pull request — the commit, the push, the pull request, the host's answer about it, the merge read back from state, the work item's own move, and the tree released. Use when asked to finish a work item, open or land its pull request, or merge the branch for an item.
+description: Take a finished branch to a landed pull request — the commit, the push, the pull request, the host's answer about it, what this project counts as done and who answers each of those checks, the merge read back from state, the work item's own move, and the tree released. Use when asked to finish a work item, open or land its pull request, or merge the branch for an item.
 argument-hint: "[<item number, item url, or pull request url>]"
 ---
 
@@ -8,7 +8,10 @@ argument-hint: "[<item number, item url, or pull request url>]"
 
 The outcome is three facts, and each is **read back rather than asserted**: the change is merged,
 the item has moved, and the tree is released. Everything below is ordered so that nothing
-irreversible happens before the thing that would have stopped it.
+irreversible happens before the thing that would have stopped it — ⛔ **and what licenses the first
+of the three is not this role's judgement** but the project's own statement of what counts as done
+([`§ 13`](../../config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)),
+one of whose checks may be a person's to answer and not this role's.
 
 ⚠️ **Four of the steps below were in one copy of this role and in none of the other four**, and
 each is marked where it falls. They are not refinements: in every one of them the obvious
@@ -32,11 +35,11 @@ defaults, and two sets drift apart with nothing noticing.
 ⛔ **Read the `unavailable` list before acting on anything.** An entry there is a stated absence
 rather than a fault, and a key named there that this role needs is a stop with the key named.
 
-Five things are read here and ⛔ **never copied into this file**: the staging and trailer rules the
+Six things are read here and ⛔ **never copied into this file**: the staging and trailer rules the
 commit runs under, the branch model that decides which tree every step after this one addresses,
-the host's own runs and what each of them mirrors, the closing capability behind the port, and the
-language and register the pull request is written in. Each has a section of the surface and this
-file cites it.
+the host's own runs and what each of them mirrors, **what this project counts as done and who
+answers each of those checks**, the closing capability behind the port, and the language and
+register the pull request is written in. Each has a section of the surface and this file cites it.
 
 Throughout, `<work-root>` is the tree the work is in — which
 [`§ 10`](../../config/schema.md#where-the-work-happens) decides and this file does not — and every
@@ -146,7 +149,43 @@ than either role's; what this role owes is to **not merge** while a red stands, 
 precondition failed. A finishing pass that starts fixing is the review happening with none of its
 record kept.
 
-## 7. The merge, and reading it back
+## 7. What counts as done
+
+⛔ **A green gate is not a definition of done, and which checks are is the project's statement** —
+[`§ 13`](../../config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check),
+read in step 1. ⛔ **This file states none of it**: which checks there are, who answers each one,
+what each one's failure wants and what order they stand in are all configuration, and what that
+order *means* is § 13's. An empty list is an answer and not a gap — completion is then the merge and
+step 6's verdict, and the reply says so.
+
+- ⛔ **Run it whole**, the way the starting role runs the readiness gate on the way in
+  ([`§ 5`](../../config/schema.md#5-readiness-gate--an-ordered-predicate-list)): every check asked,
+  every verdict reported, and a change failing two of them hears about both.
+- ⛔ **A check carrying a command is run here and never handed over**, with the command and ⛔ **the
+  tree it ran in** — [`§ 10`](../../config/schema.md#which-tree-a-verdict-belongs-to), the same rule
+  step 5's test plan is held to. ⚠️ **A check the host already runs is a misconfiguration rather
+  than a duplicate to skip**: the reader refuses it, naming the check and the workflow, so meeting
+  one here is a stop with the configuration named and not something to work around.
+- ⛔ **A check whose answerer is a person is not this role's to answer, and reading the diff is not
+  an answer to it.** Read the record the reviewing role wrote — [`skills/review/`](../review/) — or
+  hand the check over with its own stop message and the state the change is in. ⚠️ **It is the
+  record that counts and not this reply**: a verdict living only here is one the next pass cannot
+  read.
+- ⛔ **A check that could not be answered is reported as unanswered, never as passed.**
+  [`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish), and the direction
+  that matters: a check nobody could ask reads exactly like a check that passed.
+- ⛔ **The order is what decides whether the next step happens.** A check standing before `merged`
+  that failed, or that nothing could answer, is a **stop** — the merge does not happen, and the
+  reply names which check and what it wants. `merged` and anything after it are answered by the
+  steps below.
+
+⛔ **Stopping here is not a failed pass and is not reported as one.** The change is not finished
+yet, and ⛔ **what is left is named rather than summarised**. Which near misses read as finished to
+whoever just produced them is
+[`§ 13`](../../config/schema.md#in-progress-is-not-done-and-a-role-that-stops-mid-list-says-what-is-left)'s
+own list, and this file does not carry a second copy of it.
+
+## 8. The merge, and reading it back
 
 ⛔ **Four things are established before the merge, because each of them is cheap now and expensive
 after.** Every one was in a single copy of a role and in none of the rest, and ⛔ **this step is
@@ -164,7 +203,7 @@ which the last of the four is the measured violation of.
    tree off it, so [`§ 6`](../../config/schema.md#6-commit-behaviour)'s dirty-tree derivation
    applies at the merge and not only at the commit.
 4. ⛔ **That the tracker answers at all.** ⚠️ **A merge whose item never moved is invisible work**,
-   and step 8 is where that is discovered — after the irreversible act. So the port is reached for
+   and step 9 is where that is discovered — after the irreversible act. So the port is reached for
    a read **before** the merge, and an unreachable tracker holds it; `§ 3`'s fallback covers a
    capability that is *absent*, which is a different thing from a host that is not answering.
 
@@ -200,7 +239,7 @@ reported five finished trees as carrying nine to twenty unpushed commits. So anc
 landing and may never contradict one — which is why the state read above, and not this, is what
 settles whether the change is in.
 
-## 8. The item's move
+## 9. The item's move
 
 ⛔ **Through the port, and never through a tracker.** The two operations are separate and either
 capability may be absent: a reference in the body that closes the item on merge, and the tracker's
@@ -226,13 +265,13 @@ a host's search normalises away the punctuation a convention relies on, so a bra
 contains those digits answers a search for a different item entirely. Where a sibling is open,
 **leave the item where it is and name the open changes in the reply.**
 
-## 9. Release the tree
+## 10. Release the tree
 
 What is released once the work has landed is [`§ 10`](../../config/schema.md#10-branch-model)'s,
 and a project's own setup and teardown are its `mechanics` pointer — ⛔ **named here, never
 absorbed.** Where it is null there is nothing to run, and that is an answer.
 
-⛔ **Confirm the landing from the host before removing anything**, per step 7 above — the tree and
+⛔ **Confirm the landing from the host before removing anything**, per step 8 above — the tree and
 the branch are the only copies of the work until the merge is read back.
 
 ⚠️ **A tree takes everything git does not track with it, and nothing records what that was.** Read
@@ -241,7 +280,7 @@ those files out before the removal or lose them; this is also why
 in-tree store under this branch model. ⛔ **A role cannot remove the tree it is standing in**: say
 what is left to remove and where, rather than reporting a release that did not happen.
 
-## 10. The reply
+## 11. The reply
 
 Register, and the language, are
 [`§ 8`](../../config/schema.md#the-reply-to-the-person-running-a-role)'s — the outcome in the first
@@ -251,7 +290,10 @@ sentence, then the facts, with a table where the content enumerates.
   rather than what was attempted, and for the merge **both** reads: the change's state and whether
   the branch ref is gone;
 - every one of § 2's preconditions that ran, and its verdict;
-- which of step 7's four pre-merge establishments held, and what each found — the dependents, the
+- **every check the project's done list carries**, by name, with its verdict, who answered it and
+  — for one carrying a command — the command and the tree it ran in; ⛔ every check that could not
+  be answered said as unanswered, and an empty list said as empty rather than passed over;
+- which of step 8's four pre-merge establishments held, and what each found — the dependents, the
   base, the tree, and whether the tracker answered;
 - which port fallback was taken, where one was, and any sibling change that is holding the item
   where it is;

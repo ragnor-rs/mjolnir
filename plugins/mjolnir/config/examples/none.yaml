@@ -50,6 +50,13 @@ readiness:
   # An empty gate is legitimate too: there is no item to gate.
   []
 
+done:
+  # The stated absence (§ 13), and the shape every role has to run against: nothing beyond
+  # the merge says what finished means here. `gate_green` would name nothing either — the
+  # host runs no check above, so there is no run to read. `[]` rather than an unset key,
+  # because a decision and an oversight read identically otherwise.
+  []
+
 commit:
   staging: explicit
   trailer: read_from_history

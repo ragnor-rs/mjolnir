@@ -317,8 +317,11 @@ second of them is as duplicated as one colliding with the first. ⛔ **Two excep
 and each in the direction the rule gets wrong:** a local run that covers *strictly more* than the
 host's — a check whose input the host's runner does not have — is not a duplicate; and a decline
 this role has reason to overrule is overruled **with the reason in the report**, never by editing
-the thing that declined it. ⚠️ **What counts as done is not this role's to define**, so it reports
-the verdicts it has.
+the thing that declined it. ⚠️ **What counts as done is not this role's to define** — the project
+states it at
+[`§ 13`](../../config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)
+and the finishing role is what walks it — so this role reports the verdicts it has and the answers
+it was given, and ⛔ **never what they add up to**.
 
 ⛔ **A failing check is never merged on, and no cause excuses it** — not a red that fails on the
 base rather than on this change, not one that died before reaching what it tests, not one a local

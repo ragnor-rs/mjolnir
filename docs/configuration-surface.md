@@ -295,7 +295,10 @@ Three of these measurements each forced a property of the port, stated in
   a third-party tracker holding someone else's material is why policy sits on the port beside
   capability — and why that project's branch name goes in the run report instead.
 
-## Two things are ordered lists of named checks, not procedure
+## What is an ordered list of named checks rather than procedure
+
+No count is given, for the reason the axes carry none: this section grew a third entry after it was
+written, and a number in the heading would have gone stale green.
 
 ### The readiness gate
 
@@ -322,6 +325,41 @@ scope-of-engagement rule no other project has, and it is the one that does most 
 there — hence the named, extensible list in
 [`schema.md § 9`](../plugins/mjolnir/config/schema.md#9-day-log), whose default set is a
 decision rather than the only possible one.
+
+### A green gate is not a definition of done
+
+The third list, and the only one of the three whose evidence is a project's **written rule** rather
+than a reading of its role copies. Two of the six state it, and ⚠️ **neither could be configured as
+the other**, which is what made the entry a list with an answerer per check rather than a flag:
+
+| | what its rule says | what answers it |
+|---|---|---|
+| one project | a manual test on the running application is required before merging; a green gate plus a clean review is not enough | a **person**, and not the procedure |
+| another | an acceptance scenario suite that needs the application running, **and** a checklist carried on the pull request | the **procedure** for the first; a person for the second |
+
+**The first project's reason is structural rather than cultural**, which is why it cannot be read as
+that project's taste. Its own documentation says the whole automated suite runs in one process
+against doubles — no messaging platform, no model provider, no embedding service, no database over
+the wire — and names the user-visible behaviour that is therefore verified by hand: the rendering of
+buttons, file uploads and message chunking, and a whole submit-through-report flow for which it
+states outright that no automated test exists. A role that read that gate as *done* would report a
+feature shipped on evidence that never touched the feature.
+
+**And the procedure cannot perform that check itself.** The credential it would drive the
+application with acts *as* the application rather than as a user, so the finishing role can hand
+over a type-this/expect-that script and then only **record a verdict it did not produce** — which
+is why the surface carries who answers a check rather than just which checks there are.
+⚠️ **Collapsing the two answerers loses a real check in the other direction**: the second project's
+acceptance suite is a machine reading a machine, mirrored by no workflow at all, and configured as
+human-answered it would stop every completion for a hand-over nobody needed — the gate somebody
+turns off.
+
+Hence the ordered list, its per-check answerer, and the refusal of a check the host already runs, in
+[`schema.md § 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check).
+⚠️ **What this measurement does not support is a definition of done for every project.** A project
+whose deliverable is a library has nothing to drive, and four of the six state no such rule; the
+absent case is `[]`, and it is the commoner one — the same shape the prose-width measurement above
+has.
 
 ## Which item is next is read, never derived
 
