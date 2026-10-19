@@ -156,7 +156,7 @@ red does not fix it.
 
 ⛔ **Procedure produces a record and enforcement reads it.** A role that assumes it owns the gate
 fights the hooks; a role that assumes a hook will stop it skips the record the hook reads. So the
-reviewing role **records** — the verdicts, and whether a person is going to look at the diff — and
+reviewing role **records** — the verdicts, and the answer to every ask it makes — and
 **never merges and never waives**; a hook (§7) is what refuses an act on the strength of that
 record, and the record is written whether or not one is installed.
 
@@ -167,12 +167,12 @@ statement; it carries no count, because a count restated elsewhere drifts the mo
 added. The measurements that forced each to be independent are in
 [`docs/configuration-surface.md`](../../../docs/configuration-surface.md).
 
-### What carries the item forward, and the two places the loop asks
+### What carries the item forward, and where it stops to ask
 
-⛔ **Each leg after the first is entered by the leg before it**, and a person naming the next role is
-not what the route runs on. A role that waits to be asked is a role that is skipped whenever nobody
-asks, and ⚠️ **a skipped role reads exactly like one that ran** — the change lands either way, and
-what is lost is every check the skipped role owns. Measured on this repository, in
+⛔ **Each leg below is entered by the leg before it**, and a person naming the next role is not what
+the route runs on. A role that waits to be asked is a role that is skipped whenever nobody asks, and
+⚠️ **a skipped role reads exactly like one that ran** — the change lands either way, and what is
+lost is every check the skipped role owns. Measured on this repository, in
 [`docs/configuration-surface.md`](../../../docs/configuration-surface.md#the-loop-does-not-continue-itself).
 
 | leg | entered by | on |
@@ -180,39 +180,76 @@ what is lost is every check the skipped role owns. Measured on this repository, 
 | the starting role | a person, or the ordering (§ 12) | an item the project makes available |
 | the work itself | the starting role, as its last act | the tree cut and entered |
 | the first finishing pass | the session holding the item | the work **implemented**, below |
-| the reviewing role | the first finishing pass | a change open on the host |
+| the reviewing role | the first finishing pass | a change open with no review recorded |
 | the second finishing pass | the reviewing role | the review recorded |
 
-⚠️ **The hand-off a red forces, stated above, is one of these legs and not a second rule**: what a
-red changes is which role fixes the change, never which role is entered.
+⚠️ **The table runs from a started item to a merged change and claims nothing outside that.**
+Filing and gating are entered by a person, and so is whatever a project puts after a merge; the
+route was measured broken between starting and merging, and that is what it states.
 
-⛔ **The leg no role owns is the implementing one, and it is where the route breaks.** The roles
-named at the top of this section are the whole list, so nothing there names the state the finishing
-role is entered on. **Implemented** is therefore stated here: the item's own acceptance check
-(§ 4.4) is answered in the tree, and nothing that check raised is waiting on a person. ⚠️ **It is
-not the diff looking finished** — an item whose acceptance check nobody can answer yet has not
-reached this state, and the session says so rather than continuing.
+⚠️ **A role carried by a hook is entered by its event and not by the leg before it**, §7's
+invocation rule leaving nothing for a leg to address. The leg before it hands over by producing the
+record the hook reads.
 
-⚠️ **A leg whose role a project does not map is not a stop.** §7's `carriers` says which roles exist
-there, and an absent one hands the item to the next leg that does: a project mapping no reviewing
-role continues from the first finishing pass into the second, rather than waiting for a role nobody
-installed.
+⛔ **A red reaches the reviewing leg once per head.** A finishing pass that meets a red on a head
+that leg has already returned green on is a **stop for the person**, naming both — never a second
+hand-over. ⚠️ **This is the bound, and it is stated here because §2's is a different one**: that cap
+counts the fix cycles *inside* one reviewing pass, so a route free to enter a fresh pass for each
+new red would hand itself a fresh cap every time and be unbounded while every individual pass stayed
+within its own.
 
-⛔ **Two of the legs stop to ask, and both ask rather than deciding** — in the form
-[*Nothing is deferred*](#nothing-is-deferred) fixes, which is not restated here:
+⚠️ **The leg no role owns is the implementing one, and it is where the route was breaking.** The
+roles named at the top of this section are the whole list, so nothing there names the state the
+finishing role is entered on. ⛔ **Implemented** is therefore stated here: **the item's own stated
+acceptance condition is answered in the tree, and nothing that condition raised is waiting on a
+person.** ⚠️ **It is not the diff looking finished** — an item whose condition nobody can answer yet
+has not reached this state, and the session says so rather than continuing. ⚠️ **Where the item
+states no such condition**, which §4.4 makes a legitimate configuration, that is reported as
+unavailable rather than skipped and the state is held against the item's stated outcome instead.
+
+⚠️ **This is the one leg the session answers about its own work**, which the surface refuses for a
+`done:` check by name (§13). What makes it admissible is the asymmetry: ⛔ **this leg opens a change
+and merges nothing**, so the self-answer is what the reviewing leg then checks — and in a project
+mapping no reviewing role it is the only answer there will be, which is a reason to map one rather
+than a reason to trust it.
+
+**A leg whose role a project does not map, stated per leg rather than generally:**
+
+- ⚠️ **An absent reviewing role skips that leg**, and the first finishing pass continues into the
+  second. ⛔ **What it never skips is the question that leg asks** — the asker moves to the finishing
+  role rather than the question disappearing, which is also why §13 is right to refuse the same
+  question as a configured check.
+- ⛔ **An absent finishing role is where the route ends**, not a leg to hand past: nothing else opens
+  a change, so implemented work stops there. The starting role says so in its reply, since a route
+  that ends silently is the defect this section exists to close.
+- ⚠️ **An unmapped role is not the same thing as a mis-mapped one**, and `carriers` carries no
+  statement of its own keys — so a role nobody mapped and a key somebody misspelled read alike. ⛔
+  **No leg treats that reading as authority to skip a question**, by the first bullet.
+
+⛔ **The route stops to ask where an act is the person's, and asks rather than deciding** — in the
+form [*Nothing is deferred*](#nothing-is-deferred) fixes, which is not restated here. The asks this
+section adds are the two below; ⚠️ **they are not the only ones a pass makes**, the reviewing role
+carrying its own, and no count of a pass's asks is written here.
 
 - **How far the reviewing pass goes**, asked by the reviewing role before it reads the change and
   after the conversation it reads first — which is not optional, and is what makes the question
-  answerable. ⛔ **The depth is what is asked and never whether the gate runs**: the host's runs and
-  §13's list are answered whatever comes back, so the shallowest answer is a person declining a
-  reading rather than a change admitted unread.
-- **Whether the merge happens now**, asked by the finishing role before the merge and before
-  anything else irreversible. ⚠️ **Later is an answer rather than a failure**: the change stays
-  open, the item stays where it is, and the reply says which.
+  answerable. ⛔ **The depth is what is asked and never whether the gate runs**: the host's own runs
+  are driven to an answer whatever comes back, and §13's list is the finishing role's either way, so
+  the shallowest answer is a person declining a reading rather than a change admitted unread.
+- **Whether the merge happens now**, asked by the finishing role once everything that would have
+  stopped the merge is established and before the merge itself. ⚠️ **Later is an answer rather than
+  a failure**: the change stays open, the item stays where it is, and the reply says which.
+
+⛔ **Silence may narrow the work and never license an act, and that is what settles each ask's
+no-answer case.** An ask does not always reach a person. Where the answer would only have reduced
+what a role does, the role proceeds at its fullest and says the question went unanswered; where the
+answer would license something irreversible, silence is not a yes and nothing happens. ⚠️ **So these
+two asks differ in their silence on purpose**, and neither is the deferral the section below
+forbids: nothing is noted for later in either case.
 
 ⛔ **Neither ask is configuration**, for the reason §6 gives for authorship: a project that could
 turn one off is a project whose loop merges unasked. ⛔ **And both answers are recorded rather than
-reported**, by the division stated above.
+reported**, by the division stated above — a record in a reply is one the next leg cannot read.
 
 ### Nothing is deferred
 

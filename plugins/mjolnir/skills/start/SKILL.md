@@ -8,9 +8,9 @@ argument-hint: "[<item number or item url>]"
 
 Four things happen in one pass and in this order: the configuration is **resolved** and said out
 loud, the item is **chosen**, the gate runs **whole**, and the claim is taken **by publishing the
-item's ref**. The work itself does not belong to this role — but ⛔ **the leg out of here does**,
-because it is the one leg of the route no role owns:
-[`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-the-two-places-the-loop-asks)
+item's ref**. The work itself does not belong to this role — but ⛔ **naming the leg *after* the
+work does**, because that is the one leg of the route no role owns:
+[`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
 states what *implemented* means and that the session holding the item enters the finishing role on
 it, and step 6 is where this role says so.
 
@@ -243,14 +243,17 @@ first sentence, then the facts, with a table where the content enumerates.
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)), which has no
   quiet form;
 - ⛔ **what happens when the work is done, named rather than left to whoever reads this later**:
-  the item's acceptance check answered in the tree is what the finishing role is entered on, and
-  the session holding the item is what enters it —
-  [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-the-two-places-the-loop-asks).
-  ⛔ **It also goes where the next role reads**, not only into this reply: a window is summarised
-  without being asked, so the leg is written to this project's artifact store
-  ([`§ 11`](../../config/schema.md#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it)),
-  whose path § 11 keeps clear of the branch model's teardown — ⚠️ **and where that store's carrier
-  is `none`, this reply is the whole of the handoff**, which the reply then says;
+  the item's stated acceptance condition answered in the tree is what the finishing role is entered
+  on, and the session holding the item is what enters it —
+  [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask).
+  ⚠️ **What carries that across a dead session is the published claim and not this reply**: the ref
+  is outside every tree and outlives the window, while a session that ends mid-item leaves it
+  standing. ⛔ **So the reply also says what reading it back will look like** — an orphaned claim,
+  which step 4 makes a person's call rather than this role's, and which is the one case on this
+  route a person still has to resume by hand;
+- ⛔ **where the project maps no finishing role**, that the route ends with the work in the tree and
+  nothing to open a change — § The loop's absent-leg rule, said here because a route that ends
+  silently is what this statement exists to prevent;
 - ⛔ anything that needs the person running this, **asked with the options**
   ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): an orphaned claim, a
   stop whose remedy is a decision, an item whose type has no prefix, an ordering that could not be

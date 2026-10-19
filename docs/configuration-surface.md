@@ -76,7 +76,7 @@ uncarried. What neither touches is the landings, which are the integration branc
 the instance above, where what the session read is itself on the record.
 
 The route is stated, with each leg and what enters it, in
-[`schema.md § The loop → What carries the item forward`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-the-two-places-the-loop-asks).
+[`schema.md § The loop → What carries the item forward`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask).
 
 ## Three findings that reshaped the surface rather than confirming it
 
@@ -668,7 +668,7 @@ citation naming the narrowest section that states the fact. Since
 to being motivated by a document whatever its level, and a citation resolving to a `##` section with
 no text of its own is refused by name; what stays a count rather than a verdict is the coarser case,
 which
-[`single-source-of-truth.md`](single-source-of-truth.md#the-three-kinds-and-why-one-of-them-is-absent)
+[`single-source-of-truth.md`](single-source-of-truth.md#what-the-granularity-check-deliberately-does-not-hold)
 records against itself.
 
 ### Why there is no threshold on the surface
