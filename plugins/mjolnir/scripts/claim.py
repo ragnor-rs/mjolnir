@@ -510,6 +510,43 @@ def standing_in(path: str) -> bool:
     return here == root or here.startswith(root + os.sep)
 
 
+def own_session_ids() -> set[int]:
+    """The POSIX sessions this run spans: this process's, and every ancestor's.
+
+    ⛔ **This process's own session is not enough, and assuming it was shipped a fix that did not
+    fix the measured case.** Measured 2026-10-19: the harness runs each command in a session of
+    its own, so the caller is the odd one out rather than the helper -- the keep-awake process sat
+    in session 29936 with the harness that spawned it, while the release sat in 30947, newly made
+    for that one call. Comparing the two said *another session* about a sibling of the caller.
+
+    ⚠️ **So the run is the ancestor chain, not the process.** Walking it collects the harness's
+    session along the way, which is the one anything the harness started will be in.
+
+    ⛔ **The failure direction is deliberate.** An ancestor that cannot be read stops the walk, so
+    the set is smaller, so more processes read as foreign -- which refuses a removal rather than
+    performing one. ⚠️ And what a too-large set can misread is another run's *helper*, never its
+    work: a sibling doing work holds a session of its own, made the same way this caller's was,
+    and no ancestor of this process is in it.
+    """
+    ids: set[int] = set()
+    pid = os.getpid()
+    seen: set[int] = set()
+    while pid > 1 and pid not in seen:
+        seen.add(pid)
+        try:
+            ids.add(os.getsid(pid))
+        except OSError:
+            pass
+        proc = subprocess.run(
+            ["ps", "-o", "ppid=", "-p", str(pid)], capture_output=True, text=True
+        )
+        parent = proc.stdout.strip()
+        if not parent.isdigit():
+            break
+        pid = int(parent)
+    return ids
+
+
 def foreign_occupants(path: str) -> list[tuple[int, str]] | None:
     """Live processes of **another session** working at or below `path`. None where unreadable.
 
@@ -522,8 +559,10 @@ def foreign_occupants(path: str) -> list[tuple[int, str]] | None:
     clean up a tree nobody was in -- which is how an override stops meaning anything.
 
     ⛔ **The distinction is the POSIX session, which is what *another live session* already
-    says.** A helper this run started shares this run's session id; a separate run -- another
-    terminal, another agent -- does not. ⚠️ **The working directory alone cannot carry it**: a
+    says** -- but of the **run** rather than of this process, which is `own_session_ids`'s whole
+    subject and the correction that made this work on the case it was written for. A helper the
+    run started sits in a session this run spans; a separate run -- another terminal, another
+    agent -- does not. ⚠️ **The working directory alone cannot carry it**: a
     session doing work and an abandoned helper are identical in the open-file table, the
     directory being the only tie either has. So the reading is on identity, not on behaviour.
 
@@ -540,7 +579,7 @@ def foreign_occupants(path: str) -> list[tuple[int, str]] | None:
         ["lsof", "-a", "-d", "cwd", "-F", "pcn"], capture_output=True, text=True
     )
     root = os.path.realpath(path)
-    mine = os.getsid(0)
+    mine = own_session_ids()
     found: list[tuple[int, str]] = []
     pid: int | None = None
     command = ""
@@ -567,7 +606,7 @@ def foreign_occupants(path: str) -> list[tuple[int, str]] | None:
                 # reason an unreadable table does -- the failure direction here deletes a tree.
                 found.append((pid, command))
                 continue
-            if theirs != mine:
+            if theirs not in mine:
                 found.append((pid, command))
     if not read_any:
         return None
@@ -1872,6 +1911,50 @@ def self_test() -> int:
                 refused = _message(lambda: release(one, "feature/helper", tree))
                 suite.ok("so the release proceeds with no force, which is the bug this fixes",
                          refused is None and not Path(tree).exists(), refused or "")
+        finally:
+            helper.kill()
+            helper.wait()
+
+    print("\nthe real topology: the caller in its own session, the helper in the run's:")
+
+    # ⛔ The fixture above is a child of this process and shares its session, which is NOT the
+    # shape the incident had -- and believing it was is how a fix shipped green and left the case
+    # broken. Measured: the harness gives each command a session of its own, so the *caller* is
+    # the odd one out and the helper sits with the harness that spawned it.
+    #
+    # So the roles are inverted into a child here. This process plays the harness; a helper is
+    # started in this session with the tree as its directory; and the reading is taken from a
+    # grandchild in a session of its own, which is what a command run by the harness is. The
+    # helper is then in an *ancestor's* session from the reader's point of view, exactly as the
+    # keep-awake process was.
+    with tempfile.TemporaryDirectory() as tmp:
+        tree = Path(tmp) / "run"
+        tree.mkdir()
+        helper = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(30)"],
+            cwd=str(tree),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            probe = (
+                "import sys; sys.path.insert(0, %r); import claim, os; "
+                "print(os.getsid(0)); print(claim.foreign_occupants(%r))"
+                % (str(Path(__file__).resolve().parent), str(tree))
+            )
+            seen = subprocess.run(
+                [sys.executable, "-c", probe],
+                capture_output=True, text=True, start_new_session=True,
+            )
+            lines = seen.stdout.splitlines()
+            if len(lines) != 2:
+                suite.ok("the probe in its own session could not be run, and says so",
+                         False, seen.stderr.strip() or seen.stdout.strip())
+            else:
+                suite.ok("the reader really is in a session of its own, as a harness's call is",
+                         lines[0].strip() != str(os.getsid(0)), f"{lines[0]} vs {os.getsid(0)}")
+                suite.ok("⛔ and a helper in an ancestor's session is not another session",
+                         lines[1].strip() in ("[]", "None"), lines[1])
         finally:
             helper.kill()
             helper.wait()
