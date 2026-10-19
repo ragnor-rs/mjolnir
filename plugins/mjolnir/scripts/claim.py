@@ -1022,9 +1022,9 @@ def _bare_world(stack: tempfile.TemporaryDirectory) -> tuple[str, str, str]:
     seed = root / "seed"
     # ⚠️ This clone is of a repository with no commits yet, which git warns about on stderr --
     # and `--quiet` does not cover a warning. The fixture is built this way on purpose, so the
-    # warning carries no information; eighteen copies of it above the report only make a reader
-    # hunt for a failure that is not there. Captured rather than discarded: a clone that genuinely
-    # fails must still say why.
+    # warning carries no information, and this world is built once per section of the suite: the
+    # copies pile up above the report and only make a reader hunt for a failure that is not
+    # there. Captured rather than discarded: a clone that genuinely fails must still say why.
     seeded = subprocess.run(
         ["git", "clone", "--quiet", str(origin), str(seed)], capture_output=True, text=True
     )
