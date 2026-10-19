@@ -498,13 +498,15 @@ owning it. The body, the threads and the markers are the three
 places a writer defers *knowingly*; prose is where it reads as diligence.
 
 ⚠️ **What it reads is the unowned half and not the unfinished half**, and the line was drawn by
-counting: *not yet*, *would need* and *still needs* appear across nine lines of tracked text here,
-every one of them stating a limit honestly, so an arm sweeping those hands a change back for the
-candid form of a sentence. What reddens names no owner for a cure — *no item owns*, *somebody
-should*, *a later change will carry*. ⚠️ The remedy is usually **deletion** rather than filing: a
-cure nobody measured is not a measured gap. ⛔ **And the green side is asserted rather than
-assumed** — the whole-change fixture carries three of those honest limit lines, taken from lines
-this repository already ships, and widening the arm to the unfinished half reddens that fixture.
+counting: the three commonest ways this repository states a limit honestly appear across nine lines
+of tracked text, so an arm sweeping those hands a change back for the candid form of a sentence.
+What reddens instead is a line that names no owner for a cure. ⚠️ **The forms themselves are not
+written down here**, for the reason the register's densities are not either — a copy in prose has
+to be kept in sync, the run prints what it found, and this arm would in any case redden on its own
+list. The remedy for a hit is usually **deletion** rather than filing: a cure nobody measured is
+not a measured gap. ⛔ **And the green side is asserted rather than assumed** — the whole-change
+fixture carries three honest limit lines, taken from lines this repository already ships, and
+widening the arm to the unfinished half reddens that fixture.
 
 Check 2 is what a reviewer cannot be, and ⚠️ it follows the cursor rather than reading a first
 page, because a review that ran long is exactly the change this gate is for. Check 1 is the one
