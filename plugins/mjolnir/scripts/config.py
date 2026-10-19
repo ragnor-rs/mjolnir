@@ -160,20 +160,26 @@ def _fences(surface_text: str) -> list[tuple[str, str]]:
     hold to it.
     """
     out: list[tuple[str, str]] = []
-    heading, block, inside = "", [], False
+    heading, block, fence = "", [], None
     for line in surface_text.splitlines():
-        if inside:
+        if fence is not None:
             if line.startswith("```"):
-                out.append((heading, "\n".join(block)))
-                block, inside = [], False
-            else:
+                if fence == "yaml":
+                    out.append((heading, "\n".join(block)))
+                block, fence = [], None
+            elif fence == "yaml":
                 block.append(line)
-        elif line.startswith("```yaml"):
-            inside = True
-        else:
-            titled = HEADING.match(line)
-            if titled:
-                heading = titled.group("title").strip()
+            # A fence of any other language is skipped entirely rather than
+            # merely not yielded: a `markdown` example containing a `##` line
+            # would otherwise be read as a heading and mis-cite the section of
+            # every refusal after it.
+            continue
+        if line.startswith("```"):
+            fence = line[3:].strip() or "(bare)"
+            continue
+        titled = HEADING.match(line)
+        if titled:
+            heading = titled.group("title").strip()
     return out
 
 
@@ -223,7 +229,19 @@ def surface_facts(surface_text: str) -> dict:
                     # marked where it is declared, and a later fence showing one
                     # facet of it must not be able to unmark it.
                     required.setdefault(path, heading)
-                if ABSENT_REASON_CLAUSE.match(clause) and path.endswith(".carrier"):
+                if ABSENT_REASON_CLAUSE.match(clause):
+                    # ⛔ Refused rather than ignored where it is not on a
+                    # `carrier`: the rule it marks reads `carrier: none`, so a
+                    # marker anywhere else states a rule nothing applies -- and
+                    # a marker nobody reads is the exact defect this marker
+                    # exists to remove, one level up.
+                    if not path.endswith(".carrier"):
+                        raise ConfigError(
+                            path,
+                            "carries `# absent_reason`, which marks a facet's "
+                            "`carrier` and is read nowhere else. Move it to the "
+                            "facet's `carrier` line or delete it.",
+                        )
                     absent_reason.setdefault(path[: -len(".carrier")], heading)
 
             # A closed set, written either as the value or as a comment beside
@@ -931,6 +949,26 @@ def self_test() -> int:
             refused is not None and "markers were dropped" in refused,
             f"reported {refused!r}",
         )
+
+    # And the marker put somewhere it is read nowhere. A plant for this branch
+    # because the branch exists to make a silently-ignored marker impossible,
+    # which is only true while something asserts it is not ignored.
+    with open(SURFACE, encoding="utf-8") as handle:
+        misplaced = handle.read().replace(
+            "  kind: github                               # required",
+            "  kind: github                               # required; absent_reason",
+            1,
+        )
+    try:
+        surface_facts(misplaced)
+        where = None
+    except ConfigError as error:
+        where = error.key
+    check(
+        "`# absent_reason` away from a `carrier` is refused, with the key named",
+        where == "host.kind",
+        f"reported {where!r}",
+    )
 
     trackerless = [c for c in loaded.values() if not c.has_tracker]
     check("the trackerless example loads", bool(trackerless))
