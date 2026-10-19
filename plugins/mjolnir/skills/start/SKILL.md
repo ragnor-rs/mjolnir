@@ -107,13 +107,17 @@ its test-and-set, what a refusal has to name and how an orphaned claim is read a
 here and not restated**, because a copy of a concurrency rule in a role's text is a copy that is
 allowed to disagree with the one thing performing it.
 
-The branch name is `(prefix, number, slug)`:
+⛔ **This role does not compose the branch name.** The derivation, why it is the carrier's and
+not a rule applied here, and what resolves two names for one item are
+[`§ 10 → The branch name a claim is taken on`](../../config/schema.md#the-branch-name-a-claim-is-taken-on)
+— measured three times in one day, each time two sessions dividing one title differently. What
+this role supplies is the three inputs:
 
-| part | where it comes from |
+| input | where it comes from |
 |---|---|
 | prefix | the per-type table in the configuration, read in step 1 — a function of the item's type ([`§ 4.1`](../../config/schema.md#41-type)), never a literal in this file |
 | number | the item's own identifier |
-| slug | the item's title, slugged — and a **translation** where the item's language differs from the repository's, never a transliteration ([`§ 8`](../../config/schema.md#8-language-register-audience--per-artifact-not-per-project)) |
+| title | the item's title — and a **translation** where the item's language differs from the repository's, never a transliteration ([`§ 8`](../../config/schema.md#8-language-register-audience--per-artifact-not-per-project)); the slug is derived from whichever string is handed over, and the reply says which |
 
 The tree is `tree_dir` joined with the item's own identifier, per
 [`§ 10 → Where a tree is created`](../../config/schema.md#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it).
@@ -122,14 +126,15 @@ derived, and a slug in that path would give one item two trees the first time it
 reworded.
 
 ⛔ **One command takes the claim, and this role does not assemble it out of git calls.** It
-publishes the ref, reads back whether the push *created* it, cuts the tree, and gives back
-whatever it created where the cut fails — ⛔ **four steps whose ordering is the rule**, so a role
-doing three of them by hand has a claim that races and a refusal that leaves a branch behind for
-every later pass to read as taken.
+derives the name, reads what already claims the item, publishes the ref, reads back whether the
+push *created* it, reads the item again, cuts the tree, and gives back whatever it created where
+any of that fails — ⛔ **steps whose ordering is the rule**, so a role doing most of them by hand
+has a claim that races and a refusal that leaves a branch behind for every later pass to read as
+taken.
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" take \
-  --repo-root <code-root> --branch <prefix>/<number>-<slug> --tree <tree>
+  --repo-root <code-root> --branch-prefix <prefix> --item <number> --title <title> --tree <tree>
 ```
 
 - **Refused** ⇒ the item is taken, and the refusal already carries who holds it and since when, or
@@ -138,10 +143,14 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" take \
 - ⛔ **Never force, and never a second checkout of a branch already checked out somewhere.** Git
   refuses the second checkout by name, and that refusal is a stop: the session holding it may be
   mid-task.
-- A cheap pre-filter avoids pointless attempts — `claim.py status` on the same root and branch. ⛔ The
-  attempt is still the authority, and a filter that came back clean is **not** evidence the claim
-  was free: the window between the two is exactly the race, and it has been observed closing
-  inside one pass.
+- A cheap pre-filter avoids pointless attempts — `claim.py status --item <number>`, which asks
+  about the work item rather than about one name. ⛔ **Advisory, and it stays advisory even when
+  it is asked correctly**: both ways of missing have been measured, and only one of them is a
+  question a filter can be fixed to answer
+  ([`§ 10`](../../config/schema.md#the-branch-name-a-claim-is-taken-on)). The attempt is the
+  authority.
+- `claim.py name` answers what a start would call the branch, for a reply that needs the name
+  before the claim exists. ⛔ It is the same derivation and not a second one.
 - ⛔ **An orphaned claim is not takeable by this role.** `status` reports one as an
   orphaned-candidate with both readings stated; it is a person's call. **Ask.**
 

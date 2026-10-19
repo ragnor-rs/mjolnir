@@ -28,7 +28,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import unicodedata
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 
 # ⛔ The claim is a test-and-set in **two** arms, because the two orders fail differently and
@@ -58,9 +60,104 @@ REFS_PREFIX = "refs/heads/"
 # self-test, so a reword travels rather than breaking it.
 UNESTABLISHED = "could not be established"
 
+# How long a slug may be. A bound is needed for the truncation to be part of the derivation
+# rather than a thing the filesystem does later at a length that varies by machine; the value is
+# a readability choice and nothing reads it but the derivation below.
+SLUG_MAX = 60
+
+# An item identifier this module can recover from a branch name on its own: a run of digits that
+# is the whole of the last segment or is followed by a hyphen. ⛔ Deliberately narrow. A tracker
+# whose identifiers carry their own hyphens cannot be parsed out of a slugged branch name without
+# guessing where the identifier ends, and a guess here turns the by-item guard on for the wrong
+# item -- so those projects state `--item` and the parse declines.
+NUMERIC_ITEM = re.compile(r"^(\d+)(?:-|$)")
+
 
 class ClaimError(RuntimeError):
     """A refusal, or a failure to read the store the claim lives in."""
+
+
+# --------------------------------------------------------------------------------------------
+# The branch name, derived
+#
+# ⛔ The derivation is **performed here and not described anywhere for a caller to follow**. A
+# slug rule written as prose is a rule two readers may apply differently, and that is not a
+# hypothetical: measured on 2026-10-19, two sessions starting one item from one title published
+# `feature/41-done-is-configuration` and `feature/41-what-counts-as-done-is-configuration`, so the
+# test-and-set on the ref name never engaged and the tree directory arbitrated a step later.
+# A caller that composes the name itself reintroduces exactly that, which is why `take` accepts
+# the three inputs and no role needs to hold the rule.
+#
+# The rule itself is `config/schema.md` § 10 -> *The branch name a claim is taken on*.
+# --------------------------------------------------------------------------------------------
+
+
+def slug_for(title: str, limit: int | None = SLUG_MAX) -> str:
+    """The item's title as a branch slug: a pure function of the string it is handed.
+
+    ⚠️ **Of the string it is handed**, which is not always the title as the tracker stores it:
+    where the item's language differs from the repository's, § 8 requires a translation, and the
+    translation is the caller's. That is the one input two sessions are not guaranteed to agree
+    on, and it is why the claim resolves on the *item* and not on the name -- see
+    `refs_for_item` below.
+
+    Normalised to NFC first so a decomposed title and a composed one slug alike; letters and
+    numbers survive by Unicode category rather than by an ASCII range, because a project writing
+    its items in its own script gets a ref it can read rather than a row of hyphens.
+
+    ⚠️ `limit` is the derivation's own, and `None` is what the suite reads the untruncated form
+    with. ⛔ **The bound is part of the rule rather than something the filesystem imposes later
+    at a length that varies by machine.** It is the arm that has actually broken: of the three
+    measured divergences, all three were one session carrying the whole title and another
+    carrying the first few words, and a character mapping with no length rule licenses both.
+    """
+    text = unicodedata.normalize("NFC", title).strip().lower()
+    kept = "".join(ch if unicodedata.category(ch)[0] in ("L", "N") else "-" for ch in text)
+    slug = re.sub(r"-+", "-", kept).strip("-")
+    if limit is not None and len(slug) > limit:
+        head = slug[:limit]
+        # Cut back to a word boundary -- unless the bound already fell on one, in which case
+        # cutting back would drop a whole word for nothing.
+        if slug[limit] != "-" and "-" in head:
+            head = head[: head.rindex("-")]
+        slug = head.strip("-")
+    return slug
+
+
+def branch_for(prefix: str, item: str, title: str) -> str:
+    """`(prefix, number, slug)`, composed in one place.
+
+    A title that slugs to nothing -- punctuation, or a script with no letters or numbers in it --
+    leaves the number alone rather than a trailing hyphen, because `prefix/70-` is a ref name git
+    accepts and nobody can read.
+    """
+    prefix = prefix.strip("/")
+    item = str(item).strip()
+    if not prefix:
+        raise ClaimError("the branch prefix is empty; it is a function of the item's type (§ 4.1).")
+    if not item:
+        raise ClaimError("the item identifier is empty; a role with none stops rather than inventing one.")
+    slug = slug_for(title)
+    return f"{prefix}/{item}-{slug}" if slug else f"{prefix}/{item}"
+
+
+def item_in_branch(branch: str) -> str | None:
+    """The item a branch name carries, where this module can read it without guessing."""
+    match = NUMERIC_ITEM.match(branch.rsplit("/", 1)[-1])
+    return match.group(1) if match else None
+
+
+def ref_is_for_item(branch: str, item: str) -> bool:
+    """Whether this branch name is a claim on this item.
+
+    The last segment and not the whole name: a project may nest its prefixes, and the part that
+    names the item is the leaf. ⚠️ This is a **candidate** test and never an answer -- a ref it
+    matches may have landed, and reading the match itself as *taken* is the defect it exists to
+    feed, not to commit.
+    """
+    tail = branch.rsplit("/", 1)[-1]
+    item = str(item)
+    return tail == item or tail.startswith(item + "-")
 
 
 # --------------------------------------------------------------------------------------------
@@ -163,6 +260,44 @@ def remote_ref_sha(root: str | Path, remote: str, branch: str) -> str | None:
     return None
 
 
+def all_refs(root: str | Path, remote: str) -> list[tuple[str, str]]:
+    """Every branch in the namespace the claim lives in, as `(branch, sha)`.
+
+    The host's namespace where there is one, and this machine's where there is not -- the same
+    split `status` makes, for the same reason: with no remote the local branch is the whole of
+    the claim.
+    """
+    if remote_url(root, remote):
+        proc = git(root, "ls-remote", "--heads", remote, check=False)
+        if proc.returncode != 0:
+            raise ClaimError(f"could not read `{remote}`: {proc.stderr.strip()}")
+        found = []
+        for line in proc.stdout.splitlines():
+            sha, _, ref = line.partition("\t")
+            ref = ref.strip()
+            if ref.startswith(REFS_PREFIX):
+                found.append((ref[len(REFS_PREFIX) :], sha.strip()))
+        return found
+    proc = git(root, "for-each-ref", "--format=%(objectname) %(refname:short)", REFS_PREFIX)
+    found = []
+    for line in proc.stdout.splitlines():
+        sha, _, name = line.partition(" ")
+        if name.strip():
+            found.append((name.strip(), sha.strip()))
+    return found
+
+
+def refs_for_item(root: str | Path, remote: str, item: str) -> list[tuple[str, str]]:
+    """Every published ref whose name claims this item, newest-sorted by nothing.
+
+    ⛔ **A list of candidates, never a verdict.** What the caller does with it is apply the
+    landed/live/orphaned reading to each, because the item's number appearing in a ref name is
+    exactly as true after the work lands as before it -- and a filter that stopped here would
+    read a landed item as taken for as long as the ref survives the merge.
+    """
+    return sorted((b, sha) for b, sha in all_refs(root, remote) if ref_is_for_item(b, item))
+
+
 # --------------------------------------------------------------------------------------------
 # Who holds it, and since when
 # --------------------------------------------------------------------------------------------
@@ -230,6 +365,29 @@ def host_record(root: str | Path, remote: str, branch: str) -> Holder:
     return Holder(
         unestablished=["the host's record does not reach back to when this ref was created"]
     )
+
+
+def moment(stamp: str | None) -> "datetime | None":
+    """An instant from the host's own timestamp, or None where there is nothing to read."""
+    if not stamp:
+        return None
+    try:
+        return datetime.fromisoformat(stamp.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def merge_lands_this_ref(created_at: str | None, merged_at: str | None) -> bool | None:
+    """Whether a merged pull request found by branch *name* is about the ref standing there now.
+
+    `True` where the ref already existed when the request merged, `False` where the merge
+    predates the ref and so belongs to an earlier occupant of the name, and `None` where one of
+    the two instants could not be read -- which the caller reports and never rounds to either.
+    """
+    born, merged = moment(created_at), moment(merged_at)
+    if born is None or merged is None:
+        return None
+    return born <= merged
 
 
 def host_slug(url: str) -> str | None:
@@ -316,8 +474,31 @@ def process_in(path: str) -> bool | None:
 
 
 def read_liveness(
-    root: str | Path, remote: str, branch: str, integration: str, ref_sha: str
+    root: str | Path,
+    remote: str,
+    branch: str,
+    integration: str,
+    ref_sha: str,
+    created_at: str | None = None,
 ) -> Liveness:
+    """`created_at` is when *this* ref came into existence, read from the host's own record.
+
+    ⛔ **The host's pull-request arms are keyed on a branch *name*, and a name outlives the ref
+    that wore it.** Measured 2026-10-19: a ref published at 14:47:34 read back `landed: the host
+    records pull request #114 for this ref as merged` -- a pull request that merged 16½ hours
+    earlier, against a different ref that had held the same name and been deleted. The reading
+    was the dangerous one of the two: *spent, releasing it needs no override*, on a claim another
+    session had taken thirty-three seconds before. It is a window rather than a steady state,
+    because the occupied-tree arm takes over once the tree is cut -- which is to say it is open
+    exactly across the interval between the publish and the cut, the interval `take` performs as
+    one operation and a pre-filter does not.
+
+    So a merged pull request lands this ref only where the ref already existed when it merged.
+    ⚠️ Where the creation time cannot be established the arm **declines** rather than asserting:
+    an unreadable creation time is not evidence the ref predates the merge, and the cost of
+    declining is a claim read as live -- which refuses a start and asks for an override to
+    release, both of which are the safe direction.
+    """
     unestablished: list[str] = []
     carries_own_commits = False
 
@@ -389,7 +570,7 @@ def read_liveness(
     if slug and shutil.which("gh"):
         proc = subprocess.run(
             ["gh", "pr", "list", "--repo", slug, "--head", branch, "--state", "all",
-             "--json", "number,state"],
+             "--json", "number,state,mergedAt"],
             capture_output=True,
             text=True,
         )
@@ -400,13 +581,26 @@ def read_liveness(
                 requests = None
                 unestablished.append("what the host records about this branch's pull requests")
             if requests is not None:
-                merged = [r["number"] for r in requests if r.get("state") == "MERGED"]
-                if merged:
-                    return Liveness(
-                        False,
-                        f"the host records pull request #{merged[0]} for this ref as merged",
-                        landed=True,
-                    )
+                merged = [r for r in requests if r.get("state") == "MERGED"]
+                # ⛔ Each merged request is read against *this* ref's own birth, not against the
+                # name it shares with the one that merged. A request that merged before the ref
+                # existed is residue from a previous occupant of the name.
+                for request in merged:
+                    verdict = merge_lands_this_ref(created_at, request.get("mergedAt"))
+                    if verdict is None:
+                        unestablished.append(
+                            f"whether pull request #{request['number']}, which the host records "
+                            "as merged for this branch name, is about this ref or about an "
+                            "earlier one that wore the name"
+                        )
+                        continue
+                    if verdict:
+                        return Liveness(
+                            False,
+                            f"the host records pull request #{request['number']} for this ref "
+                            "as merged",
+                            landed=True,
+                        )
                 if [r for r in requests if r.get("state") == "OPEN"]:
                     return Liveness(True, "an open pull request references the ref")
         else:
@@ -493,13 +687,83 @@ def status(
     sha = remote_ref_sha(root, remote, branch)
     if not sha:
         return Status(False, None, Holder(), None, local_only=False)
+    # ⛔ The holder is read **before** liveness and not beside it: `since` is when this ref came
+    # into existence, and the landed arm cannot tell a merge of this ref from a merge of the one
+    # that last wore its name without it.
+    holder = host_record(root, remote, branch)
     return Status(
         taken=True,
         ref_sha=sha,
-        holder=host_record(root, remote, branch),
-        liveness=read_liveness(root, remote, branch, integration, sha),
+        holder=holder,
+        liveness=read_liveness(root, remote, branch, integration, sha, holder.since),
         local_only=False,
     )
+
+
+# --------------------------------------------------------------------------------------------
+# The same question, asked about a work item rather than about a name
+# --------------------------------------------------------------------------------------------
+
+
+@dataclass
+class ItemStatus:
+    """What the branch namespace says about one work item.
+
+    ⛔ **Advisory, and the surface says so.** Two measured misses sit behind this type and only
+    one of them is a question this can answer: a filter asked about the wrong *name* (which this
+    fixes), and a filter asked at the right moment that was overtaken before the push (which
+    nothing asked before the attempt can fix). The authority is `take`.
+    """
+
+    item: str
+    readings: list[tuple[str, Status]]
+    local_only: bool
+
+    def contending(self, mine: str | None = None) -> list[tuple[str, Status]]:
+        """Refs claiming this item that are neither spent nor this session's own."""
+        return [
+            (branch, held)
+            for branch, held in self.readings
+            if branch != mine and not (held.liveness and held.liveness.landed)
+        ]
+
+    def report(self) -> str:
+        where = "on this machine" if self.local_only else "on the host"
+        if not self.readings:
+            return f"free: no ref claims item {self.item} {where}."
+        lines = []
+        contending = self.contending()
+        if not contending:
+            lines.append(
+                f"free: every ref claiming item {self.item} has landed, so none of them holds it."
+            )
+        elif len(contending) > 1:
+            # ⛔ Not a tidy answer, because the state is not tidy: this is the failure the claim
+            # exists to prevent, already happened, and collapsing it into "taken" would hide
+            # which of the two a person has to settle.
+            lines.append(
+                f"contested: {len(contending)} refs claim item {self.item} and none has landed. "
+                "Two sessions hold one item; which survives is a person's call."
+            )
+        else:
+            lines.append(f"taken: one ref claims item {self.item}.")
+        for branch, held in self.readings:
+            lines.append(f"  {branch}")
+            for line in held.report().splitlines():
+                lines.append(f"    {line}")
+        return "\n".join(lines)
+
+
+def status_for_item(
+    root: str | Path, item: str, remote: str = "origin", integration: str | None = None
+) -> ItemStatus:
+    integration = integration_branch(root, remote, integration)
+    local_only = not remote_url(root, remote)
+    readings = [
+        (branch, status(root, branch, remote, integration))
+        for branch, _ in refs_for_item(root, remote, item)
+    ]
+    return ItemStatus(item=str(item), readings=readings, local_only=local_only)
 
 
 def _local_branch(root: str | Path, branch: str) -> bool:
@@ -511,25 +775,65 @@ def _local_branch(root: str | Path, branch: str) -> bool:
 
 def take(
     root: str | Path,
-    branch: str,
-    tree: str,
+    branch: str | None = None,
+    tree: str | None = None,
     remote: str = "origin",
     integration: str | None = None,
     *,
+    item: str | None = None,
+    prefix: str | None = None,
+    title: str | None = None,
     _lease: bool = True,
     _require_created: bool = True,
     _release_on_tree_failure: bool = True,
+    _item_precheck: bool = True,
+    _item_postcheck: bool = True,
 ) -> str:
     """Claim the item, then cut the tree. Raises `ClaimError` on a refusal.
 
-    The three underscore arguments exist for `--self-test` and for nothing else: they are how the
+    The branch name is **derived here** from `(prefix, item, title)` where those are given, so
+    that two sessions handed one title cannot publish two names for one item. An explicit
+    `branch` is still accepted, for the roles that already have a name in hand.
+
+    ⛔ **The ref name is not the whole of the test-and-set, and the measurements say so.** Three
+    times on 2026-10-19 two sessions started one item under two names -- twice by abbreviating
+    the title differently, once by carrying the whole of it -- and each time the push *created*
+    the ref, so the arm that was supposed to refuse never engaged and the tree directory
+    arbitrated one step later. The derivation above closes that for sessions that hand over the
+    same title; the guard below closes it for the ones that do not, which is § 8's translation
+    case and anything taken by hand.
+
+    The underscore arguments exist for `--self-test` and for nothing else: they are how the
     suite plants each arm away in turn, to show that the race is held by the arm it is attributed
     to and that the no-residue rule is held by the release rather than by luck.
     """
+    if branch is None:
+        if not (prefix and item and title is not None):
+            raise ClaimError(
+                "a claim needs either `--branch`, or `--branch-prefix`, `--item` and `--title` "
+                "for the name to be derived from."
+            )
+        branch = branch_for(prefix, item, title)
+    if tree is None:
+        raise ClaimError("a claim needs the tree it is cut into; § 10 derives the path, not this.")
+    # Where the caller named no item, one is recovered from the branch where that can be done
+    # without guessing -- so a role that already holds a name still gets the guard.
+    item = str(item) if item else item_in_branch(branch)
+
     integration = integration_branch(root, remote, integration)
     base = git(root, "rev-parse", integration).stdout.strip()
     url = remote_url(root, remote)
     published = False
+
+    if item and _item_precheck:
+        held = status_for_item(root, item, remote, integration)
+        contending = held.contending(mine=branch)
+        if contending:
+            raise ClaimError(
+                f"refused: item {item} is already claimed under "
+                f"{', '.join('`' + b + '`' for b, _ in contending)}, which is not the name this "
+                f"start would have used (`{branch}`).\n{held.report()}"
+            )
 
     if url:
         args = ["push", "--porcelain", remote, f"{base}:{REFS_PREFIX}{branch}"]
@@ -541,6 +845,25 @@ def take(
             held = status(root, branch, remote, integration)
             raise ClaimError(f"refused: the claim on `{branch}` is taken.\n{held.report()}")
         published = True
+
+    # ⛔ Read again, now that this session's own ref is published. The check above is a read
+    # followed by a write and so has a window; this one closes it, because a sibling that
+    # published a differently-named ref inside that window is visible here and this session
+    # gives its own ref back rather than letting two stand.
+    #
+    # ⚠️ Where both sessions reach this point they both give their refs up and the item is left
+    # free, which is a refusal reported to two people rather than one item held by two. That is
+    # the direction to fail in, and a re-run takes it.
+    if item and _item_postcheck:
+        contending = status_for_item(root, item, remote, integration).contending(mine=branch)
+        if contending:
+            if published:
+                git(root, "push", remote, "--delete", branch, check=False)
+            raise ClaimError(
+                f"refused: item {item} was claimed under "
+                f"{', '.join('`' + b + '`' for b, _ in contending)} while this start was "
+                f"publishing `{branch}`. This session's ref has been given back."
+            )
 
     # The local half. Atomic too, but only against this machine -- which is why it is second.
     #
@@ -881,6 +1204,261 @@ def self_test() -> int:
         suite.ok("`claim_free` reads the taken ref as taken", not free_before)
         suite.ok("`claim_free` reads an unclaimed name as free", free_other)
 
+    print("\nthe branch name, derived rather than composed:")
+
+    # The three titles two sessions actually divided on, 2026-10-19. Each pair is one title that
+    # produced two refs, and the divergence in all three was how much of the title was carried.
+    MEASURED = [
+        (
+            41,
+            "What counts as done is configuration, and who answers each check",
+            ["feature/41-done-is-configuration", "feature/41-what-counts-as-done-is-configuration"],
+        ),
+        (
+            76,
+            "How a pull request lands is read by four roles and stated nowhere",
+            [
+                "feature/76-how-a-pull-request-lands",
+                "feature/76-how-a-pull-request-lands-is-read-by-four-roles-and-stated-nowhere",
+            ],
+        ),
+        (
+            70,
+            "Two sessions share one backlog: the claim on a work item is read by two roles and "
+            "written by nothing",
+            [
+                "feature/70-two-sessions-share-one-backlog",
+                "feature/70-two-sessions-share-one-backlog-the-claim-on-a-work-item-is-read-by-"
+                "two-roles-and-written-by-nothing",
+            ],
+        ),
+    ]
+    # Plant: the name composed by whoever is starting, which is what the role did. One title,
+    # two readers, two refs -- and in each measured case the push created the second ref, so the
+    # arm that was meant to refuse never ran.
+    suite.ok(
+        "composed by hand, one title gives two names on all three measured items "
+        "(so the derivation is what holds it)",
+        all(len(set(names)) == 2 for _, _, names in MEASURED),
+    )
+    suite.ok(
+        "derived, each title answers one name however many times it is asked",
+        all(len({branch_for("feature", i, t) for _ in range(3)}) == 1 for i, t, _ in MEASURED),
+        ", ".join(branch_for("feature", i, t) for i, t, _ in MEASURED),
+    )
+
+    # ⛔ Two *processes*, because "a pure function" in one interpreter is not the claim being
+    # made. The claim is that two sessions agree, and anything environment-carried -- a locale,
+    # a hash seed, a Unicode normalisation default -- would show up only across processes.
+    here = [branch_for("feature", i, t) for i, t, _ in MEASURED]
+    probe = (
+        "import json, sys; sys.path.insert(0, sys.argv[1]); import claim; "
+        "print(json.dumps([claim.branch_for('feature', i, t) for i, t in json.load(sys.stdin)]))"
+    )
+    elsewhere = subprocess.run(
+        [sys.executable, "-c", probe, str(Path(__file__).resolve().parent)],
+        input=json.dumps([[i, t] for i, t, _ in MEASURED]),
+        capture_output=True,
+        text=True,
+    )
+    suite.ok(
+        "and a second interpreter derives the same names",
+        elsewhere.returncode == 0 and json.loads(elsewhere.stdout or "[]") == here,
+        elsewhere.stdout + elsewhere.stderr,
+    )
+
+    # The length rule, which is the arm all three divergences turned on. Properties rather than
+    # one frozen string, so a reworded title is not a failing test.
+    long_title = MEASURED[2][1]
+    long_slug, full = slug_for(long_title), slug_for(long_title, limit=None)
+    suite.ok("a long title is bounded", len(long_slug) <= SLUG_MAX, long_slug)
+    suite.ok("the untruncated form would not have been", len(full) > SLUG_MAX, full)
+    suite.ok("and the cut falls on a word boundary, never mid-word",
+             full.startswith(long_slug) and full[len(long_slug)] == "-", long_slug)
+    suite.ok("and leaves no trailing separator", not long_slug.endswith("-"), long_slug)
+    suite.ok("a bound landing exactly on a separator keeps the whole word before it",
+             slug_for("one two three", limit=7) == "one-two",
+             slug_for("one two three", limit=7))
+
+    for label, title, expected in (
+        ("punctuation collapses to one separator", "A: b -- c!!  d", "a-b-c-d"),
+        ("case is dropped", "TwO SeSSiOnS", "two-sessions"),
+        ("digits survive", "§ 10 and #70", "10-and-70"),
+        ("a script of its own survives rather than becoming hyphens",
+         "Две сессии", "две-сессии"),
+        ("a decomposed title slugs as its composed form does",
+         unicodedata.normalize("NFD", "resum\u00e9"), unicodedata.normalize("NFC", "resum\u00e9")),
+    ):
+        suite.ok(f"the derivation: {label}", slug_for(title) == expected, slug_for(title))
+
+    suite.ok(
+        "a title that slugs to nothing leaves the number alone, not a trailing hyphen",
+        branch_for("feature", 70, "!!! ---") == "feature/70",
+        branch_for("feature", 70, "!!! ---"),
+    )
+    suite.ok(
+        "an empty prefix is refused rather than producing `/70-x`",
+        _raises(lambda: branch_for("", 70, "x")),
+    )
+
+    print("\nthe claim resolves on the item, not on the name:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, two = _bare_world(stack)
+        mine, theirs = "feature/70-two-sessions", "feature/70-two-sessions-share-one-backlog"
+
+        # Plant: both guards removed, which is the state the measured failures happened in --
+        # the ref name is the whole of the test-and-set, and two names are two claims.
+        take(one, mine, str(Path(tmp) / "t1"), _item_precheck=False, _item_postcheck=False)
+        raced = True
+        try:
+            take(two, theirs, str(Path(tmp) / "t2"),
+                 _item_precheck=False, _item_postcheck=False)
+        except ClaimError:
+            raced = False
+        suite.ok(
+            "with the ref-name arms alone two sessions claim one item under two names "
+            "(so the item guard is what holds it)",
+            raced and len(refs_for_item(one, "origin", "70")) == 2,
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, two = _bare_world(stack)
+        mine, theirs = "feature/70-two-sessions", "feature/70-two-sessions-share-one-backlog"
+        take(one, mine, str(Path(tmp) / "t1"))
+
+        refusal = ""
+        try:
+            take(two, theirs, str(Path(tmp) / "t2"))
+        except ClaimError as exc:
+            refusal = str(exc)
+        suite.ok("a second session under a different name is refused", "refused" in refusal, refusal)
+        suite.ok("and the refusal names the ref that holds the item", mine in refusal, refusal)
+        suite.ok("it leaves no second ref", len(refs_for_item(two, "origin", "70")) == 1)
+        suite.ok("no local branch", not _local_branch(two, theirs))
+        suite.ok("and no tree", not Path(Path(tmp) / "t2").exists())
+
+        # Each arm attributed separately, as the two ref-name arms above are: the pre-check
+        # holds the order where the sibling's ref was already there, the post-check holds the
+        # order where it appears while this session is publishing.
+        suite.ok(
+            "the pre-check alone refuses it (the sibling was already there)",
+            _refuses_item(two, theirs, str(Path(tmp) / "t3"), _item_postcheck=False),
+        )
+        suite.ok(
+            "the post-check alone refuses it too (the window the pre-check leaves)",
+            _refuses_item(two, theirs, str(Path(tmp) / "t4"), _item_precheck=False),
+        )
+        suite.ok(
+            "and the post-check gives this session's own ref back rather than leaving two",
+            len(refs_for_item(two, "origin", "70")) == 1
+            and refs_for_item(two, "origin", "70")[0][0] == mine,
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, two = _bare_world(stack)
+        item, title, _ = MEASURED[0]
+        take(one, prefix="feature", item=str(item), title=title, tree=str(Path(tmp) / "t1"))
+        refusal = ""
+        try:
+            # Both guard arms off, so what is left is the ref-name test-and-set alone. This is
+            # the point of deriving the name: the guard above becomes the residue case rather
+            # than the mechanism, and the common arm engages again.
+            take(two, prefix="feature", item=str(item), title=title, tree=str(Path(tmp) / "t2"),
+                 _item_precheck=False, _item_postcheck=False)
+        except ClaimError as exc:
+            refusal = str(exc)
+        suite.ok(
+            "two sessions deriving from one title collide on the ref itself, with the item "
+            "guard planted away",
+            "taken" in refusal,
+            refusal,
+        )
+
+    print("\nwhat the branch namespace says about a work item:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, two = _bare_world(stack)
+        held = status_for_item(two, "70")
+        suite.ok("an item no ref claims reads free", "free:" in held.report(), held.report())
+
+        take(one, "feature/70-a", str(Path(tmp) / "t1"))
+        held = status_for_item(two, "70")
+        suite.ok("an item one ref claims reads taken", held.report().startswith("taken:"),
+                 held.report())
+        suite.ok("and names the ref, so the answer is checkable",
+                 "feature/70-a" in held.report(), held.report())
+        suite.ok("while a different item is still free",
+                 "free:" in status_for_item(two, "81").report())
+
+        # ⛔ The trap the bullet names: the ref tail still matches after the work lands, so a
+        # filter that stopped at the match would hold the item for as long as the ref survives
+        # the merge. Planted by reading the candidate list, then held by reading the status.
+        t2 = Path(tmp) / "t2"
+        take(one, "feature/81-done", str(t2))
+        for key, value in (("user.email", "one"), ("user.name", "One")):
+            git(t2, "config", key, value)
+        (t2 / "work.txt").write_text("work\n")
+        git(t2, "add", "work.txt")
+        git(t2, "commit", "--quiet", "-m", "work")
+        git(t2, "push", "--quiet", "origin", "feature/81-done")
+        git(two, "fetch", "--quiet", "origin", "feature/81-done")
+        git(two, "checkout", "--quiet", "main")
+        git(two, "merge", "--squash", "FETCH_HEAD", check=False)
+        for key, value in (("user.email", "two"), ("user.name", "Two")):
+            git(two, "config", key, value)
+        git(two, "commit", "--quiet", "-m", "squashed")
+        git(two, "push", "--quiet", "origin", "main")
+
+        suite.ok(
+            "a ref-tail match alone still matches after the merge (so the reading is what holds it)",
+            [b for b, _ in refs_for_item(two, "origin", "81")] == ["feature/81-done"],
+        )
+        landed = status_for_item(two, "81")
+        suite.ok("but the item reads free, because the only ref claiming it has landed",
+                 "free:" in landed.report(), landed.report())
+        suite.ok("and a start on it is not refused",
+                 "claimed" in take(two, "feature/81-again", str(Path(tmp) / "t3")))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, two = _bare_world(stack)
+        take(one, "feature/70-a", str(Path(tmp) / "t1"),
+             _item_precheck=False, _item_postcheck=False)
+        take(two, "feature/70-b", str(Path(tmp) / "t2"),
+             _item_precheck=False, _item_postcheck=False)
+        contested = status_for_item(two, "70")
+        suite.ok("two live refs for one item read as contested, not as taken",
+                 contested.report().startswith("contested:"), contested.report())
+        suite.ok("and the report says it is a person's call",
+                 "person's call" in contested.report(), contested.report())
+
+    print("\na merged pull request found by branch name, against the ref standing there now:")
+
+    # The measured misreading, 2026-10-19: a ref published at 14:47:34 read back as landed on a
+    # pull request that merged at 22:17:55 the day before. No host is needed to hold the rule --
+    # what went wrong was the comparison that was never made.
+    born = "2026-10-19T14:47:34Z"
+    merged_before = "2026-10-18T22:17:55Z"
+    merged_after = "2026-10-19T18:02:11Z"
+    suite.ok(
+        "a merge that predates the ref does not land it (the measured misreading)",
+        merge_lands_this_ref(born, merged_before) is False,
+    )
+    suite.ok(
+        "a merge that postdates the ref does land it",
+        merge_lands_this_ref(born, merged_after) is True,
+    )
+    suite.ok(
+        "and with either instant unreadable the arm declines rather than guessing",
+        merge_lands_this_ref(None, merged_after) is None
+        and merge_lands_this_ref(born, None) is None,
+    )
+
     print("\nliveness, and what is reported rather than broken:")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -1140,10 +1718,36 @@ def _refuses(root: str, branch: str, tree: str) -> bool:
     return False
 
 
+def _refuses_item(root: str, branch: str, tree: str, **planted: bool) -> bool:
+    """A refusal with one of the item guard's two arms planted away."""
+    try:
+        take(root, branch, tree, **planted)
+    except ClaimError:
+        return True
+    return False
+
+
+def _raises(call) -> bool:
+    try:
+        call()
+    except ClaimError:
+        return True
+    return False
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--self-test", action="store_true", help="plant a violation per check, then hold the rule")
     sub = parser.add_subparsers(dest="command")
+
+    # ⛔ The derivation on its own, so nothing has to reproduce it to find out what a start would
+    # name. A role that needs the name before it has the claim asks for it rather than slugging.
+    # ⚠️ `--branch-prefix` rather than `--prefix`, which the sweep over role text reads as a
+    # flag carrying a directory -- correctly, for every other command that spells it that way.
+    namer = sub.add_parser("name", help="the branch name a claim on this item would be taken on")
+    namer.add_argument("--branch-prefix", required=True, help="a function of the item's type (§ 4.1)")
+    namer.add_argument("--item", required=True, help="the item's own identifier")
+    namer.add_argument("--title", required=True, help="the title the slug derives from (§ 8)")
 
     for name, help_text in (
         ("take", "claim the item: publish the ref, then cut the tree"),
@@ -1152,13 +1756,27 @@ def main(argv: list[str]) -> int:
     ):
         node = sub.add_parser(name, help=help_text)
         node.add_argument("--repo-root", required=True, help="the code root, stated and never inherited")
-        node.add_argument("--branch", required=True)
+        node.add_argument("--branch", required=(name == "release"))
         node.add_argument("--remote", default="origin")
         node.add_argument(
             "--integration",
             default=None,
             help="override; derived from the remote's default branch when omitted",
         )
+        if name in ("take", "status"):
+            node.add_argument(
+                "--item",
+                default=None,
+                help="the work item; for `take`, what the claim is resolved on rather than the "
+                "ref name, and for `status`, the question asked",
+            )
+        if name == "take":
+            node.add_argument(
+                "--branch-prefix", default=None, help="with --item and --title, derives --branch"
+            )
+            node.add_argument(
+                "--title", default=None, help="with --item and --branch-prefix, derives --branch"
+            )
         if name in ("take", "release"):
             node.add_argument("--tree", required=(name == "take"))
         if name == "release":
@@ -1177,8 +1795,21 @@ def main(argv: list[str]) -> int:
         return 2
 
     try:
-        if args.command == "take":
-            print(take(args.repo_root, args.branch, args.tree, args.remote, args.integration))
+        if args.command == "name":
+            print(branch_for(args.branch_prefix, args.item, args.title))
+        elif args.command == "take":
+            print(
+                take(
+                    args.repo_root,
+                    args.branch,
+                    args.tree,
+                    args.remote,
+                    args.integration,
+                    item=args.item,
+                    prefix=args.branch_prefix,
+                    title=args.title,
+                )
+            )
         elif args.command == "release":
             print(
                 release(
@@ -1191,7 +1822,20 @@ def main(argv: list[str]) -> int:
                 )
             )
         else:
-            print(status(args.repo_root, args.branch, args.remote, args.integration).report())
+            if args.item and args.branch:
+                print(
+                    "state one question: `--item` asks what holds the work item, `--branch` "
+                    "asks about one name.",
+                    file=sys.stderr,
+                )
+                return 2
+            if args.item:
+                print(status_for_item(args.repo_root, args.item, args.remote, args.integration).report())
+            elif args.branch:
+                print(status(args.repo_root, args.branch, args.remote, args.integration).report())
+            else:
+                print("`status` needs `--item` or `--branch`.", file=sys.stderr)
+                return 2
     except ClaimError as exc:
         print(str(exc), file=sys.stderr)
         return 1

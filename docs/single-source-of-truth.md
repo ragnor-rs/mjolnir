@@ -556,6 +556,11 @@ broken; and that a root with no remote claims locally and says so.
 | 8 | A process **below** a tree's root reads as occupying it | a real process two directories down | computed |
 | 9 | A squash-merged claim reads **landed** rather than live, and releases with no override | a real squash merge, after asserting the same ref read live before it | computed |
 | 10 | A claim that is neither landed nor held in a tree here is refused by `release`, fresh ones included | two clones | computed |
+| 11 | The branch name is **derived**, and a second interpreter derives the same one from each of the three titles two sessions divided on | the derivation, in two processes | computed |
+| 12 | The derivation's **bound** cuts at a word boundary and leaves no trailing separator, and punctuation, case, digits, a non-Latin script and a decomposed title each slug as stated | the derivation | computed |
+| 13 | Two sessions under **two names for one item** produce one claim, with each arm of the item guard attributed separately | two clones | computed |
+| 14 | A **landed** ref still matches the item's name and the item still reads free, and a start on it is not refused | two clones, after a real squash merge | computed |
+| 15 | A merged pull request that **predates the ref** does not land it, and either instant unreadable makes the arm decline | the comparison, with the measured timestamps | computed |
 
 ⚠️ **Check 0 is run once per arm, and that is the finding this suite was written by rather than
 for.** The surface states two arms because the first draft of the script shipped only the second —
@@ -566,6 +571,22 @@ the push at all: exit zero, no update attempted, the lease never consulted. The 
 caught it, with the second session cheerfully claiming an item the first already held. ⛔ So each
 arm is planted away while the other stays, and the check is believed only where removing *that*
 arm is what lets the race through.
+
+⚠️ **Checks 11 and 13 are two answers to one failure, and the suite keeps them apart because
+they cover different configurations.** Three items were started twice under two names each on
+2026-10-19 — the divergence being how much of the title each session carried — so the derivation
+(11) makes two sessions handed one title publish one name, and the ref's own test-and-set
+arbitrates as it was meant to; check 13 plants the derivation's agreement away and holds the
+residue, which is § 8's translation case and anything named by hand. ⛔ Attributed separately for
+the reason check 0 is: with both the guard's arms removed, two sessions claim one item and the
+suite says so.
+
+⚠️ **Check 15 is held without a host, and that is the whole of what can be held here.** The
+measured failure was a ref reading *landed* on a pull request that merged the day before against
+a deleted ref of the same name, and what was wrong was a comparison that was never made rather
+than anything about the host — so the comparison is what the suite holds. The wiring was proved
+by hand against the live host instead: the same ref read `landed … releasing it needs no
+override` on the carrier before the change and `orphaned-candidate` after it.
 
 ⚠️ **Check 2 has two shapes for the same reason, and the second one hid behind the first.** A
 refusal on the *branch name* never reaches the local half at all — the push is what refuses — so
@@ -623,6 +644,22 @@ whatever it finds deletes somebody else's work.
   branch one minute after it merged, not by the suite.
 - **A claim on a project sharing no remote.** Two machines with no remote between them cannot be
   arbitrated by anything, and the surface states that rather than guarding it.
+- **The host's pull-request arms against a real host.** Check 15 holds the comparison and nothing
+  runs `gh` in the suite, so what is untested here is that the field read carries the instant the
+  comparison needs. ⚠️ The *open* pull request arm has the same name-reuse exposure and is left
+  alone: a reused name whose previous occupant has an open request reads **live**, which refuses
+  a start and asks for an override to release — the safe direction of the two, and the reason the
+  merged arm was the one worth the comparison.
+- **Two sessions reaching the second item read together.** Both give their refs up and the item
+  is left free, which the suite does not reproduce because true simultaneity is not a fixture it
+  can build — the same limit the second test-and-set arm has. ⚠️ What is held is each arm
+  separately; what is reasoned is that the outcome of the interleaving is a refusal to both
+  rather than a claim to both.
+- **A tracker whose identifiers are not digits.** The item a branch carries is recovered from the
+  name only where it is a run of digits, so a project whose keys carry their own separators
+  states the item rather than having one guessed out of a slug. ⛔ Where it is neither stated nor
+  recoverable the guard does not run, and the ref name is the whole of the claim again — which is
+  the pre-derivation behaviour and is recorded here rather than reported as covered.
 
 ## The reply's register: held in the session, not on the gate
 
