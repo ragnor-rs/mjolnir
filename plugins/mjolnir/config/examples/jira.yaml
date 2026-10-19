@@ -77,6 +77,21 @@ readiness:
   - { check: ref_exists, ref: "<the release branch for that fix version>", stop: "The release branch is missing from the remote." }
   - { check: state_is, roles: [initial, ready], on_fail: flag, stop: "Already started or finished." }
 
+# ⛔ The same "a green gate is not done" rule as github-projects.yaml, split in two because
+# its two halves have different answerers (§ 13). The acceptance suite needs the application
+# running and is otherwise a machine reading a machine — one command, a pass/fail count, and
+# mirrored by no workflow above, which is exactly the check that *must* run locally. The
+# checklist on the change needs a person or a browser, and only that half is `human`:
+# configuring the suite as human-answered would stop every completion for a hand-over
+# nobody needed.
+done:
+  - { check: gate_green, answered_by: procedure, stop: "The host's runs are not green for this commit." }
+  - { check: local, run: "<the acceptance scenario command>", answered_by: procedure,
+      stop: "The acceptance scenarios have not been run against a running instance." }
+  - { check: checklist_ticked, answered_by: human,
+      stop: "Work the checklist on the change and record what you saw." }
+  - { check: merged, answered_by: procedure, stop: "The change has not landed." }
+
 commit:
   staging: all
   trailer: read_from_history

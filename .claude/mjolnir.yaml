@@ -146,6 +146,21 @@ readiness:
   - { check: state_is, roles: [initial], stop: "The issue is already closed." }
   - { check: no_open_blockers, stop: "An issue this one depends on has not landed yet." }
 
+# ⛔ What this repository ships is text and the scripts that hold it, so there is no running
+# application for anyone to drive and no `human_verification` to configure: the host's own
+# runs in `host.checks` *are* the verification here, and every check below is machine-answered.
+# (Not the readiness gate directly above, which answers a different question.) That is the
+# behaviour this project already had, written down (§ 13) rather than assumed, and `merged`
+# last is what makes the gate block the merge.
+# ⚠️ Whether a person is going to look at the diff is a different question and is **not** a
+# check here: the reviewing role asks it every pass as procedure, so configuring it would be
+# the same ask twice with one of the two allowed to disagree.
+done:
+  - { check: gate_green, answered_by: procedure,
+      stop: "The host's own runs are not green for this commit." }
+  - { check: merged, answered_by: procedure,
+      stop: "The change has not landed on the integration branch." }
+
 commit:
   staging: explicit
   # ⛔ Not read_from_history. The only author is this host's authenticated user; no tool,

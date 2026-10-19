@@ -311,14 +311,21 @@ duplicates.
 ⛔ **A local run of a command the host has already run for this commit adds nothing**, to this role
 or to whoever reads the change: it spends a shared machine for no new information. The complement is
 the legitimate case — ⛔ **a check no `host.checks` entry mirrors is the one that must be run
-locally**, because nothing else will ever answer it. ⚠️ **Already mirrored is not a string match**:
-one workflow can run several commands while its entry states one, so a check colliding with the
-second of them is as duplicated as one colliding with the first. ⛔ **Two exceptions, each measured
+locally**, because nothing else will ever answer it — ⚠️ **already mirrored being a comparison
+against whatever an entry mirrors rather than against one string**, which is
+[`§ 2`](../../config/schema.md#2-code-host)'s fact and not this file's. ⚠️ **A command configured in
+the project's done list is not this role's to run**
+([`§ 13`](../../config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)):
+that list belongs to the finishing role, and running it here spends an expensive suite twice or
+leaves each role thinking the other had it. ⛔ **Two exceptions, each measured
 and each in the direction the rule gets wrong:** a local run that covers *strictly more* than the
 host's — a check whose input the host's runner does not have — is not a duplicate; and a decline
 this role has reason to overrule is overruled **with the reason in the report**, never by editing
-the thing that declined it. ⚠️ **What counts as done is not this role's to define**, so it reports
-the verdicts it has.
+the thing that declined it. ⚠️ **What counts as done is not this role's to define** — the project
+states it at
+[`§ 13`](../../config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)
+and the finishing role is what walks it — so this role reports the verdicts it has and the answers
+it was given, and ⛔ **never what they add up to**.
 
 ⛔ **A failing check is never merged on, and no cause excuses it** — not a red that fails on the
 base rather than on this change, not one that died before reaching what it tests, not one a local

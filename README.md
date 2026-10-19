@@ -117,9 +117,10 @@ The rule, and why it is procedure rather than a setting, is
 **The single statement of every rule and flow is
 [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the nine-role loop and
 its axes, the tracker port and its capabilities, the work-item facets with their absent
-cases, the status writers, the readiness gate, commit behaviour, the day log, the branch model,
-the session's context and the ordering. Everything else written about the procedure, in this
-repository or on a work item, explains or records; none of it is a second authority.
+cases, the status writers, the readiness gate, what counts as done and who answers each of those
+checks, commit behaviour, the day log, the branch model, the session's context and the ordering.
+Everything else written about the procedure, in this repository or on a work item, explains or
+records; none of it is a second authority.
 
 That is enforced rather than asserted: the `Single source of truth` workflow holds every document
 to it on every change — see [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md)
@@ -136,7 +137,7 @@ found between the old copies and the decision that settled it.
 |---|---|
 | [`plugins/mjolnir/skills/file-work-item/`](plugins/mjolnir/skills/file-work-item/) | Turn a request into work items: the split confirmed, a three-layer duplicate check with a human gate, the parent case where the request is a piece of an open item, and the body rendered from the project's own template |
 | [`plugins/mjolnir/skills/start/`](plugins/mjolnir/skills/start/) | Take a work item: the one named or the next the project's ordering offers, the readiness gate run whole, the claim published as the item's ref, and the branch cut into a tree the session then works in |
-| [`plugins/mjolnir/skills/finish/`](plugins/mjolnir/skills/finish/) | Take a finished branch to a landed pull request: the commit, the push, the pull request, the host's answer about it, the merge read back from state, the item's move through the port, and the tree released |
+| [`plugins/mjolnir/skills/finish/`](plugins/mjolnir/skills/finish/) | Take a finished branch to a landed pull request: the commit, the push, the pull request, the host's answer about it, what the project counts as done and who answers each of those checks, the merge read back from state, the item's move through the port, and the tree released |
 | [`plugins/mjolnir/skills/review/`](plugins/mjolnir/skills/review/) | Review an open change and drive its gate green: the conversation read first, the diff read whatever else reads it, every finding reproduced and fixed under the same item, every thread answered, and a record of whether a person is going to look — which this role writes and never acts on |
 | [`plugins/mjolnir/skills/day-report/`](plugins/mjolnir/skills/day-report/) | Build a working day's time-log entry from session transcripts, git, the code host, chat and the calendar |
 | [`plugins/mjolnir/config/`](plugins/mjolnir/config/) | The configuration surface: the schema, and a whole example per tracker including a deliberately trackerless one |

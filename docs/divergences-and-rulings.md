@@ -130,14 +130,22 @@ Recorded so the next reader does not take it for an oversight:
   Three of the six deploy copies run 210 to 372 lines, and "almost nothing survives extraction"
   is close to the truth for this role — but it should be reached by reading the rest.
 
-### Two further things that are configuration, not procedure
+### Further things that are configuration, not procedure
 
 The **readiness gate**
-([schema § 5](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list))
-and the day log's **exclusion list**
-([schema § 9](../plugins/mjolnir/config/schema.md#9-day-log)) — each an
-ordered list of named checks drawn from a shared library rather than a fixed sequence. The
-measurements are in `configuration-surface.md`.
+([schema § 5](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)),
+the day log's **exclusion list**
+([schema § 9](../plugins/mjolnir/config/schema.md#9-day-log)) and **what counts as done**
+([schema § 13](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check))
+— each an ordered list of named checks drawn from a shared library rather than a fixed sequence. The
+measurements are in `configuration-surface.md`. ⚠️ No count is carried in this heading any more: it
+said *two* and what counts as done arrived, which is the drift this record is supposed to catch
+rather than demonstrate.
+
+What counts as done carries one thing the readiness gate and the exclusion list do not, and it is
+the part a reader should not take for a refinement: **a check states who answers it.** What forced
+that — two projects splitting one rule in ways a single human-answered flag would have got wrong in
+opposite directions — is the measurement, and it stays where the measurements are.
 
 ## 5. What the last three day-log copies added
 

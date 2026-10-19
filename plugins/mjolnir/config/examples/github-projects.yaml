@@ -73,6 +73,18 @@ readiness:
   - { check: state_is, roles: [initial], stop: "The item is not in the starting state." }
   - { check: no_open_blockers, stop: "An open blocker has to land first." }
 
+# ⛔ A green gate is explicitly not done here, and the reason is structural rather than
+# cultural: the whole automated suite above runs in one process against doubles, so the
+# user-visible flow is verified by hand or by nothing. The verification sits *before*
+# `merged`, which is what makes it block the merge (§ 13) — and because the credential this
+# procedure holds drives the application as the application rather than as a user, it can
+# hand over a type-this/expect-that script and never produce the answer itself.
+done:
+  - { check: gate_green, answered_by: procedure, stop: "The host's runs are not green for this commit." }
+  - { check: human_verification, answered_by: human,
+      stop: "Drive the change in the running application and report what you saw." }
+  - { check: merged, answered_by: procedure, stop: "The change has not landed." }
+
 commit:
   staging: explicit
   trailer: read_from_history
