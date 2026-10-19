@@ -46,9 +46,26 @@ own and a bare number would resolve to the wrong one.
 
 ## 2. The argument and the branch must agree
 
-The argument resolves three ways, and all three reach the same thing: **one item number**. A bare
-number is the number; an item's address and a pull request's address each carry it in the last path
-segment.
+The argument resolves three ways and each has to reach **one item number** — which is ⛔ **not the
+same number as the change's**:
+
+| the argument | where the item number comes from |
+|---|---|
+| a bare number | the argument itself; it is the item's own |
+| an item's address | its last path segment |
+| a **change's** address | ⛔ the host's record of what that change closes — **never** the last path segment, which is the *change's* number |
+
+⛔ **The last two are not one rule, and collapsing them resolves the wrong object.** ⚠️ **Measured
+on this repository:** `/pull/132`'s last segment is 132 while the item was 76, and 132 is a live
+item of its own — so the plausible reading finishes an item nobody named. ⛔ **That is why the
+resolution is corrected here rather than left to the stop below**, which only catches the arm with
+a branch to disagree with and never the arm that proceeds on the argument alone. ⚠️ On a tracker
+whose keys are not integers a path segment is never an item key at all.
+
+⛔ **Reading what a change closes is a capability and not a given**
+([`§ 3`](../../config/schema.md#the-operations-and-what-an-absent-capability-does)). Where it is
+unavailable this role says so and **asks** for the item number rather than deriving one — the same
+answer `item_number`'s own fallback gives below.
 
 ⛔ **An argument that disagrees with the branch is a stop that prints both values.** Not a
 preference for one of them and not a question — the two readings are *finish the item I named* and
