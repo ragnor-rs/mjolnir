@@ -297,9 +297,17 @@ def surface_keys(surface_text: str) -> set[str]:
     return {path for _, block in _fences(surface_text) for path, _ in _walk_keys(block)}
 
 
-# The grammar a retirement is stated in, and the only part of it hardcoded here.
-# Everything else about which keys are retired is read off the surface.
-RETIREMENT = re.compile(r"`([A-Za-z0-9_.]+)`\s+is\s+retired\b")
+# A retirement has no key line to hang a marker on -- the key being gone from
+# the surface's blocks is what retiring it means -- so it is stated as a clause
+# of its own, inside the block the key was declared in.
+#
+# ⛔ A token, and never the English beside it. A grammar that read the prose
+# statement would be reading the one part of the surface written for people: the
+# same shape was measured on #99, where `required when <key> is <value>` claimed
+# four sentences that were never markers and stopped every example loading. The
+# prose says why the key is retired and this clause is what the reader performs,
+# which is the division every other marker on the surface already has.
+RETIRED_CLAUSE = re.compile(r"^#\s*retired:\s*(?P<key>[A-Za-z0-9_.]+)$")
 
 
 def retired_keys(surface_text: str) -> set[str]:
@@ -309,11 +317,17 @@ def retired_keys(surface_text: str) -> set[str]:
     are held to each other rather than maintained apart -- which is the arm that
     was missing while `RETIRED` was the only statement of its own contents.
 
-    ⛔ Matched with the text's line breaks flattened. The documents wrap at a
-    column, so a statement whose key and verb land on different lines is the
-    same statement, and a line-based match would read it as absent.
+    ⚠️ No arm refuses a surface that states none. Unlike the marker classes
+    above, zero retirements is the ordinary state of a surface that has never
+    retired anything, so emptiness here is read against `RETIRED` -- which must
+    then be empty too -- rather than against the surface being unreadable.
     """
-    return set(RETIREMENT.findall(" ".join(surface_text.split())))
+    return {
+        found.group("key")
+        for _, block in _fences(surface_text)
+        for line in block.splitlines()
+        if (found := RETIRED_CLAUSE.match(line.strip()))
+    }
 
 
 def vocabulary(facts: dict, path: str, what: str) -> list[str]:

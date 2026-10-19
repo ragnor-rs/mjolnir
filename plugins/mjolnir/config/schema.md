@@ -75,6 +75,16 @@ among them: `# stated, never inherited from the working directory; required`.
 or as a comment beside it. The reader accepts what the alternation states and nothing else, so a
 value added here is accepted without the reader changing.
 
+**A key the surface has stopped declaring is marked `# retired: <key>`**, as a clause of its own
+inside the block that key was declared in — a retired key has no line left to carry a marker,
+which is what retiring it means. The clause is what the reader performs, and the prose beside it
+says why; ⛔ **the reader reads the clause and never that prose**, a grammar matching English having
+been measured claiming four sentences that were never markers.
+
+```yaml
+# retired: version
+```
+
 ⛔ **`version` is retired, and a configuration that still declares it is refused with the key
 named.** It stated which revision of this surface a configuration was written against, so a reader
 of an older file could tell a facet absent **by decision** from one that did not exist when the
@@ -217,6 +227,10 @@ correctly and proceeds — and since the absolute code root is the configured `c
 the resolved root, every `git` and `gh` call then addresses the other project's repository. No
 in-band test tells that apart from a deliberate run on that project, so what the surface
 requires is that the answer be stated where the person can see it, not that it be guessed.
+
+```yaml
+# retired: roots.skills
+```
 
 ⛔ **`roots.skills` is retired, and a configuration that still declares it is refused with the
 key named.** It was declared here, written in every configuration, and read by nothing — and
