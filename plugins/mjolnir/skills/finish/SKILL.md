@@ -56,8 +56,8 @@ same number as the change's**:
 | a **change's** address | ⛔ the host's record of what that change closes — **never** the last path segment, which is the *change's* number |
 
 ⛔ **The last two are not one rule, and collapsing them resolves the wrong object.** ⚠️ **Measured
-on this repository:** `/pull/132`'s last segment is 132 while the item was 76, and 132 is a live
-item of its own — so the plausible reading finishes an item nobody named. ⛔ **That is why the
+on this repository:** a change's address ended in 132 while the item it closes was 76, and 132 was
+a live item of its own — so the plausible reading finishes an item nobody named. ⛔ **That is why the
 resolution is corrected here rather than left to the stop below**, which only catches the arm with
 a branch to disagree with and never the arm that proceeds on the argument alone. ⚠️ On a tracker
 whose keys are not integers a path segment is never an item key at all.
