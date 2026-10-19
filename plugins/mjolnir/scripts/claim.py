@@ -510,6 +510,70 @@ def standing_in(path: str) -> bool:
     return here == root or here.startswith(root + os.sep)
 
 
+def foreign_occupants(path: str) -> list[tuple[int, str]] | None:
+    """Live processes of **another session** working at or below `path`. None where unreadable.
+
+    ⛔ **Occupancy is not "any process holding this working directory", which is what `release`
+    shipped first and what refused its own cleanup inside the hour.** Measured 2026-10-19: a
+    `caffeinate` the harness had started *while* the session was in its tree still carried that
+    directory after the session left, so the tree read as occupied by a process holding an
+    inherited descriptor and doing nothing. The refusal was correct on its own terms and wrong
+    about the world, and the override reserved for destroying somebody's work had to be passed to
+    clean up a tree nobody was in -- which is how an override stops meaning anything.
+
+    ⛔ **The distinction is the POSIX session, which is what *another live session* already
+    says.** A helper this run started shares this run's session id; a separate run -- another
+    terminal, another agent -- does not. ⚠️ **The working directory alone cannot carry it**: a
+    session doing work and an abandoned helper are identical in the open-file table, the
+    directory being the only tie either has. So the reading is on identity, not on behaviour.
+
+    ⛔ **And a list of process names is not the answer.** `caffeinate` is one harness's helper and
+    the next ships something else, so a carrier naming it would be a project's value in shared
+    code -- which this repository's own sweep refuses.
+
+    ⚠️ **Returns the occupants rather than a verdict.** A refusal that cannot say *who* costs the
+    reader an `lsof` of their own, which is exactly what the measured incident cost.
+    """
+    if not shutil.which("lsof"):
+        return None
+    proc = subprocess.run(
+        ["lsof", "-a", "-d", "cwd", "-F", "pcn"], capture_output=True, text=True
+    )
+    root = os.path.realpath(path)
+    mine = os.getsid(0)
+    found: list[tuple[int, str]] = []
+    pid: int | None = None
+    command = ""
+    read_any = False
+    for line in proc.stdout.splitlines():
+        tag, value = line[:1], line[1:]
+        if tag == "p":
+            pid = int(value) if value.isdigit() else None
+            command = ""
+        elif tag == "c":
+            command = value
+        elif tag == "n" and pid is not None:
+            read_any = True
+            cwd = os.path.realpath(value)
+            if cwd != root and not cwd.startswith(root + os.sep):
+                continue
+            try:
+                theirs = os.getsid(pid)
+            except ProcessLookupError:
+                # ⚠️ Gone between the listing and the question: not an occupant.
+                continue
+            except OSError:
+                # ⛔ Unaskable is not absent. A process we may not ask about counts, for the same
+                # reason an unreadable table does -- the failure direction here deletes a tree.
+                found.append((pid, command))
+                continue
+            if theirs != mine:
+                found.append((pid, command))
+    if not read_any:
+        return None
+    return found
+
+
 def read_liveness(
     root: str | Path,
     remote: str,
@@ -999,24 +1063,28 @@ def release(
     # another live session occupies, and what it costs that session is not a ref but everything
     # in the tree git does not track.
     if doomed and not force and Path(doomed).exists():
-        occupied = process_in(doomed)
-        # ⛔ Three answers, not two, and the two that are not `False` both refuse. An unreadable
+        # ⛔ Another *session*, not any process: this run's own helpers inherit the tree's
+        # directory and outlive its use of the tree, and counting them refused this command's
+        # own cleanup. `foreign_occupants` carries that reading and the measurement behind it.
+        occupants = foreign_occupants(doomed)
+        # ⛔ Three answers, not two, and the two that are not "nobody" both refuse. An unreadable
         # open-file table is *unestablished*, never *idle* -- the arm's own rule, and here the
         # direction that matters, since reading it as idle removes the tree it could not clear.
-        if occupied is True:
+        if occupants is None:
             raise ClaimError(
-                f"refused: a live process is working at or below `{doomed}`, which this release "
-                "would remove.\n"
+                f"refused: whether another session is working in `{doomed}` could not be read, "
+                "and unreadable is not idle.\n"
+                "The machine's open-file table was unavailable, so the reading that protects a "
+                "sibling session could not be taken. Pass --force to remove the tree regardless."
+            )
+        if occupants:
+            who = ", ".join(f"{command} ({pid})" for pid, command in occupants)
+            raise ClaimError(
+                f"refused: another session is working at or below `{doomed}`, which this release "
+                f"would remove: {who}.\n"
                 "§ 10 keeps a tree another session occupies. Wait for that session to finish, or "
                 "pass --force — which here destroys whatever the tree holds that git does not "
                 "track, not only a ref."
-            )
-        if occupied is None:
-            raise ClaimError(
-                f"refused: whether a live process is working in `{doomed}` could not be read, and "
-                "unreadable is not idle.\n"
-                "The machine's open-file table was unavailable, so the reading that protects a "
-                "sibling session could not be taken. Pass --force to remove the tree regardless."
             )
 
     if not force and remote_url(root, remote):
@@ -1729,14 +1797,19 @@ def self_test() -> int:
         _, one, _two = _bare_world(stack)
         tree = str(Path(tmp) / "sibling")
         take(one, "feature/sib", tree)
+        # ⛔ `start_new_session` is the whole point: without it the child shares this process's
+        # session and is this run's own helper, which is the case below. A sibling is a separate
+        # session, and only setsid makes the fixture one.
         held = subprocess.Popen(
             [sys.executable, "-c", "import time; time.sleep(30)"],
             cwd=tree,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            start_new_session=True,
         )
         try:
-            seen = process_in(tree)
+            seen = foreign_occupants(tree)
+            seen = None if seen is None else (len(seen) > 0)
             if seen is None:
                 # ⚠️ No open-file table here. That is the third answer, and it must refuse too --
                 # which is the arm this branch asserts instead.
@@ -1754,11 +1827,54 @@ def self_test() -> int:
                 suite.ok("⛔ the refusal says what forcing would cost, not just that it is refused",
                          "git does not track" in (_message(
                              lambda: release(one, "feature/sib", tree)) or ""))
+                # ⛔ And *who*. The measured incident cost an `lsof` by hand to find out that the
+                # occupant was a keep-awake helper and not a session; a refusal that cannot name
+                # the occupant hands that cost to every reader.
+                suite.ok("and names the occupant, so the reader need not run lsof themselves",
+                         str(held.pid) in (_message(
+                             lambda: release(one, "feature/sib", tree)) or ""))
                 suite.ok("--force does cover a sibling, unlike the caller's own tree",
                          "ref deleted" in release(one, "feature/sib", tree, "origin", force=True))
         finally:
             held.kill()
             held.wait()
+
+    print("\nthis run's own helper holding the tree's directory:")
+
+    # ⛔ The measured incident, planted: a `caffeinate` the harness started while the session was
+    # in its tree still held that directory after the session left, and the release of a tree
+    # nobody was in was refused. The fixture is the same shape -- a child of this process, with
+    # NO `start_new_session`, so it shares this session exactly as that helper did.
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+        tree = str(Path(tmp) / "helper")
+        take(one, "feature/helper", tree)
+        helper = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(30)"],
+            cwd=tree,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            suite.ok("the open-file table does see it, which is why cwd alone was not enough",
+                     process_in(tree) is not False)
+            mine = foreign_occupants(tree)
+            if mine is None:
+                suite.ok("no open-file table here, so the distinction cannot be made either way",
+                         True, "lsof absent")
+            else:
+                suite.ok("⛔ but a helper sharing this session is not another session",
+                         mine == [], str(mine))
+                # ⚠️ Through `_message` rather than called directly: with the session test
+                # planted out this refuses, and an uncaught refusal kills the suite before the
+                # sections below it run -- a plant has to redden its own check, not the file.
+                refused = _message(lambda: release(one, "feature/helper", tree))
+                suite.ok("so the release proceeds with no force, which is the bug this fixes",
+                         refused is None and not Path(tree).exists(), refused or "")
+        finally:
+            helper.kill()
+            helper.wait()
 
     # The green side: the same release, same arguments, with nobody in the tree.
     with tempfile.TemporaryDirectory() as tmp:

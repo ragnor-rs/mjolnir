@@ -1308,7 +1308,19 @@ only half of this rule a carrier can enforce; the ordering above is text.
 ⛔ **The reading is taken twice, on the caller and on everyone else, and a tree a *different* live
 session occupies is refused too.** The two are not one test: a reading of this process cannot see
 a sibling, and a reading of every process cannot tell the caller apart from one, so a carrier
-holding only the second would refuse itself forever. ⚠️ **Their remedies differ, which is why
+holding only the second would refuse itself forever.
+
+⛔ **And *another session* is the unit, never another process.** A run's own helpers inherit its
+working directory and outlive its use of the tree, so counting every process holding that
+directory keeps trees nobody is working in — ⚠️ **measured within the hour of the reading first
+shipping**, when a keep-awake process the harness had started while the session was in its tree
+refused that tree's cleanup after the session had left. ⛔ **The override is not the answer to
+that**: the one reserved for destroying another run's work, spent on a tree nobody is in, is an
+override that has stopped meaning anything. ⚠️ **What separates them is identity rather than
+behaviour** — a session doing work and an abandoned helper are indistinguishable by the directory
+alone, which is the only tie either has — and ⛔ **a list of process names is not identity**: a
+helper belongs to whichever harness ships it, so naming one would put a project's value in shared
+code, which the carrier sweep refuses in any case. ⚠️ **Their remedies differ, which is why
 their refusals must**: nothing the caller can do clears its own occupancy except leaving, while a
 sibling's is a person's call — so an override covers the second and may not cover the first, and
 ⛔ **what an override costs here is named in the refusal**, a tree being the only copy of
