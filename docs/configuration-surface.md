@@ -712,3 +712,59 @@ that is off.
 What the empty list means is a real configuration rather than an absent facet, which is why the key
 carries no `carrier` and no `absent_reason`: a project whose roles need nothing beyond the shell's
 own variables has *stated* what it hands a role, and there is nothing for a reason to explain.
+
+## The revision key never moved, and the markers took its job
+
+`version` was in every configuration from the first commit that carried one (`6410f34`) and the
+surface named it only at `9451882`, where this repository's own single-source gate found a key
+every adopter writes that the single statement of the surface did not declare. It was then read by
+nothing for the whole of its life, and it never moved — through a run of changes that each made an
+older configuration unreadable.
+
+The table below is the statement, and no count of its rows is written beside it: a figure in prose
+goes stale on the next row, green, which is the defect one level up from the one this section
+records.
+
+| Change | What it did to a configuration already written | `version` |
+|---|---|---|
+| `f40785e` — the branch model as the sixth axis | added three required keys | stayed `1` |
+| `1b11c52` (#83) — `roots.skills` retired | **refuses** any configuration still carrying the key | stayed `1` |
+| `31e50d4` (#92) — § 11, the session's context | added a required `context.artifacts.carrier` | stayed `1` |
+| `7f962c9` (#125) — § 12, the ordering, and `branch_model.tree_dir` | added a required `ordering.carrier`, and a `tree_dir` required under `kind: worktree` — so a configuration that already cut trees is **refused** | stayed `1` |
+| `1a3789a` (#132) — § 2, how a pull request lands | added `host.landing.method` and `host.landing.delete_branch`, required with no marked default | stayed `1` |
+| `8461104` (#133) — § 13, what counts as done | added a required `done` with no default, `[]` legitimate — a *decision* the refusal cannot tell from the absence | stayed `1` |
+| `dbf4ef1` (#142) — § 14, what the shell inherits | added a required `environment.inherits`, `[]` again a decision rather than an omission | stayed `1` |
+
+**Classified against the ruling, every row reads the same way: the key would not have moved.** The
+revision is retired, so no row is an instance of a revision that should have been bumped and was
+not — each is a configuration refused with the key named, which is what the marker beside that key
+already does. The last three rows are why the alternative of absorbing a new key with a default was
+not available: `host.landing.method` has no default by design, since one would pick a merge method
+for every project that did not notice the key, and `done: []` and `environment.inherits: []` are
+decisions the surface states in as many words are *not* unset keys — so a default there would
+manufacture the very decision those facets refuse to infer.
+
+**What settled it is `e62a1d9` (#137), which moved requiredness onto the surface and deleted the
+reader's own list of it.** Before that, a reader met a missing key with no way to say whether the
+project had decided against it; after it, requiredness is marked beside the key, a legitimately
+unset key carries no marker, and every facet with a real absent case carries a `carrier` whose
+`absent_reason` is the decision written down. A configuration states its decision or is refused
+with the key named. That is the whole of what the revision was introduced to separate, answered
+where the key is declared rather than by a number describing the file.
+
+⚠️ **What the retirement gives up, measured rather than assumed.** A refusal on a file written
+before a key existed reads exactly like one on a file that left the key out. Across all seven rows
+the remedy is identical — write what the marker declares — so what is lost is a diagnostic during a
+phase of rapid surface change, not a behaviour, and no reader is left with a revision it does not
+act on. ⛔ The honest cost is that an adopter migrating a months-old configuration is told *which*
+keys are missing and never *that they are new*.
+
+**The retirement is held in both directions, and the arm that holds the set was missing until this
+change.** The reader refuses a retired key and its self-test asserts both that the surface declares
+no such key and that a configuration still carrying one is refused — but every one of those
+assertions was generated from the reader's own list, so deleting an entry deleted the refusal and
+its only assertion together. Measured: with the `version` entry removed the suite stayed green on
+every assertion and the reader accepted `version: 1` again. That is exactly the defect the retired
+`REQUIRED` table demonstrated, surviving in the one list still shaped like it, and it is now closed
+by deriving the retired set from the surface's own statements and holding the reader's list to it
+both ways.

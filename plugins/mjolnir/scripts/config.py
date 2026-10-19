@@ -297,6 +297,25 @@ def surface_keys(surface_text: str) -> set[str]:
     return {path for _, block in _fences(surface_text) for path, _ in _walk_keys(block)}
 
 
+# The grammar a retirement is stated in, and the only part of it hardcoded here.
+# Everything else about which keys are retired is read off the surface.
+RETIREMENT = re.compile(r"`([A-Za-z0-9_.]+)`\s+is\s+retired\b")
+
+
+def retired_keys(surface_text: str) -> set[str]:
+    """Every key the surface states is retired.
+
+    The surface states the retirement and this reader performs it, so the two
+    are held to each other rather than maintained apart -- which is the arm that
+    was missing while `RETIRED` was the only statement of its own contents.
+
+    ⛔ Matched with the text's line breaks flattened. The documents wrap at a
+    column, so a statement whose key and verb land on different lines is the
+    same statement, and a line-based match would read it as absent.
+    """
+    return set(RETIREMENT.findall(" ".join(surface_text.split())))
+
+
 def vocabulary(facts: dict, path: str, what: str) -> list[str]:
     """An alternation the reader requires, or a refusal naming what is absent."""
     found = facts["enums"].get(path)
@@ -529,12 +548,25 @@ class Config:
 # that still carries it would be that same silence surviving the removal. The
 # self-test holds each entry to the surface in both directions, so re-declaring
 # one there reddens the build rather than making every configuration unreadable.
+#
+# ⛔ The **set** is held to the surface too, by `retired_keys` below, and that is
+# a separate arm from holding each entry: without it, deleting an entry here
+# deleted the refusal and its only assertion together and left the suite green --
+# measured, with the reader accepting `version: 1` again. That is the defect the
+# retired `REQUIRED` table demonstrated, in the one list still shaped like it.
 RETIRED = [
     (
         "roots.skills",
         "the skills root is the directory the role was invoked in, which no "
         "configuration can state -- it is where this file is found. See § 1, "
         "`The skills root is where the role runs`. Delete the key",
+    ),
+    (
+        "version",
+        "requiredness and the absent case are marked beside each key on the "
+        "surface, so a configuration states its decision or is refused with the "
+        "key named, and no revision is left to separate the two. See "
+        "§ `The file itself`. Delete the key",
     ),
 ]
 
@@ -1138,7 +1170,6 @@ MARKED_REQUIRED = [
     "roots.code",
     "statuses",
     "tracker.kind",
-    "version",
     "work_item.estimate.carrier",
     "work_item.template.carrier",
     "work_item.type.carrier",
@@ -1296,7 +1327,26 @@ def self_test() -> int:
     # reader refuses while the surface still asks for it would make every
     # configuration that follows the surface unreadable.
     with open(SURFACE, encoding="utf-8") as handle:
-        declared = surface_keys(handle.read())
+        surface_text = handle.read()
+    declared = surface_keys(surface_text)
+
+    # ⛔ The set, not only each entry. Deleting an entry from `RETIRED` used to
+    # delete the refusal and the assertion that holds it in one edit, silently
+    # green -- so the surface's own statements are what this reader is measured
+    # against, in both directions.
+    stated = retired_keys(surface_text)
+    performed = {path for path, _ in RETIRED}
+    check(
+        "every retirement the surface states is one this reader refuses",
+        stated <= performed,
+        f"the surface retires {sorted(stated - performed)}, which this reader accepts",
+    )
+    check(
+        "this reader refuses no key the surface does not state as retired",
+        performed <= stated,
+        f"it refuses {sorted(performed - stated)}, stated nowhere on the surface",
+    )
+
     for path, _ in RETIRED:
         check(
             f"the surface declares no `{path}`",

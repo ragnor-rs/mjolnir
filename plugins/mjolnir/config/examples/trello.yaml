@@ -3,8 +3,6 @@
 # not a submodule. The two roots differ here, which is the case § 1 exists for: the skills root
 # is the directory the role runs in, and `code` is stated rather than derived from it.
 # Example data — not any project's facts.
-version: 1
-
 roots:
   code: "<subdirectory>"
   code_is_own_repo: true        # branches, PRs and CI belong to the inner repository

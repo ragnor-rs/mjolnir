@@ -54,8 +54,11 @@ and each is the defect this repository was built to call a defect.
 Three were in the tree when the check was written, which is the argument for it:
 
 - `version` was in all five configurations and declared nowhere in the schema — a key every
-  adopter writes, that the single statement of the surface did not name. It is now
-  [schema § The file itself](../plugins/mjolnir/config/schema.md#the-file-itself).
+  adopter writes, that the single statement of the surface did not name. Declaring it is what
+  exposed it: read by nothing and never moved, it is now **retired** at
+  [schema § The file itself](../plugins/mjolnir/config/schema.md#the-file-itself), which is the
+  check finding a key the surface should never have had to declare rather than one it had
+  forgotten to.
 - One ruling's outcome lived in the README, which stated that rule citing no schema section, so
   the README was a second authority for exactly one rule. It is now
   [schema § 7 → Invocation](../plugins/mjolnir/config/schema.md#invocation), which the README

@@ -116,6 +116,8 @@ Present in one or two copies each, and true for every project:
 | 10 | Deployment | **A thin skeleton only**: confirm intent and name the target, with an explicit go required for a live environment *for this deploy*; read-only preflight; invoke the project's own script; verify health; report what was rebuilt and what failed with its log tail. Hosts, services, secrets, build steps and tier selection stay local | #13, until extracted |
 | 11 | Reading the host's answer, and what a failure is | **One subsection, read by every role that reads a run.** The four preconditions, a precondition's failure never being folded into the conclusion, an **environment failure consuming no fix cycle**, the cap on fix cycles, and watching rather than polling. It was written in the finishing role's skill while that role was the only reader; the reviewing role reads the same runs, and a rule stated in one role's skill is a second authority for the other | [schema § 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is) |
 
+| 12 | What `version` is for, and when it moves | **Retired**, as `roots.skills` was, and a configuration still declaring it is refused with the key named. Requiredness and the absent case are marked beside each key, so a configuration states its decision or is refused — leaving the revision nothing to separate. It had never moved through a run of changes that each made an older configuration unreadable ([the measurement](configuration-surface.md#the-revision-key-never-moved-and-the-markers-took-its-job)) | [schema § The file itself](../plugins/mjolnir/config/schema.md#the-file-itself) |
+
 ### Where a ruling overrode a stated counter-argument
 
 Recorded so the next reader does not take it for an oversight:
@@ -126,6 +128,11 @@ Recorded so the next reader does not take it for an oversight:
 - **(2) is the one ruling that overrides a *measured* claim** rather than a preference — two
   upstream issue numbers about permission-allowlist pollution, **not re-verified**. Repeated
   message flags are right either way, so nothing waits on it, but the probe is worth doing.
+- **(12) overrides the key's own stated purpose**, which was to let a reader tell a facet absent by
+  decision from one that did not exist when the file was written. The override is that the purpose
+  was met elsewhere rather than abandoned — by the requiredness and `absent_reason` markers — and
+  what it knowingly gives up is a diagnostic on a stale file, stated on the surface beside the
+  retirement rather than left for an adopter to discover.
 - **(10) is provisional.** It was settled on one copy read in full and five read structurally.
   Three of the six deploy copies run 210 to 372 lines, and "almost nothing survives extraction"
   is close to the truth for this role — but it should be reached by reading the rest.

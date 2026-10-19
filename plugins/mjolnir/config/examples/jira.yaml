@@ -2,8 +2,6 @@
 # Deployment is split per environment, and the tracker credential is a person's own
 # account, so the procedure may not write status at all.
 # Example data — not any project's facts.
-version: 1
-
 roots:
   code: "."
   code_is_own_repo: false
