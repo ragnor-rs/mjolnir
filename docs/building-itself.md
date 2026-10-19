@@ -55,7 +55,9 @@ an unstated limit reads later as coverage.
 
 [#134](https://github.com/ragnor-rs/mjolnir/issues/134) (*"The loop has never run whole on a single
 item, and the record claims it for none"*) went through the shipped carriers and through nothing
-else. It was filed for that purpose: [#27](https://github.com/ragnor-rs/mjolnir/issues/27) asks for
+else, and it is closed by [#135](https://github.com/ragnor-rs/mjolnir/pull/135) (*"Record the one
+item the loop ran whole on, and what it did not touch"*), which is the change this paragraph landed
+in. It was filed for that purpose: [#27](https://github.com/ragnor-rs/mjolnir/issues/27) asks for
 one such instance, and the only shape that satisfies a condition about an item traversing the loop
 is an item that traverses it — which is why it is an item of its own rather than a line in #27.
 
