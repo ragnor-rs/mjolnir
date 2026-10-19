@@ -52,6 +52,9 @@ host:
   # its single job's name, so there is no key here that can be got wrong. ⛔ Nothing reads
   # either property — holding this facet to those files mechanically is #49.
   checks:
+    - workflow: "Boundary"
+      mirrors: "python3 plugins/mjolnir/scripts/boundary.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Claim carrier"
       mirrors: "python3 plugins/mjolnir/scripts/claim.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -255,3 +258,16 @@ ordering:
   # its output is the surface's, and the argument for the order stays in the document beside it.
   carrier: command
   command: "python3 .claude/skills/close-out/scripts/plan-status.py --queue"
+
+environment:
+  # ⚠️ Measured, not declared (#90), and the measurement is the argument for the key: the shell a
+  # role runs in here holds forty-odd variables and the procedure reads five of them. Nothing in
+  # that shell is a credential — the host's own credential lives in its credential helper rather
+  # than in a variable, which is why no token is named below and why writing one in would be the
+  # false statement rather than the cautious one.
+  #
+  # ⛔ Names only. Two paths every command needs, the temp root `day_log.out_dir` and
+  # `context.artifacts.dir` are written under, and the two the harness substitutes into a carrier —
+  # the plugin's own location, and the per-user directory the reply-register hook keeps its
+  # one-hand-back marker in.
+  inherits: [PATH, HOME, TMPDIR, CLAUDE_PLUGIN_ROOT, CLAUDE_PLUGIN_DATA]

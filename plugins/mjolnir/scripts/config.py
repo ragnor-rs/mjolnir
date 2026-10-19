@@ -796,6 +796,33 @@ def validate(data: dict, facts: dict) -> None:
             "this is readable by a person and by nothing shipped (§ 10).",
         )
 
+    # § 14. The one key of the three halves of the boundary, and the one thing a
+    # reader can hold about it: it is names. `[]` is a real statement and is
+    # accepted -- a project whose roles need nothing beyond the shell's own
+    # variables -- so what is refused here is a list carrying something that is
+    # not a variable name.
+    #
+    # ⚠️ The limit, stated rather than discovered: a name-shaped entry that is
+    # somehow a secret passes. Refusing that would need the credential grammar,
+    # which lives in the boundary carrier, and a copy of it here would be a
+    # second grammar allowed to disagree with the one that runs.
+    inherited = _get(data, "environment.inherits")
+    if inherited is not None:
+        if not isinstance(inherited, list):
+            raise ConfigError(
+                "environment.inherits",
+                f"is {inherited!r}; § 14 states it as a list of variable names, and `[]` "
+                "where a role's commands need none.",
+            )
+        for index, name in enumerate(inherited):
+            if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+                raise ConfigError(
+                    f"environment.inherits[{index}]",
+                    f"is {name!r}, which is not a variable name. § 14 states the list as "
+                    "names and never values: a configuration carrying the value would be "
+                    "the leak the section exists to prevent.",
+                )
+
     # § 12. A command carrier owes a command, for the reason § 11's `file`
     # carrier owes a directory: the absence surfaces at the moment a role needs
     # the answer, which is the one moment it cannot be asked for.
@@ -1098,6 +1125,7 @@ MARKED_REQUIRED = [
     "commit.trailer",
     "context.artifacts.carrier",
     "done",
+    "environment.inherits",
     "host.checks",
     "host.kind",
     "host.landing.delete_branch",
@@ -1450,6 +1478,17 @@ def _planted_violations():
         ("a sections mode outside its alternation", "day_log.sections",
          at("day_log.sections", "everything")),
         ("a required key present but empty", "host.repo", at("host.repo", None)),
+        ("an inherited set that is not a list", "environment.inherits",
+         at("environment.inherits", "GH_TOKEN")),
+        # ⚠️ The stand-in is worded so the boundary carrier's own outward check
+        # reads it as a placeholder rather than as a value: a plant that reddens
+        # the scan § 6 runs over a diff is a plant somebody has to wave through
+        # on every commit. What this asserts is the name *shape*, and any string
+        # carrying an `=` fails that whatever follows it.
+        ("an inherited entry that is not a variable name", "environment.inherits[0]",
+         at("environment.inherits", ["GH_TOKEN=value-goes-here"])),
+        ("an inherited entry that is not a string at all", "environment.inherits[0]",
+         at("environment.inherits", [1])),
         ("a statuses list that is not a list", "statuses", at("statuses", "open")),
         ("a status entry that is not a block", "statuses[0]", at("statuses", ["open"])),
         ("a status with no name", "statuses[0].name",

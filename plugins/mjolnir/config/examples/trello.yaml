@@ -175,3 +175,11 @@ ordering:
   # and this says which card to offer. One statement of the order, read by two roles.
   carrier: command
   command: "<the command that prints the queue list top to bottom, one card id per line>"
+
+environment:
+  # A key and a token as a pair, which is how this tracker is addressed: one credential is two
+  # variables here, and a list that named only the token would read as complete. ⚠️ The project
+  # whose `policy.forbid_on_item` above bars credentials from ever reaching a card is the same
+  # project that has to say which credentials its roles hold — the write side and this one are
+  # the same boundary from opposite directions.
+  inherits: [PATH, HOME, TRACKER_KEY, TRACKER_TOKEN]

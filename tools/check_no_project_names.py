@@ -266,6 +266,7 @@ VALUE_KEYS = [
     "tree_dir",      # where a working tree is cut (§ 10)
     "command",       # what prints the ordering (§ 12)
     "audience",      # who an artifact is written for
+    "inherits",      # the variables a role's shell may read (§ 14)
 ]
 
 # A placeholder is not a value. ⛔ The bare-capitals form counts as a placeholder
@@ -292,6 +293,22 @@ TRAILING_COMMENT = re.compile(r"(?<!\\)#.*$")
 
 def _tokens(groups: dict[str, str]) -> list[tuple[str, str]]:
     return [(token, label) for label, blob in groups.items() for token in blob.split()]
+
+
+def _members(raw: str) -> list[str]:
+    """The value, or each member where the value is an inline list.
+
+    ⛔ A key whose value is a list carries as many of a project's facts as it has
+    members, and reading the whole bracket as one string forbids a value no
+    carrier could ever contain -- which reads as a check doing its job and is a
+    check holding nothing. Found when § 14's `inherits` became the first list of
+    bare names a project writes; the list-of-mappings keys were already read,
+    because the pattern above stops at a comma.
+    """
+    value = raw.strip()
+    if value.startswith("[") and value.endswith("]"):
+        return [member.strip().strip("\"'").strip() for member in value[1:-1].split(",")]
+    return [value.strip("\"'").strip()]
 
 
 STACK = _tokens(STACK_TOKENS)
@@ -507,16 +524,16 @@ class Tree:
                         r"(?:^|[\s{,])" + re.escape(key) + r":\s*(?P<value>\"[^\"]*\"|'[^']*'|[^,}\n]+)",
                         line,
                     ):
-                        value = match.group("value").strip().strip("\"'").strip()
-                        if not value or value in {"null", "[]", "{}", ">-", "|", ">", "|-"}:
-                            continue
-                        if PLACEHOLDER.match(value) or value == own:
-                            continue
-                        if in_data and PLACEHOLDER_IN_DATA.match(value):
-                            continue
-                        if len(value) < MIN_VALUE_LEN and not value.endswith(":"):
-                            continue
-                        found.setdefault(value, f"{path} ({key})")
+                        for value in _members(match.group("value")):
+                            if not value or value in {"null", "[]", "{}", ">-", "|", ">", "|-"}:
+                                continue
+                            if PLACEHOLDER.match(value) or value == own:
+                                continue
+                            if in_data and PLACEHOLDER_IN_DATA.match(value):
+                                continue
+                            if len(value) < MIN_VALUE_LEN and not value.endswith(":"):
+                                continue
+                            found.setdefault(value, f"{path} ({key})")
         return found
 
     def declared_keys_present(self) -> set[str]:
@@ -827,6 +844,25 @@ def _plant_in_a_hook(text: str):
     return apply
 
 
+def _plant_an_inline_list_member(tree: Tree) -> Tree:
+    """A value a configuration states as one member of an inline list.
+
+    ⛔ The member is read out of whatever configuration supplies one rather than
+    written here, so a project that reworks its list keeps the plant. Found when
+    § 14's `inherits` became the first list of bare names a project writes: read
+    the bracket as one string and no carrier could ever contain the value, which
+    is a check reporting green while holding nothing for the key.
+    """
+    members = sorted(
+        value for value, where in tree.forbidden_values().items() if "(inherits)" in where
+    )
+    if not members:
+        raise AssertionError(
+            "no configuration supplies an inline-list value, so this plant tests nothing"
+        )
+    return _plant_in_a_carrier(f"\nThe role reads `{members[0]}` from the shell.\n")(tree)
+
+
 def _plant_foreign_slug_as_url(tree: Tree) -> Tree:
     tree.text["README.md"] += "\nSee <https://github.com/planted-owner/planted-repo>.\n"
     return tree
@@ -993,6 +1029,8 @@ VIOLATIONS = [
          _plant_upper_case_status(tree))),
     ("no value is carried in the strict set", "a single-quoted value in a hook",
      lambda tree: _plant_in_a_hook("status='In Progress'\n")(tree)),
+    ("no value is carried in the strict set", "a member of an inline list value",
+     _plant_an_inline_list_member),
     ("no value is carried in the strict set", "a renamed value key", _plant_renamed_value_key),
     ("no value is carried in the strict set", "configurations with no concrete value left", _plant_configurations_with_no_concrete_value),
 ]

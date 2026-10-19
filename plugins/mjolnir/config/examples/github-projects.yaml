@@ -151,3 +151,10 @@ ordering:
   # and not where the project got the order from.
   carrier: command
   command: "<the command that prints the board's ranked column, one item id per line>"
+
+environment:
+  # The same host as the example next door, and the opposite decision: the credential stays in
+  # the host tool's own credential store and is never exported, so no role inherits it and the
+  # list says so. ⚠️ The report is what makes that statement worth writing — a token that turns
+  # up in this shell anyway is named by it, which is how a project learns its own drift.
+  inherits: [PATH, HOME]
