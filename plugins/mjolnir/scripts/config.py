@@ -93,17 +93,36 @@ REPO_ROOT = os.path.dirname(os.path.dirname(PLUGIN_ROOT))
 # does not get to move it, or a role would have to be told where to look.
 CONFIG_PATH = os.path.join(".claude", "mjolnir.yaml")
 
-# The marker that makes a default machine-readable, read as the last
-# semicolon-separated clause of a key's trailing comment: `# default` means the
-# value shown on the line is the default, and `# default: <value>` states one
-# the line does not show -- which is how a key whose value is an alternation
-# declares which arm of it applies. Matching the whole clause rather than the
-# bare word keeps a comment that merely mentions a default from becoming one.
+# The markers that make the surface machine-readable, each read as one
+# semicolon-separated clause of a key's trailing comment. Every clause of a
+# comment is scanned, not just the last one, so a key that states prose and a
+# marker together -- `# stated, never inherited; required` -- carries both.
+#
+# `# default` means the value shown on the line is the default, and
+# `# default: <value>` states one the line does not show -- which is how a key
+# whose value is an alternation declares which arm of it applies.
 DEFAULT_CLAUSE = re.compile(r"^default(?:\s*:\s*(?P<literal>.+))?$")
 
-# A fenced block of the surface, and a `key:` line inside one. List items are
-# not matched on purpose -- a `- { ... }` line is an entry, not a key.
+# `# required` means every project writes the key, and its absence is refused.
+# ⛔ Matched as the *bare* clause on purpose. A key whose requiredness depends
+# on another key's value states that condition in prose beside it -- `# required
+# under worktree` -- and is enforced by the rule in its own section, which is a
+# different question from "must this key be written at all" and must not be
+# answered by this marker. A key with neither marker is legitimately unset.
+REQUIRED_CLAUSE = re.compile(r"^required$")
+
+# `# absent_reason` beside a `carrier` marks the facet as having a real absent
+# case: `carrier: none` is then accepted only with a stated reason, and the
+# facet is reported in `unavailable()`. The alternative was a list of such
+# facets in this module, which is what left the reader with a second statement
+# of which absences are deliberate -- and a sixth facet invisible to both rules.
+ABSENT_REASON_CLAUSE = re.compile(r"^absent_reason$")
+
+# A fenced block of the surface, the heading it sits under, and a `key:` line
+# inside one. List items are not matched on purpose -- a `- { ... }` line is an
+# entry, not a key.
 FENCE = re.compile(r"```yaml\n(.*?)```", re.S)
+HEADING = re.compile(r"^#{2,}\s+(?P<title>.+?)\s*$")
 KEY_LINE = re.compile(r"^(?P<indent>\s*)(?P<key>[A-Za-z_][\w-]*):(?P<rest>.*)$")
 
 # An alternation written as a value or as a trailing comment: `a | b | c`. This
@@ -131,8 +150,37 @@ def _literal(text: str):
     return _load_yaml(text, os.path.relpath(SURFACE, PLUGIN_ROOT))
 
 
-def _fences(surface_text: str) -> list[str]:
-    return FENCE.findall(surface_text)
+def _fences(surface_text: str) -> list[tuple[str, str]]:
+    """Each fenced block, paired with the heading it sits under.
+
+    The heading travels with the block so a refusal can cite the section that
+    states the rule -- ``host.checks: required -- marked `# required` under
+    § 2. Code host`` -- instead of carrying a gloss of its own. A gloss in this
+    module would be a paraphrase of the surface, which is the shape nothing can
+    hold to it.
+    """
+    out: list[tuple[str, str]] = []
+    heading, block, fence = "", [], None
+    for line in surface_text.splitlines():
+        if fence is not None:
+            if line.startswith("```"):
+                if fence == "yaml":
+                    out.append((heading, "\n".join(block)))
+                block, fence = [], None
+            elif fence == "yaml":
+                block.append(line)
+            # A fence of any other language is skipped entirely rather than
+            # merely not yielded: a `markdown` example containing a `##` line
+            # would otherwise be read as a heading and mis-cite the section of
+            # every refusal after it.
+            continue
+        if line.startswith("```"):
+            fence = line[3:].strip() or "(bare)"
+            continue
+        titled = HEADING.match(line)
+        if titled:
+            heading = titled.group("title").strip()
+    return out
 
 
 def _walk_keys(block: str):
@@ -163,15 +211,38 @@ def surface_facts(surface_text: str) -> dict:
     """
     defaults: dict[str, object] = {}
     enums: dict[str, list[str]] = {}
+    required: dict[str, str] = {}
+    absent_reason: dict[str, str] = {}
 
-    for block in _fences(surface_text):
+    for heading, block in _fences(surface_text):
         for path, rest in _walk_keys(block):
             value, _, comment = rest.partition("#")
+            clauses = [c.strip() for c in comment.split(";")]
 
-            clause = DEFAULT_CLAUSE.match(comment.strip().split(";")[-1].strip())
-            if clause:
-                shown = clause.group("literal")
-                defaults[path] = _literal(shown if shown else value.strip())
+            for clause in clauses:
+                found = DEFAULT_CLAUSE.match(clause)
+                if found:
+                    shown = found.group("literal")
+                    defaults[path] = _literal(shown if shown else value.strip())
+                if REQUIRED_CLAUSE.match(clause):
+                    # First statement wins: a key shown in several fences is
+                    # marked where it is declared, and a later fence showing one
+                    # facet of it must not be able to unmark it.
+                    required.setdefault(path, heading)
+                if ABSENT_REASON_CLAUSE.match(clause):
+                    # ⛔ Refused rather than ignored where it is not on a
+                    # `carrier`: the rule it marks reads `carrier: none`, so a
+                    # marker anywhere else states a rule nothing applies -- and
+                    # a marker nobody reads is the exact defect this marker
+                    # exists to remove, one level up.
+                    if not path.endswith(".carrier"):
+                        raise ConfigError(
+                            path,
+                            "carries `# absent_reason`, which marks a facet's "
+                            "`carrier` and is read nowhere else. Move it to the "
+                            "facet's `carrier` line or delete it.",
+                        )
+                    absent_reason.setdefault(path[: -len(".carrier")], heading)
 
             # A closed set, written either as the value or as a comment beside
             # it -- `key: a | b | c` is the first shape, and a line whose value
@@ -182,8 +253,22 @@ def surface_facts(surface_text: str) -> dict:
                     break
 
     # A reader that derives nothing accepts anything, so an unreadable surface
-    # is refused here rather than silently waved through.
-    missing = [name for name, found in (("default", defaults), ("alternation", enums)) if not found]
+    # is refused here rather than silently waved through. ⛔ `required` is in
+    # this list for a sharper reason than the other two: a surface whose
+    # requiredness markers were dropped would leave this reader accepting a
+    # configuration with no `host.repo` and no `roots.code` at all, and the
+    # refusals that are the only evidence the markers were ever read would
+    # simply stop happening -- silently, and green.
+    missing = [
+        name
+        for name, found in (
+            ("default", defaults),
+            ("alternation", enums),
+            ("required key", required),
+            ("absent-capable facet", absent_reason),
+        )
+        if not found
+    ]
     if missing:
         raise ConfigError(
             os.path.relpath(SURFACE, PLUGIN_ROOT),
@@ -191,7 +276,12 @@ def surface_facts(surface_text: str) -> dict:
             "Either the surface changed shape or its markers were dropped.",
         )
 
-    return {"defaults": defaults, "enums": enums}
+    return {
+        "defaults": defaults,
+        "enums": enums,
+        "required": required,
+        "absent_reason": absent_reason,
+    }
 
 
 def surface_keys(surface_text: str) -> set[str]:
@@ -200,7 +290,7 @@ def surface_keys(surface_text: str) -> set[str]:
     Used by the self-test to hold the retired keys to the surface: a key this
     reader refuses must not be one the surface still tells a project to write.
     """
-    return {path for block in _fences(surface_text) for path, _ in _walk_keys(block)}
+    return {path for _, block in _fences(surface_text) for path, _ in _walk_keys(block)}
 
 
 def vocabulary(facts: dict, path: str, what: str) -> list[str]:
@@ -335,9 +425,14 @@ class Config:
                 "that leaves each tracker operation doing is the port's to report, "
                 "never this reader's: a capability is the adapter's fact."
             )
-        for facet in ("type", "estimate", "template"):
-            if self.get(f"work_item.{facet}.carrier") == "none":
-                reason = self.get(f"work_item.{facet}.absent_reason")
+        # Which § 4 facets have a real absent case is the surface's
+        # `# absent_reason` marker, not a triple written here: a fourth one is
+        # reported the moment it is declared, and the old list would have left
+        # it invisible to this report and to validation together.
+        for path in sorted(self.facts.get("absent_reason", {})):
+            facet = path.rpartition(".")[2]
+            if path.startswith("work_item.") and self.get(f"{path}.carrier") == "none":
+                reason = self.get(f"{path}.absent_reason")
                 out.append(f"No {facet} is carried: {' '.join(str(reason).split())}")
         if self.get("context.artifacts.carrier") == "none":
             reason = self.get("context.artifacts.absent_reason")
@@ -402,47 +497,20 @@ class Config:
 #
 # Each rule names the section of the surface it enforces. The rules are
 # procedure -- the surface's own boundary rule puts them in a skill rather than
-# in the configuration -- but every *value* they test against is read from the
-# surface above, so this table never has to be edited when a vocabulary grows.
+# in the configuration -- but every *value* and every *key* they test against is
+# read from the surface above, so nothing here has to be edited when a
+# vocabulary grows or a facet gains a key.
 
-REQUIRED = [
-    ("version", "which revision of the surface this file was written against (§ The file itself)"),
-    ("roots.code", "the path every git and gh call addresses, configured and never inferred (§ 1)"),
-    ("host.kind", "the code host (§ 2)"),
-    ("host.repo", "the repository, stated and never inherited from the working directory (§ 2)"),
-    ("host.checks", "the host's runs; `[]` is the one legitimate absence and means every verdict is local (§ 2)"),
-    # § 2 makes this facet mandatory with no absent case, for § 10's reason: a project
-    # that lands changes some other way has a different host rather than a different
-    # shape of these keys. What the host *permits* is read from the host and is not
-    # restated here, so these two are the whole of what a configuration states.
-    ("host.landing.method",
-     "how a pull request lands, which no role infers from the shape of the integration branch (§ 2)"),
-    ("host.landing.delete_branch",
-     "which of the host and the procedure deletes the remote ref once a change has landed (§ 2)"),
-    ("tracker.kind", "the tracker port, or `none` (§ 3)"),
-    ("work_item.type.carrier", "what carries the type, or `none` with an `absent_reason` (§ 4.1)"),
-    ("work_item.estimate.carrier", "what carries the estimate, or `none` with an `absent_reason` (§ 4.3)"),
-    ("work_item.template.carrier", "what carries the template, or `none` with an `absent_reason` (§ 4.4)"),
-    ("statuses", "the status vocabulary; `[]` is legitimate (§ 4.2)"),
-    ("readiness", "the readiness gate; `[]` is legitimate (§ 5)"),
-    ("commit.staging", "how changes are staged (§ 6)"),
-    ("commit.trailer", "the commit trailer, or `none` (§ 6)"),
-    ("carriers", "each mapped role's carrier (§ 7)"),
-    ("language.work_item", "the language work items are written in (§ 8)"),
-    ("language.repo", "the language the repository is written in (§ 8)"),
-    # § 10 is mandatory and has no absent case: a project that never cuts a
-    # second tree is `in_place`, which is an answer rather than an omission.
-    # `work_in_shared_checkout` and `mechanics` are the two keys it states as
-    # conditionally null, so they are not required here.
-    ("branch_model.kind", "where a branch is cut (§ 10)"),
-    ("branch_model.parallel_trees", "whether two trees may be live at once (§ 10)"),
-    ("branch_model.exclusive_resources",
-     "what the trees cannot all help themselves to; `[]` states that nothing contends (§ 10)"),
-    ("context.artifacts.carrier",
-     "what carries what one role hands the next, or `none` with an `absent_reason` (§ 11)"),
-    ("ordering.carrier",
-     "what states which item is next, or `none` with an `absent_reason` (§ 12)"),
-]
+# ⛔ There is no table of required keys here, and there must not be one again.
+# Requiredness is read off the surface's `# required` marker, exactly as a
+# default is read off `# default` -- see `surface_facts`. What the table cost
+# while it existed: its entries paraphrased the sections they cited, nothing
+# could hold the paraphrase to the original, the judgement calls it encoded
+# (`carriers` required, `day_log.out_dir` not) were stated in no section, and
+# the self-test generated its missing-key assertions from the table, so
+# deleting an entry deleted the enforcement and its only assertion together --
+# silently green. Adding a required key is now a marker on the surface and
+# nothing here.
 
 # Keys the surface used to declare and no longer does, each with where the fact
 # lives now. A retired key is **refused**, not ignored: `roots.skills` was
@@ -462,14 +530,10 @@ RETIRED = [
 
 # A facet whose carrier is `none` states why. This is the line between a
 # deliberate absence and an unset value, and it is the whole reason the two can
-# be told apart at all.
-ABSENT_REASON_REQUIRED = [
-    "work_item.type",
-    "work_item.estimate",
-    "work_item.template",
-    "context.artifacts",
-    "ordering",
-]
+# be told apart at all. ⛔ Which facets those are is **not** listed here either:
+# it is the `# absent_reason` marker beside each `carrier` line on the surface,
+# so a facet that grows a real absent case declares it once, where it is
+# declared, and both this rule and `unavailable()` pick it up.
 
 # Alternations the surface states for a *context* rather than for a key of its
 # own: a status's `role` and `writer`, a readiness entry's `check` and
@@ -489,15 +553,16 @@ def validate(data: dict, facts: dict) -> None:
         if _has(data, path):
             raise ConfigError(path, f"is retired -- {where}.")
 
-    for path, what in REQUIRED:
+    for path, section in sorted(facts["required"].items()):
+        where = f"marked `# required` under § {section}"
         if not _has(data, path):
-            raise ConfigError(path, f"required -- {what}.")
+            raise ConfigError(path, f"required -- {where}.")
         # Present and empty is not present. YAML reads a key with nothing after
         # it as null, which satisfied a presence test and then arrived in a
         # path join as None -- a traceback naming no key, out of the one module
         # whose whole promise is naming the key.
         if _get(data, path) is None:
-            raise ConfigError(path, f"is empty -- {what}.")
+            raise ConfigError(path, f"is empty -- {where}.")
 
     for path, allowed in sorted(facts["enums"].items()):
         if path in CONTEXTUAL or not _has(data, path):
@@ -515,7 +580,7 @@ def validate(data: dict, facts: dict) -> None:
                 path, f"is {value!r}; the surface allows {' | '.join(allowed)}."
             )
 
-    for facet in ABSENT_REASON_REQUIRED:
+    for facet in sorted(facts["absent_reason"]):
         if _get(data, f"{facet}.carrier") == "none" and not _get(
             data, f"{facet}.absent_reason"
         ):
@@ -739,6 +804,70 @@ def _examples() -> list[str]:
     )
 
 
+# ⛔ The keys the surface is expected to mark, and the facets it is expected to
+# mark absent-capable -- written out here, in the test, on purpose. This is a
+# second statement of the same fact, in the one place where a second statement
+# is what makes the first one hold: the reader derives both sets from the
+# surface, so a test that derived its assertions from the surface too would
+# assert whatever the surface happened to say and pass. That is precisely how
+# the retired `REQUIRED` table's assertions behaved -- generated from the table,
+# so deleting an entry deleted the enforcement and its only assertion together,
+# silently green. Here, a marker dropped from the surface fails the comparison
+# below, and a marker added fails it until somebody writes the key down here.
+MARKED_REQUIRED = [
+    "branch_model.exclusive_resources",
+    "branch_model.kind",
+    "branch_model.parallel_trees",
+    "carriers",
+    "commit.staging",
+    "commit.trailer",
+    "context.artifacts.carrier",
+    "host.checks",
+    "host.kind",
+    "host.landing.delete_branch",
+    "host.landing.method",
+    "host.repo",
+    "language.repo",
+    "language.work_item",
+    "ordering.carrier",
+    "readiness",
+    "roots.code",
+    "statuses",
+    "tracker.kind",
+    "version",
+    "work_item.estimate.carrier",
+    "work_item.template.carrier",
+    "work_item.type.carrier",
+]
+
+MARKED_ABSENT_CAPABLE = [
+    "context.artifacts",
+    "ordering",
+    "work_item.estimate",
+    "work_item.template",
+    "work_item.type",
+]
+
+
+def _surface_without(marker: re.Pattern) -> str:
+    """The surface with one marker stripped from every line that carries it.
+
+    Used to plant the absence of a marker class. Stripping the clause rather
+    than editing a copy by hand keeps the plant honest: what is removed is
+    exactly what the reader looks for, so a reader that stopped looking would
+    pass the plant.
+    """
+    with open(SURFACE, encoding="utf-8") as handle:
+        out = []
+        for line in handle.read().splitlines():
+            body, hash_, comment = line.partition("#")
+            if hash_:
+                kept = [c.strip() for c in comment.split(";") if not marker.match(c.strip())]
+                line = f"{body}# {'; '.join(kept)}" if kept else body.rstrip()
+            out.append(line)
+    return "\n".join(out)
+
+
 def self_test() -> int:
     failures = 0
 
@@ -772,7 +901,24 @@ def self_test() -> int:
     ]
     check("a deliberately absent facet loads silently", bool(silent))
 
-    for facet in ABSENT_REASON_REQUIRED:
+    # The surface's two marked sets, against the test's own statement of them.
+    # Both directions, and the difference is named rather than reported as a
+    # count: a marker added to the surface and a marker dropped from it are
+    # different problems with different fixes.
+    with open(SURFACE, encoding="utf-8") as handle:
+        surface = surface_facts(handle.read())
+    for label, derived, expected in (
+        ("required", set(surface["required"]), set(MARKED_REQUIRED)),
+        ("absent-capable", set(surface["absent_reason"]), set(MARKED_ABSENT_CAPABLE)),
+    ):
+        check(
+            f"the surface marks exactly the {label} keys this test states",
+            derived == expected,
+            f"the surface marks {sorted(derived - expected)} that this test does not, "
+            f"and this test states {sorted(expected - derived)} that the surface does not",
+        )
+
+    for facet in MARKED_ABSENT_CAPABLE:
         broken = _example_without(f"{facet}.absent_reason", loaded)
         check(
             f"an unset `{facet}` is refused, with the key named",
@@ -780,10 +926,49 @@ def self_test() -> int:
             f"reported {broken!r}",
         )
 
-    for path, _ in REQUIRED:
+    for path in MARKED_REQUIRED:
         broken = _example_missing(path, loaded)
         check(f"a config missing `{path}` is refused, with the key named",
               broken == path, f"reported {broken!r}")
+
+    # The marker itself, planted away in each direction. ⛔ A surface that
+    # states no requiredness must redden rather than accept anything: without
+    # this, dropping every `# required` would leave the reader applying no
+    # requiredness rule at all and every example still loading clean.
+    for label, marker in (
+        ("requiredness", REQUIRED_CLAUSE),
+        ("absent-capable facets", ABSENT_REASON_CLAUSE),
+    ):
+        try:
+            surface_facts(_surface_without(marker))
+            refused = None
+        except ConfigError as error:
+            refused = str(error)
+        check(
+            f"a surface stating no {label} is refused rather than read as none",
+            refused is not None and "markers were dropped" in refused,
+            f"reported {refused!r}",
+        )
+
+    # And the marker put somewhere it is read nowhere. A plant for this branch
+    # because the branch exists to make a silently-ignored marker impossible,
+    # which is only true while something asserts it is not ignored.
+    with open(SURFACE, encoding="utf-8") as handle:
+        misplaced = handle.read().replace(
+            "  kind: github                               # required",
+            "  kind: github                               # required; absent_reason",
+            1,
+        )
+    try:
+        surface_facts(misplaced)
+        where = None
+    except ConfigError as error:
+        where = error.key
+    check(
+        "`# absent_reason` away from a `carrier` is refused, with the key named",
+        where == "host.kind",
+        f"reported {where!r}",
+    )
 
     trackerless = [c for c in loaded.values() if not c.has_tracker]
     check("the trackerless example loads", bool(trackerless))
