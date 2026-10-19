@@ -190,6 +190,10 @@ sections be present and filled.
 refuses one: it surfaces later as a branch under the wrong prefix, and a branch name is the thing
 nobody goes back and corrects. State both values in the stop.
 
+⛔ **Read which template a body uses from which semantic sections it carries, never from the heading
+text** — [`§ 4.4`](../../config/schema.md#44-template) states why the text cannot tell two
+templates apart.
+
 **Both facets have an absent case, and filing works in it.** Where no carrier states a type, there
 is no type to cross-check and the reply says so rather than reporting a check that passed. Where
 there is no template at all, this role writes the semantic sections under headings it chooses in

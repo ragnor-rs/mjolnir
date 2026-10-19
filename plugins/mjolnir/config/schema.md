@@ -549,6 +549,11 @@ The branch prefix is a **function of type**, and its range differs between proje
 values in some, five in others, with one type resolving to one of two prefixes by a stated
 test. A map, never a boolean.
 
+⛔ **A function is total over `values`, and the reader refuses a gap naming the type.** A type
+with no prefix is an item nobody can cut a branch for, and the gap surfaces at the one moment
+it is expensive: the branch is already named, and a branch name is the thing nobody goes back
+and corrects.
+
 ### 4.2 Status — an ordered set of `(name, role, writer)`
 
 ```yaml
@@ -629,7 +634,7 @@ work_item:
     carrier: file | none                     # required; absent_reason
     dir: ".claude/templates"
     by_type: { bug: "…", feature: "…" }
-    sections:                    # semantic name -> this template's own heading
+    sections:                    # semantic name -> the heading every template here gives it
       outcome: "…"
       acceptance: "…"
       reproduction: "…"
@@ -641,6 +646,17 @@ The procedure names the **semantic** sections it depends on — `outcome`, `acce
 `reproduction` — and each template declares which of its own headings fills each. That keeps the
 heading text, and its language, out of the procedure while letting the procedure still check a
 section is present and tick its items later.
+
+⚠️ **`sections` is declared once for the project rather than once per template**, so every file
+`by_type` names gives one semantic section the same heading. What differs between two templates is
+therefore **which** of those sections each one carries — a reproduction on the defect template and
+none on the feature template is the measured shape. ⛔ **That is what identifies the template a body
+uses**, and the filing role's cross-check against the type has nothing else to read: the heading
+text is shared by construction, so it cannot tell two templates apart.
+
+⛔ **Every `by_type` key is one of `type.values`, and the reader refuses one that is not.** A
+template keyed to a type the project cannot assign is a template nothing selects, and the
+cross-check above would be holding a body against a file no item can legitimately have used.
 
 **`carrier: none` with a stated reason is a first-class setting here, on § 4.3's terms rather than
 on a second statement of them.** A project whose items already state the sections above has no

@@ -95,6 +95,69 @@ states rather than being worked around.**
 ⚠️ **#27's own start was run through the starting role too**, on the same day and before #134
 existed. It is a weaker instance than the one above and is recorded as such: one role, not the loop.
 
+### The duplicate check, run against the live host
+
+The `search_items` bullet above is why the filing role's duplicate check went **unperformed** as #134
+ran. The implementation landed with [#136](https://github.com/ragnor-rs/mjolnir/pull/136), and the
+check has since been run against the live host under
+[#7](https://github.com/ragnor-rs/mjolnir/issues/7), the item that owns the filing role.
+
+**It was run for a real request rather than as a rehearsal:** whether anything in this backlog
+already owns *the reader does not hold `work_item.type.values`, `work_item.template.by_type` and
+`work_item.type_branch_prefix` to each other*. The layers are the filing role's; the operation they
+go through, in both the shapes this one needed, is
+[`schema.md § 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)'s.
+
+| layer | what was asked | what it reached |
+|---|---|---|
+| the keyword axes | 11 queries, over the surface, action, object and symptom axes | 75 distinct items |
+| the keyword-independent sweep | 4 sweeps with no terms at all, each bounded at 100 and none at its bound | 87 distinct items |
+| the two together | — | 21 items the sweep reached that no keyword query did |
+
+**The outcome was no duplicate and nothing filed.** The governing candidate was
+[#99](https://github.com/ragnor-rs/mjolnir/issues/99) (*"A tracker block missing the keys its kind
+requires is accepted"*), tiered Medium: the same defect class — a configuration this reader accepts
+and should refuse — carried on a different key, so doing it leaves the request with everything still
+to do.
+
+⚠️ **What this instance does not show**
+([`schema.md § 11`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)).
+The sweep is not what caught #99 — an action-axis query reached it as well — so this measures the
+sweep *widening* coverage by 21 items, never the sweep being the only layer that could have found
+the candidate that mattered. And the layers were driven through the port by hand under this item
+rather than by the filing role being invoked — the distinction this section's opening draws, and the
+weaker side of it.
+
+### The cross-check that needed a configuration this repository does not have
+
+The filing role holds an item's type against the template its body uses, and this repository carries
+**neither** facet — both absent by decision, with the reasons the reader reports. So the mismatch
+path had no configuration here to run against, and
+[#114](https://github.com/ragnor-rs/mjolnir/pull/114) (*"File a work item from one copy, with the
+duplicate search the richest copy had"*) recorded it as stated-but-unexercised when the role landed.
+
+⚠️ **That turned out to be weaker than it read.** A probe skills root is enough: this project's own
+configuration with the two facets swapped in — a type over two values, and a `file` template with
+`by_type` and the `sections` map of
+[`schema.md § 4.4`](../plugins/mjolnir/config/schema.md#44-template) — resolves with both facets
+carried and neither in the reader's `unavailable` list. ⛔ **Nothing in this repository's own
+configuration was changed to get there**, which is the point: a facet this project does not carry is
+still exercisable, and the absent case stays the one that runs here.
+
+One request body was typed twice, so a stop is attributable to the cross-check and to nothing else:
+typed as the feature, whose template declares no reproduction, the body's reproduction section
+put it against the defect template and the check **stopped**, naming both; typed as the defect, the
+same body agreed with the template its type selects and the check **passed**. The probe's own prefix
+map makes the consequence concrete rather than quoted — the two types take different prefixes, so
+the unstopped run would have branched a defect under the feature's.
+
+⚠️ **What this instance does not show either**
+([`schema.md § 11`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)).
+The write was never entered on the passing run — the probe's tracker block still addresses this
+backlog and a probe does not write to it, so the cross-check being upstream of the write is why
+nothing was lost, and this instance says nothing about filing. And it is the role's prose performed
+and reported rather than a test asserting it.
+
 ## The absent facets this repository depends on
 
 The surface's absent cases are argued for elsewhere; here they are load-bearing rather than
