@@ -22,8 +22,11 @@ leg enters it, what each leg is entered on, and what *implemented* means are
 [`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-the-two-places-the-loop-asks)'s
 — ⛔ **named here and not restated**, since the reviewing role is entered by the same statement and a
 route written in one role's skill is a second authority for the other. What this file holds is where
-each pass begins and ends: the first runs steps 1 to 6 and hands over; the second ⛔ **resolves
-again** — step 1, since a pass may be a new window entirely — and then resumes at step 7.
+each pass begins and ends: the first runs steps 1 to 6 and hands over; the second ⛔ **runs steps 1
+and 2 again, then resumes at step 7** — the resolution because a pass may be a new window entirely,
+and ⛔ **step 2 because the second pass is the one usually handed a *change's* address**, whose
+measured failure is that number read as an item's. ⚠️ **Skipping it would land step 9's move on
+whatever item shares the change's number**, which is the step that cannot be taken back.
 ⚠️ **Where a reviewing role is mapped, a pass that walks this file end to end has merged a change
 nothing reviewed**, which is the failure the hand-over in step 6 exists to prevent. ⛔ **Where one is
 not, walking it through is correct**, and that is read from `carriers` rather than from this role

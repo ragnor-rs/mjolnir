@@ -156,7 +156,12 @@ cannot derive.
 against the prose it came from, red on an innocent reword and green on a reword into the opposite
 — and this document rules it out for the same reason everywhere else. So the verdict is confined
 to the one case needing no reading at all: a section with no text of its own cannot be where any
-fact is. ⚠️ **Every other coarse citation is counted and left standing**, and the count is not
+fact is. ⚠️ **And that verdict reaches `##` sections only**, which is the shape the check's own
+reading of the outline is defined over: a cited `###` whose whole content is in `####` subsections
+resolves to a heading and a list exactly as a `##` container does, and passes. The surface carries
+no such subsection today, so the limit is latent rather than live — stated here because a latent
+limit found later in a green run reads as coverage. ⚠️ **Every other coarse citation is counted and
+left standing**, and the count is not
 small; the alternative measured against it was reddening on all of them, which makes a legitimate
 section-wide citation unwritable and asks for a hand pass whose result the gate could not check
 either. Repointing one is a reader's judgement, which is the same place fidelity already sits.

@@ -124,11 +124,12 @@ what invites the second reading, and the date is the only thing the refusal prot
 **Finishing and reviewing interleave, and the division between them and a hook is stated here
 rather than in either role**, because each of the three reads it and a rule read by two roles and
 written in one of their skills is a second authority for the other. ⛔ **Finishing is entered
-twice.** Its first pass takes the branch to an open change; the reviewing role then conducts the
-review, drives the change's own plan, fixes what it finds and drives the host's runs to an answer;
-the second finishing pass merges, moves the item and releases the tree. A finishing pass that meets
-an open change proceeds from there rather than opening a second one, and one that meets a red hands
-it to the reviewing role rather than fixing it.
+twice**, and ⛔ **which leg enters each pass is the subsection below** — what belongs here is the
+division of labour rather than the order. The reviewing role conducts the review, drives the
+change's own plan, fixes what it finds and drives the host's runs to an answer; the finishing role
+commits, pushes and opens the change, and later merges it, moves the item and releases the tree.
+⛔ **A finishing pass that meets an open change does not open a second one**, and one that meets a
+red does not fix it.
 
 ⛔ **Procedure produces a record and enforcement reads it.** A role that assumes it owns the gate
 fights the hooks; a role that assumes a hook will stop it skips the record the hook reads. So the

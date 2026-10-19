@@ -48,22 +48,25 @@ rule and is read there rather than restated.
 
 ### The loop does not continue itself
 
-Measured on this repository over one day, 2026-10-19 UTC, from the harness's own session records
-and the integration branch's history: **fourteen changes landed, the finishing role was invoked six
-times, and the reviewing role three.** Eight sessions invoked the starting role and five of those
-went on to invoke the finishing one. One session is the clean instance — it implemented item
+Measured on this repository from the harness's own session records and the integration branch's
+history, over a window stated closed because a day still running is a figure that grows after it is
+written — 2026-10-19 UTC, 00:00 to 20:23: **sixteen changes landed, the finishing role was invoked
+six times, and the reviewing role three.** Eight sessions invoked the starting role and five of
+those went on to invoke the finishing one. One session is the clean instance — it implemented item
 [#8](https://github.com/ragnor-rs/mjolnir/issues/8), landed it as `b9e8fd7` through pull request
 [#147](https://github.com/ragnor-rs/mjolnir/pull/147), wrote its bookkeeping and asked what was
-next, with the finishing role neither invoked nor read: the only part of that file the session
-opened was its first eight lines, while editing an unrelated map that lists it.
+next, with the finishing role neither invoked nor its procedure read. ⚠️ **What that session had of
+that role is worth being exact about**, since the weaker claim is the one that survives: its
+frontmatter, read eight lines at a time while the session was authoring another role's frontmatter,
+and eight scattered body lines returned by a `grep` across every skill. No read ever named the file,
+and no invocation preamble for it was ever injected.
 
 What the figures are evidence for is not that the roles are wrong but that **nothing carried the
 item between them.** Each role's description was keyed on being asked; the route was stated in prose
 that named no mechanism; and the leg from implemented work to an open change belonged to no role in
-the pattern above — the nine are filing, gating, starting, finishing, reviewing, deploying, the day
-log, bookkeeping and deliverables, and implementing is none of them. A session that had just
-finished the work therefore had nothing instructing it to continue, and every role it skipped was
-skipped silently.
+the pattern above, implementing being absent from the list this section's own opening cites. A
+session that had just finished the work therefore had nothing instructing it to continue, and every
+role it skipped was skipped silently.
 
 ⚠️ **A count of invocations is a floor, and the direction it errs in is against this argument rather
 than for it.** It reads the harness's record of a *carrier* being invoked, so a session that opened
@@ -662,8 +665,8 @@ resident: that is the right shape, and it was not arrived at deliberately. And a
 the surface to settle one sentence resolves the whole of it to do so, which is the argument for a
 citation naming the narrowest section that states the fact. Since
 [#91](https://github.com/ragnor-rs/mjolnir/issues/91) closed, every heading of the surface is held
-to being motivated by a document whatever its level, and a citation resolving to a heading with no
-text of its own is refused by name; what stays a count rather than a verdict is the coarser case,
+to being motivated by a document whatever its level, and a citation resolving to a `##` section with
+no text of its own is refused by name; what stays a count rather than a verdict is the coarser case,
 which
 [`single-source-of-truth.md`](single-source-of-truth.md#the-three-kinds-and-why-one-of-them-is-absent)
 records against itself.

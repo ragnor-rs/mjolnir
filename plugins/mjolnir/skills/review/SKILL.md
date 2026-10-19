@@ -127,8 +127,8 @@ decisions were respected. The acceptance check for this role is that the pass re
 and ⛔ **asked before the diff is read** — a question put afterwards is a reading already spent, and
 the answer could then only license what has already happened. ⚠️ **It comes after step 3 and not
 before it**: the conversation is read whatever the answer here, and a question asked with none of
-that context is one nobody can answer well. That this leg asks at all, and the form it
-asks in, are
+that context is one nobody can answer well. That this leg asks at all, and the form the question
+takes, are
 [`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-the-two-places-the-loop-asks)'s.
 
 | the answer | what this role does about the diff |
@@ -143,11 +143,14 @@ answer** — the change's own plan, the threads, the gate, step 9's two question
 reading and leaves every obligation that does not depend on it standing.
 
 - ⛔ **`skip` is a person declining a reading and is never a waiver.** This role waives nothing, so
-  step 8's machine tiers are still driven to an answer, nothing is ticked, and step 11's record says
-  the reading was declined and by whom. ⚠️ **It is step 9a's second row, one question earlier**:
-  there the plan's items go to the person, here the diff does, and in both the gate is unaffected.
-  ⛔ **It does not answer step 9b either** — whether a *person* is going to look is that question's,
-  asked of a person about themselves, where this one is about what this role does.
+  step 8's machine tiers are still driven to an answer and step 11's record says the reading was
+  declined and by whom. ⚠️ **What it does not do is tick anything**: a plan item is ticked by an
+  observation in step 6, which runs on this answer like the rest, so an unticked item here means the
+  observation was missing rather than that the diff went unread.
+- ⛔ **It is neither of step 9's questions, and answers neither.** 9a asks who *runs the plan* and
+  ends the pass where the answer is the person's; 9b asks whether a **person** is going to look, of
+  a person about themselves. This one asks only what this role does about the diff, and a `skip` here
+  leaves both of those still to be asked.
 - ⛔ **Delegated is the default where no answer arrives**, which is step 9b's own warning about an
   ask that never reaches a person — and ⛔ **the reply says the default took effect** rather than
   reporting an answer nobody gave.
