@@ -90,6 +90,12 @@ CLOSED = "closed"
 # wrong direction here is the silent one, and the words are refused by name.
 STATE_QUALIFIER = re.compile(r"-?\b(?:state|is)\s*:\s*(?:open|closed)\b", re.IGNORECASE)
 
+# What the host's client writes to stderr when the thing asked for is not there.
+# ⛔ Carried as a constant rather than spelled into a condition, because *absent*
+# and *could not be established* are two different answers here and this string is
+# the whole of what separates them.
+NOT_FOUND = "(HTTP 404)"
+
 # What a search with no terms is ordered by. The keyword-independent layer of the
 # duplicate check reads titles rather than matches, so it asks for the most
 # recently updated under a bound; the host's own default order is relevance,
@@ -215,6 +221,34 @@ def read_item(number: int) -> dict:
     return item
 
 
+def _label_exists(repo: str, label: str) -> bool:
+    """Whether the repository has this label, asked for by name.
+
+    ⛔ Not `_gh`, because the interesting answer here is a **failure**: the host's
+    `404` is what *absent* looks like, and `_gh` turns every non-zero exit into
+    the same refusal. So the three cases are separated here -- present, absent,
+    and could-not-be-established -- and only the third raises.
+    """
+    done = subprocess.run(
+        ["gh", "api", f"repos/{repo}/labels/{label}", "--jq", ".name"],
+        capture_output=True, text=True, timeout=30,
+    )
+    if done.returncode == 0:
+        return True
+    # ⚠️ Measured: the host's own body lands on stdout and `gh` writes `(HTTP 404)`
+    # to stderr, so this matches the latter rather than hunting `404` anywhere in
+    # either -- a digit sequence in an unrelated message would otherwise read as
+    # *absent*, which is the reading that invents an answer.
+    if NOT_FOUND in done.stderr:
+        return False
+    raise port.HostUnavailable(
+        f"`gh api repos/{repo}/labels/{label}` failed with neither a label nor a "
+        f"`404`: {done.stderr.strip() or 'no stderr'}. Whether this repository has "
+        "that label could not be established, which is not the same as it not "
+        "having it."
+    )
+
+
 def search_items(
     terms: str | None = None, *, labels: list[str] | None = None, limit: int = 100
 ) -> dict:
@@ -244,9 +278,18 @@ def search_items(
     answers `[]` for a label that does not exist and `[]` for a label nothing
     carries, with exit 0 and no warning in either -- and this is the one search
     the filing role performs, so the two readings are a duplicate check that
-    found nothing and a duplicate check that never ran. The labels are only read
-    back where the answer *is* empty: a hit proves the label exists and spends no
-    call proving it.
+    found nothing and a duplicate check that never ran. The labels are only
+    checked where the answer *is* empty: a hit proves the label exists and spends
+    no call proving it.
+
+    ⚠️ **Each label is asked for by name rather than looked up in a listing.** A
+    listing takes a bound, and a label past that bound comes back absent from an
+    answer that reports no truncation -- so the guard would call a label the
+    repository *has* unknown and refuse a search that was fine. Measured by
+    shrinking the bound, which is what a repository with more labels than the
+    bound does by itself. ⛔ And three answers, not two: present, absent by the
+    host's own `404`, and **unestablished**, which is reported as a failure rather
+    than folded into either.
 
     The answer carries its own bound, because the layer that uses it is required
     to report one. ⚠️ `at_limit` says the host had at least this many, never that
@@ -283,11 +326,7 @@ def search_items(
     args += ["--search", query or RECENT_FIRST]
     items = _gh(args)
     if labels and not items:
-        known = {
-            label["name"]
-            for label in _gh(["label", "list", "--repo", repo, "--limit", "200", "--json", "name"])
-        }
-        unknown = [label for label in labels if label not in known]
+        unknown = [label for label in labels if not _label_exists(repo, label)]
         if unknown:
             raise port.HostUnavailable(
                 f"`gh issue list --label {' --label '.join(labels)}` answered with "
@@ -296,7 +335,10 @@ def search_items(
                 "running, not this tracker holding no such item."
             )
     return {
-        "terms": terms,
+        # ⚠️ The query as **sent**, not as handed in: the filing role records every
+        # query against its hit count, and a record of the unstripped argument is a
+        # record of something the host was never asked.
+        "terms": query or RECENT_FIRST,
         "labels": list(labels or []),
         "limit": limit,
         "at_limit": len(items) >= limit,
