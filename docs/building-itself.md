@@ -20,8 +20,8 @@ whole of the bootstrap — not three pieces picked for being difficult.
 | the first carrier of the issue loop, its starting half | `e9e8e0f`, [#107](https://github.com/ragnor-rs/mjolnir/pull/107) | the role that starts a work item cannot be started by the role that starts a work item |
 
 ⚠️ **The third row names the *issue* loop, and the distinction is not cosmetic.** The day-log
-carrier shipped in this repository's first commit, `6410f34` — so the earliest carrier of any of
-the nine roles was never hand-built in this sense at all; it predates the loop it belongs to. It
+carrier shipped in this repository's first commit, `6410f34` — so the earliest carrier of any role
+of the loop was never hand-built in this sense at all; it predates the loop it belongs to. It
 is excluded here for the reason the `day_log.script` bullet below gives: the one role whose
 carrier shipped first is the one role this project cannot run.
 
@@ -44,14 +44,56 @@ being written.
 ⚠️ Two different facts, and only the second one says a loop is running. A carrier can sit in the
 tree while item after item is started by hand, and nothing in the tree would differ — the starting
 half landed with [#107](https://github.com/ragnor-rs/mjolnir/pull/107) well before any of this.
-**#27's own start was run through it** rather than by hand, which is the one instance this record
-can speak for.
 
 Nothing in the tree records that distinction and no check holds it: whether a role was invoked or
 performed by hand is a fact about a session's transcript rather than about the repository. So this
-document claims it for no item, per
+document speaks for the instances below and for no others, per
 [`schema.md § 11`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish) —
 an unstated limit reads later as coverage.
+
+### The one item the loop ran whole on
+
+[#134](https://github.com/ragnor-rs/mjolnir/issues/134) (*"The loop has never run whole on a single
+item, and the record claims it for none"*) went through the shipped carriers and through nothing
+else, and it is closed by [#135](https://github.com/ragnor-rs/mjolnir/pull/135) (*"Record the one
+item the loop ran whole on, and what it did not touch"*), which is the change this paragraph landed
+in. It was filed for that purpose: [#27](https://github.com/ragnor-rs/mjolnir/issues/27) asks for
+one such instance, and the only shape that satisfies a condition about an item traversing the loop
+is an item that traverses it — which is why it is an item of its own rather than a line in #27.
+
+**What ran.** Filing wrote the item, its label and its relation; starting ran the readiness gate
+whole and took the claim by publishing the ref; finishing took the branch to an open change; the
+reviewing role conducted the review and drove the gate; and a second finishing pass merged it.
+⚠️ **The interleave is not this record's invention and not this run's choice** — that finishing is
+entered twice with the review between its passes, and what the second pass owes beyond the merge, is
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles)'s, stated there
+once.
+
+⛔ **These carriers are not the loop, and this document does not say which ones are missing.** Which
+roles this project carries is [`schema.md § 7`](../plugins/mjolnir/config/schema.md#7-carrier)'s
+facet, and the command in the last section derives the set from it; naming the remainder here would
+be a copy that goes stale the first time a carrier lands — the same prohibition that section already
+carries, and one the README records as having drifted once already. The one absence worth a sentence
+is the role whose carrier exists and still cannot run, for the reason the `day_log.script` bullet
+below gives.
+
+**Two capabilities were absent as it ran, and each took the fallback
+[`§ 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)
+states rather than being worked around.**
+
+- `search_items` — ⚠️ absent from the plugin the session served rather than from this tracker. The
+  implementation landed on #27's branch, which had not merged, and a plugin registered from a
+  directory serves that directory's checked-out branch; so the filing role queried the capability,
+  found it absent and asked before writing, which is exactly its stated fallback. The duplicate
+  check is therefore reported as not performed by the role — the queries that *were* run came from
+  the unmerged branch's own implementation and are named as separate evidence rather than as the
+  role's check.
+- `checklist_read` — absent because plain issues have no check-item object. The filing role
+  therefore has no answer about #27's checklist, and the parent relation that governed #134's
+  filing was established from #27's acceptance conditions in its body instead.
+
+⚠️ **#27's own start was run through the starting role too**, on the same day and before #134
+existed. It is a weaker instance than the one above and is recorded as such: one role, not the loop.
 
 ## The absent facets this repository depends on
 
