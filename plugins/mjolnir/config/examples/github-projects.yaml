@@ -1,7 +1,5 @@
 # A project tracked on GitHub Projects, code and cards on the same host.
 # Carries the whole set of roles. Example data — not any project's facts.
-version: 1
-
 roots:
   code: "."
   code_is_own_repo: false

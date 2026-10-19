@@ -479,6 +479,36 @@ def process_in(path: str) -> bool | None:
     return False
 
 
+def standing_in(path: str) -> bool:
+    """Whether *this* process's working directory is at or below `path`.
+
+    ⛔ **§ 10's *leave, then remove*, and the only half of it a carrier can enforce.** The rest of
+    that rule is an ordering in a role's text; this is the refusal that catches a pass which
+    skipped it. A removal asked for from inside the tree either fails or succeeds into a session
+    whose working directory no longer exists, and the second is the worse of the two: the session
+    keeps running, every call that names a root explicitly still works, and every call that does
+    not writes wherever the shell lands -- the directory the session was launched in, which under
+    this branch model is the shared checkout.
+
+    ⛔ **At or below, never equal**, for the same reason `process_in` carries that correction: a
+    session's working directory is routinely a subdirectory of its tree, and an equality test
+    answers *not standing there* for a session that is.
+
+    ⚠️ This reads **this** process and `process_in` reads every other one; they answer different
+    questions and the caller needs both. A sibling session's tree is skipped, and the caller's own
+    is stopped on -- the stop being clearable by leaving, which is what makes it a refusal rather
+    than an exemption.
+    """
+    try:
+        here = os.path.realpath(os.getcwd())
+    except OSError:
+        # ⚠️ An unreadable cwd *is* the deleted-out-from-under case, already arrived. There is no
+        # live directory left to protect, so the removal may proceed and clean up after it.
+        return False
+    root = os.path.realpath(path)
+    return here == root or here.startswith(root + os.sep)
+
+
 def read_liveness(
     root: str | Path,
     remote: str,
@@ -936,7 +966,25 @@ def release(
     rule above affordable: without the landed reading, every squash-merged claim reached this
     guard as live, and the ordinary cleanup after a merge had to pass the flag reserved for
     breaking somebody else's work -- which is how an override stops meaning anything.
+
+    ⛔ **A release asked for from inside the tree it would remove is refused, and `--force` does
+    not cover it.** The override exists for breaking another session's claim, which is a person's
+    call; standing in the tree is not a call anybody can make, because forcing it removes the
+    directory this process is in either way. § 10 orders the exit first, so leaving is what clears
+    this and nothing else does.
     """
+    doomed = tree or tree_for_branch(root, branch)
+    # ⛔ Before the ref deletion and not beside the tree removal: a refusal has to leave the claim
+    # whole. Checked where `release` is entered, so a half-released claim is never this guard's.
+    if doomed and standing_in(doomed):
+        raise ClaimError(
+            f"refused: this release would remove `{doomed}`, which this process is standing in.\n"
+            "§ 10 orders the exit before the removal. Leave the tree and run this again — from "
+            "the shared checkout, or from anywhere outside it.\n"
+            "--force does not cover this: it breaks another session's claim, and the tree would "
+            "still go out from under this one."
+        )
+
     if not force and remote_url(root, remote):
         held = status(root, branch, remote, integration)
         # ⛔ The test is **landed or held here**, not *live*. Keying on live left the orphan case
@@ -958,10 +1006,11 @@ def release(
         proc = git(root, "push", remote, "--delete", branch, check=False)
         done.append("ref deleted" if proc.returncode == 0 else "ref was already gone")
 
-    held = tree or tree_for_branch(root, branch)
-    if held and Path(held).exists():
-        git(root, "worktree", "remove", held, "--force", check=False)
-        done.append(f"tree {held} removed")
+    # ⛔ `doomed`, not a second derivation of the same path: the guard above refused on one answer
+    # and a re-read here is allowed to give another, which would remove a tree nothing checked.
+    if doomed and Path(doomed).exists():
+        git(root, "worktree", "remove", doomed, "--force", check=False)
+        done.append(f"tree {doomed} removed")
     git(root, "worktree", "prune", check=False)
 
     if _local_branch(root, branch):
@@ -1592,6 +1641,44 @@ def self_test() -> int:
                  "already gone" in again, again)
         suite.ok("so the item can be claimed again after a release",
                  "claimed" in take(two, "feature/r", str(Path(tmp) / "t2")))
+
+    print("\nleaving the tree before removing it:")
+
+    # ⛔ Both sides of the scope, because a guard that refuses everything and a guard that is dead
+    # both report green from one side only. The red side is a release called from inside the tree;
+    # the green side is the *same* release, same arguments, one directory up.
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+        tree = str(Path(tmp) / "standing")
+        take(one, "feature/e", tree)
+        (Path(tree) / "sub").mkdir()
+        outside = os.getcwd()
+        try:
+            os.chdir(tree)
+            suite.ok("a process in the tree reads as standing in it", standing_in(tree))
+            suite.ok("a release from inside the tree is refused",
+                     _raises(lambda: release(one, "feature/e", tree)))
+            # ⚠️ The refusal has to leave the claim whole: it runs before the ref deletion, so a
+            # pass that meets it has lost nothing and can leave and re-run.
+            suite.ok("and the refusal leaves the published ref alone",
+                     remote_ref_sha(one, "origin", "feature/e") is not None)
+            suite.ok("and leaves the tree standing", Path(tree).exists())
+            suite.ok("--force does not cover standing in the tree",
+                     _raises(lambda: release(one, "feature/e", tree, "origin", force=True)))
+            os.chdir(Path(tree) / "sub")
+            suite.ok("at or below, not equal: a subdirectory of the tree is inside it",
+                     _raises(lambda: release(one, "feature/e", tree)))
+        finally:
+            # ⚠️ Restored before the green side rather than after the suite: the removal below
+            # deletes this directory, and a cwd that no longer exists breaks every later section.
+            os.chdir(outside)
+        suite.ok("a tree nobody is standing in reads as not stood in", not standing_in(tree))
+        left = release(one, "feature/e", tree)
+        suite.ok("and the same release from outside the tree proceeds",
+                 not Path(tree).exists(), left)
+        suite.ok("so leaving is what clears the refusal, and nothing else does",
+                 remote_ref_sha(one, "origin", "feature/e") is None, left)
 
     print("\nreleasing somebody else's live claim:")
 
