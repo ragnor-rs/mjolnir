@@ -167,10 +167,16 @@ step 6's verdict, and the reply says so.
   than a duplicate to skip**: the reader refuses it, naming the check and the workflow, so meeting
   one here is a stop with the configuration named and not something to work around.
 - ⛔ **A check whose answerer is a person is not this role's to answer, and reading the diff is not
-  an answer to it.** Read the record the reviewing role wrote — [`skills/review/`](../review/) — or
-  hand the check over with its own stop message and the state the change is in. ⚠️ **It is the
-  record that counts and not this reply**: a verdict living only here is one the next pass cannot
-  read.
+  an answer to it.** Read whatever record already exists — the reviewing role writes one for its own
+  two questions, [`skills/review/`](../review/), and those are not these checks — or hand the check
+  over with its own stop message and the state the change is in.
+- ⛔ **And the answer that comes back is written down by this role, on the change, naming who
+  answered and what they saw.** ⚠️ **This is the step that is easy to drop**, because the answer
+  arrives in conversation and reads as received: a verdict living only in this reply is one the next
+  pass cannot read ([`§ 11`](../../config/schema.md#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it)),
+  and § 13 asks for a record rather than a report. ⛔ **Nothing is ticked on the strength of an
+  answer that was not recorded** — which is the same rule the reviewing role states for a plan item,
+  one list over.
 - ⛔ **A check that could not be answered is reported as unanswered, never as passed.**
   [`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish), and the direction
   that matters: a check nobody could ask reads exactly like a check that passed.

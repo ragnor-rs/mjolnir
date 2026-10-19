@@ -1259,14 +1259,11 @@ message. ⚠️ **It is not § 5 twice.** That gate asks whether an item may sta
 the item and the tracker; this one asks whether the work is finished and is answered off the change,
 the host's runs and — the part no other facet has — **a person**.
 
-⛔ **A green gate is not a definition of done, and the projects that say so differ in why.** Two
-state the rule and neither could be configured as the other: one requires the running application
-to be driven by hand before a merge, because its whole automated suite runs in one process against
-doubles; the other splits the same rule into an acceptance suite that is machine-answerable and a
-checklist that is not
+⛔ **A green gate is not a definition of done**, and the two projects known to say so split that
+rule differently enough that neither could be configured as the other — which is why this is a list
+with an answerer per check rather than a flag
 ([the measurement](../../../docs/configuration-surface.md#a-green-gate-is-not-a-definition-of-done)).
-A procedure that read the gate as *done* would report work shipped on evidence that never touched
-it; a procedure that demanded a person everywhere would be the check somebody turns off, which is
+⚠️ A procedure that demanded a person everywhere would be the check somebody turns off, which is
 the reasoning #26's spend guard already rests on.
 
 The two vocabularies an entry draws on, stated once — and written under the key they belong to
@@ -1286,10 +1283,26 @@ done:
 - ⛔ **The order states what each check blocks: every check after it.** That is why `merged` is a
   member of the list rather than the frame around it — a check written before it is a check the
   merge waits on, and one written after it is answered once the change is in. A project moves the
-  boundary by moving the entry, and nothing in the procedure decides it.
+  boundary by moving the entry, and nothing in the procedure decides it. ⚠️ **A list carrying no
+  `merged` entry is read as entirely pre-merge**, which is the only reading left once the boundary
+  is absent, rather than a misconfiguration.
 - ⛔ **`answered_by` is stated on every check and is never defaulted.** A default would have to be
   `procedure`, and the configuration it silently produces is the one failure here that is
   indistinguishable from success: a check only a person can answer, answered by reasoning about it.
+  ⛔ **A check that names its own answerer is bound to it, in both directions**, because requiring
+  the key to be *stated* does not stop the failure above being what is stated:
+
+  | the check | answered by | and the other way round |
+  |---|---|---|
+  | `gate_green`, `merged` | `procedure` | a machine reading handed to a person is the check somebody turns off |
+  | `local` | `procedure` | a command is the procedure's to run |
+  | `human_verification` | `human` | a person's verification answered by reasoning about it |
+  | `checklist_ticked` | **either**, and the project says which | — |
+
+  ⚠️ **`checklist_ticked` is the one that looks as if it should be bound and must not be**: ticking
+  a checklist is a person's act, but reading *whether* it is ticked can be a machine's wherever the
+  host or the tracker reports it — § 3's `checklist_read` is that capability — so binding it would
+  refuse one of two correct configurations.
 - ⛔ **`answered_by: human` is not satisfiable by the procedure, and no amount of reading the diff
   satisfies it.** The answer is **recorded** where something else can read it and the record says
   **who** answered — the division [§ The loop](#the-loop--nine-roles) already states: procedure
@@ -1300,9 +1313,8 @@ done:
   [§ 11](#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it).
 - ⛔ **`answered_by: procedure` with a `run` is run, not handed over**, and its verdict is reported
   with the command that produced it and the tree that produced it
-  ([§ 10](#which-tree-a-verdict-belongs-to)). ⚠️ **Collapsing the two answerers loses a real
-  check**: an acceptance suite that merely needs the application up is machine-answerable, and
-  configuring it human-answered stops every completion for a hand-over nobody needed.
+  ([§ 10](#which-tree-a-verdict-belongs-to)). ⚠️ **It is the finishing role that runs it**, not the
+  reviewing one, whose own local-check rule is about the change's plan rather than this list.
 - ⛔ **A check names what it asks about and never its own preconditions.** What a check needs before
   it can run at all — a deployment, a credential, indexed material, money — and what it reports
   when it ran only in part is #60's axis. Two facets describing one unrunnable tier in two
@@ -1310,9 +1322,14 @@ done:
 
 ⚠️ **`gate_green` on a project whose host runs nothing is a check with no source, not a check that
 passes.** `checks: []` is § 2's one legitimate absence and means every verdict is local, so the run
-`gate_green` would read does not exist — and by the rule above the role reports it unanswered. A
-project in that position states the command as a `local` check instead, which is the one place on
-this surface a local command can be named without hanging off a workflow. ⚠️ **What such a verdict
+`gate_green` would read does not exist — and by the rule above the role reports it unanswered.
+⚠️ **The reader has both halves in hand and deliberately refuses nothing**, because a project whose
+host runs nothing today may carry workflows tomorrow and the pairing is not wrong, only unanswerable
+now. A
+project in that position states the command as a `local` check instead — the only place a
+**verdict-producing** command is named with no workflow behind it, [§ 12](#12-ordering)'s `command`
+being the other local command this surface carries and the verdict of nothing.
+⚠️ **What such a verdict
 *proves* is not stated here**: a pass replayed out of a build cache having executed nothing, and a
 precondition the command does not check itself, are #66's — and that item is also where a local
 check gets a statement of its own rather than being this facet's `run`.
@@ -1322,10 +1339,11 @@ gate already has: completion is the merge and the host's own runs, and no furthe
 for. ⚠️ The absence is `[]` and not an unset key, by the rule this surface opens with: a deliberate
 absence states itself, and without that statement a decision and an oversight read identically.
 
-**The role that walks this is the finishing one**, at [`skills/finish/`](../skills/finish/). ⛔ **It
-is not the reviewing role's to define**: that role records the verdicts it produced and the answers
-it was given, and a role that decided for itself what they added up to would be the gate and the
-record at once.
+**The role that walks this is the finishing one**, at [`skills/finish/`](../skills/finish/), and it
+is that role that **writes** the record a person's answer leaves. ⛔ **The list is not the reviewing
+role's to define**: that role records the verdicts it produced and the answers to its own two
+questions, which are not checks on this list, and a role that decided for itself what any of it
+added up to would be the gate and the record at once.
 
 ⚠️ **Whether a person is going to look at the diff is not a check on this list.** The reviewing role
 asks that every pass, as procedure with no setting — along with who runs the change's own plan — so
@@ -1345,13 +1363,18 @@ machine for an answer it already has.
 that must run locally, because nothing else will ever answer it — which is the acceptance suite in
 the measurement above, mirrored by no workflow at all.
 
-⚠️ **Already mirrors is not a comparison against one string, and #58 is why.** A workflow may run
-several commands while its entry states one, and a check colliding with the second of them is as
-duplicated as one colliding with the first — so what the refusal reads is **whatever an entry
-mirrors**, which widens when #58 lands rather than being rewritten then. ⚠️ **And the comparison is
-the command as both sides wrote it**, surrounding whitespace aside: a project that writes one
-command two different ways has two commands as far as this refusal can tell, which errs towards
-accepting a duplicate rather than towards refusing a legitimate check.
+⚠️ **Already mirrors is not a comparison against one string**, for the reason § 2 states beside
+`mirrors` itself and #58 exists to settle: a check colliding with the second of a workflow's
+commands is as duplicated as one colliding with the first. So what the refusal reads is **whatever
+an entry mirrors**: a command, or a list of them. ⛔ **The list is a tolerance and not a form this
+surface states** — #58 decides the landing shape, and the per-command path filter its acceptance
+names is **refused** here rather than guessed at. The tolerance runs in the strict direction only:
+it can find a collision, never excuse one.
+⚠️ **And the comparison is
+the command as both sides wrote it**, with only its runs of whitespace normalised — the same
+command to any shell, so a second spelling of one command is not a second command. Anything beyond
+that is two commands as far as this refusal can tell, which errs towards accepting a duplicate
+rather than towards refusing a legitimate check.
 
 ### In progress is not done, and a role that stops mid-list says what is left
 

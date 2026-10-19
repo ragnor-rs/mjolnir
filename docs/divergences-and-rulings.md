@@ -139,13 +139,13 @@ the day log's **exclusion list**
 ([schema § 13](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check))
 — each an ordered list of named checks drawn from a shared library rather than a fixed sequence. The
 measurements are in `configuration-surface.md`. ⚠️ No count is carried in this heading any more: it
-said *two* and the third arrived, which is the drift this record is supposed to catch rather than
-demonstrate.
+said *two* and what counts as done arrived, which is the drift this record is supposed to catch
+rather than demonstrate.
 
-The last of the three carries one thing the first two do not, and it is the part a reader should not
-take for a refinement: **a check states who answers it.** What forced that — two projects splitting
-one rule in ways a single human-answered flag would have got wrong in opposite directions — is the
-measurement, and it stays where the measurements are.
+What counts as done carries one thing the readiness gate and the exclusion list do not, and it is
+the part a reader should not take for a refinement: **a check states who answers it.** What forced
+that — two projects splitting one rule in ways a single human-answered flag would have got wrong in
+opposite directions — is the measurement, and it stays where the measurements are.
 
 ## 5. What the last three day-log copies added
 

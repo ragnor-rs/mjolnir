@@ -21,12 +21,16 @@ Three things it deliberately does not do:
     surface therefore changes what this reader accepts without changing this
     reader.
 
-    ⚠️ It does carry four *sentinels* -- `none` for an absent carrier or
-    tracker, `never` for a writer the procedure may not use -- because which
-    member of a set means "absent" is not something an alternation states.
-    Those are held to the surface by the self-test rather than by inspection,
-    so renaming one in the surface reddens the build instead of silently
-    turning off the report that depends on it.
+    ⚠️ It does carry *sentinels* -- `none` for an absent carrier or tracker,
+    `never` for a writer the procedure may not use, and the two § 13 members a
+    rule is written against: `local`, the check that carries a command, and
+    `procedure`, the answerer a command is run by. Each is a member of a set the
+    surface states, and which member a rule turns on is the part an alternation
+    cannot say. No count of them is given here -- the first form of this
+    sentence said *four* and was stale the moment § 13 added two. Every one is
+    held to the surface by the self-test rather than by inspection, so renaming
+    one there reddens the build instead of silently turning off the rule that
+    depends on it.
   * **It infers no root.** `roots.code` is read, never derived from the working
     directory or from `git rev-parse` -- both would do something plausible first
     and be wrong wherever the two roots differ.
@@ -43,9 +47,9 @@ Three things it deliberately does not do:
     configuration cannot support; acting on that is the role's business.
 
 **Absence is a configuration, not a gap.** `tracker.kind: none`, an empty
-`statuses` list, an empty `readiness` list, `host.checks: []`, and a facet whose
-`carrier` is `none` with a stated `absent_reason` all load silently and are not
-misconfigurations. An *unset* carrier is. `unavailable()` is how a role says what
+`statuses` list, an empty `readiness` list, an empty `done` list,
+`host.checks: []`, and a facet whose `carrier` is `none` with a stated
+`absent_reason` all load silently and are not misconfigurations. An *unset* carrier is. `unavailable()` is how a role says what
 it cannot do without any of those reading as a broken install.
 
 Usage:
@@ -495,16 +499,35 @@ CONTEXTUAL = {
 }
 
 
-def _normalised_command(command) -> str:
-    """A command as written, with surrounding whitespace made irrelevant.
+# § 13 binds four of its five checks to an answerer and leaves `checklist_ticked`
+# to the project. Spelled out here for the same reason the sentinels above are,
+# and held to the surface by the same loop: which member of a set a rule turns on
+# is the part an alternation cannot state. A check the surface adds without a
+# binding simply does not appear here and is the project's to answer either way.
+BOUND_ANSWERERS = {
+    "gate_green": "procedure",
+    "local": "procedure",
+    "human_verification": "human",
+    "merged": "procedure",
+}
+
+
+def _normalised_command(command: str) -> str:
+    """A command as written, with its runs of whitespace normalised.
 
     The whole of the normalisation, deliberately: § 13 states that the
-    comparison is the command as both sides wrote it, so a project writing one
-    command two different ways has two commands here. That errs towards
-    accepting a duplicate rather than towards refusing a legitimate check, which
-    is the direction a refusal has to err in.
+    comparison is otherwise the command as both sides wrote it, so a project
+    writing one command two genuinely different ways has two commands here.
+    That errs towards accepting a duplicate rather than towards refusing a
+    legitimate check, which is the direction a refusal has to err in.
+
+    ⚠️ Whitespace is the one thing collapsed rather than merely trimmed, and the
+    first form of this said *surrounding* whitespace while doing more: a command
+    spelled with two spaces between its words is the same command to any shell,
+    so treating it as a second one would refuse a duplicate the rule means to
+    catch. § 13 says the same, having been corrected with this.
     """
-    return " ".join(str(command).split())
+    return " ".join(command.split())
 
 
 def _mirrored_commands(data: dict) -> dict[str, str]:
@@ -513,8 +536,13 @@ def _mirrored_commands(data: dict) -> dict[str, str]:
     `mirrors` states one command per entry today, and a workflow that runs
     several has no form on the surface -- #58's gap. So § 13's refusal reads
     **whatever an entry mirrors** rather than comparing against a single string:
-    a list is read as the commands it holds, and when #58 lands only this
-    function changes.
+    a list is read as the commands it holds.
+
+    ⚠️ That list is a *tolerance*, not a shape § 2 states, and it promises
+    nothing about #58: that item's own acceptance names a per-command path
+    filter, which is a list of mappings and is **refused** below rather than
+    guessed at. Whoever lands #58 edits this function, and the refusal is what
+    tells them so.
 
     ⚠️ A shape this cannot read is refused rather than skipped -- the list, an
     entry, and a `mirrors` alike. Skipping any of the three would empty this map
@@ -759,6 +787,19 @@ def validate(data: dict, facts: dict) -> None:
                 "failure without what it wants.",
             )
         run = entry.get("run")
+        # The other side of the collision comparison, and it has to be held to a
+        # shape for the same reason `mirrors` is: `_normalised_command` stringifies
+        # whatever it is given, so a `run` written as a list -- the natural way to
+        # write a multi-word command -- becomes a key no mirrored command can ever
+        # match, and the refusal below it holds nothing while looking like it holds.
+        if run is not None and not isinstance(run, str):
+            raise ConfigError(
+                f"{where}.run",
+                f"is {run!r}; § 13 states it as one command, written as a string. "
+                "A value of another shape stringifies into something no "
+                "`host.checks` entry can match, so the refusal of a check the host "
+                "already runs would pass it in silence.",
+            )
         if entry["check"] == "local":
             if not run:
                 raise ConfigError(
@@ -777,10 +818,34 @@ def validate(data: dict, facts: dict) -> None:
                     "command needs standing up before it can run at all is "
                     "#60's axis, not an answerer here.",
                 )
-        elif run:
+        # Every check § 13 binds to an answerer, in both directions. The
+        # `local` arm above is the same rule and stays where it is because it
+        # needs the command in hand; these are the rest. ⛔ Both directions
+        # matter and only one of them is obvious: a machine check handed to a
+        # person is the check somebody turns off, and a person's check handed
+        # to the procedure is answered by reasoning about it and reported
+        # green, which is the failure § 13 exists for. `checklist_ticked` is
+        # bound to neither, and § 13 says why.
+        elif BOUND_ANSWERERS.get(entry["check"], entry["answered_by"]) != entry["answered_by"]:
+            raise ConfigError(
+                f"{where}.answered_by",
+                f"is {entry['answered_by']!r} on a check § 13 binds to "
+                f"`{BOUND_ANSWERERS[entry['check']]}`. A check that names its own "
+                "answerer is not a project's to reassign: a machine reading "
+                "handed to a person is a check that gets turned off, and a "
+                "person's verification handed to the procedure is answered by "
+                "reasoning about it. `checklist_ticked` is the one that may go "
+                "either way, since reading whether a list is ticked can be a "
+                "machine's work.",
+            )
+        elif "run" in entry:
+            # Presence rather than truthiness, which is the reader's own rule one
+            # section up: a key written with nothing after it reads as absent and
+            # is refused instead, so `run:` left dangling on a check that runs
+            # none is as much a mistake as one carrying a command.
             raise ConfigError(
                 f"{where}.run",
-                f"names {run!r} on a `{entry['check']}` check, whose verdict comes "
+                f"is {run!r} on a `{entry['check']}` check, whose verdict comes "
                 "from somewhere else (§ 13). A command nothing runs is a command "
                 "that reads as covered.",
             )
@@ -1015,7 +1080,18 @@ def self_test() -> int:
     # one there reddens the build rather than silently disabling the report it
     # drives. `none` and `never` are members of sets the surface states; which
     # member means "absent" is the part an alternation cannot say.
-    for member, path in (("none", "tracker.kind"), ("never", "writer")):
+    for member, path in (
+        ("none", "tracker.kind"),
+        ("never", "writer"),
+        # § 13's two. `local` is the check a `run` hangs off and `procedure` is
+        # the answerer it is bound to, so a rename in the surface would leave
+        # both rules reading a member that no longer exists -- and the examples
+        # alone would not say so, since a rule that matches nothing refuses
+        # nothing.
+        ("local", "done.check"),
+        ("procedure", "done.answered_by"),
+        ("human", "done.answered_by"),
+    ) + tuple((check, "done.check") for check in sorted(BOUND_ANSWERERS)):
         states = facts_for(path)
         check(
             f"the surface still states `{member}` in its `{path}` set",
@@ -1174,8 +1250,21 @@ def _planted_violations():
         ("a machine-answerable check handed to a person", "done[0].answered_by",
          at("done", [{"check": "local", "run": "a-command", "answered_by": "human",
                       "stop": "…"}])),
+        ("a person's check answered by the procedure", "done[0].answered_by",
+         at("done", [{"check": "human_verification", "answered_by": "procedure",
+                      "stop": "…"}])),
+        ("a machine reading handed to a person", "done[0].answered_by",
+         at("done", [{"check": "gate_green", "answered_by": "human", "stop": "…"}])),
+        ("the merge itself handed to a person", "done[0].answered_by",
+         at("done", [{"check": "merged", "answered_by": "human", "stop": "…"}])),
         ("a command on a check that runs none", "done[0].run",
          at("done", [{"check": "merged", "run": "a-command", "answered_by": "procedure",
+                      "stop": "…"}])),
+        ("a dangling command on a check that runs none", "done[0].run",
+         at("done", [{"check": "merged", "run": None, "answered_by": "procedure",
+                      "stop": "…"}])),
+        ("a command that is not one command", "done[0].run",
+         at("done", [{"check": "local", "run": ["a-command"], "answered_by": "procedure",
                       "stop": "…"}])),
         ("a done check the host already runs", "done[0].run",
          _collides_with_a_mirrored_command),

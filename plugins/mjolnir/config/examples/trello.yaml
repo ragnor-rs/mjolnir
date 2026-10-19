@@ -84,7 +84,7 @@ readiness:
 # ⛔ A person-answered check on the tracker with the fewest places to put the answer. There is
 # no comment action here, and `policy.forbid_on_item` above bars branch names from the card
 # anyway, so the record of who verified what goes on the **change** in the inner repository —
-# which is one of the places § 13 asks for: somewhere other than a role's own reply, which
+# which satisfies what § 13 asks of the record: somewhere other than a role's own reply, which
 # nothing downstream can read.
 done:
   - { check: gate_green, answered_by: procedure, stop: "The inner repository's runs are not green for this commit." }

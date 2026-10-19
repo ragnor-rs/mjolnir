@@ -297,8 +297,11 @@ Three of these measurements each forced a property of the port, stated in
 
 ## What is an ordered list of named checks rather than procedure
 
-No count is given, for the reason the axes carry none: this section grew a third entry after it was
-written, and a number in the heading would have gone stale green.
+No count is given, for the reason [`schema.md § The
+loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles) gives for the axes — a count
+restated elsewhere drifts the moment one is added — and this section is the demonstration: it gained
+what counts as done after it was written, which would have made a number in the heading wrong while
+the gate stayed green.
 
 ### The readiness gate
 
@@ -328,12 +331,12 @@ decision rather than the only possible one.
 
 ### A green gate is not a definition of done
 
-The third list, and the only one of the three whose evidence is a project's **written rule** rather
-than a reading of its role copies. ⚠️ **It is also the only one carrying no count**, and that is a
-property of the evidence rather than a style: two projects are known to state the rule and the
-source says *at least one* of the two positions below rather than enumerating the six, so a figure
-here would be wider than what was read. **Neither of the two could be configured as the other**,
-which is what made the entry a list with an answerer per check rather than a flag:
+The one of this family whose evidence is a project's **written rule** rather than a reading of its
+role copies. ⚠️ **And the one carrying no count of projects**, which is a property of the evidence
+rather than a style: two are known to state the rule, and the source says *at least one* of the two
+positions below rather than enumerating the six, so a figure here would be wider than what was
+read. **Neither of the two could be configured as the other**, which is what made the entry a list
+with an answerer per check rather than a flag:
 
 | | what its rule says | what answers it |
 |---|---|---|

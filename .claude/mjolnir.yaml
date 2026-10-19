@@ -127,8 +127,9 @@ readiness:
   - { check: no_open_blockers, stop: "An issue this one depends on has not landed yet." }
 
 # ⛔ What this repository ships is text and the scripts that hold it, so there is no running
-# application for anyone to drive and no `human_verification` to configure: the gate above
-# *is* the verification here, and every check in it is machine-answered. That is the
+# application for anyone to drive and no `human_verification` to configure: the host's own
+# runs in `host.checks` *are* the verification here, and every check below is machine-answered.
+# (Not the readiness gate directly above, which answers a different question.) That is the
 # behaviour this project already had, written down (§ 13) rather than assumed, and `merged`
 # last is what makes the gate block the merge.
 # ⚠️ Whether a person is going to look at the diff is a different question and is **not** a
