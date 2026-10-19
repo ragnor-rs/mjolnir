@@ -390,6 +390,16 @@ Three of these measurements each forced a property of the port, stated in
   a third-party tracker holding someone else's material is why policy sits on the port beside
   capability — and why that project's branch name goes in the run report instead.
 
+⚠️ **Every impossibility in that table is a property of the tracker's API rather than of the
+project using it**, which is the measurement behind
+[`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability).
+No comment action, no short-id field, no label at creation time — each of those is one tracker's
+API and not one project's choice, and no configuration a project writes can reach any of them.
+⚠️ **And three of the six run on a single tracker**, so a difference between those three cannot be
+a capability difference at all — the API answering them is one API. What projects were found
+differing in is which mechanism carries the type, the estimate and the template, which is a facet
+below and already has a home of its own.
+
 ## What is an ordered list of named checks rather than procedure
 
 No count is given, for the reason [`schema.md § The
@@ -455,8 +465,14 @@ acceptance suite is a machine reading a machine, mirrored by no workflow at all,
 human-answered it would stop every completion for a hand-over nobody needed — the gate somebody
 turns off.
 
-Hence the ordered list, its per-check answerer, and the refusal of a check the host already runs, in
+Hence the ordered list and its per-check answerer, in
 [`schema.md § 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check).
+⚠️ **And hence the refusal of a check the host already runs**
+([`§ 13 → A done: check the host already runs`](../plugins/mjolnir/config/schema.md#a-done-check-the-host-already-runs-is-a-misconfiguration)):
+every check in the table above is mirrored by no workflow at all — a hand test on the running
+application, an acceptance suite needing it up, and a checklist carried on the pull request —
+which is the shape the facet was derived from. A check that *is* mirrored needs no entry, because
+the host has already answered it, and these two measurements supply no example of one.
 ⚠️ **What this measurement does not support is a definition of done for every project.** A project
 whose deliverable is a library has nothing to drive, so the absent case is `[]` and is first-class
 rather than degenerate. ⚠️ **How common it is was not measured** — unlike the prose-width table
@@ -494,8 +510,10 @@ example is written that way rather than given a query to look tidy.
 
 ## The four facets, and the absent case
 
-Issue type, status, estimate and template
-([`schema.md § 4`](../plugins/mjolnir/config/schema.md#4-work-item-facets)) are each per-project,
+Issue type ([`schema.md § 4.1`](../plugins/mjolnir/config/schema.md#41-type)), status
+([`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)),
+estimate ([`§ 4.3`](../plugins/mjolnir/config/schema.md#43-estimate)) and template
+([`§ 4.4`](../plugins/mjolnir/config/schema.md#44-template)) are each per-project,
 and each was carried by a different mechanism depending on the project. Three of the four had a
 real absent case — which is where the schema's absence-is-a-configuration rule comes from: a
 procedure that treats absence as an unset value fails on a project that is correctly configured.

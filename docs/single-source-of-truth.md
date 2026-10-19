@@ -77,19 +77,32 @@ file it came from fails in both directions. Every check below is one of the firs
 |---|---|---|---|
 | 0 | Every markdown document that may cite the schema has a declared role in the script | root `*.md`, `docs/**`, `plugins/**` | forbidding |
 | 1 | Every citation of the schema resolves — **both its path and its fragment** | every document with a role | computed |
-| 2 | Every `##`-level schema section is cited by at least one document | `##` only, not `###` | computed |
+| 2 | Every schema heading below the title is cited by at least one document | every level the schema uses, container sections excepted | computed |
 | 3 | Every ruling's outcome cell resolves, and its § number and its link agree | the `Outcome lives in` column | computed |
 | 4 | A ⛔ statement carries a citation naming a **section** | documents that explain or record | forbidding |
 | 5 | Every configuration's top-level key set equals the one the schema declares | top level only | computed |
+| 6 | No citation names a **container** — a section whose whole content is in its subsections | every citation, in every document with a role | computed |
+| 7 | The footprint report covers every file the checks walk | the report's own coverage | computed |
 
 Check 2 is the one that does the most work, because it runs in the direction nobody remembers to
 check by hand: a section added to the schema with nothing recording why it has that shape fails
 the build at the moment it is added, rather than being noticed a year later by someone wondering
-whether it is load-bearing. ⚠️ It holds `##` sections only, so a `###` subsection that no
-document motivates passes — and some do today, including a ⛔ rule of its own. The direction is
-enforced one level less deeply than it reads. No number is given here on purpose: a count of them
-is a fact about the schema, and a copy of it in this document would go stale on the next
-subsection either way, green.
+whether it is load-bearing. ⚠️ **It used to hold `##` sections only**, so a `###` subsection that
+no document motivated passed — two did, **each carrying a ⛔ rule of its own**, and the direction
+was enforced one level less deeply than it read. It now holds **every level the schema
+uses**: the depth is read from the headings rather than written down, so a `####` added tomorrow
+is held the day it exists. No number of them is given here on purpose: a count is a fact about the
+schema, and a copy of it in this document would go stale on the next subsection either way, green.
+
+⚠️ **The one exemption is a container**, and it is what checks 2 and 6 share. A `##` section whose
+whole content lives in its subsections states nothing of its own — § 4 is the live instance — so
+there is no rule there for a document to motivate, and check 2 reads it through its subsections,
+each of which is held in its own right. Check 6 is the other face of the same fact: a citation of
+such a section resolves to a heading and a list, which is why it is a problem rather than a
+preference. That was check 6's one finding against the tree it was written for: a sentence naming
+the four facets cited the section holding them, and now cites the four. ⚠️ The exemption
+is planted on the **green** side and was verified by disabling it, because a carve-out nothing can
+fail is a carve-out nobody checked.
 
 Check 4 is scoped to documents that explain or record, not to a skill. That is the schema's own
 [boundary rule](../plugins/mjolnir/config/schema.md#the-configuration-surface): a fact that cannot
@@ -110,6 +123,44 @@ under the loop — therefore cannot be named as a ruling's outcome at all, and a
 to would have to name its work item instead. Nothing needs to today; it is recorded because the
 alternative is discovering it from a red build on whichever divergence first rules that way.
 
+## What the run reports rather than holds
+
+Two things are printed with no verdict attached, and the argument for both is the same: **a
+citation costs the whole document it points into**. A role settling one sentence against the
+schema pays for every line of it, and a reader following a citation to a rule that lives in one
+subsection reads the others on the way. That cost is real, it moves with every change, and
+nothing was reporting it.
+
+- **A per-file footprint** — lines, characters and ⛔/⚠️ markers, for every file the checks
+  already walk. A role that doubles in size is then visible in the diff of a build log rather
+  than noticed when a window runs short. Check 7 is what stops the report shrinking in silence:
+  a file the checks read and the footprint skips is a cost reported by nothing. ⚠️ The marker
+  count is of the emoji form anywhere in the file, code spans included, and the advisory marker
+  **without** its variation selector is not counted — which is what keeps the tree's one bare
+  instance, a script's output quoted inside a code span, out of a count of directives.
+- **A count of coarse citations** — every citation naming a section that states something itself
+  *and* has subsections, grouped by section with the documents that cite it. Check 6 holds the
+  decidable end of this and nothing holds the rest.
+
+⛔ **Neither carries a threshold, and that is not an omission** — it is the local half of
+[`schema § 11`](../plugins/mjolnir/config/schema.md#11-session-context), whose own statement that
+the window degrades before it fills is given with no number for the same reason. A budget is a
+judgement, and a judgement hardcoded in a check is the copy-that-must-be-kept-in-sync the section
+below rules out. It is also unenforceable at run time: the harness exposes context utilization to
+no hook but `SessionStart` on a resume. So the run measures, prints, and reddens on nothing it
+cannot derive.
+
+### What the granularity check deliberately does not hold
+
+**Which subsection states the fact.** That is the *quoting* kind — matching a document's sentence
+against the prose it came from, red on an innocent reword and green on a reword into the opposite
+— and this document rules it out for the same reason everywhere else. So the verdict is confined
+to the one case needing no reading at all: a section with no text of its own cannot be where any
+fact is. ⚠️ **Every other coarse citation is counted and left standing**, and the count is not
+small; the alternative measured against it was reddening on all of them, which makes a legitimate
+section-wide citation unwritable and asks for a hand pass whose result the gate could not check
+either. Repointing one is a reader's judgement, which is the same place fidelity already sits.
+
 ## The check must not become one more copy of the principles
 
 ⛔ A check that hardcoded the loop's role count, the list of axes, or which facets have an absent
@@ -128,6 +179,8 @@ only:
 | the key vocabulary, from the fenced blocks | yaml top-level key syntax |
 | the citation targets, from the anchors | the citation and outcome-cell forms |
 | the rulings, from the table carrying the `Outcome lives in` column | that column's name |
+| which sections are containers, from each one's own text and its subsections | that a section is `##` and a subsection `###` |
+| the footprint, from the files the checks already walk | the two directive markers it counts |
 | | the binding marker, and which document plays which role |
 
 Adding a section to the schema grows what the script expects with no edit to the script, and
@@ -1034,12 +1087,16 @@ first phase names it — *Assert each check can fail, then …* — and a run wi
 to name, so it says only what it holds. ⛔ A step name is not evidence that a suite plants: both
 families plant, and the run prints what it planted.
 
-⚠️ **Two of the checks plant the green side as well as the red**, and both are checks whose scope
-has a hole in it by design. The reply-register check plants replies that must stay green — a check
-that flags an arrow inside a fenced block, an indented block or a quotation is not the check it
-claims to be, and each of those was a measured false red rather than a hypothesis. The width check
-plants a line of each unbreakable kind, for the same reason one claim over: its exclusion list is
-where it would quietly stop holding anything. ⛔ A red-only suite says nothing about either.
+⚠️ **The checks that plant the green side as well as the red are the ones whose scope has a hole
+in it by design**, and each hole is an exclusion somebody wrote on purpose. The reply-register
+check plants replies that must stay green — a check that flags an arrow inside a fenced block, an
+indented block or a quotation is not the check it claims to be, and each of those was a measured
+false red rather than a hypothesis. The width check plants a line of each unbreakable kind,
+because its exclusion list is where it would quietly stop holding anything. The single-authority
+check plants a container cited through its subsection, which is the one carve-out checks 2 and 6
+share. ⛔ A red-only suite says nothing
+about any of them, and each green plant is verified by **disabling its own exclusion** and
+watching it redden — an exemption that cannot fail is an exemption nobody checked.
 
 ⚠️ The reply-register check carries one more thing its siblings do not: it runs its turn-guard
 assertions against a state directory of its own, after a second run of the self-test read the
