@@ -16,6 +16,12 @@ host:
     - workflow: "CI"
       mirrors: "npm test"
       triggers: "pull_request -> main"
+  # The common pairing on this host: squash, and the host's own delete-on-merge switch turned on,
+  # so the procedure must not ask for the deletion a second time. What the host *permits* is read
+  # from the host and is not restated here — this says only which method the project lands by.
+  landing:
+    method: squash
+    delete_branch: host
 
 tracker:
   # ⛔ The kind and nothing else: no board to address, no status field to resolve and no

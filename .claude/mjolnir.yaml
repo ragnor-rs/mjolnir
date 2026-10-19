@@ -77,6 +77,22 @@ host:
     - workflow: "Single source of truth"
       mirrors: "python3 tools/check_single_source.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+  # ⚠️ Measured on this repository rather than declared for it (#76), and the measurement is the
+  # argument for the key existing at all: `main` is linear, which is equally consistent with
+  # squash and with rebase, so every landing before this line picked a method by reading the
+  # shape of the history. Squash is what the landings have in fact been.
+  #
+  # ⛔ What the host permits is NOT restated here, per § 2 — and the gap is the point: the host
+  # allows all three methods and this project uses one, so a history that drifts is a history
+  # nothing on the host refuses. Measured 2026-10-19: `allow_squash_merge`,
+  # `allow_merge_commit` and `allow_rebase_merge` are all true.
+  #
+  # `procedure`, because the host's `delete_branch_on_merge` is false here (measured the same
+  # day) and the branch is cleaned up by hand after every merge — remote ref, local branch and
+  # tree. Only the remote ref is this key's; the other two are § 10's release either way.
+  landing:
+    method: squash
+    delete_branch: procedure
 
 tracker:
   # Plain GitHub issues with no project board — the cheapest real configuration. The gap was

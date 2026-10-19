@@ -15,6 +15,13 @@ host:
     - workflow: "Build"
       mirrors: "<the build command>"
       triggers: "pull_request -> release/*"
+  # The release-branch shape: a merge commit, so what landed on a release branch and when is
+  # readable off the history itself, and the branches are kept rather than deleted by either side.
+  # ⚠️ `never` is a value and not an omission — the host's switch off and the procedure not
+  # deleting is a state, and a key with two values would have made somebody always delete.
+  landing:
+    method: merge_commit
+    delete_branch: never
 
 tracker:
   kind: jira

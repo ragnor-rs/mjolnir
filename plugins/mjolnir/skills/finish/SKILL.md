@@ -32,11 +32,11 @@ defaults, and two sets drift apart with nothing noticing.
 ⛔ **Read the `unavailable` list before acting on anything.** An entry there is a stated absence
 rather than a fault, and a key named there that this role needs is a stop with the key named.
 
-Five things are read here and ⛔ **never copied into this file**: the staging and trailer rules the
+Six things are read here and ⛔ **never copied into this file**: the staging and trailer rules the
 commit runs under, the branch model that decides which tree every step after this one addresses,
-the host's own runs and what each of them mirrors, the closing capability behind the port, and the
-language and register the pull request is written in. Each has a section of the surface and this
-file cites it.
+the host's own runs and what each of them mirrors, **how a pull request lands here and what deletes
+the branch once it has**, the closing capability behind the port, and the language and register the
+pull request is written in. Each has a section of the surface and this file cites it.
 
 Throughout, `<work-root>` is the tree the work is in — which
 [`§ 10`](../../config/schema.md#where-the-work-happens) decides and this file does not — and every
@@ -168,6 +168,20 @@ which the last of the four is the measured violation of.
    a read **before** the merge, and an unreachable tracker holds it; `§ 3`'s fallback covers a
    capability that is *absent*, which is a different thing from a host that is not answering.
 
+⛔ **The method is named in the merge call and read from the configuration, never inferred** —
+[`§ 2 → How a pull request lands`](../../config/schema.md#how-a-pull-request-lands), which states
+the three values, why no reader derives one from the shape of the integration branch, and what the
+key does *not* restate. ⛔ **The stated method is checked against what the host permits before the
+merge, and that check runs one way only**: a method the host forbids is a stop naming both, while a
+host permitting more than the project lands by is the ordinary case and no finding. It costs no
+extra call — the host read above already carries it.
+
+⛔ **Who deletes the branch is that section's `delete_branch` and is not this role's to decide.**
+Under `procedure` this role asks for the deletion; under `host` it must **not**, the host's own
+switch having already done it, and a second attempt fails on a ref that is gone; under `never`
+neither acts. ⚠️ **It is the remote ref only** — the local branch and the tree are step 9's release
+regardless of this key.
+
 ⛔ **Read the merge back from state. Never from the exit status.** ⚠️ **The third of the four
 single-copy steps:** both success and refusal can print nothing, and one copy reported a merge that
 *had* landed as not having.
@@ -184,14 +198,16 @@ error, which can be absent entirely**: the change's own state *and* whether the 
 exists on the remote, which is the second half of the read-back and the only thing that says
 whether the server-side deletion happened. Then finish whatever those two say is left.
 
-⛔ **The squash subject carries the references, and a host appends none of them to a subject it was
-given.** Where the project's convention puts the item's number, or the change's own, in the subject
-line of what lands, ⛔ **that subject is passed explicitly** — a host adds the change reference only
-to a subject it generates itself, and omitting the subject on a one-commit branch squashes under
-*that commit's* message instead, dropping the item reference. ⚠️ **No title check can catch
-either**: it reads the change, and the squash happens after it passed. The subject is permanent on
-the integration branch, so this is also the last chance to correct a title that overstates what
-the change does.
+**Under `method: squash`, the subject of what lands is this role's to pass.** ⛔ **The squash
+subject carries the references, and a host appends none of them to a subject it was given.** Where
+the project's convention puts the item's number, or the change's own, in the subject line of what
+lands, ⛔ **that subject is passed explicitly** — a host adds the change reference only to a
+subject it generates itself, and omitting the subject on a one-commit branch squashes under *that
+commit's* message instead, dropping the item reference. ⚠️ **No title check can catch either**: it
+reads the change, and the squash happens after it passed. The subject is permanent on the
+integration branch, so this is also the last chance to correct a title that overstates what the
+change does. ⚠️ **Under the other two methods there is no such subject to pass** — the branch's own
+commit messages are what lands — so the title is corrected on the change itself or not at all.
 
 ⛔ **Ancestry answers in one direction only.** ⚠️ **The fourth of the four.** A true answer proves
 the content landed; a false answer proves **nothing**, because a squashed or rebased merge rewrites
@@ -233,7 +249,10 @@ and a project's own setup and teardown are its `mechanics` pointer — ⛔ **nam
 absorbed.** Where it is null there is nothing to run, and that is an answer.
 
 ⛔ **Confirm the landing from the host before removing anything**, per step 7 above — the tree and
-the branch are the only copies of the work until the merge is read back.
+the branch are the only copies of the work until the merge is read back. ⚠️ **What this step
+releases is the tree and the local branch**, which no host setting reaches; the remote ref was
+step 7's, under
+[`§ 2`](../../config/schema.md#how-a-pull-request-lands)'s `delete_branch`.
 
 ⚠️ **A tree takes everything git does not track with it, and nothing records what that was.** Read
 those files out before the removal or lose them; this is also why
@@ -253,6 +272,9 @@ sentence, then the facts, with a table where the content enumerates.
 - every one of § 2's preconditions that ran, and its verdict;
 - which of step 7's four pre-merge establishments held, and what each found — the dependents, the
   base, the tree, and whether the tracker answered;
+- the method the merge was performed with and that it was read rather than inferred, with what the
+  host was found to permit; and which of the three `delete_branch` arms applied, so that a remote
+  ref still standing reads as the configuration rather than as a deletion that failed;
 - which port fallback was taken, where one was, and any sibling change that is holding the item
   where it is;
 - ⛔ anything that could not be established, **named rather than omitted** —
