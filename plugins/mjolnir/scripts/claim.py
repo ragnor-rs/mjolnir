@@ -1020,7 +1020,16 @@ def _bare_world(stack: tempfile.TemporaryDirectory) -> tuple[str, str, str]:
     )
 
     seed = root / "seed"
-    subprocess.run(["git", "clone", "--quiet", str(origin), str(seed)], check=True)
+    # ⚠️ This clone is of a repository with no commits yet, which git warns about on stderr --
+    # and `--quiet` does not cover a warning. The fixture is built this way on purpose, so the
+    # warning carries no information, and this world is built once per section of the suite: the
+    # copies pile up above the report and only make a reader hunt for a failure that is not
+    # there. Captured rather than discarded: a clone that genuinely fails must still say why.
+    seeded = subprocess.run(
+        ["git", "clone", "--quiet", str(origin), str(seed)], capture_output=True, text=True
+    )
+    if seeded.returncode != 0:
+        raise ClaimError(f"the fixture's seed clone failed: {seeded.stderr.strip()}")
     for key, value in (("user.email", "seed"), ("user.name", "Seed")):
         git(seed, "config", key, value)
     (seed / "README.md").write_text("seed\n")
@@ -1716,7 +1725,13 @@ def self_test() -> int:
         orphanage = Path(tmp) / "no-default"
         subprocess.run(["git", "init", "--quiet", "--bare", str(orphanage)], check=True)
         blank = Path(tmp) / "blank"
-        subprocess.run(["git", "clone", "--quiet", str(orphanage), str(blank)], check=True)
+        # Empty on purpose -- a remote advertising nothing is the state under test -- so git's
+        # warning about it is noise here too, and captured for the same reason as the seed's.
+        blanked = subprocess.run(
+            ["git", "clone", "--quiet", str(orphanage), str(blank)], capture_output=True, text=True
+        )
+        if blanked.returncode != 0:
+            raise ClaimError(f"the fixture's blank clone failed: {blanked.stderr.strip()}")
         git(blank, "checkout", "--quiet", "--detach", check=False)
         derived = None
         try:
