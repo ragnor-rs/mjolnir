@@ -1,0 +1,40 @@
+name: No audit trail
+
+# The gate that holds the prose a change writes to the rule that an artifact states what is true
+# now. One mirrored command, so one workflow, per § 2 of plugins/mjolnir/config/schema.md — the
+# rule its siblings here cite too.
+#
+# ⛔ The rule itself is in no line of this file: it is
+# plugins/mjolnir/config/schema.md#an-artifact-states-what-is-true-now, and what the check does
+# not reach is stated once in docs/single-source-of-truth.md.
+
+on:
+  # ⚠️ One event, and `push` is deliberately absent. The rule's own carve-out is that existing
+  # artifacts stand as they are, so the check reads the lines a change **adds** — against the
+  # merge base. On the integration branch there is no merge base to read, and a run there would
+  # either hold nothing or hold the whole history to a rule that does not bind it.
+  pull_request:
+
+# No credential of any kind: the diff is read out of the checkout with git, not off the host.
+permissions: {}
+
+jobs:
+  no-audit-trail:
+    name: No audit trail
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          # ⛔ The whole history, because the check needs a merge base. At the default depth of
+          # one there is none, and the check reports that it could not establish which lines the
+          # change adds rather than reporting green over them.
+          fetch-depth: 0
+
+      # One step, one command: the planted violations and the planted exemptions run first, and
+      # the change is held only once the check has been shown it can both fail and pass — an
+      # over-broad grammar here would redden a document for the honest form of a sentence. That
+      # command is also the string `host.checks` states this run mirrors — ⚠️ held together by eye
+      # and not by a check, since nothing here reads a workflow file. That is #49.
+      - name: Assert the check can fail and can pass, then hold the lines this change adds
+        run: python3 tools/check_no_audit_trail.py --self-test

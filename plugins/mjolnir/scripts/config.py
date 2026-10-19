@@ -102,9 +102,33 @@ CONFIG_PATH = os.path.join(".claude", "mjolnir.yaml")
 # comment is scanned, not just the last one, so a key that states prose and a
 # marker together -- `# stated, never inherited; required` -- carries both.
 #
-# ⚠️ One marker is not of that shape and is declared with the reader that uses
-# it rather than here: `RETIRED_CLAUSE`, which is a comment line of its own,
-# a retired key having no line left to hang a clause on.
+# ⚠️ Two markers are not of that shape, being comment lines of their own for the
+# same reason -- the key they name has no line left to hang a clause on, or never
+# had one. `RETIRED_CLAUSE` is declared with the reader that uses it; the
+# procedure-only pair is here, because `surface_facts` below is what reads it.
+#
+# `# procedure: <key>` means the surface will never declare that key, the rule it
+# would turn off being procedure, and a configuration stating it is refused.
+# ⛔ No list of those keys lives in this module: the clause is the statement and
+# this reader reads it, so a rule that becomes procedure is one marker on the
+# surface and no edit here -- the division every other marker has, and the one
+# the retired `REQUIRED` table lost by keeping a copy. ⚠️ It names a **bare** key
+# rather than a dotted path, unlike every marker that hangs on a key line: a key
+# that was never declared sits at no path, so the refusal reads the name wherever
+# a configuration puts it.
+PROCEDURE_CLAUSE = re.compile(r"^#\s*procedure:\s*(?P<key>[A-Za-z_][\w-]*)$")
+
+# ⛔ And a clause that means to be that marker and does not parse is refused
+# rather than dropped, which is the hole the retirement class still carries: a
+# mistyped clause leaves the surface reading as refusing a key and this reader
+# refusing nothing, green. ⚠️ What it must not reach is English: a fence comment
+# saying a thing is procedure is ordinary on this surface, so the near miss fires
+# only on a colon with something other than one bare key after it, or on one bare
+# key with the colon missing -- never on `# procedure, no setting`.
+PROCEDURE_NEAR_MISS = re.compile(
+    r"^#\s*procedure\s*:(?!\s*[A-Za-z_][\w-]*$)"
+    r"|^#\s*procedure\s+[A-Za-z_][\w-]*\s*$"
+)
 #
 # `# default` means the value shown on the line is the default, and
 # `# default: <value>` states one the line does not show -- which is how a key
@@ -272,9 +296,29 @@ def surface_facts(surface_text: str) -> dict:
     required: dict[str, str] = {}
     required_when: dict[tuple[str, str, str], str] = {}
     absent_reason: dict[str, str] = {}
+    procedure: dict[str, str] = {}
     declared: set[str] = set()
 
     for heading, block in _fences(surface_text):
+        # The clause-shaped marker, read before the key walk because it sits on
+        # no key line. ⚠️ A surface stating none is not refused below, unlike
+        # every marker that hangs on a key: zero is the ordinary state of a
+        # surface that has made nothing procedure, and what holds *this* one to
+        # the clause it states is the reader's own suite.
+        for line in block.splitlines():
+            stripped = line.strip()
+            found = PROCEDURE_CLAUSE.match(stripped)
+            if found:
+                procedure.setdefault(found.group("key"), heading)
+            elif PROCEDURE_NEAR_MISS.match(stripped):
+                raise ConfigError(
+                    os.path.relpath(SURFACE, PLUGIN_ROOT),
+                    f"carries `{stripped}` under § {heading}, which means to be the "
+                    "procedure marker and does not parse as one. The form is "
+                    "`# procedure: <key>`, the key bare. Left unparsed, the surface "
+                    "reads as refusing a key and this reader refuses nothing.",
+                )
+
         for path, rest in _walk_keys(block):
             declared.add(path)
             value, _, comment = rest.partition("#")
@@ -395,6 +439,7 @@ def surface_facts(surface_text: str) -> dict:
         "required": required,
         "required_when": required_when,
         "absent_reason": absent_reason,
+        "procedure": procedure,
     }
 
 
@@ -815,10 +860,43 @@ def _mirrored_commands(data: dict) -> dict[str, str]:
     return out
 
 
+def _every_key(data, prefix: str = ""):
+    """Yield (bare key, the path it sits at) for every key in a configuration.
+
+    At any depth and through lists, because the marker this feeds names a key
+    the surface declares nowhere: there is no path to look it up at, and a
+    project reaching for a switch is as likely to nest it under the facet it
+    means to affect as to write it at the top of the file.
+    """
+    if isinstance(data, dict):
+        for key, value in data.items():
+            path = f"{prefix}{key}"
+            yield str(key), path
+            yield from _every_key(value, f"{path}.")
+    elif isinstance(data, list):
+        for index, item in enumerate(data):
+            yield from _every_key(item, f"{prefix[:-1]}[{index}].")
+
+
 def validate(data: dict, facts: dict) -> None:
     for path, where in RETIRED:
         if _has(data, path):
             raise ConfigError(path, f"is retired -- {where}.")
+
+    # A key the surface marked procedure, wherever a configuration put it. The
+    # section the clause sits under is what the refusal cites, so the rule's own
+    # statement is what a reader is sent to rather than a gloss written here.
+    marked = facts.get("procedure") or {}
+    if marked:
+        for key, path in _every_key(data):
+            heading = marked.get(key)
+            if heading:
+                raise ConfigError(
+                    path,
+                    f"is procedure, not configuration -- the rule it would turn off is "
+                    f"stated under § {heading}, and no key on the surface turns it off. "
+                    "Delete the key.",
+                )
 
     for path, section in sorted(facts["required"].items()):
         where = f"marked `# required` under § {section}"
@@ -1356,6 +1434,13 @@ MARKED_REQUIRED_WHEN = [
     ("tracker.project_key", "tracker.kind", "jira"),
 ]
 
+# The keys the surface marks procedure, stated here for the reason the lists
+# above are: an assertion derived from the surface would assert whatever the
+# surface happened to say. ⛔ This one carries the whole weight of the class,
+# since the reader keeps no list of its own to compare against -- drop the clause
+# from the surface and this is what reddens.
+MARKED_PROCEDURE = ["audit_trail"]
+
 MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
     "ordering",
@@ -1383,6 +1468,23 @@ def _surface_without(marker: re.Pattern) -> str:
                 line = f"{body}# {'; '.join(kept)}" if kept else body.rstrip()
             out.append(line)
     return "\n".join(out)
+
+
+def _surface_without_procedure() -> str:
+    """The surface with every `# procedure:` clause removed.
+
+    The plant that tells a reader of the surface from a reader of itself, for a
+    class where that is the whole mechanism: nothing in this module lists the
+    procedure-only keys, so stripping the clauses must make the refusal
+    disappear. A reader that had quietly grown a list of its own would go on
+    refusing with the surface silent.
+    """
+    with open(SURFACE, encoding="utf-8") as handle:
+        return "\n".join(
+            line
+            for line in handle.read().splitlines()
+            if not PROCEDURE_CLAUSE.match(line.strip())
+        )
 
 
 def _surface_without_retirements() -> str:
@@ -1452,6 +1554,7 @@ def self_test() -> int:
             set(MARKED_REQUIRED_WHEN),
         ),
         ("absent-capable", set(surface["absent_reason"]), set(MARKED_ABSENT_CAPABLE)),
+        ("procedure-only", set(surface["procedure"]), set(MARKED_PROCEDURE)),
     ):
         check(
             f"the surface marks exactly the {label} keys this test states",
@@ -1657,6 +1760,68 @@ def self_test() -> int:
             f"a configuration still declaring `{path}` is refused, with the key named",
             broken == path,
             f"reported {broken!r}",
+        )
+
+    # The procedure-only class, which has no path to be looked up at: what is
+    # asserted is that the *name* is refused wherever a configuration puts it,
+    # and that the name comes from the surface rather than from this module.
+    for name in MARKED_PROCEDURE:
+        check(
+            f"the surface declares no key named `{name}`",
+            all(part != name for path in declared for part in path.split(".")),
+            "the surface declares it, and this reader refuses it",
+        )
+        top = _refused(_a_valid_example_with(name, "off"))
+        check(
+            f"a configuration declaring `{name}` is refused, with the key named",
+            top == name,
+            f"reported {top!r}",
+        )
+        # Nested under a facet, which is where a project reaching for a switch
+        # would sooner put it than at the top of the file.
+        nested = _refused(_a_valid_example_with(f"language.{name}", "off"))
+        check(
+            f"a `{name}` nested under a facet is refused, with its path named",
+            nested == f"language.{name}",
+            f"reported {nested!r}",
+        )
+
+    stripped = surface_facts(_surface_without_procedure())["procedure"]
+    check(
+        "the procedure arm reads the surface, not a list of this reader's own",
+        not stripped,
+        f"the clauses were stripped and the reader still derived {sorted(stripped)}",
+    )
+    # ⛔ And the mechanism broken from the other end: with the clause gone the
+    # same configuration must **load**. An arm that only asserts the refusal
+    # happens passes just as well for a reader that refuses the key on its own
+    # authority, which is the shape this class exists not to have.
+    if MARKED_PROCEDURE:
+        released = _refused(
+            _a_valid_example_with(MARKED_PROCEDURE[0], "off"),
+            facts=surface_facts(_surface_without_procedure()),
+        )
+        check(
+            "with the clause stripped that same configuration loads",
+            released is None,
+            f"it was still refused on {released!r}",
+        )
+
+        with open(SURFACE, encoding="utf-8") as handle:
+            mistyped = handle.read().replace(
+                f"# procedure: {MARKED_PROCEDURE[0]}",
+                f"# procedure {MARKED_PROCEDURE[0]}",
+                1,
+            )
+        try:
+            surface_facts(mistyped)
+            reported = None
+        except ConfigError as error:
+            reported = str(error)
+        check(
+            "a clause meaning to be the procedure marker and not parsing is refused",
+            reported is not None and "procedure marker" in reported,
+            f"reported {reported!r}",
         )
 
     # A root with no configuration stops, and names the root it looked in --
@@ -2057,10 +2222,16 @@ def _with(data: dict, path: str, value) -> dict:
     return data
 
 
-def _refused(data: dict, *, check_paths: bool = False) -> str | None:
-    """The key a resolution refuses on, or None where it is accepted."""
-    with open(SURFACE, encoding="utf-8") as handle:
-        facts = surface_facts(handle.read())
+def _refused(data: dict, *, check_paths: bool = False, facts: dict | None = None) -> str | None:
+    """The key a resolution refuses on, or None where it is accepted.
+
+    `facts` is the surface to resolve against, for the one assertion that needs
+    a surface other than this tree's: a refusal is the surface's only if it
+    stops happening when the surface stops stating it.
+    """
+    if facts is None:
+        with open(SURFACE, encoding="utf-8") as handle:
+            facts = surface_facts(handle.read())
     try:
         _resolve(data, EXAMPLES, facts, check_paths)
     except ConfigError as error:

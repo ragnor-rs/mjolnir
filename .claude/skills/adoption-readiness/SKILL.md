@@ -99,5 +99,7 @@ never read a project fact off a probe.
   adapter's work item, the configuration's absence.
 - The critical path's open items, as numbers with their titles.
 - ⛔ Anything the run could not establish, stated as such and not as a gap in the toolkit.
-- ⛔ No audit trail: what changed since a previous run belongs nowhere, because this report states
-  only what is true now.
+- ⛔ No audit trail, by
+  [`schema § The loop → An artifact states what is true now`](../../../plugins/mjolnir/config/schema.md#an-artifact-states-what-is-true-now):
+  a run's own account of what moved belongs nowhere, because this report states what is true now.
+  ⚠️ The reply is the one artifact where that costs nothing — it is read once and kept nowhere.

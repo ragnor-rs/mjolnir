@@ -35,6 +35,13 @@ workflow and its own `host.checks` entry, and is recorded in
 [its own section](#prose-line-width-held-on-the-gate-for-files-and-nowhere-for-bodies) below —
 where the half of its rule that no check reaches is stated with it.
 
+`tools/check_no_audit_trail.py` holds a claim about the prose a change writes rather than about
+the tree it writes it into: that no artifact carries a record of the pass that wrote it. It has its
+own `No audit trail` workflow and its own `host.checks` entry, and is recorded in
+[its own section](#an-artifact-states-what-is-true-now-held-on-the-lines-a-change-adds) below. It
+is the only one here whose scope is a **diff** — the rule's own carve-out leaves the past alone —
+and the only one with no `push` arm, there being no merge base to read on the integration branch.
+
 `plugins/mjolnir/scripts/check_reply_register.py` holds the register of a role's reply, and it is
 the one here that does not run on the gate at all. It is in
 [its own section](#the-replys-register-held-in-the-session-not-on-the-gate) too, and for the same
@@ -1026,6 +1033,65 @@ change that introduced them here.
   instead of reading it — which no role does today, because the rule's reader is the writer of a
   document rather than a skill.
 
+## An artifact states what is true now: held on the lines a change adds
+
+`tools/check_no_audit_trail.py --self-test` runs in the `No audit trail` workflow, with no
+credential and no network. ⛔ The rule is
+[schema § The loop → An artifact states what is true now](../plugins/mjolnir/config/schema.md#an-artifact-states-what-is-true-now)
+and this document states none of it: what is recorded here is the reach of the check, which is
+narrower than the rule in three directions the rule does not mention.
+
+What it holds: the lines this change **adds** to tracked markdown, read off a diff against the
+merge base with the integration branch — derived through `claim.integration_branch`, the one
+derivation this repository has for which branch that is. Table rows are in scope deliberately: the
+measured habit lived in an ordering document's `why` column, which is exactly the place a sweep of
+this kind would think to exclude. A document's fenced blocks and frontmatter are out, and so is any
+marker **shown** rather than used — an inline-code span or a double-quoted run — because the
+section of the surface that states this rule has to spell out every form it forbids, and so does
+the check.
+
+The kind is **forbidding**, not computed, and the run says so in its own output rather than leaving
+a green verdict to imply completeness. Three shapes are matched: a dated record of a pass, a figure
+stated beside a former value, and a clause whose subject is the pass before this one. The fourth
+shape the rule names — a per-pass paragraph appended where a line should have been overwritten — is
+held only insofar as it carries one of those three markers.
+
+⚠️ **It plants both sides**, as the width and reply-register checks do. Violations that must redden
+— a dated revalidation heading, a dated heading with no verb in it, a dated pass record in prose,
+a parenthetical former value, a `Was:` label, a figure stated as a movement, the word the rule
+names, a pass as the subject of a clause, a line pointing back at the pass before it, what a
+document stated earlier, and a touched document the sweep cannot open — and one exemption per
+exclusion, each
+of which must stay green. Each exemption was then verified by **disabling its own exclusion** and
+watching that plant redden, including the carve-out that is this check's whole shape: with the
+added-line filter removed, the plant carrying a violation the change did not write goes red.
+
+### What this check deliberately does not hold
+
+- **The two artifacts outside every tree.** The ordering document and the day log live in the
+  session store (§ 11), where no diff reaches them. That is not a small gap: the
+  seven dated paragraphs the rule was written against were in the ordering document, and what holds
+  the rule there is the close-out role stating it locally. A check on the gate cannot read a file
+  the gate never sees.
+- **A work item body, a pull request body or a review comment.** The same half of the same rule the
+  width check cannot reach, and for the same reason: those surfaces are not files. The nothing-
+  deferred gate does read a body, so an arm there is possible — what stopped it here is that this
+  grammar is lexical, and a body is where an author's own account of a pass is most likely to be
+  exactly what was asked for.
+- **A record phrased without any of the markers.** The shapes are lexical, so a paragraph narrating
+  a pass in words the grammar does not carry passes. ⚠️ Two of the four words the rule names are
+  held only in compound forms: `was` and `corrected` occur constantly in honest prose —
+  `the divergence was 71 lines`, `the finding was corrected under the same item` — and a sweep for
+  the bare words hands a change back for the honest form of a sentence. What is read instead is
+  `(was …)`, a `Was:` label, and a pass as the subject of a clause.
+- **Anything that is not markdown.** A Python docstring narrating a pass is prose a reader reads,
+  and nothing here holds it. The same boundary the width check draws, for the weaker of its two
+  reasons: a comment is annotation on code rather than a document somebody opens.
+- **Whether an ask happened.** The rule's exception is the person running the role asking for
+  history, and no gate can see the asking. A dated record somebody asked for and a dated record
+  nobody asked for are the same lines, so the check reddens on both and the remedy for the first is
+  the person saying so — which is the honest shape of a check that cannot read intent.
+
 ## The boundary: three arms, two of them held in the session
 
 `plugins/mjolnir/scripts/boundary.py --self-test` runs in the `Boundary` workflow, with no
@@ -1165,7 +1231,9 @@ indented block or a quotation is not the check it claims to be, and each of thos
 false red rather than a hypothesis. The width check plants a line of each unbreakable kind,
 because its exclusion list is where it would quietly stop holding anything. The single-authority
 check plants a container cited through its subsection, which is the one carve-out checks 2 and 6
-share. ⛔ A red-only suite says nothing
+share. The audit-trail check plants the carve-out that is its whole scope — a violation the change
+did not write — beside a landed record and a live-status line, each of which carries a date and has
+to pass. ⛔ A red-only suite says nothing
 about any of them, and each green plant is verified by **disabling its own exclusion** and
 watching it redden — an exemption that cannot fail is an exemption nobody checked.
 
