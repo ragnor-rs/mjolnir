@@ -110,8 +110,8 @@ the three that are obvious. The measurements that forced each to be independent:
    was acted on**, which is recorded rather than restated, being an instance of the thing this
    document keeps catching. On 2026-10-17, at `f40785e`, `squash`, `merge_method` and `linear`
    returned **zero** hits across the surface, this repository's configuration, every document under
-   `docs/` and every file under `config/examples/`. Two days later, at `756ab7a`, `squash` had six
-   hits in those same files. ⛔ **Not one of the six states the fact**, which is why the gap
+   `docs/` and every file under `config/examples/`. Two days later, at `756ab7a`, `squash` matched
+   six lines in those same files. ⛔ **Not one of the six states the fact**, which is why the gap
    survived its own measurement going stale: every one is the landed reading explaining why a
    rewritten hash defeats ancestry — the one reader this facet does not simplify — and no key, and
    no sentence anywhere, said which method a project lands by.

@@ -89,9 +89,10 @@ host:
   # nothing on the host refuses. Measured 2026-10-19: `allow_squash_merge`,
   # `allow_merge_commit` and `allow_rebase_merge` are all true.
   #
-  # `procedure`, because the host's `delete_branch_on_merge` is false here (measured the same
-  # day) and the branch is cleaned up by hand after every merge — remote ref, local branch and
-  # tree. Only the remote ref is this key's; the other two are § 10's release either way.
+  # `procedure`, because the host's `delete_branch_on_merge` is false here (measured the same day)
+  # and the cleanup after a merge happens on this side — remote ref, local branch and tree. ⚠️ Only
+  # the remote ref is this key's; the other two are § 10's release either way. What was a standing
+  # convention held by whoever remembered it is a stated fact a role reads as of this line.
   landing:
     method: squash
     delete_branch: procedure

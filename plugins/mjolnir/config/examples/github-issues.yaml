@@ -16,9 +16,11 @@ host:
     - workflow: "CI"
       mirrors: "npm test"
       triggers: "pull_request -> main"
-  # The common pairing on this host: squash, and the host's own delete-on-merge switch turned on,
-  # so the procedure must not ask for the deletion a second time. What the host *permits* is read
-  # from the host and is not restated here — this says only which method the project lands by.
+  # Squash, with the host's own delete-on-merge switch turned on — so the procedure must not ask
+  # for the deletion a second time. ⚠️ That switch is off on a new repository, so `host` here is a
+  # project that went and turned it on, which is the point of showing it: the key states who
+  # deletes, and a first-day repository with nobody deleting is `never`. What the host *permits*
+  # is read from the host and is not restated here — this says only which method is landed by.
   landing:
     method: squash
     delete_branch: host

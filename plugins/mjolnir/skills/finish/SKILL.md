@@ -162,7 +162,10 @@ which the last of the four is the measured violation of.
    branch. A change based on the wrong one is a mistake to report, not to merge.
 3. ⛔ **That the tree is clean here too.** Asking for the branch to be deleted moves the working
    tree off it, so [`§ 6`](../../config/schema.md#6-commit-behaviour)'s dirty-tree derivation
-   applies at the merge and not only at the commit.
+   applies at the merge and not only at the commit. ⚠️ **That reason holds only where this role
+   asks for the deletion**, which [`§ 2`](../../config/schema.md#how-a-pull-request-lands)'s
+   `delete_branch` decides; the precondition stands either way, a dirty tree at the merge being
+   worth establishing before an irreversible act whoever deletes the branch.
 4. ⛔ **That the tracker answers at all.** ⚠️ **A merge whose item never moved is invisible work**,
    and step 8 is where that is discovered — after the irreversible act. So the port is reached for
    a read **before** the merge, and an unreachable tracker holds it; `§ 3`'s fallback covers a
@@ -170,8 +173,10 @@ which the last of the four is the measured violation of.
 
 ⛔ **The method is named in the merge call and read from the configuration, never inferred** —
 [`§ 2 → How a pull request lands`](../../config/schema.md#how-a-pull-request-lands), which states
-the three values, why no reader derives one from the shape of the integration branch, and what the
-key does *not* restate. ⛔ **The stated method is checked against what the host permits before the
+the values, why no reader derives one from the shape of the integration branch, and what the key
+does *not* restate. ⚠️ **No count of them is carried here**: the surface accepts a value added to
+that alternation without its reader changing, so a number in this file would be wrong by the next
+one, green. ⛔ **The stated method is checked against what the host permits before the
 merge, and that check runs one way only**: a method the host forbids is a stop naming both, while a
 host permitting more than the project lands by is the ordinary case and no finding. ⚠️ **It is one
 read more, and of the repository rather than of the change** — a pull request carries no
@@ -179,9 +184,12 @@ merge-permission field, so nothing read in step 6 answers it.
 
 ⛔ **Who deletes the branch is that section's `delete_branch` and is not this role's to decide.**
 Under `procedure` this role asks for the deletion; under `host` it must **not**, the host's own
-switch having already done it, and a second attempt fails on a ref that is gone; under `never`
-neither acts. ⚠️ **It is the remote ref only** — the local branch and the tree are step 9's release
-regardless of this key.
+switch having already done it, and a second attempt is refused on a ref that is gone; under
+`never` neither acts. ⚠️ **The key is about the remote ref** — the local branch and the tree are
+step 9's release regardless of it. ⚠️ **So under the two values that delete nothing here, the
+deletion is simply never asked for**, and under `procedure` a deletion asked for *as part of the
+merge* takes the local branch with it: that is step 9's release arriving early, not a second act,
+and the dirty-tree precondition above is why it is established first.
 
 ⛔ **Read the merge back from state. Never from the exit status.** ⚠️ **The third of the four
 single-copy steps:** both success and refusal can print nothing, and one copy reported a merge that
@@ -207,8 +215,9 @@ subject it generates itself, and omitting the subject on a one-commit branch squ
 commit's* message instead, dropping the item reference. ⚠️ **No title check can catch either**: it
 reads the change, and the squash happens after it passed. The subject is permanent on the
 integration branch, so this is also the last chance to correct a title that overstates what the
-change does. ⚠️ **Under the other two methods there is no such subject to pass** — the branch's own
-commit messages are what lands — so the title is corrected on the change itself or not at all.
+change does. ⚠️ **Under any method that is not `squash` there is no such subject to pass** — the
+branch's own commit messages are what lands — so the title is corrected on the change itself or
+not at all.
 
 ⛔ **Ancestry answers in one direction only.** ⚠️ **The fourth of the four.** A true answer proves
 the content landed; a false answer proves **nothing**, because a squashed or rebased merge rewrites
