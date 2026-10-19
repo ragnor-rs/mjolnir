@@ -98,6 +98,14 @@ performs, and the prose beside it says why. ⚠️ **Where it sits is for whoeve
 reader takes the clause from any block on the surface, so the placement is a convention and not
 something a refusal would catch.
 
+**A key this surface will never declare is marked `# procedure: <key>`**, in a block beside the
+rule it would turn off — a clause of its own for the reason a retirement is one, there being no key
+line to hang a marker on. It is for a rule that is procedure everywhere: the key does not exist, a
+configuration stating it is refused, and the refusal is a clause the reader performs rather than a
+sentence a reader is left to notice. ⚠️ **It names a bare key and not a dotted path**, unlike every
+other marker here: a key that was never declared sits at no path, so the reader refuses one of that
+name wherever a configuration puts it.
+
 ⛔ **The reader reads the clause and never that prose**, because a grammar over English reads what
 English says rather than what it means — measured against this file, where such a grammar read a
 live required key out of a sentence *denying* that it was retired
@@ -305,6 +313,59 @@ gives for authorship: a defect a project can configure away is a defect the tool
 failure mode this guards is specific — surfacing a gap *reads* as diligence, so a role that writes
 a thorough known-costs section scores better with a reader than one that stops and asks, and the
 honest-looking version of the defect is the one that survives review.
+
+### An artifact states what is true now
+
+⛔ **No artifact a role writes carries a record of the pass that wrote it unless the person running
+the role asks for one.** An artifact states its current content, and a stale line is **replaced**
+rather than annotated beside its replacement. What the pass itself did — which figure it moved,
+what it found wrong, which document it brought current — goes in the reply
+([§ 8](#the-reply-to-the-person-running-a-role)), which is read once and kept nowhere.
+
+⛔ **Four shapes carry the rule, named so that a gate can hold them**: a dated record of a pass, a
+figure stated beside a former value, a clause whose subject is the pass before this one, and a
+per-pass paragraph appended where the line it corrects should have been overwritten.
+
+**The exception is an ask.** Where the person running the role asks for history, it is written
+where they ask for it. The default is off, and ⛔ **a role never decides on its own that a record of
+its own run is worth keeping** — nobody asked for the writing to be narrated, and the role is the
+one party that cannot judge how interesting its own pass was.
+
+⚠️ **A landed record an entry carries as its content is none of those shapes.** The test is whether
+the line states something still true — this item landed as that commit, these are the figures now —
+or states what a pass did to the document. The same words can be either, and which of the two it is
+decides it.
+
+⛔ **And an artifact the procedure exists to produce is content, not annotation.** Where a role's
+whole output is an account of work — § 9's day log is a day's, and § 13's record of who answered a
+check is a pass's — that account **is** the artifact somebody asked for by mapping the role, and the
+rule above bites on what such a file accumulates *beside* its own content rather than on the content
+itself. Read otherwise, the rule would forbid two of the loop's roles from producing anything.
+
+⛔ **It is not an invariant over the past.** Existing artifacts stand as they are, by the carve-out
+§ 6 makes for commit history and [§ 8](#prose-line-width) makes for prose that predates a width: a
+document comes under this rule where somebody is editing it anyway. Nothing here licenses a sweep
+that rewrites every document, which is why a gate holding this reads the lines a change **adds**.
+
+The one instance of this the surface already states is a work item's body:
+[§ 3](#a-duplicate-is-the-item-rewritten-never-a-second-item-filed) rewrites a confirmed duplicate
+rather than appending to it, and keeps nothing of what the body stated earlier, for the reason this
+rule gives one artifact over.
+
+Procedure rather than configuration, and ⛔ **no key on this surface turns it off** — the placement
+authorship has under § 6, the reply's register under § 8 and the duplicate rule under § 3. A project
+that could configure this would be choosing whether the documents its own roles maintain may grow a
+history nobody reads. The cost is measured where the habit was: the ordering document this
+repository plans with had grown seven dated revalidation paragraphs, 70 of its 469 lines, every
+figure in them stale and every standing fact in them already argued in a row of the table.
+
+```yaml
+# procedure: audit_trail
+```
+
+⛔ **`audit_trail` is the key this surface will never declare.** A rule that is procedure everywhere
+is the rule an adopting project is likeliest to reach for a switch on, and a key accepted in silence
+is the rule gone with nothing refusing it.
 
 ## 1. Roots
 
@@ -1091,6 +1152,10 @@ role's own reply; what it does not say is that the reply is held to it by the sa
 the rest of this table. ⚠️ **The reply is where deferring is cheapest** — it costs no commit, no
 item body and no thread, so every gate downstream of it is green over work that was named once in
 a session and never again, which is the one escape route the measured violations all took.
+
+⚠️ **This is also the one artifact an account of the run belongs in**, by
+[§ The loop → An artifact states what is true now](#an-artifact-states-what-is-true-now) — stated
+there and not restated here.
 
 ⚠️ **Readable and short are different things, and readable wins.** There are two ways to shorten
 and only one of them is this table's: **selection** drops what does not change the reader's next

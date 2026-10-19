@@ -62,6 +62,11 @@ host:
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ Why this entry has no `push -> main` arm is stated with the check, in
+    # docs/single-source-of-truth.md.
+    - workflow: "No audit trail"
+      mirrors: "python3 tools/check_no_audit_trail.py --self-test"
+      triggers: ["pull_request -> *"]
     # ⚠️ What this entry cannot state about its workflow is #82, and is stated there.
     - workflow: "Nothing deferred"
       mirrors: "python3 tools/check_nothing_deferred.py --self-test"

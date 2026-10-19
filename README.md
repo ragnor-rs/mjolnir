@@ -154,6 +154,7 @@ found between the old copies and the decision that settled it.
 | [`tools/check_no_project_names.py`](tools/check_no_project_names.py) | The sweep that holds the convention above: no other project named anywhere, and no value, tracker or stack in any carrier root |
 | [`tools/check_nothing_deferred.py`](tools/check_nothing_deferred.py) | The gate that refuses a merge while any item raised against the change is unresolved, counted in the body and in the threads on it |
 | [`tools/check_prose_width.py`](tools/check_prose_width.py) | The sweep that holds every tracked markdown file to the line width the configuration states, excluding the lines the format forbids breaking |
+| [`tools/check_no_audit_trail.py`](tools/check_no_audit_trail.py) | The gate that reads the markdown lines a change adds and refuses a dated pass record, a figure beside a former value, or a clause whose subject is the pass before this one |
 | [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/): a `Stop` hook holding a role's reply to the register, and a `PreToolUse` hook refusing a command that would carry a credential onto a surface outside the project |
 
 The loop's remaining roles land here as they are reconciled. ⛔ **No count of them is written
@@ -207,6 +208,16 @@ procedure. The files half is held by the `Prose width` workflow, reading the wid
 `.claude/mjolnir.yaml` rather than carrying one; the bodies half is held by nobody, which is
 stated with the check in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#prose-line-width-held-on-the-gate-for-files-and-nowhere-for-bodies).
+
+⛔ **An artifact states what is true now, and carries no record of the pass that wrote it unless
+somebody asked for one.** The
+[audit-trail rule](plugins/mjolnir/config/schema.md#an-artifact-states-what-is-true-now) is the
+single statement of the four forbidden shapes, the ask that is the exception, and why the past is
+left alone. A stale line is replaced rather than annotated, and what a pass did goes in the reply.
+It is held on the lines a change adds by the `No audit trail` workflow; what that cannot reach —
+the ordering document the habit was measured on and the day log, both outside every tree — is
+stated with the check in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#an-artifact-states-what-is-true-now-held-on-the-lines-a-change-adds).
 
 ⛔ **The only author is the authenticated user** — here and in every project the toolkit drives.
 The [authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration)

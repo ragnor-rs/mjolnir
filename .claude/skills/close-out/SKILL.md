@@ -12,12 +12,16 @@ disagreement, makes the edits that are mechanical, and **asks** about the ones t
 ⛔ **Run it from the primary checkout**, not from a branch worktree. The plan is one file outside
 the repository and has no lock; a worktree has no reason to be writing it.
 
-⛔ **This role leaves no audit trail.** The plan states what is true now — rows, arguments, counts.
-It never records what a pass did, what it corrected, what a figure used to be, when a notation
-changed, or who filed what. No dated revalidation paragraphs, no "was", no "previously", no
-"re-derived rather than recalled", no ✅-with-a-date beyond the landed record a row already carries.
-A stale line is **replaced**, not annotated. Everything about the pass itself goes in the reply
-(§ 7), which is read once and kept nowhere.
+⛔ **This role leaves no audit trail**, by
+[`schema § The loop → An artifact states what is true now`](../../../plugins/mjolnir/config/schema.md#an-artifact-states-what-is-true-now)
+— the rule and its one exception are stated there and not restated here. What it means for *this*
+artifact: the plan states what is true now — rows, arguments, counts — and no dated revalidation
+paragraph, no "was", no "previously", no "re-derived rather than recalled", and no ✅-with-a-date
+beyond the landed record a row already carries. Everything about the pass itself goes in the reply
+(§ 7).
+
+⚠️ **No gate reaches this document**, which is why the forms are written out above rather than
+cited.
 
 ## 1. One read
 
