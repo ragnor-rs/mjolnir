@@ -1184,7 +1184,8 @@ cannot remove the tree it is standing in and leave anything behind that still wo
 either fails or succeeds into a session whose working directory no longer exists. ⚠️ **Stating the
 entry and not the exit is what made the release unperformable**: the role that releases a tree is
 the role standing in it, so the step that owns the third outcome of finishing could never reach it
-and handed off on every item. The ordering is therefore **leave, then remove**, and it is the
+and handed off on every item that got a tree — which `work_in_shared_checkout` decides, and under
+`never` is all of them. The ordering is therefore **leave, then remove**, and it is the
 procedure's rather than a project's.
 
 ⛔ **A removal asked for from at or below the tree is refused rather than attempted**, and the

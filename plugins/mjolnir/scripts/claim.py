@@ -487,7 +487,8 @@ def standing_in(path: str) -> bool:
     skipped it. A removal asked for from inside the tree either fails or succeeds into a session
     whose working directory no longer exists, and the second is the worse of the two: the session
     keeps running, every call that names a root explicitly still works, and every call that does
-    not writes wherever the shell lands -- which under this branch model is the shared checkout.
+    not writes wherever the shell lands -- the directory the session was launched in, which under
+    this branch model is the shared checkout.
 
     ⛔ **At or below, never equal**, for the same reason `process_in` carries that correction: a
     session's working directory is routinely a subdirectory of its tree, and an equality test
