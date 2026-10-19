@@ -61,19 +61,21 @@ in. It was filed for that purpose: [#27](https://github.com/ragnor-rs/mjolnir/is
 one such instance, and the only shape that satisfies a condition about an item traversing the loop
 is an item that traverses it — which is why it is an item of its own rather than a line in #27.
 
-**In the order the surface states, not one this record chose.** Filing wrote the item, its label and
-its relation; starting ran the readiness gate whole and took the claim by publishing the ref;
-finishing took the branch to an open change; the reviewing role then conducted the review and drove
-the gate; and the second finishing pass merged it and released the tree. That finishing is entered
-twice with the review between its passes is
+**What ran.** Filing wrote the item, its label and its relation; starting ran the readiness gate
+whole and took the claim by publishing the ref; finishing took the branch to an open change; the
+reviewing role conducted the review and drove the gate; and a second finishing pass merged it.
+⚠️ **The interleave is not this record's invention and not this run's choice** — that finishing is
+entered twice with the review between its passes, and what the second pass owes beyond the merge, is
 [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles)'s, stated there
 once.
 
-⛔ **These carriers are not the loop.** Gating, deploying, session bookkeeping and producing
-deliverables have no carrier in this project at all, and the day-log role has one it cannot run, for
-the reason the `day_log.script` bullet below gives. The whole set is
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles)'s; what this
-paragraph is for is that the instance above not be read as coverage of it.
+⛔ **These carriers are not the loop, and this document does not say which ones are missing.** Which
+roles this project carries is [`schema.md § 7`](../plugins/mjolnir/config/schema.md#7-carrier)'s
+facet, and the command in the last section derives the set from it; naming the remainder here would
+be a copy that goes stale the first time a carrier lands — the same prohibition that section already
+carries, and one the README records as having drifted once already. The one absence worth a sentence
+is the role whose carrier exists and still cannot run, for the reason the `day_log.script` bullet
+below gives.
 
 **Two capabilities were absent as it ran, and each took the fallback
 [`§ 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)
