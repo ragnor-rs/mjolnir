@@ -42,16 +42,6 @@ examples of a shape rather than any project's facts.
 
 ## The file itself
 
-```yaml
-version: 1                                   # required
-```
-
-One key is not a facet. `version` states which revision of this surface a configuration was
-written against, so a reader of an older file can tell a facet that is absent **by decision**
-from one that did not exist when the file was written — the two read identically otherwise, and
-only the revision separates them. It is the only key that describes the file rather than the
-project.
-
 **A default is marked, never described.** A key whose line in a block below carries `# default`
 has the value shown as its default; `# default: <value>` states one the line does not show. The
 marker is the single statement of a default: prose beside a block says why a default is what it is
@@ -100,6 +90,39 @@ among them: `# stated, never inherited from the working directory; required`.
 **A closed set of values is written as an alternation** — `a | b | c` — either as the key's value
 or as a comment beside it. The reader accepts what the alternation states and nothing else, so a
 value added here is accepted without the reader changing.
+
+**A key the surface has stopped declaring is marked `# retired: <key>`**, in a block of its own
+beside the prose retiring it, in the section that used to declare the key — a retired key has no
+line left to carry a clause, which is what retiring it means. The clause is what the reader
+performs, and the prose beside it says why. ⚠️ **Where it sits is for whoever reads this file**: the
+reader takes the clause from any block on the surface, so the placement is a convention and not
+something a refusal would catch.
+
+⛔ **The reader reads the clause and never that prose**, because a grammar over English reads what
+English says rather than what it means — measured against this file, where such a grammar read a
+live required key out of a sentence *denying* that it was retired
+([the measurement](../../../docs/configuration-surface.md#the-revision-key-never-moved-and-the-markers-took-its-job)).
+
+```yaml
+# retired: version
+```
+
+⛔ **`version` is retired, and a configuration that still declares it is refused with the key
+named.** It stated which revision of this surface a configuration was written against, so a reader
+of an older file could tell a facet absent **by decision** from one that did not exist when the
+file was written — the two reading identically otherwise. The markers above answer that question
+where the key is declared instead: requiredness is marked, a legitimately unset key carries no
+marker, and every facet with a real absent case carries a `carrier` whose `absent_reason` **is**
+the decision written down. So a configuration states its decision or is refused with the key
+named, and the revision had nothing left to separate. It never moved through a run of changes that
+each made an older configuration unreadable, because nothing read it
+([the measurement](../../../docs/configuration-surface.md#the-revision-key-never-moved-and-the-markers-took-its-job)).
+
+⚠️ **What retiring it gives up is stated here rather than discovered later.** A refusal on a file
+written before a key existed reads exactly like one on a file that left the key out, and names the
+key either way. The remedy is the same act in both cases — make the file match the markers, writing
+what is marked required and deleting what is marked retired — so what is given up is a diagnostic,
+not a behaviour, and no reader has to be told what to do with a revision it can no longer read.
 
 ## The loop — nine roles
 
@@ -232,6 +255,10 @@ correctly and proceeds — and since the absolute code root is the configured `c
 the resolved root, every `git` and `gh` call then addresses the other project's repository. No
 in-band test tells that apart from a deliberate run on that project, so what the surface
 requires is that the answer be stated where the person can see it, not that it be guessed.
+
+```yaml
+# retired: roots.skills
+```
 
 ⛔ **`roots.skills` is retired, and a configuration that still declares it is refused with the
 key named.** It was declared here, written in every configuration, and read by nothing — and

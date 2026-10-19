@@ -761,3 +761,79 @@ that is off.
 What the empty list means is a real configuration rather than an absent facet, which is why the key
 carries no `carrier` and no `absent_reason`: a project whose roles need nothing beyond the shell's
 own variables has *stated* what it hands a role, and there is nothing for a reason to explain.
+
+## The revision key never moved, and the markers took its job
+
+What the surface now states is at
+[`schema.md § The file itself`](../plugins/mjolnir/config/schema.md#the-file-itself): the key is
+retired, a configuration still declaring it is refused, and a retirement is marked `# retired:`.
+What this section carries is the measurement that forced it.
+
+`version` was in every configuration from the first commit that carried one (`6410f34`) and the
+surface named it only at `9451882`, where this repository's own single-source gate found a key
+every adopter writes that the single statement of the surface did not declare. It was then read by
+nothing for the whole of its life, and it never moved — through a run of changes that each made an
+older configuration unreadable.
+
+The table below is the statement, and no count of its rows is written beside it: a figure in prose
+goes stale on the next row, green, which is the defect one level up from the one this section
+records.
+
+| Change | What it did to a configuration already written | `version` |
+|---|---|---|
+| `f40785e` — § 10, the branch model | added three required keys | stayed `1` |
+| `1b11c52` (#83) — `roots.skills` retired | **refuses** any configuration still carrying the key | stayed `1` |
+| `31e50d4` (#92) — § 11, the session's context | added a required `context.artifacts.carrier` | stayed `1` |
+| `7f962c9` (#125) — § 12, the ordering, and `branch_model.tree_dir` | added a required `ordering.carrier`, and a `tree_dir` required under `kind: worktree` — so a configuration that already cut trees is **refused** | stayed `1` |
+| `1a3789a` (#132) — § 2, how a pull request lands | added `host.landing.method` and `host.landing.delete_branch`, required with no marked default | stayed `1` |
+| `8461104` (#133) — § 13, what counts as done | added a required `done` with no default, `[]` legitimate — a *decision* the refusal cannot tell from the absence | stayed `1` |
+| `dbf4ef1` (#142) — § 14, what the shell inherits | added a required `environment.inherits`, `[]` again a decision rather than an omission | stayed `1` |
+| `b9e8fd7` (#147) — § 4.5, the date the gating role owns | added a required `work_item.due_date.carrier`, absent-capable, so a configuration written before it is refused with the key named and states its decision through `absent_reason` | stayed `1` |
+| `9bfa447` (#145) — § 3, the keys a tracker kind requires | added `# required_when`, so a tracker block that was complete before it is **refused** for keys that depend on a `kind` the configuration already declared | stayed `1` |
+
+⚠️ **The rows kept arriving while this change was open**, and each was added by merging `main` into
+it rather than by anyone revisiting the question. A revision that moved on every required key would
+have been stale inside the very branch that introduced the rule, twice over — which is the argument
+the table makes, made by the only means that can make it. ⛔ It is also why no figure accompanies
+the table: each of those merges would have falsified one.
+
+**Classified against the ruling, every row reads the same way: the key would not have moved.** The
+revision is retired, so no row is an instance of a revision that should have been bumped and was
+not — each is a configuration refused with the key named, which is what the marker beside that key
+already does. `host.landing.method`, `done` and `environment.inherits` are why the alternative of
+absorbing a new key with a default was not available: the first has no default by design, since one
+would pick a merge method for every project that did not notice the key, and the other two are
+facets whose `[]` the surface states in as many words is a decision and *not* an unset key — so a
+default there would manufacture the very decision those facets refuse to infer.
+
+**What settled it is `e62a1d9` (#137), which moved requiredness onto the surface and deleted the
+reader's own list of it.** Before that, a reader met a missing key with no way to say whether the
+project had decided against it; after it, requiredness is marked beside the key, a legitimately
+unset key carries no marker, and every facet with a real absent case carries a `carrier` whose
+`absent_reason` is the decision written down. A configuration states its decision or is refused
+with the key named. That is the whole of what the revision was introduced to separate, answered
+where the key is declared rather than by a number describing the file.
+
+⚠️ **What the retirement gives up is stated on the surface** beside the retirement itself, and the
+measurement behind it is this table: on every row the remedy an adopter faces is the same act, so
+what is lost is a diagnostic during a phase of rapid surface change rather than a behaviour. The
+cost falls on a configuration written months earlier, which is told *which* keys are missing and
+never *that they are new*.
+
+**The retirement is held in both directions, and the arm that holds the set was missing until this
+change.** The reader refuses a retired key and its self-test asserts both that the surface declares
+no such key and that a configuration still carrying one is refused — but every one of those
+assertions was generated from the reader's own list, so deleting an entry deleted the refusal and
+its only assertion together. Measured: with the `version` entry removed the suite stayed green on
+every assertion and the reader accepted `version: 1` again. That is exactly the defect the retired
+`REQUIRED` table demonstrated, surviving in the one list still shaped like it. What closes it is
+the marker the surface now declares, read against the reader's own list in both directions — and
+a third arm beneath those two, because the pair of them compare the derivation only against that
+list: replacing the derivation with a constant left both green until a plant stripped the clauses
+out of the surface and asserted the comparison notices.
+
+⚠️ **That marker is a token because the first attempt at it was not.** The retired set was first
+read out of the surface's prose, by a grammar matching a backticked key followed by *is retired* —
+and it read `host.repo`, a live required key, out of a sentence stating it is retired **in no
+sense**. A negation is invisible to a grammar of that shape, and prose is where negations live, so
+a machine-read fact belongs in a clause with the prose beside it saying why.

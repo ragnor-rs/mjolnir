@@ -31,8 +31,6 @@
 #
 # What survives all three without exception: nothing under a carrier root — skills, commands or
 # hooks — carries a value, and no OTHER project is ever named.
-version: 1
-
 roots:
   code: "."
   code_is_own_repo: false

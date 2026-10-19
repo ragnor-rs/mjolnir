@@ -1,8 +1,6 @@
 # Plain GitHub issues: no board, no status field, no `in_flight` role.
 # The cheapest real tracker there is, and what a new adopter has on their first day.
 # Example data — not any project's facts.
-version: 1
-
 roots:
   code: "."
   code_is_own_repo: false

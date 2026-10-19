@@ -6,8 +6,6 @@
 # unset value is cheap to prevent now and expensive to discover then.
 #
 # Example data — not any project's facts.
-version: 1
-
 roots:
   code: "."
   code_is_own_repo: false
