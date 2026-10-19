@@ -20,6 +20,12 @@ the section it cites. That is the *quoting* kind of check, which goes red on an
 innocent reword and green when a claim is reworded into its opposite. The checks
 here are all of the *computed* and *forbidding* kinds.
 
+Two things it reports rather than holds, for the same reason: resolving a
+citation costs the whole document it points into, so the run prints what each
+file costs a reader, and how many citations name a section where a subsection
+may be the smaller home. Which subsection states a given fact is the *quoting*
+kind again, so that half is a count and not a verdict.
+
 Usage:
     check_single_source.py              hold the tree to the surface
     check_single_source.py --self-test  assert every check reddens on each of its
@@ -32,6 +38,7 @@ import glob
 import os
 import re
 import sys
+import textwrap
 
 # --- what plays which role -------------------------------------------------
 #
@@ -80,6 +87,17 @@ OUTCOME_COLUMN = "Outcome lives in"
 BINDING = "⛔"
 STATEMENT = re.compile(r"^\s*(?:[-*]\s+)?" + BINDING)
 
+# The markers that direct a reader rather than inform one. The footprint counts
+# both, because what a citation costs is not the file's length alone: a document
+# of directives is read differently from a document of the same size that
+# explains, and the count is the only part of that a machine can report.
+#
+# ⚠️ The advisory marker is its emoji form, variation selector included. The bare
+# codepoint would also match it, and would then count the one bare instance in
+# this tree -- a script's output quoted inside a code span, which is a marker
+# being shown rather than a marker directing anybody.
+DIRECTIVE = (BINDING, "⚠️")
+
 # A citation of the surface: a link whose target is the surface and whose
 # fragment names a section of it. The path is checked, not only the fragment --
 # a fragment that resolves against a path that does not is a dead link with a
@@ -117,16 +135,21 @@ def anchor(heading: str) -> str:
     return text.replace(" ", "-")
 
 
-def headings(text: str) -> list[tuple[int, str, str]]:
-    """(level, title, anchor) in document order, outside fenced blocks.
+def outline(text: str) -> list[tuple[int, int, str, str]]:
+    """(line index, level, title, anchor) in document order, outside fenced blocks.
 
     Repeats carry the host's `-1`, `-2` suffixes, so a citation of the second
     section with a given title resolves and the first does not stand in for it.
+
+    The line index is here so that a section's own extent is read from the same
+    scan its anchor is: a second walk looking the headings up again would be a
+    second reading of the document, free to disagree with this one about which
+    `## Title` inside a fenced block is a heading.
     """
-    out: list[tuple[int, str, str]] = []
+    out: list[tuple[int, int, str, str]] = []
     seen: dict[str, int] = {}
     fenced = False
-    for line in text.splitlines():
+    for index, line in enumerate(text.splitlines()):
         if line.lstrip().startswith("```"):
             fenced = not fenced
             continue
@@ -139,8 +162,13 @@ def headings(text: str) -> list[tuple[int, str, str]]:
         base = anchor(title)
         nth = seen.get(base, 0)
         seen[base] = nth + 1
-        out.append((len(match.group(1)), title, base if nth == 0 else f"{base}-{nth}"))
+        out.append((index, len(match.group(1)), title, base if nth == 0 else f"{base}-{nth}"))
     return out
+
+
+def headings(text: str) -> list[tuple[int, str, str]]:
+    """(level, title, anchor) in document order, outside fenced blocks."""
+    return [(level, title, slug) for _at, level, title, slug in outline(text)]
 
 
 def split_row(line: str) -> list[str]:
@@ -235,6 +263,34 @@ class Tree:
                 out[slug] = current
         return out
 
+    def outline(self) -> list[tuple[int, int, str, str]]:
+        return outline(self.text[SURFACE])
+
+    def section_shape(self) -> dict[str, tuple[str, list[str]]]:
+        """`##` anchor -> (the section's own text, the titles of its subsections).
+
+        The own text is what a citation of the section resolves to: everything
+        between its heading and its first subsection. ⛔ Where that is empty the
+        section is a *container* — it states nothing itself, so a citation of it
+        names a heading and a list of subsections rather than a fact, and the
+        motivation check reads it through its subsections rather than directly.
+        """
+        lines = self.text[SURFACE].splitlines()
+        marks = self.outline()
+        shape: dict[str, tuple[str, list[str]]] = {}
+        for i, (at, level, _title, slug) in enumerate(marks):
+            if level != 2:
+                continue
+            ends = next((m[0] for m in marks[i + 1:]), len(lines))
+            subs = []
+            for _at, deeper, title, _slug in marks[i + 1:]:
+                if deeper <= 2:
+                    break
+                if deeper == 3:
+                    subs.append(title)
+            shape[slug] = ("\n".join(lines[at + 1:ends]).strip(), subs)
+        return shape
+
     def declared_keys(self) -> set[str]:
         keys = set()
         for block in re.findall(r"```yaml\n(.*?)```", self.text[SURFACE], re.S):
@@ -307,14 +363,57 @@ def check_citations_resolve(tree: Tree) -> list[str]:
 
 
 def check_no_orphan_section(tree: Tree) -> list[str]:
+    """Every heading below the title is motivated by a document that cites it.
+
+    The depth is the surface's own rather than a level written down here: a
+    `####` added tomorrow is held the moment it exists. ⛔ The one exemption is
+    a **container** — a `##` section whose whole content is in its subsections
+    states nothing of its own, so what a document would be motivating is the
+    subsections, and each of those is held here in its own right.
+    """
     cited = {c for _, _, c in tree.citations()}
+    shape = tree.section_shape()
     problems = []
-    for _, title, slug in tree.headings(2):
-        if slug not in cited:
+    for level, title, slug in tree.headings():
+        if level < 2 or slug in cited:
+            continue
+        own, subs = shape.get(slug, ("", []))
+        if subs and not own:
+            continue
+        kind = "section" if level == 2 else "subsection"
+        problems.append(
+            f"{SURFACE}: {kind} \"{title}\" is cited by no document. A rule stated "
+            "here with nothing recording why it has this shape is either unmotivated or "
+            "the documents have gone stale."
+        )
+    return problems
+
+
+def check_no_citation_names_a_container(tree: Tree) -> list[str]:
+    """A citation of a container resolves to a heading and a list, never a fact.
+
+    The rule behind it is that a citation names the section stating the fact
+    rather than the one above it, and ⛔ **this check holds only the decidable
+    end of that**: which subsection states a given fact is the *quoting* kind
+    this gate rules out everywhere else. A `##` section whose own text is empty
+    states nothing anywhere, so a citation of it is wrong without anything
+    needing to be read. The refusal names its subsections, because the remedy
+    is choosing one.
+
+    Every other coarse citation — a section that has subsections *and* states
+    something itself — is counted by `coarse_citations` and held by nobody. That
+    limit is stated in `docs/single-source-of-truth.md` rather than left to be
+    inferred from a green run.
+    """
+    shape = tree.section_shape()
+    problems = []
+    for path, _target, cited in tree.citations():
+        own, subs = shape.get(cited, ("", []))
+        if subs and not own:
             problems.append(
-                f"{SURFACE}: section \"{title}\" is cited by no document. A rule stated "
-                "here with nothing recording why it has this shape is either unmotivated or "
-                "the documents have gone stale."
+                f"{path}: cites `{cited}`, whose whole content is in its subsections, so the "
+                "citation resolves to a heading and nothing else. One of these states the "
+                f"fact: {' · '.join(subs)}."
             )
     return problems
 
@@ -464,6 +563,69 @@ def check_configurations_match_the_surface(tree: Tree) -> list[str]:
     return problems
 
 
+# --- what the run reports rather than holds --------------------------------
+#
+# Neither of these has a verdict. They exist because resolving a citation costs
+# the whole document it points into, and a cost nothing prints is a cost nobody
+# reads: a role that doubles in size, or a document that acquires ten more
+# coarse citations, is then visible in the diff of a build log. ⛔ No threshold
+# is applied to either — a budget is a judgement, and a judgement hardcoded here
+# is the copy-that-must-be-kept-in-sync this script exists not to become.
+
+
+def footprint(tree: Tree) -> list[tuple[str, int, int, int]]:
+    """(path, lines, characters, directive markers) for every file the checks walk."""
+    rows = []
+    for path in [SURFACE] + tree.prose:
+        text = tree.text.get(path)
+        if text is None:
+            continue
+        rows.append(
+            (path, len(text.splitlines()), len(text), sum(text.count(m) for m in DIRECTIVE))
+        )
+    return rows
+
+
+def coarse_citations(tree: Tree) -> list[tuple[str, list[str], list[tuple[str, int]]]]:
+    """(anchor, its subsections, the documents citing it and how often).
+
+    The sections held by `check_no_citation_names_a_container` are absent:
+    those are a verdict rather than a report. What is left is every citation of
+    a section that states something itself *and* has subsections — where a
+    subsection may be the smaller home and no machine here can tell.
+    """
+    shape = tree.section_shape()
+    by_anchor: dict[str, dict[str, int]] = {}
+    for path, _target, cited in tree.citations():
+        own, subs = shape.get(cited, ("", []))
+        if subs and own:
+            by_anchor.setdefault(cited, {})
+            by_anchor[cited][path] = by_anchor[cited].get(path, 0) + 1
+    return [
+        (cited, shape[cited][1], sorted(docs.items(), key=lambda d: (-d[1], d[0])))
+        for cited, docs in sorted(by_anchor.items(), key=lambda a: (-sum(a[1].values()), a[0]))
+    ]
+
+
+def check_the_footprint_covers_what_is_walked(tree: Tree) -> list[str]:
+    """The report shrinking in silence is the one way it can lie.
+
+    A file the checks read and the footprint skips is a cost reported by
+    nothing, which is check 0's argument one column over — and the same reason
+    a glob matching no file is a problem here rather than a quiet pass.
+    """
+    measured = {path for path, *_ in footprint(tree)}
+    problems = [
+        f"{path}: is read by the checks and carries no footprint, so what it costs a reader "
+        "is reported by nothing."
+        for path in [SURFACE] + tree.prose
+        if path not in measured
+    ]
+    if not measured:
+        problems.append("the footprint measured no file at all, so the report holds nothing.")
+    return problems
+
+
 CHECKS = [
     ("every document has a role", check_every_document_has_a_role),
     ("citations resolve", check_citations_resolve),
@@ -471,6 +633,8 @@ CHECKS = [
     ("outcomes live in the surface or a work item", check_outcomes_live_in_one_of_two_places),
     ("binding statements cite the surface", check_binding_statements_cite_the_surface),
     ("configurations match the surface", check_configurations_match_the_surface),
+    ("no citation names a container", check_no_citation_names_a_container),
+    ("the footprint covers what is walked", check_the_footprint_covers_what_is_walked),
 ]
 
 
@@ -524,7 +688,70 @@ def _plant_broken_path(tree: Tree) -> Tree:
 
 
 def _plant_orphan_section(tree: Tree) -> Tree:
-    tree.text[SURFACE] += "\n## 99. A planted section nothing motivates\n"
+    tree.text[SURFACE] += "\n## 99. A planted section nothing motivates\n\nIts own text.\n"
+    return tree
+
+
+def _plant_orphan_subsection(tree: Tree) -> Tree:
+    """The level the check used to stop one short of.
+
+    ⚠️ The section above it is given own text and a citation, so what reddens is
+    the subsection being unmotivated rather than its parent being so. A plant
+    that reddens the branch next door proves nothing about this one.
+    """
+    tree.text[SURFACE] += (
+        "\n## 98. A planted section a document motivates\n\nIts own text.\n"
+        "\n### A planted subsection nothing motivates\n\nIts own text.\n"
+    )
+    tree.text[READER] += (
+        f"\n\n[the planted section](plugins/mjolnir/config/{SURFACE_NAME}"
+        "#98-a-planted-section-a-document-motivates)\n"
+    )
+    return tree
+
+
+def _plant_citation_of_a_container(tree: Tree) -> Tree:
+    """A section with no text of its own, cited.
+
+    ⚠️ Planted on the surface *and* in a document, because the check reads a
+    citation against the section's shape and a plant touching either one alone
+    exercises nothing: a container nobody cites is permitted, and a citation of
+    a section that states something is permitted too.
+    """
+    tree.text[SURFACE] += (
+        "\n## 97. A planted container\n\n### A planted subsection that states the fact\n"
+        "\nIts own text.\n"
+    )
+    tree.text[READER] += (
+        f"\n\n[the planted container](plugins/mjolnir/config/{SURFACE_NAME}"
+        "#97-a-planted-container)\n"
+    )
+    return tree
+
+
+def _plant_file_the_footprint_cannot_measure(tree: Tree) -> Tree:
+    """A document the checks walk and the report skips."""
+    tree.prose.append("docs/unmeasurable.md")
+    return tree
+
+
+def _plant_uncited_container(tree: Tree) -> Tree:
+    """The exemption, on the green side: a container cited through its subsection.
+
+    ⛔ An exemption nothing can fail is an exemption nobody checked, and the
+    motivation check's is the only place it can quietly stop holding: read
+    without the carve-out, every container is an orphan; read with the carve-out
+    written one level too wide, so is nothing. This was verified by disabling
+    the exemption and watching the plant redden.
+    """
+    tree.text[SURFACE] += (
+        "\n## 96. A planted container\n\n### A planted subsection a document motivates\n"
+        "\nIts own text.\n"
+    )
+    tree.text[READER] += (
+        f"\n\n[the planted subsection](plugins/mjolnir/config/{SURFACE_NAME}"
+        "#a-planted-subsection-a-document-motivates)\n"
+    )
     return tree
 
 
@@ -677,6 +904,9 @@ VIOLATIONS = [
     ("citations resolve", "an anchor that does not exist", _plant_broken_anchor),
     ("citations resolve", "a valid anchor on a wrong path", _plant_broken_path),
     ("no orphan section", "a section nothing motivates", _plant_orphan_section),
+    ("no orphan section", "a subsection nothing motivates", _plant_orphan_subsection),
+    ("no citation names a container", "a citation of a container section", _plant_citation_of_a_container),
+    ("the footprint covers what is walked", "a file the report skips", _plant_file_the_footprint_cannot_measure),
     ("outcomes live in the surface or a work item", "a cell with no home", _plant_outcome_with_no_home),
     ("outcomes live in the surface or a work item", "a cell with a second home", _plant_outcome_with_a_second_home),
     ("outcomes live in the surface or a work item", "a number against the wrong anchor", _plant_outcome_number_against_wrong_anchor),
@@ -685,6 +915,16 @@ VIOLATIONS = [
     ("binding statements cite the surface", "a statement citing no section", _plant_binding_statement_citing_no_section),
     ("configurations match the surface", "an undeclared key in this project's own config", _plant_undeclared_key),
     ("configurations match the surface", "an undeclared key in an example", _plant_undeclared_key_in_an_example),
+]
+
+
+# The other side of the one check that carries an exemption. ⛔ A red-only suite
+# says nothing about a carve-out: these must stay green, and each is compared
+# against the tree's own result rather than against zero, so a real problem
+# elsewhere in the tree does not read as the exemption failing.
+
+EXEMPTIONS = [
+    ("no orphan section", "a container cited through its subsection", _plant_uncited_container),
 ]
 
 
@@ -704,9 +944,17 @@ def self_test(tree: Tree) -> int:
         else:
             print(f"  STAYED GREEN           {name}: {label}")
             failures += 1
+    for name, label, plant in EXEMPTIONS:
+        before = by_name[name](tree)
+        if by_name[name](plant(tree.copy())) == before:
+            print(f"  green on               {name}: {label}")
+        else:
+            print(f"  WENT RED               {name}: {label}")
+            failures += 1
     if failures:
         print(
-            f"\n{failures} assertion(s) did not hold. A check that cannot fail is not a check."
+            f"\n{failures} assertion(s) did not hold. A check that cannot fail is not a check, "
+            "and an exemption that cannot pass is not an exemption."
         )
     return 1 if failures else 0
 
@@ -721,7 +969,10 @@ def main(argv: list[str]) -> int:
     tree = Tree(root)
 
     if "--self-test" in argv:
-        print(f"Asserting each check reddens on its planted violations ({len(VIOLATIONS)}):")
+        print(
+            f"Asserting each check reddens on its planted violations ({len(VIOLATIONS)}) "
+            f"and stays green on each exemption ({len(EXEMPTIONS)}):"
+        )
         if self_test(tree):
             return 1
         print()
@@ -730,6 +981,25 @@ def main(argv: list[str]) -> int:
     problems = [p for found in results.values() for p in found]
     for name, found in results.items():
         print(f"  {'FAIL' if found else 'ok  '}  {name}")
+
+    print("\nWhat each file costs whoever opens it — lines, characters, ⛔/⚠️ markers:")
+    for path, lines, chars, marks in sorted(footprint(tree), key=lambda row: -row[2]):
+        print(f"  {lines:6}  {chars:7}  {marks:4}   {path}")
+
+    coarse = coarse_citations(tree)
+    print(
+        f"\nCoarse citations — a section cited where a subsection may state the fact "
+        f"({sum(n for _, _, docs in coarse for _, n in docs)} into {len(coarse)} sections).\n"
+        "Reported and held by nobody: which subsection states it cannot be computed."
+    )
+    for cited, subs, docs in coarse:
+        total = sum(n for _, n in docs)
+        print(f"  {total:3}  #{cited} — {len(subs)} subsection{'s' if len(subs) > 1 else ''}")
+        print(textwrap.fill(
+            ", ".join(f"{path} ×{n}" for path, n in docs),
+            width=98, initial_indent=" " * 8, subsequent_indent=" " * 8,
+        ))
+
     if problems:
         print(f"\n{len(problems)} problem(s):\n")
         for problem in problems:
