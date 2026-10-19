@@ -387,6 +387,12 @@ def merge_lands_this_ref(created_at: str | None, merged_at: str | None) -> bool 
     born, merged = moment(created_at), moment(merged_at)
     if born is None or merged is None:
         return None
+    # ⚠️ One instant carrying a zone and the other not makes the comparison raise rather than
+    # answer, and this is reached from `status`, which a refusal's own wording calls -- so the
+    # crash would land on the path that reports a refusal. The host stamps both in UTC, so the
+    # mismatch is a shape nothing here has seen; it declines rather than trusting that.
+    if (born.tzinfo is None) != (merged.tzinfo is None):
+        return None
     return born <= merged
 
 
@@ -1457,6 +1463,11 @@ def self_test() -> int:
         "and with either instant unreadable the arm declines rather than guessing",
         merge_lands_this_ref(None, merged_after) is None
         and merge_lands_this_ref(born, None) is None,
+    )
+    suite.ok(
+        "and declines rather than raising where one instant carries a zone and the other does not",
+        merge_lands_this_ref(born, merged_after.rstrip("Z")) is None
+        and merge_lands_this_ref(born.rstrip("Z"), merged_after) is None,
     )
 
     print("\nliveness, and what is reported rather than broken:")
