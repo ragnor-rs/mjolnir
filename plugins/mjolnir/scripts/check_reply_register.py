@@ -205,17 +205,58 @@ HEDGES_ALLOWED = 3
 # narrows rather than replaces.
 #
 # ⛔ **Four of these are named rather than derived**, by a ruling of 2026-10-20:
-# `open items`, `deliberately`, `stated plainly`, and `left`. The first three are
-# matched as they were ruled, being distinctive enough that a reply has no other
-# use for them. ⚠️ **`left` is matched only in its parking senses**, and that is
-# a narrowing rather than a softening: the bare word is this repository's
-# ordinary English for what a process or a merge did -- *three trees left behind*
-# -- so matching it bare would hand a turn back over text that parks nothing,
-# which costs the reader the whole reply for a finding that is not there.
+# `open items`, `deliberately`, `stated plainly`, and `left` -- and all four are
+# matched only in their **parking senses**, by a ruling of the same date reading
+# the measurement below. ⚠️ That is a narrowing rather than a softening, and it
+# is the carve-out `left` already had, applied to the three forms that did not:
+# matching one bare hands a turn back over text that parks nothing, which costs
+# the reader the whole reply for a finding that is not there.
+#
+# `left` had it from the start, the bare word being this repository's ordinary
+# English for what a process or a merge did -- *three trees left behind*. The
+# other three were held to be distinctive enough that a reply has no other use
+# for them, and ⚠️ **that premise failed the next day**, on a reply that paid the
+# re-read for it. Each of the three is this repository's own vocabulary for a
+# mechanism, and the bare form reddened on every sentence below:
+#
+#   - `deliberately` is how a design intent is recorded here, in nine of one
+#     document's own section headings and in § 4's word for a facet nobody
+#     configured. ⛔ **Measured on a reply**, which described when a mechanism
+#     was built and how it behaves and owned no work at all;
+#   - `open items` is the mechanism § Nothing is deferred *states* -- a gate
+#     counts them on the change and refuses the merge while one stands -- so a
+#     reply describing that gate reddened;
+#   - `stated plainly` is § 8's own Uncertainty row, and the text of this
+#     script's own finding for it, so a reply relaying this check reddened on it.
+#
+# ⚠️ The second and third were **demonstrated against the shipped check** rather
+# than waited for, which is the direction a false red has to be established in:
+# a sentence this repository writes by the dozen, run through the arm.
+#
+# ⚠️ **What parks in each is the writer's own absence**, which is the grammar the
+# whole arm already states: an omission excused rather than filled, a section of
+# work the reply carries rather than does, a gap stated in place of being closed.
+# ⛔ The ruling is kept where it was measured -- the shape each form was named for
+# stays red -- and `--self-test` holds every form in both directions.
 PARKED = re.compile(
-    r"\bopen items?\b"
-    r"|\bdeliberately\b"
-    r"|\bstated plainly\b"
+    # `open items`: a section of them the reply carries, or one asserted to
+    # stand. ⚠️ Not the count a gate reads, which is the rule's own mechanism.
+    r"^\s{0,3}#{1,6}\s*open items?\b"
+    r"|(?:\*\*|__)\s*open items?\s*(?:\*\*|__)"
+    r"|\bopen items? (?:remains?|stands?|(?:is|are) (?:listed|below|outstanding))\b"
+    r"|\b(?:remains?|stands?) (?:as )?(?:an |one )?open item\b"
+    r"|\b(?:leaves?|leaving|left) (?:behind )?(?:an |one |two |three |four |\d+ )?open items?\b"
+    # `deliberately`: an absence of work excused rather than filled. ⚠️ Not
+    # `deliberately does not`, which is how every surface here states a limit,
+    # and not `deliberately not written`, which is how two of them state one.
+    r"|\bdeliberately (?:absent|omitted|skipped|unfixed|undone|untouched|unfinished|incomplete)\b"
+    r"|\bdeliberately (?:not|never) "
+    r"(?:done|fixed|built|run|implemented|wired|added|filled|tested|touched|handled|covered)\b"
+    # `stated plainly`: a gap stated in place of being closed. ⚠️ Not the plain
+    # statement § 8 asks for, and not what is stated plainly *about* a gap.
+    r"|\bstated plainly (?:rather than|instead of)\b"
+    r"|\b(?:gaps?|limits?|costs?|residues?|absences?|omissions?|shortfalls?|holes?)\b"
+    r"[^.\n]{0,40}?\bstated plainly\b"
     r"|\b(?:left|leaving|leave) (?:it |them |that |this |these |those )?"
     r"(?:to|for|as) (?:a |the )?"
     r"(?:later|future|follow-?up|next|another|somebody|someone|whoever|you)\b"
@@ -847,8 +888,13 @@ REDDENS = [
      "The arm reddens on one span. If you want, I can add the density arm as well.\n"),
     ("nothing is parked", "an omission excused rather than filled",
      "The second reading is deliberately absent, and the first covers the measured case.\n"),
-    ("nothing is parked", "a ruled phrase naming what the change carries",
-     "The body states one open item and the gate reads it.\n"),
+    ("nothing is parked", "a ruled phrase carrying a section of work rather than doing it",
+     "The guard is wired and its plants are green.\n\n## Open items\n\n- the skill's own wording\n"),
+    ("nothing is parked", "a ruled phrase asserting that one of them stands",
+     "The arm is narrowed. One open item remains against this change.\n"),
+    ("nothing is parked", "a ruled phrase stating a gap in place of closing it",
+     "The second arm's cost is stated plainly rather than fixed, and the first covers the "
+     "measured case.\n"),
     ("nothing is parked", "parking in a table cell, where a sentence would be read",
      "| part | verdict |\n|---|---|\n| the sweep arm | out of scope |\n"),
     ("nothing is parked", "work handed to the reader",
@@ -892,13 +938,31 @@ STAY_GREEN = [
      "The mapping is stated once.\n\n```\nfile -> region -> span -> value\n```\n"),
     ("the register is reference", "an inequality and an image, which are not exclamations",
      "The guard compares a != b and c != d.\n\n![one](a.png) ![two](b.png) ![three](c.png)\n"),
-    # ⚠️ The narrowing the ruled word `left` cost, kept as the plants that hold
-    # it. Both of these are this repository's ordinary English for what a process
-    # or a merge did, and a bare word match hands the turn back over each.
+    # ⚠️ The narrowing each ruled form cost, kept as the plants that hold it.
+    # Every sentence below is this repository's ordinary prose about a mechanism,
+    # a design intent or a rule, and a bare match hands the turn back over each.
     ("nothing is parked", "the past tense of leaving a tree, which parks nothing",
      "The sibling session left its tree and the release then succeeded.\n"),
     ("nothing is parked", "a residue count, which is a fact and not a promise",
      "Three worktrees remain registered and six branches survive the merge.\n"),
+    # ⚠️ The measured false red, in the shape it was handed back in: a reply that
+    # reports when a mechanism was built and how it behaves, owning no work at all.
+    ("nothing is parked", "somebody else's design intent, reported",
+     "The step is deliberately not a plain entry in the list: it is skipped with a warning "
+     "unless the setting it reads is already there.\n"),
+    ("nothing is parked", "a citation of one of the nine section headings here that carry the word",
+     "The limit is recorded under § What this check deliberately does not hold.\n"),
+    ("nothing is parked", "a limit this repository states about its own documents",
+     "The densities are deliberately not written down in any document, and a run prints its "
+     "own.\n"),
+    ("nothing is parked", "the mechanism the no-deferral rule states, described",
+     "The gate counts the open items raised against the change and refuses the merge while one "
+     "stands.\n"),
+    ("nothing is parked", "the register's own Uncertainty row, cited",
+     "That row asks for uncertainty stated plainly, once, and this reply carries one hedge.\n"),
+    ("nothing is parked", "this check's own finding for that row, relayed",
+     "The hook answered: four hedges read as hedging throughout rather than as uncertainty "
+     "stated plainly and once.\n"),
     ("nothing is parked", "a ruled phrase inside a code span, which is a citation",
      "The gate reads the body's `## Open items` section and the threads on the change.\n"),
     ("nothing is parked", "a quoted parking, which is not the writer's text",

@@ -809,11 +809,14 @@ place the finished reply is available, and it hands the text over directly, so
 
 **What blocks, and what a hand-back costs.** A finding blocks where it is a fact about the text
 *and* worth what handing the turn back costs — which is the reply a second time. The writer
-restates it whole, so a person who has read it reads it again. ⚠️ Measured on the two hand-backs of
-one session in a project with this plugin enabled: thirteen of twenty-one prose lines came back byte
-for byte in the one, eight of thirteen in the other, and each paid that for two reworded clauses.
-Nothing in the first shape of this check accounted for that price, and in one of the two it was paid
-for a defect that was not there.
+restates it whole, so a person who has read it reads it again. ⚠️ Measured on the three hand-backs
+this check had recorded by the end of 2026-10-20, in projects with this plugin enabled and no
+configuration of their own: thirteen of twenty-one prose lines came back byte for byte in the first,
+eight of thirteen in the second, and the third brought back a reply whose second pass also dropped a
+file-and-line citation the first had carried. Each paid that for two reworded clauses. ⛔ **Two of
+the three were paid for a defect that was not there**, and both of those came from matching a bare
+token — a pair of arrows with a clause between them in the one, a ruled word in a sense that parks
+nothing in the other. Nothing in the first shape of this check accounted for that price.
 
 - **Opening** blocks on one instance. It is the first thing read and the frame for everything under
   it, and a preamble form is a phrase rather than a judgement.
@@ -832,10 +835,32 @@ for a defect that was not there.
   their verdict** — a reworded parking passes, and what covers that is the reader, as it did
   before. The difference is what a hit means: a dramatic word is a tone, while a parking form is an
   act, and an act is worth the re-read a tone is not.
-- ⚠️ **Four of its forms are named by a ruling rather than derived**, and one of the four is matched
-  only in its parking senses. `left` is this repository's ordinary English for what a process or a
-  merge did, so a bare match would hand a turn back over text that parks nothing — and the plants
-  that hold that carve-out are two sentences of exactly that kind, asserted to stay green.
+- ⚠️ **Four of its forms are named by a ruling rather than derived, and all four are matched only in
+  their parking senses** — the second half by a ruling of the same date, 2026-10-20, reading the
+  measurement below. A bare match hands a turn back over text that parks nothing, which is the
+  re-read above paid for a finding that is not there, so what each form is matched in is the
+  writer's **own** absence: an omission excused rather than filled, a section of work the reply
+  carries rather than does, a gap stated in place of being closed.
+- ⚠️ **The premise the first three were left bare on failed the next day.** They were held to be
+  distinctive enough that a reply has no other use for them, and each is in fact this repository's
+  own vocabulary for a mechanism: `deliberately` records a design intent, in nine of this document's
+  own section headings and in § 4's word for a facet nobody configured; `open items` is what
+  § Nothing is deferred's gate counts on a change; and `stated plainly` is § 8's Uncertainty row and
+  the text of this check's own finding for it, so a reply relaying this check reddened on it. ⚠️ The
+  first of the three is **measured on a reply** and the other two are **demonstrated against the
+  shipped check** — a sentence this repository writes by the dozen, run through the arm — rather
+  than waited for. `left` had the carve-out from the start, the bare word being ordinary English for
+  what a process or a merge did — *three trees left behind*.
+- ⚠️ **One false red is kept rather than closed, and it is kept knowingly**: `deliberately absent`
+  is both the shape the ruling was measured on and § 4's own phrase for a facet carrying an
+  `absent_reason`, word for word, so a reply writing the second is handed back. Nothing lexical
+  separates them. ⛔ The direction the rest of the list errs in is the opposite one — a reworded
+  parking passes — and `deliberately not written`, which two documents here use to state a limit,
+  is excluded for that reason and misses a parking that would say it that way.
+- Every form is planted in both directions, and the green plants are the sentences this repository
+  actually writes: the shape each ruled form was named for stays red, while a design intent
+  reported, a heading cited, a limit stated, the gate described, and this check's own finding
+  relayed are each asserted to stay green.
 
 ⚠️ **A chain is two arrows sharing an operand, and sharing is not a token count.** The first form
 read one or two tokens between the arrows as the shared operand, so
@@ -945,7 +970,11 @@ calls and asserts it is this script. See
   regardless — so every hook role [#16](https://github.com/ragnor-rs/mjolnir/issues/16) measures
   keys on an event and a command, and passes its acceptance check without the ruling. The gap
   belongs to a rule whose **scope** is the loop rather than a command, which today is only this
-  one.
+  one. ⚠️ **The wider hold is where every hand-back has in fact been measured** — each of the three
+  was on a reply in a project carrying no configuration of its own, so the remedy an asking answer
+  names, work going under the current branch and pull request and item, named artifacts the project
+  had none of. That is an argument for the arm's precision rather than for its reach: a reply
+  answering a question about history owes no work, and nothing in the payload says so.
 - **A reply that was never sent as text.** A turn that ends in a tool call carries no final
   message, and the hook answers nothing rather than guessing.
 - **Code, a quotation, and — for the emphasis density only — a table.** A fenced block, an
