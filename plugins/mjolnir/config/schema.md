@@ -253,6 +253,15 @@ reported**, by the division stated above — a record in a reply is one the next
 
 ### Nothing is deferred
 
+⛔ **This is the first rule, and every other statement on this surface yields to it.** Where it
+meets another rule of the procedure, a value a project configured, or a convenience a role would
+otherwise take, it wins — and a role that finds itself weighing the two has already answered. It
+binds every artifact a role produces rather than the work item alone: the reply in the session, the
+item body, the pull request, a review comment, a document, and any file the change adds a line to.
+⚠️ **Precedence is stated because procedure alone did not carry it.** The rule was procedure with
+no setting from the day it landed, and it still read as one section among fourteen to anything
+choosing between them.
+
 ⛔ **A work item is delivered whole.** A role that reaches a question it cannot answer **asks**,
 and waits for the answer. It does not note the question, pick a default and carry on, and it does
 not hand the question forward as a follow-up item for the same work.
@@ -1074,6 +1083,14 @@ procedure, stated inside the axis it would otherwise be a value of.
 | Length | What the content needs | Padding, or compression into fragments and arrow chains |
 | Emphasis | Where a fact is load-bearing | As a default texture |
 | Uncertainty | Stated plainly, once | Hedging throughout |
+| Completeness | The work the turn was asked for, done — or the one question that blocks it, asked | Work the reply names and the turn does not do, a menu of scopes, or a note for later |
+
+⛔ **The Completeness row is [§ Nothing is deferred](#nothing-is-deferred) reaching this artifact,
+and it is not a second statement of that rule.** That section already says the rule reaches a
+role's own reply; what it does not say is that the reply is held to it by the same check that holds
+the rest of this table. ⚠️ **The reply is where deferring is cheapest** — it costs no commit, no
+item body and no thread, so every gate downstream of it is green over work that was named once in
+a session and never again, which is the one escape route the measured violations all took.
 
 ⚠️ **Readable and short are different things, and readable wins.** There are two ways to shorten
 and only one of them is this table's: **selection** drops what does not change the reader's next
@@ -1327,6 +1344,26 @@ sibling's is a person's call — so an override covers the second and may not co
 everything in it that version control does not track. ⚠️ **Where the machine cannot be asked at
 all the removal is refused**, that arm having three answers and not two: unreadable is not idle,
 and reading it as idle removes the tree it could not clear.
+
+⛔ **And a tree the harness cut for a helper is not a work tree at all**, which is the ruling above
+one step earlier: that reading separates a helper *process* from a session occupying a tree, and
+says nothing about a *tree* some harness registered in the repository on a helper's behalf. ⚠️
+**Measured on this repository 2026-10-20**, in two parts that are worth keeping apart: three
+per-agent trees a review's verifiers were given were cut inside the checkout and outlived the merge
+with nothing reaping them — that was observed — and the consequence was then **reproduced** in a
+throwaway repository rather than waited for, because those three trees happened to hold branches of
+their own. With a nested tree holding the item's branch, the branch-to-tree resolution a release
+reads answers with it: a finished helper's tree is removed as though it were the item's, and a live
+helper's instead demands the override this section reserves for breaking another session's work.
+
+⚠️ **The test is nesting and not a name**, for the reason the process case already gives: a
+directory name belongs to whichever harness ships it, so naming one puts a project's value in
+shared code. What is structural instead is each model's own answer to *where a work tree is*: the
+main checkout is the work tree under `in_place`, a tree cut at `tree_dir` is one under `worktree`,
+and a registered worktree **nested below the main checkout** is neither of those in either model.
+⛔ **A project whose trees did live inside its checkout names the tree explicitly**, which the
+starting role already requires and a release already accepts — so the resolution finds nothing
+there rather than finding the wrong thing, which is the direction that keeps a tree.
 
 ⚠️ **Where the session cannot leave, the skip is correct and the tree is somebody else's to
 remove.** A session that was pinned to a tree when it was launched has no exit to perform, and the

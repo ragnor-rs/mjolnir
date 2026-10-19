@@ -222,12 +222,29 @@ experience:
   Measured here repeatedly, including a change whose own subject was this class introducing two more
   of it.
 
-⛔ **A reviewer that probes gets an isolated copy of the change, never the work tree.** Measured:
-parallel verifiers told to probe *in memory* planted files into the live tree instead, and in a tree
-whose branch is the claim on a work item that is somebody's claim holding junk. ⚠️ **Naming the
-mechanism is the part that worked** — the change exported at its own sha into a scratch directory,
-or the module under test loaded and its in-memory tree mutated — because *in memory or a scratch
-copy* was not enough. Afterwards, read the tree's own status back rather than trusting discipline.
+⛔ **A delegated reviewer reads and returns findings, and is given no way to write at all.** The
+writing a review needs — a planted violation, a probe, the fix itself — is this role's own, in the
+work tree the item already has.
+
+⚠️ **Measured twice, and the second measurement overturned the first answer.** Parallel verifiers
+told to probe *in memory* planted files into the live tree instead, and in a tree whose branch is
+the claim on a work item that is somebody's claim holding junk; the answer then was an isolated copy
+per reviewer with the mechanism named, because *in memory or a scratch copy* was not enough.
+⛔ **That answer contained write access the reader never needed.** Three verifiers each given a copy
+of their own, 2026-10-20, were each given a working tree registered in the repository, and the
+three trees and six branches they left behind outlived the merge with nothing in this loop reaping
+them. ⛔ **A tree registered in the repository is also an answer to a question this loop asks** —
+which tree holds a given branch, and therefore which tree a release removes
+([`§ 10`](../../config/schema.md#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it)) —
+and that consequence was reproduced rather than waited for.
+
+⛔ **So the containment is the delegate's own tool list and not a sentence in the delegation.** A
+reviewing carrier that cannot write cannot plant, which is a property of what it was handed rather
+than discipline it was asked for — and *do not write outside your copy* is an instruction, which is
+the thing this step has twice measured not holding. ⚠️ **Reproduction is better placed here in any
+case**: a plant has to run where the gate will run, and that is the item's tree rather than a copy
+of it. Where a delegated pass did write, read the tree's own status back rather than trusting that
+it did not.
 
 ⛔ **Hand any reviewer the change's head as the host reports it**, not the sha this session
 remembers. Measured: readers given a branch's first commit reported an already-retracted claim as

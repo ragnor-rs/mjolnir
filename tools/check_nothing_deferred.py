@@ -91,6 +91,29 @@ LIST_MARKER = re.compile(r"^(?:[-*+]|\d+[.)])\s+")
 # markers a migrating project is most likely to arrive with.
 MARKER = re.compile(r"\b(TODO|FIXME|XXX)\s*[:(]")
 
+# A remedy with no owner, in prose. ⛔ Every form here names *who* is missing
+# rather than *what* is: a line saying a thing is absent states a limit, and a
+# line saying nobody owns the cure defers it. The counts that drew the line are
+# in the check's own docstring.
+#
+# ⚠️ A closed list, which is the quoting weakness this repository rules out
+# elsewhere, and safe in the direction that matters here: a reworded deferral
+# passes and leaves a finding missed, never a finding invented -- and the finding
+# missed is one the person reading the diff can still raise, while a false red
+# hands back a change over the honest form of a sentence.
+UNOWNED = re.compile(
+    r"\bno(?:\s+\w+)?\s+item\s+owns\b"
+    r"|\bnobody\s+owns\b|\bowned\s+by\s+(?:nobody|no\s?one)\b"
+    r"|\bno\s+(?:item|issue|change|role)\s+(?:owns|carries)\s+(?:it|this|that)\b"
+    r"|\bno(?:body| one) has (?:built|written|wired|carried) (?:it|this|that)\b"
+    r"|\b(?:somebody|someone) (?:should|has to|will have to|would have to)\b"
+    r"|\bis (?:left|parked) (?:to|for) (?:a )?"
+    r"(?:later|future|another|somebody|someone|whoever)\b"
+    r"|\b(?:a|the|some) (?:later|future) (?:item|change|pass) "
+    r"(?:will|would|can|could) (?:carry|cover|do|fix)\b",
+    re.I,
+)
+
 # Only added lines are read. A marker this change did not write is somebody
 # else's item and not a reason to refuse this merge.
 DIFF_ADDED = re.compile(r"^\+(?!\+\+)(?P<text>.*)$")
@@ -480,6 +503,41 @@ def check_no_unticked_item_in_the_body(change: Change) -> list[str]:
     return problems
 
 
+def check_no_unowned_remedy_added(change: Change) -> list[str]:
+    """Work a line names and nobody owns, anywhere in the diff.
+
+    ⛔ The arm above reads a marker, which is a form a writer reaches for
+    knowingly. This one reads the form the rule was measured escaping through:
+    prose. A change whose `Open items` section read exactly `None.` and whose
+    run of this script was green shipped a deferral as a clause in a document --
+    *a carrier for the check, which no item owns today* -- which is work named,
+    owned by nobody, and sitting where no gate looked.
+
+    ⚠️ **The grammar is the unowned half and not the unfinished half.** Prose
+    that merely says something is absent -- *not yet built*, *would need the
+    credential grammar*, *still needs an answer* -- is this repository's ordinary
+    way of stating a limit, and nine such lines were counted in tracked text
+    before this arm was written. Sweeping those hands back a change for the
+    honest form of the sentence. What reddens is a remedy with no owner, which is
+    the half that defers.
+
+    ⚠️ The remedy is usually **deletion** rather than filing: a cure nobody
+    measured is not a measured gap, and a limit stated without one is the honest
+    form of the same sentence.
+    """
+    problems = []
+    for path, line in change.added:
+        if path == SELF:
+            continue
+        match = UNOWNED.search(line)
+        if match:
+            problems.append(
+                f"{path}: this change adds work with no owner — {match.group(0).strip()!r} in "
+                f"{line.strip()[:120]}"
+            )
+    return problems
+
+
 def check_no_deferral_marker_added(change: Change) -> list[str]:
     problems = [
         f"{path}: the host supplied no patch for this file, so nothing below read it. "
@@ -513,6 +571,7 @@ CHECKS = [
     ("no thread on the change is unresolved", check_no_thread_is_unresolved),
     ("no unticked item in the body", check_no_unticked_item_in_the_body),
     ("no deferral marker added by the change", check_no_deferral_marker_added),
+    ("no work added with no owner", check_no_unowned_remedy_added),
 ]
 
 
@@ -541,8 +600,21 @@ WHOLE = Change(
     threads=[{"resolved": True, "outdated": False, "path": "a.py", "line": 3, "first": "Answered."}],
     # A marker in this file is exempt and a line in a sibling tool is not;
     # the first half is asserted by this fixture staying green.
+    # ⛔ The three lines below are the honest form of a limit, taken from lines
+    # this repository already carries, and they are in the whole-change fixture
+    # so the green side of the unowned-remedy arm is asserted rather than
+    # assumed: each says a thing is absent and none says nobody owns the cure.
+    # Widening the arm to the unfinished half reddens this fixture, which is the
+    # assertion that the carve-out is load-bearing.
     added=[("a.py", "    return value"),
-           ("tools/" + os.path.basename(__file__), "    # TODO: the forms this file forbids")],
+           ("tools/" + os.path.basename(__file__), "    # TODO: the forms this file forbids"),
+           ("docs/configuration-surface.md",
+            "the one derivation measured runs from a priority the surface does not yet carry"),
+           ("plugins/mjolnir/scripts/port.py",
+            "    # sweep above forbids -- and would need editing every time an"),
+           ("plugins/mjolnir/skills/review/SKILL.md",
+            "still needs an answer on the thread, and a thread nobody replied to is an open "
+            "question.")],
     unread=[],
 )
 
@@ -629,6 +701,20 @@ VIOLATIONS = [
      _plant_marker("tools/check_single_source.py", "    # XXX: skip this for now")),
     ("no deferral marker added by the change", "a file the host supplied no patch for",
      _plant_unread_file),
+    # ⛔ The measured clause itself, byte for byte from the change that shipped
+    # it, rather than a paraphrase of it: a plant written in this file's own
+    # words would hold the grammar to the grammar.
+    ("no work added with no owner", "the measured clause: a cure nobody owns, in a document",
+     _plant_marker("docs/building-itself.md",
+                   "what would make it the latter is a carrier for the check, which no item "
+                   "owns today")),
+    ("no work added with no owner", "a remedy handed to an unnamed person",
+     _plant_marker("docs/x.md", "Somebody should narrow the arm once the facet lands.")),
+    ("no work added with no owner", "work parked on a later change",
+     _plant_marker("plugins/mjolnir/config/schema.md",
+                   "The second half is left for a later item.")),
+    ("no work added with no owner", "a future change named as the owner",
+     _plant_marker("docs/x.md", "A later change will carry the sweep arm.")),
 ]
 
 
