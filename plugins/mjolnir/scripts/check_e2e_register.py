@@ -704,8 +704,14 @@ def _a_repository(where: str) -> tuple[str, str]:
     os.makedirs(os.path.join(root, "a-suite"))
     os.makedirs(os.path.join(root, "a-judged-tree"))
     git(root, "init", "--quiet")
-    git(root, "config", "user.email", "suite@example.invalid")
-    git(root, "config", "user.name", "The suite")
+    # ⛔ An identity that is not address-shaped, which is this repository's own
+    # gate rather than taste: the sweep forbidding a person or an account to be
+    # named reads every tracked file and not only the carrier roots, so the
+    # conventional placeholder address a fixture would use is a red here — and
+    # so is writing one into the comment that explains why. Git commits under
+    # any string.
+    git(root, "config", "user.email", "the-suite")
+    git(root, "config", "user.name", "the-suite")
 
     def write(relative: str, text: str) -> None:
         full = os.path.join(root, relative)

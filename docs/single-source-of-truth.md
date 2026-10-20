@@ -1335,7 +1335,11 @@ is refused rather than read as nothing to hold
   passing — the narrowness is what keeps every *Yes* in a cell from being read as a missing file.
 - **An untracked case file.** Both file lists come from git, so a case is a case once it is
   indexed. A file sitting in the suite root and never added is not covered and not reported as
-  covered.
+  covered. ⚠️ The register beside them is read from the **working tree**, which is the one
+  asymmetry in what this check reads: a local run on a dirty tree answers about a register edit
+  the host has not seen. [§ 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)'s
+  first precondition is what covers that, and the run in the workflow has nothing uncommitted by
+  construction.
 - **Whether the written reason is a good one.** Any non-blank line under the exemptions heading is
   an entry. What this buys is that the gap is written where the next reader meets it; whether it
   should have been accepted is the reviewer's, and the run prints every entry so that it can be.
