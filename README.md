@@ -268,9 +268,11 @@ figure appears above: a number a reader cannot check is asserted at them rather 
 
 ⚠️ The register [§ 8](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role)
 fixes is a **reply's**, and it forbids exactly this one — persuasive, for an artifact whose reader
-a project does not choose. This page's reader is chosen, so that register does not reach it;
-whether any register binds prose written into a file is
-[#126](https://github.com/ragnor-rs/mjolnir/issues/126)'s question and is not answered here.
+a project does not choose. This page's reader is chosen, so that register does not reach it. What
+does reach it is the
+[floor](plugins/mjolnir/config/schema.md#the-floor-under-prose-a-role-writes-into-a-file) under
+every file: three properties of the text that hold whatever register is chosen over it, and a page
+written to persuade can carry all three.
 
 Both halves are a convention of this repository and not a rule of the procedure: the README is not
 one of the artifacts § 8's `artifacts` map names, and no check holds either half — stated with the

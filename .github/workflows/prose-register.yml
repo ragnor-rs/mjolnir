@@ -1,0 +1,50 @@
+name: Prose register
+
+# The gate that holds the prose a change writes into a file to the floor the surface fixes under
+# whatever register a project nominates. One mirrored command, so one workflow, per § 2 of
+# plugins/mjolnir/config/schema.md — the rule its siblings here cite too.
+#
+# ⚠️ The workflow name and the job name are deliberately the same string, as in every sibling:
+# `host.checks` is keyed by the workflow name and never by a job name, and identical names leave
+# no key to get wrong.
+#
+# ⛔ Neither the floor nor any of its three numbers is in a line of this file. The rule is
+# plugins/mjolnir/config/schema.md#the-floor-under-prose-a-role-writes-into-a-file, the numbers are
+# in the script, and what the check leaves to a reader is stated once in
+# docs/single-source-of-truth.md.
+
+on:
+  # ⚠️ One event, and `push` is deliberately absent, for the reason its sibling that reads added
+  # lines states: the floor binds prose written after it is set, so the check reads the lines a
+  # change **adds** against the merge base. On the integration branch there is no merge base, and
+  # a run there would either hold nothing or hold every paragraph ever written to a rule that does
+  # not bind it.
+  pull_request:
+
+# No credential of any kind: the diff and the documents come out of the checkout with git, not off
+# the host. ⚠️ Not the same as no network — the base derivation this check imports can reach
+# `ls-remote` where the checkout records no default branch, which is stated with it in
+# docs/single-source-of-truth.md. On this event the host names the base branch in the environment,
+# so that path is not taken here.
+permissions: {}
+
+jobs:
+  prose-register:
+    name: Prose register
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          # ⛔ The whole history, because the check needs a merge base. At the default depth of
+          # one there is none, and the check reports that it could not establish which lines the
+          # change adds rather than reporting green over them.
+          fetch-depth: 0
+
+      # One step, one command: the planted violations and the planted exemptions run first, and
+      # the change is held only once the check has been shown it can both fail and pass — three
+      # arms over a density would otherwise redden a paragraph for the shape the rule next door
+      # asks for. That command is also the string `host.checks` states this run mirrors — ⚠️ held
+      # together by eye and not by a check, since nothing here reads a workflow file. That is #49.
+      - name: Assert the check can fail and can pass, then hold the prose this change writes
+        run: python3 tools/check_prose_register.py --self-test

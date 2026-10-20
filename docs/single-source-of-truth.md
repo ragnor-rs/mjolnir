@@ -42,6 +42,13 @@ own `No audit trail` workflow and its own `host.checks` entry, and is recorded i
 scope is a **diff** rather than a tree — the rule's own carve-out leaves the past alone — which it
 shares with the gate above, as it shares having no `push` arm.
 
+`tools/check_prose_register.py` holds three properties of the prose a change writes into a file,
+under whichever register the project nominates for it. It has its own `Prose register` workflow and
+its own `host.checks` entry, and is recorded in
+[its own section](#the-floor-under-file-prose-held-on-the-lines-a-change-adds) below. ⚠️ It is the
+one that stands up nothing of its own: the diff and the merge base come from the check above it and
+the word lists from the one below, so what is written in it is the grammar neither of them has.
+
 `plugins/mjolnir/scripts/check_reply_register.py` holds the register of a role's reply, and it is
 the one here that does not run on the gate at all. It is in
 [its own section](#the-replys-register-held-in-the-session-not-on-the-gate) too, and for the same
@@ -249,8 +256,10 @@ Stated, because an unstated limit reads later as coverage.
   configures it either, the README not being one of the artifacts
   [schema § 8](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project)'s
   map names. Whether the procedure should state that boundary in general is
-  [#65](https://github.com/ragnor-rs/mjolnir/issues/65)'s, and whether any register binds prose
-  written into a file is [#126](https://github.com/ragnor-rs/mjolnir/issues/126)'s.
+  [#65](https://github.com/ragnor-rs/mjolnir/issues/65)'s. ⚠️ What a file's prose **is** held to,
+  whichever register a project nominates over it, is
+  [§ The floor under file prose](#the-floor-under-file-prose-held-on-the-lines-a-change-adds) — and
+  a floor is not a register, so nothing there closes this gap either.
   ⚠️ **Measured on `docs/working-on-the-toolkit.md`:** setting its role to `procedure` leaves every
   check green, because the checks that discriminate on a role read a binding statement or a citation
   of the surface and that document carries neither — so the value is held only where the document
@@ -1274,6 +1283,107 @@ change that introduced them here.
   instead of reading it — which no role does today, because the rule's reader is the writer of a
   document rather than a skill.
 
+## The floor under file prose: held on the lines a change adds
+
+`tools/check_prose_register.py --self-test` runs in the `Prose register` workflow with no
+credential, and with the same network caveat the added-lines check below carries, from which it
+imports its base derivation. ⛔ The rule is
+[schema § 8 → The floor under prose a role writes into a file](../plugins/mjolnir/config/schema.md#the-floor-under-prose-a-role-writes-into-a-file),
+and none of it is stated here: what this section records is how far each of the three arms gets,
+and the measurement that decided each one.
+
+**What it reads.** Every tracked markdown file, and every tracked script's own prose — a comment
+block of more than one whole line, and a docstring, by the test the rule states. ⛔ **On the lines
+the change adds**, which is the same carve-out and the same machinery as the check below: the diff,
+the merge base and the markdown prose grammar are imported from it rather than stood up again, and
+the word list and the emphasis grammar are imported from the reply's check. ⚠️ **The arms were
+measurable before they were held**, which is why there is no sweep of the tree in this change: read
+over this repository at `7584138`, 124 runs of a dozen words or more are repeated between a file
+and a document it cites, 4,337 of 15,315 lines of tracked Python are prose by that test, and 21
+paragraphs carry a hedge.
+
+| Arm | What it reads | Kind | On a finding |
+|---|---|---|---|
+| Restatement | Runs of words an added line repeats out of a document the file cites, quotations, code and the cited document's own headings aside | computed | **reddens**, naming the run and its length |
+| Emphasis | Added prose lines in runs, against the position of each line's emphasised spans | computed | **reddens** where every line of a long enough run is marked past its opening |
+| Uncertainty | The reply check's hedge list, over one paragraph of added prose | forbidding, over a density | **reddens** |
+| Every property of the floor is accounted for | The first column of the rule's own table | computed | **reddens** on a row with no arm |
+
+**Why a run of words is a sound end of the padding clause, where the clause itself is not.** What
+cannot be computed is whether a sentence earns its place — that is this repository's standing
+position, recorded two sections up for the reply and unchanged here. What can be computed is a
+narrower thing: this repository already holds that one fact has one home and that a document cites
+it, so prose that reproduces a dozen of a cited document's words in a row has a home for those
+words and is not it. ⚠️ **The arm is a copy detector and not a judge**: it says the words are in two
+places, and which copy should go is still a writer's call.
+
+⚠️ **The two densities are set where this tree's own habit stops, and the numbers live in the
+script.** A dozen words, because that is where repetition stops being a coincidence of English:
+the same read at ten words finds 219 runs and at fourteen 75, so nothing about the figure is a
+cliff, and it is set where a reader would agree that two writers did not arrive there separately.
+Four lines for the emphasis arm, because **none** of this tree's 1,171 paragraphs of that length
+carries a marked span past the opening of every line — while the two paragraphs that come closest
+are three lines long and are lists of defined terms, which is the shape the Structure row asks for.
+One hedge per paragraph, because two paragraphs here carry two and none carries three.
+
+⛔ **Emphasis is read past the opening of a line, and that is what keeps the arm off the shape the
+Structure row of
+[§ 8's own table](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) asks
+for.** A marked span that opens a line is a term being defined; a list of four such lines is four
+marked lines and is not a texture. Both readings were measured and they agree on this tree — the
+narrower one is what shipped, because an arm that hands back a build has to err toward the finding
+it misses.
+
+⚠️ **Each arm has a planted violation and the fixture asserts its own premises**, since a plant
+against a cited document proves nothing if the planted file does not in fact cite it: the run
+prints that both planted files resolve the planted authority and that the sentence it restates is
+long enough for the arm to find. Every exclusion — the quotation, the code span, the fence, a
+section named by its title, the added-lines carve-out itself, and the two kinds of annotation —
+was verified by disabling it and watching its own plant redden. The carve-outs that have nothing
+to disable are labelled omissions rather than exclusions, as the check below labels its own.
+
+⛔ **One hole was found by a plant rather than by reasoning**, and it is the reason the docstring
+delimiter is dropped before anything else: read as text, a triple quote is an empty quotation
+followed by an opening one, so the quotation carve-out swallowed every docstring in the tree while
+the run reported green. A docstring is prose by
+[the rule's own test](../plugins/mjolnir/config/schema.md#the-floor-under-prose-a-role-writes-into-a-file),
+so that is the whole Python half held by nothing — and the plant for the habit the arm was built on
+stayed green until that line existed.
+
+### What this check deliberately does not hold
+
+- **The padding clause itself, and the compression half beside it.** Whether a sentence earns its
+  place is a judgement, and so is whether a passage was shortened by selection or by compression.
+  The surface says so; what is held here is the one corner of the first that the authority rule
+  already decides.
+- **Structure.** Unheld for file prose exactly as it is for a reply, and for the same reason: the
+  same paragraph is correct prose or a withheld table depending on what it says.
+- **A restatement reworded.** The arm reads a verbatim run, so changing two words in the middle of
+  a restated sentence passes it — which is the *quoting* weakness inverted, and a finding missed
+  rather than invented. ⚠️ The reach is bounded the same way in a second direction: a document
+  named by its bare file name, with no directory in front of it, is not resolved as a citation at
+  all, because more than one tracked file can carry one name.
+- **A paragraph with one unmarked line in it.** The emphasis arm asks for every line, so a
+  five-line paragraph marked on four passes. The threshold is a proxy for *as a default texture*
+  rather than that rule, which is the same limit the reply's own emphasis density carries.
+- **A hedge the list does not carry.** The list is the reply check's, imported so that one
+  rewording reaches both, and a synonym outside it passes. The thing forbidden is a tone, so no
+  list completes.
+- **A register and an audience.** A project nominates both, and what a nominated register asks of
+  a document is held by nobody here — the floor is three properties of the text, and none of them
+  is a register. That the README is in a persuasive register and every document beside it is in a
+  reference one is a convention of this repository, stated where that page's reader is.
+- **Prose outside a tracked file.** A work-item body, a pull request, a review comment and the
+  ordering document are not files this sweep can see, so the floor reaches none of them — the same
+  shape of gap the width rule has, and the same remedy: a writer.
+- **A comment the test reads as annotation.** A trailing comment and a lone whole-line comment are
+  out by rule, and a restatement written into one is missed. ⚠️ 137 lines of this tree are in that
+  position, against 4,337 the test reads as prose.
+- **Whether the floor is where a project would put it.** Three properties are procedure here
+  because none describes the reader; a project that disagreed could not turn them off, and nothing
+  in this repository asks whether that is the right boundary. [#65](https://github.com/ragnor-rs/mjolnir/issues/65)
+  is where the boundary between procedure and configuration for this axis is argued.
+
 ## An artifact states what is true now: held on the lines a change adds
 
 `tools/check_no_audit_trail.py --self-test` runs in the `No audit trail` workflow with no
@@ -1483,9 +1593,14 @@ because its exclusion list is where it would quietly stop holding anything. The 
 check plants a container cited through its subsection, which is the one carve-out checks 2 and 6
 share. The audit-trail check plants the carve-out that is its whole scope — a violation the change
 did not write — beside a landed record and a live-status line, each of which carries a date and has
-to pass. ⛔ A red-only suite says nothing
-about any of them, and each green plant is verified by **disabling its own exclusion** and
-watching it redden — an exemption that cannot fail is an exemption nobody checked.
+to pass. The prose-register check plants a quotation, a cell of defined terms and both kinds of
+annotation, and asserts its fixture's premises before any of them: a plant against a cited
+document establishes nothing where the planted file turns out not to cite it. ⛔ A red-only suite
+says nothing about any of them. **A green plant naming an exclusion is verified by switching that
+exclusion off** and watching it redden — one that cannot fail is one nobody checked — while a plant
+naming an omission has nothing to switch off, and what it asserts is that a grammar stayed narrow.
+⚠️ Two of these suites keep the two kinds apart in their own labels, because calling an omission a
+verified exclusion claims a step that was never performed.
 
 ⚠️ The reply-register check carries one more thing its siblings do not: it runs its turn-guard
 assertions against a state directory of its own, after a second run of the self-test read the

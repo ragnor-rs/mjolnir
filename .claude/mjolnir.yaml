@@ -74,6 +74,12 @@ host:
     - workflow: "Port contract"
       mirrors: "python3 plugins/mjolnir/scripts/port.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ No `push -> main` arm, and the reason is the one the `No audit trail` entry gives: a
+    # check that reads the lines a change adds needs a merge base, and the integration branch has
+    # none. Stated with the check, in docs/single-source-of-truth.md.
+    - workflow: "Prose register"
+      mirrors: "python3 tools/check_prose_register.py --self-test"
+      triggers: ["pull_request -> *"]
     - workflow: "Prose width"
       mirrors: "python3 tools/check_prose_width.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
