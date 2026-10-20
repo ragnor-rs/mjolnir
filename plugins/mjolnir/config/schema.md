@@ -2203,3 +2203,119 @@ absence is stated rather than left unset**, by the rule this surface opens with:
 has decided it runs nothing end to end and a project that has not thought about it read
 identically otherwise. ⚠️ **A reader reports it as unavailable**, so a role that would have asked
 about coverage says what the project decided instead.
+
+## 16. What a run executed, and the count that is the only evidence it ran
+
+```yaml
+executed:
+  carrier: command | none                   # required; absent_reason
+  declares: "<prints how many cases the tree holds>"   # required_when: executed.carrier = command
+  reports: "<prints what a run executed and skipped>"  # required_when: executed.carrier = command
+  min: 1   # the one floor this facet judges; unset leaves every count reported and nothing judged
+  requires: ["<a precondition the cases need and the run does not check>"]
+  absent_reason: "…"                        # required where the carrier is none
+  revisit_when: "…"                         # where a trigger for the absence exists
+```
+
+⛔ **Where a floor is stated, a run reporting zero executed cases against a non-zero declaration is
+not a pass.** That is the rule, and it is arithmetic the run already has rather than a judgement
+about coverage: how many cases executed, how many skipped and what each skip wanted, against how
+many the tree declares. ⚠️ **The condition is written into the rule rather than qualified later**:
+`min` is what asks for the verdict, and a sentence stating the rule unconditionally would be denied
+by the facet's own weaker form further down.
+
+**What makes a tier the subject of this facet is one property: its dependency is *stood up for the
+run*** — a store the subject talks to over its real protocol, created for the run rather than mocked
+and rather than found already running. ⛔ **It does not matter who stands it up**, the run itself or
+the host beside the run, and a facet read either way would exclude the consumers that do it the
+other. ⛔ **The tier axis, its values and its vocabulary are #60's and are not restated here**, for
+the reason [§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check) gives
+one list over: two vocabularies for one tier is the thing that must not happen on this surface. What
+this section adds to that axis is a third value — ⚠️ **a tier that *ran* and proved nothing**, which
+is neither *not run* nor *passed*.
+
+⛔ **Why the degradation is quiet here and nowhere else:** a dependency created for the run is a
+thing whose absence the runner **handles**, so the cases skip and the command exits zero. A target
+that is merely deployed refuses the connection, and a run against one fails loudly. ⚠️ **So «the
+host cannot run this tier» is the wrong diagnosis**: many hosts can, and a host that cannot is a
+project this facet still answers — what it reports either way is whether anything executed
+([the measurement](../../../docs/configuration-surface.md#a-tier-that-executed-nothing-and-the-build-that-said-so)).
+
+**What each command prints, which is the one contract a project writes to.** The procedure judges
+numbers and never output, so the form is stated here and nothing of any runner or report format
+enters the toolkit — a consumer whose runner prints something else states a command that ends in
+whatever turns it into this:
+
+```
+executed <n>
+skipped <n> <what those cases wanted>
+```
+
+- `declares` prints **one non-negative integer and nothing else**. ⛔ A looser reading would find a
+  number in any output and judge against whichever one it found first.
+- `reports` prints the `executed` line **exactly once**, and a `skipped` line per reason, each
+  carrying a count **and what those cases wanted**. ⛔ **A `skipped` line stating a count and no
+  reason is refused**, which is the acceptance half of the rule above: a skip count with nothing
+  saying what it was is a skip folded into a pass. ⚠️ **A count of zero is not a skip** and is not
+  refused for saying nothing about itself, there being nothing folded into anything at zero — the
+  shape a generated report emits unconditionally. ⚠️ **Repeated reasons are not refused either**:
+  the counts sum and the reason is named once, because a distinctness rule would redden a report
+  rather than a tier.
+- ⛔ **A line this grammar cannot read is refused rather than skipped**, which is the fail-closed
+  direction and the only one available: a line nobody can parse may be the count, and a run that
+  ignored it would judge against a number it did not read.
+
+⛔ **`min` is the one floor this facet judges, and `1` is the only value it states.** A higher floor
+is a coverage threshold, and a threshold is the thing this rule is not: zero against a non-zero
+declaration is the failure, and ⚠️ **every other number is reported rather than judged** — a
+measurement that prints and reddens on nothing it cannot derive. A project
+wanting a floor above one is asking for a different rule, which this surface does not state and a
+reader refuses rather than silently accepts. ⛔ **The refusal holds beside a stated absence too**: a
+`min`, a command or a precondition written under `carrier: none` is refused with the key named,
+since the absence is the statement and a value beside it is a rule nothing performs.
+
+⚠️ **`min` left unset is a weaker configuration and a real one, and what it costs is stated here
+rather than discovered**: the counts are read and reported, no verdict is produced from them, and a
+tier that executed nothing therefore **passes** — reported, named in the run's own output, and
+judged by nothing. ⛔ **So a project that has been bitten states the floor**, and a project leaving
+it out is choosing the figures without the verdict rather than configuring the facet by halves.
+
+⛔ **`requires:` is the preconditions the cases need and the run does not check itself**, and it is
+what the report names when the floor is missed: a tier that executed nothing wanted something, and
+a verdict that says only *zero* leaves whoever reads it to guess what. ⚠️ **Where nothing names the
+dependency** — no `requires:`, and a report carrying no `skipped` line — the run says the dependency
+is **unnamed** rather than that there was none.
+
+⚠️ **The form is stated here and once.** #66 states a local check's command, what a pass
+establishes, and the `invalidate:` form that defeats a cached pass; its `requires:` is this list,
+and whichever of the two lands second **cites** the other rather than writing a second grammar for
+one rule. ⛔ **Evaluating a precondition is #66's and not this facet's**: what this one does with
+the list is name it, and a facet that also ran it would be two statements of one rule.
+
+⛔ **Reading a count is not the same act as judging it, and a count that could not be read is
+reported as unanswered.** Neither command's output is read as a zero when it cannot be read at all —
+[§ 11](#a-report-names-what-it-could-not-establish)'s rule arriving where it costs the most, since a
+tier nobody could ask reads exactly like a tier that ran nothing, and *that* reads as the failure
+this facet exists to catch. A verdict on a number that was never read would be the right answer by
+accident.
+
+⚠️ **The rule reads the same for a host run and a local one**, and nothing here is conditioned on
+which. A project whose host stands the dependency up and a project whose host cannot are answered by
+one statement, so the half that differs is which run has a dependency to stand up — not what its
+count has to show.
+
+⛔ **And the run states which tree it read the counts in, and with which commands.** This is the one
+facet whose verdict comes from running a *project's* own command, so
+[§ 10](#which-tree-a-verdict-belongs-to)'s rule binds here at its sharpest: a command reaching a
+service bound to another tree answers about code this branch does not contain, in the direction that
+passes, and a count with no tree beside it gives a reader no way to tell.
+
+**`carrier: none` is the stated absence, and a tier that declares no count behaves exactly as it
+does today.** ⛔ **A reader reports it as unavailable and a run says the count was *unavailable*,
+never that nothing was skipped** — absence of signal is not an answer ([§ 2](#2-code-host)), and
+`skipped: 0` is the one thing a project with no declaration must not be told.
+
+**What reads this facet.** The verdict is produced by the carrier shipped with this surface, run as
+a host check like any other (§ 2). ⚠️ **The role that launches a tier is #128's** and is not this
+facet's to state: what is configuration here is the declaration, the report and the floor, and what
+is procedure is the arithmetic over them.

@@ -1120,8 +1120,9 @@ stated beside a former value, and a clause whose subject is the pass before this
 shape the rule names — a per-pass paragraph appended where a line should have been overwritten — is
 held only insofar as it carries one of those three markers.
 
-⚠️ **It plants both sides**, as the width and reply-register checks do, and the run prints what it
-planted rather than a count being written here. ⛔ **The green plants are of two kinds and the
+⚠️ **It plants both sides**, as several siblings do — ⛔ which are not listed here, for the reason
+no count of them is: a list in prose is a copy, and each run prints what it
+planted. ⛔ **The green plants are of two kinds and the
 difference is load-bearing.** An **exclusion** is something the check sets aside — the lines a
 change did not write, a marker shown in a code span or a quotation, a document's frontmatter, a
 fence shown inside a longer fence — and each of those was verified by **disabling that exclusion**
@@ -1274,7 +1275,8 @@ workflow, with no credential and no network. ⛔ The rule is
 [schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded) and this
 document states none of it: what is recorded here is the reach of the check.
 
-⚠️ **It is the only check here with no subject in this repository.** Several siblings are shipped
+⚠️ **It has no subject in this repository**, which is the uncommon case here rather than the usual
+one. Several siblings are shipped
 carriers too — the reader, the port, the claim and the boundary all run in an adopting project —
 but each of them also has something to act on here. This one does not: this project states
 `e2e_register.carrier: none`, nothing here is deployed, and there is no suite for a register to
@@ -1346,6 +1348,122 @@ is refused rather than read as nothing to hold
 - **Whether `host.checks` names this workflow.** Nothing here reads a workflow file, which is #49
   — the same limit every sibling carries.
 
+## A tier held to the count the tree declares
+
+`plugins/mjolnir/scripts/executed.py --self-test` runs in the `Executed count` workflow, with no
+credential and no network. ⛔ The rule is
+[schema § 16](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
+and this document states none of it: what is recorded here is the reach of the check.
+
+⚠️ **It has no subject in this repository either**, for the same reason as the section above and a
+different fact about it: no tier here has a dependency a run stands up. Every check in this
+tree is a suite over the tree it runs in, so nothing is created for a run and nothing can be
+absent — which is the one degradation § 16 is about. This project therefore states
+`executed.carrier: none`, and pointed at a project in that position the check says the count is
+**unavailable** and exits without producing a verdict — ⚠️ **which is a non-zero status and not a
+third colour**, a runner having only two: what it means is *do not run this check here*, and the
+message says to delete the entry or state the facet. ⛔ Never zero: zero executed is the failure
+the rule names, so reporting it for a project that declared nothing would be the one wrong answer
+available. What the workflow runs is the carrier's own assertion suite.
+
+What it holds, on a project that carries the facet: the two counts against each other, and every
+skip against whether it says what it wanted. Both commands are read from the configuration, so the
+script carries no runner, no task name and no report format of any stack. The kind is **computed**:
+two numbers and a list of reasons.
+
+⚠️ **What it reads, and what it deliberately leaves to the runner.** The output, never the exit
+status: whether the cases that executed *passed* is the runner's verdict, so a report naming
+failures is read for its counts like any other. A command whose output cannot be read is a count
+nobody established, and that is reported as unanswered —
+[§ 11](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)'s rule
+arriving where it costs the most, since a tier nobody could ask reads exactly like a tier that ran
+nothing, and *that* reads as the failure this check exists to catch.
+
+⚠️ **It plants both sides, and keeps the two kinds of green plant apart in its own labels.**
+Violations that must redden — a tier that executed nothing against a non-zero declaration, the same
+with no precondition and no skip reason to name, and a skip stating a count and nothing else — and
+green plants of two kinds. The **exclusions** each name a guard in the rule: an unset floor, a tree
+declaring no case at all, and a reasonless skip of zero cases. ⚠️ **Each was verified by
+substituting what the guard carves out** — the unset floor read as the floor the rule judges, the
+zero declaration read as a count, the zero skip read as a skip — ⛔ **and that is the form, because
+deleting the arm instead raises on an unset floor rather than reddening**, so a reader repeating
+the experiment the other way gets a failure that says nothing. The **narrowness** plants have no
+guard to switch off — more executed than declared, and every declared case executed — and what they
+assert is that the rule never grew an arm that would catch them. ⛔ Calling those verified
+exclusions would claim a step nobody performed. Each violation was then verified by replacing the
+branch it names with a constant and watching it go green.
+
+⛔ **And the half of the run that reports rather than judges is asserted too.** With the reporting
+function replaced by one returning nothing, every plant above still passed and the suite was green —
+including two green plants whose own labels name report branches. Each state is now held against a
+phrase its report has to carry: the unset floor, the zero declaration and the degraded-declaration
+warning beside it, the two commands disagreeing, the counts that do not add up, and the tree the
+verdict belongs to with the commands that produced it — which
+[§ 16](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
+requires of this facet above every other, it being the one whose verdict comes from running a
+project's own command.
+
+⚠️ **The fixture's own premises are asserted before any plant runs** — that it starts green, that
+it states a floor, that its tree declares cases, and that its run skipped something with a reason.
+A plant measured against a baseline that is already red proves nothing; a fixture with no floor
+would make the rule's own plant pass because nothing is judged rather than because it reddened.
+
+⛔ **And every plant above is a subject that was already built, which is why the suite also runs two
+real commands.** A configured command is a string run through a shell in a working directory, and no
+in-memory plant reaches any of that. The suite writes a declaration and a report into a temporary
+directory, reads them back through a trailing pipeline — the shape the contract in
+[schema § 16](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
+asks a project for — then replaces the report with one that executed nothing and watches the rule
+redden through the commands rather than through a subject. ⚠️ The state no fixture reproduces is
+asserted there too: a command that printed nothing at all, which is refused rather than read as
+zero executed.
+
+### What this check deliberately does not hold
+
+- **Whether the cases that executed passed.** That is the runner's verdict. This check asks only
+  whether anything executed at all, which is the question a green build does not answer.
+- **Whether the declaration is correct.** It is a command the project owns, and a tree that declares
+  the wrong number is held to nothing here: more executed than declared is reported as the two
+  commands disagreeing, and executed-plus-skipped failing to reach the declaration is reported as
+  some case neither accounts for. Neither is judged. The rule needs the declaration only to be
+  **non-zero**.
+- ⛔ **A declaration that has itself degraded, which turns the rule off.** The two commands are
+  equally fragile over the same tree, so a shared failure that makes `declares` print `0` disarms
+  the rule — the failure
+  [§ 16](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
+  names being zero executed against a **non-zero** declaration — and the run is green. The check
+  cannot tell that from a project with no cases, so it **says so in its own output** wherever
+  nothing was declared and nothing executed, which is the whole of the remedy: closing it would
+  redden every project that genuinely has none.
+- ⛔ **How long a configured command may take.** No bound is imposed: `reports` is frequently the
+  tier's own run, so any number here would redden a healthy tier, and a bound belongs to a key this
+  surface does not state. What is held is the handling — a bound arriving from outside is reported
+  as a count nobody established rather than as a zero — and what is given up is that a hung command
+  burns the job's own limit with no verdict.
+- **Any floor above one.** A higher floor is a coverage threshold, which § 16 is defined against,
+  and the reader refuses it with the key named rather than accepting it silently. What that gives
+  up is stated rather than discovered: a project wanting coverage enforcement has no key here for
+  it.
+- **Whether a stated precondition holds.** `requires:` is named in the verdict and never evaluated —
+  evaluating one is #66's, and a facet that also ran it would be two statements of one rule. ⚠️ So a
+  run can name the dependency the cases wanted and be wrong about whether it was there.
+- **Whether the skip reason is a good one.** Any non-blank text after a skip's count is a reason.
+  What this buys is that a skip is never a bare number; whether the reason is honest is a
+  reviewer's. ⚠️ **Two leniencies sit beside it, each the fail-open direction chosen on purpose**: a
+  skip of **zero** cases needs no reason, since nothing is folded into anything at zero and refusing
+  it reddened a tier in which every declared case executed; and a reason repeated across lines is
+  not refused, the counts summing and the reason being named once, since a distinctness rule would
+  redden a report rather than a tier.
+- **A tier the project does not declare.** `carrier: none` is a stated absence and the check exits
+  with no verdict, so a project that has a degrading tier and has not written the facet is held to
+  nothing. The reader reports the absence in `unavailable` rather than leaving it silent.
+- **Which run the counts came from.** The two commands run when this check runs, so a report command
+  that replays an older run's output is read as this run's. ⚠️ That is #66's `invalidate:` and is
+  named rather than closed here — a cached pass is the local half of the same honesty, and whichever
+  of the two lands second cites the other.
+- **Whether `host.checks` names this workflow.** Nothing here reads a workflow file, which is #49 —
+  the same limit every sibling carries.
+
 ## Each check has a violation it is asserted to redden on
 
 `--self-test` plants one violation per check and asserts that check goes red, as the first step of
@@ -1382,16 +1500,18 @@ because its exclusion list is where it would quietly stop holding anything. The 
 check plants a container cited through its subsection, which is the one carve-out checks 2 and 6
 share. The audit-trail check plants the carve-out that is its whole scope — a violation the change
 did not write — beside a landed record and a live-status line, each of which carries a date and has
-to pass. The prose-register check plants a quotation, a cell of defined terms and both kinds of
-annotation, and asserts its fixture's premises before any of them: a plant against a cited
-document establishes nothing where the planted file turns out not to cite it. The end-to-end
+to pass. The end-to-end
 register check plants the three ways a change may be written down and the change that is outside
-every judged tree, and asserts its fixture's premises first for the same reason. ⛔ A red-only suite
-says nothing about any of them. **A green plant naming an exclusion is verified by switching that
-exclusion off** and watching it redden — one that cannot fail is one nobody checked — while a plant
-naming an omission has nothing to switch off, and what it asserts is that a grammar stayed narrow.
-⚠️ Two of these suites keep the two kinds apart in their own labels, because calling an omission a
-verified exclusion claims a step that was never performed.
+every judged tree, and asserts its fixture's premises first for the same reason. The executed-count
+check plants an unset floor and a tree declaring no case — the two guards in its rule — beside two
+cases nothing was written to let through. ⛔ A red-only suite says nothing about any of them.
+**A green plant naming an exclusion is verified by switching that exclusion off** and watching it
+redden — one that cannot fail is one nobody checked — while a plant naming an omission has nothing
+to switch off, and what it asserts is that a grammar stayed narrow. ⚠️ A suite that keeps the two
+kinds apart in its own labels does so because calling an omission a verified exclusion claims a
+step that was never performed. ⛔ No count of those suites is written here, by the rule this
+document opens with: the first form of this sentence carried one, the retirement of a suite made it
+wrong, and the change that added another would have made it wrong again.
 
 ⚠️ The reply-register check carries one more thing its siblings do not: it runs its turn-guard
 assertions against a state directory of its own, after a second run of the self-test read the

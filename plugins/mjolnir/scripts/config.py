@@ -680,6 +680,21 @@ class Config:
                 "change is held to neither: "
                 f"{' '.join(str(reason).split())}"
             )
+        # § 16, and reported for the reason § 15's is: a role that would have
+        # asked what a tier executed learns that this project has no tier whose
+        # dependency a run stands up, rather than meeting a key that is not
+        # there. ⛔ And the count is never reported as a zero — absence of signal
+        # is not an answer, and zero executed is the failure this facet names, so
+        # reporting it for a project that declared nothing would be the one wrong
+        # answer available here.
+        if self.get("executed.carrier") == "none":
+            reason = self.get("executed.absent_reason")
+            out.append(
+                "No executed count is carried (`executed.carrier: none`), so "
+                "what a run executed is **unavailable** here rather than zero, "
+                "and no run is held to a floor: "
+                f"{' '.join(str(reason).split())}"
+            )
         if self.get("ordering.carrier") == "none":
             reason = self.get("ordering.absent_reason")
             out.append(
@@ -1179,6 +1194,91 @@ def validate(data: dict, facts: dict) -> None:
                 "a suite with no cases in it.",
             )
 
+    # § 16. Requiredness is marked on the surface and answers whether each
+    # command is written; what each value has to *be* is here.
+    if _get(data, "executed.carrier") == "command":
+        for key in ("declares", "reports"):
+            command = _get(data, f"executed.{key}")
+            if not isinstance(command, str) or not command.strip():
+                raise ConfigError(
+                    f"executed.{key}",
+                    f"is {command!r}; § 16 states it as a command whose output "
+                    "the arithmetic is read from. A value of another shape runs "
+                    "as no command, and a count that could not be read is "
+                    "reported as unanswered — so a verdict would be withheld on "
+                    "a configuration defect rather than on a tier that ran "
+                    "nothing.",
+                )
+        # ⛔ The one floor § 16 judges, and the refusal is the section's
+        # not-a-threshold rule rather than a type check. A project writing
+        # `min: 40` has asked for coverage enforcement, which this facet does not
+        # state — and accepting it would ship exactly the threshold the rule is
+        # defined against, reddening on the count being wrong rather than on the
+        # tier having executed nothing.
+        floor = _get(data, "executed.min")
+        # ⚠️ The boolean arm runs **first**, because `True == 1` in Python: the
+        # value comparison below would accept `min: true` as the floor and
+        # refuse `min: false` with a message about which numbers are allowed.
+        # Both are the same mistake and are named as the one they are.
+        if isinstance(floor, bool):
+            raise ConfigError(
+                "executed.min",
+                "is a boolean; § 16 states it as the floor that must have "
+                "executed, which is a count. A boolean compares equal to `1`, so "
+                "`true` would otherwise be read as that floor.",
+            )
+        # ⚠️ And an integer, not merely something equal to one: `1.0` compares
+        # equal and is not the count § 16 states. The same trap as the boolean
+        # above, one line down, and missed there on the first pass — found by
+        # review on this change.
+        if floor is not None and (not isinstance(floor, int) or floor != 1):
+            raise ConfigError(
+                "executed.min",
+                f"is {floor!r}; § 16 states `1` as the one floor this facet "
+                "judges. Zero executed against a non-zero declaration is the "
+                "failure, every other number is reported rather than judged, and "
+                "a higher floor is the coverage threshold this rule is defined "
+                "against. Leave it unset to have the counts reported and nothing "
+                "judged.",
+            )
+        requires = _get(data, "executed.requires")
+        if requires is not None:
+            if not isinstance(requires, list):
+                raise ConfigError(
+                    "executed.requires",
+                    f"is {requires!r}; § 16 states it as the preconditions the "
+                    "cases need — a list, even where there is one. Read as a "
+                    "sequence it names one precondition per character, and the "
+                    "verdict that misses the floor would print the dependency a "
+                    "character at a time.",
+                )
+            for index, precondition in enumerate(requires):
+                if not isinstance(precondition, str) or not precondition.strip():
+                    raise ConfigError(
+                        f"executed.requires[{index}]",
+                        f"is {precondition!r}, which names no precondition "
+                        "(§ 16). An entry naming nothing is counted as a named "
+                        "dependency and printed as a blank, so the verdict reads "
+                        "as having said what the skipped cases wanted.",
+                    )
+    elif _get(data, "executed.carrier") == "none":
+        # ⛔ A stated absence that also states a floor, a command or a
+        # precondition is refused with the key named. The shape rules above are
+        # gated on the carrier, so without this arm the one value § 16 says a
+        # reader "refuses rather than silently accepts" — a coverage threshold —
+        # loads clean on any project whose carrier is `none`, and reads to the
+        # next person as a floor something judges. Found by review on this
+        # change, where the sibling facet one section up has the same hole.
+        for key in ("declares", "reports", "min", "requires"):
+            if _has(data, f"executed.{key}"):
+                raise ConfigError(
+                    f"executed.{key}",
+                    "is written beside `executed.carrier: none` (§ 16). The "
+                    "absence is the statement, so a value here is a rule nothing "
+                    "performs: delete the key, or state the carrier it belongs "
+                    "to.",
+                )
+
     statuses = _get(data, "statuses")
     if not isinstance(statuses, list):
         raise ConfigError("statuses", "must be a list; `[]` where no status is mapped.")
@@ -1470,6 +1570,7 @@ MARKED_REQUIRED = [
     "done",
     "e2e_register.carrier",
     "environment.inherits",
+    "executed.carrier",
     "host.checks",
     "host.kind",
     "host.landing.delete_branch",
@@ -1513,6 +1614,12 @@ MARKED_REQUIRED_WHEN = [
     ("e2e_register.judged", "e2e_register.carrier", "file"),
     ("e2e_register.register", "e2e_register.carrier", "file"),
     ("e2e_register.suite", "e2e_register.carrier", "file"),
+    # § 16's two, each the command one half of the arithmetic is read from and each
+    # meaningless where the facet is absent. ⛔ `min` is **not** here: a floor left
+    # unset is the weaker configuration the section states, where the counts are
+    # reported and nothing is judged, so marking it required would refuse that.
+    ("executed.declares", "executed.carrier", "command"),
+    ("executed.reports", "executed.carrier", "command"),
     ("tracker.board", "tracker.kind", "trello"),
     ("tracker.project.number", "tracker.kind", "github-projects"),
     ("tracker.project.owner", "tracker.kind", "github-projects"),
@@ -1529,6 +1636,7 @@ MARKED_PROCEDURE = ["audit_trail"]
 MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
     "e2e_register",
+    "executed",
     "ordering",
     "work_item.due_date",
     "work_item.estimate",
@@ -2046,6 +2154,28 @@ def self_test() -> int:
                 ),
                 f"reported {reported!r}",
             )
+            # ⛔ And every facet whose carrier this configuration states as
+            # `none` is named in that report. Derived from the surface's own
+            # `# absent_reason` marker rather than listed, so a facet that grows
+            # an absent case is covered here the moment it is declared -- and
+            # the arm that reports it is held by something. Found by review on
+            # this change: the facet's own branch could be deleted whole and
+            # every assertion in this file still passed, which is the shape the
+            # retired required-key table is remembered for.
+            for facet in sorted(config.facts.get("absent_reason", {})):
+                if config.get(f"{facet}.carrier") != "none":
+                    continue
+                # ⚠️ The facet's own name rather than its dotted path, because
+                # that is what the report names: `unavailable()` writes "No
+                # due_date is carried" for a § 4 facet and the dotted key for
+                # one that has a key of its own. Asserting the path would have
+                # been an assertion about this test's spelling.
+                named = facet.rpartition(".")[2]
+                check(
+                    f"and names `{named}` among them, its carrier being none",
+                    any(named in line for line in reported),
+                    f"reported {reported!r}",
+                )
             # The resolved identity, which is the only guard § 1 has against a
             # role run from a sibling project: the reader says which root it
             # resolved and which file it read, both absolute, for the role to
@@ -2224,6 +2354,28 @@ def _planted_violations():
          _an_e2e_register_with(judged=["a-judged-tree", "   "])),
         ("a case glob of a shape that matches nothing",
          "e2e_register.cases", _an_e2e_register_with(cases=["*"])),
+        ("a declaration that is no command at all",
+         "executed.declares", _an_executed_with(declares=["a-command"])),
+        ("a report command written blank",
+         "executed.reports", _an_executed_with(reports="   ")),
+        ("a floor above the one § 16 judges, which is a coverage threshold",
+         "executed.min", _an_executed_with(min=40)),
+        ("a floor written as a boolean, which compares equal to the floor",
+         "executed.min", _an_executed_with(min=True)),
+        ("preconditions written as one string rather than a list",
+         "executed.requires",
+         _an_executed_with(requires="a-store-the-run-creates")),
+        ("a precondition entry that names nothing",
+         "executed.requires[1]",
+         _an_executed_with(requires=["a-store-the-run-creates", "  "])),
+        ("a floor written as something merely equal to one",
+         "executed.min", _an_executed_with(min=1.0)),
+        ("a floor stated beside the carrier that judges nothing",
+         "executed.min", _an_absent_executed_with(min=40)),
+        ("a command stated beside the carrier that runs none",
+         "executed.declares", _an_absent_executed_with(declares="a-command")),
+        ("a precondition stated beside the carrier that names none",
+         "executed.requires", _an_absent_executed_with(requires=["a-store"])),
         ("a type the branch-prefix map does not cover",
          "work_item.type_branch_prefix.epic", _a_type_with_no_prefix),
         ("a template keyed to a type the project cannot assign",
@@ -2256,6 +2408,57 @@ def _an_e2e_register_with(**overrides):
                 "judged": ["a-judged-tree"],
             }
         )
+        node.update(overrides)
+        return data
+
+    return mutate
+
+
+def _an_executed_with(**overrides):
+    """§ 16's facet carried, with one key replaced.
+
+    Written out rather than borrowed from whichever example states the facet,
+    for the reason stated one fixture up: the conditional markers refuse a
+    *missing* `declares` or `reports` before any shape rule is reached, so a
+    plant that broke one key of a borrowed block would redden on whatever the
+    borrowing left out. ⚠️ `min` is deliberately absent from the base, since two
+    of the plants above are about what a stated floor may be and a base carrying
+    one would have each of them mutate a value rather than introduce it. ⛔ That
+    leaves the **accepted** floor planted nowhere here, and what holds it is the
+    arm that loads every example: the one carrying the facet in full states
+    `min: 1`, so a refusal that caught the legitimate value would redden there.
+    """
+
+    def mutate(data: dict) -> dict:
+        node = data.setdefault("executed", {})
+        node.clear()
+        node.update(
+            {
+                "carrier": "command",
+                "declares": "a-command-printing-a-count",
+                "reports": "a-command-printing-a-run",
+            }
+        )
+        node.update(overrides)
+        return data
+
+    return mutate
+
+
+def _an_absent_executed_with(**overrides):
+    """§ 16's facet stated absent, with one key written beside the absence.
+
+    The other half of the facet's shape rules: the block above is reached only
+    under `carrier: command`, so these plants are what hold the arm that refuses
+    a value beside a stated absence. ⛔ Without them the one value § 16 says a
+    reader refuses rather than silently accepts loads clean on every project
+    whose carrier is `none`.
+    """
+
+    def mutate(data: dict) -> dict:
+        node = data.setdefault("executed", {})
+        node.clear()
+        node.update({"carrier": "none", "absent_reason": "a stated reason"})
         node.update(overrides)
         return data
 
