@@ -198,7 +198,7 @@ public artifacts cited as evidence — the plugin cited as
 [prior art](docs/configuration-surface.md#prior-art), and the published practice the
 [window-as-a-resource measurements](docs/configuration-surface.md#the-window-is-a-resource-the-loop-spends)
 are drawn from — each an artifact rather than a project in scope. Nothing under a carrier root
-carries a value — which since the reply-register hook means the hooks root as well as the skills
+carries a value — which since the reply hook means the hooks root as well as the skills
 one.
 
 That is a **search** rather than a reading of the procedure, and the search is the check:
@@ -268,14 +268,11 @@ figure appears above: a number a reader cannot check is asserted at them rather 
 
 ⚠️ The register [§ 8](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role)
 fixes is a **reply's**, and it forbids exactly this one — persuasive, for an artifact whose reader
-a project does not choose. This page's reader is chosen, so that register does not reach it. What
-does reach it is the
-[floor](plugins/mjolnir/config/schema.md#the-floor-under-prose-a-role-writes-into-a-file) under
-every file: three properties of the text that hold whatever register is chosen over it, and a page
-written to persuade can carry all three.
+a project does not choose. This page's reader is chosen, so that register does not reach it.
 
-Both halves are a convention of this repository and not a rule of the procedure: the README is not
-one of the artifacts § 8's `artifacts` map names, and no check holds either half — stated with the
+That register is a rule rather than a check, and nothing mechanical reads it: a page's prose is
+held by whoever writes it. The one thing a check does hold over a role's output is that no work is
+named and left undone, which is a property of the work rather than of the writing — stated with the
 gate's other limits in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#what-it-deliberately-does-not-check).
 

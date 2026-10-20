@@ -1,0 +1,39 @@
+name: Reply defers nothing
+
+# The first rule reaches a role's reply, and the reply is the one artifact no later gate reads —
+# no commit, no body, no thread, so work named there and not done escapes every check after it.
+# That is held in the session by a `Stop` hook, the only place a finished reply exists. So what a
+# gate can hold is the checker and its wiring: that the arm still reddens on each parking form it
+# was written for, that each carved sense stays green, and that the carrier still calls this
+# script on the event carrying a reply. A hook whose check has quietly stopped firing, or which is
+# no longer called at all, reports green on every reply — the failure this run catches.
+#
+# ⛔ **No property of prose is held here, by the ruling of 2026-10-20**: style is a rule the
+# surface states and a session loads, never a check. What this run holds is unfinished work.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the
+# project controls its workflows, because a `host.checks` entry states one mirrored command.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: the checker reads files in the tree and reaches nothing.
+permissions: {}
+
+jobs:
+  reply-defers-nothing:
+    name: Reply defers nothing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, planted violations first — and the same string `host.checks`
+      # states this run mirrors. ⚠️ Held together by eye and not by a check, since nothing
+      # here reads a workflow file. That is #49.
+      - name: Assert the arm can fail, then hold the carrier to the surface
+        run: python3 plugins/mjolnir/scripts/check_reply_defers_nothing.py --self-test

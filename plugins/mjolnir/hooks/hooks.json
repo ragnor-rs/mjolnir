@@ -20,9 +20,9 @@
           {
             "type": "command",
             "command": "python3",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/check_reply_register.py"],
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/check_reply_defers_nothing.py"],
             "timeout": 10,
-            "statusMessage": "Holding the reply to its register"
+            "statusMessage": "Holding the reply to leaving no work unfinished"
           }
         ]
       }

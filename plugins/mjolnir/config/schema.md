@@ -291,31 +291,24 @@ mechanism.
 resolvable thread from a plain comment, a finding is posted as the first: a comment nothing can
 mark resolved is an item no gate can see, and an item no gate can see reads as resolved.
 
-⛔ **It reaches a role's own reply, not only its work item.** A finding raised against a reply —
-by a check the loop runs over it ([§ 8](#the-reply-to-the-person-running-a-role)) or by the person
-reading it — is corrected in the same turn, in whichever of the two shapes the next paragraph
-gives. *The next reply will hold* is this rule's smallest violation: the reader is told the defect
-is there and handed it anyway, and a guard that cannot force the correction has still named one.
+⛔ **It reaches a role's own reply, not only its work item.** Work a reply names and the turn does
+not do is this rule's cheapest violation — no commit, no body, no thread, so every gate after it is
+green over work that was named once in a session and never again. *The next reply will hold* is the
+smallest form of it: the reader is told the defect is there and handed it anyway.
 
-⛔ **The correction is as small as the finding, and no smaller.** A finding that names a span is
-answered by that span and its replacement, and the reply is **not** sent again; a finding about the
-reply as a whole — the opening it is framed by, a texture spread through it — is answered by the
-reply, because there is no span to name and a correction cannot be smaller than its defect. ⚠️
-**Where both are raised at once the reply comes back**, the span fixes carried inside it: that is
-the dearer of the two and the direction to err in, since the reverse leaves the whole-reply defect
-standing.
+⛔ **And the correction is the work, never the text.** A finding against a reply is answered by
+doing what the reply named, in the same turn, under the current branch, pull request and item — or
+by asking the one question that blocks it, in the form this section already gives. The reply itself
+is not rewritten and no span of it is replaced: the sentence that named the work stands, and what
+comes back is what the work did.
 
-⛔ **And where the reply does come back, corrected is the finding fixed with the rest of it as it
-stands.** A reply rewritten around the fix costs the reader the one thing a re-read gives — seeing
-what moved — and loses what the first reply carried with nothing saying so.
-
-⚠️ **Both halves are measured, and the second measurement is what the first rule above rests on**:
-a restatement answering one finding returned most of its prose lines unchanged, one answering a
-finding beside it that asked for nothing returned almost none of them and dropped a question the
-first reply had put to the person — and then a restatement that obeyed the bound perfectly, all but
-one line of it identical, still charged its reader the whole reply to show them one clause. ⛔ **So
-the bound on a restatement is not a substitute for not asking for one.** The figures are recorded
-beside the check that holds this, where [§ 8](#the-reply-to-the-person-running-a-role) points.
+⚠️ **That is measured rather than preferred, and what it replaced is the measurement.** A check
+holding this over a reply once asked for the parked span and its replacement, and the cheapest
+compliant answer to *replace this sentence* is to delete the sentence naming the parked work — the
+finding's own evidence rather than its subject. Over that check's whole record, three real parkings
+were caught, three sentences were rewritten, and no work item moved. ⛔ **So no rule here bounds the
+length of a correction**, because no correction here is prose: a bound on a restatement was the
+shape that produced those three, and the figures are recorded beside the check that holds this.
 
 **The narrow exception is separate work.** Work that genuinely belongs to a **different** outcome
 is a separate numbered item, filed before the merge and linked from it. ⛔ **The test is whether
@@ -1255,14 +1248,24 @@ the Length row names it rather than naming a limit.
 varies by who is speaking rather than by project, so nothing configures it and no role derives it
 from the repository.
 
-⛔ **A role does not hold its own reply to this by reading it back before sending it.** The writer
-judging its own register at the time of writing is the mechanism being replaced, not the one being
-specified: the properties above are held by a check over the reply the role actually produced,
-reported to the session rather than to a file. Which of them are held mechanically, which are
-reported without being held, and which are left to a reader are stated once in
-[`docs/single-source-of-truth.md § The reply's register`](../../../docs/single-source-of-truth.md#the-replys-register-held-in-the-session-not-on-the-gate)
-— beside the gate's own checks and under the same discipline, because an unstated limit reads
-later as coverage.
+⛔ **This table is a rule, and nothing mechanical reads it.** A role holds its own reply to it by
+having read it — which is why it reaches the session before the writing does, rather than being
+checked after. ⚠️ **That is the reverse of how it was first built, and the reversal is measured.**
+A check held six of these rows over finished replies for three days: the arms that reported never
+reached the writer at all, and the arms that handed a turn back bought a second reply each. Over
+thirty hand-backs it was right three times, and all three were the Completeness row. The record is
+[`docs/single-source-of-truth.md § The reply defers nothing`](../../../docs/single-source-of-truth.md#the-reply-defers-nothing-held-in-the-session-not-on-the-gate).
+
+⛔ **The Completeness row is the one exception, and it is not a style rule.** Work a reply names and
+the turn does not do is an act rather than a property of prose, so it is held by a check in the
+session — [§ Nothing is deferred](#nothing-is-deferred)'s, not this section's. Every other row is
+read by nothing and enforced by being known.
+
+⛔ **So no check in this toolkit judges a register, an emphasis, a hedge or a length — on a reply,
+on a document, or on a comment.** A machine deciding whether prose is any good was tried on two
+artifacts and retired from both; what a project configures under this section is read by the roles
+that write, and by no gate. ⚠️ **The wrapping below is the one property still held mechanically**,
+and it is held as a column rather than as a judgement.
 
 ### Prose line width
 
@@ -1313,47 +1316,6 @@ Whether a project holds this mechanically is the project's own business, as with
 surface states. This repository holds it on the gate, and what that check does not reach is stated
 with it in
 [`docs/single-source-of-truth.md § Prose line width`](../../../docs/single-source-of-truth.md#prose-line-width-held-on-the-gate-for-files-and-nowhere-for-bodies).
-
-### The floor under prose a role writes into a file
-
-A document, a skill and the prose inside a script are artifacts like the day log, with one setting
-more: the language is `language.repo`, the wrapping is the subsection above, and the register and
-the audience are a project's to nominate through the `artifacts` map. ⛔ **Three
-properties of that prose are a floor underneath whichever register is nominated, and they are
-procedure.** Each is a row of [the reply's table](#the-reply-to-the-person-running-a-role) and is
-named rather than restated here; what makes the three of them a floor is that none describes who
-is reading — a nominated reader is owed them exactly as the person running a role is.
-
-| Property | What a file is held to | The unit it is read over |
-|---|---|---|
-| Restatement | The decidable corner of the Length row's *padding*: words repeated off a document this file cites, where citing it was the whole reason to name it | a run of words, against that document |
-| Emphasis | The Emphasis row | one paragraph |
-| Uncertainty | The Uncertainty row | one paragraph |
-
-⛔ **The unit is a paragraph where the reply's is the whole artifact**, and the difference is how
-the two are read: a reply is met once, from the top, while a file is entered at a heading and read
-from there. A density taken across a document averages its one textured passage against every
-plain paragraph around it, so the row read file-wide holds nothing.
-
-⚠️ **Padding beyond that corner is a reader's**, and the Length row's other half — compression —
-is left to one here as well. Both are judgements about whether a sentence earns its place, which
-is what the first clause of that row protects; the corner above is decidable because the
-repository's own authority rule already says which of two statements of one fact is the spare one.
-
-⛔ **A comment is prose this floor reaches where it stands on its own lines, and annotation where
-it rides on a line of code or data.** The subsection above reaches no file that is not markdown
-and gives two reasons for it — a line's width belongs to the language, and a comment beside a line
-of data annotates that line — and neither decides a block that a reader reads straight through. So
-the test is that path through the text, not the file's extension: a comment block of more than one
-whole line is prose, and so is a docstring, while a trailing comment and a lone comment line are
-read with the statement they sit against.
-
-⛔ **The floor binds prose written after it is set**, which is the carve-out the width above
-carries and for the same reason, so nothing here asks for a tree to be repainted.
-
-This repository holds the three mechanically, each in the one corner a check can reach, and what
-is left to a reader is recorded with them in
-[`docs/single-source-of-truth.md § The floor under file prose`](../../../docs/single-source-of-truth.md#the-floor-under-file-prose-held-on-the-lines-a-change-adds).
 
 ## 9. Day log
 

@@ -74,17 +74,11 @@ host:
     - workflow: "Port contract"
       mirrors: "python3 plugins/mjolnir/scripts/port.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
-    # ⚠️ No `push -> main` arm, and the reason is the one the `No audit trail` entry gives: a
-    # check that reads the lines a change adds needs a merge base, and the integration branch has
-    # none. Stated with the check, in docs/single-source-of-truth.md.
-    - workflow: "Prose register"
-      mirrors: "python3 tools/check_prose_register.py --self-test"
-      triggers: ["pull_request -> *"]
     - workflow: "Prose width"
       mirrors: "python3 tools/check_prose_width.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
-    - workflow: "Reply register"
-      mirrors: "python3 plugins/mjolnir/scripts/check_reply_register.py --self-test"
+    - workflow: "Reply defers nothing"
+      mirrors: "python3 plugins/mjolnir/scripts/check_reply_defers_nothing.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Single source of truth"
       mirrors: "python3 tools/check_single_source.py --self-test"
@@ -290,6 +284,6 @@ environment:
   #
   # ⛔ Names only. Two paths every command needs, the temp root `day_log.out_dir` and
   # `context.artifacts.dir` are written under, and the two the harness substitutes into a carrier —
-  # the plugin's own location, and the per-user directory the reply-register hook keeps its
+  # the plugin's own location, and the per-user directory the reply hook keeps its
   # one-hand-back marker in.
   inherits: [PATH, HOME, TMPDIR, CLAUDE_PLUGIN_ROOT, CLAUDE_PLUGIN_DATA]

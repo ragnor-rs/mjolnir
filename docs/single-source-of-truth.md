@@ -42,17 +42,12 @@ own `No audit trail` workflow and its own `host.checks` entry, and is recorded i
 scope is a **diff** rather than a tree — the rule's own carve-out leaves the past alone — which it
 shares with the gate above, as it shares having no `push` arm.
 
-`tools/check_prose_register.py` holds three properties of the prose a change writes into a file,
-under whichever register the project nominates for it. It has its own `Prose register` workflow and
-its own `host.checks` entry, and is recorded in
-[its own section](#the-floor-under-file-prose-held-on-the-lines-a-change-adds) below. ⚠️ It is the
-one that stands up nothing of its own: the diff and the merge base come from the check above it and
-the word lists from the one below, so what is written in it is the grammar neither of them has.
-
-`plugins/mjolnir/scripts/check_reply_register.py` holds the register of a role's reply, and it is
-the one here that does not run on the gate at all. It is in
-[its own section](#the-replys-register-held-in-the-session-not-on-the-gate) too, and for the same
-reason: whatever holds a claim here states what it leaves alone. ⚠️ No count of these scripts is
+`plugins/mjolnir/scripts/check_reply_defers_nothing.py` holds that a role's reply names no work the
+turn does not do, and it is the one here that does not run on the gate at all. It is in
+[its own section](#the-reply-defers-nothing-held-in-the-session-not-on-the-gate) too, and for the
+same reason: whatever holds a claim here states what it leaves alone. ⚠️ **A sibling that held
+three properties of file prose was retired on 2026-10-20**, with the ruling and the measurement
+recorded in [§ The file-prose floor, retired](#the-file-prose-floor-retired). ⚠️ No count of these scripts is
 written down, here or anywhere — a count in prose is a copy, and three open changes were each
 adding themselves to this document as "the third" when it was.
 
@@ -491,7 +486,7 @@ exempted the whole directory and so would have read straight past it.
   documents *don't* contain, and the counts carry the argument instead.
 - **A language interpreter.** `python3` is on no list, and the strict set carries live instances
   of one: a configured script run under it in the day-log skill, and the hook carrier that calls
-  the reply-register check. ⚠️ Whether a configured script is a path the procedure prefixes with
+  the reply check. ⚠️ Whether a configured script is a path the procedure prefixes with
   an interpreter, or a command the procedure merely runs, is
   [#65](https://github.com/ragnor-rs/mjolnir/issues/65)'s and
   [#66](https://github.com/ragnor-rs/mjolnir/issues/66)'s ruling about what configuration carries.
@@ -545,7 +540,7 @@ exempted the whole directory and so would have read straight past it.
   role that does not exist. ⛔ **The key is exempt and not the file and not the value beside it**,
   both measured, and the exemption is asserted to stay green while disabling it reddens.
 - **Most carrier roots are empty, and the run still exits 0.** The shapes that match a file today
-  are the skills root and — since the reply-register hook — the hooks root; the hooks that enforce
+  are the skills root and — since the reply hook — the hooks root; the hooks that enforce
   the *loop* are still [#16](https://github.com/ragnor-rs/mjolnir/issues/16), and the command
   carrier belongs to whichever project migrates with one. ⚠️ No number is given here, for the
   reason the plant counts are not: the run prints its own, and a count in prose goes stale green.
@@ -702,7 +697,7 @@ there has it backwards.
 ⚠️ No count of the scripts is carried here. The two above hold a document claim and are what this
 document was written for; the rest hold a module, a shape or a rule — the configuration reader
 `plugins/mjolnir/scripts/config.py`, whose own checks are its work item's; the prose-width sweep,
-which reads the same documents and holds none of their content; the reply-register hook recorded
+which reads the same documents and holds none of their content; the reply hook recorded
 two sections on; and the port contract recorded in this one. Each carries its own workflow and
 its own `host.checks` entry, for the reason the sweep above does: one entry states one mirrored
 command.
@@ -895,402 +890,88 @@ whatever it finds deletes somebody else's work.
   recoverable the guard does not run, and the ref name is the whole of the claim again — which is
   the pre-derivation behaviour and is recorded here rather than reported as covered.
 
-## The reply's register: held in the session, not on the gate
+## The reply defers nothing: held in the session, not on the gate
 
-The surface fixes the register of the reply a role writes in the session, as procedure with no
-per-project setting —
-[schema § 8 → The reply to the person running a role](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role).
-⛔ That rule had to be held by something other than the writer, because a writer judging its own
-register while writing is the mechanism it replaces, and the honest-looking version of the defect
-is the one that survives review.
+`plugins/mjolnir/scripts/check_reply_defers_nothing.py`, on a `Stop` hook, holding
+[schema § Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred) over one
+artifact: the reply a role writes in the session.
 
-**A gate cannot hold it, and that is not a limitation of this repository's gate.** A reply is not a
-file; it exists in a session and nowhere a workflow can read. The harness's `Stop` event is the one
-place the finished reply is available, and it hands the text over directly, so
-`plugins/mjolnir/hooks/hooks.json` is the carrier and
-`plugins/mjolnir/scripts/check_reply_register.py` the implementation it calls — the division
-`config.py` already has, and the reason the hook script is classified rather than strictly swept.
+⛔ **One arm, and it holds no property of prose.** Work the reply names and the turn does not do.
+Every other property of a reply — its opening, its length, its register, its emphasis, how it
+states uncertainty — is a rule
+[§ 8](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) states and a
+session reads, and no check in this tree reads one.
 
-| Property | What is checked | Kind | A finding |
-|---|---|---|---|
-| Opening | The first line carrying the reply's own words is not one of a closed set of preamble forms | forbidding | **blocks**, once per turn |
-| Length | No text is compressed into an arrow chain — two arrows sharing an operand, with no clause between them | forbidding, over a density | reports every chain; **blocks** where compression is the texture, once per turn |
-| Emphasis | Emphasised spans against the reply's own prose line count | computed | reports |
-| Register | A closed list of dramatic words, and exclamations, over a density | forbidding, over a density | reports |
-| Uncertainty | A closed list of hedges, over a density | forbidding, over a density | reports |
-| Completeness | A closed list of parking forms — work promised, offered, or excused rather than done | forbidding | **blocks** on one span, once per turn |
-| Structure | — | — | nothing; see below |
+**Why a hook rather than the gate.** The reply is the only artifact the loop produces that no later
+check ever reads: no commit, no body, no thread. Work named there and not done is green everywhere
+downstream, which is the escape route every measured violation took. And a `Stop` payload is the
+only place a finished reply exists — the harness hands over `last_assistant_message`, so nothing
+parses a transcript.
 
-**What blocks, and what a hand-back costs.** A finding blocks where it is a fact about the text
-*and* worth what handing the turn back costs — which is a correction the person reads, and was the
-whole reply a second time until the measurement four paragraphs down. ⚠️ Measured on the four
-hand-backs
-this check had recorded on 2026-10-20, in projects with this plugin enabled and no configuration of
-their own: thirteen of twenty-one prose lines came back byte for byte in the first, eight of
-thirteen in the second, and the third brought back a reply whose second pass also dropped a
-file-and-line citation the first had carried. Each paid that for two reworded clauses. ⛔ **Three
-of the four were paid for a defect that was not there**, and all three came from matching a bare
-token — a pair of arrows with a clause between them in the first, a ruled word in a sense that
-parks nothing in the second, and the same ruled word in the first person in the fourth, which the
-third narrowed the others without reaching. Nothing in the first shape of this check accounted for
-that price.
+**What the hand-back is.** `decision: block` with the findings as `additionalContext`, which the
+harness's documented contract makes the field the writer reads back; the `reason` beside it is shown
+to the person. ⚠️ **It blocks at most once per turn**, keyed on the harness's own `prompt_id` under
+`CLAUDE_PLUGIN_DATA`, because a hook that also blocked the answer would hold the session open on a
+judgement a forbidding check cannot make. A payload naming no turn cannot be guarded, and that is
+**reported rather than treated as a spent hand-back**, naming which half could not be established.
 
-⚠️ **The fourth arrived on the same day as the change that narrowed three of the four ruled forms,
-after that change had landed**, so the figure above states the date it is true of rather than that
-day's end: a count stated over a window whose end the reader cannot see keeps growing after it is
-written.
+⛔ **It asks for the work and never for text** — the form
+[§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred) states, and the
+correction this check cost most to learn. Two asks preceded it — the parked span and its
+replacement, or the reply re-sent — and both were answered as written: the cheapest compliant
+answer to *replace this sentence* is to delete the
+sentence that named the parked work. Over the whole record three real parkings were caught, three
+sentences were rewritten, and **no work item moved**.
 
-⛔ **What a restatement in fact returns is measured over every hand-back this check has recorded**,
-rather than over the four read by hand, since what
-[§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred) charges for a
-finding on a reply is this: 41 hand-backs, across nine projects' transcripts, from 2026-10-17 20:59
-to 2026-10-20 13:04 — the end stated as a time rather than a date because one more arrived while
-this was being written. A restatement answering the blocking finding alone brought back **167 of
-307 prose lines byte for byte**; one answering a reported density alongside it brought back **71 of
-300**. On the *Completeness* arm alone, where the blocking finding is a single span either way, the
-same split is 128 of 213 lines against 50 of 193. ⚠️ **What did not come back unchanged came back
-reworded rather than dropped**: 263 of those 307 lines have a counterpart in the restatement that
-says the same thing in different words, which is what costs the reader a second reading of a reply
-they had already finished.
+### What the record says, measured 2026-10-20
 
-⛔ **So a reported finding was asked for after all, on every turn where something else blocked** —
-against the division
-[§ 8](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) is held to here,
-which is that only an asking answer spends a re-read. The answer listed both kinds under one ask,
-and context handed back on a `Stop` is read by the writer whether or not the answer blocks, so the
-one price the reporting kind was changed to stop paying was charged again by any turn carrying one
-finding of each. ⚠️ **Half the hand-backs are that shape**: 29 of the 57 replies this arm hands
-back, over the corpus the section below states, carry a reported density too. Measured on the reply
-it was found on — one parked sentence blocking, an *Emphasis* density of 15 spans reported beside
-it — the restatement came back with 2 emphasised spans, **1 of its 14 prose lines byte for byte**
-and 9 carrying a reworded counterpart, and it dropped one of the two questions the first reply had
-put to the person. A question lost in a restatement is visible to nobody: the corrected reply is
-what the person reads, and it is green.
+Over every session store of this project, 358 fires of this check and its predecessor:
 
-⛔ **Two things change, and neither is which findings block**, both under
-[§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred). The ask is
-addressed to the findings that block it, with a reported one named *after* the sentence that asks
-and under a line saying it is not what the correction is for. And what **corrected** means is
-stated on the surface, in the section cited above, rather than reproduced here. ⚠️ **The second is
-measured on a
-hand-back that carried no density at all**: one parked clause blocked, the writer did the work the
-clause had offered, and the reply came back with 3 of its 9 prose lines byte for byte and a
-reworded counterpart for all nine — so the rewording is not the density arm's doing, and bounding
-the ask alone would not have stopped it. ⚠️ **The bound is prose asked of the writer and held by
-nothing**: the self-test holds every asking answer to carrying one of the two asks, and nothing
-compares a correction to the reply it corrects. Stated because an unstated limit reads later as
-coverage.
+| answer | fires | what followed |
+|---|---|---|
+| green | 265 | the turn ended |
+| reported, `systemMessage` only | 64 | the turn ended, 64 of 64 |
+| handed back | 29 | a further reply, 29 of 29 |
 
-⛔ **The bound held, and the duplication did not go away** — which is the measurement behind what
-[§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred) now says a
-correction is. The first hand-back after it was answered exactly as asked: of
-the reply's 16 prose lines, **15 came back byte for byte**, one changed, and 226 characters
-differed. The reader read **2,918 characters** a second time to be shown those 226, and reported
-the same complaint that opened this section. ⚠️ **A diff is what makes a corrected re-send cheap,
-and a session has none**: the terminal renders both replies in full, so a restatement costs its
-reader the whole page whatever share of it is identical. Four hand-backs were reported as
-duplication before this was read, and the bound improved three of them without closing one.
+⚠️ **Of 30 recorded hand-backs, 3 were true**, and every one of the three was a single form — an
+offer standing in for the work. 17 fired on an emphasis density and 2 on a single arrow chain, both
+arms this project had already demoted; of the 11 parking hand-backs, 7 were false and 1 unreadable
+from its span. ⚠️ **Four of the seven false reds were cascades** — a reply *about* this check
+reddening on this check's own vocabulary, which makes working on this rule the activity most likely
+to produce one.
 
-⛔ **So the correction asked for is as small as the finding**, which is
-[§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred)'s rule, held here
-by the reach each blocking arm declares. A finding that names a span — a parked clause, a preamble
-opening — asks for that span
-and its replacement and forbids the reply being sent again; compression as the reply's *texture*
-asks for the reply, having no span to name. ⚠️ **A mixed answer asks for the reply**, the span
-fixes carried inside it, which is the dearer price and the safe direction. The two asks are two
-strings, and `--self-test` holds every asking branch to carrying exactly one of them, each arm to
-declaring a reach, and the person's own line to naming which was asked for — that last written
-after a break that reverted it and reddened nothing.
+⚠️ **`systemMessage` never reaches the writer.** Probed directly rather than inferred: a hook
+emitting a random token in that field alone fired, wrote both a `hook_success` and a
+`hook_system_message` entry to the transcript, and the next turn could not name the token. So a
+reported finding is a line to the person and nothing else, and an arm that only reports changes no
+text. ⛔ The matching claim for `additionalContext` is the opposite and is measured the same way:
+every summary carrying it recorded `preventedContinuation: false` and every one was followed by a
+further reply, so **injecting context costs a reply whether or not the answer blocks**.
 
-- **Opening** blocks on one instance. It is the first thing read and the frame for everything under
-  it, and a preamble form is a phrase rather than a judgement.
-- **Length** reports every chain it finds and blocks only where the count is over a density of the
-  reply's own prose lines: compression as the reply's *texture* rather than one line to restate. One
-  chain is told to the person and asks the writer for nothing. ⚠️ That density is not the weakness
-  the three below have — what it counts is a form the text either carries or does not, so the
-  threshold decides whether a re-read is warranted rather than standing in for the rule.
+### What it deliberately does not hold
 
-- **Completeness** is the one row here whose rule is not § 8's: it holds the reply to
-  [schema § Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred), the
-  surface's first rule, which already says that rule reaches a role's own reply. It blocks on a
-  single span, which no other arm here does, and the price is deliberate: the alternative is the
-  person reading parked work and having to say so, which is the thing the rule exists to spare
-  them. ⚠️ **It shares the closed-list weakness of *Register* and *Uncertainty* and does not share
-  their verdict** — a reworded parking passes, and what covers that is the reader, as it did
-  before. The difference is what a hit means: a dramatic word is a tone, while a parking form is an
-  act, and an act is worth the re-read a tone is not.
-- ⚠️ **Four of its forms are named by a ruling rather than derived, and all four are matched only in
-  their parking senses** — the second half by a ruling of the same date, 2026-10-20, reading the
-  measurement below. A bare match hands a turn back over text that parks nothing, which is the
-  re-read above paid for a finding that is not there, so what each form is matched in is the
-  writer's **own** absence: an omission excused rather than filled, a section of work the reply
-  carries rather than does, a gap stated in place of being closed.
-- ⚠️ **The premise the first three were left bare on failed the next day.** They were held to be
-  distinctive enough that a reply has no other use for them, and each is in fact this repository's
-  own vocabulary for a mechanism: `deliberately` records a design intent, in nine of this document's
-  own section headings and in § 4's word for a facet nobody configured; `open items` is what
-  § Nothing is deferred's gate counts on a change; and `stated plainly` is § 8's Uncertainty row and
-  the text of this check's own finding for it, so a reply relaying this check reddened on it. ⚠️ The
-  first of the three is **measured on a reply** and the other two are **demonstrated against the
-  shipped check** — a sentence this repository writes by the dozen, run through the arm — rather
-  than waited for. `left` has that carve-out for the bare word, which is ordinary English for what
-  a process or a merge did — *three trees left behind*.
-- ⛔ **`left` had that carve-out in the third person only, and the first person was bare.** One of
-  its alternatives matched `I left` as a token, so the word was carved out for what a sibling
-  session did and not for what the writer did — and what a role's reply says about work it has done
-  is in the first person: *I left the tree and released the claim*, *I left a review comment on the
-  thread*. ⚠️ **Measured on the fourth hand-back**, on a reply reporting a file correctly left
-  unchanged, the same day the other three forms were narrowed. The green plant that was meant to
-  hold this carve-out asserted a sibling session's tree rather than the writer's own sentence, so it
-  could not reach the alternative that was bare: a form is only carved out in the person its plant
-  is written in. The first person is now read with the parked state it leaves behind — *left the
-  second arm unfixed* — over the same bounded gap `stated plainly` is read across.
-- ⛔ **The rest of this arm's false reds were measured over the corpus rather than waited for.**
-  Each of the four narrowings above was paid for by a hand-back first, which is one false red per
-  re-read, so the fifth was found by running the arm over the artifact it holds: **2,713 finished
-  replies** in this project's own session transcripts, every assistant message carrying text and no
-  tool call. 99 spans matched, across 27 distinct forms. ⚠️ **The majority are the acts the rule is
-  for** — 39 are `say the word`, and the rest are offers, a section of work named and not done, and
-  a figure asserted to stand — which is the result that makes the arm worth having. Four forms
-  carried a second sense this repository writes constantly, and each is now read around the match:
-  a heading of another artifact cited in double quotes, where a code span and a block quote were
-  already carved out; an absence stated, which is what the rule asks for; § 10's own instruction to
-  a role that cannot delete the tree it stands in, *say what is left to remove and where*; and a
-  scope stated by declaration. ⚠️ **Two words are excluded from the parked state the word is read
-  with, on that same measurement**: *on the same unresolved threads* is how a review's red runs are
-  reported here, and *left untouched* is how items that already carried a label are, so `unresolved`
-  and `untouched` match nothing, where `undone`, `unfixed`, `unaddressed` and `unfinished` do.
-- Three further senses the same sweep measured are carved out rather than recorded as costs, each
-  by the thing it names rather than by its wording: **work the surface reserves to the person**,
-  read with the clause that governs it — *it isn't my claim, so I haven't touched it*, *that
-  document is the close-out role's* — where the measured parking, *two things that follow, which I
-  haven't touched*, carries no such clause and stays red; **an artifact's own decisions described**,
-  read with its subject, where *the decisions the item left open* is the item's and *the two items I
-  left open remain open* is the writer's; and **§ 10's handover of what a role cannot do**, matched
-  by a closed list of what the surface reserves — the tree a session stands in, its branch, a
-  priority nobody may derive. ⚠️ A parking that names one of those in the same sentence passes,
-  which is this list's ruled direction.
-- ⛔ **A count of what an arm raises is counted through the arm, not off its pattern.** The first
-  measurement here counted raw matches, which reports spans the carve-outs already suppress and
-  flatters every one of them. Read through the whole pipeline — the quoted blanking, the negation,
-  the senses — this arm raises **62 spans and hands back 57 of the 482 replies** that end a turn, of
-  2,901 text-only assistant messages on 2026-10-20, where the shape it shipped in raised 99 over
-  every such message. ⚠️ What remains is the arm working: offers, a section of work named and not
-  done, a figure asserted to stand, and `say the word` 36 times over. ⛔ **Which replies those 482
-  are, and why the larger figure is not a hand-back rate, is the last entry under
-  [§ What this check deliberately does not hold](#what-this-check-deliberately-does-not-hold).**
-- ⛔ **One further carve-out was measured and rejected rather than shipped**, recorded so that it is
-  not proposed a second time as though it were untested. The hand-back that occasioned the
-  measurement above fired on `say the word` closing a reply that *had* asked its blocking question
-  with three options and their costs, so the asking sense was a candidate for the same narrowing the
-  four ruled forms got: the form read with a clause reserving the decision to the person — *your
-  call*, *the choice is yours*, *one decision I can't make for you*. ⚠️ **The corpus refused it.**
-  Of the 41 offer-form spans this project's replies carry, such a clause in the same line greens
-  exactly **one**, none carries one in the line before, and the one it greens offers to lay the
-  options out in a later reply, which is a parking in the shape of an ask. Read over the whole reply
-  instead it greens four more, and every one of them is an offer of work the reply had finished
-  without it: review threads nobody asked for, an assignee re-stamped, a delegated review pass, an
-  ignore entry. So the form stays matched in every person and sense, and what a hand-back on it
-  costs is bounded above rather than carved out here.
-- ⚠️ **One false red is kept rather than closed, and it is kept knowingly**: `deliberately absent`
-  is both the shape the ruling was measured on and § 4's own phrase for a facet carrying an
-  `absent_reason`, word for word, so a reply writing the second is handed back. Nothing lexical
-  separates them. ⛔ The direction the rest of the list errs in is the opposite one — a reworded
-  parking passes — and `deliberately not written`, which two documents here use to state a limit,
-  is excluded for that reason and misses a parking that would say it that way. The first-person
-  narrowing errs in that same direction and is stated here rather than left to be read as coverage:
-  *I left it alone* and *I left it unchanged* are a judgement as often as they are a parking, so
-  neither state is matched, and a parking worded that way is missed.
-- ⚠️ **Two of the sweep's own spans are the writer's to fix rather than this arm's**, and they are
-  named so that a later sweep does not read them as the arm's defects: a ruled phrase cited in
-  *emphasis* rather than in a code span is the writer's own voice by every convention here, so it
-  reddens and should have been written in backticks; and a column header reading `what is left`
-  over a count of a check's hits is a label whose sense nothing lexical separates from the parking.
-  One span each.
-- ⛔ **One of the forms is read with its answer rather than as a span**: a section of open items is
-  a finding where it lists any, and not where it answers `None.` — the same heading text and the
-  same answer the gate on the change's body holds that section to, so that a reply and a body
-  answering one question do not answer it in two conventions. ⚠️ Found in the change that narrowed
-  the rest: the heading alone had been a finding, which hands back a reply for carrying the very
-  answer the convention asks for.
-- Every form is planted in both directions, and the green plants are the sentences this repository
-  actually writes: the shape each ruled form was named for stays red, while a design intent
-  reported, a heading cited, a limit stated, the gate described, and this check's own finding
-  relayed are each asserted to stay green. ⚠️ **In both persons, where a plant in one person was
-  what let the first-person form ship bare**: the loop's own cleanup, a review comment left on a
-  thread, and a file reported correctly unchanged are each asserted green in the first person, and
-  the parked state the first person is now matched with is asserted red with and without an object
-  between the two words. ⛔ **Each carve-out the sweep added is planted with the sentence that was
-  in fact reddened**, and every one of them was verified by disabling the carve-out and watching its
-  plant go red — the direction a carve-out has to be established in, since a green plant passes
-  whether or not the mechanism it names is there. The negation carve-out carries a red plant too: a
-  parking after the negator's own clause ends, *I did not finish the second arm, so next steps*,
-  which is what keeps `nothing` from greening a reply that negates one thing and parks another.
-
-⚠️ **A chain is two arrows sharing an operand, and sharing is not a token count.** The first form
-read one or two tokens between the arrows as the shared operand, so
-`FRESH` or `OURS` → write; `CHANGED` → report — two mappings that share nothing — was read as a
-chain and handed a turn back. A clause between the arrows now says they are two mappings:
-clause-ending punctuation, a dash, or a coordinator. A dot inside a token ends no clause, so a chain
-of file paths is still a chain.
-
-The other three are weaker in two different ways, and neither weakness is a threshold alone.
-*Emphasis* is genuinely **computed** — a density derived from the reply's own length, so no word
-list can be reworded past it, but the density is a proxy for "as a default texture" rather than
-that rule. *Register* and *Uncertainty* are **forbidding** checks over closed word lists read at a
-density: ⚠️ a synonym that is not on the list passes, which is precisely the *quoting* weakness
-this document rules out elsewhere, and the lists cannot be completed because the thing forbidden
-is a tone rather than a name. So all three report and none blocks. ⚠️ The densities are
-deliberately not written down here — a number in prose is a copy that has to be kept in sync, and
-the run prints its own.
-
-**Blocking means handing the turn back, not refusing it.** The hook returns `decision: block` with
-the findings as `additionalContext`, which the harness's documented contract makes the field the
-writer reads back; the `reason` beside it is shown to the person instead. ⚠️ **It blocks at most
-once per turn**, keyed on the harness's own turn id under `CLAUDE_PLUGIN_DATA`, because a hook that
-also blocked the restatement would hold the session open on a judgement a forbidding check cannot
-make. A payload carrying no turn at all cannot be guarded, so a finding that would have been handed
-back is asked for anyway and the answer **says that it could not guard**, rather than returning the
-same answer as a turn that has had its hand-back. ⚠️ **The marker records a hand-back and not a
-fire.** While every answer asked for a restatement the two were the same event; once one of them
-stopped asking, a density first in a turn would have spent that turn's one hand-back and the
-blocking finding after it would have been told, falsely, that it had already had one.
-
-⛔ **What costs the reader the reply a second time is asking for it, and `decision` is not what
-decides that** — a statement about how
-[schema § 8 → The reply to the person running a role](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role)
-is held here, which is this document's half of that rule rather than the surface's. Context handed
-back on a `Stop` is read by the writer whether or not the answer also
-blocks, so for as long as every answer carried context, the two kinds in the table above were never
-the two prices they read as. ⚠️ Measured over the sixteen answers this check has carried context on,
-across thirteen sessions of a project with the plugin enabled: every one of them recorded
-`preventedContinuation: false` — the two that set `decision: block` included — and every one was
-followed by a further reply. Thirteen of the sixteen were a density that only reported, and fourteen
-of the sixteen were *Emphasis* alone. In the shape before this was read, those density answers
-closed on *the next reply is written knowing them* — a deferral stated by the guard that holds the
-rule against deferring, which a session obeyed with a promise in place of a corrected reply; in the
-shape after it, the one that fired brought the whole reply back for one line of bold.
-
-**So an answer that does not block asks the writer for nothing, and tells the person instead.** The
-findings reach whoever ran the role as the session message, named rather than counted, and the turn
-ends there — which is the whole of what `reports` costs in the table above. Two answers still ask,
-and both ask for the reply just sent to be corrected inside the same turn, because that is the
-reply carrying the findings and
-[*Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred) admits no deferred
-work: the turn that is handed back, and a finding that would have been handed back on a payload the
-guard could not be kept for. ⚠️ **What they ask to be sent is one of two strings** and not one
-shared by both, by the reach rule above: the corrected span, or the reply. `--self-test` holds each
-asking answer to carrying exactly one of them and to promising nothing about a later reply — and
-holds the other two to carrying **neither** and no promise either, because dropping the ask is a
-licence to defer unless what replaces it is silence towards the writer.
-
-⛔ **What either of those two answers asks for is the blocking findings, and a reported one rides
-along named as not that** — the two kinds of
-[§ 8](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role)'s table kept apart
-in the one place they are read. It is one list under the ask and a second after it, in that order,
-and `--self-test` asserts the order on both answers and on a composed reply carrying one of each
-kind: a reported finding ahead of the ask is a density asked for, which is the price the reporting
-kind exists to not pay. ⚠️ **The person is told both regardless** — the `reason` beside the context
-names the reported arms as reported, so a hand-back reports no less about a reply than the same
-reply would have been told on a turn where nothing blocked. ⛔ **No channel here reaches the person
-without reaching the writer**, which is why the bound is prose rather than an omission: the harness
-injects both the context and the `reason` into the session, measured on the transcript of a
-hand-back, so dropping a reported finding from the context would hide it from the person and leave
-it in front of the writer anyway.
-
-It derives what it can, for the reason the gate's own scripts do:
-
-| Derived, at run time | Hardcoded |
-|---|---|
-| the property list, from the first column of the register's own table in the surface | the anchor of the subsection that table sits in |
-| which properties are accounted for, by holding that list against the checks in both directions | the preamble forms, the chain form, the word lists and the densities |
-| the self-test's own plants against the surface, from the table it just parsed | the markdown table and heading grammar |
-| that the carrier still names this script, by reading `hooks.json` and resolving what it calls | the hook event's name, and the carrier's path |
-
-A property added to the register's table with no check and no stated reason for having none
-reddens `--self-test` at the moment the row is added. That is check 2's direction, one surface
-over — and it runs in the direction nobody remembers to check by hand, because the failure
-otherwise is a register that grew a clause and a hook that silently never held it. ⛔ Held and
-excused are kept apart rather than unioned: a property excused *in part* must still be held in
-part, so deleting the compression check does not leave the padding limit standing in for it. The
-same discipline reaches the carrier — `hooks.json` naming another script, another event, or
-nothing parseable at all leaves every check here green, so the gate resolves what the carrier
-calls and asserts it is this script. See
-[schema § 7](../plugins/mjolnir/config/schema.md#7-carrier) for the carrier axis itself.
-
-### What this check deliberately does not hold
-
-- **Structure.** Whether continuous prose was carrying enumerable facts is a judgement about the
-  facts and not about the text: the same paragraph is correct prose or a withheld table depending
-  on what it says. A reader covers it.
-- **The padding half of Length.** Whether a sentence earns its place cannot be computed, and a
-  length threshold would punish exactly the content the rule's own first clause protects. Only the
-  compression half is held — which is also the distinction the rule turns on: shortening by
-  selection against shortening by compression.
-- **A chain whose operand is repeated across a clause.** `open → closed; closed → archived` shares
-  an operand in meaning and is two mappings in form, and form is what a check reads. ⚠️ A finding
-  missed rather than a finding invented, which is the direction the one check here that still hands
-  turns back on a form has to err in.
-- **A reported finding, in the reply it was found in.** Nothing is asked of the writer, so the
-  reply the person has already read is the reply that stands. ⚠️ Measured on the same sixteen
-  answers: three of the thirteen sessions carried two, and in one of those both were the same
-  *Emphasis* density — the second after the first had been read and acknowledged in that session.
-  So the ask the arm used to carry did not buy compliance either, and what it did buy was the
-  re-read. ⛔ What is left unheld is a density that nothing fixes — stated plainly, because the
-  alternative measured against it was a whole restatement for one line of bold, and an arm that
-  costs nothing and holds nothing is not the same as one that holds something.
-- **Whether the reply was a role's at all.** The hook fires on every reply in a session where this
-  plugin is enabled, and nothing in a `Stop` payload says whether a role was running. So the
-  register is held more widely than the surface states it — in the safe direction here, and stated
-  because an unstated limit reads later as coverage. ⚠️ That direction is a property of this one
-  rule rather than of hooks, so what a hook reads in place of a role is
-  [#87](https://github.com/ragnor-rs/mjolnir/issues/87)'s to settle. It blocks nothing, and that is
-  a finding rather than an omission: a guard is correct whether or not a role is running — a build
-  slot contends regardless, and a check the host has already run for this code is wasted work
-  regardless — so every hook role [#16](https://github.com/ragnor-rs/mjolnir/issues/16) measures
-  keys on an event and a command, and passes its acceptance check without the ruling. The gap
-  belongs to a rule whose **scope** is the loop rather than a command, which today is only this
-  one. ⚠️ **The wider hold is where every hand-back has in fact been measured** — each of the three
-  was on a reply in a project carrying no configuration of its own, so the remedy an asking answer
-  names, work going under the current branch and pull request and item, named artifacts the project
-  had none of. That is an argument for the arm's precision rather than for its reach: a reply
-  answering a question about history owes no work, and nothing in the payload says so.
-- **Every reply but the last of its turn.** A `Stop` payload carries one message, the turn's final
-  one, so a reply the writer sends and then follows with a tool call is in no payload and is held to
-  nothing — and a turn ending in a tool call carries no final message at all, which the hook answers
-  with nothing rather than a guess. ⚠️ **It is most of the text a session produces.** Measured over
-  this project's transcripts on 2026-10-20: **482 of 2,901** assistant messages carrying text and no
-  tool call end their turn, and the other 2,419 are mid-turn text the hook never sees. ⛔ **The
-  larger figure is the one the parking arm's own counts above were taken over**, so it cannot be
-  read as a hand-back rate: five sixths of it could not have been handed back whatever the arm
-  found. The carve-outs it bought stand either way — a sense wrongly matched is wrongly matched
-  wherever the text sits — and the figures above are stated against the 482. ⚠️ **The restatement
-  this section measures is itself an instance**: it ended in a tool call, so the reply the hook had
-  asked for was never read by the hook that asked.
-- **A reply repeating one already sent in the same turn**, which is what the limit above leaves
-  open and is not closed by reaching for the transcript the payload names. ⚠️ **Measured, and the
-  measurement is why**: of 327 turns in this project's transcripts carrying more than one reply, 4
-  end on a reply that repeats at least half its prose lines from earlier in the turn, and 3 of those
-  4 are the restatement this rule asks for rather than a repetition nobody asked for. ⛔ **And the
-  one case this was measured on is invisible to any comparison of text**: a reply reported in full,
-  a question went to the person through a tool, and the reply after the answer stated the same facts
-  again in different words — every one of its five prose lines sits between 32% and 45% of its
-  nearest counterpart, where a restatement of the same reply sits above 60%. What repeats is the
-  content, which is the judgement *Structure* is already left to a reader for.
-- **Code, a quotation, and — for the emphasis density only — a table.** A fenced block, an
-  indented block and a quoted line are dropped from every check: they are not the writer's own
-  prose, and sweeping them produced false reds on a pasted traceback and on quoting the person's
-  own words back. Table rows are read by the word-list checks and **not** by the emphasis density,
-  because a bolded term in a cell is the shape the Structure row asks for. So emphasis as a
-  texture inside a table is held by nothing.
-- **A failure before this script is running.** The hook fails open and names itself, but only once
-  it has started: the harness's timeout, no interpreter on the path, or a syntax error in the file
-  produces no output at all, and nothing in the session then says the reply was held to nothing.
-  That residue cannot be closed from inside the hook, and what covers it is this run.
-- **Its own failure.** ⛔ The hook **fails open** and says so: an internal error answers with a
-  message naming itself, rather than with silence that reads as a reply in register, or with a
-  non-zero exit that would break every turn — the same absence-is-not-an-answer rule
-  [§ 2](../plugins/mjolnir/config/schema.md#2-code-host) states for the host's own runs.
+- ⛔ **Every property of prose**, which
+  [§ 8](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) states as a rule
+  nothing mechanical reads. Not the opening, the length, the register, the emphasis or the hedging
+  — on this artifact or any other. The ruling is 2026-10-20's and it is about what a machine
+  may judge at all: a density over a reply's own lines is a form rather than a judgement, and it
+  still answers a question about whether the prose is any good. Two artifacts were held this way and
+  both are retired; see [§ The file-prose floor, retired](#the-file-prose-floor-retired).
+- ⚠️ **A reworded parking.** The forms are a closed list, which is the quoting weakness this
+  repository rules out elsewhere, and it is safe in the one direction that matters: a parking the
+  list does not carry passes and leaves a finding missed, never a finding invented. What covers the
+  rewordings is the person reading the reply.
+- ⚠️ **Which role is running.** A `Stop` payload says nothing about it, so this holds every reply in
+  a session where the plugin is enabled rather than a role's. In the safe direction — more replies
+  held, never fewer — and the ruling is [#87](https://github.com/ragnor-rs/mjolnir/issues/87)'s.
+- ⚠️ **Whether the work actually got done.** The hand-back asks for it and the turn continues;
+  nothing here reads the tree afterwards to see that it did. What reads that is the gate on the
+  change, one artifact over.
+- ⛔ **Two false reds were fixed on 2026-10-20 and are planted in both directions**: the source
+  marker was matched case-insensitively, so the ordinary English `todo queue` reddened on a reply
+  reporting that queue *empty*; and a section of open items accepted one spelling of its answer, so
+  every statement of absence but the bare word reddened. Each fix carries a plant that must stay
+  green, **verified by reverting the fix** rather than by reading the pattern.
 
 ## Prose line width: held on the gate for files, and nowhere for bodies
 
@@ -1308,7 +989,7 @@ configuration and nothing else. The kind is **computed**, for that reason. A tre
 configuration carries no width makes the check hold nothing, and it says so and reddens rather
 than passing — the same rule the document checks apply to a glob that matches no file.
 
-⚠️ **It plants both sides, as the reply-register check does.** Violations that must redden — an
+⚠️ **It plants both sides, as the reply check does.** Violations that must redden — an
 overlong paragraph, an overlong list continuation, a tree with no width configured, a tree with
 nothing tracked, a tracked file it cannot read, a frontmatter marker that never closes — and one
 exemption plant per excluded kind, each of which must stay green. Each exemption was then verified
@@ -1355,129 +1036,25 @@ change that introduced them here.
   reading it — which no role does today, because the rule's reader is the writer of a document
   rather than a skill.
 
-## The floor under file prose: held on the lines a change adds
+## The file-prose floor, retired
 
-`tools/check_prose_register.py --self-test` runs in the `Prose register` workflow with no
-credential, and with the same network caveat the added-lines check below carries, from which it
-imports its base derivation. ⛔ The rule is
-[schema § 8 → The floor under prose a role writes into a file](../plugins/mjolnir/config/schema.md#the-floor-under-prose-a-role-writes-into-a-file),
-and none of it is stated here: what this section records is how far each of the three arms gets,
-and the measurement that decided each one.
+`tools/check_prose_register.py` held three properties of the prose a change wrote into a file —
+restatement of a cited document, hedging at a density, emphasis as a default texture — on the lines
+a change added. ⛔ **It is retired, by the ruling of 2026-10-20: style is a rule, not a check.**
 
-**What it reads.** Every tracked markdown file, and the prose inside every tracked file whose
-comments begin `#` — a script, a workflow, a configuration. ⛔ **The test is the rule's and the
-file's extension decides nothing**, which is why the set is not the scripts alone: the arms were
-written reading scripts and markdown, and the workflow added beside them in this same change was
-unheld while carrying thirty lines of exactly the prose they are for. ⛔ **On the lines the change
-adds**, which is the same carve-out and the same machinery as the check below: the diff, the merge
-base and the markdown prose grammar are imported from it rather than stood up again, and the word
-list and the emphasis grammar are imported from the reply's check. ⚠️ **The arms were measurable
-before they were held**, which is why no sweep of the tree is part of this: over this repository at
-`7584138`, 48 files carry 2,159 paragraphs the floor reaches, 4,337 of 15,315 lines of tracked
-Python are prose by its test, and the three arms find what the two paragraphs below record.
+⚠️ **Its position was better than the hook's and that did not save it.** Reading only added lines on
+`pull_request` costs no re-read and interrupts no turn, so none of the harm measured against the
+reply check applied to it. What applied is the ruling itself, and the measurement behind that is
+recorded once, in
+[§ The reply defers nothing](#the-reply-defers-nothing-held-in-the-session-not-on-the-gate).
 
-| Arm | What it reads | Kind | On a finding |
-|---|---|---|---|
-| Restatement | Runs of words an added line repeats out of a document the file cites, quotations, code and the cited document's own headings aside | computed | **reddens**, naming the run and its length |
-| Emphasis | Added prose lines in runs, against the position of each line's emphasised spans | computed | **reddens** where every line of a long enough run is marked past its opening |
-| Uncertainty | The reply check's hedge list, over one paragraph of added prose, table rows included | forbidding, over a density | **reddens** |
-| Every property of the floor is accounted for | The first column of the rule's own table | computed | **reddens** on a row with no arm |
+What the retirement removed: the check, its workflow, its entry in `host.checks`, and the subsection
+of [§ 8](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) that stated the
+floor. ⛔ **The reply's property table was kept whole** — under this ruling that table *is* the rule,
+so deleting a row would delete the thing being enforced.
 
-**Why a run of words is a sound end of the padding clause, where the clause itself is not.** What
-cannot be computed is whether a sentence earns its place — that is this repository's standing
-position, recorded two sections up for the reply and unchanged here. What can be computed is a
-narrower thing: this repository already holds that one fact has one home and that a document cites
-it, so prose that reproduces a dozen of a cited document's words in a row has a home for those
-words and is not it. ⚠️ **The arm is a copy detector and not a judge**: it says the words are in two
-places, and which copy should go is still a writer's call.
-
-⚠️ **The three numbers are set where this tree's own habit stops, and they live in the script.** A
-dozen words, because that is where repetition stops being a coincidence of English: run over the
-whole tree as though every line were added, the arm finds 155 such runs at a dozen words, 290 at
-ten and 88 at fourteen — so nothing about the figure is a cliff, and it is set where a reader would
-agree that two writers did not arrive there separately. Four lines for the emphasis arm, because
-**none** of the tree's 1,268 paragraphs of that length carries a marked span past the opening of
-every line, while the two that come closest are three lines long and are lists of defined terms.
-One hedge per paragraph, because 36 paragraphs here carry one, two carry two, and none carries
-three.
-
-⚠️ **The 155 are concentrated where the item that asked for this predicted they would be**: 22 in
-the reply-register check and 22 in the names sweep, both restating the document that records their
-limits, and 21 in the surface against 18 in the document explaining it — the two that cite each
-other. ⛔ Not one of them is refused by this change, because none is a line it adds; what they are
-is the evidence that the arm holds a habit rather than a hypothesis.
-
-⛔ **Emphasis is read past the opening of a line, and that is what keeps the arm off the shape the
-Structure row of
-[§ 8's own table](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) asks
-for.** A marked span that opens a line is a term being defined; a list of four such lines is four
-marked lines and is not a texture. Both readings were measured and they agree on this tree — the
-narrower one is what shipped, because an arm that hands back a build has to err toward the finding
-it misses.
-
-⚠️ **A table row answers to the word list and not to the density, which is the reply check's
-division and is taken from it by parameter rather than by retyping.** Found in review of this
-change: both kinds of arm had been given one unit, so a cell carrying two hedges was held by
-nobody while a table of marked-up cells would have read as a texture. ⛔ **And the green plant for
-that row exclusion lied once before it held** — with the header and the delimiter row counted as
-added, they joined the run carrying no emphasis, the arm answered *not every line*, and the plant
-passed with its own exclusion switched off.
-
-⚠️ **Each arm has a planted violation and the fixture asserts its own premises**, since a plant
-against a cited document proves nothing if the planted file does not in fact cite it: the run
-prints that every planted file — one per kind the sweep reads — resolves the planted authority, and
-that the sentence it restates is long enough for the arm to find. Every exclusion — the quotation,
-the code span, the fence, a section named by its title, the added-lines carve-out itself, and the
-two kinds of annotation — was verified by disabling it and watching its own plant redden. The
-carve-outs with nothing to disable are labelled omissions instead, as the check below labels its
-own.
-
-⛔ **One hole was found by a plant rather than by reasoning**, and it is the reason the docstring
-delimiter is dropped before anything else: read as text, a triple quote is an empty quotation
-followed by an opening one, so the quotation carve-out swallowed every docstring in the tree while
-the run reported green. A docstring is prose by
-[the rule's own test](../plugins/mjolnir/config/schema.md#the-floor-under-prose-a-role-writes-into-a-file),
-so that is the whole Python half held by nothing — and the plant for the habit the arm was built on
-stayed green until that line existed.
-
-### What this check deliberately does not hold
-
-- **The padding clause itself, and the compression half beside it.** Whether a sentence earns its
-  place is a judgement, and so is whether a passage was shortened by selection or by compression.
-  The surface says so; what is held here is the one corner of the first that the authority rule
-  already decides.
-- **Structure.** Unheld for file prose exactly as it is for a reply, and for the same reason: the
-  same paragraph is correct prose or a withheld table depending on what it says.
-- **A restatement reworded.** The arm reads a verbatim run, so changing two words in the middle of
-  a restated sentence passes it — which is the *quoting* weakness inverted, and a finding missed
-  rather than invented. ⚠️ The reach is bounded the same way in a second direction: a document
-  named by its bare file name, with no directory in front of it, is not resolved as a citation at
-  all, because more than one tracked file can carry one name.
-- **A paragraph with one unmarked line in it.** The emphasis arm asks for every line, so a
-  five-line paragraph marked on four passes. The threshold is a proxy for *as a default texture*
-  rather than that rule, which is the same limit the reply's own emphasis density carries.
-- **A hedge the list does not carry.** The list is the reply check's, imported so that one
-  rewording reaches both, and a synonym outside it passes. The thing forbidden is a tone, so no
-  list completes.
-- **A register and an audience.** A project nominates both, and what a nominated register asks of
-  a document is held by nobody here — the floor is three properties of the text, and none of them
-  is a register. That the README is in a persuasive register and every document beside it is in a
-  reference one is a convention of this repository, stated where that page's reader is.
-- **Prose outside a tracked file.** A work-item body, a pull request, a review comment and the
-  ordering document are not files this sweep can see, so the floor reaches none of them — the same
-  shape of gap the width rule has, and the same remedy: a writer.
-- **A comment the test reads as annotation.** A trailing comment and a lone whole-line comment are
-  out by rule, and a restatement written into one is missed. ⚠️ 137 lines of this tree are in that
-  position, against 4,337 the test reads as prose.
-- **A format with no comment syntax.** The three JSON files here — the hook carrier, the plugin
-  manifest and the marketplace one — can hold no prose for the sweep to read, so the reach stops at
-  them by the file format rather than by a decision. ⚠️ A format that comments some other way than
-  with a leading `#` would be unheld too, and unheld in silence: nothing warns that a tracked file
-  carries no prose because its grammar was never taught.
-- **Whether the floor is where a project would put it.** Three properties are procedure here
-  because none describes the reader; a project that disagreed could not turn them off, and nothing
-  in this repository asks whether that is the right boundary. [#65](https://github.com/ragnor-rs/mjolnir/issues/65)
-  is where the boundary between procedure and configuration for this axis is argued.
+⚠️ **What is left holding file prose is the language it is written in**, and nothing else. Width
+went with the same ruling, recorded with the width check rather than here.
 
 ## An artifact states what is true now: held on the lines a change adds
 

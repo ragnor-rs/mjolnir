@@ -87,7 +87,7 @@ carriers:
   # The two hook carriers the plugin ships. ⚠️ A hook landing in the plugin is unclassified until
   # it is named here, and an unclassified carrier makes every role count a floor — so adding one
   # to the plugin without adding it here reddens this check rather than being silently uncounted.
-  check_reply_register:         { class: guard }  # holds the reply to its register, on `Stop`
+  check_reply_defers_nothing:   { class: guard }  # holds the reply to leaving no work undone
   boundary:                     { class: guard }  # refuses what may not leave the project, on
                                                   # `PreToolUse` (#90, shipped by #142)
   app-instance-capacity:        { class: guard }
