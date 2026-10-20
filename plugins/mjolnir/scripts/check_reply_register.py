@@ -212,9 +212,9 @@ HEDGES_ALLOWED = 3
 # matching one bare hands a turn back over text that parks nothing, which costs
 # the reader the whole reply for a finding that is not there.
 #
-# `left` was held to have had it from the start, the bare word being this
-# repository's ordinary English for what a process or a merge did -- *three
-# trees left behind*. ⛔ **It had it in the third person only.** One alternative
+# `left` has it for the bare word, which is this repository's ordinary English
+# for what a process or a merge did -- *three trees left behind*. ⛔ **It had
+# that carve-out in the third person only.** One alternative
 # matched `I left` as a bare token, so the carve-out held for what a sibling
 # session did and not for what the writer did, and the loop's own reply about
 # work it had done reddened: *I left the tree and released the claim*, *I left a

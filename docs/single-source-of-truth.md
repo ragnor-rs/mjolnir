@@ -843,11 +843,10 @@ parks nothing in the second, and the same ruled word in the first person in the 
 third narrowed the others without reaching. Nothing in the first shape of this check accounted for
 that price.
 
-⚠️ **The count above was first written as three, with the day it was measured over named as
-closed while it was still running.** The fourth hand-back arrived that same day, after the change
-that recorded the first three had landed. A figure counted over a window a reader cannot see the end
-of grows after it is written, so what is stated here is the date the count is true of and not the
-day's own end.
+⚠️ **The fourth arrived on the same day as the change that narrowed three of the four ruled forms,
+after that change had landed**, so the figure above states the date it is true of rather than that
+day's end: a count stated over a window whose end the reader cannot see keeps growing after it is
+written.
 
 - **Opening** blocks on one instance. It is the first thing read and the frame for everything under
   it, and a preamble form is a phrase rather than a judgement.
@@ -880,8 +879,8 @@ day's own end.
   the text of this check's own finding for it, so a reply relaying this check reddened on it. ⚠️ The
   first of the three is **measured on a reply** and the other two are **demonstrated against the
   shipped check** — a sentence this repository writes by the dozen, run through the arm — rather
-  than waited for. `left` was held to have had the carve-out from the start, the bare word being
-  ordinary English for what a process or a merge did — *three trees left behind*.
+  than waited for. `left` has that carve-out for the bare word, which is ordinary English for what
+  a process or a merge did — *three trees left behind*.
 - ⛔ **`left` had that carve-out in the third person only, and the first person was bare.** One of
   its alternatives matched `I left` as a token, so the word was carved out for what a sibling
   session did and not for what the writer did — and what a role's reply says about work it has done
