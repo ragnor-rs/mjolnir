@@ -1292,15 +1292,17 @@ imports its base derivation. ⛔ The rule is
 and none of it is stated here: what this section records is how far each of the three arms gets,
 and the measurement that decided each one.
 
-**What it reads.** Every tracked markdown file, and every tracked script's own prose — a comment
-block of more than one whole line, and a docstring, by the test the rule states. ⛔ **On the lines
-the change adds**, which is the same carve-out and the same machinery as the check below: the diff,
-the merge base and the markdown prose grammar are imported from it rather than stood up again, and
-the word list and the emphasis grammar are imported from the reply's check. ⚠️ **The arms were
-measurable before they were held**, which is why there is no sweep of the tree in this change: read
-over this repository at `7584138`, 124 runs of a dozen words or more are repeated between a file
-and a document it cites, 4,337 of 15,315 lines of tracked Python are prose by that test, and 21
-paragraphs carry a hedge.
+**What it reads.** Every tracked markdown file, and the prose inside every tracked file whose
+comments begin `#` — a script, a workflow, a configuration. ⛔ **The test is the rule's and the
+file's extension decides nothing**, which is why the set is not the scripts alone: the arms were
+written reading scripts and markdown, and the workflow added beside them in this same change was
+unheld while carrying thirty lines of exactly the prose they are for. ⛔ **On the lines the change
+adds**, which is the same carve-out and the same machinery as the check below: the diff, the merge
+base and the markdown prose grammar are imported from it rather than stood up again, and the word
+list and the emphasis grammar are imported from the reply's check. ⚠️ **The arms were measurable
+before they were held**, which is why no sweep of the tree is part of this: over this repository at
+`7584138`, 48 files carry 2,159 paragraphs the floor reaches, 4,337 of 15,315 lines of tracked
+Python are prose by its test, and the three arms find what the two paragraphs below record.
 
 | Arm | What it reads | Kind | On a finding |
 |---|---|---|---|
@@ -1317,14 +1319,21 @@ it, so prose that reproduces a dozen of a cited document's words in a row has a 
 words and is not it. ⚠️ **The arm is a copy detector and not a judge**: it says the words are in two
 places, and which copy should go is still a writer's call.
 
-⚠️ **The two densities are set where this tree's own habit stops, and the numbers live in the
-script.** A dozen words, because that is where repetition stops being a coincidence of English:
-the same read at ten words finds 219 runs and at fourteen 75, so nothing about the figure is a
-cliff, and it is set where a reader would agree that two writers did not arrive there separately.
-Four lines for the emphasis arm, because **none** of this tree's 1,171 paragraphs of that length
-carries a marked span past the opening of every line — while the two paragraphs that come closest
-are three lines long and are lists of defined terms, which is the shape the Structure row asks for.
-One hedge per paragraph, because two paragraphs here carry two and none carries three.
+⚠️ **The three numbers are set where this tree's own habit stops, and they live in the script.** A
+dozen words, because that is where repetition stops being a coincidence of English: run over the
+whole tree as though every line were added, the arm finds 155 such runs at a dozen words, 290 at
+ten and 88 at fourteen — so nothing about the figure is a cliff, and it is set where a reader would
+agree that two writers did not arrive there separately. Four lines for the emphasis arm, because
+**none** of the tree's 1,268 paragraphs of that length carries a marked span past the opening of
+every line, while the two that come closest are three lines long and are lists of defined terms.
+One hedge per paragraph, because 36 paragraphs here carry one, two carry two, and none carries
+three.
+
+⚠️ **The 155 are concentrated where the item that asked for this predicted they would be**: 22 in
+the reply-register check and 22 in the names sweep, both restating the document that records their
+limits, and 21 in the surface against 18 in the document explaining it — the two that cite each
+other. ⛔ Not one of them is refused by this change, because none is a line it adds; what they are
+is the evidence that the arm holds a habit rather than a hypothesis.
 
 ⛔ **Emphasis is read past the opening of a line, and that is what keeps the arm off the shape the
 Structure row of
@@ -1336,11 +1345,12 @@ it misses.
 
 ⚠️ **Each arm has a planted violation and the fixture asserts its own premises**, since a plant
 against a cited document proves nothing if the planted file does not in fact cite it: the run
-prints that both planted files resolve the planted authority and that the sentence it restates is
-long enough for the arm to find. Every exclusion — the quotation, the code span, the fence, a
-section named by its title, the added-lines carve-out itself, and the two kinds of annotation —
-was verified by disabling it and watching its own plant redden. The carve-outs that have nothing
-to disable are labelled omissions rather than exclusions, as the check below labels its own.
+prints that every planted file — one per kind the sweep reads — resolves the planted authority, and
+that the sentence it restates is long enough for the arm to find. Every exclusion — the quotation,
+the code span, the fence, a section named by its title, the added-lines carve-out itself, and the
+two kinds of annotation — was verified by disabling it and watching its own plant redden. The
+carve-outs with nothing to disable are labelled omissions instead, as the check below labels its
+own.
 
 ⛔ **One hole was found by a plant rather than by reasoning**, and it is the reason the docstring
 delimiter is dropped before anything else: read as text, a triple quote is an empty quotation
@@ -1379,6 +1389,11 @@ stayed green until that line existed.
 - **A comment the test reads as annotation.** A trailing comment and a lone whole-line comment are
   out by rule, and a restatement written into one is missed. ⚠️ 137 lines of this tree are in that
   position, against 4,337 the test reads as prose.
+- **A format with no comment syntax.** The three JSON files here — the hook carrier, the plugin
+  manifest and the marketplace one — can hold no prose for the sweep to read, so the reach stops at
+  them by the file format rather than by a decision. ⚠️ A format that comments some other way than
+  with a leading `#` would be unheld too, and unheld in silence: nothing warns that a tracked file
+  carries no prose because its grammar was never taught.
 - **Whether the floor is where a project would put it.** Three properties are procedure here
   because none describes the reader; a project that disagreed could not turn them off, and nothing
   in this repository asks whether that is the right boundary. [#65](https://github.com/ragnor-rs/mjolnir/issues/65)

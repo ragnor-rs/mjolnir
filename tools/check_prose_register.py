@@ -57,28 +57,22 @@ CITATION = "schema § 8 → The floor under prose a role writes into a file"
 
 # --- the three numbers, and what each was measured on ----------------------
 #
-# ⛔ None of them is written into any document: a threshold in prose is a copy
-# that has to be kept in sync, and a run prints its own. Each was chosen by
-# reading the tree rather than by argument, and each errs toward a finding
-# missed, which is the direction an arm that reddens a build has to err in.
+# ⛔ No document carries any of them, and a run prints its own. Each was picked
+# by reading this tree rather than by argument, and each errs toward the finding
+# it misses -- the direction an arm that reddens a build has to err in. Why each
+# number is where it is, the counts beside it, and what each one is a proxy for
+# are the document's: `docs/single-source-of-truth.md` § The floor under file
+# prose.
 
-# A run of words repeated verbatim off a cited document. ⚠️ Twelve, because
-# English does not repeat a dozen words in a row by accident: at twelve this
-# tree carries 124 such runs against the documents its files cite, at ten 219,
-# and at fourteen 75 -- so the count is not a cliff and the floor is set where
-# coincidence stops being a reading.
+# A run of words repeated verbatim off a cited document. Twelve, which is past
+# the length two writers reach separately.
 RESTATEMENT_WORDS = 12
 
-# Emphasis as a texture rather than as a mark. ⚠️ Four, measured: of 1,171
-# paragraphs of four or more prose lines in this tree, **none** has an emphasised
-# span away from the start of every one of its lines. The two paragraphs that
-# come closest are three lines long and are lists of defined terms, which is the
-# shape the Structure row asks for rather than a texture.
+# Emphasis as a texture rather than as a mark: the length at which a marked line
+# is no longer one of a few. Four, and the measurement is the document's.
 EMPHASIS_LINES = 4
 
-# Hedging, per paragraph. ⚠️ One, measured: 21 paragraphs here carry a hedge,
-# two carry two, and none carries three -- so a second hedge inside one paragraph
-# is already outside this tree's own habit.
+# Hedging, counted inside one paragraph. One, which this tree exceeds twice.
 HEDGES_ALLOWED = 1
 
 # --- grammar this file carries, because no sibling's fits the unit ---------
@@ -103,10 +97,10 @@ DOCSTRING_DELIMITER = re.compile(r"\"{3}|'{3}")
 LINK = re.compile(r"\[([^\]\n]*)\]\([^)\s]*\)")
 
 # What a line may open with before its first word: a list marker, and the
-# directive markers this repository writes. ⛔ An emphasised span at the start of
-# a line is a term being defined, which the measurement above is the argument
-# for: a list of four defined terms is four emphasised lines and is not a
-# texture, so the arm reads only spans that sit past the opening.
+# directive markers this repository writes. ⛔ A span marked at the start of a
+# line is a term being defined, so the arm reads only what sits past the
+# opening -- four defined terms are four marked lines and are no texture. Which
+# of the two readings this tree bears out is the document's.
 OPENER = re.compile(r"^[\s>]*(?:[-*+]\s+|\d+\.\s+)?(?:[⛔⚠️✅❌]️?\s*)*")
 
 WORD = re.compile(r"[a-z0-9_]+")
@@ -118,8 +112,16 @@ WHOLE_LINE_COMMENT = re.compile(r"^\s*#")
 # section by its title repeats that title by rule.
 MD_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(?P<text>.*)$")
 
+# ⛔ Which files carry prose at all, by the rule's test rather than by what is
+# convenient to parse: markdown, and every tracked file whose comment is a line
+# beginning `#`. A workflow and a configuration are in that set and their
+# comment blocks are read straight through exactly as a script's are -- this
+# change's own first draft read scripts alone and left its own workflow
+# unheld. A format with no comment at all, which here is JSON, is reached by
+# nothing and is named in the document.
 MARKDOWN, PYTHON = ".md", ".py"
-TRACKED = (f"*{MARKDOWN}", f"*{PYTHON}")
+HASH_COMMENT = (PYTHON, ".yaml", ".yml", ".toml", ".sh", ".cfg")
+TRACKED = (f"*{MARKDOWN}",) + tuple(f"*{suffix}" for suffix in HASH_COMMENT)
 
 
 def shown_only(text: str) -> str:
@@ -130,11 +132,10 @@ def shown_only(text: str) -> str:
     rest of a document onto the line its quotation opened on, and every finding
     after it would name a line nobody can open.
 
-    ⛔ **A docstring's own delimiter is syntax and is dropped first.** Read as
-    text, `\"\"\"` is an empty quotation followed by an opening one, so the
-    quotation grammar swallows the whole docstring -- every docstring in the
-    tree, held by nothing, while the run reported green. Measured: the plant for
-    the habit this arm was built on stayed green until this line existed.
+    ⛔ **A docstring's own delimiter is syntax and is dropped first.** Three
+    quote characters read as one empty pair and then an opener, so without this
+    the grammar below runs to the end of the docstring and takes the text with
+    it. What that cost, and the plant that found it, are in the document.
     """
     text = DOCSTRING_DELIMITER.sub("   ", text)
     text = LINK.sub(r"\1", lines_a_change_adds.CODE_SPAN.sub(" ", text))
@@ -164,17 +165,13 @@ def numbered_words(numbered: list[tuple[int, str]]) -> list[tuple[str, int]]:
 # --- which lines of a file are prose ---------------------------------------
 
 
-def python_prose(text: str) -> tuple[set[int], str | None]:
-    """(the prose line numbers of a script, the reason none could be read).
+def comment_prose(text: str) -> tuple[set[int], str | None]:
+    """(the prose line numbers of a commented file, and nothing it could not read).
 
-    Prose is a comment block of more than one whole line, and a docstring. ⛔ A
-    trailing comment and a lone whole-line comment are annotation and are not
-    here, which is the surface's own test applied: both are read with the
-    statement they sit against rather than straight through.
-
-    ⚠️ A file that does not parse yields **no** prose and a reason, never an
-    empty set on its own: a script the sweep cannot read is unheld, and that is
-    the one state a check may not report as green.
+    ⛔ Which lines those are is the rule's test rather than this file's choice,
+    and what is written here is how one of its shapes is recognised: a run of
+    whole-line comments longer than one. Everything the test calls annotation is
+    what is left over.
     """
     lines = lines_a_change_adds.split_lines(text)
     held: set[int] = set()
@@ -188,7 +185,18 @@ def python_prose(text: str) -> tuple[set[int], str | None]:
         run = []
     if len(run) > 1:
         held.update(run)
+    return held, None
 
+
+def python_prose(text: str) -> tuple[set[int], str | None]:
+    """A script's prose: its comment blocks, and whatever `ast` calls a docstring.
+
+    ⚠️ A file that does not parse yields **no** prose and a reason, never an
+    empty set on its own: a script the sweep cannot read is unheld, and that is
+    the one state a check may not report as green.
+    """
+    lines = lines_a_change_adds.split_lines(text)
+    held = comment_prose(text)[0]
     try:
         tree = ast.parse(text)
     except (SyntaxError, ValueError) as exc:
@@ -211,16 +219,18 @@ def python_prose(text: str) -> tuple[set[int], str | None]:
 def prose_of(path: str, text: str) -> tuple[set[int], str | None]:
     if path.endswith(PYTHON):
         return python_prose(text)
+    if path.endswith(HASH_COMMENT):
+        return comment_prose(text)
     return lines_a_change_adds.prose_lines(text), None
 
 
-def read_straight_through(path: str, text: str, number: int, line: str) -> bool:
+def read_straight_through(path: str, line: str) -> bool:
     """Is this prose line one a density is read over?
 
-    A table row and a heading are out of the **paragraph** arms and in the rest,
-    which is the division the reply's own check already draws: a bolded term in
-    a cell is the shape the Structure row asks for, so sweeping rows for a
-    texture reddens on the rule next door.
+    A table row and a heading sit outside the **paragraph** arms and inside the
+    rest, which is the division the reply's own check already draws and for the
+    reason it draws it: marking up a cell is what the rule one row over asks
+    for, so an arm reading rows for a texture reddens on a sibling rule.
     """
     if not path.endswith(MARKDOWN):
         return True
@@ -244,14 +254,24 @@ class Prose:
         self.documents = documents
         self.unparsed: dict[str, str] = {}
         self.prose: dict[str, set[int]] = {}
+        self._read: dict[str, tuple[list[str], list[tuple[str, ...]]]] = {}
         for path, text in change.text.items():
             held, why = prose_of(path, text)
             self.prose[path] = held
             if why:
                 self.unparsed[path] = why
 
-    def copy(self) -> "Prose":
-        return Prose(self.change.copy(), dict(self.documents))
+    def haystack(self, document: str) -> tuple[list[str], list[tuple[str, ...]]]:
+        """(the cited document's own word sequence, its headings), read once."""
+        if document not in self._read:
+            text = self.documents[document]
+            self._read[document] = (
+                [word for word, _ in numbered_words(
+                    _prose_lines(document, text, prose_of(document, text)[0])
+                )],
+                headings_of(text),
+            )
+        return self._read[document]
 
     def held(self):
         """(path, line number, the line) for every added prose line, in order."""
@@ -277,7 +297,7 @@ class Prose:
             for number in sorted(self.change.added.get(path, ())):
                 line = lines[number - 1] if number <= len(lines) else ""
                 held = (number in self.prose.get(path, ()) and line.strip()
-                        and read_straight_through(path, self.change.text[path], number, line))
+                        and read_straight_through(path, line))
                 if not held or (run and number != run[-1][0] + 1):
                     if run:
                         yield path, run[0][0], [text for _, text in run]
@@ -290,9 +310,9 @@ class Prose:
     def cites(self, path: str) -> list[str]:
         """The tracked documents this file names, by either of the two path forms.
 
-        ⚠️ A path and nothing else. A document named by its bare file name, with
-        no directory in front of it, is not resolved -- stated as a limit rather
-        than guessed at, since more than one tracked file can carry one name.
+        ⚠️ A path and nothing else resolves here, because one file name can
+        belong to several tracked files and guessing which would be worse than
+        the gap. The gap is recorded where the gaps are.
         """
         text = self.change.text.get(path, "")
         here = os.path.dirname(path)
@@ -394,11 +414,10 @@ def check_no_restatement(prose: Prose) -> list[str]:
             continue
         needle = numbered_words(_prose_lines(path, prose.change.text[path], prose.prose[path]))
         for document in cited:
-            text = prose.documents[document]
-            haystack = [word for word, _ in numbered_words(
-                _prose_lines(document, text, prose_of(document, text)[0])
-            )]
-            headings = headings_of(text)
+            # ⚠️ Read once per document and not once per citing file. Every file
+            # here cites the same two or three documents, so the uncached shape
+            # re-read each of them for each of them.
+            haystack, headings = prose.haystack(document)
             for size, number, run in repeated_runs(needle, haystack, RESTATEMENT_WORDS, headings):
                 if number not in added:
                     continue
@@ -623,8 +642,24 @@ A_SCRIPT = (
     'ALSO_PLANTED = "perhaps possibly arguably it might be somewhat wrong"\n'
 )
 
+A_WORKFLOW = (
+    "# A planted workflow, whose comment block is prose a reader reads straight through.\n"
+    "#\n"
+    "# The rule it runs is in docs/planted-cited.md, cited here and stated there.\n"
+    "\n"
+    "on:\n"
+    "  pull_request:   # annotation on this line of data\n"
+)
+
 TRACKED_DOCUMENTS = {"docs/planted-cited.md": A_CITED_DOCUMENT}
-FIXTURE_FILES = {"docs/planted.md": A_DOCUMENT, "tools/planted.py": A_SCRIPT}
+FIXTURE_FILES = {
+    "docs/planted.md": A_DOCUMENT,
+    "tools/planted.py": A_SCRIPT,
+    # ⛔ The third reader gets a planted file of its own, because a kind with no
+    # plant is a kind nothing asserts -- and this one shipped unasserted once,
+    # which the document records.
+    ".github/workflows/planted.yml": A_WORKFLOW,
+}
 
 
 def fixture() -> Prose:
@@ -722,6 +757,19 @@ def _plant_a_restated_comment_block(prose: Prose) -> Prose:
     return refreshed(prose)
 
 
+def _plant_a_restated_workflow_comment(prose: Prose) -> Prose:
+    """The same two-line comment rule, in a file that carries no code at all."""
+    path = ".github/workflows/planted.yml"
+    prose.change.text[path] = (
+        A_WORKFLOW + "\n# " + THE_RESTATED_SENTENCE[:90] + "\n# " + THE_RESTATED_SENTENCE[90:]
+        + "\n"
+    )
+    prose.change.added[path] = set(
+        range(1, len(lines_a_change_adds.split_lines(prose.change.text[path])) + 1)
+    )
+    return refreshed(prose)
+
+
 def _plant_a_restated_table_cell(prose: Prose) -> Prose:
     """A row restates as readily as a sentence, and a row is in this arm's scope."""
     return _plant(f"| a planted row | {THE_RESTATED_SENTENCE} |")(prose)
@@ -768,6 +816,8 @@ VIOLATIONS = [
      _plant_a_restated_docstring),
     ("no restatement of a cited document", "a restating comment block",
      _plant_a_restated_comment_block),
+    ("no restatement of a cited document", "a restating comment block in a workflow",
+     _plant_a_restated_workflow_comment),
     ("no restatement of a cited document", "a restating table cell", _plant_a_restated_table_cell),
     ("emphasis is not the paragraph's texture", "every line of a paragraph marked",
      _plant_emphasis_as_the_texture),
@@ -1073,11 +1123,18 @@ def main(argv: list[str]) -> int:
             return 1
         print()
 
+    # ⛔ The accounting arm reads the surface alone, so it is answered before the
+    # diff and reported even where the diff refuses: a run that printed only the
+    # refusal would leave a property with no arm unreported on every branch a
+    # merge base could not be found for.
     accounting = check_every_property_is_accounted_for(text)
     try:
         change = lines_a_change_adds.read_change(root, TRACKED)
     except lines_a_change_adds.Unreadable as exc:
-        print(f"  FAIL  the files this change touches were read\n\n  - {exc}")
+        print(f"  {'FAIL' if accounting else 'ok  '}  every property of the floor is accounted for")
+        print(f"  FAIL  the files this change touches were read\n")
+        for problem in accounting + [str(exc)]:
+            print(f"  - {problem}")
         return 1
 
     prose = Prose(change, tracked(root))

@@ -1249,9 +1249,9 @@ with it in
 
 ### The floor under prose a role writes into a file
 
-A document, a skill and the prose inside a script are artifacts like the day log on three of their
-four settings: the language is `language.repo`, the wrapping is the subsection above, and the
-register and the audience are a project's to nominate through the `artifacts` map. ⛔ **Three
+A document, a skill and the prose inside a script are artifacts like the day log, with one setting
+more: the language is `language.repo`, the wrapping is the subsection above, and the register and
+the audience are a project's to nominate through the `artifacts` map. ⛔ **Three
 properties of that prose are a floor underneath whichever register is nominated, and they are
 procedure.** Each is a row of [the reply's table](#the-reply-to-the-person-running-a-role) and is
 named rather than restated here; what makes the three of them a floor is that none describes who
