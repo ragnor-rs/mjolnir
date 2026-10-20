@@ -545,9 +545,15 @@ def main(argv: list[str]) -> int:
     # claims the role keys are held to the surface both ways, and that was true of the *count*
     # only: a misspelled `role:` was accepted silently, classified a shipped carrier under a role
     # that does not exist, and then reported the real role as unshipped — a wrong NOT READY with
-    # no line anywhere saying why. The reverse direction is held too: an entry nothing ships and
-    # no project carries is stale data, and stale data is what made this check refuse a verdict
-    # once already.
+    # no line anywhere saying why.
+    #
+    # ⚠️ One direction only, and the comment here claimed both. A declared entry that nothing
+    # ships and no project carries is stale data, and nothing holds that — nor can anything hold
+    # it on this population: the projects are the invocation's argument, so an entry would read
+    # as stale whenever the one target carrying it is left off the list, a red keyed on the
+    # caller's list rather than on any tree. The two entries for this repository's own carrier
+    # root are the proof: nothing ships them and no adoption target carries them, so they would
+    # read as stale while being exactly right.
     for name, entry in sorted(declared["carriers"].items()):
         role = entry.get("role")
         if role is not None and role not in role_keys:

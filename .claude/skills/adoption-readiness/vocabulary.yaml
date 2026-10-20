@@ -37,8 +37,14 @@ roles:
 #   beside   — a role that travels beside the loop without being part of it
 #   utility  — project-local tooling the loop does not contain
 #   guard    — a hook enforcing the loop rather than carrying a role (§ 7, #16)
+#   rule     — a hook that puts a rule into a session rather than holding anything to it
 #   library  — implementation a carrier calls, not a carrier itself
 #   notes    — a loose document in a carrier root, which is not a carrier at all
+#
+# ⚠️ `guard` and `rule` are the two halves of schema § The loop → "Procedure produces a record
+# and enforcement reads it", and the distinction is the one #166 ruled on: a hook that supplies
+# procedure before the writing is not a check over what was written. Classifying a loader as a
+# guard would restate here exactly the conflation that ruling deleted.
 #
 # ⛔ A carrier matching nothing here is reported as unclassified and makes the verdict
 # "cannot establish" rather than being skipped. An uncounted role reads as a role that does not
@@ -84,22 +90,32 @@ carriers:
   scraper-monitor:           { class: utility }
   edit-idea-workspace-xml:   { class: utility }   # one of the two #17 names
 
-  # The two hook carriers the plugin ships. ⚠️ A hook landing in the plugin is unclassified until
-  # it is named here, and an unclassified carrier makes every role count a floor — so adding one
-  # to the plugin without adding it here reddens this check rather than being silently uncounted.
+  # The three hook carriers the plugin ships. ⚠️ A hook landing in the plugin is unclassified
+  # until it is named here, and an unclassified carrier makes every role count a floor — so adding
+  # one to the plugin without adding it here reddens this check rather than being silently
+  # uncounted. It has now happened twice, once per hook that landed.
   check_reply_defers_nothing:   { class: guard }  # holds the reply to leaving no work undone
   boundary:                     { class: guard }  # refuses what may not leave the project, on
                                                   # `PreToolUse` (#90, shipped by #142)
+  load_the_register:            { class: rule }   # hands the session § 8's property table on
+                                                  # `SessionStart` (#79, shipped by #166)
   app-instance-capacity:        { class: guard }
+  app-start-guard:              { class: guard }
   capacity-and-merge-guard:     { class: guard }
   capacity-ticket-release:      { class: guard }
   ci-mirror-guard:              { class: guard }  # refuses a check the host already ran (#33)
   command-heads:                { class: guard }
   drop-merged-stack:            { class: guard }
   gradle-capacity:              { class: guard }
+  local-check-guard:            { class: guard }  # the same shape as `ci-mirror-guard` under
+                                                  # another name (#33)
+  merge-guard:                  { class: guard }  # refuses a merge with no review answer
+                                                  # recorded, which is #16's shape
   merge-review-gate:            { class: guard }
+  post-merge-cleanup:           { class: guard }
   post-merge-instance-teardown: { class: guard }
   prune-merged-worktrees:       { class: guard }  # destructive, and "clean" is not the oracle (#34)
+  session-worktree-report:      { class: guard }
   lib:                          { class: library }
 
   roles:      { class: notes }
