@@ -41,6 +41,24 @@ import re
 import subprocess
 import sys
 
+# The surface's own reader, imported rather than re-implemented. What the surface
+# *publishes* is stated in markers this repository already has exactly one parser
+# for, and a second parser here would be the defect this whole gate exists to
+# delete: two readings of one surface, each allowed to disagree with it.
+#
+# ⚠️ The path is derived from this file's own location, so a run from a worktree
+# reads that tree's reader rather than the primary checkout's -- the failure that
+# otherwise prints a convincing verdict about a file nobody is editing.
+_PLUGIN_SCRIPTS = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "plugins", "mjolnir", "scripts",
+)
+if _PLUGIN_SCRIPTS not in sys.path:
+    sys.path.insert(0, _PLUGIN_SCRIPTS)
+
+import config as reader  # noqa: E402
+import yaml  # noqa: E402 -- a dependency `reader` already states and refuses without
+
 # --- what plays which role -------------------------------------------------
 
 SURFACE = "plugins/mjolnir/config/schema.md"
@@ -239,35 +257,36 @@ DIRECTORY_FLAGS = re.compile(
 # forbids the one form the rule is satisfied by.
 ABSOLUTE_PATH = re.compile(r"(?<![\w.$}])/(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+")
 
-# Which leaf key of a configuration carries a project's fact. Grammar, because
-# the surface does not mark its keys as project-supplied or procedure-supplied --
-# it illustrates some with a placeholder and some with a default, and the two
-# read alike. Each name below is asserted to occur in some configuration, so a
-# renamed key is loud rather than a value set that quietly shrinks to nothing.
-VALUE_KEYS = [
-    "repo",          # the host's slug
-    "workflow",      # a run's name on the host
-    "mirrors",       # the local command a run duplicates
-    "run",           # the command a done check is answered by (§ 13)
-    "board",         # a Trello board
-    "project_key",   # a Jira project
-    "name",          # a status word, and a status field's own name
-    "label_prefix",  # the prefix a label convention carries
-    "unit",          # an estimate's unit
-    "dir",           # a template directory (§ 4.4) or an artifact store (§ 11)
-    "outcome",       # a template's own heading, per semantic section
-    "acceptance",
-    "reproduction",
-    "field",         # what a readiness check reads
-    "label",
-    "ref",
-    "out_dir",       # where the day log is written
-    "script",        # the evidence script's path
-    "tree_dir",      # where a working tree is cut (§ 10)
-    "command",       # what prints the ordering (§ 12)
-    "audience",      # who an artifact is written for
-    "inherits",      # the variables a role's shell may read (§ 14)
-]
+# Which value a configuration carries is **every scalar it states**, minus the
+# vocabulary the surface itself publishes. ⛔ Not a list of the key names those
+# values happen to sit under: measured by planting, a configured branch prefix
+# and a configured label both passed such a list, and neither is reachable by
+# one. The prefix sits under `work_item.type_branch_prefix.<one of the project's
+# own types>` -- a key the project itself names -- and the label sits in
+# `tracker.labels`, a plural whose singular `label` is a readiness check's
+# argument, a different fact one letter away. A list of key names cannot express
+# the line, because the project-invented classes sit under keys no list can
+# anticipate.
+#
+# ⚠️ And the line is not "every value the surface writes" either. The surface
+# *illustrates* some keys with a concrete value -- `label_prefix: "type:"`,
+# `type_branch_prefix: { bug: bugfix }` -- and a project writing the same string
+# has still invented it. What the surface **publishes** is narrower and marked:
+#
+# - a closed alternation, `kind: worktree | in_place`, in either of the two
+#   shapes the surface writes one;
+# - a value marked `# default`.
+#
+# Both are read through `reader.surface_facts`, so a facet added to the surface
+# changes what this sweep forbids with no edit here -- the property this script
+# already claims for its other reads. ⛔ Which is also why `worktree`, `in_place`
+# and `explicit` must stay nameable: § 6's dirty-tree derivation and § 10's
+# routing table are stated *by mode*, so a role forbidden from saying `worktree`
+# could not name § 10 at all.
+#
+# ⚠️ A number, a flag and a null are nobody's vocabulary and are not read at all.
+# A width is a bare integer, and a sweep that matched one would redden on every
+# count, threshold and year in the tree.
 
 # A placeholder is not a value. ⛔ The bare-capitals form counts as a placeholder
 # **only inside the data root**, where `OWNER/REPO` and `KEY` are stand-ins. A
@@ -292,6 +311,17 @@ DOUBLE_SPAN_DELIMITER = "``"
 QUOTED_ANY = re.compile(r"\"([^\"]*)\"|«([^»]*)»|“([^”]*)”")
 QUOTED_SINGLE = re.compile(r"'([^']*)'")
 
+# ⛔ A key of a JSON object is structure, not a value, and in JSON a key is
+# necessarily quoted -- so rule 2's "whole quoted string" reads every key of
+# every carrier written in that format as a value. The live instance is the hook
+# carrier: `"hooks"` is the harness's own schema word three times over, and this
+# project happens to classify work with a label of the same spelling. ⚠️ Scoped to
+# `.json` by extension and to nothing else: in a script a quoted key is a dict
+# literal's, where the value beside it is the thing worth sweeping, and widening
+# this would exempt a value written as a key. A JSON *value* is swept, which is
+# one of the planted violations.
+JSON_KEY = re.compile(r"\"([^\"]*)\"\s*:")
+
 # Two characters is a real value -- a tracker's `CI`, a label prefix's `E:`.
 MIN_VALUE_LEN = 2
 
@@ -303,20 +333,67 @@ def _tokens(groups: dict[str, str]) -> list[tuple[str, str]]:
     return [(token, label) for label, blob in groups.items() for token in blob.split()]
 
 
-def _members(raw: str) -> list[str]:
-    """The value, or each member where the value is an inline list.
+def _leaves(node, keys: tuple[str, ...] = ()):
+    """Every scalar a parsed document states, with the key path it sits under.
 
-    ⛔ A key whose value is a list carries as many of a project's facts as it has
-    members, and reading the whole bracket as one string forbids a value no
-    carrier could ever contain -- which reads as a check doing its job and is a
-    check holding nothing. Found when § 14's `inherits` became the first list of
-    bare names a project writes; the list-of-mappings keys were already read,
-    because the pattern above stops at a comma.
+    ⛔ A list's members are leaves of their own. A key whose value is a list
+    carries as many of a project's facts as it has members, and reading the whole
+    bracket as one string forbids a value no carrier could ever contain -- which
+    reads as a check doing its job and is a check holding nothing. ⚠️ Measured on
+    § 14's `inherits`, where a line-based read stops at the first comma and yields
+    `[PATH`: every real member of the list goes unswept while the key reads as
+    covered, which is the whole of the failure.
+
+    ⚠️ A list's members carry the *list's* path and no index, which is what lets
+    the subset test below ask about the list they came from.
     """
-    value = raw.strip()
-    if value.startswith("[") and value.endswith("]"):
-        return [member.strip().strip("\"'").strip() for member in value[1:-1].split(",")]
-    return [value.strip("\"'").strip()]
+    if isinstance(node, dict):
+        for key, value in node.items():
+            yield from _leaves(value, keys + (str(key),))
+    elif isinstance(node, list):
+        for item in node:
+            yield from _leaves(item, keys)
+    else:
+        yield keys, node
+
+
+def _list_nodes(node, keys: tuple[str, ...] = ()):
+    """Each list a document states, with its scalar members -- for the subset test."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            yield from _list_nodes(value, keys + (str(key),))
+    elif isinstance(node, list):
+        yield keys, [str(i) for i in node if not isinstance(i, (dict, list))]
+        for item in node:
+            yield from _list_nodes(item, keys)
+
+
+def _scalars(value) -> list[str]:
+    """Each scalar inside a value the surface states, a list's members included."""
+    if isinstance(value, dict):
+        return [s for item in value.values() for s in _scalars(item)]
+    if isinstance(value, (list, tuple)):
+        return [s for item in value for s in _scalars(item)]
+    return [str(value)]
+
+
+def _inline_list(rest: str) -> list[str] | None:
+    """The members of an inline list a surface key states, or None.
+
+    The surface writes a closed vocabulary two ways: as an alternation, which the
+    reader already returns, and as a list -- § 9's `streams` is the live
+    instance. A list is read here rather than in the reader because nothing else
+    needs it yet, and ⛔ it is read through the reader's own fence and key walk, so
+    the markdown is parsed once however many facts are taken out of it.
+    """
+    value = rest.split("#")[0].strip()
+    if not (value.startswith("[") and value.endswith("]")):
+        return None
+    try:
+        members = yaml.safe_load(value)
+    except yaml.YAMLError:
+        return None
+    return [str(m) for m in members] if isinstance(members, list) else None
 
 
 STACK = _tokens(STACK_TOKENS)
@@ -514,8 +591,14 @@ class Tree:
             return out
         out = [line.strip() for line in body.splitlines()]
         out += CODE_SPAN.findall(body)
+        keys = {match.start() for match in JSON_KEY.finditer(body)} if path.endswith(".json") \
+            else set()
         for pattern in (QUOTED_ANY, QUOTED_SINGLE):
-            out += [g for match in pattern.finditer(body) for g in match.groups() if g is not None]
+            out += [
+                g for match in pattern.finditer(body)
+                if match.start() not in keys
+                for g in match.groups() if g is not None
+            ]
         return out
 
     # --- what the configurations and the surface say ----------------------
@@ -563,36 +646,104 @@ class Tree:
             blocks.append("\n".join(block))
         return blocks
 
-    def forbidden_values(self) -> dict[str, str]:
-        """value -> the configuration and key it was read from."""
-        found: dict[str, str] = {}
-        own = self.own_slug()
-        for path in self.configs():
-            in_data = self.inside(path, DATA_ROOTS)
-            for raw in self.text.get(path, "").splitlines():
-                # A comment is not a value, and a block scalar's marker is not
-                # the value it introduces.
-                line = TRAILING_COMMENT.sub("", raw)
-                for key in VALUE_KEYS:
-                    for match in re.finditer(
-                        r"(?:^|[\s{,])" + re.escape(key) + r":\s*(?P<value>\"[^\"]*\"|'[^']*'|[^,}\n]+)",
-                        line,
-                    ):
-                        for value in _members(match.group("value")):
-                            if not value or value in {"null", "[]", "{}", ">-", "|", ">", "|-"}:
-                                continue
-                            if PLACEHOLDER.match(value) or value == own:
-                                continue
-                            if in_data and PLACEHOLDER_IN_DATA.match(value):
-                                continue
-                            if len(value) < MIN_VALUE_LEN and not value.endswith(":"):
-                                continue
-                            found.setdefault(value, f"{path} ({key})")
-        return found
+    def published_vocabulary(self) -> tuple[set[str], dict[str, set[str]], list[str]]:
+        """What the surface publishes: (every member, its closed lists, problems).
 
-    def declared_keys_present(self) -> set[str]:
-        blob = "\n".join(self.text.get(p, "") for p in self.configs())
-        return {k for k in VALUE_KEYS if re.search(r"(?:^|[\s{,])" + re.escape(k) + r":", blob, re.M)}
+        ⛔ Published, never merely written. The alternations and the marked
+        defaults come from the surface's own reader; the lists are walked here
+        through that reader's fence and key walk. Everything else a fence shows is
+        an *illustration* of a project's fact and is not subtracted -- which is
+        the whole of why a configured branch prefix is caught while `worktree` is
+        not.
+
+        ⚠️ A surface this reader cannot read is reported rather than treated as a
+        surface that publishes nothing: with an empty set every value a
+        configuration states reads as that project's own, which floods instead of
+        hiding, but the sweep would then be measuring its own copy of nothing.
+        """
+        text = self.text.get(SURFACE, "")
+        try:
+            facts = reader.surface_facts(text)
+        except (reader.ConfigError, yaml.YAMLError) as exc:
+            return set(), {}, [
+                f"{SURFACE}: the surface's own reader cannot read what it publishes — "
+                f"{exc}. This check subtracts the published vocabulary from every value a "
+                "configuration states, and that subtraction is not happening."
+            ]
+        pool = {member for members in facts["enums"].values() for member in map(str, members)}
+        for value in facts["defaults"].values():
+            pool.update(_scalars(value))
+        lists: dict[str, set[str]] = {}
+        for _heading, block in reader._fences(text):
+            for path, rest in reader._walk_keys(block):
+                members = _inline_list(rest)
+                if members is not None:
+                    lists.setdefault(path.split(".")[-1], set()).update(members)
+        return pool, lists, []
+
+    def configuration_values(self) -> tuple[dict[str, str], list[str]]:
+        """(value -> the configuration and key path it came from, problems).
+
+        Every scalar a configuration states is that project's own vocabulary
+        unless the surface publishes it. ⛔ The problems are returned beside the
+        values rather than raised, because each of them is a way for this check to
+        hold nothing while reporting green: a surface that publishes nothing, a
+        configuration that does not parse, a configuration that states no value at
+        all. ⚠️ There is no list of key names to go stale -- a key renamed anywhere
+        is still a leaf and still read -- so these three arms are the whole of
+        this check's self-guard.
+        """
+        pool, published_lists, problems = self.published_vocabulary()
+        own = self.own_slug()
+        found: dict[str, str] = {}
+        for path in self.configs():
+            try:
+                document = yaml.safe_load(self.text.get(path, "")) or {}
+            except yaml.YAMLError as exc:
+                problems.append(
+                    f"{path}: does not parse as a configuration, so every value it states "
+                    f"is read as no value at all and the sweep goes quiet over the file "
+                    f"— {exc.__class__.__name__}."
+                )
+                continue
+            in_data = self.inside(path, DATA_ROOTS)
+            # A list whose every member the surface publishes under the same key
+            # is a choice from the surface's own words rather than a vocabulary
+            # this project invented. ⛔ One member the surface does not publish
+            # makes the whole list the project's -- which is what keeps a type
+            # vocabulary forbidden, that being a list of a project's own words
+            # under the very same shape.
+            closed = {
+                keys for keys, members in _list_nodes(document)
+                if members and set(members) <= published_lists.get(keys[-1] if keys else "", set())
+            }
+            stated = 0
+            for keys, value in _leaves(document):
+                if not isinstance(value, str):
+                    continue
+                value = value.strip()
+                if not value or value == own or value in pool or keys in closed:
+                    continue
+                if len(value) < MIN_VALUE_LEN and not value.endswith(":"):
+                    continue
+                if PLACEHOLDER.match(value):
+                    continue
+                if in_data and PLACEHOLDER_IN_DATA.match(value):
+                    continue
+                stated += 1
+                found.setdefault(value, f"{path} ({'.'.join(keys)})")
+            if not stated:
+                problems.append(
+                    f"{path}: states no concrete value of its own, so this check has nothing "
+                    "to look for from it. The examples are placeholders by design, but at "
+                    "least one concrete status word, workflow name or heading per "
+                    "configuration is what gives the sweep something to sweep for."
+                )
+        return found, problems
+
+    def forbidden_values(self) -> dict[str, str]:
+        """Every value a configuration states as its own. What the plants read."""
+        return self.configuration_values()[0]
 
 
 # --- the checks ------------------------------------------------------------
@@ -778,20 +929,7 @@ def check_no_stack_is_named_in_the_strict_set(tree: Tree) -> list[str]:
 
 
 def check_no_value_is_carried_in_the_strict_set(tree: Tree) -> list[str]:
-    values = tree.forbidden_values()
-    problems = []
-    for key in sorted(set(VALUE_KEYS) - tree.declared_keys_present()):
-        problems.append(
-            f"`{key}` is declared here as a key that carries a project's fact and occurs in no "
-            "configuration. Either it was renamed on the surface, in which case the value set "
-            "this check sweeps for has quietly shrunk, or it should go."
-        )
-    if not values:
-        problems.append(
-            "No configuration supplies a concrete value, so this check holds nothing. The "
-            "examples are placeholders by design, but at least one concrete status word, "
-            "workflow name or heading is what gives the sweep something to look for."
-        )
+    values, problems = tree.configuration_values()
     for path in tree.strict():
         for context in tree.value_contexts(path):
             stripped = context.strip()
@@ -898,6 +1036,87 @@ def _plant_in_a_hook(text: str):
     return apply
 
 
+def _plant_in_a_json_carrier(text: str):
+    """Into a hook carrier written in JSON, where every key is a quoted string."""
+    def apply(tree: Tree) -> Tree:
+        tree.text["hooks/planted.json"] = text
+        return tree
+
+    return apply
+
+
+def _a_configured(tree: Tree, *keys: str) -> str:
+    """A value this project's own configuration states under a key path.
+
+    ⛔ Read out of the configuration rather than written here. A plant carrying
+    the literal keeps passing after the project rewords its vocabulary, which is
+    a plant asserting its own text; and the value this one must return is exactly
+    the one no list of key names could reach.
+    """
+    node = yaml.safe_load(tree.text.get(OWN_CONFIG, "")) or {}
+    for key in keys:
+        node = node.get(key) if isinstance(node, dict) else None
+    members = sorted(set(_scalars(node))) if node else []
+    if not members:
+        raise AssertionError(
+            f"{OWN_CONFIG} states nothing under `{'.'.join(keys)}`, so this plant tests nothing"
+        )
+    return members[0]
+
+
+def _plant_a_configured_branch_prefix(tree: Tree) -> Tree:
+    """The prefix one of a project's own types maps to, planted in a carrier.
+
+    ⛔ The shape is the whole point. `work_item.type_branch_prefix` is a map whose
+    *keys* are the project's own type vocabulary, so the prefix sits under a key
+    name nothing can anticipate -- measured green against a list of twenty-two of
+    them, and found while writing the starting role, whose text is the one place
+    that value must not appear, since reading it from configuration is what that
+    role is for.
+    """
+    prefix = _a_configured(tree, "work_item", "type_branch_prefix")
+    return _plant_in_a_carrier(f"\nCut the branch with the `{prefix}` prefix.\n")(tree)
+
+
+def _plant_a_configured_label(tree: Tree) -> Tree:
+    """A label out of the project's own label vocabulary.
+
+    ⛔ The other shape a list of key names cannot reach: `tracker.labels` is a
+    plural key holding a list, while the singular `label` is a readiness check's
+    argument -- a different fact under a name one letter away, which is how such
+    a list reads as covering this and does not.
+    """
+    label = _a_configured(tree, "tracker", "labels")
+    return _plant_in_a_carrier(f"\nThe item carries the `{label}` label.\n")(tree)
+
+
+def _a_published_alternation_member(tree: Tree) -> str:
+    """A value this project configures that the surface publishes as an alternation."""
+    pool, _lists, _problems = tree.published_vocabulary()
+    document = yaml.safe_load(tree.text.get(OWN_CONFIG, "")) or {}
+    for _keys, value in _leaves(document):
+        if isinstance(value, str) and value.strip() in pool and len(value.strip()) >= MIN_VALUE_LEN:
+            return value.strip()
+    raise AssertionError(
+        f"{OWN_CONFIG} configures no value the surface publishes as an alternation, so this "
+        "exemption asserts nothing"
+    )
+
+
+def _a_published_list_member(tree: Tree) -> str:
+    """A member of a closed list the surface publishes, as this project chose it."""
+    _pool, lists, _problems = tree.published_vocabulary()
+    document = yaml.safe_load(tree.text.get(OWN_CONFIG, "")) or {}
+    for keys, members in _list_nodes(document):
+        published = lists.get(keys[-1] if keys else "", set())
+        if members and set(members) <= published:
+            return sorted(members)[0]
+    raise AssertionError(
+        f"{OWN_CONFIG} states no subset of a closed list the surface publishes, so this "
+        "exemption asserts nothing"
+    )
+
+
 def _plant_an_inline_list_member(tree: Tree) -> Tree:
     """A value a configuration states as one member of an inline list.
 
@@ -908,7 +1127,7 @@ def _plant_an_inline_list_member(tree: Tree) -> Tree:
     is a check reporting green while holding nothing for the key.
     """
     members = sorted(
-        value for value, where in tree.forbidden_values().items() if "(inherits)" in where
+        value for value, where in tree.forbidden_values().items() if where.endswith("inherits)")
     )
     if not members:
         raise AssertionError(
@@ -1013,19 +1232,46 @@ def _plant_surface_with_no_tracker_kinds(tree: Tree) -> Tree:
 
 
 def _plant_configurations_with_no_concrete_value(tree: Tree) -> Tree:
-    keys = "|".join(VALUE_KEYS)
+    """Every scalar replaced by a placeholder: a sweep with nothing to look for.
+
+    ⛔ Derived rather than written out, and it has to be: the reading is of every
+    leaf, so a plant that blanked a list of named keys would leave the rest of the
+    document stating values and assert nothing.
+    """
+    def blanked(node):
+        if isinstance(node, dict):
+            return {key: blanked(value) for key, value in node.items()}
+        if isinstance(node, list):
+            return [blanked(item) for item in node]
+        return "<placeholder>"
+
     for path in tree.configs():
-        tree.text[path] = re.sub(
-            r"((?:^|[\s{,])(?:" + keys + r"):)\s*(?:\"[^\"]*\"|'[^']*'|[^,}#\n]+)",
-            r'\1 "<placeholder>"',
-            tree.text[path],
-        )
+        tree.text[path] = yaml.safe_dump(blanked(yaml.safe_load(tree.text.get(path, "")) or {}))
     return tree
 
 
-def _plant_renamed_value_key(tree: Tree) -> Tree:
-    for path in tree.configs():
-        tree.text[path] = re.sub(r"(?m)^(\s*)out_dir:", r"\1output_dir:", tree.text[path])
+def _plant_an_unreadable_configuration(tree: Tree) -> Tree:
+    """A configuration that does not parse must not read as one stating no values.
+
+    The direction that matters: an unreadable file yields no values, which looks
+    exactly like a file whose values are all placeholders and nothing like an
+    error -- so the sweep would go quiet over a whole configuration and stay
+    green.
+    """
+    tree.text[OWN_CONFIG] = tree.text.get(OWN_CONFIG, "") + "\nunreadable: [this, is\n"
+    return tree
+
+
+def _plant_a_surface_publishing_nothing(tree: Tree) -> Tree:
+    """A surface with no alternation left in it.
+
+    ⛔ What this asserts is that the published vocabulary is read **from the
+    surface**: a sweep carrying its own copy of the alternations would not notice
+    this plant at all. ⚠️ The failure direction here is a flood rather than a
+    hole, which is why the arm reports the unreadable surface by name instead of
+    letting a hundred false reds stand in for the explanation.
+    """
+    tree.text[SURFACE] = re.sub(r"\s*\|\s*", " ", tree.text.get(SURFACE, ""))
     return tree
 
 
@@ -1098,7 +1344,20 @@ VIOLATIONS = [
      _plant_in_a_carrier("\nA span `` opened and never closed, then `In Progress`.\n")),
     ("no value is carried in the strict set", "a status word between two double spans",
      _plant_in_a_carrier("\n`` A `` then `In Progress` then `` B ``.\n")),
-    ("no value is carried in the strict set", "a renamed value key", _plant_renamed_value_key),
+    # ⛔ One per shape a list of key names cannot reach, each reading its value
+    # out of the configuration rather than carrying it.
+    ("no value is carried in the strict set", "a configured branch prefix, under a key the project names",
+     _plant_a_configured_branch_prefix),
+    ("no value is carried in the strict set", "a configured label, under a plural whose singular means something else",
+     _plant_a_configured_label),
+    ("no value is carried in the strict set", "a configured value as a JSON value",
+     lambda tree: _plant_in_a_json_carrier(
+         '{"statusMessage": "%s"}\n' % _a_configured(tree, "tracker", "labels"))(tree)),
+    # The three ways this check can hold nothing and report green.
+    ("no value is carried in the strict set", "a surface that publishes nothing",
+     _plant_a_surface_publishing_nothing),
+    ("no value is carried in the strict set", "a configuration that does not parse",
+     _plant_an_unreadable_configuration),
     ("no value is carried in the strict set", "configurations with no concrete value left", _plant_configurations_with_no_concrete_value),
 ]
 
@@ -1120,6 +1379,24 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     # exemption nobody checked.
     ("no stack is named in the strict set", "a build tool in a carrier map's key",
      _plant_in_a_carrier("\nThe entry is `gradle-capacity: { class: guard }`.\n")),
+    # ⛔ The green side of the line this check draws, one plant per shape the
+    # surface publishes a vocabulary in. A sweep that forbade either would forbid
+    # a role from naming the section that routes it: § 6's dirty-tree derivation
+    # and § 10's routing table are both stated *by mode*. ⚠️ Verified by emptying
+    # the published set and watching both redden -- an exemption nothing can fail
+    # is an exemption nobody checked.
+    ("no value is carried in the strict set", "a value the surface publishes as an alternation",
+     lambda tree: _plant_in_a_carrier(
+         f"\nThe model is `{_a_published_alternation_member(tree)}`.\n")(tree)),
+    ("no value is carried in the strict set", "a member of a closed list the surface publishes",
+     lambda tree: _plant_in_a_carrier(
+         f"\nThe stream is `{_a_published_list_member(tree)}`.\n")(tree)),
+    # And the narrowest of the four exceptions one format over: in JSON a key is
+    # quoted by construction, so rule 2 reads every key of a hook carrier as a
+    # value. The value beside it is swept, which is a planted violation above.
+    ("no value is carried in the strict set", "a configured value as a JSON object key",
+     lambda tree: _plant_in_a_json_carrier(
+         '{"%s": {"type": "command"}}\n' % _a_configured(tree, "tracker", "labels"))(tree)),
 ]
 
 

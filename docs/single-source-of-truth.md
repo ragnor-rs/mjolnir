@@ -367,7 +367,7 @@ It derives what it can, for the reason stated above about the check not becoming
 |---|---|
 | the one permitted slug, from `host.repo` in this project's own configuration | the host-URL, address and tracker-identifier grammars |
 | the tracker names, from the `kind` alternatives of the surface's **tracker block** and every configuration's declared kind | the closed list of stack tool names |
-| the forbidden value set, from the configurations themselves — this project's own included | which leaf keys of a configuration carry a project's fact |
+| the forbidden value set, from **every scalar the configurations state** — this project's own included — minus the vocabulary the surface publishes | nothing: no list of key names is kept here, and none is kept in step |
 | the file list, from `git ls-files`; the strict set, from the carrier shapes | a carrier directory's name, and the code-span and quoted-string forms of rules 1 and 2 |
 | the file to plant a violation into, from the strict set | the three exceptions below |
 
@@ -380,6 +380,54 @@ Reading the forbidden values out of the configurations is what makes the accepta
 work in opposite directions: **a new example configuration adds to what is forbidden under a
 carrier root instead of tripping anything, and a status word added to a skill reddens the build.**
 Both were measured rather than reasoned about.
+
+### The line: a vocabulary the surface publishes, against one a project invents
+
+Every scalar a configuration states is read, whatever key it sits under, and the subtraction is
+what the surface **publishes**:
+
+- a closed alternation, `kind: worktree | in_place`, in either shape the surface writes one — as
+  the value, or as a comment beside a value;
+- a value marked `# default`;
+- a closed vocabulary stated as a list, § 9's `streams` being the live instance, where the
+  configuration's own list is a **subset** of it.
+
+⛔ **Published is narrower than written.** The surface *illustrates* some keys with a concrete
+value — `label_prefix: "type:"`, `type_branch_prefix: { bug: bugfix }` — and a project writing the
+same string has still invented it, so an illustration subtracts nothing. What tells the two apart
+is the marker, per
+[schema § The file itself](../plugins/mjolnir/config/schema.md#the-file-itself): the alternations
+and the marked defaults are read through the surface's own reader rather than parsed a second time
+here, so a marker's grammar has one implementation and a facet added to the surface changes what
+this sweep forbids with no edit to the sweep.
+
+⚠️ **A keyed-on-key-names reading cannot express that line, and the two values it misses are a
+measurement.** Planted one at a time into a carrier file as a code span, against a list of
+twenty-two singular key names: `closed`, a workflow name and an artifact directory each reddened,
+while **a configured branch prefix and a configured label both passed**. Those two are the two the
+project invented, and neither is reachable by a key name — the prefix sits under
+`work_item.type_branch_prefix.<one of the project's own types>`, a key the project itself writes,
+and the label sits in `tracker.labels`, a plural whose singular `label` is a readiness check's
+argument, a different fact one letter away. ⛔ **And the branch prefix is read by the starting
+role**, whose text is the one place that value must not appear, since reading it from
+configuration is what that role is for.
+
+The alternations must stay nameable for a reason of the same kind: § 6's dirty-tree derivation and
+§ 10's routing table are both stated *by mode*, so a role forbidden from saying `worktree` could
+not name § 10 at all. ⚠️ Each of those two subtractions carries a plant in the **green**
+direction, verified by emptying the published set and watching both redden — an exemption nothing
+can fail is an exemption nobody checked.
+
+⚠️ **A published alternation's members are single tokens**, that being the reader's own grammar,
+so a multi-word value cannot be published at all and stays forbidden wherever a project
+configures it. Measured by planting a facet on the surface in both spellings: the single-token
+member is subtracted and the two-word one is not, with no edit to the sweep in either direction.
+
+What stops the derived set shrinking to nothing is three reported arms rather than an assertion
+that each key is still in use, there being no key list left to go stale: a surface whose published
+vocabulary cannot be read, a configuration that does not parse, and a configuration that states no
+concrete value at all. Each is one of the planted violations, and the first of them is what proves
+the subtraction is read from the surface rather than copied into the script.
 
 ### Three exceptions, encoded rather than assumed
 
@@ -458,6 +506,30 @@ exempted the whole directory and so would have read straight past it.
 - **A bare all-caps value inside an example configuration**, per the first exception above. The
   residue is narrow — an example whose status words are upper-case — and the alternative was
   dropping `OWNER/REPO` and `KEY` out of the placeholder set.
+- **A project value spelled like something the surface publishes.** The subtraction is by the
+  value and not by the key it sits under, so a project that names a status `merged`, or a label
+  `field`, may have a role say it. The narrower reading — subtract a published value only under
+  the key that publishes it — is not available: the surface shows several keys in fences that
+  open at an indent, so `statuses[].writer` and a bare `writer:` are one statement read at two
+  paths, and keying the subtraction to the path reddens `procedure` three times across two
+  shipped carriers. ⚠️ Measured in both shapes before the looser rule was the stated one.
+- **A list a project states that the surface happens to illustrate with the same members.** A
+  type vocabulary is forbidden by the subset test the moment it carries one word the surface
+  does not — `[bug, feature, chore]` is caught by `chore` — so what passes is a project whose
+  list is exactly the surface's illustration, `[bug, feature, task]` and nothing else. The
+  alternative forbids `sessions` and `commits` in the day-log skill, which name the stream
+  vocabulary § 9 publishes and must.
+- **A value written as a key of a JSON carrier.** In JSON a key is quoted by construction, so
+  rule 2's whole-quoted-string reading takes in every key of a hook carrier: `"hooks"` is the
+  harness's own schema word three times over in this repository's own hook file, and this project
+  happens to classify work with a label of that spelling. The exemption is scoped to `.json` by
+  extension — a quoted key in a script is a dict literal's, where the value beside it is the
+  thing worth sweeping — and a configured value as a JSON *value* is a planted violation.
+- **A configured value a carrier's prose merely contains.** Rule 2 is unchanged by the derivation
+  reaching further: a label named in a sentence rather than in a span is not read. ⚠️ Which the
+  wider set makes load-bearing rather than theoretical — `decision` is one of this project's own
+  labels and an ordinary English word the shipped roles use a dozen times over, and the sweep is
+  green on every one of them.
 - **A build tool a project actually named a carrier after.** The fourth exception, and the
   narrowest: a carrier-classification map is keyed by the basenames projects used, so a key naming
   a build tool is a fact the map must carry — dropping it makes the role it classifies read as a
@@ -1268,11 +1340,11 @@ change that introduced them here.
   live in the session store outside every tree (§ 11), where `git ls-files` cannot reach them and
   no width is stated for them.
 - **The width as a configured *value*.** The sweep that forbids a configured value from appearing
-  in a carrier root is keyed on key names, and `prose_width` is deliberately not among them: a
-  width is a bare integer, and a value list that matched one would redden on every count,
-  threshold and year in the tree. What that leaves unguarded is a role's text stating a width
-  instead of reading it — which no role does today, because the rule's reader is the writer of a
-  document rather than a skill.
+  in a carrier root reads every scalar a configuration states, and a number is not one of them: a
+  width is a bare integer, and a sweep that matched one would redden on every count, threshold
+  and year in the tree. What that leaves unguarded is a role's text stating a width instead of
+  reading it — which no role does today, because the rule's reader is the writer of a document
+  rather than a skill.
 
 ## An artifact states what is true now: held on the lines a change adds
 
