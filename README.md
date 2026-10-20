@@ -6,22 +6,27 @@ procedure over per-project configuration**.
 Installed as a Claude Code plugin. No clone, no submodule, no symlink, and no copy of anything in
 the adopting project.
 
-## Why
+## Who this page is for
 
-The same procedure was copied into six projects and the copies drifted. No two copies of any role
-were identical: one role ran 71 to 229 lines across its copies, another 99 to 247. Line count that
-far apart is divergent behaviour, not formatting — and some of those lines were hard-won
-corrections that existed in exactly one copy.
+**This page is written for whoever is deciding whether to adopt the toolkit into a project of their
+own.** What it is, what adopting costs, what it ships and where the rules live, in that order. The
+other two readers are one hop away and not on the way: the argument the configuration surface was
+derived from is in [`docs/configuration-surface.md`](docs/configuration-surface.md) with the
+divergences behind it in [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md), and
+what an install writes and what a session actually serves, for whoever is editing this tree, is in
+[`docs/working-on-the-toolkit.md`](docs/working-on-the-toolkit.md).
 
-Only a closed set of facts actually differs between projects. Those facts belong in
-configuration, and the procedure belongs in one place.
+The register is the one every document here is written in — reference and technical, as a textbook
+states a result — with the one property a reply's register has no reason to carry: a reply is read
+once and kept nowhere, while a front page is read first and kept indefinitely, so a measurement
+this page rests on is cited where that measurement lives rather than copied here.
 
-The argument is not borrowed: read-it-from-one-place had already been independently invented six
-times across those projects, in five different stores
-([the count](docs/configuration-surface.md#the-strongest-argument-for-extraction-is-not-borrowed)),
-each time with the same justification in its own words —
-
-> a copy that has to be «kept in sync» is the defect rather than the maintenance burden
+Both halves of that — the reader and the register — are a convention of this repository rather than
+a rule of the procedure, and nothing holds either: no role writes this file, so nothing in
+[`.claude/mjolnir.yaml`](.claude/mjolnir.yaml) states its audience, and the check that gives every
+document a role says nothing about who the document is for. That limit is recorded with the gate's
+others in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#what-it-deliberately-does-not-check).
 
 ## Install
 
@@ -36,66 +41,6 @@ Then write the project's own facts into `.claude/mjolnir.yaml`. Start from which
 [`plugins/mjolnir/config/examples/`](plugins/mjolnir/config/examples/) matches the tracker, and
 read [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md) for what every key
 means.
-
-### Working on the toolkit itself
-
-A plugin installed from a GitHub marketplace is a **clone**, so editing this tree changes nothing a
-session serves. Register the tree itself as the marketplace instead, at **user scope**:
-
-```
-claude plugin marketplace add /path/to/this/repo --scope user
-claude plugin install mjolnir@mjolnir --scope user
-```
-
-`user` rather than `local`, because whoever works on the toolkit is also the person adopting it in
-every other project on the same machine, and one registration serves both: self-hosting here, and
-every other project — whose adoption then costs exactly one file, `.claude/mjolnir.yaml`, with no
-install step at all.
-
-`local` does not confine a registration the way its name suggests, which is the sharper reason to
-pass `user` explicitly rather than a matter of reach. Only the *declaration* lands in one project's
-`.claude/settings.local.json`; the registry entry that resolution actually reads is machine-wide and
-keyed by marketplace name. Measured: a project declaring nothing of its own resolved the plugin
-from an entry a different project's `local` add had written, a second `local` add of the same name
-re-pointed that entry for every project instead of coexisting with the first, and a `remove` from
-one project emptied it for all of them — leaving the first project's own declaration pointing at
-nothing. So `local` is not a narrower `user`; it is the same machine-wide entry with its declaration
-filed somewhere that does not govern it.
-
-What those two commands write, so the choice is checkable rather than asserted. Paths are inside
-the harness's own user configuration directory, wherever `CLAUDE_CONFIG_DIR` puts it:
-
-| | |
-|---|---|
-| `settings.json` | `extraKnownMarketplaces.mjolnir` — `source: directory` with the path — and `enabledPlugins["mjolnir@mjolnir"]` |
-| `plugins/known_marketplaces.json` | `installLocation`, which for a directory source **is the working tree** |
-| `plugins/installed_plugins.json` | `scope`, a `version`, a `gitCommitSha`, and an `installPath` under `plugins/cache/` |
-
-**That `installPath` is a snapshot copy, and it is vestigial.** It is written once, at install, and
-pinned to the recorded `gitCommitSha`. Nothing refreshes it: `plugin marketplace update` leaves it
-alone, and `plugin update` is version-gated, so it reports the plugin already at its latest version
-while the snapshot stays where it was. Measured in this repository: the snapshot was byte-identical
-to its pinned commit, three commits behind the branch tip, and differed from the tree in six of its
-seven files.
-
-Edits are live anyway, because a session resolves a directory-source plugin through the
-marketplace's `installLocation` — the working tree — and never through `installPath`.
-`$CLAUDE_PLUGIN_ROOT` resolves there too, so plugin-provided scripts and hooks also run from the
-tree. Reading `installPath` and concluding the install is frozen is reading the copy nothing serves.
-
-Two consequences of that, worth knowing before editing:
-
-- A session started **afterwards** serves an edited skill or `hooks/hooks.json` with no reinstall,
-  no `plugin update` and no version bump. A session already running keeps the configuration it
-  started with.
-- Only the registered tree is served, so a branch in a git worktree is served **nowhere** until it
-  reaches that tree. A change to the procedure cannot be dogfooded from the worktree it was written
-  in.
-
-This matters because the toolkit
-[builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/27) — every issue here is
-filed, started, finished and reviewed through the loop this repository ships, on the configuration
-in [`.claude/mjolnir.yaml`](.claude/mjolnir.yaml).
 
 ## Invocation
 
@@ -112,6 +57,38 @@ Skills are addressed **namespaced, with no alias**:
 
 The rule, and why it is procedure rather than a setting, is
 [`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
+
+## What is in it
+
+| | |
+|---|---|
+| [`plugins/mjolnir/skills/file-work-item/`](plugins/mjolnir/skills/file-work-item/) | Turn a request into work items: the split confirmed, a three-layer duplicate check with a human gate, the parent case where the request is a piece of an open item, and the body rendered from the project's own template |
+| [`plugins/mjolnir/skills/gate-work-item/`](plugins/mjolnir/skills/gate-work-item/) | Gate a work item into committed work: the project's own checks run whole on an item somebody else wrote, who repairs what failed asked once, and then the two things written here and nowhere else — the estimate and the date — before the item is admitted |
+| [`plugins/mjolnir/skills/start/`](plugins/mjolnir/skills/start/) | Take a work item: the one named or the next the project's ordering offers, the readiness gate run whole, the claim published as the item's ref, and the branch cut into a tree the session then works in |
+| [`plugins/mjolnir/skills/finish/`](plugins/mjolnir/skills/finish/) | Take a finished branch to a landed pull request: the commit, the push, the pull request, the host's answer about it, what the project counts as done and who answers each of those checks, the merge read back from state, the item's move through the port, and the tree released |
+| [`plugins/mjolnir/skills/review/`](plugins/mjolnir/skills/review/) | Review an open change and drive its gate green: the conversation read first, the diff read whatever else reads it, every finding reproduced and fixed under the same item, every thread answered, and a record of whether a person is going to look — which this role writes and never acts on |
+| [`plugins/mjolnir/skills/day-report/`](plugins/mjolnir/skills/day-report/) | Build a working day's time-log entry from session transcripts, git, the code host, chat and the calendar |
+| [`plugins/mjolnir/config/`](plugins/mjolnir/config/) | The configuration surface: the schema, and a whole example per tracker including a deliberately trackerless one |
+| [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) | What a role runs on rather than reimplements: the configuration reader, and the tracker port behind [`schema.md § 3`](plugins/mjolnir/config/schema.md#3-tracker-port) |
+| [`plugins/mjolnir/scripts/adapters/`](plugins/mjolnir/scripts/adapters/) | One implementation of that port per tracker, installed by being there, per [`schema.md § 3`](plugins/mjolnir/config/schema.md#3-tracker-port). Which kinds are built is what the directory says, so no list of them is carried here |
+| [`docs/configuration-surface.md`](docs/configuration-surface.md) | Why the surface has this shape — the measurements behind every schema section |
+| [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) | Every divergence found between the old copies and which behaviour was kept, including where a ruling overrode a stated counter-argument |
+| [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) | How the single-authority claim is held: the checks, their kinds, and what each deliberately leaves alone |
+| [`docs/building-itself.md`](docs/building-itself.md) | The bootstrap record: which pieces could not be built through the loop, and the command that derives what the loop carries here |
+| [`docs/working-on-the-toolkit.md`](docs/working-on-the-toolkit.md) | What an install writes, which copy of the plugin a session resolves, and the two consequences of that worth knowing before editing this tree |
+| [`tools/check_single_source.py`](tools/check_single_source.py) | The single-authority check, run by the `Single source of truth` workflow on every change |
+| [`tools/check_no_project_names.py`](tools/check_no_project_names.py) | The sweep that holds the convention above: no other project named anywhere, and no value, tracker or stack in any carrier root |
+| [`tools/check_nothing_deferred.py`](tools/check_nothing_deferred.py) | The gate that refuses a merge while any item raised against the change is unresolved, counted in the body and in the threads on it |
+| [`tools/check_prose_width.py`](tools/check_prose_width.py) | The sweep that holds every tracked markdown file to the line width the configuration states, excluding the lines the format forbids breaking |
+| [`tools/check_no_audit_trail.py`](tools/check_no_audit_trail.py) | The gate that reads the markdown lines a change adds and refuses a dated pass record, a figure beside a former value, or a clause whose subject is the pass before this one |
+| [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/): a `Stop` hook holding a role's reply to the register, and a `PreToolUse` hook refusing a command that would carry a credential onto a surface outside the project |
+
+The loop's remaining roles land here as they are reconciled. ⛔ **No count of them is written
+here** — the table above says which are shipped, and
+[`docs/building-itself.md`](docs/building-itself.md) names the command that derives it; a figure in
+this sentence is a copy of that, and it had already drifted once. A project that has not been
+migrated keeps working throughout — that is a safety property of the migration, not an acceptable
+end state.
 
 ## Where the rules live
 
@@ -133,36 +110,43 @@ the measurements the surface was derived from, and
 [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) records every divergence
 found between the old copies and the decision that settled it.
 
-## What is in it
+## Why one procedure over configuration
 
-| | |
-|---|---|
-| [`plugins/mjolnir/skills/file-work-item/`](plugins/mjolnir/skills/file-work-item/) | Turn a request into work items: the split confirmed, a three-layer duplicate check with a human gate, the parent case where the request is a piece of an open item, and the body rendered from the project's own template |
-| [`plugins/mjolnir/skills/gate-work-item/`](plugins/mjolnir/skills/gate-work-item/) | Gate a work item into committed work: the project's own checks run whole on an item somebody else wrote, who repairs what failed asked once, and then the two things written here and nowhere else — the estimate and the date — before the item is admitted |
-| [`plugins/mjolnir/skills/start/`](plugins/mjolnir/skills/start/) | Take a work item: the one named or the next the project's ordering offers, the readiness gate run whole, the claim published as the item's ref, and the branch cut into a tree the session then works in |
-| [`plugins/mjolnir/skills/finish/`](plugins/mjolnir/skills/finish/) | Take a finished branch to a landed pull request: the commit, the push, the pull request, the host's answer about it, what the project counts as done and who answers each of those checks, the merge read back from state, the item's move through the port, and the tree released |
-| [`plugins/mjolnir/skills/review/`](plugins/mjolnir/skills/review/) | Review an open change and drive its gate green: the conversation read first, the diff read whatever else reads it, every finding reproduced and fixed under the same item, every thread answered, and a record of whether a person is going to look — which this role writes and never acts on |
-| [`plugins/mjolnir/skills/day-report/`](plugins/mjolnir/skills/day-report/) | Build a working day's time-log entry from session transcripts, git, the code host, chat and the calendar |
-| [`plugins/mjolnir/config/`](plugins/mjolnir/config/) | The configuration surface: the schema, and a whole example per tracker including a deliberately trackerless one |
-| [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) | What a role runs on rather than reimplements: the configuration reader, and the tracker port behind [`schema.md § 3`](plugins/mjolnir/config/schema.md#3-tracker-port) |
-| [`plugins/mjolnir/scripts/adapters/`](plugins/mjolnir/scripts/adapters/) | One implementation of that port per tracker, installed by being there, per [`schema.md § 3`](plugins/mjolnir/config/schema.md#3-tracker-port). Which kinds are built is what the directory says, so no list of them is carried here |
-| [`docs/configuration-surface.md`](docs/configuration-surface.md) | Why the surface has this shape — the measurements behind every schema section |
-| [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) | Every divergence found between the old copies and which behaviour was kept, including where a ruling overrode a stated counter-argument |
-| [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) | How the single-authority claim is held: the checks, their kinds, and what each deliberately leaves alone |
-| [`docs/building-itself.md`](docs/building-itself.md) | The bootstrap record: which pieces could not be built through the loop, and the command that derives what the loop carries here |
-| [`tools/check_single_source.py`](tools/check_single_source.py) | The single-authority check, run by the `Single source of truth` workflow on every change |
-| [`tools/check_no_project_names.py`](tools/check_no_project_names.py) | The sweep that holds the convention above: no other project named anywhere, and no value, tracker or stack in any carrier root |
-| [`tools/check_nothing_deferred.py`](tools/check_nothing_deferred.py) | The gate that refuses a merge while any item raised against the change is unresolved, counted in the body and in the threads on it |
-| [`tools/check_prose_width.py`](tools/check_prose_width.py) | The sweep that holds every tracked markdown file to the line width the configuration states, excluding the lines the format forbids breaking |
-| [`tools/check_no_audit_trail.py`](tools/check_no_audit_trail.py) | The gate that reads the markdown lines a change adds and refuses a dated pass record, a figure beside a former value, or a clause whose subject is the pass before this one |
-| [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/): a `Stop` hook holding a role's reply to the register, and a `PreToolUse` hook refusing a command that would carry a credential onto a surface outside the project |
+The same procedure was copied into every project that ran it, and the copies drifted: no two copies
+of any role were identical, and some of the lines that differed were hard-won corrections that
+existed in exactly one copy. Line count that far apart is divergent behaviour rather than
+formatting, and the ranges measured are in
+[`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) beside the divergence each
+one carried.
 
-The loop's remaining roles land here as they are reconciled. ⛔ **No count of them is written
-here** — the table above says which are shipped, and
-[`docs/building-itself.md`](docs/building-itself.md) names the command that derives it; a figure in
-this sentence is a copy of that, and it had already drifted once. A project that has not been
-migrated keeps working throughout — that is a safety property of the migration, not an acceptable
-end state.
+Only a closed set of facts actually differs between projects. Those facts belong in configuration,
+and the procedure belongs in one place. The argument is not borrowed: read-it-from-one-place had
+already been independently invented across those projects, in several different stores
+([the instances](docs/configuration-surface.md#the-strongest-argument-for-extraction-is-not-borrowed)),
+each time with the same justification in its own words —
+
+> a copy that has to be «kept in sync» is the defect rather than the maintenance burden
+
+## Working on the toolkit itself
+
+A plugin installed from a GitHub marketplace is a **clone**, so editing this tree changes nothing a
+session serves. Register the tree itself as the marketplace instead, at **user scope**:
+
+```
+claude plugin marketplace add /path/to/this/repo --scope user
+claude plugin install mjolnir@mjolnir --scope user
+```
+
+Edits are then live in every session started afterwards, with no reinstall and no version bump.
+What those two commands write, why the scope is `user` rather than the `local` whose name suggests
+a narrower reach, which copy of the plugin is vestigial, and why a branch in a worktree is served
+nowhere until it reaches the registered tree are in
+[`docs/working-on-the-toolkit.md`](docs/working-on-the-toolkit.md).
+
+This matters because the toolkit
+[builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/27) — every issue here is
+filed, started, finished and reviewed through the loop this repository ships, on the configuration
+in [`.claude/mjolnir.yaml`](.claude/mjolnir.yaml).
 
 ## Conventions
 
@@ -187,8 +171,6 @@ value set out of the configurations themselves — this project's own included �
 carrier root, whether it holds skills, commands or hooks, to a stricter rule than the rest of the
 tree. Its exceptions are in the script, and what it deliberately leaves to a reviewer is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-second-sweep-naming-no-other-project).
-
-Projects referred to in the documentation are lettered A–F. The counts are what carry the argument.
 
 ⛔ **Nothing is deferred.** A role that reaches a question it cannot answer asks, with the options
 stated, rather than noting it and carrying on; and no change merges carrying an item raised

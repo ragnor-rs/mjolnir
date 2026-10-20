@@ -239,6 +239,17 @@ Stated, because an unstated limit reads later as coverage.
   *quoting* kind: red on an innocent reword, green when a claim is reworded into its opposite.
   No check here attempts it. It stays a reviewer's job, which is why a document paraphrases as
   little as it can and cites instead.
+- **A document's audience and register.** Check 0 gives every document a *role* — explains, records
+  or carries procedure — and a role bounds what a document may **state**, never who it is written
+  for or in what register. Two audiences interleaved in one file is invisible here, and so is a
+  document written in no settled register at all. The front page's own reader is stated in
+  [README § Who this page is for](../README.md#who-this-page-is-for), as a convention of this
+  repository rather than a rule of the procedure, and held by nobody. ⚠️ Nothing configures it
+  either: the `language.artifacts` triple at
+  [schema § 8](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project)
+  is read by the role that writes the artifact, and no role writes a README — so an entry for one
+  would be read by nothing, which is why the statement is in the file itself. Whether the procedure
+  should state that boundary in general is [#65](https://github.com/ragnor-rs/mjolnir/issues/65)'s.
 - **Issue state.** Check 3 resolves the *form* of a work-item cell, not whether that issue is
   still open. Reading the tracker needs a token scope, and per
   [#50](https://github.com/ragnor-rs/mjolnir/issues/50) this workflow is granted none: its

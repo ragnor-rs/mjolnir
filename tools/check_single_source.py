@@ -61,6 +61,7 @@ ROLES = {
     READER: EXPLAINS,
     "docs/configuration-surface.md": EXPLAINS,
     "docs/single-source-of-truth.md": EXPLAINS,
+    "docs/working-on-the-toolkit.md": EXPLAINS,
     RULINGS: RECORDS,
     "docs/building-itself.md": RECORDS,
     "plugins/mjolnir/skills/day-report/SKILL.md": PROCEDURE,
