@@ -858,6 +858,46 @@ after that change had landed**, so the figure above states the date it is true o
 day's end: a count stated over a window whose end the reader cannot see keeps growing after it is
 written.
 
+⛔ **What a restatement in fact returns is measured over every hand-back this check has recorded**,
+rather than over the four read by hand, since what
+[§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred) charges for a
+finding on a reply is this: 41 hand-backs, across nine projects' transcripts, from 2026-10-17 20:59
+to 2026-10-20 13:04 — the end stated as a time rather than a date because one more arrived while
+this was being written. A restatement answering the blocking finding alone brought back **167 of
+307 prose lines byte for byte**; one answering a reported density alongside it brought back **71 of
+300**. On the *Completeness* arm alone, where the blocking finding is a single span either way, the
+same split is 128 of 213 lines against 50 of 193. ⚠️ **What did not come back unchanged came back
+reworded rather than dropped**: 263 of those 307 lines have a counterpart in the restatement that
+says the same thing in different words, which is what costs the reader a second reading of a reply
+they had already finished.
+
+⛔ **So a reported finding was asked for after all, on every turn where something else blocked** —
+against the division
+[§ 8](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) is held to here,
+which is that only an asking answer spends a re-read. The answer listed both kinds under one ask,
+and context handed back on a `Stop` is read by the writer whether or not the answer blocks, so the
+one price the reporting kind was changed to stop paying was charged again by any turn carrying one
+finding of each. ⚠️ **Half the hand-backs are that shape**: 29 of the 57 replies this arm hands
+back, over the corpus the section below states, carry a reported density too. Measured on the reply
+it was found on — one parked sentence blocking, an *Emphasis* density of 15 spans reported beside
+it — the restatement came back with 2 emphasised spans, **1 of its 14 prose lines byte for byte**
+and 9 carrying a reworded counterpart, and it dropped one of the two questions the first reply had
+put to the person. A question lost in a restatement is visible to nobody: the corrected reply is
+what the person reads, and it is green.
+
+⛔ **Two things change, and neither is which findings block**, both under
+[§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred). The ask is
+addressed to the findings that block it, with a reported one named *after* the sentence that asks
+and under a line saying it is not what the restatement is for. And **corrected** is stated on the
+surface to mean the finding fixed with the rest of the reply as it stands, because a reply reworded
+around the fix charges the reader every line to show them one. ⚠️ **The second is measured on a
+hand-back that carried no density at all**: one parked clause blocked, the writer did the work the
+clause had offered, and the reply came back with 3 of its 9 prose lines byte for byte and a
+reworded counterpart for all nine — so the rewording is not the density arm's doing, and bounding
+the ask alone would not have stopped it. ⚠️ **The bound is prose asked of the writer and held by
+nothing**: the self-test holds both asking answers to carrying the sentence, and nothing compares a
+restatement to the reply it corrects. Stated because an unstated limit reads later as coverage.
+
 - **Opening** blocks on one instance. It is the first thing read and the frame for everything under
   it, and a preamble form is a phrase rather than a judgement.
 - **Length** reports every chain it finds and blocks only where the count is over a density of the
@@ -929,9 +969,25 @@ written.
 - ⛔ **A count of what an arm raises is counted through the arm, not off its pattern.** The first
   measurement here counted raw matches, which reports spans the carve-outs already suppress and
   flatters every one of them. Read through the whole pipeline — the quoted blanking, the negation,
-  the senses — this arm now raises **70 spans and hands back 65 of 2,734 replies**, where the shape
-  it shipped in raised 99 over the same corpus. ⚠️ What remains is the arm working: offers, a
-  section of work named and not done, a figure asserted to stand, and `say the word` 38 times over.
+  the senses — this arm raises **62 spans and hands back 57 of the 482 replies** that end a turn, of
+  2,901 text-only assistant messages on 2026-10-20, where the shape it shipped in raised 99 over
+  every such message. ⚠️ What remains is the arm working: offers, a section of work named and not
+  done, a figure asserted to stand, and `say the word` 36 times over. ⛔ **Which replies those 482
+  are, and why the larger figure is not a hand-back rate, is the last entry under
+  [§ What this check deliberately does not hold](#what-this-check-deliberately-does-not-hold).**
+- ⛔ **One further carve-out was measured and rejected rather than shipped**, recorded so that it is
+  not proposed a second time as though it were untested. The hand-back that occasioned the
+  measurement above fired on `say the word` closing a reply that *had* asked its blocking question
+  with three options and their costs, so the asking sense was a candidate for the same narrowing the
+  four ruled forms got: the form read with a clause reserving the decision to the person — *your
+  call*, *the choice is yours*, *one decision I can't make for you*. ⚠️ **The corpus refused it.**
+  Of the 41 offer-form spans this project's replies carry, such a clause in the same line greens
+  exactly **one**, none carries one in the line before, and the one it greens offers to lay the
+  options out in a later reply, which is a parking in the shape of an ask. Read over the whole reply
+  instead it greens four more, and every one of them is an offer of work the reply had finished
+  without it: review threads nobody asked for, an assignee re-stamped, a delegated review pass, an
+  ignore entry. So the form stays matched in every person and sense, and what a hand-back on it
+  costs is bounded above rather than carved out here.
 - ⚠️ **One false red is kept rather than closed, and it is kept knowingly**: `deliberately absent`
   is both the shape the ruling was measured on and § 4's own phrase for a facet carrying an
   `absent_reason`, word for word, so a reply writing the second is handed back. Nothing lexical
@@ -1023,6 +1079,16 @@ holds each of them to carrying it and to promising nothing about a later reply �
 two to carrying **neither** it nor a promise, because dropping the ask is a licence to defer unless
 what replaces it is silence towards the writer.
 
+⛔ **What either of those two answers asks for is the blocking findings, and a reported one rides
+along named as not that** — the two kinds of
+[§ 8](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role)'s table kept apart
+in the one place they are read. It is one list under the ask and a second after it, in that order,
+and `--self-test` asserts the order on both answers and on a composed reply carrying one of each
+kind: a reported finding ahead of the ask is a density asked for, which is the price the reporting
+kind exists to not pay. ⚠️ **The person is told both regardless** — the `reason` beside the context
+names the reported arms as reported, so a hand-back reports no less about a reply than the same
+reply would have been told on a turn where nothing blocked.
+
 It derives what it can, for the reason the gate's own scripts do:
 
 | Derived, at run time | Hardcoded |
@@ -1080,8 +1146,28 @@ calls and asserts it is this script. See
   names, work going under the current branch and pull request and item, named artifacts the project
   had none of. That is an argument for the arm's precision rather than for its reach: a reply
   answering a question about history owes no work, and nothing in the payload says so.
-- **A reply that was never sent as text.** A turn that ends in a tool call carries no final
-  message, and the hook answers nothing rather than guessing.
+- **Every reply but the last of its turn.** A `Stop` payload carries one message, the turn's final
+  one, so a reply the writer sends and then follows with a tool call is in no payload and is held to
+  nothing — and a turn ending in a tool call carries no final message at all, which the hook answers
+  with nothing rather than a guess. ⚠️ **It is most of the text a session produces.** Measured over
+  this project's transcripts on 2026-10-20: **482 of 2,901** assistant messages carrying text and no
+  tool call end their turn, and the other 2,419 are mid-turn text the hook never sees. ⛔ **The
+  larger figure is what the sweep above counted**, so it cannot be read as a hand-back rate: five
+  sixths of it could not have been handed back whatever the arm found. The carve-outs it bought
+  stand either way — a sense wrongly matched is wrongly matched wherever the text sits — and the
+  figures above are restated against the 482. ⚠️ **The measured restatement is itself an instance**:
+  it ended in a tool call, so the corrected reply the hook had asked for was never read by the hook
+  that asked.
+- **A reply repeating one already sent in the same turn**, which is what the limit above leaves
+  open and is not closed by reaching for the transcript the payload names. ⚠️ **Measured, and the
+  measurement is why**: of 327 turns in this project's transcripts carrying more than one reply, 4
+  end on a reply that repeats at least half its prose lines from earlier in the turn, and 3 of those
+  4 are the restatement this rule asks for rather than a repetition nobody asked for. ⛔ **And the
+  one case this was measured on is invisible to any comparison of text**: a reply reported in full,
+  a question went to the person through a tool, and the reply after the answer stated the same facts
+  again in different words — every one of its five prose lines sits between 32% and 45% of its
+  nearest counterpart, where a restatement of the same reply sits above 60%. What repeats is the
+  content, which is the judgement *Structure* is already left to a reader for.
 - **Code, a quotation, and — for the emphasis density only — a table.** A fenced block, an
   indented block and a quoted line are dropped from every check: they are not the writer's own
   prose, and sweeping them produced false reds on a pasted traceback and on quoting the person's

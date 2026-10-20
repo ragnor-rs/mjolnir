@@ -62,6 +62,14 @@ DEFERRAL_CITATION = "schema § Nothing is deferred"
 # that fires on a density closed on one. `--self-test` holds both asking answers
 # to carrying this sentence and to promising nothing about a later reply.
 #
+# ⛔ **And it bounds the restatement to the correction**, because the price the
+# rule charges is a re-read of the same reply, and a reply rewritten around the
+# fix is a different and larger price: the reader cannot see what changed, and
+# what the first reply carried can go missing without anything saying so. ⚠️ How
+# far restatements in fact departed from the reply they corrected is measured in
+# the document rather than restated here, over every hand-back this check has
+# recorded; no figure of it lives in this file.
+#
 # ⛔ **Asking is what costs the reader the reply a second time, and `decision` is
 # not what decides it.** Context handed back on a `Stop` is read by the writer
 # whether or not the answer also blocks, so an arm that reported a finding *and*
@@ -75,7 +83,9 @@ DEFERRAL_CITATION = "schema § Nothing is deferred"
 # strings authored below rather than arbitrary text. A reworded licence passes
 # it; what catches that is the absent `RESTATE`, which is the arm that matters.
 RESTATE = ("Re-send this reply corrected, in this turn — a finding against the reply just sent "
-           "is not carried forward to a later one.")
+           "is not carried forward to a later one. Corrected is the finding fixed with the rest "
+           "of the reply as it stands, since what this costs the reader is a re-read: a reply "
+           "reworded around the fix costs them every line of it instead of the one that changed.")
 DEFERRALS = ("the next reply", "a later reply", "written knowing", "next time")
 
 # ⛔ What the two kinds now mean, which is narrower than it reads: `BLOCKS` hands
@@ -301,10 +311,17 @@ PARKED = re.compile(
 PARKED_FLOOR = 1
 
 # ⛔ **Three senses carved out by measurement rather than by argument**, over
-# 2,713 finished replies in this project's own transcripts — the only corpus of
-# the artifact this arm holds. 99 spans matched across 27 distinct forms, and the
-# majority are the acts the rule is for: 39 `say the word`, the offers, the
-# sections of work named and not done. ⚠️ **What the sweep found instead is that
+# 2,713 assistant messages in this project's own transcripts that carried text
+# and no tool call. ⚠️ **That is not the corpus of the artifact this arm holds**,
+# which it was read as being: a `Stop` payload carries the last reply of a turn,
+# so a message followed by a tool call is never in one, and most of a session's
+# text is exactly that. The split is measured in the document, and the sweep's
+# verdicts below stand either way — a sense carved out is carved out whether or
+# not the reply it was measured on could have been handed back.
+#
+# Over that set, 99 spans matched across 27 distinct forms, and the majority are
+# the acts the rule is for: 39 `say the word`, the offers, the sections of work
+# named and not done. ⚠️ **What the sweep found instead is that
 # four forms carry a second sense this repository writes constantly**, and each
 # carve-out below is read around the match rather than over the reply.
 #
@@ -902,10 +919,17 @@ def answer(payload: dict) -> dict:
     }
     if block:
         out["decision"] = "block"
+        # ⚠️ The reported arms are named here too, and named as reported: this
+        # line is what the person reads, and a hand-back that listed only what it
+        # blocked on would report less about the reply than the same reply would
+        # have got on a turn where nothing blocked. Order preserved rather than
+        # set-deduplicated, so two findings on one property read as one name once.
+        aside = "; ".join(dict.fromkeys(f.split(":", 1)[0] for f in reported))
         out["reason"] = (
             f"The reply's register is procedure ({CITATION}). "
             + "; ".join(f.split(":", 1)[0] for f in blocking)
             + " — handed back once for restating."
+            + (f" {aside} — reported, and not what the restatement is for." if aside else "")
         )
     else:
         out["systemMessage"] = (
@@ -938,9 +962,19 @@ def context(blocking: list[str], reported: list[str], block: bool, unguarded: st
     them*, which is a deferral stated by the guard that holds the rule against
     deferring, and the shape that replaced it asked for a whole restatement on a
     density. What those two arms do now is report to the person, above.
+
+    ⛔ **The restatement is asked for the blocking findings, and a reported one is
+    named outside the ask.** An arm that reports asks the writer for nothing only
+    on a turn where nothing blocks: while this listed both kinds together under
+    one ask, every density that happened to share a turn with a blocking finding
+    was asked for after all -- which is the whole of what the reporting kind was
+    changed to stop costing. ⚠️ The order is load-bearing rather than cosmetic,
+    and `--self-test` asserts it: the ask closes the blocking list, and anything
+    the writer reads after it is told it is not what the restatement is for.
     """
-    lines = [f"The reply's register is procedure: {CITATION}. Findings against the reply just sent:"]
-    lines += [f"- {f}" for f in blocking + reported]
+    lines = [f"The reply's register is procedure: {CITATION}. "
+             "What the restatement is for, found in the reply just sent:"]
+    lines += [f"- {f}" for f in blocking]
     if block:
         lines.append(
             f"This turn is handed back once only; a second reply is not blocked. {RESTATE}"
@@ -949,6 +983,13 @@ def context(blocking: list[str], reported: list[str], block: bool, unguarded: st
         lines.append(
             f"Nothing is blocked, and not because these findings are weak: {unguarded}. {RESTATE}"
         )
+    if reported:
+        lines.append(
+            "Reported to the person who ran the role, and outside the restatement above: these "
+            "ask the writer for nothing, and re-sending the reply reworded for them is the price "
+            "this answer is bounded to avoid."
+        )
+        lines += [f"- {f}" for f in reported]
     return "\n".join(lines)
 
 
@@ -1458,6 +1499,8 @@ def self_test() -> int:
         ("handed back", dict(blocking=["a: b"], reported=[], block=True, unguarded="")),
         ("blocking, unguarded", dict(blocking=["a: b"], reported=[], block=False,
                                      unguarded="no turn is named")),
+        ("handed back, a density reported alongside",
+         dict(blocking=["a: b"], reported=["c: d"], block=True, unguarded="")),
     ]
     for label, kwargs in branches:
         said = context(**kwargs)
@@ -1468,6 +1511,56 @@ def self_test() -> int:
             missing = "carries no restatement" if RESTATE not in said else f"defers: {deferred}"
             print(f"  FAIL                   {label}: {missing}")
             failures += 1
+
+    # ⛔ The ask is bounded to the findings that block it, asserted on the order
+    # the writer reads the two lists in. While both kinds sat together under one
+    # ask, a density that happened to share a turn with a blocking finding was
+    # asked for too — which is what the reporting kind had already been changed
+    # to stop costing, undone by every turn where something else blocked. So a
+    # reported finding sits *after* the sentence that asks, under a line saying it
+    # is not what the restatement is for.
+    print("\nAsserting a reported finding sits outside the ask the blocking one carries:")
+    for label, kwargs in [
+        ("handed back", dict(blocking=["Completeness: parked"], reported=["Emphasis: texture"],
+                             block=True, unguarded="")),
+        ("blocking, unguarded", dict(blocking=["Completeness: parked"],
+                                     reported=["Emphasis: texture"], block=False,
+                                     unguarded="no turn is named")),
+    ]:
+        said = context(**kwargs)
+        bounded = ("ask the writer for nothing" in said
+                   and said.index("Completeness: parked") < said.index(RESTATE)
+                   < said.index("Emphasis: texture"))
+        if bounded:
+            print(f"  ok                     {label}: the restatement is asked for what blocks it")
+        else:
+            print(f"  FAIL                   {label}: the reported finding is inside the ask")
+            failures += 1
+
+    # ⛔ And on the answer itself rather than on `context` alone, since what the
+    # writer reads is the answer: a reply carrying one finding of each kind is
+    # handed back for the blocking one, names the reported one after the ask, and
+    # names it to the person as reported. ⚠️ The plant is composed from the two
+    # single-kind plants and then asserted to carry both findings, because a
+    # composition is a density's denominator as much as its numerator.
+    print("\nAsserting the answer to a reply carrying one finding of each kind:")
+    both = blocking_reply + "\n" + reporting_reply
+    both_blocking, both_reported = findings(both)
+    answered = answer({"last_assistant_message": both, "prompt_id": "self-test-both-kinds"})
+    said = answered.get("hookSpecificOutput", {}).get("additionalContext", "")
+    reason = answered.get("reason", "")
+    if not (both_blocking and both_reported):
+        print("  FAIL                   the composed plant does not carry one finding of each kind")
+        failures += 1
+    elif (answered.get("decision") == "block"
+            and all(f in said for f in both_blocking + both_reported)
+            and max(said.index(f) for f in both_blocking) < said.index(RESTATE)
+            and min(said.index(f) for f in both_reported) > said.index(RESTATE)
+            and "reported, and not what the restatement is for" in reason):
+        print("  ok                     blocked for one, and the other named outside the ask")
+    else:
+        print("  FAIL                   the reported finding was asked for, or went unnamed")
+        failures += 1
 
     # ⛔ And the arm that asks for nothing asks for *nothing* — not a later reply
     # either. Dropping the restatement is a licence to defer unless what replaces
