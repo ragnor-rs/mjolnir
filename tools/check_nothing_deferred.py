@@ -527,7 +527,7 @@ def check_no_unowned_remedy_added(change: Change) -> list[str]:
     """
     problems = []
     for path, line in change.added:
-        if path == SELF:
+        if path in EXEMPT:
             continue
         match = UNOWNED.search(line)
         if match:
@@ -545,7 +545,7 @@ def check_no_deferral_marker_added(change: Change) -> list[str]:
         for path in change.unread
     ]
     for path, line in change.added:
-        if path == SELF:
+        if path in EXEMPT:
             continue
         match = MARKER.search(line)
         if match:
@@ -555,14 +555,24 @@ def check_no_deferral_marker_added(change: Change) -> list[str]:
     return problems
 
 
-# The one file that necessarily writes the markers down, for the same reason
-# its sibling sweep exempts itself: it spells out every form it forbids. ⚠️ The
-# exemption is this file and no other -- a marker in any other tool is read,
-# which `tools/` being where further scripts land makes load-bearing rather
-# than theoretical. Both halves are asserted below: the whole-change fixture
-# carries a marker in this file and stays green, and a plant puts one in a
-# sibling tool and reddens.
-SELF = "tools/" + os.path.basename(__file__)
+# The files that necessarily write the markers down, for the same reason this
+# sweep exempts itself: a check that forbids a form has to spell that form out,
+# and has to plant it to prove the arm fires. ⚠️ **The list is closed and short
+# -- a marker in any other tool or script is read**, which `tools/` being where
+# further scripts land makes load-bearing rather than theoretical. Both halves
+# are asserted below: the whole-change fixture carries a marker in an exempt
+# file and stays green, and a plant puts one in a sibling tool and reddens.
+#
+# ⛔ The second entry earned the exemption the same way the first did. Its arm
+# holds a role's reply to naming no work the turn does not do, the marker is one
+# of the forms it forbids, and the casing is its grammar -- `re.I` over the whole
+# pattern matched the ordinary English noun, so a plant in the marker's own
+# casing is what asserts the narrowing. Without the exemption that plant could
+# not be written, and the arm would ship with nothing holding it.
+EXEMPT = frozenset({
+    "tools/" + os.path.basename(__file__),
+    "plugins/mjolnir/scripts/check_reply_defers_nothing.py",
+})
 
 
 CHECKS = [

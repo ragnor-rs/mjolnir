@@ -672,11 +672,14 @@ there has it backwards.
   projects that arrive with them.
 - **A marker this change did not write.** Only added lines are read: somebody else's marker is
   somebody else's item.
-- **A marker in the script itself.** ⚠️ That one file, not all of `tools/` — it necessarily
-  writes
-  down every form it forbids, and its sibling needs no such licence, which matters because `tools/`
-  is where further scripts land. Both halves are asserted: the whole-change fixture carries a
-  marker in this file and stays green, and a plant puts one in a sibling tool and reddens.
+- **A marker in a file that necessarily writes one down.** ⚠️ A closed list of two, not all of
+  `tools/` and not every script — a check that forbids a form has to spell that form out, and has
+  to plant it to prove the arm fires. The sweep itself is one; the other is the hook holding a
+  reply to naming no work the turn does not do, where the marker is one of the forms it forbids and
+  its **casing** is the grammar, so the plant has to be written in that casing. Every other file is
+  swept, which matters because `tools/` is where further scripts land. Both halves are asserted:
+  the whole-change fixture carries a marker in an exempt file and stays green, and a plant puts one
+  in a sibling tool and reddens.
 - **A setext heading.** `Open items` underlined with hyphens is an `h2` to the host and is not a
   heading to this gate. The residue is narrow and the alternative is a second heading grammar.
 - **A pull request that does not exist yet.** Run by hand before one is opened, the gate has no
