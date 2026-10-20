@@ -181,3 +181,15 @@ environment:
   # project that has to say which credentials its roles hold — the write side and this one are
   # the same boundary from opposite directions.
   inherits: [PATH, HOME, TRACKER_KEY, TRACKER_TOKEN]
+
+e2e_register:
+  # ⚠️ The decision rather than the absence of one: this project drives the tier by hand, and
+  # `human_verification` under `done:` above is where that answer is recorded. A person's walk
+  # through the change leaves no case file, so there is no file list for anything here to compare.
+  carrier: none
+  absent_reason: >-
+    The tier is driven by hand and recorded through the `human_verification` check above. Nothing
+    is written to a case file, so there is no suite and no register to hold together.
+  revisit_when: >-
+    The walk-through is automated into case files, which is the first moment a record of what is
+    covered has two lists to be held between.

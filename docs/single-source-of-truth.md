@@ -1267,6 +1267,85 @@ quoting kind.
   short one does. What the arm supplies is the report that makes the gap visible; closing it is a
   person's judgement about what a role needs, which is the one judgement the procedure never makes.
 
+## The end-to-end register against the suite, and the change against both
+
+`plugins/mjolnir/scripts/check_e2e_register.py --self-test` runs in the `End-to-end register`
+workflow, with no credential and no network. ⛔ The rule is
+[schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded) and this
+document states none of it: what is recorded here is the reach of the check.
+
+⚠️ **It is the only check here with no subject in this repository.** Several siblings are shipped
+carriers too — the reader, the port, the claim and the boundary all run in an adopting project —
+but each of them also has something to act on here. This one does not: this project states
+`e2e_register.carrier: none`, nothing here is deployed, and there is no suite for a register to
+describe. Pointed at a project in that position it says it has no subject and exits with
+neither green nor red, which is the same rule the width check applies to a tree with no width
+configured: a check that holds nothing may not report green. What the workflow therefore runs is
+the carrier's own assertion suite.
+
+What it holds, on a project that carries the facet: the register against the case list **both
+ways**, and the change against both. Every value is read from the configuration — the suite root,
+the glob a case matches, the register and the heading its table sits under, the heading the
+written-down gaps sit under, and the trees a change is judged over — so the script carries no path
+and no name of any project. The kind is **computed**: two file lists, the register at each end of
+the change, and the diff. ⛔ It never runs a case and never asks whether one passes
+([schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded)).
+
+⚠️ **It plants both sides, as the width check does.** Violations that must redden — a case no row
+names, a row naming a case that is gone, a row naming no case at all, an absent register, an
+absent heading, a suite holding no case, and a judged change recording none of the three — and one
+exemption plant per hole in the scope, each of which must stay green: a judged change that writes
+down why it is uncovered, one that records a row rather than adding a case, a change outside every
+judged tree, a row naming its case relative to the suite root, a row naming it as a link target,
+and a table under a later heading of the same document. Each exemption was then verified by
+**switching its own arm off** and watching that plant redden, and each violation by replacing the
+comparison with a constant and watching it go green.
+
+⚠️ **The fixture's own premises are asserted before any plant runs** — that it starts green, that
+its change touches a judged tree, and that its register names every case it has. A plant measured
+against a baseline that is already red proves nothing, and an exemption plant whose change touched
+no judged tree would pass vacuously for the wrong reason.
+
+⛔ **And one plant did not reach the mechanism it was written for, which is why the suite also
+builds a repository.** A plant adding a case in a subdirectory of the suite was written to assert
+that the case glob crosses a directory separator; the subject it mutates is in memory, so the
+plant never called the matching at all and stayed green with that arm switched off. The glob, the
+two file lists, the base and the diff are now exercised against a repository the suite creates in
+a temporary directory — in both directions, including a base that is the change's own head, which
+is refused rather than read as nothing to hold
+([schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded)).
+
+### What this check deliberately does not hold
+
+- **Whether a case passes, or whether the suite runs at all.** That is the expensive half, which
+  needs a deployment, a credential, indexed material and money, and which no workflow here
+  mirrors. This half asks only whether the record and the change agree with the file list.
+- **Whether a row *describes* its case truthfully.** A row may name the right file and say the
+  wrong thing about it. This is the *fidelity* limit the document checks have, two claims over,
+  and it is the reason the comparison is of paths rather than of prose.
+- **A tree the configuration does not judge.** A change to a container tree, a deployment tree or
+  a tree nobody listed carries no obligation here. The run names what it left unjudged in its own
+  output, which is the whole of the remedy: a reviewer stands in for the judgement there.
+- **A reworded row.** A new row is a row whose text is not among the base's rows, so editing a row
+  satisfies the change arm as adding one does. The leniency is deliberate and in the safe
+  direction: the strict reading would refuse a change that did write something down, and this arm
+  is an escape rather than a gate.
+- **A path written bare in a row.** A row names its case in a code span or a link target. A path
+  written as plain words is read as naming nothing, which reddens with that message rather than
+  passing — the narrowness is what keeps every *Yes* in a cell from being read as a missing file.
+- **An untracked case file.** Both file lists come from git, so a case is a case once it is
+  indexed. A file sitting in the suite root and never added is not covered and not reported as
+  covered. ⚠️ The register beside them is read from the **working tree**, which is the one
+  asymmetry in what this check reads: a local run on a dirty tree answers about a register edit
+  the host has not seen. [§ 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)'s
+  first precondition is what covers that, and the run in the workflow has nothing uncommitted by
+  construction.
+- **Whether the written reason is a good one.** Any non-blank line under the exemptions heading is
+  an entry. What this buys is that the gap is written where the next reader meets it; whether it
+  should have been accepted is the reviewer's, and the run prints every entry so that it can be.
+- **Whether `host.checks` names this workflow.** Nothing here reads a workflow file, which is #49
+  — the same limit every sibling carries.
+
 ## Each check has a violation it is asserted to redden on
 
 `--self-test` plants one violation per check and asserts that check goes red, as the first step of
@@ -1305,7 +1384,9 @@ share. The audit-trail check plants the carve-out that is its whole scope — a 
 did not write — beside a landed record and a live-status line, each of which carries a date and has
 to pass. The prose-register check plants a quotation, a cell of defined terms and both kinds of
 annotation, and asserts its fixture's premises before any of them: a plant against a cited
-document establishes nothing where the planted file turns out not to cite it. ⛔ A red-only suite
+document establishes nothing where the planted file turns out not to cite it. The end-to-end
+register check plants the three ways a change may be written down and the change that is outside
+every judged tree, and asserts its fixture's premises first for the same reason. ⛔ A red-only suite
 says nothing about any of them. **A green plant naming an exclusion is verified by switching that
 exclusion off** and watching it redden — one that cannot fail is one nobody checked — while a plant
 naming an omission has nothing to switch off, and what it asserts is that a grammar stayed narrow.

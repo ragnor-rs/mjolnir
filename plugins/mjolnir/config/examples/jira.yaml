@@ -162,3 +162,25 @@ environment:
   # `writer: never` appears throughout this file — the same credential that makes the write
   # possible is what makes it read as that person speaking.
   inherits: [PATH, HOME, TRACKER_API_TOKEN, TRACKER_ACCOUNT]
+
+e2e_register:
+  # The facet carried in full: a suite of journeys, a document that says which journey each case
+  # pins, and the two trees a change to behaviour lands in. ⛔ None of the content is here — the
+  # journeys, the rows and the reasons are the project's, and what the check holds is whether the
+  # three agree. The suite itself is not run by anything this states: it needs a deployment, a
+  # credential and money, and this facet is the half that needs the file list and the diff.
+  carrier: file
+  suite: "qa/journeys"
+  # Only the case files, because the suite root also holds the fixtures and the page objects they
+  # drive. The naming is the project's own (§ `What earns a test`), which is why it is configured
+  # rather than assumed.
+  cases: "*.case"
+  register: "qa/journeys/COVERAGE.md"
+  heading: "Journeys, and the case that pins each one"
+  # ⚠️ The escape, and the reason the rule is meetable: a change that genuinely cannot be covered
+  # end to end is written down under this heading, in the same document, where the next reader
+  # meets it.
+  exemptions: "What is deliberately not covered, and why"
+  # The two trees a behavioural change lands in. The container and deployment trees are
+  # deliberately absent: a change to them passes unremarked and the run says so.
+  judged: ["src/app", "src/api"]

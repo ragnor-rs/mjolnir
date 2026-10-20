@@ -135,3 +135,12 @@ environment:
   # shell does not already give every process. ⛔ Not an absent facet — there is no `carrier`
   # here and no `absent_reason`, because the project has stated what it hands a role.
   inherits: []
+
+e2e_register:
+  # Nothing is driven end to end here, and the one mapped role produces a file. ⚠️ Stated rather
+  # than left unset, which is this file's whole shape: every absence in it carries its reason.
+  carrier: none
+  absent_reason: >-
+    The one mapped role reads evidence off the machine and writes a document. There is no system
+    to drive, so there is no suite for a register to describe.
+  revisit_when: A role is mapped whose work has to be exercised through an interface.

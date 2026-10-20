@@ -666,6 +666,20 @@ class Config:
                 "merge and whatever the host already runs, and no further check "
                 "is asked for. That is a stated configuration (§ 13)."
             )
+        # § 15. Reported for the reason the ordering below is: a role that would
+        # have asked whether a change is covered end to end learns that the
+        # project decided it runs nothing end to end, rather than meeting a key
+        # that is not there. ⛔ And the complement is not reported: a project that
+        # *does* carry the facet has a check to run, which is a verdict rather
+        # than an absence.
+        if self.get("e2e_register.carrier") == "none":
+            reason = self.get("e2e_register.absent_reason")
+            out.append(
+                "No end-to-end register is carried (`e2e_register.carrier: "
+                "none`), so no case list and no register are compared and a "
+                "change is held to neither: "
+                f"{' '.join(str(reason).split())}"
+            )
         if self.get("ordering.carrier") == "none":
             reason = self.get("ordering.absent_reason")
             out.append(
@@ -1126,6 +1140,45 @@ def validate(data: dict, facts: dict) -> None:
             "rather than report one it could not read (§ 12).",
         )
 
+    # § 15. The two keys of this facet whose *shape* the comparisons walk, held
+    # here for the reason `environment.inherits` is: requiredness is marked on
+    # the surface and answers whether the key is written, never what it is.
+    #
+    # ⛔ A shape the check cannot walk is refused rather than skipped, which is
+    # the fail-closed direction and the only one that matters here. `judged`
+    # written as a string is a plausible mistake — one tree is the common case —
+    # and read as a sequence it would judge a change over each *character* of the
+    # path, matching no file: the change arm would then find nothing in a judged
+    # tree and report green over every change there is.
+    if _get(data, "e2e_register.carrier") == "file":
+        judged = _get(data, "e2e_register.judged")
+        if not isinstance(judged, list):
+            raise ConfigError(
+                "e2e_register.judged",
+                f"is {judged!r}; § 15 states it as the trees a change is judged "
+                "over — a list, even where there is one. Read as a sequence of "
+                "characters it matches no path, so every change would pass as "
+                "touching nothing judged.",
+            )
+        for index, tree in enumerate(judged):
+            if not isinstance(tree, str) or not tree.strip():
+                raise ConfigError(
+                    f"e2e_register.judged[{index}]",
+                    f"is {tree!r}, which is not a tree a change can be judged "
+                    "over (§ 15). An entry nothing can match narrows the "
+                    "judgement in silence, and the run's own report of what it "
+                    "left unjudged would still name every other tree.",
+                )
+        cases = _get(data, "e2e_register.cases")
+        if cases is not None and (not isinstance(cases, str) or not cases.strip()):
+            raise ConfigError(
+                "e2e_register.cases",
+                f"is {cases!r}; § 15 states it as the glob a case file matches, "
+                "and the default where it is absent is every file under the "
+                "suite. A value of another shape matches nothing, which reads as "
+                "a suite with no cases in it.",
+            )
+
     statuses = _get(data, "statuses")
     if not isinstance(statuses, list):
         raise ConfigError("statuses", "must be a list; `[]` where no status is mapped.")
@@ -1415,6 +1468,7 @@ MARKED_REQUIRED = [
     "commit.trailer",
     "context.artifacts.carrier",
     "done",
+    "e2e_register.carrier",
     "environment.inherits",
     "host.checks",
     "host.kind",
@@ -1451,6 +1505,14 @@ MARKED_REQUIRED = [
 RELATIVELY_DECLARED = ("work_item.type_branch_prefix.bug", "bugfix")
 
 MARKED_REQUIRED_WHEN = [
+    # § 15's five, each meaningless where the facet is absent and each needed by
+    # one of the two comparisons: the first three by the register-against-suite
+    # one, the last two by the change-against-both one.
+    ("e2e_register.exemptions", "e2e_register.carrier", "file"),
+    ("e2e_register.heading", "e2e_register.carrier", "file"),
+    ("e2e_register.judged", "e2e_register.carrier", "file"),
+    ("e2e_register.register", "e2e_register.carrier", "file"),
+    ("e2e_register.suite", "e2e_register.carrier", "file"),
     ("tracker.board", "tracker.kind", "trello"),
     ("tracker.project.number", "tracker.kind", "github-projects"),
     ("tracker.project.owner", "tracker.kind", "github-projects"),
@@ -1466,6 +1528,7 @@ MARKED_PROCEDURE = ["audit_trail"]
 
 MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
+    "e2e_register",
     "ordering",
     "work_item.due_date",
     "work_item.estimate",
@@ -2152,12 +2215,51 @@ def _planted_violations():
          at("ordering", {"carrier": "command"})),
         ("a field-carried date with no field named", "work_item.due_date.field",
          at("work_item.due_date", {"carrier": "field"})),
+        ("a judged set written as one tree rather than a list",
+         "e2e_register.judged", _an_e2e_register_with(judged="a-judged-tree")),
+        ("a judged entry that is not a tree at all",
+         "e2e_register.judged[0]", _an_e2e_register_with(judged=[None])),
+        ("a judged entry that is blank, and so matches every path",
+         "e2e_register.judged[1]",
+         _an_e2e_register_with(judged=["a-judged-tree", "   "])),
+        ("a case glob of a shape that matches nothing",
+         "e2e_register.cases", _an_e2e_register_with(cases=["*"])),
         ("a type the branch-prefix map does not cover",
          "work_item.type_branch_prefix.epic", _a_type_with_no_prefix),
         ("a template keyed to a type the project cannot assign",
          "work_item.template.by_type.epic",
          at("work_item.template.by_type.epic", "epic.md")),
     ]
+
+
+def _an_e2e_register_with(**overrides):
+    """§ 15's facet carried in full, with one key replaced.
+
+    Written out rather than borrowed from whichever example states the facet,
+    and that is not a literal this module could have read instead: the
+    conditional markers refuse a *missing* sibling before any shape rule is
+    reached, so a plant that broke one key of a borrowed block would redden on
+    whatever else the borrowing left out and prove nothing about the branch it
+    was written for. Each value here is a stand-in with no project in it.
+    """
+
+    def mutate(data: dict) -> dict:
+        node = data.setdefault("e2e_register", {})
+        node.clear()
+        node.update(
+            {
+                "carrier": "file",
+                "suite": "a-suite-root",
+                "register": "a-suite-root/a-register.md",
+                "heading": "A heading the table sits under",
+                "exemptions": "A heading the written-down gaps sit under",
+                "judged": ["a-judged-tree"],
+            }
+        )
+        node.update(overrides)
+        return data
+
+    return mutate
 
 
 def _a_type_with_no_prefix(data: dict) -> dict:
