@@ -52,7 +52,7 @@ adding themselves to this document as "the third" when it was.
 ## Why this is a check rather than a convention
 
 Every other duplication in this backlog is one the toolkit exists to delete. This one is the
-toolkit's own. The procedure is described in the schema, in the README, in the three documents
+toolkit's own. The procedure is described in the schema, in the README, in the documents
 under `docs/`, in each shipped skill, and in the issue bodies — and only the schema is an
 authority. Nothing held the rest to that. A rule restated in a document, a section nothing
 motivates, a ruling pointing at a home its outcome has since left: each reads as fine in review,
@@ -239,6 +239,22 @@ Stated, because an unstated limit reads later as coverage.
   *quoting* kind: red on an innocent reword, green when a claim is reworded into its opposite.
   No check here attempts it. It stays a reviewer's job, which is why a document paraphrases as
   little as it can and cites instead.
+- **A document's audience and register, and a role value the document gives nothing to hold.**
+  Check 0 gives every document a *role* — explains, records or carries procedure — and a role bounds
+  what a document may **state**, never who it is written for or in what register. Two audiences
+  interleaved in one file is invisible here, and so is a document in no settled register. The front
+  page's own reader is stated in
+  [README § Who this page is written for](../README.md#who-this-page-is-written-for), as a
+  convention of this repository rather than a rule of the procedure, and held by nobody; nothing
+  configures it either, the README not being one of the artifacts
+  [schema § 8](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project)'s
+  map names. Whether the procedure should state that boundary in general is
+  [#65](https://github.com/ragnor-rs/mjolnir/issues/65)'s, and whether any register binds prose
+  written into a file is [#126](https://github.com/ragnor-rs/mjolnir/issues/126)'s.
+  ⚠️ **Measured on `docs/working-on-the-toolkit.md`:** setting its role to `procedure` leaves every
+  check green, because the checks that discriminate on a role read a binding statement or a citation
+  of the surface and that document carries neither — so the value is held only where the document
+  gives it something to hold, and the entry itself is held by check 0 either way.
 - **Issue state.** Check 3 resolves the *form* of a work-item cell, not whether that issue is
   still open. Reading the tracker needs a token scope, and per
   [#50](https://github.com/ragnor-rs/mjolnir/issues/50) this workflow is granted none: its
