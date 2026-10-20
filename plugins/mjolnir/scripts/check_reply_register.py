@@ -262,9 +262,13 @@ PARKED = re.compile(
     r"(?:done|fixed|built|run|implemented|wired|added|filled|tested|touched|handled|covered)\b"
     # `stated plainly`: a gap stated in place of being closed. ⚠️ Not the plain
     # statement § 8 asks for, and not what is stated plainly *about* a gap.
+    # ⛔ The second form here read a cost and `stated plainly` in one line as a
+    # parking, and the corpus sweep found it on *## The cost of saying no,
+    # stated plainly* -- a heading doing exactly what § 8 asks of a reply. A
+    # cost named beside the promise to state it is the register, not a parking,
+    # so only the form that says a gap was stated *in place of* closing it is
+    # matched, and a parking reworded past that is missed by rule.
     r"|\bstated plainly (?:rather than|instead of)\b"
-    r"|\b(?:gaps?|limits?|costs?|residues?|absences?|omissions?|shortfalls?|holes?)\b"
-    r"[^.\n]{0,40}?\bstated plainly\b"
     # `left`: the writer's own omission, excused rather than filled. ⚠️ Not the
     # bare word, and ⛔ **not the bare word in the first person either**, which
     # is what the loop's own reply says about work it did do -- *I left a review
@@ -308,6 +312,13 @@ PARKED_FLOOR = 1
 #     of one work item's body, cited in three replies that then falsified it. A
 #     double-quoted span is not the writer's own text, which is the carve-out a
 #     code span and a block quote already have, so it is blanked before matching.
+#     ⛔ **A cited heading, and not every quoted span.** The first shape blanked
+#     anything in double quotes, which greened *the density arm is a "follow-up"
+#     and not in this change* -- a parking whose writer scare-quoted the ruled
+#     word. So the span must read as a title: more than one word, and opening on
+#     a capital or an item reference, which every citation measured here does and
+#     no scare-quoted ruled phrase does. ⚠️ A lowercase heading cited this way
+#     reddens, and the sweep is what would find it.
 #   - **A negation.** *Nothing was stashed, moved or left out*, *Nothing is left
 #     open from this session's work*, *not questions left open* — four replies
 #     reddened for stating the absence the rule asks for. ⚠️ Bounded to the
@@ -319,12 +330,24 @@ PARKED_FLOOR = 1
 #     by declaration: *out of scope by that project's declaration* describes a
 #     mechanism where the bare form reads as a writer's excuse.
 #
-# ⚠️ Two more senses are **measured and not separable**, and they are stated in
-# the document with the rest of this arm's residue rather than carved out here:
-# work the surface reserves to the person (*it isn't my claim, so I haven't
-# touched it*) is word for word the shape the rule was named on, and so is an
-# item's own decisions described (*the decisions the item left open*).
-QUOTED = re.compile(r"\"[^\"\n]{1,160}\"|“[^”\n]{1,160}”")
+#   - **Work the surface reserves to the person.** *It isn't my claim, so I
+#     haven't touched it*, *"ok" is not authorization to delete, so I have not
+#     touched it*, *that document is the close-out role's, so I have not touched
+#     it* — five replies reporting the one thing a role is required to do, which
+#     is to stop. ⚠️ Read with the denial that governs it: the carve-out needs an
+#     earlier clause in the same sentence denying the writer's ownership or
+#     authority, so the measured parking — *two things that follow, which I
+#     haven't touched* — carries no denial and stays red.
+#   - **An artifact's own decisions, described.** *The decisions the item left
+#     open*, *a question my own notes had left open*: the subject is the item or
+#     the notes, not the writer. ⛔ Read with its subject, and the subject must
+#     not be the writer: *the two items I left open remain open* is a parking and
+#     stays red, which is why the first person is excluded from the gap rather
+#     than the noun alone being matched.
+QUOTED = re.compile(
+    r"\"(?=[A-Z#\d])[^\"\n]{0,80}\s[^\"\n]{0,80}\""
+    r"|“(?=[A-Z#\d])[^”\n]{0,80}\s[^”\n]{0,80}”"
+)
 # ⚠️ The two negators are bounded differently, and the measured sentences are why:
 # *nothing was stashed, moved or left out* coordinates a list across commas, while
 # a bare `not` carries no such list and a comma after it starts a new clause --
@@ -336,8 +359,43 @@ NEGATED = re.compile(
     re.I,
 )
 CARVED = re.compile(
+    # § 10's own instruction, in the three wordings the corpus carries: the
+    # phrase with its object, the phrase as a heading with the *and where* the
+    # surface asks for, and the role reporting it because it cannot act
     r"what(?:'?s| is) left to (?:remove|delete)\b"
-    r"|\bout of scope by\b",
+    r"|what(?:'?s| is) left,? and where\b"
+    r"|\b(?:report|reports|say|says|name|names|state|states)s? ?"
+    r"what(?:'?s| is) left\b"
+    r"|\bout of scope by\b"
+    # what governs *I have not touched it*, in an earlier clause of the same
+    # sentence: ownership or authority denied, or the thing attributed to another
+    # owner outright -- *that document is the close-out role's* denies nothing
+    # and reserves the work just as firmly
+    r"|(?:(?:is ?n'?t|is not|was not|are not|'s not) "
+    r"(?:my|mine|authoriz\w*|authoris\w*|part of)"
+    r"|(?:is|was) (?:the )?[^.\n]{0,25}?(?:role|session|item|project|reviewer|author)'s"
+    r"|\bbelongs to\b)"
+    r"[^.\n]{0,60}?\bI have(?:n'?t| not) touched\b"
+    # the subject of *left open* being an artifact rather than the writer
+    r"|\b(?:items?|issues?|bodies|body|notes?|sections?|changes?|pull requests?|threads?|#\d+)\b"
+    r"(?:(?!\bI\b)[^.\n]){0,20}?(?:had |has |have )?(?:left|leaves) open\b"
+    # ⛔ What the surface reserves to the person, handed over as it requires. § 10
+    # says a role cannot delete the tree it stands in, and the priority rule says
+    # a role never derives a priority -- so *left for you | the tree and its
+    # local branch* and *left for you per the derivation rule* carry out a rule
+    # rather than parking the writer's work. ⚠️ Matched by the thing handed over,
+    # which is a closed list, and not by the wording: a parking that names a tree
+    # in the same sentence passes, which is this list's ruled direction.
+    r"|\b(?:left|leaving|leave) (?:it |them |that |this )?(?:for|to) you\b[^.\n]{0,70}?"
+    r"\b(?:tree|worktree|branch|priority|label|merge|claim)\b"
+    r"|\b(?:tree|worktree|branch|priority|label|merge|claim)\b[^.\n]{0,70}?"
+    r"\b(?:left|leaving|leave) (?:it |them |that |this )?(?:for|to) you\b"
+    # the passive sense of *left out*: what a process or a mishap did, where the
+    # parking sense is the writer's own omission -- *left out of the commit*
+    r"|\bleft out of\b"
+    # a state described rather than handed on: *the queue left as the next
+    # session reads it*, where the parking sense hands the work to that session
+    r"|\bleft as the next\b[^.\n]{0,25}?\b(?:reads?|sees?|finds?|will read)\b",
     re.I,
 )
 
@@ -999,6 +1057,17 @@ REDDENS = [
     # is a parking as often as it is a report.
     ("nothing is parked", "a parking after a negator's own clause ends",
      "I did not finish the second arm, so next steps: wire the carrier.\n"),
+    ("nothing is parked", "the writer's own work handed over, naming nothing the surface reserves",
+     "The narrowing is in. The density arm is left for you to finish.\n"),
+    ("nothing is parked", "the writer's own omission, where the passive sense is carved out",
+     "The sweep is in, and I left out the two arms it found.\n"),
+    ("nothing is parked", "a gap stated in place of being closed, which is the ruled form",
+     "The second arm's cost is stated plainly rather than fixed.\n"),
+    ("nothing is parked", "a ruled word the writer scare-quoted, which is still the writer's",
+     "The density arm is a \"follow-up\" and not in this change.\n"),
+    ("nothing is parked", "work not done, with no denial of ownership before it",
+     "The carrier is wired. Two things that follow, which I haven't touched: the skill's own "
+     "wording, and the ignore entry.\n"),
     ("nothing is parked", "work named as still open, with no negation anywhere",
      "The first arm is narrowed. The two items I left open remain open.\n"),
     ("nothing is parked", "the writer's own omission, excused with the state it leaves behind",
@@ -1087,6 +1156,31 @@ STAY_GREEN = [
      "One review with four comments left six runs, all red on the same unresolved threads.\n"),
     ("nothing is parked", "items that needed no edit, reported",
      "#51, #52 and #53 already carried the label and were left untouched.\n"),
+    ("nothing is parked", "a role stopping where the surface reserves the work to the person",
+     "It isn't my claim, so I haven't touched it: the branch is stale rather than orphaned.\n"),
+    ("nothing is parked", "the same, where what is denied is authority rather than ownership",
+     "An acknowledgement is not authorization to delete, so I have not touched it.\n"),
+    ("nothing is parked", "another role's artifact, reported as not this pass's to edit",
+     "That document is the close-out role's, so I have not touched it.\n"),
+    ("nothing is parked", "§ 10's handover of the tree a session cannot delete",
+     "| Left for you | the tree and its local branch, with the command above |\n"),
+    ("nothing is parked", "the same instruction as a heading, with the surface's own *and where*",
+     "## What is left, and where\n\nThe tree this session stands in, and its local branch.\n"),
+    ("nothing is parked", "a role reporting the remainder because it cannot act on it",
+     "This session is pinned to the tree, so I report what is left rather than a release that "
+     "did not happen.\n"),
+    ("nothing is parked", "a priority the derivation rule reserves to the person",
+     "Issue #54 is filed with a topical label only, left for you per the derivation rule.\n"),
+    ("nothing is parked", "the passive sense of a thing omitted by a process",
+     "Those edits were verified green by every local check and left out of the commit.\n"),
+    ("nothing is parked", "a cost named beside the promise to state it, which is the register",
+     "## The cost of saying no, stated plainly\n\nThe queue loses two days.\n"),
+    ("nothing is parked", "a queue described in the state the next session will read",
+     "No row is re-ranked, and the queue above left as the next session reads it.\n"),
+    ("nothing is parked", "an item's own decisions, described rather than parked",
+     "The decisions the item left open are the two the gate names.\n"),
+    ("nothing is parked", "a question an artifact of the writer's had left open, then answered",
+     "One finding resolved a question my own notes had left open, and the correction is in.\n"),
     # ⚠️ The measured false red, in the shape it was handed back in: a reply that
     # reports when a mechanism was built and how it behaves, owning no work at all.
     ("nothing is parked", "somebody else's design intent, reported",

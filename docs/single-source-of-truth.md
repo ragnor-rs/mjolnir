@@ -906,12 +906,22 @@ written.
   with, on that same measurement**: *on the same unresolved threads* is how a review's red runs are
   reported here, and *left untouched* is how items that already carried a label are, so `unresolved`
   and `untouched` match nothing, where `undone`, `unfixed`, `unaddressed` and `unfinished` do.
-- ⚠️ **Two senses the sweep measured are kept as false reds, because nothing lexical separates
-  them**: work the surface reserves to the person — *it isn't my claim, so I haven't touched it*,
-  and *"ok" is not authorization to delete* — is word for word the shape the rule was named on, the
-  measured parking being *two things that follow, which I haven't touched*. An item's own decisions
-  described, *the decisions the item left open*, reads the same as a reply leaving them open. Five
-  of the 99 spans are the first and five the second.
+- Three further senses the same sweep measured are carved out rather than recorded as costs, each
+  by the thing it names rather than by its wording: **work the surface reserves to the person**,
+  read with the clause that governs it — *it isn't my claim, so I haven't touched it*, *that
+  document is the close-out role's* — where the measured parking, *two things that follow, which I
+  haven't touched*, carries no such clause and stays red; **an artifact's own decisions described**,
+  read with its subject, where *the decisions the item left open* is the item's and *the two items I
+  left open remain open* is the writer's; and **§ 10's handover of what a role cannot do**, matched
+  by a closed list of what the surface reserves — the tree a session stands in, its branch, a
+  priority nobody may derive. ⚠️ A parking that names one of those in the same sentence passes,
+  which is this list's ruled direction.
+- ⛔ **A count of what an arm raises is counted through the arm, not off its pattern.** The first
+  measurement here counted raw matches, which reports spans the carve-outs already suppress and
+  flatters every one of them. Read through the whole pipeline — the quoted blanking, the negation,
+  the senses — this arm now raises **70 spans and hands back 65 of 2,734 replies**, where the shape
+  it shipped in raised 99 over the same corpus. ⚠️ What remains is the arm working: offers, a
+  section of work named and not done, a figure asserted to stand, and `say the word` 38 times over.
 - ⚠️ **One false red is kept rather than closed, and it is kept knowingly**: `deliberately absent`
   is both the shape the ruling was measured on and § 4's own phrase for a facet carrying an
   `absent_reason`, word for word, so a reply writing the second is handed back. Nothing lexical
@@ -921,6 +931,12 @@ written.
   narrowing errs in that same direction and is stated here rather than left to be read as coverage:
   *I left it alone* and *I left it unchanged* are a judgement as often as they are a parking, so
   neither state is matched, and a parking worded that way is missed.
+- ⚠️ **Two of the sweep's own spans are the writer's to fix rather than this arm's**, and they are
+  named so that a later sweep does not read them as the arm's defects: a ruled phrase cited in
+  *emphasis* rather than in a code span is the writer's own voice by every convention here, so it
+  reddens and should have been written in backticks; and a column header reading `what is left`
+  over a count of a check's hits is a label whose sense nothing lexical separates from the parking.
+  One span each.
 - ⛔ **One of the forms is read with its answer rather than as a span**: a section of open items is
   a finding where it lists any, and not where it answers `None.` — the same heading text and the
   same answer the gate on the change's body holds that section to, so that a reply and a body
