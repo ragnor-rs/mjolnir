@@ -1308,7 +1308,7 @@ Python are prose by its test, and the three arms find what the two paragraphs be
 |---|---|---|---|
 | Restatement | Runs of words an added line repeats out of a document the file cites, quotations, code and the cited document's own headings aside | computed | **reddens**, naming the run and its length |
 | Emphasis | Added prose lines in runs, against the position of each line's emphasised spans | computed | **reddens** where every line of a long enough run is marked past its opening |
-| Uncertainty | The reply check's hedge list, over one paragraph of added prose | forbidding, over a density | **reddens** |
+| Uncertainty | The reply check's hedge list, over one paragraph of added prose, table rows included | forbidding, over a density | **reddens** |
 | Every property of the floor is accounted for | The first column of the rule's own table | computed | **reddens** on a row with no arm |
 
 **Why a run of words is a sound end of the padding clause, where the clause itself is not.** What
@@ -1342,6 +1342,14 @@ for.** A marked span that opens a line is a term being defined; a list of four s
 marked lines and is not a texture. Both readings were measured and they agree on this tree — the
 narrower one is what shipped, because an arm that hands back a build has to err toward the finding
 it misses.
+
+⚠️ **A table row answers to the word list and not to the density, which is the reply check's
+division and is taken from it by parameter rather than by retyping.** Found in review of this
+change: both kinds of arm had been given one unit, so a cell carrying two hedges was held by
+nobody while a table of marked-up cells would have read as a texture. ⛔ **And the green plant for
+that row exclusion lied once before it held** — with the header and the delimiter row counted as
+added, they joined the run carrying no emphasis, the arm answered *not every line*, and the plant
+passed with its own exclusion switched off.
 
 ⚠️ **Each arm has a planted violation and the fixture asserts its own premises**, since a plant
 against a cited document proves nothing if the planted file does not in fact cite it: the run

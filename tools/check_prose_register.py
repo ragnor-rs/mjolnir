@@ -282,7 +282,7 @@ class Prose:
                     continue
                 yield path, number, lines[number - 1]
 
-    def paragraphs(self):
+    def paragraphs(self, *, tables: bool = False):
         """(path, first line number, the lines) for each run of added prose lines.
 
         A run is consecutive **added** prose, so a paragraph half written by this
@@ -290,6 +290,13 @@ class Prose:
         than taken from the sibling that also groups added lines: that one joins
         its run into one string, because its grammar reads across a wrap, where
         every arm here counts per line and needs the lines kept apart.
+
+        ⛔ **`tables` is the reply check's own parameter, spelled the same and
+        drawing the same line**, because the two kinds of arm want opposite
+        answers about a row: a word list reads one, and a density must not. The
+        first shape here shared one unit between both arms, so a hedged cell was
+        held by nothing — the gap is the sibling's ruling applied in only one of
+        the two places it reaches.
         """
         for path in sorted(self.change.text):
             lines = lines_a_change_adds.split_lines(self.change.text[path])
@@ -297,7 +304,7 @@ class Prose:
             for number in sorted(self.change.added.get(path, ())):
                 line = lines[number - 1] if number <= len(lines) else ""
                 held = (number in self.prose.get(path, ()) and line.strip()
-                        and read_straight_through(path, line))
+                        and (tables or read_straight_through(path, line)))
                 if not held or (run and number != run[-1][0] + 1):
                     if run:
                         yield path, run[0][0], [text for _, text in run]
@@ -457,8 +464,9 @@ def _emphasis_past_the_opening(line: str) -> bool:
 
 
 def check_uncertainty_is_stated_once(prose: Prose) -> list[str]:
+    """⚠️ Rows included, since a hedge in a cell is the same hedge."""
     problems = []
-    for path, number, run in prose.paragraphs():
+    for path, number, run in prose.paragraphs(tables=True):
         hits = reply.HEDGE.findall(shown_only("\n".join(run)))
         if len(hits) > HEDGES_ALLOWED:
             problems.append(
@@ -806,6 +814,13 @@ def _plant_hedging(prose: Prose) -> Prose:
     )(prose)
 
 
+def _plant_hedging_in_a_table_cell(prose: Prose) -> Prose:
+    """The row the first shape of this arm left unheld, which is the word-list side."""
+    return _plant(
+        "| a planted row | perhaps wrong, and it may be somewhat narrow as well |"
+    )(prose)
+
+
 VIOLATIONS = [
     ("the files this change touches were read", "a file the sweep cannot open", _plant_unreadable),
     ("the files this change touches were read", "a script that does not parse",
@@ -824,6 +839,8 @@ VIOLATIONS = [
     ("emphasis is not the paragraph's texture", "the same, inside a script's comment block",
      _plant_emphasis_in_a_comment_block),
     ("uncertainty is stated once", "two hedges in one paragraph", _plant_hedging),
+    ("uncertainty is stated once", "two hedges in one table cell, which a word list reads",
+     _plant_hedging_in_a_table_cell),
 ]
 
 
@@ -884,6 +901,27 @@ def _plant_a_term_list(prose: Prose) -> Prose:
     return refreshed(prose)
 
 
+def _plant_a_marked_up_table(prose: Prose) -> Prose:
+    """Rows of marked-up cells, which the density arm must not read as a texture.
+
+    ⛔ The header and the delimiter are **carried** rather than added, and the
+    difference is whether this plant reaches anything: added, they join the run
+    as two lines carrying no emphasis, so the arm answers *not every line* and
+    the plant stays green with its own exclusion switched off — measured, and it
+    is the one way a green plant lies.
+    """
+    path = "docs/planted.md"
+    prose.change.text[path] += "\n| A | B |\n|---|---|\n"
+    rows = "".join(
+        f"| **A planted term {number}** | **and its cell**, marked as a cell's content is |\n"
+        for number in range(EMPHASIS_LINES + 1)
+    )
+    prose.change.text[path] += rows
+    last = len(lines_a_change_adds.split_lines(prose.change.text[path].rstrip("\n")))
+    prose.change.added[path].update(range(last - EMPHASIS_LINES, last + 1))
+    return refreshed(prose)
+
+
 def _plant_a_paragraph_with_one_plain_line(prose: Prose) -> Prose:
     run = "".join(
         f"A planted line {number} whose **own emphasis** sits past its opening.\n"
@@ -926,6 +964,8 @@ EXEMPTIONS = [
      _plant_a_restatement_of_an_uncited_document),
     ("an omission: defined terms opening their lines, which is the Structure shape",
      _plant_a_term_list),
+    ("an exclusion: rows of marked-up cells, which the density arm does not read",
+     _plant_a_marked_up_table),
     ("an omission: a paragraph with one unmarked line", _plant_a_paragraph_with_one_plain_line),
     ("an exclusion: a trailing comment, which annotates its line of data",
      _plant_a_trailing_comment),
