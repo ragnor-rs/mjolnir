@@ -1152,12 +1152,12 @@ calls and asserts it is this script. See
   with nothing rather than a guess. ⚠️ **It is most of the text a session produces.** Measured over
   this project's transcripts on 2026-10-20: **482 of 2,901** assistant messages carrying text and no
   tool call end their turn, and the other 2,419 are mid-turn text the hook never sees. ⛔ **The
-  larger figure is what the sweep above counted**, so it cannot be read as a hand-back rate: five
-  sixths of it could not have been handed back whatever the arm found. The carve-outs it bought
-  stand either way — a sense wrongly matched is wrongly matched wherever the text sits — and the
-  figures above are restated against the 482. ⚠️ **The measured restatement is itself an instance**:
-  it ended in a tool call, so the corrected reply the hook had asked for was never read by the hook
-  that asked.
+  larger figure is the one the parking arm's own counts above were taken over**, so it cannot be
+  read as a hand-back rate: five sixths of it could not have been handed back whatever the arm
+  found. The carve-outs it bought stand either way — a sense wrongly matched is wrongly matched
+  wherever the text sits — and the figures above are stated against the 482. ⚠️ **The restatement
+  this section measures is itself an instance**: it ended in a tool call, so the reply the hook had
+  asked for was never read by the hook that asked.
 - **A reply repeating one already sent in the same turn**, which is what the limit above leaves
   open and is not closed by reaching for the transcript the payload names. ⚠️ **Measured, and the
   measurement is why**: of 327 turns in this project's transcripts carrying more than one reply, 4
