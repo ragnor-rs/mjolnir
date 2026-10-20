@@ -58,8 +58,9 @@ answer.
   name beside the kind the invocation gave — read the two together. A kind nobody tests is a kind
   nobody can be wrong about, and here it is typed by hand. Where the project has written its own
   configuration, the reader's kind wins and the argument is ignored.
-- **What a project keeps local.** A carrier classified `utility`, `guard` or `beside` is out of the
-  loop's scope by declaration, not by measurement.
+- **What a project keeps local.** A carrier the vocabulary file classifies outside the role set —
+  project-local tooling, a guard, or something travelling beside the loop — is out of the loop's
+  scope by declaration, not by measurement.
 
 ## 3. When it says `CANNOT ESTABLISH`
 
