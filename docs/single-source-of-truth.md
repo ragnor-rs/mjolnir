@@ -902,10 +902,10 @@ written.
   a heading of another artifact cited in double quotes, where a code span and a block quote were
   already carved out; an absence stated, which is what the rule asks for; § 10's own instruction to
   a role that cannot delete the tree it stands in, *say what is left to remove and where*; and a
-  scope stated by declaration. ⚠️ The sweep also found **two words this change had itself added**
-  matching prose that reports rather than parks — the runs a review leaves red *on the same
-  unresolved threads*, and items that *were left untouched* because they already carried the label
-  — and both are dropped from the state the first person is read with.
+  scope stated by declaration. ⚠️ **Two words are excluded from the parked state the word is read
+  with, on that same measurement**: *on the same unresolved threads* is how a review's red runs are
+  reported here, and *left untouched* is how items that already carried a label are, so `unresolved`
+  and `untouched` match nothing, where `undone`, `unfixed`, `unaddressed` and `unfinished` do.
 - ⚠️ **Two senses the sweep measured are kept as false reds, because nothing lexical separates
   them**: work the surface reserves to the person — *it isn't my claim, so I haven't touched it*,
   and *"ok" is not authorization to delete* — is word for word the shape the rule was named on, the

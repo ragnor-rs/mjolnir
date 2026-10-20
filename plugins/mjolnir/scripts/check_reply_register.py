@@ -1070,8 +1070,8 @@ STAY_GREEN = [
      "Three worktrees remain registered and six branches survive the merge.\n"),
     # ⚠️ Each sentence below is one this project's own replies have in fact been
     # reddened on, read off 2,713 of them: a heading cited, an absence stated,
-    # the surface's own instruction carried out, a scope declared, and two words
-    # this arm matched for a week on prose that reports rather than parks.
+    # the surface's own instruction carried out, a scope declared, and the two
+    # words a parked state is no longer read with.
     ("nothing is parked", "another item's section heading, cited and then falsified",
      "The snapshot was stale, which falsifies #27's \"What is left\" wholesale.\n"),
     ("nothing is parked", "the absence the rule asks for, stated",
