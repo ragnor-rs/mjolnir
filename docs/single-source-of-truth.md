@@ -891,6 +891,27 @@ written.
   could not reach the alternative that was bare: a form is only carved out in the person its plant
   is written in. The first person is now read with the parked state it leaves behind — *left the
   second arm unfixed* — over the same bounded gap `stated plainly` is read across.
+- ⛔ **The rest of this arm's false reds were measured over the corpus rather than waited for.**
+  Each of the four narrowings above was paid for by a hand-back first, which is one false red per
+  re-read, so the fifth was found by running the arm over the artifact it holds: **2,713 finished
+  replies** in this project's own session transcripts, every assistant message carrying text and no
+  tool call. 99 spans matched, across 27 distinct forms. ⚠️ **The majority are the acts the rule is
+  for** — 39 are `say the word`, and the rest are offers, a section of work named and not done, and
+  a figure asserted to stand — which is the result that makes the arm worth having. Four forms
+  carried a second sense this repository writes constantly, and each is now read around the match:
+  a heading of another artifact cited in double quotes, where a code span and a block quote were
+  already carved out; an absence stated, which is what the rule asks for; § 10's own instruction to
+  a role that cannot delete the tree it stands in, *say what is left to remove and where*; and a
+  scope stated by declaration. ⚠️ The sweep also found **two words this change had itself added**
+  matching prose that reports rather than parks — the runs a review leaves red *on the same
+  unresolved threads*, and items that *were left untouched* because they already carried the label
+  — and both are dropped from the state the first person is read with.
+- ⚠️ **Two senses the sweep measured are kept as false reds, because nothing lexical separates
+  them**: work the surface reserves to the person — *it isn't my claim, so I haven't touched it*,
+  and *"ok" is not authorization to delete* — is word for word the shape the rule was named on, the
+  measured parking being *two things that follow, which I haven't touched*. An item's own decisions
+  described, *the decisions the item left open*, reads the same as a reply leaving them open. Five
+  of the 99 spans are the first and five the second.
 - ⚠️ **One false red is kept rather than closed, and it is kept knowingly**: `deliberately absent`
   is both the shape the ruling was measured on and § 4's own phrase for a facet carrying an
   `absent_reason`, word for word, so a reply writing the second is handed back. Nothing lexical
@@ -913,7 +934,12 @@ written.
   what let the first-person form ship bare**: the loop's own cleanup, a review comment left on a
   thread, and a file reported correctly unchanged are each asserted green in the first person, and
   the parked state the first person is now matched with is asserted red with and without an object
-  between the two words.
+  between the two words. ⛔ **Each carve-out the sweep added is planted with the sentence that was
+  in fact reddened**, and every one of them was verified by disabling the carve-out and watching its
+  plant go red — the direction a carve-out has to be established in, since a green plant passes
+  whether or not the mechanism it names is there. The negation carve-out carries a red plant too: a
+  parking after the negator's own clause ends, *I did not finish the second arm, so next steps*,
+  which is what keeps `nothing` from greening a reply that negates one thing and parks another.
 
 ⚠️ **A chain is two arrows sharing an operand, and sharing is not a token count.** The first form
 read one or two tokens between the arrows as the shared operand, so

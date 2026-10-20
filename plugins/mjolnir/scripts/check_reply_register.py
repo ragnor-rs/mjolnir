@@ -279,7 +279,7 @@ PARKED = re.compile(
     r"|\bleft (?:to do|undone|out|open|for later|for now)\b"
     r"|\bwhat(?:'?s| is) left\b"
     r"|\b(?:left|leaving|leave)\b[^.\n]{0,40}?"
-    r"\b(?:undone|unfixed|unaddressed|unresolved|unfinished|untouched)\b"
+    r"\b(?:undone|unfixed|unaddressed|unfinished)\b"
     r"|\bnext steps?\b"
     r"|\bfollow-?ups?\b"
     r"|\b(?:still|yet) to (?:be )?(?:done|built|written|fixed|run)\b"
@@ -295,6 +295,51 @@ PARKED = re.compile(
     re.I,
 )
 PARKED_FLOOR = 1
+
+# ⛔ **Three senses carved out by measurement rather than by argument**, over
+# 2,713 finished replies in this project's own transcripts — the only corpus of
+# the artifact this arm holds. 99 spans matched across 27 distinct forms, and the
+# majority are the acts the rule is for: 39 `say the word`, the offers, the
+# sections of work named and not done. ⚠️ **What the sweep found instead is that
+# four forms carry a second sense this repository writes constantly**, and each
+# carve-out below is read around the match rather than over the reply.
+#
+#   - **A citation of another artifact's heading.** `"What is left"` is a section
+#     of one work item's body, cited in three replies that then falsified it. A
+#     double-quoted span is not the writer's own text, which is the carve-out a
+#     code span and a block quote already have, so it is blanked before matching.
+#   - **A negation.** *Nothing was stashed, moved or left out*, *Nothing is left
+#     open from this session's work*, *not questions left open* — four replies
+#     reddened for stating the absence the rule asks for. ⚠️ Bounded to the
+#     negator's own clause: a parking after a comma or a semicolon is a parking,
+#     and *I did not finish it, so next steps:* stays red.
+#   - **§ 10's own instruction, obeyed.** *Say what is left to remove and where*
+#     is what the surface tells a role that cannot delete the tree it stands in,
+#     and six replies reddened for carrying it out. The same for a scope stated
+#     by declaration: *out of scope by that project's declaration* describes a
+#     mechanism where the bare form reads as a writer's excuse.
+#
+# ⚠️ Two more senses are **measured and not separable**, and they are stated in
+# the document with the rest of this arm's residue rather than carved out here:
+# work the surface reserves to the person (*it isn't my claim, so I haven't
+# touched it*) is word for word the shape the rule was named on, and so is an
+# item's own decisions described (*the decisions the item left open*).
+QUOTED = re.compile(r"\"[^\"\n]{1,160}\"|“[^”\n]{1,160}”")
+# ⚠️ The two negators are bounded differently, and the measured sentences are why:
+# *nothing was stashed, moved or left out* coordinates a list across commas, while
+# a bare `not` carries no such list and a comma after it starts a new clause --
+# *I did not finish it, so next steps:* is a parking and stays red. So `nothing`
+# crosses a comma but never a clause word, and `not` does not cross either.
+NEGATED = re.compile(
+    r"\b(?:nothing|none)\b(?:(?!\b(?:so|but|then|though|however|while)\b)[^.;:\n]){0,45}$"
+    r"|\bnot\b[^.,;:\n]{0,35}$",
+    re.I,
+)
+CARVED = re.compile(
+    r"what(?:'?s| is) left to (?:remove|delete)\b"
+    r"|\bout of scope by\b",
+    re.I,
+)
 
 # ⛔ The one ruled form that is read with its answer rather than as a span. A
 # section of open items is a finding where it lists any, and the gate on the
@@ -497,7 +542,15 @@ def check_nothing_is_parked(reply: str) -> list[str]:
     lines = prose(reply, tables=True)
     found = []
     for index, line in enumerate(lines):
-        for match in PARKED.finditer(line):
+        # ⚠️ Blanked to the same length, so a reported span still lines up with
+        # the line the writer wrote.
+        read = QUOTED.sub(lambda m: " " * len(m.group(0)), line)
+        for match in PARKED.finditer(read):
+            if NEGATED.search(read[:match.start()]):
+                continue
+            if any(c.start() <= match.start() and c.end() >= match.end()
+                   for c in CARVED.finditer(read)):
+                continue
             start = max(0, match.start() - 24)
             found.append(line[start:match.end() + 24].strip())
         section = OPEN_ITEMS_SECTION.match(line)
@@ -941,6 +994,13 @@ REDDENS = [
      "The guard is wired.\n\nOpen items: the skill's own wording\n"),
     ("nothing is parked", "the same section answered with nothing at all",
      "The guard is wired and its plants are green.\n\n## Open items\n"),
+    # ⚠️ The red side of each sense carved out by the transcript sweep: a negator
+    # in an earlier clause, and a section of work the sweep's own corpus showed
+    # is a parking as often as it is a report.
+    ("nothing is parked", "a parking after a negator's own clause ends",
+     "I did not finish the second arm, so next steps: wire the carrier.\n"),
+    ("nothing is parked", "work named as still open, with no negation anywhere",
+     "The first arm is narrowed. The two items I left open remain open.\n"),
     ("nothing is parked", "the writer's own omission, excused with the state it leaves behind",
      "The carrier is wired and its plants are green. I have left the second arm unfixed.\n"),
     ("nothing is parked", "the same, with the object between the word and the state",
@@ -1008,6 +1068,25 @@ STAY_GREEN = [
      "alone, since that sentence records which file a past session edited.\n"),
     ("nothing is parked", "a residue count, which is a fact and not a promise",
      "Three worktrees remain registered and six branches survive the merge.\n"),
+    # ⚠️ Each sentence below is one this project's own replies have in fact been
+    # reddened on, read off 2,713 of them: a heading cited, an absence stated,
+    # the surface's own instruction carried out, a scope declared, and two words
+    # this arm matched for a week on prose that reports rather than parks.
+    ("nothing is parked", "another item's section heading, cited and then falsified",
+     "The snapshot was stale, which falsifies #27's \"What is left\" wholesale.\n"),
+    ("nothing is parked", "the absence the rule asks for, stated",
+     "The tree was clean: nothing was stashed, moved or left out.\n"),
+    ("nothing is parked", "a section's contents corrected, with the parking negated",
+     "That section listed the calls made in this pass, not questions left open.\n"),
+    ("nothing is parked", "§ 10's own instruction to a role that cannot delete its own tree",
+     "I cannot remove the tree this session stands in, so this says what is left to remove and "
+     "where.\n"),
+    ("nothing is parked", "a scope stated by declaration, which is a mechanism and not an excuse",
+     "Those carriers are out of scope by declaration rather than by measurement.\n"),
+    ("nothing is parked", "the runs a review left red, which is a count and not an omission",
+     "One review with four comments left six runs, all red on the same unresolved threads.\n"),
+    ("nothing is parked", "items that needed no edit, reported",
+     "#51, #52 and #53 already carried the label and were left untouched.\n"),
     # ⚠️ The measured false red, in the shape it was handed back in: a reply that
     # reports when a mechanism was built and how it behaves, owning no work at all.
     ("nothing is parked", "somebody else's design intent, reported",
