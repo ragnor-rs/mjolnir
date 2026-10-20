@@ -229,18 +229,22 @@ Register, and the language, are
 first sentence, then the facts, with a table where the content enumerates.
 
 - what was resolved — the root, the configuration file, the repository;
-- ⛔ **the item by identifier *and* title, the title as the tracker holds it, in the first
-  sentence** — the identifier is what every later step is keyed on, and the title is the only part
-  of this report a reader can check against the item they meant: a bare number reads as correct
-  whichever item it names, so a mistyped argument and a candidate taken off the wrong line of the
-  ordering are equally invisible. ⚠️ **The branch name is not that statement**: the slug is
-  derived, and where the item's language differs from the repository's it is a *translation* of the
-  title rather than the title
+- ⛔ **the item by identifier *and* title, the title quoted as the tracker holds it** — the
+  identifier is what every later step is keyed on, and the title is the only part of this report a
+  reader can check against the item they meant: a bare number reads as correct whichever item it
+  names, so a mistyped argument and a candidate taken off the wrong line of the ordering are
+  equally invisible. It belongs in the opening sentence, and that is **no second rule about that
+  sentence**: the outcome the lead-in above puts there *is* which item was taken, which a number
+  alone does not state. ⛔ **Quoted and never translated**, even where the reply's language is
+  another one ([`§ 8`](../../config/schema.md#the-reply-to-the-person-running-a-role)) — a
+  quotation is the evidence here, and a title rendered into the reply's language matches nothing in
+  the tracker. ⚠️ **The branch name is not that statement either**: the slug is derived, and where
+  the item's language differs from the repository's it is a *translation* of the title
   ([`§ 8`](../../config/schema.md#8-language-register-audience--per-artifact-not-per-project)),
-  which is why step 4 has the reply name which string it came from — a reader taking the title out
-  of the branch reads a string the tracker does not hold. ⚠️ **A title that could not be read is
-  reported as unread**, by step 2's fallback and the last bullet below; an omission here reads as a
-  reply that skipped this;
+  which is why step 4 has the reply name which string it came from. ⚠️ **A title that could not be
+  read is reported as unread**, by step 2's fallback and the last bullet below; an omission reads
+  as a reply that skipped this. ⚠️ **It costs no extra read** — step 4 hands the same title to the
+  branch derivation;
 - **why it**: where it stood in the ordering, and every candidate skipped ahead of it with the
   reason — a claim taken, or a gate that stopped;
 - every predicate that ran and its verdict, the quiet ones included, and every predicate that
