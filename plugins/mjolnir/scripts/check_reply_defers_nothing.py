@@ -359,28 +359,29 @@ FENCE = re.compile(r"^\s{0,3}(?P<marker>`{3,}|~{3,})")
 # Markdown's other code block, which carries no marker at all.
 INDENTED_CODE = re.compile(r"^(?: {4,}|\t)")
 CODE_SPAN = re.compile(r"`[^`\n]*`")
-TABLE_ROW = re.compile(r"^\s*\|")
-HEADING = re.compile(r"^\s*#{1,6}\s+")
 QUOTE = re.compile(r"^\s*>")
 
 
 # --- reading the reply -----------------------------------------------------
 
 
-def prose(reply: str, *, tables: bool = False) -> list[str]:
+def prose(reply: str) -> list[str]:
     """The lines of a reply that are prose, in order.
 
     Code goes whole — fenced blocks by their marker, indented blocks by their
     indent — and inline code spans are removed from the lines that survive. A
-    quoted line is not the writer's own text, so it is not held against them. A
-    table row is prose only where a check asks for it: a cell is where this
-    repository's own documents put a mapping arrow and a bolded term, so
-    sweeping rows would redden on the shape the register asks for.
+    quoted line is not the writer's own text, so it is not held against them.
+
+    ⛔ **A table row is prose here.** It was a parameter while five arms read
+    rows differently; with one arm left there is one answer, and that answer is
+    yes: a `verdict` cell saying *next steps* parks exactly what a sentence
+    would. A flag whose only caller always passed the same value is weight
+    nothing carries.
 
     ⚠️ The indent rule over-reaches in the safe direction: a list item's
     four-space continuation line is read as code and checked by nothing. That
     is a finding missed rather than a finding invented, which is the right way
-    round for the two checks that block.
+    round for a check that blocks.
     """
     out, marker = [], None
     for line in reply.splitlines():
@@ -395,8 +396,6 @@ def prose(reply: str, *, tables: bool = False) -> list[str]:
         if marker is not None or not line.strip():
             continue
         if INDENTED_CODE.match(line) or QUOTE.match(line):
-            continue
-        if TABLE_ROW.match(line) and not tables:
             continue
         out.append(CODE_SPAN.sub(" ", line))
     return out
@@ -438,7 +437,7 @@ def check_nothing_is_parked(reply: str) -> list[str]:
     writer puts in a cell as readily as in a paragraph -- a `verdict` column
     saying *next steps* parks exactly what a sentence would.
     """
-    lines = prose(reply, tables=True)
+    lines = prose(reply)
     found = []
     for index, line in enumerate(lines):
         # ⚠️ Blanked to the same length, so a reported span still lines up with
@@ -709,8 +708,8 @@ def hook(stream, out=None) -> int:
     except Exception as error:  # noqa: BLE001 — any failure here must stay non-fatal
         print(json.dumps({
             "systemMessage": (
-                f"Reply register: the check did not run ({type(error).__name__}), so this "
-                "reply was held to nothing."
+                f"Reply defers nothing: the check did not run ({type(error).__name__}), so "
+                "this reply was held to nothing."
             )
         }), file=out)
         return 0
@@ -721,9 +720,9 @@ def hook(stream, out=None) -> int:
 
 # --- the planted violations ------------------------------------------------
 #
-# One per branch that does real work, including the branches that must stay
-# green: a check that reddens on an arrow inside a fenced block is not the check
-# this file claims to carry.
+# One per form the arm reads, and one per sense carved out of it -- the green
+# side being the half a narrowing is only asserted by: a check that reddens on a
+# ruled phrase inside a fenced block is not the check this file claims to carry.
 
 CLEAN = (
     "Three relations were added and one was refused.\n\n"
@@ -1073,7 +1072,6 @@ def self_test() -> int:
             failures += 1
 
     print("\nAsserting the hook fails open and names the failure:")
-    import io
     out = io.StringIO()
     code = hook(io.StringIO("not json at all"), out)
     printed = out.getvalue()
