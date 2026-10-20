@@ -387,6 +387,67 @@ figure in them stale and every standing fact in them already argued in a row of 
 is the rule an adopting project is likeliest to reach for a switch on, and a key accepted in silence
 is the rule gone with nothing refusing it.
 
+### What earns a test, and what makes its red believable
+
+⛔ **The tier this binds is the one a project's ordinary build runs, and nothing else** — no process
+the build did not start, no dependency the run has to stand up. ⚠️ **So a stand-in for a dependency
+is not a cheaper test in this tier; it is a missing one in the tier past it**, and the tiers past it
+have a discipline this does not state. The values the tier axis takes and the two facets they derive
+from are #60's, and what a local verdict proves is #66's — ⛔ **neither restated here**, because two
+vocabularies for one tier is what § 13 already refuses one list over.
+
+⚠️ **Nothing below refuses a change.** No check reads it, no gate fails a change for carrying no
+test, and a project that states no testing discipline of its own behaves exactly as it does today.
+What it binds is whoever writes a test: the implementing leg
+[above](#what-carries-the-item-forward-and-where-it-stops-to-ask), which no role owns, and the
+reviewing role reading a diff that adds one.
+
+⛔ **A test is a ceiling and not a floor.** It earns its place by covering a decision — a branch, an
+ordering, a parse, a boundary — that is expensive to reach from end to end, and one that re-asserts
+wiring is bloat three times over: it slows the suite, it is rewritten every time the wiring moves,
+and it teaches a reader to distrust a red. ⚠️ **The consequence is the part a rule that sounds like
+taste needs**: what a project's cases cover is the **intended extent** rather than a menu with gaps
+to fill in, so a decision nobody made is not a case somebody owes.
+
+⛔ **Fakes over mocks, and the seam a fake stands at is named rather than assumed.** A mock asserts
+the call its author expected, so it reddens when the call moves and stays green when the behaviour
+does; a fake answers as the thing it replaces and fails on the second. ⚠️ **A default nothing can be
+substituted at is advice the code refuses**, which is why the seam is half the rule rather than an
+implementation detail of it. ⛔ **And the sharp end is a store: mocking one proves nothing**, so a
+test that needs a store runs against a real one — the boundary above biting rather than a second
+rule, since a store the run has to stand up belongs to the tier past this one.
+
+⛔ **A test is proved to bite.** The violation is written first and the red confirmed, because an
+assertion written before its break tends to match only the break its author imagined. ⚠️ **And the
+undo for a deliberate break is a copy of the file**, never version control's own checkout of it:
+that cannot tell the break from any other uncommitted edit to the same file and takes both, and
+against a file nothing tracks it does nothing at all — so the break survives into the tree with
+every check green. ⚠️ **Confirming the red is not the whole of it**, since a break the assertion
+reddens on by another route leaves the test believed and unexercised; both halves are measured on
+this repository's own checks
+([the measurement](../../../docs/single-source-of-truth.md#each-check-has-a-violation-it-is-asserted-to-redden-on)).
+⛔ **The same rule for a different artifact is #28's** — the checks a document role ships — and it is
+cited here rather than ruled a second time.
+
+⛔ **Assert values, never key sets.** A parity check written over key sets passes on the very defect
+it exists to catch: two structures whose keys agree and whose values do not. ⛔ **And a fixture
+thinner than the production shape tests the fixture** — a case built from the two fields it reads
+answers about a record nothing produces, and the fields it left out are where the defect is.
+
+**What stays project-local is named rather than omitted**, so that a reader meeting no statement of
+one can tell this boundary from a gap: **a coverage figure**, **the naming a case file carries**,
+**the layout cases sit in**, and **the suffix that marks a tier**. Each is a real decision and none
+of them generalises, which is measured rather than assumed
+([the measurement](../../../docs/configuration-surface.md#the-unit-tier-six-files-of-rulings-and-no-role-reading-any-of-them)).
+⚠️ **The suffix is the one of the four that is also a tier boundary**, so a project leaving it
+unwritten has a tier its own build cannot run and nothing downstream can see.
+
+⛔ **Procedure, and no key on this surface carries any of it.** Nothing above is read by a role to
+decide what to do next, which is the test for a candidate key that #65 states generally; what a
+project *does* configure about its tiers is #60's and #66's. ⚠️ **A project may still hold rules of
+its own**, which are additions to this rather than a second statement of it — and the form the rest
+of that store is classified under is #40's.
+
 ## 1. Roots
 
 ```yaml

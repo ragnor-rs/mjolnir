@@ -580,6 +580,50 @@ the work against a measurement written after, with a number never moving between
 stated by one project and true in all of them: the single rule the survey found already
 universal.
 
+## The unit tier: six files of rulings, and no role reading any of them
+
+Read across the same six projects' instructions files. Four carry a unit tier of **101, 85, 74 and
+48** cases; of the other two, one holds two specification files with its runner commented out of the
+host's own test workflow, and one has no automated suite at all. So the tier is not a minority
+practice — and the rules governing it are written in **exactly one** file each, every one of them
+the day somebody was corrected:
+
+| the rule | how many of the six state it |
+|---|---|
+| a test is a ceiling rather than a floor, and the list of cases is the intended extent | 1, and it alone states the consequence |
+| fakes over mocks, with the seam named | 2, one of which also states the sharp end — mocking the store proves nothing, so that tier runs against a real one |
+| the violation is written first and the red confirmed | 1 |
+| assert values and never key sets; a fixture thinner than the production shape tests the fixture | 1 each |
+
+⚠️ **No role reads any of them.** That is what makes this an extraction rather than a tidy-up: each
+is advice a careful reviewer would give in any of the six, held where one project's sessions can
+reach it and no other's. Hence the statement as procedure in
+[`schema.md § The loop → What earns a test`](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable).
+
+**Why the surface, and not either of the two homes it was weighed against.** The discipline is read
+by two legs — the implementing one, which no role owns, and the reviewing role — and
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles) already settles
+what follows: a rule read by two roles and written in one of their skills is a second authority for
+the other. Promoting these rules into the reviewing role's own text is therefore the option with a
+precedent against it rather than the cheap one, and it is ruling 11's reasoning arriving a second
+time. A per-project pointer — the shape the role-to-person map takes — fails a different test: a
+pointer carries values a role reads, and none of this is a value. Six copies free to disagree is the
+defect the extraction deletes rather than a configuration of it.
+
+**What was not promoted, and the measurement is the reason.** A coverage figure is set in one
+project's runner configuration, written as a placeholder in a second, and stated by neither of the
+remaining four; promoted on that evidence it would be one project's taste imposed on five. The
+case-file naming, the package-mirroring layout and the decision *not* to sit cases beside the code
+they cover are one project's and are stated by none of the others.
+
+⚠️ **One of those local conventions is also the measurement for why a local rule is named rather
+than left out** — and it is a tier-boundary defect rather than a naming one. A project carrying nine
+cases against a dependency it stands up itself, under a distinct suffix, states that suffix
+**nowhere** in its own testing conventions, which list the framework, the mocking policy, the file
+naming and the layout — all four of them the unit tier's — and then stop. The tier it leaves
+unmentioned is the one its own build cannot run unaided, and a convention nobody wrote down is not a
+convention a migration can carry.
+
 ## The strongest argument for extraction is not borrowed
 
 Read-it-from-one-place has been **independently invented six times** across these projects, in
