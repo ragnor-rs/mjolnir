@@ -284,9 +284,8 @@ ABSOLUTE_PATH = re.compile(r"(?<![\w.$}])/(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+")
 # routing table are stated *by mode*, so a role forbidden from saying `worktree`
 # could not name § 10 at all.
 #
-# ⚠️ A number, a flag and a null are nobody's vocabulary and are not read at all.
-# A width is a bare integer, and a sweep that matched one would redden on every
-# count, threshold and year in the tree.
+# ⚠️ A number, a flag and a null are nobody's vocabulary and are not read at all;
+# what that leaves unguarded is in the document the docstring names.
 
 # A placeholder is not a value. ⛔ The bare-capitals form counts as a placeholder
 # **only inside the data root**, where `OWNER/REPO` and `KEY` are stand-ins. A
@@ -1052,6 +1051,13 @@ def _a_configured(tree: Tree, *keys: str) -> str:
     the literal keeps passing after the project rewords its vocabulary, which is
     a plant asserting its own text; and the value this one must return is exactly
     the one no list of key names could reach.
+
+    ⛔ **And one the derivation forbids**, which is not the same thing. A project
+    whose label vocabulary carries a word the surface publishes -- `all` and
+    `field` are both one letter from an ordinary label -- hands the plant a value
+    that is nameable by design, and the self-test then reports it as having
+    stayed green: a false red reading exactly like the sweep regressing.
+    Reproduced by planting `all` into this project's own labels.
     """
     node = yaml.safe_load(tree.text.get(OWN_CONFIG, "")) or {}
     for key in keys:
@@ -1061,7 +1067,15 @@ def _a_configured(tree: Tree, *keys: str) -> str:
         raise AssertionError(
             f"{OWN_CONFIG} states nothing under `{'.'.join(keys)}`, so this plant tests nothing"
         )
-    return members[0]
+    forbidden = tree.forbidden_values()
+    chosen = [member for member in members if member in forbidden]
+    if not chosen:
+        raise AssertionError(
+            f"every value {OWN_CONFIG} states under `{'.'.join(keys)}` is one the surface "
+            f"publishes ({', '.join(members)}), so this plant would carry a nameable value "
+            "and assert nothing"
+        )
+    return chosen[0]
 
 
 def _plant_a_configured_branch_prefix(tree: Tree) -> Tree:
@@ -1069,8 +1083,8 @@ def _plant_a_configured_branch_prefix(tree: Tree) -> Tree:
 
     ⛔ The shape is the whole point. `work_item.type_branch_prefix` is a map whose
     *keys* are the project's own type vocabulary, so the prefix sits under a key
-    name nothing can anticipate -- measured green against a list of twenty-two of
-    them, and found while writing the starting role, whose text is the one place
+    name nothing can anticipate -- measured green against a list of key names,
+    and found while writing the starting role, whose text is the one place
     that value must not appear, since reading it from configuration is what that
     role is for.
     """
