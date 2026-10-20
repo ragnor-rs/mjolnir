@@ -59,6 +59,13 @@ host:
     - workflow: "Config reader"
       mirrors: "python3 plugins/mjolnir/scripts/config.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ What this run holds is the carrier's own suite and not a verdict about this tree:
+    # `e2e_register` below is `none`, so pointed at this project the check says it has no
+    # subject and exits without one. The entry is here because the carrier ships from this
+    # repository and nothing else would ever assert it.
+    - workflow: "End-to-end register"
+      mirrors: "python3 plugins/mjolnir/scripts/check_e2e_register.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -290,3 +297,22 @@ environment:
   # the plugin's own location, and the per-user directory the reply hook keeps its
   # one-hand-back marker in.
   inherits: [PATH, HOME, TMPDIR, CLAUDE_PLUGIN_ROOT, CLAUDE_PLUGIN_DATA]
+
+e2e_register:
+  # ⛔ Nothing here is driven end to end, so there is no suite for a register to describe and no
+  # new check in `host.checks` above. What this repository ships is read by a person running a
+  # role and by the gates in `tools/`; the thing an end-to-end case would drive — a deployed
+  # system behind the interface a person uses — does not exist to be deployed.
+  #
+  # ⚠️ The facet is still stated, because an unset key and a decided one read alike. The carrier
+  # that holds the coverage record for the tiers this repository *does* run is its own gate list:
+  # every check carries its planted violations and the workflow runs them before it holds
+  # anything, which is a per-check assertion rather than a register of scenarios.
+  carrier: none
+  absent_reason: >-
+    No end-to-end tier: nothing here is deployed and no interface is driven. Every check in this
+    repository answers about the tree it runs in, and each carries its own planted violations
+    rather than a row in a register.
+  revisit_when: >-
+    A role is carried by something that has to be stood up before it can be exercised — a service,
+    a hosted endpoint, or an install this repository performs rather than describes.

@@ -164,3 +164,16 @@ environment:
   # list says so. ⚠️ The report is what makes that statement worth writing — a token that turns
   # up in this shell anyway is named by it, which is how a project learns its own drift.
   inherits: [PATH, HOME]
+
+e2e_register:
+  # The tier exists and is somebody else's: the suite lives in a repository of its own, driven
+  # against a deployed environment on its own schedule. ⚠️ So this project has no case file to
+  # compare a register against, and a facet written here would be a record of a suite that is not
+  # in this tree — which the file-list comparison would read as a register full of dangling rows.
+  carrier: none
+  absent_reason: >-
+    The end-to-end suite is not in this repository. It runs against a deployed environment from a
+    repository of its own, so no case file here could be compared with a register here.
+  revisit_when: >-
+    A case file lands in this repository, which is the first moment either comparison has two
+    lists to make.

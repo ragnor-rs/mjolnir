@@ -624,6 +624,53 @@ naming and the layout — all four of them the unit tier's — and then stop. Th
 unmentioned is the one its own build cannot run unaided, and a convention nobody wrote down is not a
 convention a migration can carry.
 
+## The register nothing compared to the suite
+
+One project of the six carries an end-to-end tier with a record of what it covers: **14 scenario
+groups**, a register table in that repository's own instructions file, and **two checks in the
+host's lint workflow** holding the three together. Measured 2026-10-19, and it is the only one of
+the six where the record exists at all.
+
+The first check compares the register with the scenario files **both ways**, and its own stated
+reason is the failure neither direction shows on its own: the run prints its scenarios, the
+register prints a shorter list, and nothing compares the two. It was written because one group sat
+unlisted while the register was otherwise accurate — a list that is wrong by one row, in the
+document a reader trusts to say what is covered.
+
+The second compares the suite with the **change**: a pull request touching the source tree that
+carries neither a new case nor a register row fails, and the escape is a section of that same
+document reading *what is deliberately not covered, and why*. ⛔ Its rule is the one the facet
+keeps: an uncovered change is allowed; an uncovered change nobody wrote down is not
+([`schema.md § 15`](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded)).
+
+⚠️ Its stated limit is the one an adopter inherits rather than discovers. It judges one tree, so a
+change to the container or deployment trees passes unremarked and a reviewer stands in for it
+there. That limit is carried onto the surface as the `judged` key and the run's own report of what
+it left unjudged, rather than closed by widening the judgement: a check that asked for an
+end-to-end case on a change to the thing that builds the image is a check somebody turns off.
+
+⚠️ **Nothing of the kind exists in the other five.** In the project carrying 12 end-to-end case
+files, which cases pin which behaviour is recorded in prose — a section of the README and each
+case's own comments — so a case too old for an assertion is a paragraph rather than a check. ⚠️
+What the remaining four do about the tier was not measured; what was measured is that none of the
+five carries a record anything compares to a suite.
+
+**Why the comparisons generalise and the content does not.** The suite root, the glob a case file
+matches, where the register lives, the heading its table sits under and which trees a behavioural
+change lands in are each one project's decision — the same boundary the unit tier's four local
+conventions sit on, one section up. *Does the register still describe the suite* and *is this
+change covered* are neither, and asking them needs no stack, no credential, no indexed material
+and no money. ⛔ So the facet states the five values and the procedure holds the agreement between
+them, authoring none of it
+([`schema.md § 15`](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded)).
+
+**Why it is a host check rather than an entry under `done:`.** A check the host already runs is
+refused as a `done:` entry by
+[`schema.md § 13`](../plugins/mjolnir/config/schema.md#a-done-check-the-host-already-runs-is-a-misconfiguration),
+and this one belongs on the host for the reason the measurement gives: it is the cheap half of a
+tier whose expensive half cannot run there at all. The suite itself is the opposite case — a
+command no workflow mirrors, which is what that facet's `local` check is for.
+
 ## The strongest argument for extraction is not borrowed
 
 Read-it-from-one-place has been **independently invented six times** across these projects, in

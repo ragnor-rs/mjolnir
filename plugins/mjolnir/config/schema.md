@@ -2117,3 +2117,89 @@ role needs learns it from the report rather than from the incident.
 ⚠️ **It is not a permission system and does not pretend to be one.** What a process can read is the
 operating system's answer; this is the project's statement of what it *means* to hand a role, and
 the gap between the two is exactly what the report prints.
+
+## 15. End-to-end coverage, recorded
+
+```yaml
+e2e_register:
+  carrier: file | none    # required; absent_reason
+  suite: "<the root the case files live under>"        # required_when: e2e_register.carrier = file
+  cases: "<the glob a case file matches under it>"     # default: "*"
+  register: "<the document the table lives in>"        # required_when: e2e_register.carrier = file
+  heading: "<the heading that table sits under>"       # required_when: e2e_register.carrier = file
+  exemptions: "<the heading the written-down gaps sit under>"   # required_when: e2e_register.carrier = file
+  judged: ["<a tree a change is judged over>"]         # required_when: e2e_register.carrier = file
+  absent_reason: "…"      # required where the carrier is none
+```
+
+Two facts, and ⛔ **neither of them is the suite**: whether the register still describes the cases
+that are on disk, and whether a change that alters behaviour carries a case, a row, or a **written
+statement that nothing covers it and why**. ⛔ **The rule the second one is, stated once: an
+uncovered change is allowed; an uncovered change nobody wrote down is not.**
+
+⛔ **The scenarios, the rows and the reasons are the project's content, and nothing here authors
+any of them.** What the procedure holds is the **agreement** between two file lists and the
+document that claims to describe one of them — a computed comparison, which is the strong kind of
+check and not the kind that quotes a sentence back at the text it came from. The tier this guards
+is the end-to-end one, whose place on the tier axis and whose own discipline are #60's and #66's
+and are not restated here.
+
+⚠️ **So this runs where the suite cannot, and that asymmetry is the facet's whole reason to
+exist.** Driving a deployed system needs a stack, a credential, indexed material and money; asking
+*is this change covered* and *does the register still describe the suite* needs the file list and
+the diff. One is a project's own command and may be a `local` entry under
+[§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check); the other is
+mirrored as a host check like any other (§ 2). Measured in one project, where the two comparisons
+run in a workflow beside a suite the same workflow cannot start
+([the measurement](../../../docs/configuration-surface.md#the-register-nothing-compared-to-the-suite)).
+
+⛔ **Both directions of the first comparison are held, and the failure that motivated it is the one
+neither direction shows on its own.** A case with no row is coverage nobody recorded; a row naming
+a file that is not there is a record of coverage that is gone. The run prints its own case list and
+the register prints a shorter one, and ⚠️ **nothing compares the two unless something does**: one
+group sat unlisted while the register was otherwise accurate.
+
+⚠️ **A row that names no case at all is reported too, and that is the fail-closed direction rather
+than an extra rule.** A row whose path nothing can read would otherwise be a row with no file to
+be missing, so a dangling row would pass as a row about nothing.
+
+⛔ **Which means the form of a row is part of the rule rather than a detail of whatever performs
+it: a row names its case in a code span or a link target**, by the path the repository holds or by
+the path under `suite`. A path written as bare words names nothing — and that narrowness is the
+reason the form is stated at all, since a reading loose enough to find a path in any cell finds one
+in every *Yes* a table carries and reports it as a file that is missing.
+
+⚠️ **What `cases` matches, and what a case is at all.** The glob is read against the path
+**relative to `suite`**, with the wildcards a shell uses and `*` crossing a directory separator —
+so the default reaches every file the suite holds and a narrower one reaches a case nested under
+it. ⚠️ **And a case is a file the repository *tracks*:** both file lists are the repository's own,
+so a case nobody has added is not covered and is not reported as covered.
+
+⛔ **A project carrying one half and not the other is told which half is missing, never failed on
+both.** An absent register makes every case rowless and an absent suite makes every row dangling,
+so the cascade reports the project's whole content as broken and buries the one fact that is: the
+other half was never written. Each half is therefore named on its own, and the comparison it would
+have fed does not run.
+
+⛔ **`judged` is configuration, and the trees it does not name are named in the run's own
+output.** The second comparison judges one tree — so a change to a container tree, a deployment
+tree or a tree nobody listed passes unremarked, and a reviewer stands in for it there. ⚠️ **The
+limit is closed by stating it rather than by widening the judgement**: a check that judged every
+tree would ask for an end-to-end case on a change to the thing that builds the image, and the
+remedy an adopter needs is to read which trees went unjudged in the output they already have.
+
+⛔ **A written exemption passes and is reported.** What is deliberately uncovered is readable in
+one place — the heading `exemptions` names, in the register itself — rather than inferred from an
+absence, which is the same reason [§ The loop](#nothing-is-deferred) refuses a known cost in a pull
+request body: a gap that reads as diligence survives review, and a gap written where the next
+reader will meet it is the one that gets closed. ⚠️ **The escape is required under the carrier for
+exactly that reason.** A project configuring a suite and no exemptions heading has a rule with no
+compliant answer, and the cheapest compliant answer to a rule like that is a case that asserts
+nothing.
+
+**`carrier: none` is the stated absence, and it is what a project with no end-to-end suite
+writes.** No suite, no register, no judged tree, and no new check in `host.checks` — ⚠️ **the
+absence is stated rather than left unset**, by the rule this surface opens with: a project that
+has decided it runs nothing end to end and a project that has not thought about it read
+identically otherwise. ⚠️ **A reader reports it as unavailable**, so a role that would have asked
+about coverage says what the project decided instead.

@@ -157,3 +157,16 @@ environment:
   # store or the session, and a configuration carrying it would be the leak § 14 exists to
   # prevent.
   inherits: [PATH, HOME, GH_TOKEN]
+
+e2e_register:
+  # What a new adopter has on their first day: one workflow running the tests the build already
+  # has, and no tier that needs a deployment to exercise. ⛔ The absence is the facet rather than
+  # a gap to work around — the key is written, so a project that has decided this and one that has
+  # not thought about it do not read alike.
+  carrier: none
+  absent_reason: >-
+    There is no end-to-end tier: the one workflow above runs what the build runs, against nothing
+    it has to stand up first. So there are no cases for a register to describe.
+  revisit_when: >-
+    A case lands that drives the deployed system through the interface a person uses, which is the
+    first thing a register would have a row for.

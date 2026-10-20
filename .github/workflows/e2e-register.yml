@@ -1,0 +1,43 @@
+name: End-to-end register
+
+# The carrier that holds a project's end-to-end register to its suite, and its change to both.
+# One mirrored command, so one workflow, per § 2 of plugins/mjolnir/config/schema.md — the rule
+# its siblings here cite too.
+#
+# ⚠️ The workflow name and the job name are deliberately the same string, as in every sibling:
+# `host.checks` is keyed by the workflow name and never by a job name, and identical names leave
+# no key to get wrong.
+#
+# ⛔ What runs here is the carrier's own assertion suite and not a verdict about this repository.
+# This project states `e2e_register.carrier: none` — nothing here is deployed, so there is no
+# suite for a register to describe — and the check says so and exits without a verdict when it is
+# pointed at a project in that position. An adopting project that carries the facet runs the same
+# script with no argument, and gets the two comparisons over its own tree.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: every scope of the automatic token is dropped, and the
+# checkout is told not to leave it behind in the git config. ⛔ No network either — the
+# two comparisons are over a file list, a document and a diff, which is the whole reason
+# this half can run where the suite it describes cannot.
+permissions: {}
+
+jobs:
+  e2e-register:
+    name: End-to-end register
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command: the planted violations and the planted exemptions, and then
+      # the plumbing against a repository the suite builds for itself — the base, the two
+      # file lists and the diff, which the in-memory plants cannot reach. That command is
+      # also the string `host.checks` states this run mirrors — ⚠️ held together by eye and
+      # not by a check, since nothing here reads a workflow file. That is #49.
+      - name: Assert the checks can fail, can pass, and read a real tree
+        run: python3 plugins/mjolnir/scripts/check_e2e_register.py --self-test
