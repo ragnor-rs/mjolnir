@@ -890,6 +890,41 @@ whatever it finds deletes somebody else's work.
   recoverable the guard does not run, and the ref name is the whole of the claim again — which is
   the pre-derivation behaviour and is recorded here rather than reported as covered.
 
+## The register, loaded rather than checked
+
+`plugins/mjolnir/scripts/load_the_register.py`, on a `SessionStart` hook. It reads the property
+table out of
+[schema § 8](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) under that
+subsection's anchor and hands it to the session as context. ⛔ **No copy of the table lives in the
+script** — a row edited on the surface is a row the next session is handed, and a paraphrase would
+be a second statement of the rule with nothing holding it to the first.
+
+⚠️ **Why this event, measured rather than assumed.** Two probes on 2026-10-20, each with a random
+token no session could otherwise know. A `Stop` answer's `systemMessage` was written to the
+transcript, rendered to the person, and **absent from the next request** — so a register reported
+after a reply changes no text. A `SessionStart` answer's `additionalContext` was **named back
+exactly** by the session it opened. The channel that reaches a writer before the writing is the only
+one that can carry a rule.
+
+⚠️ **The rows are rendered as a table because the cells have to be delimited.** Measured on this
+hook's first live run: rendered as `- Property — required. Not: forbidden`, a session read the last
+row's third cell as running into the paragraph after it and quoted the splice back as the rule.
+
+### What it deliberately does not do
+
+- ⚠️ **It fails open and silently**, which is this script's choice rather than a rule of the
+  procedure. A session is not the place to report that a document could not be parsed: failing
+  loudly would interrupt a person over a file they may be mid-edit on. So
+  nothing in a session says the register went unloaded, and that residue is covered by the gate —
+  the `Register loaded` run asserts the table is found and every row reaches the context, with a
+  planted surface it cannot read.
+- ⚠️ **It does not check that the register was followed.** Nothing reads the reply afterwards for
+  any property in that table; the one arm that does read a reply holds an act rather than a style,
+  and is recorded below.
+- ⚠️ **It cannot tell which role is running**, so every session the plugin is enabled in is handed
+  the register, not only one running a role. In the safe direction, and the ruling is
+  [#87](https://github.com/ragnor-rs/mjolnir/issues/87)'s.
+
 ## The reply defers nothing: held in the session, not on the gate
 
 `plugins/mjolnir/scripts/check_reply_defers_nothing.py`, on a `Stop` hook, holding

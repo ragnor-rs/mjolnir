@@ -1249,8 +1249,13 @@ varies by who is speaking rather than by project, so nothing configures it and n
 from the repository.
 
 ⛔ **This table is a rule, and nothing mechanical reads it.** A role holds its own reply to it by
-having read it — which is why it reaches the session before the writing does, rather than being
-checked after. ⚠️ **That is the reverse of how it was first built, and the reversal is measured.**
+having read it — so **the toolkit puts it into every session before anything is written**, rather
+than checking what was written afterwards. ⚠️ That placement is measured rather than chosen: of the
+two channels a hook has, the one that reports after a reply never reaches the writer at all, and
+the one that opens a session is named back by the session it opens. The table above is read out of
+this file at run time, so a row edited here is a row every later session is handed.
+
+⚠️ **That is the reverse of how it was first built, and the reversal is measured.**
 A check held six of these rows over finished replies for three days: the arms that reported never
 reached the writer at all, and the arms that handed a turn back bought a second reply each. Over
 thirty hand-backs it was right three times, and all three were the Completeness row. The record is
