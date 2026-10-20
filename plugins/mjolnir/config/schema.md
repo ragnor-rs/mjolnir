@@ -398,8 +398,9 @@ vocabularies for one tier is what
 [§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check) already refuses
 one list over.
 
-⚠️ **Nothing below refuses a change.** No check reads it, no gate fails a change for carrying no
-test, and a project that states no testing discipline of its own behaves exactly as it does today.
+⚠️ **Nothing below refuses a change.** No `readiness:` predicate and no `done:` check is answered
+out of it, no gate fails a change for carrying no test, and a project that states no testing
+discipline of its own behaves exactly as it does today.
 What it binds is whoever writes a test: the implementing leg
 [above](#what-carries-the-item-forward-and-where-it-stops-to-ask), which no role owns, and the
 reviewing role reading a diff that adds one.
@@ -425,8 +426,8 @@ undo for a deliberate break is a copy of the file**, never version control's own
 that cannot tell the break from any other uncommitted edit to the same file and takes both, and
 against a file nothing tracks it does nothing at all — so the break survives into the tree with
 every check green. ⚠️ **Confirming the red is not the whole of it**, since a break the assertion
-reddens on by another route leaves the test believed and unexercised; both halves are measured on
-this repository's own checks
+reddens on by another route leaves the test believed and unexercised — which is measured on this
+repository's own checks
 ([the measurement](../../../docs/single-source-of-truth.md#each-check-has-a-violation-it-is-asserted-to-redden-on)).
 ⛔ **The same rule for a different artifact is #28's** — the checks a document role ships — and it is
 cited here rather than ruled a second time.
@@ -445,11 +446,13 @@ of them generalises, which is measured rather than assumed
 ⚠️ **The suffix is the one of the four that is also a tier boundary**, so a project leaving it
 unwritten has a tier nothing downstream can see and its own build cannot run unaided.
 
-⛔ **Procedure, and no key on this surface carries any of it.** Nothing above is read by a role to
-decide what to do next, which is the test for a candidate key that #65 states generally; what a
-project *does* configure about its tiers is #60's and #66's. ⚠️ **A project may still hold rules of
-its own**, which are additions to this rather than a second statement of it — and the form the rest
-of that store is classified under is #40's.
+⛔ **Procedure, and no key on this surface carries any of it.** Nothing above is a value a project
+supplies for a role to read and decide what to do next, which is the test for a candidate key that
+#65 states generally — ⚠️ **the rules themselves are read by the two legs named at the top of this
+subsection**, which is what being procedure rather than configuration means here. What a project
+*does* configure about its tiers is #60's and #66's. ⚠️ **A project may still hold rules of its
+own**, which are additions to this rather than a second statement of it — and the form the rest of
+that store is classified under is #40's.
 
 ## 1. Roots
 
