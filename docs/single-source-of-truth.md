@@ -575,6 +575,16 @@ there has it backwards.
   clearing one is an act with a name and a timestamp on it — and what closes the rest is a second
   person, which is the `revisit_when` already written against `estimate` in this project's own
   configuration.
+- **A finding one pass raised and fixed itself, which is an item in form only.** A thread is how an
+  item needing somebody's action is made readable, so a defect found and closed inside a single
+  pass has no such item to carry: posting it as a thread *manufactures* one, and where the author
+  and the reviewer are one credential the only hand that can clear it is the hand that wrote it —
+  the ratchet above, turning on finished work. ⚠️ Measured on #159, whose gate was held red by a
+  finding two commits after its fix had landed. What the pass has to say about such a defect
+  belongs in the commit that fixed it and in the change's own body, which check 1 already reads.
+  ⛔ A thread is for what a reader has to answer, and the gate cannot tell the two apart: it reads
+  resolution, which is a record of judgement, and the judgement on work already finished was never
+  pending.
 - **A finding raised as a plain comment.** A comment carries no resolution state anywhere on the
   host, so nothing can report it unresolved — which is why the rule puts a finding in a thread.
   A finding posted where it cannot be read back is a reviewer's catch, and the one real hole in
@@ -832,14 +842,21 @@ place the finished reply is available, and it hands the text over directly, so
 
 **What blocks, and what a hand-back costs.** A finding blocks where it is a fact about the text
 *and* worth what handing the turn back costs — which is the reply a second time. The writer
-restates it whole, so a person who has read it reads it again. ⚠️ Measured on the three hand-backs
-this check had recorded by the end of 2026-10-20, in projects with this plugin enabled and no
-configuration of their own: thirteen of twenty-one prose lines came back byte for byte in the first,
-eight of thirteen in the second, and the third brought back a reply whose second pass also dropped a
-file-and-line citation the first had carried. Each paid that for two reworded clauses. ⛔ **Two of
-the three were paid for a defect that was not there**, and both of those came from matching a bare
-token — a pair of arrows with a clause between them in the one, a ruled word in a sense that parks
-nothing in the other. Nothing in the first shape of this check accounted for that price.
+restates it whole, so a person who has read it reads it again. ⚠️ Measured on the four hand-backs
+this check had recorded on 2026-10-20, in projects with this plugin enabled and no configuration of
+their own: thirteen of twenty-one prose lines came back byte for byte in the first, eight of
+thirteen in the second, and the third brought back a reply whose second pass also dropped a
+file-and-line citation the first had carried. Each paid that for two reworded clauses. ⛔ **Three
+of the four were paid for a defect that was not there**, and all three came from matching a bare
+token — a pair of arrows with a clause between them in the first, a ruled word in a sense that
+parks nothing in the second, and the same ruled word in the first person in the fourth, which the
+third narrowed the others without reaching. Nothing in the first shape of this check accounted for
+that price.
+
+⚠️ **The fourth arrived on the same day as the change that narrowed three of the four ruled forms,
+after that change had landed**, so the figure above states the date it is true of rather than that
+day's end: a count stated over a window whose end the reader cannot see keeps growing after it is
+written.
 
 - **Opening** blocks on one instance. It is the first thing read and the frame for everything under
   it, and a preamble form is a phrase rather than a judgement.
@@ -872,14 +889,64 @@ nothing in the other. Nothing in the first shape of this check accounted for tha
   the text of this check's own finding for it, so a reply relaying this check reddened on it. ⚠️ The
   first of the three is **measured on a reply** and the other two are **demonstrated against the
   shipped check** — a sentence this repository writes by the dozen, run through the arm — rather
-  than waited for. `left` had the carve-out from the start, the bare word being ordinary English for
-  what a process or a merge did — *three trees left behind*.
+  than waited for. `left` has that carve-out for the bare word, which is ordinary English for what
+  a process or a merge did — *three trees left behind*.
+- ⛔ **`left` had that carve-out in the third person only, and the first person was bare.** One of
+  its alternatives matched `I left` as a token, so the word was carved out for what a sibling
+  session did and not for what the writer did — and what a role's reply says about work it has done
+  is in the first person: *I left the tree and released the claim*, *I left a review comment on the
+  thread*. ⚠️ **Measured on the fourth hand-back**, on a reply reporting a file correctly left
+  unchanged, the same day the other three forms were narrowed. The green plant that was meant to
+  hold this carve-out asserted a sibling session's tree rather than the writer's own sentence, so it
+  could not reach the alternative that was bare: a form is only carved out in the person its plant
+  is written in. The first person is now read with the parked state it leaves behind — *left the
+  second arm unfixed* — over the same bounded gap `stated plainly` is read across.
+- ⛔ **The rest of this arm's false reds were measured over the corpus rather than waited for.**
+  Each of the four narrowings above was paid for by a hand-back first, which is one false red per
+  re-read, so the fifth was found by running the arm over the artifact it holds: **2,713 finished
+  replies** in this project's own session transcripts, every assistant message carrying text and no
+  tool call. 99 spans matched, across 27 distinct forms. ⚠️ **The majority are the acts the rule is
+  for** — 39 are `say the word`, and the rest are offers, a section of work named and not done, and
+  a figure asserted to stand — which is the result that makes the arm worth having. Four forms
+  carried a second sense this repository writes constantly, and each is now read around the match:
+  a heading of another artifact cited in double quotes, where a code span and a block quote were
+  already carved out; an absence stated, which is what the rule asks for; § 10's own instruction to
+  a role that cannot delete the tree it stands in, *say what is left to remove and where*; and a
+  scope stated by declaration. ⚠️ **Two words are excluded from the parked state the word is read
+  with, on that same measurement**: *on the same unresolved threads* is how a review's red runs are
+  reported here, and *left untouched* is how items that already carried a label are, so `unresolved`
+  and `untouched` match nothing, where `undone`, `unfixed`, `unaddressed` and `unfinished` do.
+- Three further senses the same sweep measured are carved out rather than recorded as costs, each
+  by the thing it names rather than by its wording: **work the surface reserves to the person**,
+  read with the clause that governs it — *it isn't my claim, so I haven't touched it*, *that
+  document is the close-out role's* — where the measured parking, *two things that follow, which I
+  haven't touched*, carries no such clause and stays red; **an artifact's own decisions described**,
+  read with its subject, where *the decisions the item left open* is the item's and *the two items I
+  left open remain open* is the writer's; and **§ 10's handover of what a role cannot do**, matched
+  by a closed list of what the surface reserves — the tree a session stands in, its branch, a
+  priority nobody may derive. ⚠️ A parking that names one of those in the same sentence passes,
+  which is this list's ruled direction.
+- ⛔ **A count of what an arm raises is counted through the arm, not off its pattern.** The first
+  measurement here counted raw matches, which reports spans the carve-outs already suppress and
+  flatters every one of them. Read through the whole pipeline — the quoted blanking, the negation,
+  the senses — this arm now raises **70 spans and hands back 65 of 2,734 replies**, where the shape
+  it shipped in raised 99 over the same corpus. ⚠️ What remains is the arm working: offers, a
+  section of work named and not done, a figure asserted to stand, and `say the word` 38 times over.
 - ⚠️ **One false red is kept rather than closed, and it is kept knowingly**: `deliberately absent`
   is both the shape the ruling was measured on and § 4's own phrase for a facet carrying an
   `absent_reason`, word for word, so a reply writing the second is handed back. Nothing lexical
   separates them. ⛔ The direction the rest of the list errs in is the opposite one — a reworded
   parking passes — and `deliberately not written`, which two documents here use to state a limit,
-  is excluded for that reason and misses a parking that would say it that way.
+  is excluded for that reason and misses a parking that would say it that way. The first-person
+  narrowing errs in that same direction and is stated here rather than left to be read as coverage:
+  *I left it alone* and *I left it unchanged* are a judgement as often as they are a parking, so
+  neither state is matched, and a parking worded that way is missed.
+- ⚠️ **Two of the sweep's own spans are the writer's to fix rather than this arm's**, and they are
+  named so that a later sweep does not read them as the arm's defects: a ruled phrase cited in
+  *emphasis* rather than in a code span is the writer's own voice by every convention here, so it
+  reddens and should have been written in backticks; and a column header reading `what is left`
+  over a count of a check's hits is a label whose sense nothing lexical separates from the parking.
+  One span each.
 - ⛔ **One of the forms is read with its answer rather than as a span**: a section of open items is
   a finding where it lists any, and not where it answers `None.` — the same heading text and the
   same answer the gate on the change's body holds that section to, so that a reply and a body
@@ -889,7 +956,16 @@ nothing in the other. Nothing in the first shape of this check accounted for tha
 - Every form is planted in both directions, and the green plants are the sentences this repository
   actually writes: the shape each ruled form was named for stays red, while a design intent
   reported, a heading cited, a limit stated, the gate described, and this check's own finding
-  relayed are each asserted to stay green.
+  relayed are each asserted to stay green. ⚠️ **In both persons, where a plant in one person was
+  what let the first-person form ship bare**: the loop's own cleanup, a review comment left on a
+  thread, and a file reported correctly unchanged are each asserted green in the first person, and
+  the parked state the first person is now matched with is asserted red with and without an object
+  between the two words. ⛔ **Each carve-out the sweep added is planted with the sentence that was
+  in fact reddened**, and every one of them was verified by disabling the carve-out and watching its
+  plant go red — the direction a carve-out has to be established in, since a green plant passes
+  whether or not the mechanism it names is there. The negation carve-out carries a red plant too: a
+  parking after the negator's own clause ends, *I did not finish the second arm, so next steps*,
+  which is what keeps `nothing` from greening a reply that negates one thing and parks another.
 
 ⚠️ **A chain is two arrows sharing an operand, and sharing is not a token count.** The first form
 read one or two tokens between the arrows as the shared operand, so
