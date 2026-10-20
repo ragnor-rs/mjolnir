@@ -193,3 +193,17 @@ e2e_register:
   revisit_when: >-
     The walk-through is automated into case files, which is the first moment a record of what is
     covered has two lists to be held between.
+
+executed:
+  # ⚠️ A different absence from the one above, and the two are not interchangeable: the tier there
+  # is driven by hand, while here there is no tier of this kind at all. A person walking a change
+  # cannot silently execute nothing — they would notice — so the degradation § 16 names has no
+  # route into this project.
+  carrier: none
+  absent_reason: >-
+    There is no tier whose dependency a run stands up. What exists is a person's walk-through,
+    recorded through the `human_verification` check above, which cannot execute zero cases
+    unnoticed.
+  revisit_when: >-
+    A suite lands that creates something for itself before it can run — a store, a service or a
+    daemon — which is the same trigger the facet above carries.

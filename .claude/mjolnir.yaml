@@ -66,6 +66,12 @@ host:
     - workflow: "End-to-end register"
       mirrors: "python3 plugins/mjolnir/scripts/check_e2e_register.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The same reading as the entry above: `executed` below is `none`, so this run holds the
+    # carrier's own suite rather than a verdict about this tree. No tier here stands a dependency
+    # up for a run, which is the only tier § 16 is about.
+    - workflow: "Executed count"
+      mirrors: "python3 plugins/mjolnir/scripts/executed.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -316,3 +322,22 @@ e2e_register:
   revisit_when: >-
     A role is carried by something that has to be stood up before it can be exercised — a service,
     a hosted endpoint, or an install this repository performs rather than describes.
+
+executed:
+  # ⛔ No tier here has a dependency the run stands up, which is the only tier § 16 is about. Every
+  # check in this repository is its own suite over the tree it runs in: nothing is created for a
+  # run and nothing can be absent, so there is no state in which one of them executes zero cases
+  # and still exits zero. A declaration and a report would be two commands counting assertions
+  # that cannot be skipped.
+  #
+  # ⚠️ Which is a narrower statement than «the counts would be useless»: they would be readable,
+  # and judging them would hold nothing, because the degradation § 16 names is unreachable here.
+  carrier: none
+  absent_reason: >-
+    No tier whose dependency the run stands up: every check here is a suite over the tree it runs
+    in, with nothing created for the run and nothing that can be absent, so no run of one can
+    execute zero cases and report success.
+  revisit_when: >-
+    A check here needs something stood up before it can execute — a store, a service, or an
+    install this repository performs rather than describes — which is the same trigger the
+    end-to-end facet above carries.

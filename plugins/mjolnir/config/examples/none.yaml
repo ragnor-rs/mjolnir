@@ -144,3 +144,12 @@ e2e_register:
     The one mapped role reads evidence off the machine and writes a document. There is no system
     to drive, so there is no suite for a register to describe.
   revisit_when: A role is mapped whose work has to be exercised through an interface.
+
+executed:
+  # Nothing is run here that could execute a case, let alone skip one. ⚠️ Stated rather than left
+  # unset, which is this file's whole shape: every absence in it carries its reason.
+  carrier: none
+  absent_reason: >-
+    There is no suite and no tier. The one mapped role reads evidence off the machine and writes a
+    document, so there is no count of executed cases to declare or to judge.
+  revisit_when: A suite is mapped that creates a dependency for itself before it can run.

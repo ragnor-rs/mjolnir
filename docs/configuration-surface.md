@@ -671,6 +671,58 @@ and this one belongs on the host for the reason the measurement gives: it is the
 tier whose expensive half cannot run there at all. The suite itself is the opposite case — a
 command no workflow mirrors, which is what that facet's `local` check is for.
 
+## A tier that executed nothing, and the build that said so
+
+Measured across the six consumers, 2026-10-19. The tier in question is the one whose dependency is
+**stood up** rather than deployed — a store the subject talks to over its real protocol, created for
+the run. ⛔ It is the only tier that can degrade to nothing at all while reporting success, and the
+reason is structural rather than a lapse: the thing it needs is created by the run, so its absence
+is a condition the runner handles and not a connection that fails.
+
+The dependency arrives two ways, and the split decides who can answer the tier at all:
+
+| how the dependency arrives | consumers | what the absence looks like |
+|---|---|---|
+| the **run** stands up its own container | three | the host answers only where its runner has a container daemon; locally, a missing daemon and a silent suite read alike |
+| the **host** supplies a service beside the run | two | the local run skips silently, and the suite's own gate is one environment variable |
+| no such tier | one | — |
+
+⛔ **So «the host cannot run this tier» is false here**, which is why this is not the unrunnable-tier
+axis one tier down: the host usually *can*, and the defect is that it says so whether or not it did
+([`schema.md § 16`](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)).
+
+**What it cost, in the one consumer where it was priced.** Three suites covering that project's
+money rules are gated on a single environment variable, and without it they abort as *skipped*
+while the aggregate build still reports success — so a green build said nothing about the rules
+those suites exist for. That project's own workflow now supplies a service beside the run and
+**fails the build when any of the three reports zero tests or any skip**. ⚠️ That rule is written
+into one workflow file, mirrored by nothing, and stated nowhere on the surface it was read from —
+which is the shape a fact takes just before it is extracted.
+
+**Why the count, and why it is not a coverage figure.** A dependency-gated suite's degradation is
+*designed* to be quiet: skipping is the correct behaviour for a case whose dependency is absent, and
+the defect is the aggregate reporting a pass. So what separates the two is arithmetic the run
+already has — how many executed, how many skipped and what each skip wanted, against how many the
+tree declares. ⚠️ **Zero against a non-zero declaration is the failure, and every other number is
+reported rather than judged**, which is why the floor the surface states is one and a higher one is
+refused:
+a threshold would redden on the count being wrong rather than on the tier having run nothing
+([`schema.md § 16`](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)).
+
+**Why it generalises and the commands do not.** How many cases a tree holds and what a run printed
+are each one project's command, written in that project's own runner; *did anything execute* is
+neither, and asking it needs two numbers. ⛔ So the facet states the commands and the floor, and the
+procedure does the arithmetic — naming no runner, no task name and no report format, which is the
+same boundary the local-check and unrunnable-tier facets sit on.
+
+**Why it is a host check rather than an entry under `done:`.** For the reason the register one
+above is: a check the host already runs is refused as a `done:` entry by
+[`schema.md § 13`](../plugins/mjolnir/config/schema.md#a-done-check-the-host-already-runs-is-a-misconfiguration),
+and this is the cheap half — two numbers — of a tier whose expensive half is the run itself. ⚠️ And
+the honesty it adds is pointed at the **host's** verdict, where the four-valued rules already
+landed stop: a job whose every step ran and whose suite executed zero cases satisfies all of their
+preconditions and reads green.
+
 ## The strongest argument for extraction is not borrowed
 
 Read-it-from-one-place has been **independently invented six times** across these projects, in

@@ -170,3 +170,15 @@ e2e_register:
   revisit_when: >-
     A case lands that drives the deployed system through the interface a person uses, which is the
     first thing a register would have a row for.
+
+executed:
+  # The same first day, one tier down: nothing in the suite the build runs stands a dependency up,
+  # so there is no case that can quietly skip and no count that would prove anything. ⚠️ Stated
+  # rather than left unset, for the reason the facet above is.
+  carrier: none
+  absent_reason: >-
+    No tier stands a dependency up: the suite the build runs talks to nothing it has to create
+    first, so no run of it can skip a case and still report success.
+  revisit_when: >-
+    A case lands that needs a store, a service or a daemon created for the run — the first moment
+    a pass and a run that executed nothing stop reading alike.

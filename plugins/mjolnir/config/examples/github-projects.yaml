@@ -177,3 +177,19 @@ e2e_register:
   revisit_when: >-
     A case file lands in this repository, which is the first moment either comparison has two
     lists to make.
+
+executed:
+  # The other half of the split § 16 measured: here the **host** supplies the dependency as a
+  # service beside the run, so the tier executes there and skips locally. ⚠️ Which is why the
+  # facet is carried even though the end-to-end suite above is somebody else's — the tier this is
+  # about is the one with a dependency, not the one with a deployment.
+  #
+  # ⚠️ The weaker configuration, and a real one: the counts are read and reported, and nothing is
+  # judged from them. The declaration here is new enough that nobody has checked it against the
+  # tree, so the figures go in the report and the floor is left out rather than set to a number
+  # that would redden on the count being wrong rather than on the tier being empty.
+  carrier: command
+  declares: "scripts/count-integration-cases"
+  reports: "scripts/report-integration-run"
+  requires:
+    - "the service the host supplies beside the run, which a local run does not have"

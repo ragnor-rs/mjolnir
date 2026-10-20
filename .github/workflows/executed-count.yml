@@ -1,0 +1,43 @@
+name: Executed count
+
+# The carrier that holds a tier's run to the count the tree declares. One mirrored command, so one
+# workflow, per § 2 of plugins/mjolnir/config/schema.md — the rule its siblings here cite too.
+#
+# ⚠️ The workflow name and the job name are deliberately the same string, as in every sibling:
+# `host.checks` is keyed by the workflow name and never by a job name, and identical names leave
+# no key to get wrong.
+#
+# ⛔ What runs here is the carrier's own assertion suite and not a verdict about this repository.
+# This project states `executed.carrier: none` — no tier here has a dependency a run stands up, so
+# there is no run that could execute nothing and still exit zero — and the check says so and exits
+# without a verdict when it is pointed at a project in that position. An adopting project that
+# carries the facet runs the same script with no argument, and gets the arithmetic over its own
+# tier.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: every scope of the automatic token is dropped, and the checkout is
+# told not to leave it behind in the git config. ⛔ No network either — the suite builds its own
+# two commands in a temporary directory, which is the whole reason the half that reads a count can
+# run where the tier it reads about cannot.
+permissions: {}
+
+jobs:
+  executed-count:
+    name: Executed count
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command: the planted violations and the planted exemptions, the grammar from
+      # both sides, and then two real commands run in a directory the suite builds — which the
+      # in-memory plants cannot reach, since every one of them is a subject that was already
+      # built. That command is also the string `host.checks` states this run mirrors — ⚠️ held
+      # together by eye and not by a check, since nothing here reads a workflow file. That is #49.
+      - name: Assert the checks can fail, can pass, and read two real commands
+        run: python3 plugins/mjolnir/scripts/executed.py --self-test
