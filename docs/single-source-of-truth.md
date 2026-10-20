@@ -888,9 +888,9 @@ what the person reads, and it is green.
 ⛔ **Two things change, and neither is which findings block**, both under
 [§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred). The ask is
 addressed to the findings that block it, with a reported one named *after* the sentence that asks
-and under a line saying it is not what the restatement is for. And **corrected** is stated on the
-surface to mean the finding fixed with the rest of the reply as it stands, because a reply reworded
-around the fix charges the reader every line to show them one. ⚠️ **The second is measured on a
+and under a line saying it is not what the restatement is for. And what **corrected** means is
+stated on the surface, in the section cited above, rather than reproduced here. ⚠️ **The second is
+measured on a
 hand-back that carried no density at all**: one parked clause blocked, the writer did the work the
 clause had offered, and the reply came back with 3 of its 9 prose lines byte for byte and a
 reworded counterpart for all nine — so the rewording is not the density arm's doing, and bounding
@@ -1087,7 +1087,11 @@ and `--self-test` asserts the order on both answers and on a composed reply carr
 kind: a reported finding ahead of the ask is a density asked for, which is the price the reporting
 kind exists to not pay. ⚠️ **The person is told both regardless** — the `reason` beside the context
 names the reported arms as reported, so a hand-back reports no less about a reply than the same
-reply would have been told on a turn where nothing blocked.
+reply would have been told on a turn where nothing blocked. ⛔ **No channel here reaches the person
+without reaching the writer**, which is why the bound is prose rather than an omission: the harness
+injects both the context and the `reason` into the session, measured on the transcript of a
+hand-back, so dropping a reported finding from the context would hide it from the person and leave
+it in front of the writer anyway.
 
 It derives what it can, for the reason the gate's own scripts do:
 
