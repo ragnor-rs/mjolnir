@@ -94,7 +94,25 @@ def declaration(text: str) -> int:
             "non-negative integer § 16 states. Nothing was judged: a count that "
             "could not be read is not a count of zero."
         )
-    return int(stated)
+    return _count(stated, "the declaration")
+
+
+def _count(digits: str, what: str) -> int:
+    """A matched run of digits as an integer, or a count nobody established.
+
+    ⛔ The conversion is guarded rather than assumed: the interpreter refuses a
+    digit string past a length limit of its own, so a grammar that matched and a
+    conversion that raised would leave this file's one stated rule --
+    unestablished counts are reported as unanswered -- answered by a traceback.
+    Found by review on this change.
+    """
+    try:
+        return int(digits)
+    except ValueError as exc:
+        raise Unreadable(
+            f"{what} printed {len(digits)} digits, which is a count this "
+            f"interpreter will not convert: {exc}. Nothing was judged."
+        ) from exc
 
 
 def report(text: str) -> tuple[int, list[tuple[int, str]]]:
@@ -123,11 +141,16 @@ def report(text: str) -> tuple[int, list[tuple[int, str]]]:
                     "count the run means is undecided. § 16 states the line "
                     "exactly once."
                 )
-            executed = int(found.group("count"))
+            executed = _count(found.group("count"), "the report's executed line")
             continue
         found = SKIPPED_LINE.match(stripped)
         if found:
-            skips.append((int(found.group("count")), (found.group("wanted") or "").strip()))
+            skips.append(
+                (
+                    _count(found.group("count"), "a skip line of the report"),
+                    (found.group("wanted") or "").strip(),
+                )
+            )
             continue
         raise Unreadable(
             f"the report states {stripped[:80]!r}, which § 16's grammar cannot "
@@ -160,14 +183,22 @@ class Subject:
         declared: int,
         executed: int,
         skips: list[tuple[int, str]] | None = None,
+        where: str | None = None,
     ):
         self.facet = facet
         self.declared = declared
         self.executed = executed
         self.skips = list(skips or [])
+        # The tree the two commands ran in, where they ran at all. `None` for a
+        # subject built in memory, which is a subject no tree produced -- and a
+        # report naming a tree it never ran in would be the wrong-tree claim one
+        # level down from the rule it exists to keep.
+        self.where = where
 
     def copy(self) -> "Subject":
-        return Subject(dict(self.facet), self.declared, self.executed, list(self.skips))
+        return Subject(
+            dict(self.facet), self.declared, self.executed, list(self.skips), self.where
+        )
 
     @property
     def floor(self):
@@ -189,7 +220,14 @@ class Subject:
         this run found missing. ⛔ Neither is read as the other's absence.
         """
         out = list(self.requires)
-        out += [reason for _, reason in self.skips if reason and reason not in out]
+        for _, reason in self.skips:
+            # ⚠️ Appended one at a time on purpose. A comprehension tests `not in`
+            # against the list as it stood before the whole of it was added, so it
+            # de-duplicates against `requires` and never among the skips -- and a
+            # verdict then names one dependency once per line that wanted it.
+            # Found by review on this change.
+            if reason and reason not in out:
+                out.append(reason)
         return out
 
 
@@ -200,13 +238,39 @@ def read_command(command: str, root: str, what: str) -> str:
     verdict, by the rule in this file's docstring: the exit status is the
     runner's business, but a command that never produced output is a count
     nobody established.
+
+    ⚠️ **Decoding replaces rather than raises.** A runner emitting one byte that
+    is not text would otherwise answer this file's own rule with a traceback,
+    and the mangled text is then refused by the grammar -- which is the right
+    answer and the stated one. Found by review on this change.
+
+    ⚠️ **No time bound is set here, and that is stated rather than discovered.**
+    `reports` is frequently the tier's own run, which legitimately takes as long
+    as the tier takes, so any number this toolkit picked would be wrong for some
+    project and would redden a healthy tier. ⛔ What is bounded is the *handling*:
+    a bound imposed from outside -- the runner's own job limit, or a caller
+    passing one -- is reported as a count nobody established rather than as a
+    zero. A configured bound would be a key on the surface, which § 16 does not
+    state.
     """
     try:
         done = subprocess.run(
-            command, shell=True, cwd=root, capture_output=True, text=True, check=False
+            command,
+            shell=True,
+            cwd=root,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            check=False,
         )
-    except OSError as exc:  # the shell itself was unavailable
+    except OSError as exc:  # the shell itself was unavailable, or the root is gone
         raise Unreadable(f"the {what} command could not be run: {exc}") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise Unreadable(
+            f"the {what} command did not finish within the bound it was given "
+            f"({exc.timeout}s). Nothing was judged: a count that could not be "
+            "read is not a count of zero."
+        ) from exc
     if not done.stdout.strip():
         raise Unreadable(
             f"the {what} command printed nothing"
@@ -219,7 +283,9 @@ def read_command(command: str, root: str, what: str) -> str:
 def read_subject(root: str, facet: dict) -> Subject:
     declared = declaration(read_command(facet["declares"], root, "declaration"))
     executed, skips = report(read_command(facet["reports"], root, "report"))
-    return Subject(facet=facet, declared=declared, executed=executed, skips=skips)
+    return Subject(
+        facet=facet, declared=declared, executed=executed, skips=skips, where=root
+    )
 
 
 # --- the checks -------------------------------------------------------------
@@ -253,12 +319,20 @@ def check_every_skip_says_what_it_wanted(subject: Subject) -> list[str]:
 
     ⚠️ Per skip rather than once, so a report with two reasonless lines says so
     twice: each is a separate count nothing accounts for.
+
+    ⛔ **A count of zero is not a skip**, and a line stating one is not refused
+    for saying nothing about it. § 16's reason for the refusal is that a skip
+    count with nothing saying what it was is a skip folded into a pass, and at
+    zero there is nothing folded into anything -- so refusing it would redden a
+    tier in which every declared case executed, on a report generator that emits
+    the line unconditionally, with a message that is false as written. Found by
+    review on this change; the plant for it is below.
     """
     return [
         f"a skip of {count} case(s) states no reason, so that count is a skip folded into "
         "a pass (§ 16). The line states a count and what those cases wanted."
         for count, reason in subject.skips
-        if not reason
+        if count and not reason
     ]
 
 
@@ -276,10 +350,25 @@ CHECKS = [
 
 
 def reported(subject: Subject) -> list[str]:
-    out = [
+    out = []
+    # ⛔ Which tree answered, and with which commands, first.
+    # [§ 10](../config/schema.md#which-tree-a-verdict-belongs-to) requires a run
+    # to state the tree its verdict belongs to, and this is the first carrier
+    # here to run a *project's* command rather than a git call -- so a command
+    # talking to a service bound to another tree's stack would otherwise answer
+    # about code this branch does not contain, in the direction that passes, with
+    # nothing in the output to tell a reader which tree it was. Found by review
+    # on this change.
+    if subject.where:
+        out.append(f"the tree this verdict belongs to: `{subject.where}`")
+    out.append(
+        f"declared by `{subject.facet.get('declares')}`; "
+        f"reported by `{subject.facet.get('reports')}`"
+    )
+    out.append(
         f"declared: {subject.declared} case(s); executed: {subject.executed}; "
         f"skipped: {subject.skipped}."
-    ]
+    )
     for count, reason in subject.skips:
         out.append(f"skipped {count}: {reason[:110] if reason else '(no reason stated)'}")
     if subject.floor is None:
@@ -292,10 +381,32 @@ def reported(subject: Subject) -> list[str]:
             "the tree declares no case, so there is nothing for this rule to judge: the "
             "failure it names is zero executed against a **non-zero** declaration."
         )
+        if subject.executed == 0:
+            # ⛔ The hole in the rule's own premise, named in the output rather
+            # than left for an adopter to discover: the two commands are equally
+            # fragile over the same tree, so a shared degradation that makes the
+            # declaration print zero disarms the rule and this run reports green.
+            # Found by review on this change, and named rather than closed —
+            # closing it would redden every project that genuinely has no case.
+            out.append(
+                "⛔ and nothing executed either, which reads identically to a declaration "
+                "command that itself degraded: this rule is disarmed by a zero declaration, "
+                "so a reader checks that the declaration is the tree's and not the failure's."
+            )
     if subject.executed > subject.declared:
         out.append(
             f"more executed ({subject.executed}) than declared ({subject.declared}), so the "
             "two commands disagree about what the tree holds. Reported rather than judged."
+        )
+    if subject.declared and subject.executed + subject.skipped != subject.declared:
+        # The one identity the two commands can be cross-checked on, computed
+        # because nothing else here computes it. ⛔ Reported and not judged: a
+        # tier whose cases are counted differently by its two commands is a
+        # configuration this facet has no verdict about.
+        out.append(
+            f"executed ({subject.executed}) plus skipped ({subject.skipped}) is not the "
+            f"declaration ({subject.declared}), so some declared case is accounted for by "
+            "neither. Reported rather than judged."
         )
     for precondition in subject.requires:
         out.append(f"the cases need: {precondition[:110]}")
@@ -414,13 +525,57 @@ def _every_case_executed(subject: Subject) -> Subject:
     return subject
 
 
+def _a_reasonless_skip_of_nothing(subject: Subject) -> Subject:
+    """A healthy tier whose report emits `skipped 0` with nothing after it.
+
+    ⛔ An exclusion, with a guard of its own in the skip check. The shape is what
+    a generated report does unconditionally, and refusing it reddened a tier in
+    which every declared case executed -- which is what this plant exists to
+    keep from coming back.
+    """
+    subject.executed = subject.declared
+    subject.skips = [(0, "")]
+    return subject
+
+
 EXEMPTIONS = [
     ("exclusion: no floor stated, so zero executed is reported and not judged",
      _no_floor_stated),
     ("exclusion: a tree declaring no case at all", _a_tree_declaring_nothing),
+    ("exclusion: a reasonless skip of zero cases, which folds nothing into anything",
+     _a_reasonless_skip_of_nothing),
     ("narrowness: more executed than declared, which the two commands disagree about",
      _more_executed_than_declared),
     ("narrowness: every declared case executed, and nothing skipped", _every_case_executed),
+]
+
+
+# --- what the report has to say, per state ----------------------------------
+#
+# ⛔ The reporting half is asserted here because nothing else asserted it: with
+# `reported()` replaced by a function returning nothing, every plant above still
+# passed and the suite was green -- measured by review on this change. Two of the
+# green plants above are *labelled* for report branches, and a plant that asserts
+# only that nothing reddened says nothing about what the run then said.
+#
+# Each entry is (the state, the plant, a phrase the report must carry).
+REPORTED = [
+    ("an unset floor says the counts are judged by nothing",
+     _no_floor_stated, "nothing is judged from"),
+    ("a zero declaration says the rule has nothing to judge",
+     _a_tree_declaring_nothing, "nothing for this rule to judge"),
+    ("and names that a degraded declaration reads the same way",
+     _a_tree_declaring_nothing, "reads identically to a declaration"),
+    ("more executed than declared says the two commands disagree",
+     _more_executed_than_declared, "disagree about what the tree holds"),
+    ("counts that do not add up to the declaration are reported",
+     _a_skip_with_no_reason, "accounted for by neither"),
+    ("a reasoned skip is reported with its reason",
+     _every_case_executed, "declared: 4 case(s)"),
+    ("a configured precondition is reported whether or not the floor was missed",
+     _every_case_executed, "the cases need:"),
+    ("and every run says the exit status is not what it read",
+     _every_case_executed, "never an exit status"),
 ]
 
 
@@ -435,6 +590,11 @@ UNREADABLE_DECLARATIONS = [
     ("a number with a runner's own output around it", "ran 3 files\n4\n"),
     ("nothing at all", "   "),
     ("a signed count, which the grammar does not state", "-1"),
+    # ⛔ The grammar matches and the conversion refuses. Planted because the
+    # interpreter's own digit limit is a route from *matched* to *traceback*,
+    # which would answer this file's rule about unestablished counts with a
+    # stack trace. Found by review on this change.
+    ("more digits than the interpreter converts", "9" * 5000),
 ]
 
 UNREADABLE_REPORTS = [
@@ -457,6 +617,17 @@ def _two_commands(where: str) -> tuple[str, dict]:
     is about a subject that was already built. ⛔ Written as files in a temporary
     directory rather than as literals, because the branch under test is the
     running and the reading, not the strings.
+
+    ⚠️ **The seam these stand at, named rather than assumed**
+    ([§ The loop](../config/schema.md#what-earns-a-test-and-what-makes-its-red-believable)):
+    a command string, a working directory, and the bytes it printed on standard
+    output. ⛔ They are a **fake and not a mock** -- real commands answering as
+    the thing they replace, which is a project's own command, so a change to how
+    the carrier runs or reads one fails here rather than passing on an
+    expectation nobody re-examined. ⚠️ And the facet is the **whole** facet,
+    `requires:` included: a fixture carrying only the keys this arm's assertions
+    read would leave the verdict's naming of the dependency exercised nowhere
+    but in memory, which is a fixture testing itself.
     """
     root = os.path.join(where, "a-tree")
     os.makedirs(root)
@@ -473,6 +644,7 @@ def _two_commands(where: str) -> tuple[str, dict]:
         "declares": "./declare",
         "reports": "./report | cat",
         "min": 1,
+        "requires": ["a store the run creates for itself"],
     }
     return root, facet
 
@@ -522,9 +694,27 @@ def self_test() -> int:
         else:
             print(f"  green on               exempt: {label}")
 
+    # ⛔ The reporting half, which no plant above reaches: each state against a
+    # phrase the report has to carry. Without these, `reported()` could return
+    # nothing at all and every assertion in this file would still hold.
+    for label, plant, phrase in REPORTED:
+        lines = reported(plant(subject.copy()))
+        check(
+            f"report: {label}",
+            any(phrase in line for line in lines),
+            f"no line carried {phrase!r}; said {lines}",
+        )
+    # And the other direction for the one branch whose absence is the finding:
+    # a run with a floor stated must **not** say the counts are judged by nothing.
+    check(
+        "report: a stated floor does not say the counts are judged by nothing",
+        not any("nothing is judged from" in line for line in reported(subject.copy())),
+    )
+
     # The verdict that misses the floor names what the cases wanted, in both
     # directions: from the configuration and the run, and **unnamed** where
-    # neither says. ⛔ Asserted on the message rather than on the red, because the
+    # neither says. ⚠️ And one dependency is named once however many skip lines
+    # wanted it. ⛔ Asserted on the message rather than on the red, because the
     # red is the same either way and the naming is half of what § 16 asks for.
     stated = check_the_run_executed_what_the_tree_declares(_executed_nothing(subject.copy()))
     check(
@@ -595,6 +785,18 @@ def self_test() -> int:
             "a real run that executed nothing reddens the rule",
             bool(found["the run executed what the tree declares"]),
             f"{found}",
+        )
+        # ⛔ And the verdict names the dependency **through the commands**, from
+        # the configured precondition and from the reason the command printed.
+        # Asserted here as well as in memory because it is half of what § 16 asks
+        # of a missed floor, and an arm that only reddened would pass with the
+        # naming gone.
+        said = found["the run executed what the tree declares"][0]
+        check(
+            "and that verdict names the dependency, from the facet and from the command",
+            "a store the run creates for itself" in said
+            and "a store nothing created" in said,
+            f"said {said!r}",
         )
         # ⛔ And a command that prints nothing is the state no fixture above
         # reproduces: the tier was never asked, and that is not a zero.
@@ -688,9 +890,28 @@ def main(argv: list[str]) -> int:
         for problem in problems:
             print(f"  - {problem}")
         return 1
+    # ⛔ A run that judged nothing does not print a pass. With no floor stated
+    # there is no verdict about what executed, so the sentence a reader takes
+    # away says what was read and what was *not* judged — and says it loudest in
+    # the state the facet exists for, a tier that executed nothing. Found by
+    # review on this change: the pass sentence read
+    # "0 of 120 declared case(s) executed, and every skip states what those
+    # cases wanted", which is the incident reported as success in prose.
+    if subject.floor is None:
+        print(
+            f"\n{subject.executed} of {subject.declared} declared case(s) executed. ⛔ Nothing "
+            "was judged: this facet states no `min`, so no floor was asked of this run. "
+            + (
+                "⚠️ And nothing executed, which is the failure § 16 names — unjudged here only "
+                "because no floor is stated."
+                if subject.declared and not subject.executed
+                else "Every skip states what those cases wanted."
+            )
+        )
+        return 0
     print(
-        f"\n{subject.executed} of {subject.declared} declared case(s) executed, and every "
-        "skip states what those cases wanted."
+        f"\n{subject.executed} of {subject.declared} declared case(s) executed, which met the "
+        f"floor of {subject.floor}, and every skip states what those cases wanted."
     )
     return 0
 

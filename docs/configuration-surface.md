@@ -703,10 +703,10 @@ which is the shape a fact takes just before it is extracted.
 *designed* to be quiet: skipping is the correct behaviour for a case whose dependency is absent, and
 the defect is the aggregate reporting a pass. So what separates the two is arithmetic the run
 already has — how many executed, how many skipped and what each skip wanted, against how many the
-tree declares. ⚠️ **Zero against a non-zero declaration is the failure, and every other number is
-reported rather than judged**, which is why the floor the surface states is one and a higher one is
-refused:
-a threshold would redden on the count being wrong rather than on the tier having run nothing
+tree declares. ⚠️ **Why the rule stops at one floor** rather than becoming a percentage: a threshold
+reddens on the count being wrong, which is a defect in the declaration rather than in the tier, and
+a check that reddens on a figure nobody maintains is the check somebody turns off. What the rule is
+therefore held to is the surface's
 ([`schema.md § 16`](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)).
 
 **Why it generalises and the commands do not.** How many cases a tree holds and what a run printed

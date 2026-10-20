@@ -184,12 +184,12 @@ executed:
   # facet is carried even though the end-to-end suite above is somebody else's — the tier this is
   # about is the one with a dependency, not the one with a deployment.
   #
-  # ⚠️ The weaker configuration, and a real one: the counts are read and reported, and nothing is
-  # judged from them. The declaration here is new enough that nobody has checked it against the
-  # tree, so the figures go in the report and the floor is left out rather than set to a number
-  # that would redden on the count being wrong rather than on the tier being empty.
+  # ⛔ The floor is stated, and this is the configuration that most needs it: the local run has no
+  # service beside it, so every case here skips locally and the suite exits zero. Leaving `min`
+  # out would read the counts and judge nothing, which is the state this project was bitten in.
   carrier: command
-  declares: "scripts/count-integration-cases"
-  reports: "scripts/report-integration-run"
+  declares: "scripts/integration-case-count"
+  reports: "scripts/integration-run-report"
+  min: 1
   requires:
     - "the service the host supplies beside the run, which a local run does not have"

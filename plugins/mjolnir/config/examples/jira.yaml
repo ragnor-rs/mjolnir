@@ -189,8 +189,8 @@ executed:
   # The facet carried in full, for the tier that stands its own dependency up: the suite talks to
   # a real store created for the run. ⛔ Which is why this is configured at all — a store that was
   # never created is a condition the runner handles, so the suite skips every case and the command
-  # still exits zero. Nothing of the runner is stated here: both values are commands this project
-  # owns, each ending in whatever turns its runner's output into the two lines § 16 states.
+  # still exits zero. Both values are this project's own commands, ending in whatever § 16's
+  # contract asks for.
   carrier: command
   declares: "scripts/count-integration-cases"
   reports: "scripts/run-integration-cases | scripts/as-executed-report"
