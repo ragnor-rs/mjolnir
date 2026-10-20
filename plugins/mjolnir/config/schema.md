@@ -297,6 +297,16 @@ reading it — is answered by re-sending that reply corrected, in the same turn.
 will hold* is this rule's smallest violation: the reader is told the defect is there and handed it
 anyway, and a guard that cannot force the correction has still named one.
 
+⛔ **Corrected is the finding fixed with the rest of the reply as it stands**, and the correction
+answers the findings that were raised rather than every line they sat beside. What this rule
+charges the reader is a re-read of what changed; a reply rewritten around the fix charges them the
+whole of it, costs them the one thing a re-read gives — seeing what moved — and loses what the
+first reply carried with nothing saying so. ⚠️ **Measured, in both halves**: a restatement
+answering one finding returned most of its prose lines unchanged, one answering a finding beside it
+that asked for nothing returned almost none of them, and that second restatement dropped a question
+the first reply had put to the person. The figures are recorded beside the check that holds this,
+where [§ 8](#the-reply-to-the-person-running-a-role) points.
+
 **The narrow exception is separate work.** Work that genuinely belongs to a **different** outcome
 is a separate numbered item, filed before the merge and linked from it. ⛔ **The test is whether
 the current item's stated acceptance check passes without it** — where it does not, the work is
