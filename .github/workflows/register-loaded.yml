@@ -1,0 +1,35 @@
+name: Register loaded
+
+# The register a reply is held to is a rule rather than a check — so the one thing that can go
+# wrong is that nobody reads it. This run holds the mechanism that makes it read: that the
+# surface's own table is found under its anchor, that every row of it reaches the context a
+# session is handed, and that the carrier still registers the loader on the event that opens a
+# session.
+#
+# ⛔ **A silent failure here is indistinguishable from the rule not existing.** The loader fails
+# open by design — a session is not the place to report an unparsable document — so nothing in a
+# session says the register went unloaded. That residue is what this run covers.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the
+# project controls its workflows, because a `host.checks` entry states one mirrored command.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: the loader reads files in the tree and reaches nothing.
+permissions: {}
+
+jobs:
+  register-loaded:
+    name: Register loaded
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Assert the surface's table reaches a session, and that the carrier loads it
+        run: python3 plugins/mjolnir/scripts/load_the_register.py --self-test
