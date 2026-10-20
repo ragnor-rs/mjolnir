@@ -222,6 +222,14 @@ experience:
   Measured here repeatedly, including a change whose own subject was this class introducing two more
   of it.
 
+⚠️ **Where the diff adds or changes a test, what it is read against is the surface's discipline** —
+[`§ The loop`](../../config/schema.md#what-earns-a-test-and-what-makes-its-red-believable), ⛔
+**cited and never carried here**, because a rule this role and the implementing leg both read is a
+second authority for the other the moment either holds a copy. ⚠️ **It is not a fourth class
+above**: a test that earns nothing, or one whose red nobody confirmed, is a finding about this
+change like any of the code's own, and the three classes are what the diff is read for *beyond* the
+code.
+
 ⛔ **A delegated reviewer reads and returns findings, and is given no way to write at all.** The
 writing a review needs — a planted violation, a probe, the fix itself — is this role's own, in the
 work tree the item already has.
