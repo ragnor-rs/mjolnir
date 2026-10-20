@@ -575,6 +575,16 @@ there has it backwards.
   clearing one is an act with a name and a timestamp on it — and what closes the rest is a second
   person, which is the `revisit_when` already written against `estimate` in this project's own
   configuration.
+- **A finding one pass raised and fixed itself, which is an item in form only.** A thread is how an
+  item needing somebody's action is made readable, so a defect found and closed inside a single
+  pass has no such item to carry: posting it as a thread *manufactures* one, and where the author
+  and the reviewer are one credential the only hand that can clear it is the hand that wrote it —
+  the ratchet above, turning on finished work. ⚠️ Measured on #159, whose gate was held red by a
+  finding two commits after its fix had landed. What the pass has to say about such a defect
+  belongs in the commit that fixed it and in the change's own body, which check 1 already reads.
+  ⛔ A thread is for what a reader has to answer, and the gate cannot tell the two apart: it reads
+  resolution, which is a record of judgement, and the judgement on work already finished was never
+  pending.
 - **A finding raised as a plain comment.** A comment carries no resolution state anywhere on the
   host, so nothing can report it unresolved — which is why the rule puts a finding in a thread.
   A finding posted where it cannot be read back is a reviewer's catch, and the one real hole in
