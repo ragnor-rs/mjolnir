@@ -35,12 +35,37 @@ your project.** Adopting it in the next project costs that one file and nothing 
   unresolved, counted in the body and in the review threads by a gate rather than by whoever is
   keen to merge.
 - **It already runs on itself.** Every issue in this repository is filed, started, finished and
-  reviewed through the loop this repository ships — so the first thing standing on this surface is
-  the thing that finds its holes.
+  reviewed through the loop this repository ships, and every change is held by
+  [the gates you can watch run](https://github.com/ragnor-rs/mjolnir/actions) — so the first thing
+  standing on this surface is the thing that finds its holes.
 - **Adopt what you have.** A tracker with no board and no status field, or no tracker at all, are
   configurations the surface covers rather than cases it refuses.
 
+## Where this is different
+
+A toolkit that hands you a **process of its own** — a spec lifecycle, a phase gate, a set of named
+agent personas — asks your project to adopt that process, and usually writes its directories and
+templates into your repository as the price of entry. This one does neither, and every row below
+is checkable in the tree it links.
+
+| | |
+|---|---|
+| **It models the process you already run** | Filing, gating, starting, finishing, reviewing, logging a day. There is no spec artifact to adopt, no phase to pass through, and no persona to learn |
+| **Your tracker stays your tracker** | Your statuses, your labels, your ordering, your definition of done — read through a port with a stated fallback for every capability your tracker lacks, rather than replaced by a board of its own ([`§ 3`](plugins/mjolnir/config/schema.md#3-tracker-port)) |
+| **Absence is a configuration, not a failure** | No board, no estimate, no item template, no due date, no tracker at all — each is a stated answer the procedure runs on, with the reason recorded where the key would have been |
+| **Nothing of it lives in your repository** | One file you write. No vendored copy, no templates directory, nothing to re-sync when the procedure improves |
+| **Your commands, run and reported** | What counts as done is an ordered list of checks you name, each with who answers it ([`§ 13`](plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)), and which item is next comes from a command you configure ([`§ 12`](plugins/mjolnir/config/schema.md#12-ordering)). Your build, your suites, your ordering argument |
+
+So it is not a spec-driven kit. It ships no spec format, no test taxonomy and no opinion about your
+architecture. What it does is make the loop *around* that work the same in every project, and hold
+it there.
+
 ## Install
+
+**What you need:** Claude Code, `python3` on your `PATH`, and PyYAML — which the configuration
+reader uses to read your one file, and will tell you to install if it is missing
+(`python3 -m pip install pyyaml`). Nothing else: no CLI to install, no package manager of its own,
+and no runtime added to your project.
 
 Two commands above, then one file. Write your project's own facts into `.claude/mjolnir.yaml`:
 start from whichever of
@@ -49,21 +74,25 @@ start from whichever of
 That file is the whole of what adoption costs — there is nothing to vendor and nothing to keep up
 to date.
 
-## Invocation
+## What you type
 
-Skills are addressed **namespaced, with no alias**:
+Skills are addressed **namespaced, with no alias** — the rule, and why it is procedure rather than
+a setting, is [`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
 
-```
-/mjolnir:file-work-item
-/mjolnir:gate-work-item
-/mjolnir:start
-/mjolnir:finish
-/mjolnir:review
-/mjolnir:day-report
-```
+| | |
+|---|---|
+| `/mjolnir:file-work-item` | Turns a request — or a chat log — into well-formed items, checked against everything your tracker already holds and related to what they block |
+| `/mjolnir:gate-work-item` | Runs your own readiness checks whole on an item somebody else wrote, and admits it to committed work |
+| `/mjolnir:start` | Takes the next item your ordering makes available, claims it where a sibling session cannot take it twice, and cuts its branch into its own tree |
+| `/mjolnir:finish` | Commits, pushes, opens the change, reads the host's answer about it, asks before merging, and releases the tree once the merge is read back from state |
+| `/mjolnir:review` | Reads the conversation, reads the diff, reproduces what it finds, fixes it under the same item, and drives the gate green |
+| `/mjolnir:day-report` | Builds a day's time-log entry from session transcripts, git, the host, chat and the calendar |
 
-The rule, and why it is procedure rather than a setting, is
-[`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
+You type the first one, and the loop carries the item from there: `start` hands the finished branch
+to `finish`, which enters `review` on the open change, which comes back to `finish` for the merge.
+Each hand-off happens on a stated condition rather than on being asked, and the two places it stops
+to ask you are stated too —
+[§ The loop](plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask).
 
 ## What is in it
 
