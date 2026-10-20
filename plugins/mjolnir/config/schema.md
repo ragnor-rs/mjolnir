@@ -1314,6 +1314,47 @@ surface states. This repository holds it on the gate, and what that check does n
 with it in
 [`docs/single-source-of-truth.md § Prose line width`](../../../docs/single-source-of-truth.md#prose-line-width-held-on-the-gate-for-files-and-nowhere-for-bodies).
 
+### The floor under prose a role writes into a file
+
+A document, a skill and the prose inside a script are artifacts like the day log, with one setting
+more: the language is `language.repo`, the wrapping is the subsection above, and the register and
+the audience are a project's to nominate through the `artifacts` map. ⛔ **Three
+properties of that prose are a floor underneath whichever register is nominated, and they are
+procedure.** Each is a row of [the reply's table](#the-reply-to-the-person-running-a-role) and is
+named rather than restated here; what makes the three of them a floor is that none describes who
+is reading — a nominated reader is owed them exactly as the person running a role is.
+
+| Property | What a file is held to | The unit it is read over |
+|---|---|---|
+| Restatement | The decidable corner of the Length row's *padding*: words repeated off a document this file cites, where citing it was the whole reason to name it | a run of words, against that document |
+| Emphasis | The Emphasis row | one paragraph |
+| Uncertainty | The Uncertainty row | one paragraph |
+
+⛔ **The unit is a paragraph where the reply's is the whole artifact**, and the difference is how
+the two are read: a reply is met once, from the top, while a file is entered at a heading and read
+from there. A density taken across a document averages its one textured passage against every
+plain paragraph around it, so the row read file-wide holds nothing.
+
+⚠️ **Padding beyond that corner is a reader's**, and the Length row's other half — compression —
+is left to one here as well. Both are judgements about whether a sentence earns its place, which
+is what the first clause of that row protects; the corner above is decidable because the
+repository's own authority rule already says which of two statements of one fact is the spare one.
+
+⛔ **A comment is prose this floor reaches where it stands on its own lines, and annotation where
+it rides on a line of code or data.** The subsection above reaches no file that is not markdown
+and gives two reasons for it — a line's width belongs to the language, and a comment beside a line
+of data annotates that line — and neither decides a block that a reader reads straight through. So
+the test is that path through the text, not the file's extension: a comment block of more than one
+whole line is prose, and so is a docstring, while a trailing comment and a lone comment line are
+read with the statement they sit against.
+
+⛔ **The floor binds prose written after it is set**, which is the carve-out the width above
+carries and for the same reason, so nothing here asks for a tree to be repainted.
+
+This repository holds the three mechanically, each in the one corner a check can reach, and what
+is left to a reader is recorded with them in
+[`docs/single-source-of-truth.md § The floor under file prose`](../../../docs/single-source-of-truth.md#the-floor-under-file-prose-held-on-the-lines-a-change-adds).
+
 ## 9. Day log
 
 ```yaml

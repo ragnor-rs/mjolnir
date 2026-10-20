@@ -337,8 +337,15 @@ def _base(root: str) -> str:
     )
 
 
-def read_change(root: str) -> Change:
-    """The post-image text and added line numbers for every markdown this change touches."""
+def read_change(root: str, patterns: tuple[str, ...] = ("*.md",)) -> Change:
+    """The post-image text and added line numbers for every file this change touches.
+
+    ⚠️ Which files is a **parameter**, and this check's own call passes markdown.
+    A sibling holding another rule over the same lines reads them through this
+    derivation rather than standing up a second one: the base, the hunk grammar
+    and the two traps below are the part that is hard to get right, and two
+    copies of them are free to disagree about which lines a change added.
+    """
     base = _base(root)
     # ⛔ `core.quotePath=false`, because a path git decides to quote does not
     # match the header grammar below -- and a header the grammar misses leaves
@@ -346,7 +353,7 @@ def read_change(root: str) -> Change:
     # against another: the offending document unread and an innocent one refused
     # on lines nobody wrote. The reset on `diff --git` below is the other half.
     diff = _git(root, "-c", "core.quotePath=false", "diff", "--unified=0", "--no-color",
-                "--diff-filter=ACMR", base, "--", "*.md")
+                "--diff-filter=ACMR", base, "--", *patterns)
     if diff.returncode != 0:
         raise Unreadable(f"the diff against `{base[:12]}` could not be read: {diff.stderr.strip()}")
 
