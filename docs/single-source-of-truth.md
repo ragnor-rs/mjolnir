@@ -1093,14 +1093,15 @@ shape after it, the one that fired brought the whole reply back for one line of 
 **So an answer that does not block asks the writer for nothing, and tells the person instead.** The
 findings reach whoever ran the role as the session message, named rather than counted, and the turn
 ends there — which is the whole of what `reports` costs in the table above. Two answers still ask,
-and both ask for the reply just sent to be re-sent corrected inside the same turn, because that is
-the reply carrying the findings and
+and both ask for the reply just sent to be corrected inside the same turn, because that is the
+reply carrying the findings and
 [*Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred) admits no deferred
 work: the turn that is handed back, and a finding that would have been handed back on a payload the
-guard could not be kept for. The sentence that asks is one string shared by both, and `--self-test`
-holds each of them to carrying it and to promising nothing about a later reply — and holds the other
-two to carrying **neither** it nor a promise, because dropping the ask is a licence to defer unless
-what replaces it is silence towards the writer.
+guard could not be kept for. ⚠️ **What they ask to be sent is one of two strings** and not one
+shared by both, by the reach rule above: the corrected span, or the reply. `--self-test` holds each
+asking answer to carrying exactly one of them and to promising nothing about a later reply — and
+holds the other two to carrying **neither** and no promise either, because dropping the ask is a
+licence to defer unless what replaces it is silence towards the writer.
 
 ⛔ **What either of those two answers asks for is the blocking findings, and a reported one rides
 along named as not that** — the two kinds of

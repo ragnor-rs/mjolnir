@@ -293,9 +293,9 @@ mark resolved is an item no gate can see, and an item no gate can see reads as r
 
 ⛔ **It reaches a role's own reply, not only its work item.** A finding raised against a reply —
 by a check the loop runs over it ([§ 8](#the-reply-to-the-person-running-a-role)) or by the person
-reading it — is answered by re-sending that reply corrected, in the same turn. *The next reply
-will hold* is this rule's smallest violation: the reader is told the defect is there and handed it
-anyway, and a guard that cannot force the correction has still named one.
+reading it — is corrected in the same turn, in whichever of the two shapes the next paragraph
+gives. *The next reply will hold* is this rule's smallest violation: the reader is told the defect
+is there and handed it anyway, and a guard that cannot force the correction has still named one.
 
 ⛔ **The correction is as small as the finding, and no smaller.** A finding that names a span is
 answered by that span and its replacement, and the reply is **not** sent again; a finding about the
