@@ -585,8 +585,8 @@ universal.
 Read across the same six projects' instructions files. Four carry a unit tier of **101, 85, 74 and
 48** cases; of the other two, one holds two specification files with its runner commented out of the
 host's own test workflow, and one has no automated suite at all. So the tier is not a minority
-practice — and the rules governing it are written in **exactly one** file each, every one of them
-the day somebody was corrected:
+practice — and the rules governing it are written in **one** of the six files each, two for the
+single rule that two state, every one of them written the day somebody was corrected:
 
 | the rule | how many of the six state it |
 |---|---|

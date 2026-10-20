@@ -394,7 +394,9 @@ the build did not start, no dependency the run has to stand up. ⚠️ **So a st
 is not a cheaper test in this tier; it is a missing one in the tier past it**, and the tiers past it
 have a discipline this does not state. The values the tier axis takes and the two facets they derive
 from are #60's, and what a local verdict proves is #66's — ⛔ **neither restated here**, because two
-vocabularies for one tier is what § 13 already refuses one list over.
+vocabularies for one tier is what
+[§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check) already refuses
+one list over.
 
 ⚠️ **Nothing below refuses a change.** No check reads it, no gate fails a change for carrying no
 test, and a project that states no testing discipline of its own behaves exactly as it does today.
@@ -431,8 +433,9 @@ cited here rather than ruled a second time.
 
 ⛔ **Assert values, never key sets.** A parity check written over key sets passes on the very defect
 it exists to catch: two structures whose keys agree and whose values do not. ⛔ **And a fixture
-thinner than the production shape tests the fixture** — a case built from the two fields it reads
-answers about a record nothing produces, and the fields it left out are where the defect is.
+thinner than the production shape tests the fixture** — a case whose input carries only the fields
+the code under test reads answers about a record nothing produces, and the fields it leaves out are
+where the defect is.
 
 **What stays project-local is named rather than omitted**, so that a reader meeting no statement of
 one can tell this boundary from a gap: **a coverage figure**, **the naming a case file carries**,
@@ -440,7 +443,7 @@ one can tell this boundary from a gap: **a coverage figure**, **the naming a cas
 of them generalises, which is measured rather than assumed
 ([the measurement](../../../docs/configuration-surface.md#the-unit-tier-six-files-of-rulings-and-no-role-reading-any-of-them)).
 ⚠️ **The suffix is the one of the four that is also a tier boundary**, so a project leaving it
-unwritten has a tier its own build cannot run and nothing downstream can see.
+unwritten has a tier nothing downstream can see and its own build cannot run unaided.
 
 ⛔ **Procedure, and no key on this surface carries any of it.** Nothing above is read by a role to
 decide what to do next, which is the test for a candidate key that #65 states generally; what a
