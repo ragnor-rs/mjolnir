@@ -841,8 +841,9 @@ place the finished reply is available, and it hands the text over directly, so
 | Structure | — | — | nothing; see below |
 
 **What blocks, and what a hand-back costs.** A finding blocks where it is a fact about the text
-*and* worth what handing the turn back costs — which is the reply a second time. The writer
-restates it whole, so a person who has read it reads it again. ⚠️ Measured on the four hand-backs
+*and* worth what handing the turn back costs — which is a correction the person reads, and was the
+whole reply a second time until the measurement four paragraphs down. ⚠️ Measured on the four
+hand-backs
 this check had recorded on 2026-10-20, in projects with this plugin enabled and no configuration of
 their own: thirteen of twenty-one prose lines came back byte for byte in the first, eight of
 thirteen in the second, and the third brought back a reply whose second pass also dropped a
@@ -888,15 +889,37 @@ what the person reads, and it is green.
 ⛔ **Two things change, and neither is which findings block**, both under
 [§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred). The ask is
 addressed to the findings that block it, with a reported one named *after* the sentence that asks
-and under a line saying it is not what the restatement is for. And what **corrected** means is
+and under a line saying it is not what the correction is for. And what **corrected** means is
 stated on the surface, in the section cited above, rather than reproduced here. ⚠️ **The second is
 measured on a
 hand-back that carried no density at all**: one parked clause blocked, the writer did the work the
 clause had offered, and the reply came back with 3 of its 9 prose lines byte for byte and a
 reworded counterpart for all nine — so the rewording is not the density arm's doing, and bounding
 the ask alone would not have stopped it. ⚠️ **The bound is prose asked of the writer and held by
-nothing**: the self-test holds both asking answers to carrying the sentence, and nothing compares a
-restatement to the reply it corrects. Stated because an unstated limit reads later as coverage.
+nothing**: the self-test holds every asking answer to carrying one of the two asks, and nothing
+compares a correction to the reply it corrects. Stated because an unstated limit reads later as
+coverage.
+
+⛔ **The bound held, and the duplication did not go away** — which is the measurement behind what
+[§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred) now says a
+correction is. The first hand-back after it was answered exactly as asked: of
+the reply's 16 prose lines, **15 came back byte for byte**, one changed, and 226 characters
+differed. The reader read **2,918 characters** a second time to be shown those 226, and reported
+the same complaint that opened this section. ⚠️ **A diff is what makes a corrected re-send cheap,
+and a session has none**: the terminal renders both replies in full, so a restatement costs its
+reader the whole page whatever share of it is identical. Four hand-backs were reported as
+duplication before this was read, and the bound improved three of them without closing one.
+
+⛔ **So the correction asked for is as small as the finding**, which is
+[§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred)'s rule, held here
+by the reach each blocking arm declares. A finding that names a span — a parked clause, a preamble
+opening — asks for that span
+and its replacement and forbids the reply being sent again; compression as the reply's *texture*
+asks for the reply, having no span to name. ⚠️ **A mixed answer asks for the reply**, the span
+fixes carried inside it, which is the dearer price and the safe direction. The two asks are two
+strings, and `--self-test` holds every asking branch to carrying exactly one of them, each arm to
+declaring a reach, and the person's own line to naming which was asked for — that last written
+after a break that reverted it and reddened nothing.
 
 - **Opening** blocks on one instance. It is the first thing read and the frame for everything under
   it, and a preamble form is a phrase rather than a judgement.

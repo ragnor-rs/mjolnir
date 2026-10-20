@@ -55,20 +55,23 @@ CITATION = "schema § 8 → The reply to the person running a role"
 # the surface's first rule and this file holds one artifact of it.
 DEFERRAL_CITATION = "schema § Nothing is deferred"
 
-# What an answer that asks for a fix asks for, in one string because both of the
-# answers that ask for one ask for the same thing: the reply just sent is the one
-# carrying the findings, so a branch that told the writer the *next* reply would
-# be better would be licensing a deferral — measured, and obeyed, when the arm
-# that fires on a density closed on one. `--self-test` holds both asking answers
-# to carrying this sentence and to promising nothing about a later reply.
+# What an answer that asks for a fix asks for. Both asking answers ask for the
+# same turn and for the reply just sent, because that is the reply carrying the
+# findings: a branch that told the writer the *next* reply would be better would
+# be licensing a deferral — measured, and obeyed, when the arm that fires on a
+# density closed on one. `--self-test` holds every asking answer to carrying
+# exactly one of the two sentences below and to promising nothing about a later
+# reply.
 #
-# ⛔ **And it bounds the restatement to the correction**, because the price the
-# rule charges is a re-read of the same reply, and a reply rewritten around the
-# fix is a different and larger price: the reader cannot see what changed, and
-# what the first reply carried can go missing without anything saying so. ⚠️ How
-# far restatements in fact departed from the reply they corrected is measured in
-# the document rather than restated here, over every hand-back this check has
-# recorded; no figure of it lives in this file.
+# ⛔ **Which of the two is sent follows the finding's reach, because the
+# correction costs what it is asked for.** A span named and replaced is one
+# paragraph; the reply again is the whole page, and the page is what the reader
+# has just finished. ⚠️ **Measured on a hand-back of this check's own**, where
+# the bound above worked exactly as written: all but one of the reply's prose
+# lines came back byte for byte, and the reader still read the whole of it a
+# second time to be shown one changed line. So bounding the restatement is not
+# the same as not asking for one. The figures are in the document, and no copy
+# of them lives in this file.
 #
 # ⛔ **Asking is what costs the reader the reply a second time, and `decision` is
 # not what decides it.** Context handed back on a `Stop` is read by the writer
@@ -81,11 +84,18 @@ DEFERRAL_CITATION = "schema § Nothing is deferred"
 # ⚠️ `DEFERRALS` is a closed list, and it is the *quoting* weakness this
 # repository rules out elsewhere -- safe only because what it sweeps is the
 # strings authored below rather than arbitrary text. A reworded licence passes
-# it; what catches that is the absent `RESTATE`, which is the arm that matters.
+# it; what catches that is an answer carrying neither ask, which is the arm that
+# matters.
+CORRECT_SPAN = ("Send the correction in this turn, and send the correction only: name the span "
+                "above and give the text that stands in its place. A finding against the reply "
+                "just sent is not carried forward to a later one — and the reply is not sent "
+                "again, because the rest of it stands and re-sending a page to move a clause "
+                "charges the reader the page.")
 RESTATE = ("Re-send this reply corrected, in this turn — a finding against the reply just sent "
            "is not carried forward to a later one. Corrected is the finding fixed with the rest "
            "of the reply as it stands, since what this costs the reader is a re-read: a reply "
            "reworded around the fix costs them every line of it instead of the one that changed.")
+ASKS = (CORRECT_SPAN, RESTATE)
 DEFERRALS = ("the next reply", "a later reply", "written knowing", "next time")
 
 # ⛔ What the two kinds now mean, which is narrower than it reads: `BLOCKS` hands
@@ -654,30 +664,74 @@ def check_nothing_is_parked(reply: str) -> list[str]:
     ]
 
 
-# Which property of the surface's table each check holds, and what a finding on
-# it does. ⛔ `BLOCKS` is for a finding that is a fact about the text *and* worth
-# what handing a turn back costs, which is the whole reply a second time -- the
-# writer restates it entire and the person reads a reply they have already read.
-# So the opening blocks on one instance, being the first thing read and the frame
-# for everything under it; compression blocks where it is the reply's texture
-# rather than one line, which is a density; and a check whose rule is reached
-# only through a word list or a density reports. The keys are asserted against
-# the surface below, in both directions.
+# ⛔ **How far a finding reaches, which is what the correction costs.** A finding
+# that names a span is fixed by replacing that span; one that is a property of the
+# reply as a whole is not fixed by replacing anything, because what is wrong is
+# the frame or the texture rather than a clause. ⚠️ The names are `SPAN` and
+# `REPLY` and not the `WHOLE` below, which is the residue table's word for a
+# property no check holds at all.
+#
+# ⛔ **This is declared per arm and not derived from the finding's text.** A
+# finding that happens to quote a span is not therefore span-reach: the
+# compression arm quotes nothing and the texture it reports is spread through the
+# reply, while the opening arm quotes one sentence that is the whole of its
+# defect. `--self-test` holds every blocking arm to declaring one, so a new arm
+# cannot inherit a price nobody chose for it.
+SPAN, REPLY = "span", "reply"
+
+# Which property of the surface's table each check holds, what a finding on it
+# does, and how far the finding reaches. ⛔ `BLOCKS` is for a finding that is a
+# fact about the text *and* worth what handing the turn back costs. So the
+# opening blocks on one instance, being the first thing read and the frame for
+# everything under it; compression blocks where it is the reply's texture rather
+# than one line, which is a density; and a check whose rule is reached only
+# through a word list or a density reports. The keys are asserted against the
+# surface below, in both directions.
 HELD = {
-    "Opening": [("the opening is the finding", BLOCKS, check_opening_is_the_finding)],
+    # The opening is one sentence, and replacing it is the whole fix: the reader
+    # has read what sits under it and does not need it again.
+    "Opening": [("the opening is the finding", BLOCKS, SPAN, check_opening_is_the_finding)],
     "Length": [
-        ("shortening is by selection", REPORTS, check_no_compression),
-        ("compression is not the texture", BLOCKS, check_compression_is_not_the_texture),
+        ("shortening is by selection", REPORTS, None, check_no_compression),
+        # ⛔ The one blocking arm whose correction is the reply again. A density
+        # over the reply's own prose lines is not a span: there is no clause to
+        # name, and the lines that carry it are most of the reply.
+        ("compression is not the texture", BLOCKS, REPLY,
+         check_compression_is_not_the_texture),
     ],
-    "Emphasis": [("emphasis is not the texture", REPORTS, check_emphasis_is_not_the_texture)],
-    "Register": [("the register is reference", REPORTS, check_register_is_reference)],
-    "Uncertainty": [("uncertainty is stated once", REPORTS, check_uncertainty_is_stated_once)],
+    "Emphasis": [("emphasis is not the texture", REPORTS, None,
+                  check_emphasis_is_not_the_texture)],
+    "Register": [("the register is reference", REPORTS, None, check_register_is_reference)],
+    "Uncertainty": [("uncertainty is stated once", REPORTS, None,
+                     check_uncertainty_is_stated_once)],
     # ⛔ `BLOCKS` on one span, which no other arm here does. The cost of a
-    # hand-back is the whole reply a second time, and it is the right price for
-    # this one: the alternative is the person reading parked work and saying so,
-    # which is what the rule exists to stop them having to do.
-    "Completeness": [("nothing is parked", BLOCKS, check_nothing_is_parked)],
+    # hand-back is the right price for this one: the alternative is the person
+    # reading parked work and saying so, which is what the rule exists to stop
+    # them having to do. ⚠️ And the finding quotes the parked span, so what it
+    # costs is that span replaced rather than the reply re-sent.
+    "Completeness": [("nothing is parked", BLOCKS, SPAN, check_nothing_is_parked)],
 }
+
+# The reach of a finding, read off the property its text opens with. ⚠️ Keyed on
+# the property rather than on the arm, because a finding is a string by the time
+# an answer is assembled and the property is the part of it that is grammar: each
+# check's first word is the row of the surface's table it holds. ⛔ A property
+# whose blocking arms disagree about reach would be unanswerable, so the
+# accounting check holds each property to one.
+REACH = {
+    name: next(reach for _, kind, reach, _ in tests if kind == BLOCKS)
+    for name, tests in HELD.items()
+    if any(kind == BLOCKS for _, kind, _, _ in tests)
+}
+
+
+def reach_of(finding: str) -> str:
+    """How far one finding reaches. ⛔ A finding whose property declares no reach
+    is read as the reply, which is the dearer of the two prices and the safe
+    direction: a correction asked for too widely wastes a reading, where one
+    asked for too narrowly leaves a defect the reader was told about standing.
+    """
+    return REACH.get(finding.split(":", 1)[0].strip(), REPLY)
 
 # What no check here holds, and whether that is the whole property or half of it.
 # ⚠️ `PARTIAL` is load-bearing rather than descriptive: a property that is half
@@ -821,7 +875,7 @@ def findings(reply: str) -> tuple[list[str], list[str]]:
     """(blocking, reported) findings against one reply."""
     blocking, reported = [], []
     for tests in HELD.values():
-        for _, kind, test in tests:
+        for _, kind, _, test in tests:
             (blocking if kind == BLOCKS else reported).extend(test(reply))
     return blocking, reported
 
@@ -925,11 +979,16 @@ def answer(payload: dict) -> dict:
         # have got on a turn where nothing blocked. Order preserved rather than
         # set-deduplicated, so two findings on one property read as one name once.
         aside = "; ".join(dict.fromkeys(f.split(":", 1)[0] for f in reported))
+        # ⚠️ What was asked for is named, because *handed back* alone reads as the
+        # whole reply coming again and that is now one of two prices. The person
+        # reading this is the one who pays whichever it was.
+        asked = ("the reply again" if any(reach_of(f) == REPLY for f in blocking)
+                 else "the spans corrected, not the reply again")
         out["reason"] = (
             f"The reply's register is procedure ({CITATION}). "
             + "; ".join(f.split(":", 1)[0] for f in blocking)
-            + " — handed back once for restating."
-            + (f" {aside} — reported, and not what the restatement is for." if aside else "")
+            + f" — handed back once, for {asked}."
+            + (f" {aside} — reported, and not what the correction is for." if aside else "")
         )
     else:
         out["systemMessage"] = (
@@ -963,29 +1022,45 @@ def context(blocking: list[str], reported: list[str], block: bool, unguarded: st
     deferring, and the shape that replaced it asked for a whole restatement on a
     density. What those two arms do now is report to the person, above.
 
-    ⛔ **The restatement is asked for the blocking findings, and a reported one is
+    ⛔ **The correction is asked for the blocking findings, and a reported one is
     named outside the ask.** An arm that reports asks the writer for nothing only
     on a turn where nothing blocks: while this listed both kinds together under
     one ask, every density that happened to share a turn with a blocking finding
     was asked for after all -- which is the whole of what the reporting kind was
     changed to stop costing. ⚠️ The order is load-bearing rather than cosmetic,
     and `--self-test` asserts it: the ask closes the blocking list, and anything
-    the writer reads after it is told it is not what the restatement is for.
+    the writer reads after it is told it is not what the correction is for.
+
+    ⛔ **And which correction is asked for is the reach of what blocks.** Every
+    blocking finding naming a span asks for those spans and forbids the reply
+    being sent again; one finding about the reply as a whole asks for the reply,
+    because a texture has no span to name and a correction cannot be smaller than
+    its defect. ⚠️ **A mixed answer asks for the reply**, which is the dearer of
+    the two and the safe direction: the span fixes are carried inside the
+    restatement either way, where the reverse would leave a texture standing.
     """
+    whole = [f for f in blocking if reach_of(f) == REPLY]
+    ask = RESTATE if whole else CORRECT_SPAN
     lines = [f"The reply's register is procedure: {CITATION}. "
-             "What the restatement is for, found in the reply just sent:"]
+             "What the correction is for, found in the reply just sent:"]
     lines += [f"- {f}" for f in blocking]
     if block:
         lines.append(
-            f"This turn is handed back once only; a second reply is not blocked. {RESTATE}"
+            f"This turn is handed back once only; a second reply is not blocked. {ask}"
         )
     else:
         lines.append(
-            f"Nothing is blocked, and not because these findings are weak: {unguarded}. {RESTATE}"
+            f"Nothing is blocked, and not because these findings are weak: {unguarded}. {ask}"
+        )
+    if whole and len(whole) < len(blocking):
+        lines.append(
+            "The reply comes back rather than a span because "
+            f"{whole[0].split(':', 1)[0]} is a property of the whole of it; the spans above are "
+            "corrected inside that restatement rather than separately."
         )
     if reported:
         lines.append(
-            "Reported to the person who ran the role, and outside the restatement above: these "
+            "Reported to the person who ran the role, and outside the correction above: these "
             "ask the writer for nothing, and re-sending the reply reworded for them is the price "
             "this answer is bounded to avoid."
         )
@@ -1353,8 +1428,24 @@ def _plant_for(kind: str) -> str:
     raise AssertionError(f"no planted reply produces a {kind} finding alone")
 
 
+def _plant_for_reach(reach: str) -> str:
+    """A planted reply whose blocking findings all reach exactly that far.
+
+    ⛔ Chosen the same way `_plant_for` is, and for the sharper version of the
+    same reason: the two asks differ by which reach is present, so a plant picked
+    by label would assert the span ask against a reply that also carries a
+    texture and pass whatever `context` did. ⚠️ `REPLY` wants a reply carrying no
+    span finding at all, which is what makes it the plant for *only* that arm.
+    """
+    for _, _, reply in REDDENS:
+        blocking, _ = findings(reply)
+        if blocking and all(reach_of(f) == reach for f in blocking):
+            return reply
+    raise AssertionError(f"no planted reply blocks on {reach} reach alone")
+
+
 def self_test() -> int:
-    by_name = {name: test for tests in HELD.values() for name, _, test in tests}
+    by_name = {name: test for tests in HELD.values() for name, _, _, test in tests}
     failures = 0
 
     # ⚠️ Both directions, and neither raises. A plant naming a check that no
@@ -1495,22 +1586,92 @@ def self_test() -> int:
     # guard that holds the rule against deferring — and it was obeyed. It now
     # asks for nothing instead, which is the arm asserted after this one.
     print("\nAsserting no branch that asks defers the fix to a later reply:")
+    span, whole = "Completeness: parked", "Length: the texture"
     branches = [
-        ("handed back", dict(blocking=["a: b"], reported=[], block=True, unguarded="")),
-        ("blocking, unguarded", dict(blocking=["a: b"], reported=[], block=False,
+        ("handed back, a span", dict(blocking=[span], reported=[], block=True, unguarded="")),
+        ("handed back, the reply", dict(blocking=[whole], reported=[], block=True, unguarded="")),
+        ("blocking, unguarded", dict(blocking=[span], reported=[], block=False,
                                      unguarded="no turn is named")),
         ("handed back, a density reported alongside",
-         dict(blocking=["a: b"], reported=["c: d"], block=True, unguarded="")),
+         dict(blocking=[span], reported=["Emphasis: texture"], block=True, unguarded="")),
     ]
     for label, kwargs in branches:
         said = context(**kwargs)
         deferred = [phrase for phrase in DEFERRALS if phrase in said.lower()]
-        if RESTATE in said and not deferred:
-            print(f"  ok                     {label}: asks for this reply")
+        carried = [ask for ask in ASKS if ask in said]
+        if len(carried) == 1 and not deferred:
+            print(f"  ok                     {label}: asks for this reply, and for one thing")
         else:
-            missing = "carries no restatement" if RESTATE not in said else f"defers: {deferred}"
+            missing = (f"carries {len(carried)} of the two asks" if len(carried) != 1
+                       else f"defers: {deferred}")
             print(f"  FAIL                   {label}: {missing}")
             failures += 1
+
+    # ⛔ Which of the two asks is sent follows the reach of what blocks, asserted
+    # on both plants and on the mixed answer. A span named and replaced is a
+    # paragraph; the reply again is the page the reader has just finished, and
+    # the measured hand-back that cost one of those to move 226 characters is
+    # what this arm exists for. ⚠️ Mixed asks for the reply, which is the dearer
+    # price and the safe direction.
+    print("\nAsserting the ask follows how far the blocking finding reaches:")
+    reaches = [
+        ("a span alone", [span], CORRECT_SPAN, RESTATE),
+        ("the reply alone", [whole], RESTATE, CORRECT_SPAN),
+        ("both, which asks for the reply", [span, whole], RESTATE, CORRECT_SPAN),
+    ]
+    for label, blocking, wanted, refused in reaches:
+        said = context(blocking=blocking, reported=[], block=True, unguarded="")
+        if wanted in said and refused not in said:
+            print(f"  ok                     {label}: asks for "
+                  f"{'the span' if wanted is CORRECT_SPAN else 'the reply'}")
+        else:
+            print(f"  FAIL                   {label}: asked for the wrong correction")
+            failures += 1
+
+    # ⛔ And on the real answer, from plants chosen by what they block on: the
+    # span arm must not ask for the reply, which is the whole of this change.
+    # ⚠️ The person's own line is asserted beside the writer's, because the two
+    # prices are now different and the person is the one who pays either. Written
+    # after a break that reverted that line to naming neither and reddened
+    # nothing — a price stated to the writer alone is a price the reader finds
+    # out about by reading.
+    for label, reach, wanted, told_them in [
+        ("a parked span", SPAN, CORRECT_SPAN, "for the spans corrected"),
+        ("compression as the texture", REPLY, RESTATE, "for the reply again"),
+    ]:
+        reply = _plant_for_reach(reach)
+        answered = answer({"last_assistant_message": reply,
+                           "prompt_id": f"self-test-reach-{reach}"})
+        said = answered.get("hookSpecificOutput", {}).get("additionalContext", "")
+        if (answered.get("decision") == "block" and wanted in said
+                and told_them in answered.get("reason", "")):
+            print(f"  ok                     {label}: asked for by the writer's own ask, and "
+                  "named to the person")
+        else:
+            print(f"  FAIL                   {label}: the wrong correction was asked for, or the "
+                  "person was not told which")
+            failures += 1
+
+    # ⛔ Every blocking arm declares a reach, held here because `reach_of` falls
+    # back to the dearer price and a silent fallback is a price nobody chose. A
+    # new blocking arm with no reach declared reddens at the moment it is added,
+    # which is the direction the property accounting one surface over runs in.
+    print("\nAsserting every blocking arm declares how far its finding reaches:")
+    undeclared = [(prop, name) for prop, tests in HELD.items()
+                  for name, kind, reach, _ in tests
+                  if kind == BLOCKS and reach not in (SPAN, REPLY)]
+    reported_reach = [(prop, name) for prop, tests in HELD.items()
+                      for name, kind, reach, _ in tests
+                      if kind == REPORTS and reach is not None]
+    if not undeclared and not reported_reach:
+        print(f"  ok                     {len(REACH)} blocking propert(ies), each with one reach")
+    else:
+        for prop, name in undeclared:
+            print(f"  FAIL                   {prop} / {name}: blocks and declares no reach")
+        for prop, name in reported_reach:
+            print(f"  FAIL                   {prop} / {name}: reports, so a reach is not its to "
+                  "declare")
+        failures += len(undeclared) + len(reported_reach)
 
     # ⛔ The ask is bounded to the findings that block it, asserted on the order
     # the writer reads the two lists in. While both kinds sat together under one
@@ -1521,18 +1682,18 @@ def self_test() -> int:
     # is not what the restatement is for.
     print("\nAsserting a reported finding sits outside the ask the blocking one carries:")
     for label, kwargs in [
-        ("handed back", dict(blocking=["Completeness: parked"], reported=["Emphasis: texture"],
+        ("handed back", dict(blocking=[span], reported=["Emphasis: texture"],
                              block=True, unguarded="")),
-        ("blocking, unguarded", dict(blocking=["Completeness: parked"],
-                                     reported=["Emphasis: texture"], block=False,
-                                     unguarded="no turn is named")),
+        ("blocking, unguarded", dict(blocking=[span], reported=["Emphasis: texture"],
+                                     block=False, unguarded="no turn is named")),
     ]:
         said = context(**kwargs)
-        bounded = ("ask the writer for nothing" in said
-                   and said.index("Completeness: parked") < said.index(RESTATE)
-                   < said.index("Emphasis: texture"))
+        asked = next((ask for ask in ASKS if ask in said), "")
+        bounded = bool(asked) and ("ask the writer for nothing" in said
+                                   and said.index(span) < said.index(asked)
+                                   < said.index("Emphasis: texture"))
         if bounded:
-            print(f"  ok                     {label}: the restatement is asked for what blocks it")
+            print(f"  ok                     {label}: the correction is asked for what blocks it")
         else:
             print(f"  FAIL                   {label}: the reported finding is inside the ask")
             failures += 1
@@ -1549,14 +1710,15 @@ def self_test() -> int:
     answered = answer({"last_assistant_message": both, "prompt_id": "self-test-both-kinds"})
     said = answered.get("hookSpecificOutput", {}).get("additionalContext", "")
     reason = answered.get("reason", "")
+    asked = next((ask for ask in ASKS if ask in said), "")
     if not (both_blocking and both_reported):
         print("  FAIL                   the composed plant does not carry one finding of each kind")
         failures += 1
-    elif (answered.get("decision") == "block"
+    elif (answered.get("decision") == "block" and asked
             and all(f in said for f in both_blocking + both_reported)
-            and max(said.index(f) for f in both_blocking) < said.index(RESTATE)
-            and min(said.index(f) for f in both_reported) > said.index(RESTATE)
-            and "reported, and not what the restatement is for" in reason):
+            and max(said.index(f) for f in both_blocking) < said.index(asked)
+            and min(said.index(f) for f in both_reported) > said.index(asked)
+            and "reported, and not what the correction is for" in reason):
         print("  ok                     blocked for one, and the other named outside the ask")
     else:
         print("  FAIL                   the reported finding was asked for, or went unnamed")
@@ -1574,11 +1736,16 @@ def self_test() -> int:
     ]:
         message = told(**kwargs)
         asked = [phrase for phrase in DEFERRALS if phrase in message.lower()]
-        if RESTATE not in message and not asked and "a: b" in message:
+        # ⚠️ Neither ask, and not the restatement alone: once there were two, an
+        # assertion naming one of them would have passed a message carrying the
+        # other — which is a whole correction asked for by the arm that is
+        # supposed to ask for nothing.
+        carried = [ask for ask in ASKS if ask in message]
+        if not carried and not asked and "a: b" in message:
             print(f"  ok                     {label}: states the finding and asks nothing")
         else:
             why = f"defers: {asked}" if asked else (
-                "asks for a restatement" if RESTATE in message else "does not state the finding")
+                "asks for a correction" if carried else "does not state the finding")
             print(f"  FAIL                   {label}: {why}")
             failures += 1
 

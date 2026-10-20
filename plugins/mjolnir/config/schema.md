@@ -297,15 +297,25 @@ reading it — is answered by re-sending that reply corrected, in the same turn.
 will hold* is this rule's smallest violation: the reader is told the defect is there and handed it
 anyway, and a guard that cannot force the correction has still named one.
 
-⛔ **Corrected is the finding fixed with the rest of the reply as it stands**, and the correction
-answers the findings that were raised rather than every line they sat beside. What this rule
-charges the reader is a re-read of what changed; a reply rewritten around the fix charges them the
-whole of it, costs them the one thing a re-read gives — seeing what moved — and loses what the
-first reply carried with nothing saying so. ⚠️ **Measured, in both halves**: a restatement
-answering one finding returned most of its prose lines unchanged, one answering a finding beside it
-that asked for nothing returned almost none of them, and that second restatement dropped a question
-the first reply had put to the person. The figures are recorded beside the check that holds this,
-where [§ 8](#the-reply-to-the-person-running-a-role) points.
+⛔ **The correction is as small as the finding, and no smaller.** A finding that names a span is
+answered by that span and its replacement, and the reply is **not** sent again; a finding about the
+reply as a whole — the opening it is framed by, a texture spread through it — is answered by the
+reply, because there is no span to name and a correction cannot be smaller than its defect. ⚠️
+**Where both are raised at once the reply comes back**, the span fixes carried inside it: that is
+the dearer of the two and the direction to err in, since the reverse leaves the whole-reply defect
+standing.
+
+⛔ **And where the reply does come back, corrected is the finding fixed with the rest of it as it
+stands.** A reply rewritten around the fix costs the reader the one thing a re-read gives — seeing
+what moved — and loses what the first reply carried with nothing saying so.
+
+⚠️ **Both halves are measured, and the second measurement is what the first rule above rests on**:
+a restatement answering one finding returned most of its prose lines unchanged, one answering a
+finding beside it that asked for nothing returned almost none of them and dropped a question the
+first reply had put to the person — and then a restatement that obeyed the bound perfectly, all but
+one line of it identical, still charged its reader the whole reply to show them one clause. ⛔ **So
+the bound on a restatement is not a substitute for not asking for one.** The figures are recorded
+beside the check that holds this, where [§ 8](#the-reply-to-the-person-running-a-role) points.
 
 **The narrow exception is separate work.** Work that genuinely belongs to a **different** outcome
 is a separate numbered item, filed before the merge and linked from it. ⛔ **The test is whether
