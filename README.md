@@ -1,24 +1,53 @@
 # mjolnir
 
-The development process — [nine roles](plugins/mjolnir/config/schema.md#the-loop--nine-roles), from
-filing a work item to the day's log — as **one shared procedure over per-project configuration**.
+### Run your whole development process from one place — without a copy of it in any repository.
 
-Installed as a Claude Code plugin. No clone, no submodule, no symlink, and no copy of anything in
-the adopting project.
+Copy a process into a second project and you maintain two. Copy it into a handful and no two are
+alike any more, and the lines that differ are the corrections you paid for once and lost
+everywhere else. You find out which copy is wrong when it is already wrong.
 
-## Install
+mjolnir is that process as **one shared procedure over per-project configuration** —
+[nine roles](plugins/mjolnir/config/schema.md#the-loop--nine-roles), from filing a work item to
+the day's log, reading whatever differs between your projects out of one file you write once.
 
-Two commands, into a project that has never seen it:
+Installed as a Claude Code plugin. **No clone, no submodule, no symlink, and no copy of anything in
+your project.** Adopting it in the next project costs that one file and nothing else.
 
 ```
 /plugin marketplace add ragnor-rs/mjolnir
 /plugin install mjolnir@mjolnir
 ```
 
-Then write the project's own facts into `.claude/mjolnir.yaml`. Start from whichever of
-[`plugins/mjolnir/config/examples/`](plugins/mjolnir/config/examples/) matches the tracker, and
-read [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md) for what every key
-means.
+## What you get
+
+- **A correction lands once.** Fix how finishing works and every project that reads this procedure
+  has it — because there is no second copy to keep in sync.
+- **Your facts stay yours, and they are a closed set.** Tracker, code host, branch model, what
+  counts as done, who answers each check, the ordering, the language. One file, every key
+  [stated once](plugins/mjolnir/config/schema.md).
+- **The loop carries the item, so you are not the one holding it.** The session that starts an item
+  finishes it, the pass that finishes it reviews it, and each leg is entered on a stated condition
+  rather than on being asked — [§ The loop](plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask).
+- **It refuses rather than hopes.** A claim on a work item is a published ref that git itself
+  refuses to duplicate; a merge is read back from the host's state, never from an exit status; an
+  absent tracker capability has a stated fallback instead of an improvisation.
+- **Work cannot be quietly dropped.** No change merges while an item raised against it is
+  unresolved, counted in the body and in the review threads by a gate rather than by whoever is
+  keen to merge.
+- **It already runs on itself.** Every issue in this repository is filed, started, finished and
+  reviewed through the loop this repository ships — so the first thing standing on this surface is
+  the thing that finds its holes.
+- **Adopt what you have.** A tracker with no board and no status field, or no tracker at all, are
+  configurations the surface covers rather than cases it refuses.
+
+## Install
+
+Two commands above, then one file. Write your project's own facts into `.claude/mjolnir.yaml`:
+start from whichever of
+[`plugins/mjolnir/config/examples/`](plugins/mjolnir/config/examples/) matches your tracker, and
+[`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md) says what every key means.
+That file is the whole of what adoption costs — there is nothing to vendor and nothing to keep up
+to date.
 
 ## Invocation
 
@@ -88,12 +117,14 @@ the measurements the surface was derived from, and
 [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) records every divergence
 found between the old copies and the decision that settled it.
 
-## Why one procedure over configuration
+## Why this shape, and not a template you copy
 
-One procedure copied per project drifts, and a line that differed was sometimes a correction only
-one copy had. What drifted, how far it drifted and the decision that settled each divergence are in
+This surface was not designed and then justified. Every copy of every process role across the
+projects that ran this pattern was read first, and each key here exists because the reading forced
+it. What drifted, how far it drifted and the decision that settled each divergence are in
 [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md), which opens on the
-measurement.
+measurement; what each key cost to arrive at is in
+[`docs/configuration-surface.md`](docs/configuration-surface.md), section by section.
 
 Only a closed set of facts actually differs between projects. Those facts belong in
 configuration, and the procedure belongs in one place.
@@ -104,6 +135,8 @@ across those projects, in several different stores
 each time with the same justification in its own words —
 
 > a copy that has to be «kept in sync» is the defect rather than the maintenance burden
+
+That is the sentence this toolkit is built to make unnecessary.
 
 ## Working on the toolkit itself
 
@@ -191,17 +224,24 @@ leave to a reader, are in
 
 ### Who this page is written for
 
-**This page is written for whoever is deciding whether to adopt the toolkit into a project of their
-own.** What it leaves out is one hop away: the measurements the surface was derived from in
+**This page is written to sell the toolkit to whoever is deciding whether to adopt it**, and its
+register is a product page's rather than a document's: it leads with what you get, it is meant to
+be read in under a minute, and it is the only artifact here written to persuade. What it leaves out
+is one hop away — the measurements the surface was derived from in
 [`docs/configuration-surface.md`](docs/configuration-surface.md), and what an install writes in
 [`docs/working-on-the-toolkit.md`](docs/working-on-the-toolkit.md).
 
-Its register is what a kept page needs and a reply does not: a measurement this page rests on is
-cited where that measurement lives rather than copied here, because a reply is spent as it is read
-and a front page is not. Whether the density properties
-[§ 8](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) fixes for a reply
-reach prose written into a file at all is
-[#126](https://github.com/ragnor-rs/mjolnir/issues/126)'s question, and is not answered here.
+Two things bound the persuasion, and both are the reason it can be trusted at all. **Every claim
+above is checkable in this repository**, by reading the surface it links or by running the gate
+that holds it; and a measurement this page rests on is cited where that measurement lives rather
+than copied here, because a front page is kept while a reply is spent as it is read. No survey
+figure appears above: a number a reader cannot check is asserted at them rather than argued.
+
+⚠️ The register [§ 8](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role)
+fixes is a **reply's**, and it forbids exactly this one — persuasive, for an artifact whose reader
+a project does not choose. This page's reader is chosen, so that register does not reach it;
+whether any register binds prose written into a file is
+[#126](https://github.com/ragnor-rs/mjolnir/issues/126)'s question and is not answered here.
 
 Both halves are a convention of this repository and not a rule of the procedure: the README is not
 one of the artifacts § 8's `artifacts` map names, and no check holds either half — stated with the
