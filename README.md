@@ -1,32 +1,10 @@
 # mjolnir
 
-The development process — nine roles, from filing a work item to the day's log — as **one shared
-procedure over per-project configuration**.
+The development process — [nine roles](plugins/mjolnir/config/schema.md#the-loop--nine-roles), from
+filing a work item to the day's log — as **one shared procedure over per-project configuration**.
 
 Installed as a Claude Code plugin. No clone, no submodule, no symlink, and no copy of anything in
 the adopting project.
-
-## Who this page is for
-
-**This page is written for whoever is deciding whether to adopt the toolkit into a project of their
-own.** What it is, what adopting costs, what it ships and where the rules live, in that order. The
-other two readers are one hop away and not on the way: the argument the configuration surface was
-derived from is in [`docs/configuration-surface.md`](docs/configuration-surface.md) with the
-divergences behind it in [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md), and
-what an install writes and what a session actually serves, for whoever is editing this tree, is in
-[`docs/working-on-the-toolkit.md`](docs/working-on-the-toolkit.md).
-
-The register is the one every document here is written in — reference and technical, as a textbook
-states a result — with the one property a reply's register has no reason to carry: a reply is read
-once and kept nowhere, while a front page is read first and kept indefinitely, so a measurement
-this page rests on is cited where that measurement lives rather than copied here.
-
-Both halves of that — the reader and the register — are a convention of this repository rather than
-a rule of the procedure, and nothing holds either: no role writes this file, so nothing in
-[`.claude/mjolnir.yaml`](.claude/mjolnir.yaml) states its audience, and the check that gives every
-document a role says nothing about who the document is for. That limit is recorded with the gate's
-others in
-[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#what-it-deliberately-does-not-check).
 
 ## Install
 
@@ -75,7 +53,7 @@ The rule, and why it is procedure rather than a setting, is
 | [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) | Every divergence found between the old copies and which behaviour was kept, including where a ruling overrode a stated counter-argument |
 | [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) | How the single-authority claim is held: the checks, their kinds, and what each deliberately leaves alone |
 | [`docs/building-itself.md`](docs/building-itself.md) | The bootstrap record: which pieces could not be built through the loop, and the command that derives what the loop carries here |
-| [`docs/working-on-the-toolkit.md`](docs/working-on-the-toolkit.md) | What an install writes, which copy of the plugin a session resolves, and the two consequences of that worth knowing before editing this tree |
+| [`docs/working-on-the-toolkit.md`](docs/working-on-the-toolkit.md) | What an install writes, which copy of the plugin a session resolves, and what that costs somebody editing this tree |
 | [`tools/check_single_source.py`](tools/check_single_source.py) | The single-authority check, run by the `Single source of truth` workflow on every change |
 | [`tools/check_no_project_names.py`](tools/check_no_project_names.py) | The sweep that holds the convention above: no other project named anywhere, and no value, tracker or stack in any carrier root |
 | [`tools/check_nothing_deferred.py`](tools/check_nothing_deferred.py) | The gate that refuses a merge while any item raised against the change is unresolved, counted in the body and in the threads on it |
@@ -112,16 +90,16 @@ found between the old copies and the decision that settled it.
 
 ## Why one procedure over configuration
 
-The same procedure was copied into every project that ran it, and the copies drifted: no two copies
-of any role were identical, and some of the lines that differed were hard-won corrections that
-existed in exactly one copy. Line count that far apart is divergent behaviour rather than
-formatting, and the ranges measured are in
-[`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) beside the divergence each
-one carried.
+One procedure copied per project drifts, and a line that differed was sometimes a correction only
+one copy had. What drifted, how far it drifted and the decision that settled each divergence are in
+[`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md), which opens on the
+measurement.
 
-Only a closed set of facts actually differs between projects. Those facts belong in configuration,
-and the procedure belongs in one place. The argument is not borrowed: read-it-from-one-place had
-already been independently invented across those projects, in several different stores
+Only a closed set of facts actually differs between projects. Those facts belong in
+configuration, and the procedure belongs in one place.
+
+The argument is not borrowed: read-it-from-one-place had already been independently invented
+across those projects, in several different stores
 ([the instances](docs/configuration-surface.md#the-strongest-argument-for-extraction-is-not-borrowed)),
 each time with the same justification in its own words —
 
@@ -137,10 +115,7 @@ claude plugin marketplace add /path/to/this/repo --scope user
 claude plugin install mjolnir@mjolnir --scope user
 ```
 
-Edits are then live in every session started afterwards, with no reinstall and no version bump.
-What those two commands write, why the scope is `user` rather than the `local` whose name suggests
-a narrower reach, which copy of the plugin is vestigial, and why a branch in a worktree is served
-nowhere until it reaches the registered tree are in
+What those commands write, and which copy of the plugin a session resolves, are in
 [`docs/working-on-the-toolkit.md`](docs/working-on-the-toolkit.md).
 
 This matters because the toolkit
@@ -213,6 +188,25 @@ single statement of what it requires and why a project does not choose it. It is
 session by a hook rather than by the gate, since a reply is not a file; the checks, and what they
 leave to a reader, are in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-replys-register-held-in-the-session-not-on-the-gate).
+
+### Who this page is written for
+
+**This page is written for whoever is deciding whether to adopt the toolkit into a project of their
+own.** What it leaves out is one hop away: the measurements the surface was derived from in
+[`docs/configuration-surface.md`](docs/configuration-surface.md), and what an install writes in
+[`docs/working-on-the-toolkit.md`](docs/working-on-the-toolkit.md).
+
+Its register is what a kept page needs and a reply does not: a measurement this page rests on is
+cited where that measurement lives rather than copied here, because a reply is spent as it is read
+and a front page is not. Whether the density properties
+[§ 8](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) fixes for a reply
+reach prose written into a file at all is
+[#126](https://github.com/ragnor-rs/mjolnir/issues/126)'s question, and is not answered here.
+
+Both halves are a convention of this repository and not a rule of the procedure: the README is not
+one of the artifacts § 8's `artifacts` map names, and no check holds either half — stated with the
+gate's other limits in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#what-it-deliberately-does-not-check).
 
 ## License
 
