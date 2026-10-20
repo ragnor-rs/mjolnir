@@ -832,14 +832,22 @@ place the finished reply is available, and it hands the text over directly, so
 
 **What blocks, and what a hand-back costs.** A finding blocks where it is a fact about the text
 *and* worth what handing the turn back costs — which is the reply a second time. The writer
-restates it whole, so a person who has read it reads it again. ⚠️ Measured on the three hand-backs
-this check had recorded by the end of 2026-10-20, in projects with this plugin enabled and no
-configuration of their own: thirteen of twenty-one prose lines came back byte for byte in the first,
-eight of thirteen in the second, and the third brought back a reply whose second pass also dropped a
-file-and-line citation the first had carried. Each paid that for two reworded clauses. ⛔ **Two of
-the three were paid for a defect that was not there**, and both of those came from matching a bare
-token — a pair of arrows with a clause between them in the one, a ruled word in a sense that parks
-nothing in the other. Nothing in the first shape of this check accounted for that price.
+restates it whole, so a person who has read it reads it again. ⚠️ Measured on the four hand-backs
+this check had recorded on 2026-10-20, in projects with this plugin enabled and no configuration of
+their own: thirteen of twenty-one prose lines came back byte for byte in the first, eight of
+thirteen in the second, and the third brought back a reply whose second pass also dropped a
+file-and-line citation the first had carried. Each paid that for two reworded clauses. ⛔ **Three
+of the four were paid for a defect that was not there**, and all three came from matching a bare
+token — a pair of arrows with a clause between them in the first, a ruled word in a sense that
+parks nothing in the second, and the same ruled word in the first person in the fourth, which the
+third narrowed the others without reaching. Nothing in the first shape of this check accounted for
+that price.
+
+⚠️ **The count above was first written as three, with the day it was measured over named as
+closed while it was still running.** The fourth hand-back arrived that same day, after the change
+that recorded the first three had landed. A figure counted over a window a reader cannot see the end
+of grows after it is written, so what is stated here is the date the count is true of and not the
+day's own end.
 
 - **Opening** blocks on one instance. It is the first thing read and the frame for everything under
   it, and a preamble form is a phrase rather than a judgement.
@@ -872,14 +880,27 @@ nothing in the other. Nothing in the first shape of this check accounted for tha
   the text of this check's own finding for it, so a reply relaying this check reddened on it. ⚠️ The
   first of the three is **measured on a reply** and the other two are **demonstrated against the
   shipped check** — a sentence this repository writes by the dozen, run through the arm — rather
-  than waited for. `left` had the carve-out from the start, the bare word being ordinary English for
-  what a process or a merge did — *three trees left behind*.
+  than waited for. `left` was held to have had the carve-out from the start, the bare word being
+  ordinary English for what a process or a merge did — *three trees left behind*.
+- ⛔ **`left` had that carve-out in the third person only, and the first person was bare.** One of
+  its alternatives matched `I left` as a token, so the word was carved out for what a sibling
+  session did and not for what the writer did — and what a role's reply says about work it has done
+  is in the first person: *I left the tree and released the claim*, *I left a review comment on the
+  thread*. ⚠️ **Measured on the fourth hand-back**, on a reply reporting a file correctly left
+  unchanged, the same day the other three forms were narrowed. The green plant that was meant to
+  hold this carve-out asserted a sibling session's tree rather than the writer's own sentence, so it
+  could not reach the alternative that was bare: a form is only carved out in the person its plant
+  is written in. The first person is now read with the parked state it leaves behind — *left the
+  second arm unfixed* — over the same bounded gap `stated plainly` is read across.
 - ⚠️ **One false red is kept rather than closed, and it is kept knowingly**: `deliberately absent`
   is both the shape the ruling was measured on and § 4's own phrase for a facet carrying an
   `absent_reason`, word for word, so a reply writing the second is handed back. Nothing lexical
   separates them. ⛔ The direction the rest of the list errs in is the opposite one — a reworded
   parking passes — and `deliberately not written`, which two documents here use to state a limit,
-  is excluded for that reason and misses a parking that would say it that way.
+  is excluded for that reason and misses a parking that would say it that way. The first-person
+  narrowing errs in that same direction and is stated here rather than left to be read as coverage:
+  *I left it alone* and *I left it unchanged* are a judgement as often as they are a parking, so
+  neither state is matched, and a parking worded that way is missed.
 - ⛔ **One of the forms is read with its answer rather than as a span**: a section of open items is
   a finding where it lists any, and not where it answers `None.` — the same heading text and the
   same answer the gate on the change's body holds that section to, so that a reply and a body
@@ -889,7 +910,11 @@ nothing in the other. Nothing in the first shape of this check accounted for tha
 - Every form is planted in both directions, and the green plants are the sentences this repository
   actually writes: the shape each ruled form was named for stays red, while a design intent
   reported, a heading cited, a limit stated, the gate described, and this check's own finding
-  relayed are each asserted to stay green.
+  relayed are each asserted to stay green. ⚠️ **In both persons, where a plant in one person was
+  what let the first-person form ship bare**: the loop's own cleanup, a review comment left on a
+  thread, and a file reported correctly unchanged are each asserted green in the first person, and
+  the parked state the first person is now matched with is asserted red with and without an object
+  between the two words.
 
 ⚠️ **A chain is two arrows sharing an operand, and sharing is not a token count.** The first form
 read one or two tokens between the arrows as the shared operand, so

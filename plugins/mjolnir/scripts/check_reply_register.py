@@ -212,11 +212,20 @@ HEDGES_ALLOWED = 3
 # matching one bare hands a turn back over text that parks nothing, which costs
 # the reader the whole reply for a finding that is not there.
 #
-# `left` had it from the start, the bare word being this repository's ordinary
-# English for what a process or a merge did -- *three trees left behind*. The
-# other three were held to be distinctive enough that a reply has no other use
-# for them, and ⚠️ **that premise failed the next day**, on a reply that paid the
-# re-read for it. Each of the three is this repository's own vocabulary for a
+# `left` was held to have had it from the start, the bare word being this
+# repository's ordinary English for what a process or a merge did -- *three
+# trees left behind*. ⛔ **It had it in the third person only.** One alternative
+# matched `I left` as a bare token, so the carve-out held for what a sibling
+# session did and not for what the writer did, and the loop's own reply about
+# work it had done reddened: *I left the tree and released the claim*, *I left a
+# review comment on the thread*. Measured on the fourth hand-back, the day the
+# other three were narrowed, and the green plant that was supposed to hold this
+# carve-out asserted a sibling's tree rather than the writer's own sentence --
+# so it could not reach the alternative that was bare.
+#
+# The other three were held to be distinctive enough that a reply has no other
+# use for them, and ⚠️ **that premise failed the next day**, on a reply that paid
+# the re-read for it. Each of the three is this repository's own vocabulary for a
 # mechanism, and the bare form reddened on every sentence below:
 #
 #   - `deliberately` is how a design intent is recorded here, in nine of one
@@ -256,12 +265,21 @@ PARKED = re.compile(
     r"|\bstated plainly (?:rather than|instead of)\b"
     r"|\b(?:gaps?|limits?|costs?|residues?|absences?|omissions?|shortfalls?|holes?)\b"
     r"[^.\n]{0,40}?\bstated plainly\b"
+    # `left`: the writer's own omission, excused rather than filled. ⚠️ Not the
+    # bare word, and ⛔ **not the bare word in the first person either**, which
+    # is what the loop's own reply says about work it did do -- *I left a review
+    # comment*, *I left the tree and released the claim*. So it is read with the
+    # parked state it leaves behind, over the bounded gap `stated plainly` above
+    # is already read across. ⚠️ The person is not matched at all: the writer's
+    # own omission and a sibling's read the same here, and the first person was
+    # what shipped bare.
     r"|\b(?:left|leaving|leave) (?:it |them |that |this |these |those )?"
     r"(?:to|for|as) (?:a |the )?"
     r"(?:later|future|follow-?up|next|another|somebody|someone|whoever|you)\b"
     r"|\bleft (?:to do|undone|out|open|for later|for now)\b"
     r"|\bwhat(?:'?s| is) left\b"
-    r"|\bI (?:have )?left\b"
+    r"|\b(?:left|leaving|leave)\b[^.\n]{0,40}?"
+    r"\b(?:undone|unfixed|unaddressed|unresolved|unfinished|untouched)\b"
     r"|\bnext steps?\b"
     r"|\bfollow-?ups?\b"
     r"|\b(?:still|yet) to (?:be )?(?:done|built|written|fixed|run)\b"
@@ -923,6 +941,10 @@ REDDENS = [
      "The guard is wired.\n\nOpen items: the skill's own wording\n"),
     ("nothing is parked", "the same section answered with nothing at all",
      "The guard is wired and its plants are green.\n\n## Open items\n"),
+    ("nothing is parked", "the writer's own omission, excused with the state it leaves behind",
+     "The carrier is wired and its plants are green. I have left the second arm unfixed.\n"),
+    ("nothing is parked", "the same, with the object between the word and the state",
+     "The narrowing is in. I left the density arm the sweep asks for undone.\n"),
     ("nothing is parked", "a ruled phrase stating a gap in place of closing it",
      "The second arm's cost is stated plainly rather than fixed, and the first covers the "
      "measured case.\n"),
@@ -974,6 +996,16 @@ STAY_GREEN = [
     # a design intent or a rule, and a bare match hands the turn back over each.
     ("nothing is parked", "the past tense of leaving a tree, which parks nothing",
      "The sibling session left its tree and the release then succeeded.\n"),
+    # ⚠️ The same carve-out in the first person, which is where it was in fact
+    # bare: each sentence below is the loop's own reply about work it did do, and
+    # the fourth hand-back was paid on the third of them.
+    ("nothing is parked", "the writer leaving a tree, which is the loop's own cleanup",
+     "I left the tree and released the claim, and the branch is deleted on both sides.\n"),
+    ("nothing is parked", "the writer leaving a review comment, which is work done",
+     "I left a review comment on each of the two threads the diff opened.\n"),
+    ("nothing is parked", "a file correctly unchanged, which is a judgement and not a parking",
+     "Every dangling pointer is repointed. I left the narrative prose in one session summary "
+     "alone, since that sentence records which file a past session edited.\n"),
     ("nothing is parked", "a residue count, which is a fact and not a promise",
      "Three worktrees remain registered and six branches survive the merge.\n"),
     # ⚠️ The measured false red, in the shape it was handed back in: a reply that
