@@ -130,7 +130,8 @@ branch_model:
   kind: worktree
   work_in_shared_checkout: never
   parallel_trees: true
-  tree_dir: "../<project>-trees"      # a sibling of the shared checkout; the leaf is the item
+  # A sibling of the shared checkout. The leaf is `<number>-<slug>` and is derived, not stated.
+  tree_dir: "../<project>-trees"
   mechanics: null
   exclusive_resources: []
 

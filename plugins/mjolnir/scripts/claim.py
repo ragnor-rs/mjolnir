@@ -141,6 +141,43 @@ def branch_for(prefix: str, item: str, title: str) -> str:
     return f"{prefix}/{item}-{slug}" if slug else f"{prefix}/{item}"
 
 
+def tree_for(tree_dir: str | Path, item: str, title: str) -> Path:
+    """`(tree_dir, number, slug)` — the tree's path, composed where the branch name is.
+
+    ⛔ **The identifier leads and the slug follows**, and that ordering is the whole of what the
+    earlier leaf rule protected. A leaf of `<item>` alone was chosen so the directory would keep
+    answering *is this item being worked* across a reworded title; `<item>-<slug>` keeps that
+    answerable on the `<item>-` prefix, which is the form anything asking the directory has to
+    match on anyway -- a leaf is a candidate test and never the answer, because the ref arbitrates
+    (`refs_for_item`), exactly as `ref_is_for_item` is a candidate test over ref names.
+
+    ⚠️ **It carries no divergence the branch name does not already carry.** The slug is
+    `slug_for`'s, not a second rule and not prose for a role to apply: two sessions handed one
+    title derive one leaf, and two sessions handed two titles already derive two *branch names*,
+    which is the thing the ref refuses. A reword between two starts is therefore a second name
+    before it is a second directory, and the refusal lands on the name.
+
+    A title that slugs to nothing leaves the identifier alone, as `branch_for` does: `70-` is a
+    directory nobody can read.
+
+    ⛔ **An item is required here, and a branch with no item passes its path instead.** Deriving
+    from an empty identifier would put every such branch in one directory.
+    """
+    item = str(item).strip()
+    if not str(tree_dir).strip():
+        raise ClaimError(
+            "the tree directory is empty; it is `branch_model.tree_dir` (§ 10) and not a value "
+            "this module defaults."
+        )
+    if not item:
+        raise ClaimError(
+            "the tree cannot be derived without the item; a branch carrying no item states "
+            "`--tree` instead."
+        )
+    slug = slug_for(title)
+    return Path(tree_dir) / (f"{item}-{slug}" if slug else item)
+
+
 def item_in_branch(branch: str) -> str | None:
     """The item a branch name carries, where this module can read it without guessing."""
     match = NUMERIC_ITEM.match(branch.rsplit("/", 1)[-1])
@@ -983,6 +1020,7 @@ def take(
     item: str | None = None,
     prefix: str | None = None,
     title: str | None = None,
+    tree_dir: str | None = None,
     _lease: bool = True,
     _require_created: bool = True,
     _release_on_tree_failure: bool = True,
@@ -994,6 +1032,12 @@ def take(
     The branch name is **derived here** from `(prefix, item, title)` where those are given, so
     that two sessions handed one title cannot publish two names for one item. An explicit
     `branch` is still accepted, for the roles that already have a name in hand.
+
+    **The tree's path is derived the same way**, from `(tree_dir, item, title)`, and for the same
+    reason: the leaf carries a slug, and a leaf slugged by a role rather than by `slug_for` is the
+    divergence the branch derivation exists to close, reintroduced one argument over. An explicit
+    `tree` is still accepted — it is what a branch carrying no item uses, and `tree_dir` is the
+    configured directory rather than a path.
 
     ⛔ **The ref name is not the whole of the test-and-set, and the measurements say so.** Three
     times on 2026-10-19 two sessions started one item under two names -- twice by abbreviating
@@ -1014,8 +1058,23 @@ def take(
                 "for the name to be derived from."
             )
         branch = branch_for(prefix, item, title)
+    if tree is not None and tree_dir is not None:
+        raise ClaimError(
+            "state one: `--tree-dir` is the configured directory and the leaf is derived, "
+            "`--tree` is the whole path stated."
+        )
+    if tree is None and tree_dir is not None:
+        if not (item and title is not None):
+            raise ClaimError(
+                "deriving the tree needs `--item` and `--title`; a branch carrying no item "
+                "states `--tree` instead."
+            )
+        tree = str(tree_for(tree_dir, item, title))
     if tree is None:
-        raise ClaimError("a claim needs the tree it is cut into; § 10 derives the path, not this.")
+        raise ClaimError(
+            "a claim needs the tree it is cut into: `--tree-dir` for § 10's derived path, or "
+            "`--tree` where the path is stated."
+        )
     # Where the caller named no item, one is recovered from the branch where that can be done
     # without guessing -- so a role that already holds a name still gets the guard.
     item = str(item) if item else item_in_branch(branch)
@@ -1604,6 +1663,106 @@ def self_test() -> int:
         "an empty prefix is refused rather than producing `/70-x`",
         _raises(lambda: branch_for("", 70, "x")),
     )
+
+    print("\nthe tree's leaf, derived rather than composed:")
+
+    # The leaf is `<item>-<slug>`. What the earlier rule -- a leaf of the identifier alone --
+    # protected is that the *directory* keeps answering "is this item being worked" across a
+    # reworded title, so these are the properties: the identifier leads, the leaf is the branch's
+    # own tail rather than a second slug rule, and the shipped candidate test answers for both of
+    # two leaves one item could be started under.
+    TREES = "../p-trees"
+    REWORDED = ("Two sessions share one backlog", "Two sessions share one backlog: the claim")
+    leaves = [tree_for(TREES, 70, title).name for title in REWORDED]
+
+    # Plant: the two halves composed the other way round, `<slug>-<item>` -- the form that reads
+    # better in an `ls`, which is why the ordering is asserted rather than assumed. Built from the
+    # same `slug_for` and handed to the same shipped test, so what reddens is the ordering.
+    suite.ok(
+        "with the slug leading, no shipped test can tell whose directory it is (so the ordering "
+        "is what holds it)",
+        not any(ref_is_for_item(f"{slug_for(title)}-70", "70") for title in REWORDED),
+        ", ".join(f"{slug_for(title)}-70" for title in REWORDED),
+    )
+    suite.ok(
+        "a reword gives two leaves, which is why the question is asked on the prefix",
+        leaves[0] != leaves[1],
+        ", ".join(leaves),
+    )
+    suite.ok(
+        "and `ref_is_for_item` answers for both of them, as it does for the ref names",
+        all(ref_is_for_item(leaf, "70") for leaf in leaves),
+        ", ".join(leaves),
+    )
+    suite.ok(
+        "the leaf is the branch's own tail -- one derivation and not two",
+        all(
+            tree_for(TREES, item, title).name == branch_for("feature", item, title).rsplit("/", 1)[-1]
+            for item, title, _ in MEASURED
+        ),
+        ", ".join(tree_for(TREES, i, t).name for i, t, _ in MEASURED),
+    )
+    suite.ok(
+        "the configured directory is joined and never slugged into the leaf",
+        tree_for("../p-trees", 70, "A title") == Path("../p-trees/70-a-title"),
+        str(tree_for("../p-trees", 70, "A title")),
+    )
+    suite.ok(
+        "a title that slugs to nothing leaves the identifier alone, not `70-`",
+        tree_for(TREES, 70, "!!! ---").name == "70",
+        tree_for(TREES, 70, "!!! ---").name,
+    )
+    suite.ok(
+        "no item is refused, rather than collecting every such branch in one directory",
+        _raises(lambda: tree_for(TREES, "", "A title")),
+    )
+    suite.ok(
+        "and an empty `tree_dir` is refused rather than defaulted to somewhere",
+        _raises(lambda: tree_for("", 70, "A title")),
+    )
+
+    print("\n`take` cuts the tree at the derived path:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _ = _bare_world(stack)
+        trees, title = Path(tmp) / "trees", "Two sessions share one backlog"
+        said = take(
+            one, None, None, item="70", prefix="feature", title=title, tree_dir=str(trees)
+        )
+        cut = trees / "70-two-sessions-share-one-backlog"
+        suite.ok("the tree is cut where the derivation says", cut.is_dir(), said)
+        suite.ok("and the report names that path, which is the path to enter", str(cut) in said, said)
+        suite.ok(
+            "end to end, the leaf and the branch's tail are the one string",
+            cut.name == branch_for("feature", "70", title).rsplit("/", 1)[-1],
+            cut.name,
+        )
+        both = _message(
+            lambda: take(
+                one, None, str(trees / "stated"), item="71", prefix="feature", title=title,
+                tree_dir=str(trees),
+            )
+        )
+        suite.ok(
+            "stating the directory and the path together is refused",
+            both is not None and "state one" in both,
+            both or "it was accepted",
+        )
+        neither = _message(
+            lambda: take(one, None, None, item="71", prefix="feature", title=title)
+        )
+        suite.ok(
+            "stating neither is refused, and the refusal names both forms",
+            neither is not None and "--tree-dir" in neither and "--tree" in neither,
+            neither or "it was accepted",
+        )
+        no_item = _message(lambda: take(one, "feature/a-branch-with-no-item", tree_dir=str(trees)))
+        suite.ok(
+            "a branch carrying no item derives no leaf, and is told to state the path",
+            no_item is not None and "--tree" in no_item,
+            no_item or "it was accepted",
+        )
 
     print("\nthe claim resolves on the item, not on the name:")
 
@@ -2395,7 +2554,16 @@ def main(argv: list[str]) -> int:
                 "--title", default=None, help="with --item and --branch-prefix, derives --branch"
             )
         if name in ("take", "release"):
-            node.add_argument("--tree", required=(name == "take"))
+            # ⛔ Not required for `take` any more, and the refusal moved into `take` itself rather
+            # than being dropped: one of `--tree-dir` and `--tree` is needed, which argparse states
+            # as neither-required and the carrier states as a refusal naming both forms.
+            node.add_argument("--tree", required=False)
+        if name == "take":
+            node.add_argument(
+                "--tree-dir",
+                default=None,
+                help="`branch_model.tree_dir` (§ 10); with --item and --title, derives --tree",
+            )
         if name == "release":
             # ⛔ A person saying it, which is the only thing § 10 permits to break a live claim.
             node.add_argument(
@@ -2433,6 +2601,7 @@ def main(argv: list[str]) -> int:
                     item=args.item,
                     prefix=args.branch_prefix,
                     title=args.title,
+                    tree_dir=args.tree_dir,
                 )
             )
         elif args.command == "release":

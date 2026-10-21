@@ -151,11 +151,12 @@ this role supplies is the three inputs:
 | number | the item's own identifier |
 | title | the item's title — and a **translation** where the item's language differs from the repository's, never a transliteration ([`§ 8`](../../config/schema.md#8-language-register-audience--per-artifact-not-per-project)); the slug is derived from whichever string is handed over, and the reply says which |
 
-The tree is `tree_dir` joined with the item's own identifier, per
+The tree's path is derived from `tree_dir` and the same inputs the name takes, per
 [`§ 10 → Where a tree is created`](../../config/schema.md#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it).
-⛔ **Neither half is this file's to choose**: the directory is configuration and the leaf is
-derived, and a slug in that path would give one item two trees the first time its title is
-reworded.
+⛔ **Neither half is this file's to choose, and neither is composed here**: the directory is
+configuration, the leaf is derived from it, and a leaf slugged inside a role is the divergence the
+name's derivation exists to close — one path over. What this role hands the command is `tree_dir`
+as the configuration states it, and what comes back names the path that was cut.
 
 ⛔ **One command takes the claim, and this role does not assemble it out of git calls.** It
 derives the name, reads what already claims the item, publishes the ref, reads back whether the
@@ -166,7 +167,8 @@ taken.
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" take \
-  --repo-root <code-root> --branch-prefix <prefix> --item <number> --title <title> --tree <tree>
+  --repo-root <code-root> --branch-prefix <prefix> --item <number> --title <title> \
+  --tree-dir <tree-dir>
 ```
 
 - **Refused** ⇒ the item is taken, and the refusal already carries who holds it and since when, or
@@ -203,6 +205,11 @@ session's own working directory is what enforces `work_in_shared_checkout`: a tr
 path satisfies every call that takes a root explicitly and none of the tools that do not take one,
 and those write wherever the session is standing. ⛔ **A run that cannot enter the tree it cut is
 a stop**, and the reply says so rather than trusting whoever reads it to remember.
+
+⛔ **The path entered is the one the claim reported, never one composed again here.** The leaf is
+derived from the item's title, so a path re-assembled at this step is a second derivation that is
+allowed to differ from the tree that exists — and entering a directory that is not a worktree is
+refused, which reads as a cut that failed.
 
 A project's own setup and teardown for a tree are its `mechanics` pointer — **named, never
 absorbed**. Where it is null there is nothing to run, and that is an answer.
