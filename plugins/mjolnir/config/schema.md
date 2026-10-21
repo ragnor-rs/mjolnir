@@ -1547,6 +1547,37 @@ is available at all. ⛔ **Such a run reports the tree as left to remove, with i
 case the hand-off wording was always right about, now reached by the sessions it describes rather
 than by all of them.
 
+### What a session standing in a tree can run
+
+⛔ **A harness that pins a session to its tree holds every shell command that session runs to being
+verifiably inside it, and a command it cannot verify is refused whole.** Procedure with no key, for
+the same reason entering has none: the pinning is the harness's operation and what belongs here is
+what the procedure asks of a role working under it. ⚠️ **Measured rather than assumed** — 445
+refusals read out of the session transcripts of ninety-six sessions across fourteen checkouts, and
+every one of them on a single harness build.
+
+⛔ **The refusal is on verifiability and never on risk**, so reading one as *that command was
+dangerous* sends a role looking for a problem that is not there. ⛔ **And the shape of the command is
+not the predicate either**: measured on that build, each with every word a literal, a pipeline ran,
+a `;` list ran, a heredoc ran, a conditional ran, a `for` loop ran, a command substitution ran, and
+a redirection to a path outside the tree ran. ⚠️ **What a role can act on is therefore the table
+below and not a grammar to satisfy** — the predicate itself is the harness's, it is not published,
+and a role that inferred one from a green run would be inferring it from the half of the behaviour
+that holds nothing.
+
+| In a call | What was measured | What to write instead |
+|---|---|---|
+| A word the guard cannot resolve — a loop's own variable, a variable its snapshot does not hold, a `${VAR:-default}` | The call is refused whole. ⚠️ Two plain expansions in one session, one resolved and one refused, so no list of safe variable names is derivable from a run | Resolve the value in a call of its own, then write the literal it resolved to |
+| A chain whose first command guards the rest — a backup before an overwrite, a fetch before a read | Refused or run whole, never in part; where it was refused the safeguard did not run either, measured as a backup that was missing when the restore came to need it | Two calls, and the first one's result read before the second is written |
+| `git -C` naming anything but this tree | Refused by name, with its own wording, the shared checkout included — which inverts § 1's *name every root* for this one tool | Read the shared checkout from the code host, or through a script that takes a root rather than through git |
+| The word `eval` anywhere in it — a search pattern or a directory name included | Refused as a string run through eval: a `grep` whose pattern is that word is enough | Name the pattern or the path another way, or read the file rather than searching it |
+| A working directory that resolved outside the tree | Refused — what a session's calls become once its tree is gone from under it. ⛔ A command naming no root may run in the shared checkout instead, which is the worse of the two outcomes and the reason § 1's rule is not dropped to get past this one | Enter a tree again; where there is none to enter, the work belongs to a session that is in one |
+| The same call again in another shape | Nothing. Every shape above ran with its words literal, so the shape was not what refused it | Split the call, or replace the word the guard could not resolve |
+
+⚠️ **The cheapest call is one plain command whose every word is a literal**, and the harness's own
+file tools are held by none of this — so a file written, read or edited through them is reached
+whatever the guard would have made of the equivalent shell command.
+
 ### The claim on a work item
 
 ⛔ **The claim is the branch, and *publishing the ref* is what makes it a claim rather than a

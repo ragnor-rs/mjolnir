@@ -893,14 +893,25 @@ whatever it finds deletes somebody else's work.
   recoverable the guard does not run, and the ref name is the whole of the claim again — which is
   the pre-derivation behaviour and is recorded here rather than reported as covered.
 
-## The register, loaded rather than checked
+## The rules loaded rather than checked
 
-`plugins/mjolnir/scripts/load_the_register.py`, on a `SessionStart` hook. It reads the property
-table out of
-[schema § 8](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) under that
-subsection's anchor and hands it to the session as context. ⛔ **No copy of the table lives in the
-script** — a row edited on the surface is a row the next session is handed, and a paraphrase would
-be a second statement of the rule with nothing holding it to the first.
+`plugins/mjolnir/scripts/load_the_rules.py`, on a `SessionStart` hook. It reads a table out of the
+surface under each of two subsections' anchors and hands both to the session as context: the
+property table of
+[schema § 8](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role), and what a
+shell command may be once the session is standing in its own tree,
+[schema § 10](../plugins/mjolnir/config/schema.md#what-a-session-standing-in-a-tree-can-run). ⛔ **No
+copy of either table lives in the script, and neither do their column names** — a row edited on the
+surface is a row the next session is handed, a paraphrase would be a second statement of the rule
+with nothing holding it to the first, and the heading row is read out of the document like every
+other row.
+
+⚠️ **One loader rather than one per rule, which is a departure from how the gates here are
+arranged.** Every check in this tree is its own script with its own mirrored command, because each
+answers a different question. These two do not: both are a table in a subsection, read at the one
+event that reaches a writer before it writes, with the same failure mode. ⛔ **What is held per rule
+is the assertion and not the mechanism** — the self-test runs its plants once per anchor, and
+asserts that a rule it cannot read leaves the other one loaded rather than taking it down.
 
 ⚠️ **Why this event, measured rather than assumed.** Two probes on 2026-10-20, each with a random
 token no session could otherwise know. A `Stop` answer's `systemMessage` was written to the
@@ -913,19 +924,26 @@ one that can carry a rule.
 hook's first live run: rendered as `- Property — required. Not: forbidden`, a session read the last
 row's third cell as running into the paragraph after it and quoted the splice back as the rule.
 
+⚠️ **The tree rule arrives before the tree does, and that is forced rather than chosen.** This event
+fires once, with the session standing in the shared checkout; a session that enters a tree later
+fires nothing a hook can answer. So the rule is handed to every session including the ones it is not
+live for, and what the session is told alongside it is that it is live only once the session is
+standing in a tree.
+
 ### What it deliberately does not do
 
 - ⚠️ **It fails open and silently**, which is this script's choice rather than a rule of the
   procedure. A session is not the place to report that a document could not be parsed: failing
   loudly would interrupt a person over a file they may be mid-edit on. So
-  nothing in a session says the register went unloaded, and that residue is covered by the gate —
-  the `Register loaded` run asserts the table is found and every row reaches the context, with a
+  nothing in a session says a rule went unloaded, and that residue is covered by the gate —
+  the `Rules loaded` run asserts each table is found and every row reaches the context, with a
   planted surface it cannot read.
-- ⚠️ **It does not check that the register was followed.** Nothing reads the reply afterwards for
-  any property in that table; the one arm that does read a reply holds an act rather than a style,
-  and is recorded below.
+- ⚠️ **It does not check that either rule was followed.** Nothing reads the reply afterwards for any
+  property in § 8's table, and nothing reads a command before it runs for anything in § 10's — the
+  refusal that holds the second half is the harness's own and is not this project's to configure.
+  The one arm here that does read a reply holds an act rather than a style, and is recorded below.
 - ⚠️ **It cannot tell which role is running**, so every session the plugin is enabled in is handed
-  the register, not only one running a role. In the safe direction, and the ruling is
+  both rules, not only one running a role. In the safe direction, and the ruling is
   [#87](https://github.com/ragnor-rs/mjolnir/issues/87)'s.
 
 ## The reply defers nothing: held in the session, not on the gate

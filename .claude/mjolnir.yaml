@@ -90,11 +90,11 @@ host:
     - workflow: "Prose width"
       mirrors: "python3 tools/check_prose_width.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
-    - workflow: "Register loaded"
-      mirrors: "python3 plugins/mjolnir/scripts/load_the_register.py --self-test"
-      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Reply defers nothing"
       mirrors: "python3 plugins/mjolnir/scripts/check_reply_defers_nothing.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Rules loaded"
+      mirrors: "python3 plugins/mjolnir/scripts/load_the_rules.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Single source of truth"
       mirrors: "python3 tools/check_single_source.py --self-test"
