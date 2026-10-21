@@ -781,21 +781,76 @@ def _outcome_table(tree: Tree) -> tuple[str, str]:
     return "".join(lines[:header]), "".join(lines[header:])
 
 
-def _plant_outcome_with_no_home(tree: Tree) -> Tree:
+def _outcome_cell(row: str) -> tuple[int, int] | None:
+    """The slice of a table row that is its last cell, or None where it has none.
+
+    ⛔ The plants below mutate this span rather than the table's text at large,
+    because the check reads this span and nothing else. The outcome form
+    `[schema § <N or heading>](…#a)` is an ordinary citation shape: it occurs in
+    prose above the table, which the split already handles, and it occurs in a
+    **description** cell of the table itself, which the split cannot. A
+    substitution landing there changes nothing the check reads, and the branch
+    then reports STAYED GREEN -- believed and unexercised. Measured: a boundary
+    section cited from two description cells took this plant, and the run said
+    green with the one branch it names never entered.
+
+    ⛔ The pipe is found by the grammar `split_row` uses and not by `rfind`,
+    because an **escaped** pipe is a cell's content rather than its edge. A
+    naive search returns whatever follows the last `\\|` in the row -- `b`, for a
+    cell ending `a \\| b` -- so the plant mutates a slice the check never reads
+    as a cell, and the row is skipped for carrying no outcome. Reproduced on a
+    synthesised row; no cell in the table carries one today, which is why the
+    span and the check have to agree by construction rather than by inspection.
+    """
+    stripped = row.rstrip()
+    bars = [m.start() for m in re.finditer(r"(?<!\\)\|", stripped)]
+    if len(bars) < 2 or bars[-1] != len(stripped) - 1:
+        return None
+    return bars[-2] + 1, bars[-1]
+
+
+def _plant_in_an_outcome_cell(tree: Tree, mutate) -> bool:
+    """Apply `mutate` to the first outcome cell it changes. True where one did.
+
+    A callback returning the cell unchanged, or None, means the cell is not the
+    one this plant is about -- so a plant filtered to a numbered or a named cell
+    skips the rest rather than landing on whichever row comes first.
+    """
     above, table = _outcome_table(tree)
-    tree.text[RULINGS] = above + OUTCOME_IN_SURFACE.sub(
-        "A planted document § Somewhere", table, count=1
+    lines = table.splitlines(keepends=True)
+    for i, line in enumerate(lines[2:], start=2):
+        if not line.strip().startswith("|"):
+            break
+        span = _outcome_cell(line)
+        if span is None:
+            continue
+        start, end = span
+        planted = mutate(line[start:end])
+        if planted is not None and planted != line[start:end]:
+            lines[i] = line[:start] + planted + line[end:]
+            tree.text[RULINGS] = above + "".join(lines)
+            return True
+    return False
+
+
+def _plant_outcome_with_no_home(tree: Tree) -> Tree:
+    _plant_in_an_outcome_cell(
+        tree,
+        lambda cell: OUTCOME_IN_SURFACE.sub("A planted document § Somewhere", cell, count=1),
     )
     return tree
 
 
 def _plant_outcome_with_a_second_home(tree: Tree) -> Tree:
     """Keep a valid home and add a document beside it -- the residue branch."""
-    above, table = _outcome_table(tree)
-    match = OUTCOME_IN_SURFACE.search(table)
-    tree.text[RULINGS] = above + table.replace(
-        match.group(0), match.group(0) + ", README § Somewhere", 1
-    )
+
+    def mutate(cell: str) -> str | None:
+        match = OUTCOME_IN_SURFACE.search(cell)
+        if match is None:
+            return None
+        return cell.replace(match.group(0), match.group(0) + ", README § Somewhere", 1)
+
+    _plant_in_an_outcome_cell(tree, mutate)
     return tree
 
 
@@ -807,16 +862,24 @@ def _plant_outcome_number_against_wrong_anchor(tree: Tree) -> Tree:
     the table -- numeric today only because the one named cell sits eleven rows
     in. The plant names the numeric branch, so it selects for it.
     """
-    above, table = _outcome_table(tree)
-    match = next(m for m in OUTCOME_IN_SURFACE.finditer(table) if m.group("section").isdigit())
-    other = next(
-        a for _, _, a in headings(tree.text[SURFACE]) if a != match.group("anchor")
-    )
-    tree.text[RULINGS] = above + table.replace(
-        match.group(0),
-        f"[schema § {match.group('section')}]({match.group('path')}#{other})",
-        1,
-    )
+
+    def mutate(cell: str) -> str | None:
+        match = next(
+            (m for m in OUTCOME_IN_SURFACE.finditer(cell) if m.group("section").isdigit()),
+            None,
+        )
+        if match is None:
+            return None
+        other = next(
+            a for _, _, a in headings(tree.text[SURFACE]) if a != match.group("anchor")
+        )
+        return cell.replace(
+            match.group(0),
+            f"[schema § {match.group('section')}]({match.group('path')}#{other})",
+            1,
+        )
+
+    _plant_in_an_outcome_cell(tree, mutate)
     return tree
 
 
@@ -829,11 +892,6 @@ def _plant_outcome_named_section_against_wrong_anchor(tree: Tree) -> Tree:
     has already paid for three times -- and one that fell through to a numeric
     cell would assert about the branch beside the one it names.
     """
-    above, table = _outcome_table(tree)
-    match = next(
-        (m for m in OUTCOME_IN_SURFACE.finditer(table) if not m.group("section").isdigit()),
-        None,
-    )
     named = next(
         (title for _, title, slug in tree.headings(2) if not re.match(r"\d+\.\s", title)),
         None,
@@ -841,34 +899,56 @@ def _plant_outcome_named_section_against_wrong_anchor(tree: Tree) -> Tree:
     if named is None:
         # The surface carries no unnumbered `##` section at all, so the branch
         # has nothing to be wrong about. Said, not skipped in silence.
+        above, table = _outcome_table(tree)
         tree.text[RULINGS] = above + table + (
             "\n<!-- the surface has no unnumbered `##` section, so this plant "
             "synthesised nothing -->\n"
         )
         return tree
-    # ⛔ An anchor belonging to a *different* unnumbered section, so the plant
-    # lands on the title-agreement arm rather than on the one that reports an
-    # anchor belonging to no unnumbered section at all. Those are different
-    # failures and the realistic one is this.
     elsewhere = tree.unnumbered_of()
+
+    def mutate(cell: str) -> str | None:
+        match = next(
+            (m for m in OUTCOME_IN_SURFACE.finditer(cell) if not m.group("section").isdigit()),
+            None,
+        )
+        if match is None:
+            return None
+        # ⛔ An anchor belonging to a *different* unnumbered section, so the
+        # plant lands on the title-agreement arm rather than on the one that
+        # reports an anchor belonging to no unnumbered section at all. Those are
+        # different failures and the realistic one is this.
+        #
+        # ⛔ *Different* is measured against the section **this cell** names,
+        # never against the first unnumbered section on the surface. The two
+        # coincided only while that first section was also the one a cell named:
+        # with a second one added ahead of it, the anchor computed differs from
+        # the first section and replaces the cell's own anchor with itself.
+        subject = match.group("section")
+        other = next(
+            (slug for slug, title in elsewhere.items() if title != subject),
+            next(a for _, _, a in headings(tree.text[SURFACE]) if a != anchor(subject)),
+        )
+        return cell.replace(
+            match.group(0),
+            f"[schema § {subject}]({match.group('path')}#{other})",
+            1,
+        )
+
+    if _plant_in_an_outcome_cell(tree, mutate):
+        return tree
+    # No ruling names one today. Synthesise the row rather than stopping: what is
+    # under test is the branch, not the table's present contents.
+    above, table = _outcome_table(tree)
     other = next(
         (slug for slug, title in elsewhere.items() if title != named),
         next(a for _, _, a in headings(tree.text[SURFACE]) if a != anchor(named)),
     )
-    if match is None:
-        # No ruling names one today. Synthesise the row rather than stopping:
-        # what is under test is the branch, not the table's present contents.
-        row = (
-            f"| planted | A synthesised divergence | Planted "
-            f"| [schema § {named}]({SURFACE_NAME}#{other}) |\n"
-        )
-        tree.text[RULINGS] = above + table.rstrip("\n") + "\n" + row
-        return tree
-    tree.text[RULINGS] = above + table.replace(
-        match.group(0),
-        f"[schema § {match.group('section')}]({match.group('path')}#{other})",
-        1,
+    row = (
+        f"| planted | A synthesised divergence | Planted "
+        f"| [schema § {named}]({SURFACE_NAME}#{other}) |\n"
     )
+    tree.text[RULINGS] = above + table.rstrip("\n") + "\n" + row
     return tree
 
 

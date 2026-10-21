@@ -117,9 +117,8 @@ is planted on the **green** side and was verified by disabling it, because a car
 fail is a carve-out nobody checked.
 
 Check 4 is scoped to documents that explain or record, not to a skill. That is the schema's own
-[boundary rule](../plugins/mjolnir/config/schema.md#the-configuration-surface): a fact that cannot
-be expressed on the surface is either procedure, in which case it belongs in a skill, or a
-project-specific skill. A skill therefore states procedure for its own role legitimately, and the
+[boundary rule](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls),
+cited here rather than paraphrased: a skill states procedure for its own role legitimately, and the
 hazard there is a *value* rather than a rule —
 [#19](https://github.com/ragnor-rs/mjolnir/issues/19)'s sweep. Its citations are still held by
 check 1: a skill already carries one, and a dead citation in a skill is a dead citation.
@@ -250,8 +249,11 @@ Stated, because an unstated limit reads later as coverage.
   convention of this repository rather than a rule of the procedure, and held by nobody; nothing
   configures it either, the README not being one of the artifacts
   [schema § 8](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project)'s
-  map names. Whether the procedure should state that boundary in general is
-  [#65](https://github.com/ragnor-rs/mjolnir/issues/65)'s. ⚠️ What a file's prose **is** held to,
+  map names. Whether that absence is a gap is answered by
+  [schema § What the procedure models](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)'s
+  test: no role reads a document's audience to decide what to do next, so what the surface leaves
+  unstated here is the boundary rather than a missing facet.
+  ⚠️ What a file's prose **is** held to,
   whichever register a project nominates over it, is
   [§ The floor under file prose](#the-floor-under-file-prose-held-on-the-lines-a-change-adds) — and
   a floor is not a register, so nothing there closes this gap either.
@@ -486,12 +488,15 @@ exempted the whole directory and so would have read straight past it.
   documents *don't* contain, and the counts carry the argument instead.
 - **A language interpreter.** `python3` is on no list, and the strict set carries live instances
   of one: a configured script run under it in the day-log skill, and the hook carrier that calls
-  the reply check. ⚠️ Whether a configured script is a path the procedure prefixes with
-  an interpreter, or a command the procedure merely runs, is
-  [#65](https://github.com/ragnor-rs/mjolnir/issues/65)'s and
-  [#66](https://github.com/ragnor-rs/mjolnir/issues/66)'s ruling about what configuration carries.
-  This check does not pre-empt it by reddening, so until that lands an interpreter named in a
-  carrier is a known hole — stated, because an unstated limit reads later as coverage.
+  the reply check. ⚠️ **The first of the two now has a ruling against it rather than an open
+  question.**
+  [schema § What the procedure models](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
+  states that a command is stated whole and the procedure supplies no part of it, which leaves
+  `python3 <day_log.script>` the one form on the surface that does not conform — marked
+  transitional where that key is declared, and settled by the extraction it already waits on rather
+  than by this check. The second instance is the toolkit calling its own code and is no project's
+  stack. ⛔ Either way this check does not redden on an interpreter, so one named in a carrier
+  stays a known hole — stated, because an unstated limit reads later as coverage.
 - **A stack token hidden in a script's comment.** Rule 1 strips comments before sweeping a
   script, so `# run npm run build first` in a hook is not read. That is the deliberate trade: a
   comment is prose, and sweeping it would redden on an ordinary English sentence. A command the
