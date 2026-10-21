@@ -107,7 +107,8 @@ to ask you are stated too —
 | [`plugins/mjolnir/config/`](plugins/mjolnir/config/) | The configuration surface: the schema, and a whole example per tracker including a deliberately trackerless one |
 | [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) | What a role runs on rather than reimplements: the configuration reader, the tracker port behind [`schema.md § 3`](plugins/mjolnir/config/schema.md#3-tracker-port), and the carriers that ship with the surface and run in an adopting project. Which they are is what the directory says, and each one's reach is recorded in [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) — so no list of them is carried here |
 | [`plugins/mjolnir/scripts/adapters/`](plugins/mjolnir/scripts/adapters/) | One implementation of that port per tracker, installed by being there, per [`schema.md § 3`](plugins/mjolnir/config/schema.md#3-tracker-port). Which kinds are built is what the directory says, so no list of them is carried here |
-| [`docs/configuration-surface.md`](docs/configuration-surface.md) | Why the surface has this shape — the measurements behind every schema section |
+| [`docs/configuration-surface.md`](docs/configuration-surface.md) | Why the surface has this shape — the measurements behind it, taken by reading every copy of every process role across the six projects |
+| [`docs/build-surface.md`](docs/build-surface.md) | The same, for the half the roles do not carry: what the six projects build, check and deploy with, and why so little of it is on the surface |
 | [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) | Every divergence found between the old copies and which behaviour was kept, including where a ruling overrode a stated counter-argument |
 | [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) | How the single-authority claim is held: the checks, their kinds, and what each deliberately leaves alone |
 | [`docs/building-itself.md`](docs/building-itself.md) | The bootstrap record: which pieces could not be built through the loop, and the command that derives what the loop carries here |
@@ -142,7 +143,9 @@ to it on every change — see [`docs/single-source-of-truth.md`](docs/single-sou
 for the checks and what they deliberately leave alone.
 
 The why sits beside it: [`docs/configuration-surface.md`](docs/configuration-surface.md) holds
-the measurements the surface was derived from, and
+the measurements the surface was derived from and
+[`docs/build-surface.md`](docs/build-surface.md) those behind what it deliberately leaves to a
+project's own commands, while
 [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) records every divergence
 found between the old copies and the decision that settled it.
 
@@ -153,7 +156,8 @@ projects that ran this pattern was read first, and each key here exists because 
 it. What drifted, how far it drifted and the decision that settled each divergence are in
 [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md), which opens on the
 measurement; what each key cost to arrive at is in
-[`docs/configuration-surface.md`](docs/configuration-surface.md), section by section.
+[`docs/configuration-surface.md`](docs/configuration-surface.md), section by section, and what the
+build half of the same reading settled is in [`docs/build-surface.md`](docs/build-surface.md).
 
 Only a closed set of facts actually differs between projects. Those facts belong in
 configuration, and the procedure belongs in one place.

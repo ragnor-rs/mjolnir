@@ -85,17 +85,6 @@ what the thing is — `exclusive_resources` ([§ 10](#10-branch-model)) names wh
 may be held and what holds a place, while what happens on contention is the enforcing hook's by
 that section's own rule.
 
-⛔ **A toolchain or runtime version is on that list, and the test is what puts it there.** It is
-read by the wrapper a project ships, by its build's own toolchain declaration, by the setup step of
-a host run, or by an image — and by no role, which is the column the test below decides on. ⚠️ **Nor
-is it the
-other candidate it looks like**: a precondition a command does not check for itself is a presence, a
-state or a credential wherever one was measured, so a version is not that either, and the facet
-asking for those preconditions is not where a version goes
-([the measurement](../../../docs/build-surface.md#the-toolchain-version-is-a-non-goal-and-the-boundary-is-where-that-is-stated),
-taken across six stacks, which found one runtime-version file and four builds that lock no
-dependency at all).
-
 ⛔ **The toolkit's own text names none of it either, and that half is a search rather than a
 reading.** So the first of the two questions the carve-outs left open is answered: **a tool name and
 a manifest name may not appear in a carrier's text**, nor may any other value or stack token, and
@@ -114,6 +103,16 @@ to read — so what the rule above reaches is the fact
 being readable *only* there, and not the token. ⚠️ **Which is a statement about the procedure and
 not about every check**: a search holding a file may still forbid a spelling wherever it occurs,
 within its own stated scope.
+
+⛔ **A toolchain or runtime version is one of those facts too, and the test below is what puts it
+there.** It is read by the wrapper a project ships, by its build's own toolchain declaration, by the
+setup step of a host run, or by an image — and by no role, which is the middle column. ⚠️ **Nor is
+it the other candidate it looks like**: `requires:`
+([§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran), which declares that
+key and states its form once) holds a precondition the run does not check itself, and every one of
+those measured is a presence, a state or a credential — so a version is not an entry there either,
+and no key is owed for it
+([the measurement](../../../docs/build-surface.md#the-toolchain-version-is-a-non-goal-and-the-boundary-is-where-that-is-stated)).
 
 **The test, run on the four absences this statement was written from.** All four are commands a
 project genuinely has and none of them is on this surface, so the column that decides each one is
