@@ -104,6 +104,16 @@ being readable *only* there, and not the token. ⚠️ **Which is a statement ab
 not about every check**: a search holding a file may still forbid a spelling wherever it occurs,
 within its own stated scope.
 
+⛔ **A toolchain or runtime version is one of those facts too, and the test below is what puts it
+there.** It is read by the wrapper a project ships, by its build's own toolchain declaration, by the
+setup step of a host run, or by an image — and by no role, which is the middle column. ⚠️ **Nor is
+it the other candidate it looks like**: `requires:`
+([§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran), which declares that
+key and states its form once) holds a precondition the run does not check itself, and every one of
+those measured is a presence, a state or a credential — so a version is not an entry there either,
+and no key is owed for it
+([the measurement](../../../docs/build-surface.md#the-toolchain-version-is-a-non-goal-and-the-boundary-is-where-that-is-stated)).
+
 **The test, run on the four absences this statement was written from.** All four are commands a
 project genuinely has and none of them is on this surface, so the column that decides each one is
 the middle one:

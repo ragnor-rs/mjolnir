@@ -694,10 +694,12 @@ axis one tier down: the host usually *can*, and the defect is that it says so wh
 **What it cost, in the one consumer where it was priced.** Three suites covering that project's
 money rules are gated on a single environment variable, and without it they abort as *skipped*
 while the aggregate build still reports success — so a green build said nothing about the rules
-those suites exist for. That project's own workflow now supplies a service beside the run and
-**fails the build when any of the three reports zero tests or any skip**. ⚠️ That rule is written
-into one workflow file, mirrored by nothing, and stated nowhere on the surface it was read from —
-which is the shape a fact takes just before it is extracted.
+those suites exist for. That project's own workflow supplies a service beside the run and **fails
+the build when any of the four suites it names reports zero tests or any skip** — the fourth is
+outside the money rules and is on the list because the rule is a list of names rather than a
+property of a suite, so a gated suite missing from it is exactly as silent as having no service
+container. ⚠️ That rule is written into one workflow file, mirrored by nothing, and stated nowhere
+on the surface it was read from — which is the shape a fact takes just before it is extracted.
 
 **Why the count, and why it is not a coverage figure.** A dependency-gated suite's degradation is
 *designed* to be quiet: skipping is the correct behaviour for a case whose dependency is absent, and
