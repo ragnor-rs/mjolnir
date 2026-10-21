@@ -1640,22 +1640,41 @@ refusals read out of the session transcripts of ninety-six sessions across fourt
 every one of them on a single harness build.
 
 ⛔ **The refusal is on verifiability and never on risk**, so reading one as *that command was
-dangerous* sends a role looking for a problem that is not there. ⛔ **And the shape of the command is
-not the predicate either**: measured on that build, each with every word a literal, a pipeline ran,
-a `;` list ran, a heredoc ran, a conditional ran, a `for` loop ran, a command substitution ran, and
-a redirection to a path outside the tree ran. ⚠️ **What a role can act on is therefore the table
-below and not a grammar to satisfy** — the predicate itself is the harness's, it is not published,
-and a role that inferred one from a green run would be inferring it from the half of the behaviour
-that holds nothing.
+dangerous* sends a role looking for a problem that is not there. ⛔ **Nor is it on complexity, which
+is the one thing the refusal itself claims**: measured on that build, each with every word a
+literal, a pipeline ran, a `;` list ran, a conditional ran, a `for` loop ran, a glob ran, an
+arithmetic expansion ran, a redirection to a path outside the tree ran, and a three-segment chain
+that `cd`s out of the tree, redirects to a path relative to that `cd` and reads the file back ran
+whole. ⛔ **What refuses is a construct whose text is not in the command**, which is the first two
+rows below. ⚠️ **The predicate is still the harness's and still unpublished**, so a role acts on the
+table and not on a grammar inferred from it.
+
+⚠️ **Two shapes this section carried as green are refused, corrected 2026-10-22**: a command
+substitution and a heredoc. ⛔ **A green run read out of a transcript is evidence about the session
+it was in and not about the guard**, which is how both came to be written here. The corpus behind
+the count above spans sessions standing in a tree and sessions standing in none, and the rule is
+live only in the first — `diff <(echo a) <(echo b)` is refused in a tree and runs unchanged outside
+one, so a construct that reads as green across a mixed corpus may never have been under the guard
+at all. ⚠️ **What a row rests on is therefore the construct run alone in a tree the session is
+pinned to**, which is the measurement a corpus of transcripts cannot make.
 
 | In a call | What was measured | What to write instead |
 |---|---|---|
-| A word the guard cannot resolve — a loop's own variable, a variable its snapshot does not hold, a `${VAR:-default}` | The call is refused whole. ⚠️ Two plain expansions in one session, one resolved and one refused, so no list of safe variable names is derivable from a run | Resolve the value in a call of its own, then write the literal it resolved to |
+| A word the guard cannot resolve — a loop's own variable, a variable its snapshot does not hold, a `${VAR:-default}` | The call is refused whole. ⚠️ Two plain expansions in one session, one resolved and one refused, so no list of safe variable names is derivable from a run. An arithmetic expansion and a glob both resolved, so what decides is where a value comes from and not the `$` | Resolve the value in a call of its own, then write the literal it resolved to |
+| A substitution of any kind — `$(…)`, a backtick pair, `<(…)` | Refused whole, under the *too complex* wording, each measured alone. ⚠️ The same characters inside single quotes ran, so this is a parse of the command rather than a match on its text | Run the inner command in a call of its own, then write the output it printed in as a literal |
+| A heredoc | Refused whole, under the same wording. ⚠️ Its text is static, so what goes unresolved is the `<<` operand rather than anything the command would have computed | Pass the text as an argument, or write the file through the harness's own file tools |
 | A chain whose first command guards the rest — a backup before an overwrite, a fetch before a read | Refused or run whole, never in part; where it was refused the safeguard did not run either, measured as a backup that was missing when the restore came to need it | Two calls, and the first one's result read before the second is written |
 | `git -C` naming anything but this tree | Refused by name, with its own wording, the shared checkout included — which inverts § 1's *name every root* for this one tool | Read the shared checkout from the code host, or through a script that takes a root rather than through git |
-| The word `eval` anywhere in it — a search pattern or a directory name included | Refused as a string run through eval: a `grep` whose pattern is that word is enough | Name the pattern or the path another way, or read the file rather than searching it |
+| The word `eval` anywhere in it — a search pattern or a directory name included | Refused as a string run through eval, with its own wording: a `grep` whose pattern is that word is enough, and so is the word alone inside single quotes — which is a match on the text, the opposite of the substitution row above | Name the pattern or the path another way, or read the file rather than searching it |
 | A working directory that resolved outside the tree | Refused — what a session's calls become once its tree is gone from under it. ⛔ A command naming no root may run in the shared checkout instead, which is the worse of the two outcomes and the reason § 1's rule is not dropped to get past this one | Enter a tree again; where there is none to enter, the work belongs to a session that is in one |
-| The same call again in another shape | Nothing. Every shape above ran with its words literal, so the shape was not what refused it | Split the call, or replace the word the guard could not resolve |
+| The same call again, in another shape or in the same one | Nothing. A refused call re-run verbatim in a pinned tree refused identically, and the same call ran unchanged in a session standing in no tree — so neither a reword nor a retry is what changes the answer | Split the call at the construct, or replace it; and never read a green run taken outside a tree as evidence about one taken inside |
+
+⛔ **Read the clause before *Refusing to run it* and nothing after it.** Three wordings were
+measured — *too complex to verify that it stays inside the worktree*, *runs a string through eval*,
+and *redirects git to the shared checkout via `-C`* — and all three close with the same two
+sentences, which name a git operation and a redirect whatever it was that refused. ⚠️ **A role
+reading that suffix as the diagnosis repairs the wrong thing**: `echo $(echo hi)` is refused with it
+and carries neither.
 
 ⚠️ **The cheapest call is one plain command whose every word is a literal**, and the harness's own
 file tools are held by none of this — so a file written, read or edited through them is reached
