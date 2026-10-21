@@ -466,6 +466,17 @@ operation, with no key on the surface for either. ⚠️ **This file carried the
 a stop and not the second**, which made this step's outcome unreachable for every session that had
 entered its tree — which, under `work_in_shared_checkout: never`, is every session.
 
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" release \
+  --repo-root <code-root> --branch <branch> --tree <tree>
+```
+
+⛔ **One command gives the claim up, and this role no more assembles it out of git calls than the
+starting role assembles the taking** — the order is the rule, and the command is re-runnable
+because a half-released claim is exactly what a failed release leaves. ⚠️ **It reaches the
+published ref as well**, which step 8 has already asked the deletion of under `procedure`; that
+half reports what was already gone rather than failing on it.
+
 ⛔ **A removal asked for from inside the tree is refused by the carrier**, naming the tree; the
 refusal is cleared by leaving rather than by forcing, and a pass that meets it has skipped the
 exit rather than found a fault.
