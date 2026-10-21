@@ -1654,11 +1654,13 @@ dangerous* sends a role looking for a problem that is not there. ⛔ **Nor is it
 is the one thing the refusal itself claims**: each run alone with every word a literal, a pipeline
 ran, a `;` list ran, a conditional ran, a `for` loop ran, a glob ran, an arithmetic expansion ran, a
 redirection to a path outside the tree ran, and a three-segment chain that `cd`s out of the tree,
-redirects to a path relative to that `cd` and reads the file back ran whole. ⛔ **What refuses is a
-part of the call the guard cannot resolve by reading it** — a value no reading produces until
-something has run, or an operand that is not a path — which is the first three rows below. ⚠️ **The
-predicate is still the harness's and still unpublished**, so a role acts on the table and not on a
-grammar inferred from it.
+redirects to a path relative to that `cd` and reads the file back ran whole. ⛔ **What refuses is
+text in the call that would still expand and that the guard cannot resolve by reading it**, which is
+the first three rows below. ⚠️ **What clears it is taking the expansion away rather than quoting as
+such**: a substitution inside single quotes ran and the same one inside double quotes did not, and a
+heredoc under a quoted delimiter ran where a body with nothing expandable in it at all was refused
+under an unquoted one. ⚠️ **The predicate is still the harness's and still unpublished**, so a role
+acts on the table and not on a grammar inferred from it.
 
 ⛔ **A green run read out of a transcript is evidence about the session it was in and not about the
 guard.** The corpus behind the count above spans sessions standing in a tree and sessions standing
@@ -1671,8 +1673,8 @@ transcripts cannot make.
 | In a call | What was measured | What to write instead |
 |---|---|---|
 | A word the guard cannot resolve — a loop's own variable, a variable its snapshot does not hold, a `${VAR:-default}` | The call is refused whole. ⚠️ Two plain expansions in one session, one resolved and one refused, so no list of safe variable names is derivable from a run. An arithmetic expansion resolved and a glob resolved, so neither a `$` nor an expansion of any kind is itself the test | Resolve the value in a call of its own, then write the literal it resolved to |
-| A substitution of any kind — `$(…)`, a backtick pair, `<(…)` | Refused whole, under the *too complex* wording, each measured alone. ⚠️ The same characters inside single quotes ran, so this is a parse of the command rather than a match on its text | Run the inner command in a call of its own, then write the output it printed in as a literal |
-| A heredoc | Refused whole, under the same wording. ⚠️ Its text is static, so what goes unresolved is the `<<` operand rather than anything the command would have computed | Pass the text as an argument, or write the file through the harness's own file tools |
+| A substitution of any kind — `$(…)`, a backtick pair, `<(…)` | Refused whole, under the *too complex* wording, each measured alone. ⚠️ The same characters ran inside single quotes and were refused inside double ones, so this is a parse of what would expand rather than a match on the text | Run the inner command in a call of its own, then write the output it printed in as a literal |
+| A heredoc whose delimiter is unquoted | Refused whole, under the same wording, with a body carrying nothing expandable in it at all — so it is the delimiter and not the content. ⚠️ `<<'EOF'` ran, which is the arm that makes this the delimiter's rule rather than the heredoc's | Quote the delimiter, or write the file through the harness's own file tools and pass its path |
 | A chain whose first command guards the rest — a backup before an overwrite, a fetch before a read | Refused or run whole, never in part; where it was refused the safeguard did not run either, measured as a backup that was missing when the restore came to need it | Two calls, and the first one's result read before the second is written |
 | `git -C` naming anything but this tree | Refused by name, with its own wording, the shared checkout included — which inverts § 1's *name every root* for this one tool | Read the shared checkout from the code host, or through a script that takes a root rather than through git |
 | The word `eval` anywhere in it — a search pattern or a directory name included | Refused as a string run through eval, with its own wording: a `grep` whose pattern is that word is enough, and so is the word alone inside single quotes — which is a match on the text, the opposite of the substitution row above | Name the pattern or the path another way, or read the file rather than searching it |
