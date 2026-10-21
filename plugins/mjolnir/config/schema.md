@@ -1452,9 +1452,9 @@ not: a tree belongs to one item, so deriving it makes the whole path a function 
 An earlier form of this section made the leaf the identifier *alone*, on the ground that a title
 reworded between two starts would give one item two directories and the directory would stop
 answering *is this item already being worked*. The `<identifier>-` prefix is what answers that
-question — a leaf is a candidate test on the same terms as
-[a ref name](#the-branch-name-a-claim-is-taken-on) — and the slug is what makes a stack of trees
-readable to whoever is looking at one. ⚠️ Reversed to `<slug>-<identifier>` the directory is
+question, and a match on it is a candidate and never an answer on exactly the terms a match on
+[a ref name](#the-branch-name-a-claim-is-taken-on) is — while the slug is what makes a stack of
+trees readable to whoever is looking at one. ⚠️ Reversed to `<slug>-<identifier>` the directory is
 attributable to nothing, which is the arm to assert rather than assume.
 
 ⛔ **The slug is [the branch name's own derivation](#the-branch-name-a-claim-is-taken-on) and never
