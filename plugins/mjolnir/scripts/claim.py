@@ -1099,6 +1099,7 @@ def release(
     integration: str | None = None,
     *,
     force: bool = False,
+    keep_ref: bool = False,
 ) -> str:
     """Give the claim up: the ref first, then the tree and the local branch.
 
@@ -1130,6 +1131,13 @@ def release(
     already names. ⚠️ **What it costs is stated in the refusal rather than left to the flag**,
     because forcing here destroys whatever the tree holds that git does not track, and everywhere
     else `--force` costs only a ref.
+
+    ⛔ **`keep_ref` gives up everything but the published ref.** Who deletes a branch on the host
+    is § 2's `delete_branch` and nothing else, and under `never` nobody does -- so a release that
+    took the ref regardless would undo a stated value from the one step whose business is the
+    tree. ⚠️ **It costs the claim nothing, which is the whole reason the option is affordable**:
+    `status` reads a claim whose work has landed as spent whether or not its ref is still
+    standing, so the item is free again either way and a kept ref holds nothing against anybody.
     """
     doomed = tree or tree_for_branch(root, branch)
     # ⛔ Before the ref deletion and not beside the tree removal: a refusal has to leave the claim
@@ -1191,8 +1199,11 @@ def release(
 
     done = []
     if remote_url(root, remote):
-        proc = git(root, "push", remote, "--delete", branch, check=False)
-        done.append("ref deleted" if proc.returncode == 0 else "ref was already gone")
+        if keep_ref:
+            done.append("ref kept")
+        else:
+            proc = git(root, "push", remote, "--delete", branch, check=False)
+            done.append("ref deleted" if proc.returncode == 0 else "ref was already gone")
 
     # ⛔ `doomed`, not a second derivation of the same path: the guard above refused on one answer
     # and a re-read here is allowed to give another, which would remove a tree nothing checked.
@@ -2129,15 +2140,15 @@ def self_test() -> int:
         stack = tempfile.TemporaryDirectory(dir=tmp)
         _, one, two = _bare_world(stack)
         t1 = Path(tmp) / "t1"
-        take(one, "feature/merged", str(t1))
+        take(one, "feature/91-merged", str(t1))
         for key, value in (("user.email", "one"), ("user.name", "One")):
             git(t1, "config", key, value)
         (t1 / "work.txt").write_text("work\n")
         git(t1, "add", "work.txt")
         git(t1, "commit", "--quiet", "-m", "work")
-        git(t1, "push", "--quiet", "origin", "feature/merged")
+        git(t1, "push", "--quiet", "origin", "feature/91-merged")
 
-        before = status(two, "feature/merged")
+        before = status(two, "feature/91-merged")
         suite.ok(
             "before the merge it reads live",
             before.liveness is not None and before.liveness.live,
@@ -2156,7 +2167,7 @@ def self_test() -> int:
 
         # The squash merge, which is what rewrites the hashes: a new commit on the integration
         # branch carrying the ref's content, and the ref's own commit reachable from nothing.
-        git(two, "fetch", "--quiet", "origin", "feature/merged")
+        git(two, "fetch", "--quiet", "origin", "feature/91-merged")
         git(two, "checkout", "--quiet", "main")
         git(two, "merge", "--squash", "FETCH_HEAD", check=False)
         for key, value in (("user.email", "two"), ("user.name", "Two")):
@@ -2164,7 +2175,7 @@ def self_test() -> int:
         git(two, "commit", "--quiet", "-m", "squashed")
         git(two, "push", "--quiet", "origin", "main")
 
-        after = status(two, "feature/merged")
+        after = status(two, "feature/91-merged")
         suite.ok(
             "after a squash merge it reads landed, not live",
             after.liveness is not None and after.liveness.landed,
@@ -2173,12 +2184,48 @@ def self_test() -> int:
         suite.ok(
             "and it is not an ancestor of the integration branch, which is why the hash test alone was wrong",
             git(two, "merge-base", "--is-ancestor",
-                remote_ref_sha(two, "origin", "feature/merged"), "main", check=False).returncode == 1,
+                remote_ref_sha(two, "origin", "feature/91-merged"), "main", check=False).returncode == 1,
         )
         suite.ok("the report says the claim is spent", "landed:" in after.report(), after.report())
+
+        # ⛔ What makes `--keep-ref` affordable, asserted rather than argued. Under § 2's
+        # `delete_branch: never` the branch stays on the host, so this is the state the option
+        # leaves behind: a ref standing on an item the loop still has to be able to claim again.
+        # ⛔ A landed claim is the only state this is testable in, which is why the arms are here
+        # and not beside the other release arms.
+        kept = release(two, "feature/91-merged", None, "origin", keep_ref=True)
+        suite.ok("--keep-ref reports the ref kept rather than deleted", "ref kept" in kept, kept)
+        suite.ok(
+            "and the ref really is still standing, so the arm is not reading its own report",
+            remote_ref_sha(two, "origin", "feature/91-merged") is not None,
+        )
+        # ⛔ The item question and not the name question, and the difference is the whole of what
+        # this option costs. `status_for_item` reads a landed ref as claiming nothing, so the work
+        # item is takeable again with the ref still standing. ⚠️ `claim_free` is keyed on one
+        # *name* and answers *taken* for as long as a ref of that name exists — which is the true
+        # answer to the question it was asked, and the arm below holds it rather than hiding it.
+        kept_item = status_for_item(two, "91")
+        suite.ok(
+            "⛔ and the work item is free regardless, the landed ref claiming nothing",
+            not kept_item.contending(),
+            kept_item.report(),
+        )
+        suite.ok(
+            "while the name question still answers taken, the ref being there",
+            not claim_free(two, "feature/91-merged")[0],
+            claim_free(two, "feature/91-merged")[1],
+        )
+        # ⛔ The control, without which the item arm above is consistent with `--keep-ref` freeing
+        # an item by itself: a ref on a claim that has NOT landed still holds its item, so the
+        # reading above belongs to the landing and not to this option.
+        suite.ok(
+            "while a ref on a claim that has not landed still holds its item",
+            not claim_free(two, "feature/fresh")[0],
+            claim_free(two, "feature/fresh")[1],
+        )
         suite.ok(
             "and releasing it needs no override",
-            "ref deleted" in release(two, "feature/merged", None, "origin"),
+            "ref deleted" in release(two, "feature/91-merged", None, "origin"),
         )
 
     print("\nthe integration branch, derived rather than named:")
@@ -2356,6 +2403,14 @@ def main(argv: list[str]) -> int:
                 action="store_true",
                 help="break a live claim held elsewhere; refused without it",
             )
+            # ⛔ Not a second spelling of --force. This one costs the claim nothing: § 2's
+            # `delete_branch` decides who deletes a branch on the host, and under `never`
+            # nobody does.
+            node.add_argument(
+                "--keep-ref",
+                action="store_true",
+                help="give up the tree and the local branch, leaving the published ref standing",
+            )
 
     args = parser.parse_args(argv)
     if args.self_test:
@@ -2389,6 +2444,7 @@ def main(argv: list[str]) -> int:
                     args.remote,
                     args.integration,
                     force=args.force,
+                    keep_ref=args.keep_ref,
                 )
             )
         else:
