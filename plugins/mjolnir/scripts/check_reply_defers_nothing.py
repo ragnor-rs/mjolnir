@@ -163,6 +163,18 @@ PARKED = re.compile(
     # `deliberately`: an absence of work excused rather than filled. ⚠️ Not
     # `deliberately does not`, which is how every surface here states a limit,
     # and not `deliberately not written`, which is how two of them state one.
+    # ⛔ **`unsaved` is deliberately *not* in this list, and that was measured
+    # rather than assumed.** A reply carrying *## Left deliberately unsaved* over
+    # a finding it declined to file passed this arm, which reads as a hole. It is
+    # not one: `deliberately unsaved` is the **save role's own ruled section** —
+    # the convention asks a save to say what it left unsaved — and the sweep
+    # found it in **9** of this project's replies in exactly that sense (*##
+    # Deliberately unsaved*, *Deliberately unsaved: nothing about the ordering*,
+    # *## What was left unsaved deliberately*). An artifact deliberately not
+    # written is not work not done, and no grammar separates the two here. ⚠️ So
+    # the parking that reply carried is missed by rule, on the direction this
+    # whole arm states: a reworded parking passes and a finding is never
+    # invented.
     r"|\bdeliberately (?:absent|omitted|skipped|unfixed|undone|untouched|unfinished|incomplete)\b"
     r"|\bdeliberately (?:not|never) "
     r"(?:done|fixed|built|run|implemented|wired|added|filled|tested|touched|handled|covered)\b"
@@ -201,6 +213,16 @@ PARKED = re.compile(
     r"|\bif you(?:'?d like|'?d prefer| want)(?:,)? I can\b"
     r"|\bI have(?:n'?t| not) (?:touched|done|built|run|fixed|started|implemented)\b"
     r"|\bwhich I have(?:n'?t| not)\b"
+    # ⛔ **A filing that did not happen is deliberately not matched**, and this
+    # was measured against the corpus rather than reasoned about. The form was
+    # written -- *no issue was filed* and its first-person variant -- and the
+    # sweep reddened **6** replies that are honest reports: *No item was filed —
+    # #70 was reopened and edited*, *No work item filed: found and fixed in the
+    # same pass*, *no issues filed, no labels, no bodies edited*. Declining a
+    # filing is what the measure-it rule **asks for** when the pass fixed the
+    # thing, so the absence of a filing carries no parking by itself and the
+    # reason that would separate the two is open-ended prose. ⚠️ Matching it
+    # would invent findings, which is the one direction this arm may not fail in.
     # ⛔ **The marker, and only in the casing that is a marker.** `re.I` over the
     # whole pattern made this match the ordinary English noun -- `todo queue`,
     # `todo list`, `the todos` -- and the first of those was measured on
@@ -315,7 +337,28 @@ CARVED = re.compile(
     r"|\bleft out of\b"
     # a state described rather than handed on: *the queue left as the next
     # session reads it*, where the parking sense hands the work to that session
-    r"|\bleft as the next\b[^.\n]{0,25}?\b(?:reads?|sees?|finds?|will read)\b",
+    r"|\bleft as the next\b[^.\n]{0,25}?\b(?:reads?|sees?|finds?|will read)\b"
+    # ⛔ **`left open` read with its predicate, which is how a landing report
+    # describes what it settled.** Measured on a reply reporting #65: *the two
+    # questions the six wordings left open are answered* was handed back, on the
+    # span `stions the six wordings left open are answered`. The clause states a
+    # resolution and the resolving verb is in it. ⚠️ The subject carve-out above
+    # could not reach it — that one matches a **closed noun list** before the
+    # phrase, and `wordings` is not in it, which is the whack-a-mole this form
+    # replaces: the predicate is the signal, not the noun. ⛔ Bounded to the same
+    # clause, so *the questions left open are answered, and three more are not*
+    # still reddens on its second clause.
+    # ⛔ `in` was written here as *the fix is in* and **withdrawn**: it carved
+    # *the two questions left open are in #99* green, which is a deferral to
+    # another item and the plainest parking there is. The resolving verb has to
+    # say the thing is answered, not where it went.
+    r"|\bleft open[^.,;:\n]{0,30}?\b(?:are|is|were|was|have been|has been|now)\s+"
+    r"(?:all )?(?:answered|settled|resolved|closed)\b"
+    # ⚠️ The verb-first gap is wider than the predicate form's, measured rather
+    # than guessed: *answered both questions the six carve-outs left open* puts
+    # 34 characters between them, and the first bound written here was 30, so the
+    # green plant reddened. It stays bounded by clause punctuation either way.
+    r"|\b(?:answered|settled|resolved|closed)\b[^.,;:\n]{0,45}?\bleft open\b",
     re.I,
 )
 
@@ -753,6 +796,11 @@ REDDENS = [
     # ⚠️ The red side of each sense carved out by the transcript sweep: a negator
     # in an earlier clause, and a section of work the sweep's own corpus showed
     # is a parking as often as it is a report.
+    # ⛔ The red side of the carve-out this change adds, which is what stops it
+    # being a hole: a deferral *to another item* uses the same phrase and the
+    # same copula, and the token that greened it was withdrawn for this.
+    ("nothing is parked", "the phrase with a destination rather than a resolution",
+     "The two questions left open are in #99.\n"),
     ("nothing is parked", "a parking after a negator's own clause ends",
      "I did not finish the second arm, so next steps: wire the carrier.\n"),
     ("nothing is parked", "the writer's own work handed over, naming nothing the surface reserves",
@@ -844,6 +892,23 @@ STAY_GREEN = [
     # reddened on, read off 2,713 of them: a heading cited, an absence stated,
     # the surface's own instruction carried out, a scope declared, and the two
     # words a parked state is no longer read with.
+    # ⛔ The false red this change was measured on, and the sense beside it: a
+    # landing report names what it settled, so it names what had been open.
+    ("nothing is parked", "a resolution stated with the phrase, the noun carve-out cannot reach",
+     "The two questions the six wordings left open are answered: a manifest name may not appear "
+     "in a carrier's text.\n"),
+    ("nothing is parked", "the same resolution with the verb first",
+     "The section answered both questions the six carve-outs left open.\n"),
+    # ⛔ The green side of the two forms this change wrote and then **withdrew**,
+    # kept as plants so the withdrawal is asserted rather than remembered: both
+    # were reddened by the corpus and both must stay green.
+    ("nothing is parked", "a filing declined because the pass fixed it instead",
+     "No issue was filed, because this pass measured the defect and the fix is in this change.\n"),
+    ("nothing is parked", "a filing declined because the owning item was reopened",
+     "Done, in full. No item was filed — #70 was reopened and edited.\n"),
+    ("nothing is parked", "the save role's own ruled section, naming an artifact not written",
+     "The plan is stamped and memory is written.\n\n## Deliberately unsaved\n\n"
+     "Nothing about the ordering, which no landing touched.\n"),
     ("nothing is parked", "another item's section heading, cited and then falsified",
      "The snapshot was stale, which falsifies #27's \"What is left\" wholesale.\n"),
     ("nothing is parked", "the absence the rule asks for, stated",

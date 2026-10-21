@@ -1022,6 +1022,18 @@ further reply, so **injecting context costs a reply whether or not the answer bl
   repository rules out elsewhere, and it is safe in the one direction that matters: a parking the
   list does not carry passes and leaves a finding missed, never a finding invented. What covers the
   rewordings is the person reading the reply.
+- ⛔ **A filing that did not happen, and an artifact deliberately not written** — ⚠️ **two forms
+  written as arms and then withdrawn against the corpus**, recorded here because both read as holes
+  and neither is one. A reply carrying *## Left deliberately unsaved* over a finding it declined to
+  file passed the arm, which looks like a gap in the closed list. Adding `unsaved` to it reddened
+  **9** replies using *Deliberately unsaved* in the save role's own ruled sense — the convention
+  asks a save to say what it left unsaved — and adding *no issue was filed* reddened **6** honest
+  reports: *No item was filed — #70 was reopened and edited*, *No work item filed: found and fixed
+  in the same pass*. An artifact not written is not work not done, and declining a filing is what
+  the measure-it rule asks for when the pass fixed the thing; no grammar here separates either pair,
+  and the reason that would is open-ended prose. ⛔ **So the parking that reply carried is missed by
+  rule**, on the direction the bullet above states, and the green side of both withdrawn forms is
+  planted so the withdrawal is asserted rather than remembered.
 - ⚠️ **Which role is running.** A `Stop` payload says nothing about it, so this holds every reply in
   a session where the plugin is enabled rather than a role's. In the safe direction — more replies
   held, never fewer — and the ruling is [#87](https://github.com/ragnor-rs/mjolnir/issues/87)'s.
