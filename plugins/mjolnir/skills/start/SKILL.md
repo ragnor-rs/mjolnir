@@ -175,10 +175,14 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" take \
 - ⛔ **Never force, and never a second checkout of a branch already checked out somewhere.** Git
   refuses the second checkout by name, and that refusal is a stop: the session holding it may be
   mid-task.
-- A cheap pre-filter avoids pointless attempts — `claim.py status --item <number>`, which asks
-  about the work item rather than about one name. ⛔ **Advisory, and it stays advisory even when
-  it is asked correctly**: both ways of missing have been measured, and only one of them is a
-  question a filter can be fixed to answer
+- A cheap pre-filter avoids pointless attempts, asked about the work item rather than about one
+  name:
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" status --repo-root <code-root> --item <number>`.
+  ⛔ **The code root is stated for this subcommand exactly as it is for `take`, and is never
+  inherited from where the call is made** — the carrier requires it and refuses the call before
+  reading any ref, so a form abbreviated down to the item alone asks nothing at all.
+  ⛔ **Advisory, and it stays advisory even when it is asked correctly**: both ways of missing
+  have been measured, and only one of them is a question a filter can be fixed to answer
   ([`§ 10`](../../config/schema.md#the-branch-name-a-claim-is-taken-on)). The attempt is the
   authority.
 - `claim.py name` answers what a start would call the branch, for a reply that needs the name

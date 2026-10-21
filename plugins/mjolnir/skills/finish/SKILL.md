@@ -466,6 +466,24 @@ operation, with no key on the surface for either. ⚠️ **This file carried the
 a stop and not the second**, which made this step's outcome unreachable for every session that had
 entered its tree — which, under `work_in_shared_checkout: never`, is every session.
 
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" release \
+  --repo-root <code-root> --branch <branch> --tree <tree>
+```
+
+⛔ **One command gives the claim up, and this role no more assembles it out of git calls than the
+starting role assembles the taking** — the order is the rule, and the command is re-runnable
+because a half-released claim is exactly what a failed release leaves.
+
+⛔ **The command reaches the published ref too, and which of step 8's three arms applied decides
+whether it may.** Under `procedure` and under `host` the ref is already gone by the time this step
+runs, and the half reports what was gone rather than failing on it. ⛔ **Under `never` the ref is
+kept deliberately, and this step is not where that decision is reversed** — `--keep-ref` gives up
+the tree and the local branch and leaves the ref standing. ⚠️ **What it costs is nothing the loop
+reads**: a landed claim claims no work item, so the item is takeable again with the ref still
+standing; the branch *name* goes on answering *taken*, which is the true answer about a ref that
+exists.
+
 ⛔ **A removal asked for from inside the tree is refused by the carrier**, naming the tree; the
 refusal is cleared by leaving rather than by forcing, and a pass that meets it has skipped the
 exit rather than found a fault.
