@@ -348,8 +348,12 @@ CARVED = re.compile(
     # replaces: the predicate is the signal, not the noun. ⛔ Bounded to the same
     # clause, so *the questions left open are answered, and three more are not*
     # still reddens on its second clause.
+    # ⛔ `in` was written here as *the fix is in* and **withdrawn**: it carved
+    # *the two questions left open are in #99* green, which is a deferral to
+    # another item and the plainest parking there is. The resolving verb has to
+    # say the thing is answered, not where it went.
     r"|\bleft open[^.,;:\n]{0,30}?\b(?:are|is|were|was|have been|has been|now)\s+"
-    r"(?:all )?(?:answered|settled|resolved|closed|in)\b"
+    r"(?:all )?(?:answered|settled|resolved|closed)\b"
     # ⚠️ The verb-first gap is wider than the predicate form's, measured rather
     # than guessed: *answered both questions the six carve-outs left open* puts
     # 34 characters between them, and the first bound written here was 30, so the
@@ -792,6 +796,11 @@ REDDENS = [
     # ⚠️ The red side of each sense carved out by the transcript sweep: a negator
     # in an earlier clause, and a section of work the sweep's own corpus showed
     # is a parking as often as it is a report.
+    # ⛔ The red side of the carve-out this change adds, which is what stops it
+    # being a hole: a deferral *to another item* uses the same phrase and the
+    # same copula, and the token that greened it was withdrawn for this.
+    ("nothing is parked", "the phrase with a destination rather than a resolution",
+     "The two questions left open are in #99.\n"),
     ("nothing is parked", "a parking after a negator's own clause ends",
      "I did not finish the second arm, so next steps: wire the carrier.\n"),
     ("nothing is parked", "the writer's own work handed over, naming nothing the surface reserves",
