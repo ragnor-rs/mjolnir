@@ -59,6 +59,7 @@ EXPLAINS, RECORDS, PROCEDURE = "explains", "records", "procedure"
 
 ROLES = {
     READER: EXPLAINS,
+    "docs/build-surface.md": EXPLAINS,
     "docs/configuration-surface.md": EXPLAINS,
     "docs/single-source-of-truth.md": EXPLAINS,
     "docs/working-on-the-toolkit.md": EXPLAINS,

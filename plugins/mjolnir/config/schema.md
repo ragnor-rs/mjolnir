@@ -85,6 +85,16 @@ what the thing is — `exclusive_resources` ([§ 10](#10-branch-model)) names wh
 may be held and what holds a place, while what happens on contention is the enforcing hook's by
 that section's own rule.
 
+⛔ **A toolchain or runtime version is on that list, and the test is what puts it there.** It is
+read by the wrapper a project ships, by its build's own toolchain declaration, by the setup step of
+a host run, or by an image — and by no role, which is the middle column above. ⚠️ **Nor is it the
+other candidate it looks like**: a precondition a command does not check for itself is a presence, a
+state or a credential wherever one was measured, so a version is not that either, and the facet
+asking for those preconditions is not where a version goes
+([the measurement](../../../docs/build-surface.md#the-toolchain-version-is-a-non-goal-and-the-boundary-is-where-that-is-stated),
+taken across six stacks, which found one runtime-version file and four builds that lock no
+dependency at all).
+
 ⛔ **The toolkit's own text names none of it either, and that half is a search rather than a
 reading.** So the first of the two questions the carve-outs left open is answered: **a tool name and
 a manifest name may not appear in a carrier's text**, nor may any other value or stack token, and
