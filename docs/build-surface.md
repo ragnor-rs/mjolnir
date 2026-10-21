@@ -30,7 +30,7 @@ The entry point whose exit status is a verdict, and the directory it runs in:
 
 | | what produces the verdict | the root it runs in |
 |---|---|---|
-| A | a Python runner mirroring every pull-request job, plus `make lint` and `make e2e` | two: the client repository the runner lives in, and a directory **inside a running container** — both reached from a parent checkout that holds none of the code and is where the invocation is made |
+| A | **two checkouts with a verdict set each.** In one: a Python runner mirroring every pull-request job, eight suites over its own checkers, `make lint` and `make e2e`. In the other: a checker per policy, each preceded in the same job by its own self-test, plus `make` targets for the data layer | four: each of the two client repositories, a directory **inside a running container**, and the data layer's own root — all reached from a parent checkout that holds none of the code and is where the invocation is made |
 | B | `./gradlew build` with four exclusions, `./gradlew detekt`, and a Flutter task behind a Gradle one | the code root only |
 | C | `npm run` per script — `lint`, `format`, `check`, `lint:styles`, seven `test:*` suites | two package roots; the code root has no manifest and runs nothing |
 | D | `./gradlew detekt test`, stated as the gating rule | the code root only, where one module's `test` task shells out to npm |
@@ -39,12 +39,19 @@ The entry point whose exit status is a verdict, and the directory it runs in:
 
 **Three of six run a verdict command somewhere other than the code root — A, C and E — and one of
 the three has no command valid at the code root at all**: C, whose instructions file states that the
-root carries no manifest and that npm cannot run there. That is the shape
+root carries no manifest and that npm cannot run there. ⚠️ **A is the harder case and the one a
+reading of its instructions alone gets wrong**: its own front page is in a checkout that holds no
+code, the code is in two repositories nested under it and ignored by it, and each of those has its
+own host, its own checks and its own verdict set — so "the code root" is a question #56 answers
+before #61 can. That is the shape
 [#61](https://github.com/ragnor-rs/mjolnir/issues/61) was written from, and reading C again confirms
-every clause of it: two package roots, each with its own manifest, `lint` and `format` present in
-**both** and meaning different things, and the test runner in one root with the type checker and the
-style linter in the other. E is a second instance in a different language pair — a JVM build at the
-root and a Python package root whose suite the host workflow reaches by setting a working directory.
+every clause of it but one: two package roots, each with its own manifest; `lint` **present in both
+and meaning different things** — a fixer in one root and a pure check in the other; and the test
+runner in one root with the type checker and the style linter in the other. ⚠️ **The one clause that
+does not reproduce is a second colliding name**: `format` is in both roots too and means the same
+thing in each, differing only in its glob. E is a second instance of the shape in a different
+language pair — a JVM build at the root and a Python package root whose suite the host workflow
+reaches by setting a working directory.
 
 **The root A's linters run in is not a directory of any checkout.** Its lint targets and its local
 runner both reach their tools through a container exec, and the directory they pass is a path
@@ -130,7 +137,9 @@ read by an image build, never by a role.
 ## Whether the host's verdict covers this code
 
 **Four of six carry a probe that answers this before a local check runs, and the four answer in four
-vocabularies.** Two of them are hooks that refuse the command; two are scripts a role reads.
+vocabularies.** Three refuse the command through a hook (B, C, F) and two answer through a script a
+role reads (A, C) — C carrying both halves, its script answering the question and its hook acting on
+the answer.
 
 | | the answer the probe gives | what it does with uncertainty |
 |---|---|---|
@@ -139,27 +148,27 @@ vocabularies.** Two of them are hooks that refuse the command; two are scripts a
 | C | exit 0 covers · 1 does not · 2 the pull request is conflicted · 3 undeterminable | the hook blocks only commands that produce a verdict and change nothing, with a named override |
 | F | a **reason** per unmet precondition, and only a blank reason means covered: the client is absent · this is not a git tree · there is no remote to ask about · the tree is dirty, so the host has never seen these edits · the head is unreadable · no run exists for this commit · the run's conclusion or status · how many steps its jobs executed | **stands aside** wherever a reason exists, and the local run proceeds |
 
-**What makes these a facet rather than four habits is that the four agree on five facts, each of
-which had to be learnt — and two of the five the surface already states.** B keys the mapping on the
-**workflow name** and not the job name, because two of its workflows call their job the same thing,
-which is
-[`schema § 2`](../plugins/mjolnir/config/schema.md#2-code-host)'s rule arrived at independently; and
-B and C both treat an empty check list as no answer rather than a pass — in C it is usually a
-conflict, and in B a pending run exits non-zero from the host's own client, so reading that exit
-status throws the answer away in exactly the state the question was asked for — which is that
-section's *absence of signal is not an answer*. The three it does not state: a path-filtered
-workflow means "the pull request has some live check" says nothing about the command in hand; the
-run must be for **this commit**, which B reads as head-equals-`HEAD` and F as a run listed for the
-sha; and a run that executed **no steps** is not an answer, F counting the steps of every job in the
-run and treating the count as part of the question.
+**What the four carry between them is six conditions, and ⚠️ only one is in all four** — which is
+the measurement, and it is weaker than *four projects agree*:
 
-⛔ **Those five are
-[`schema § 2 → Reading a run's answer`](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)**,
-arrived at independently in four projects, one of which enumerates all four of that section's
-preconditions — uncommitted work, a run for this commit, steps executed, concluded green — in its
-own words. ⚠️ What none of the four states is the **remedy** on uncertainty, and the four disagree
-about it: two run the checks anyway, one stands aside, one fails open. So the facet carries the
-conditions and the project carries what to do when they cannot be established.
+| the condition | which probes carry it |
+|---|---|
+| an empty check list is **no answer** rather than a pass — in C usually a conflict, in B a pending run exiting non-zero from the host's own client, so reading that status throws the answer away in the state the question was asked for | all four, and it is [`schema § 2`](../plugins/mjolnir/config/schema.md#2-code-host)'s *absence of signal is not an answer* arrived at independently |
+| the run must be for **this commit** | B as head-equals-`HEAD`, F as a run listed for the sha, A and C by walking the change's own runs |
+| nothing the change touches is **uncommitted** | F alone, which refuses on a dirty tree because the host has never seen those edits |
+| the run **executed steps** | F alone, which counts the steps of every job in the run |
+| the mapping is on the **workflow name** and never the job name | B alone, because two of its workflows call their job the same thing — which is § 2's rule, held in one project and missed by the other three |
+| a **path-filtered** workflow means "the pull request has some live check" says nothing about the command in hand | B and C |
+
+⛔ **So the facet is not a consensus to write down but a union to state once**, and the four-valued
+honesty [`schema § 2`](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)
+already carries is what one of the four reached in full and three reached in part.
+
+F is the one that reaches all four of that section's preconditions — uncommitted work, a run for
+this commit, steps executed, concluded green — in its own words. ⚠️ **What none of
+the four states is the remedy on uncertainty**, and the four disagree about it: two run the checks
+anyway, one stands aside, one fails open. So the facet carries the conditions and the project
+carries what to do when one cannot be established.
 
 **One condition no probe can be written against today.** Three of C's four code checks, and its
 type check among them, run only on a pull request whose base is a release branch — so for an
@@ -181,7 +190,7 @@ a case whose subject is absent from the live catalogue answers indistinguishably
 
 | | tiers present | what the unrunnable ones need | asked for rather than automatic | refused outright |
 |---|---|---|---|---|
-| A | no unit suite at all; acceptance scenarios; a manual checklist | a running site, a browser on the machine, a password, and for some scenarios the app container | the whole acceptance run, which takes the site under test as a required argument | the writing scenarios against production, by the suite's own guard |
+| A | eleven suites over its **own checkers**, eight of them run by the host, and none over the product; acceptance scenarios; a manual checklist | a running site, a browser on the machine, a password, and for some scenarios the app container | the whole acceptance run, which takes the site under test as a required argument | the writing scenarios against production, by the suite's own guard |
 | B | unit; integration against a real store; a bot suite over a user account | a store the host supplies as a service; a deployed bot, a user-account session, model quota, and catalogue content a case can be asked about — which is why its inputs are arguments of the run and never configuration, a stored one rotting into a silent skip | the bot suite, in no workflow at all; and every measurement run on a server | one measurement environment, refused by name, because its quota is the one that caps throughput |
 | C | one unit runner; seven suites against a store; live-model harnesses | a store the host supplies as a service | the live-model harnesses, which no workflow runs | — |
 | D | unit and store integration, under one task | a container daemon | — | — |
@@ -209,8 +218,14 @@ the floor that catches the third case is already surface at
 honest and the choice between them is a project's, so nothing here recommends one. What a tier
 states about its own selection is #60's, which carries the amendment.
 
-**A's whole suite is the one the surface would otherwise read as absent.** It has no automated unit
-tier, its release trigger is manual because of that, and its coverage rule is a check over the
+**A's whole suite is the one the surface would otherwise read as absent, and ⚠️ the one its own
+prose reports wrongly.** Its instructions say it has no automated tests; what it has is eleven
+suites and
+no test of the product, each suite holding one of its own checkers to the violation it must redden
+on — which is why its release trigger is manual, stated there as the consequence of having no suite
+that could fail a bad release. ⛔ **The distinction is the measurement**: a project with checkers
+and no product tests is not a project with no tier, and reading the prose rather than the files gets
+it backwards. Its coverage rule is a check over the
 **diff** rather than over a run: a change in behaviour with no scenario and no register entry fails
 it. ⚠️ **It is a host check, and A's local runner mirrors it** like every other job — which is the
 direction that matters, because a check the host already runs is refused as a `done:` entry. That is
@@ -225,7 +240,7 @@ project whose host runs the fewest of its checks.
 | B | the wrapper's own properties file | a toolchain declaration in the build, and the one runtime-version file in all six projects | by the manifest's dependency versions | one, for the non-JVM module |
 | C | none | by the host workflow's setup step and by the images | by each root's manifest | both roots |
 | D | the wrapper, a major version ahead of B's | a toolchain declaration in the build | by the manifest | one, for the non-JVM module |
-| E | the wrapper | by the host workflow and the images only — no toolchain declaration in the build | one installed unpinned in the workflow | none at all |
+| E | the wrapper | a toolchain declaration **per module** rather than once for the build, plus the host workflow and the images | one installed unpinned in the workflow | none at all |
 | F | the wrapper | a toolchain declaration in a convention plugin of its own | **pinned in the workflow, with the reason stated** | none at all |
 
 **Six facts, each measured rather than reasoned.** Across six projects there is exactly **one**
@@ -234,10 +249,14 @@ else a language runtime is an input to a host workflow's setup step, in five of 
 of those five it is stated **twice with two different values**, by two workflows in one repository
 that install different major versions of the same runtime. **Four of the six run a JVM build and
 none of them locks its dependencies**, so a build is reproducible to the versions its manifests
-name and no further. F is the only project that pins its linters with an argument for doing so: an
-unpinned linter reddens the build on a day nobody changed any code, which teaches people that red
-means "try again". And A is the only one that pins the host's own actions by digest rather than by
-tag, in every workflow step that uses one — fourteen references against none anywhere else.
+name and no further. F is the only project that pins a linter's version **in the workflow that runs
+it**, and the only one stating why: an unpinned linter reddens the build on a day nobody changed any
+code, which teaches people that red means "try again". ⚠️ **A pins the same class of tool by a
+different mechanism and has its own argument for it** — the host installs from the two committed
+lockfiles, so the versions are the same locally and on the host — which is why the superlative above
+is about the mechanism and not about care. And A is the only one that pins the host's own actions by
+digest rather than by tag, in every step that uses one, because a tag is mutable and one of the
+actions it uses was compromised once — fourteen pinned references against none anywhere else.
 
 ⚠️ **The two-values case is what the non-goal ruling below has to survive, and it does.** Nothing
 reads either value to decide what to do next, so the disagreement is invisible to every role and is
@@ -245,7 +264,8 @@ the project's own to settle inside the commands it already runs; a key would rec
 disagreement without resolving it.
 
 **Only one project states where a version string lives.** D carries a declared list of release
-files — a pattern per file, with one marked optional — which is
+files — three entries, two of them a pattern and one a kind the release step knows how to write,
+with one of the three marked optional — which is
 [#36](https://github.com/ragnor-rs/mjolnir/issues/36)'s subject stated as configuration by a project
 that has not adopted anything. A's answer is the opposite and equally explicit: the code is the
 artifact, an image is a build product, and a deployment is identified by the commit it was built
@@ -259,9 +279,9 @@ expects a script. Measured, the shapes are three:
 
 | | the deploy | the targets, and which are live |
 |---|---|---|
-| A | a dispatch of the host's own workflow — two of them, one per stand kind, plus a manual release procedure in a runbook | a stand and production; two older shared boxes, one being retired |
-| B | one script with a required environment argument | five, of which three are production hosts with different roles; one target refuses two services and starts them stopped |
-| C | a hosted build configuration with substitutions, and no script at all | two, by substitution |
+| A | a dispatch of the host's own workflow — two of them, one per stand kind, plus a manual release procedure in a runbook, and a workflow of its own in the second repository that refuses a commit its checks have not passed | a stand and production; plus one older shared box serving two stands, one of which is being retired |
+| B | one script with a required environment argument | five, of which three are production hosts with different roles; one target **builds and creates** two services and deliberately does not start them, and a sixth target is refused by name because it was retired |
+| C | three hosted build configurations — both halves together, or either half alone — and no script at all | two, by substitution |
 | D, E | one script each, plus a host provisioning script beside it | one live target each |
 | F | one script with a required environment argument, which **refuses the remote target by name** rather than half-attempting it | one implemented, one refused |
 
