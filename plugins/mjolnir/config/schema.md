@@ -1649,14 +1649,13 @@ whole. ⛔ **What refuses is a construct whose text is not in the command**, whi
 rows below. ⚠️ **The predicate is still the harness's and still unpublished**, so a role acts on the
 table and not on a grammar inferred from it.
 
-⚠️ **Two shapes this section carried as green are refused, corrected 2026-10-22**: a command
-substitution and a heredoc. ⛔ **A green run read out of a transcript is evidence about the session
-it was in and not about the guard**, which is how both came to be written here. The corpus behind
-the count above spans sessions standing in a tree and sessions standing in none, and the rule is
-live only in the first — `diff <(echo a) <(echo b)` is refused in a tree and runs unchanged outside
-one, so a construct that reads as green across a mixed corpus may never have been under the guard
-at all. ⚠️ **What a row rests on is therefore the construct run alone in a tree the session is
-pinned to**, which is the measurement a corpus of transcripts cannot make.
+⛔ **A green run read out of a transcript is evidence about the session it was in and not about the
+guard.** The corpus behind the count above spans sessions standing in a tree and sessions standing
+in none, and the rule is live only in the first — `diff <(echo a) <(echo b)` is refused in a tree
+and runs unchanged outside one, so a construct that reads as green across a mixed corpus may never
+have been under the guard at all. ⚠️ **What a row rests on is therefore the construct run alone in
+a tree the session is pinned to**, measured 2026-10-22, which is a measurement a corpus of
+transcripts cannot make.
 
 | In a call | What was measured | What to write instead |
 |---|---|---|
