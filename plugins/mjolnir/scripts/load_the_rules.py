@@ -94,7 +94,7 @@ RULES = [
         "coda": (
             "This rule is live only while the session is standing in a tree, and it is handed "
             "to you now because entering one fires nothing that could hand it to you then. "
-            "Until then nothing above applies."
+            "Until the session is in a tree, this table holds nothing."
         ),
     },
 ]
@@ -152,8 +152,12 @@ def read_table(text: str, anchor: str) -> tuple[list[str], list[list[str]]]:
             continue
         if not found or not TABLE_ROW.match(line):
             continue
+        # ⚠️ Two, not three. The one table this read when it served a single
+        # rule had three columns, and a count written against it would make a
+        # two-column rule silently absent rather than refused -- which is the
+        # failure this script's whole docstring is about.
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) < 3:
+        if len(cells) < 2:
             continue
         head = re.sub(r"[*`]", "", cells[0])
         if not head or set(head) <= set("-: "):
@@ -373,6 +377,27 @@ def self_test() -> int:
                 print(f"  FAIL                   {label}: still parsed a table")
                 failures += 1
         print()
+
+    # ⛔ The next rule's table is not this one's shape, and the reader must not
+    # be written against the shapes that happen to be here now. Asserted over a
+    # fabricated document rather than the surface, there being no two-column
+    # rule to read yet.
+    print("Asserting the reader is not written against three columns:")
+    fabricated = ("### A rule with two columns\n\n| What | Instead |\n|---|---|\n"
+                  "| a thing | another thing |\n")
+    header, rows = read_table(fabricated, "a-rule-with-two-columns")
+    if header == ["What", "Instead"] and rows == [["a thing", "another thing"]]:
+        print("  ok                     a two-column table is read, heading row and all")
+    else:
+        print(f"  FAIL                   a two-column table read as {header} / {rows}")
+        failures += 1
+    single = "### A rule with one column\n\n| What |\n|---|\n| a thing |\n"
+    if not read_table(single, "a-rule-with-one-column")[1]:
+        print("  ok                     and a single-cell line is not a row of anything")
+    else:
+        print("  FAIL                   a single-cell line was read as a row")
+        failures += 1
+    print()
 
     # ⛔ One rule unreadable must not take the other down with it: the rules are
     # independent, and a session handed one of them is strictly better off than
