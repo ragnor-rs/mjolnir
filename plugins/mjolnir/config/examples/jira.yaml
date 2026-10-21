@@ -135,7 +135,9 @@ branch_model:
   kind: worktree
   work_in_shared_checkout: never
   parallel_trees: true
-  tree_dir: "../<project>-trees"       # beside the shared checkout; the leaf is the item's key
+  # Beside the shared checkout; the leaf is the item's key and then its slug, derived — so a key
+  # carrying its own hyphens is the leading half of the leaf rather than a thing to parse back out.
+  tree_dir: "../<project>-trees"
   mechanics: null                      # a tree here needs nothing installed or copied
   exclusive_resources: []              # nothing local is held; the checks run on the host
 context:

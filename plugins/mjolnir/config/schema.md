@@ -1443,12 +1443,27 @@ each role that reads it.
 ### Where a tree is created, and how the session comes to be in it
 
 ⛔ **`tree_dir` states the directory trees are created under, and the leaf is the item's own
-identifier.** The directory is a project's fact — one project nests its trees under the skills
-root with a second checkout inside each, another makes them siblings of the shared checkout — and
-the leaf is not: a tree belongs to one item, so deriving it makes the whole path a function of the
-item. ⚠️ **The item's own identifier and not its branch name**, which carries a slug: a title
-reworded between two starts would give one item two trees, and the directory would stop answering
-*is this item already being worked*.
+identifier followed by the title's slug** — `<identifier>-<slug>`, which is the branch name's last
+segment. The directory is a project's fact — one project nests its trees under the skills root with
+a second checkout inside each, another makes them siblings of the shared checkout — and the leaf is
+not: a tree belongs to one item, so deriving it makes the whole path a function of the item.
+
+⛔ **The identifier leads, and the ordering is part of the rule rather than a readability choice.**
+An earlier form of this section made the leaf the identifier *alone*, on the ground that a title
+reworded between two starts would give one item two directories and the directory would stop
+answering *is this item already being worked*. The `<identifier>-` prefix is what answers that
+question — a leaf is a candidate test on the same terms as
+[a ref name](#the-branch-name-a-claim-is-taken-on) — and the slug is what makes a stack of trees
+readable to whoever is looking at one. ⚠️ Reversed to `<slug>-<identifier>` the directory is
+attributable to nothing, which is the arm to assert rather than assume.
+
+⛔ **The slug is [the branch name's own derivation](#the-branch-name-a-claim-is-taken-on) and never
+a second one applied here.** A leaf slugged by a role out of prose reintroduces one path over
+exactly what that subsection exists to close. ⚠️ **A reword between two starts is a second branch
+name before it is a second directory**, and the ref is where the refusal lands.
+
+⚠️ **A branch carrying no work item derives no leaf and states its path instead.** Deriving from an
+absent identifier would collect every such branch in one directory.
 
 ⚠️ **So the directory is a second place one item collides with itself**, after the ref. It is not
 a second claim and nothing reads it as one — the ref arbitrates, per the next subsection — but it

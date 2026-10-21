@@ -256,7 +256,7 @@ branch_model:
   # A sibling of the shared checkout rather than a directory inside it: that checkout is the
   # registered marketplace path every session serves, so nesting a per-item tree under it would
   # put one branch's working files inside the path that is supposed to be serving main. The leaf
-  # is the item's own number and is derived rather than stated here — § 10.
+  # is the item's own number and then its title's slug, derived rather than stated here — § 10.
   tree_dir: "../mjolnir-wt"
   # Null because there is nothing to point at: a tree here needs no dependency install, no asset
   # copy, no port, no container, and nothing to tear down. The cheapest proof that a project
