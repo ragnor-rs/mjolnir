@@ -22,9 +22,10 @@ deliberately does not enumerate them: a list here would be a second copy of that
 gate holds documents to this file rather than this file to the documents, so the copy could drift
 indefinitely without anything noticing.
 
-**The boundary this file defends:** a fact that cannot be expressed here is either procedure —
-in which case it belongs in a skill — or a project-specific skill that stays in that project.
-It is never a special case in the toolkit.
+**The boundary this file defends has a section of its own**, below:
+[§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) — what a
+role reads from here, what a project's own command or script answers instead, and how a reader
+tells a facet that is missing from the boundary working as designed.
 
 **Absence is a configuration, not a gap.** Several of these facets have a real absent case, and
 no count of them is written here — a count in prose is a copy that goes stale on the next facet,
@@ -39,6 +40,78 @@ is written down, and it is excluded from the "names no particular project" searc
 examples of a shape rather than any project's facts.
 
 ---
+
+## What the procedure models, and what it only names and calls
+
+**This surface states every fact a role reads to decide what to do next, and stops there.** A fact
+only a project's own command or script reads is not on it, and a configured command or a configured
+path is how a role reaches such a fact without learning it. ⛔ **This is a statement of where the
+surface ends and not a facet of it**: it declares no key, refuses no configuration, and no file
+anybody has written becomes invalid or incomplete by it.
+
+⛔ **The test for a candidate key: does any role read it to decide what to do next?** A value a role
+reads is surface and is declared in one of the numbered sections below. A value only the project's
+own script reads is not — however load-bearing it is to that project, and however many projects
+have one of their own.
+
+⛔ **Both ways of getting that wrong read identically from outside, which is why both are stated.**
+A fact a role reads and this surface does not state is a **gap**, and a gap is written down here by
+name — one mirrored command per workflow is #58's, and the conditions under which a local verdict
+counts are #66's — so a reader meets the missing facet instead of discovering it. A fact nothing but
+the project's own command reads is **not** a gap and no key is owed for it: an adopter who files one
+item per local command grows the surface in the one direction this boundary exists to prevent, and
+an absence nobody can classify is what makes filing it the honest thing to do.
+
+⛔ **What configuration carries is a command the procedure runs or a path it names, and the
+procedure learns nothing about either.** It detects no manifest, infers no package manager, owns no
+build, and knows nothing of what produced a verdict. What it reads back is an exit status and
+whatever output form the section asking for the command states — the two lines
+[§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran) states are the one
+instance, and they are a form a project writes *to* rather than a report anything here parses.
+
+⚠️ **A command is stated whole, and the procedure supplies no part of it.** An interpreter a role
+prefixes is the stack entering the toolkit one token at a time: it is a guess about the language a
+configured script is written in, it is wrong the first time a project writes one in another
+language, and the configuration never said so. `day_log.script` ([§ 9](#9-day-log)) is the live
+instance of the other form — a path a role prefixes — and is marked **transitional** where it is
+declared, so what settles it is the extraction that key already waits on rather than a second rule
+here.
+
+⛔ **A fact that is only ever one project's reaches a role through that project's own probe or
+script, never through a key**: a host, a service, a port, a credential, a container name, a
+resource limit. What this surface holds about such a thing is the shape a role needs and nothing of
+what the thing is — `exclusive_resources` ([§ 10](#10-branch-model)) names a resource, a cap and
+what contends for it, while whether capacity exists is answered where the resource lives.
+
+⛔ **The toolkit's own text names none of it either, and that half is a search rather than a
+reading.** No tracker, status word, label prefix, tool, task name, manifest or flag of any
+particular stack appears in a carrier's text. The two exemptions — `docs/`, which quotes the
+measurements this toolkit was derived from, and `examples/`, which is data — are stated with the
+values rule in [§ The file itself](#the-file-itself), and the search holding all of it is #19's,
+landed as `tools/check_no_project_names.py` with its own limits recorded beside it.
+
+⚠️ **So a directory is a key rather than a token to forbid, and the two rules do not collide.** The
+directory a command runs in is read by the procedure, which makes it surface and is #61's command
+root; a flag carrying that directory inside a command string states the same fact a second time,
+where no role can read it. ⛔ **Nothing is matched inside a command string** — the procedure runs it
+and reads its status — so no token in one is forbidden, and what the rule reaches is the fact being
+readable *only* there.
+
+**The test, run on the four absences this statement was written from.** All four are commands a
+project genuinely has and none of them is on this surface, so the column that decides each one is
+the middle one:
+
+| the candidate | does a role read it to decide what to do next | where that leaves it |
+|---|---|---|
+| a command that brings a working tree up | no — nothing reads a verdict out of it, and the steps are the project's | `branch_model.mechanics` (§ 10): a pointer the procedure names and calls |
+| an acceptance suite no host run mirrors | yes — a `done:` check is answered out of its verdict | surface, and the key exists: the `local` entry and its `run` (§ 13) |
+| a procedure that restores an environment | no | not surface: a project's own script, named by whichever role needs it |
+| a build whose tool reports a cached pass as work done | yes — whether a pass counts at all | surface, and the gap is #66's |
+
+⚠️ **The four do not sort by whether the command is local, which is why the test is run rather than
+the question answered by eye.** Every one of them is a local command; two carry a fact a role reads
+and two do not, and the one whose key already exists had been met as a missing facet and read as
+one.
 
 ## The file itself
 
@@ -431,8 +504,9 @@ thinner than the production shape tests the fixture** — a case whose input car
 the code under test reads answers about a record nothing produces, and the fields it leaves out are
 where the defect is.
 
-**What stays project-local is named rather than omitted**, so that a reader meeting no statement of
-one can tell this boundary from a gap: **a coverage figure**, **the naming a case file carries**,
+**What stays project-local is named here rather than omitted**, which is
+[§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) applied
+to this subsection's own content: **a coverage figure**, **the naming a case file carries**,
 **the layout cases sit in**, and **the suffix that marks a tier**. Each is a real decision and none
 of them generalises, which is measured rather than assumed
 ([the measurement](../../../docs/configuration-surface.md#the-unit-tier-six-files-of-rulings-and-no-role-reading-any-of-them)).
@@ -440,8 +514,9 @@ of them generalises, which is measured rather than assumed
 unwritten has a tier nothing downstream can see and its own build cannot run unaided.
 
 ⛔ **Procedure, and no key on this surface carries any of it.** Nothing above is a value a project
-supplies for a role to read and decide what to do next, which is the test for a candidate key that
-#65 states generally — ⚠️ **the rules themselves are read by the two legs named at the top of this
+supplies for a role to read and decide what to do next, which is the test for a candidate key
+[§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) states
+generally — ⚠️ **the rules themselves are read by the two legs named at the top of this
 subsection**, which is what being procedure rather than configuration means here. What a project
 *does* configure about its tiers is #60's and #66's. ⚠️ **A project may still hold rules of its
 own**, which are additions to this rather than a second statement of it — and the form the rest of
@@ -1395,13 +1470,14 @@ dirty-tree derivation (§6), where the starting role cuts the branch, which tree
 to, and what the finishing role releases once the work has landed. Where the model is stated
 nowhere, the layers of a single project disagree about it and each reads correctly on its own.
 
-⛔ **The mechanics stay local.** Installing dependencies, copying the assets and environment
-files git does not track, allocating ports, naming a container project, and tearing all of it
-down again: that is project-specific, and `mechanics` is the pointer the shared procedure calls
-rather than a procedure the shared one absorbs. ⚠️ **Unlike `day_log.script`, this pointer is not
-transitional.** Nothing here is waiting to be extracted — a tree's setup and teardown are where a
-project's own build genuinely differs, and a skill on the route **names** `mechanics` instead of
-restating it.
+⛔ **`mechanics` is a pointer, and the steps it points at are the project's.** Installing
+dependencies, copying the assets and environment files git does not track, allocating ports,
+naming a container project, and tearing all of it down again — the boundary at
+[§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) arriving
+at the one role that cuts a tree, so the shared procedure calls the pointer and a skill on the
+route **names** it instead of restating it. ⚠️ **Unlike `day_log.script`, this pointer is not
+transitional.** Nothing here is waiting to be extracted: a tree's setup and teardown are where a
+project's own build genuinely differs.
 
 ⛔ **It is steps and never a location, and `tree_dir` is the location.** The two were conflated
 while the second key was absent, which left *where a tree goes* stated in no facet and carried by
@@ -1844,7 +1920,9 @@ outlives the file in silence.
 
 ⚠️ **The reader stores `dir` as written and expands nothing.** A value naming a shell variable is
 expanded by the role's own command, which is the shape `day_log.out_dir` (§ 9) already has, and
-what a configured path carries rather than a command is #65's and #66's ruling. A store that does
+what a configured path carries rather than a command is
+[§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls)'s, with
+the form a local check's own command takes still #66's. A store that does
 not exist yet is created by the first role that writes to it: unlike `roots.code` (§ 1), its
 absence is not a stop.
 

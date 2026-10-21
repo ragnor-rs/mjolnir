@@ -1016,3 +1016,51 @@ read out of the surface's prose, by a grammar matching a backticked key followed
 and it read `host.repo`, a live required key, out of a sentence stating it is retired **in no
 sense**. A negation is invisible to a grammar of that shape, and prose is where negations live, so
 a machine-read fact belongs in a clause with the prose beside it saying why.
+
+## The boundary that was carved out six times
+
+What the surface now states is at
+[`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls):
+the test for a candidate key, what a configured command or path carries, and four worked cases.
+What this section carries is the measurement that forced it — and unlike the rest of this document,
+it is a measurement of this repository's own backlog rather than of the six projects the surface
+was derived from.
+
+**Six work items stated the same boundary, each on whichever item happened to need it**, while the
+surface stated none of it. Measured 2026-10-21, against the bodies as they stood that day:
+
+| the item | the carve-out it carries |
+|---|---|
+| #13 — the deploy role | hosts, services, secrets, build steps and tier selection stay local, and a project whose deploy is one script keeps that script, called from the skeleton |
+| #24 — the branch model | worktree setup that installs dependencies, copies assets, allocates ports or names a container project is called from the shared procedure, never absorbed into it |
+| #16 — the hooks | hook paths, event names and the shared library are extractable; what counts as the guarded resource is not |
+| #60 — the unrunnable tiers | the commands stay project-local, and no tier taxonomy is imposed on adopters |
+| #61 — the command root | the toolkit detects no manifest, infers no package manager and owns no build |
+| #66 — the local check | no tool, task name or flag of any stack enters the toolkit |
+
+⛔ **The copies disagreed, which is the part a list of homes understates.** #61 bars *detecting* a
+manifest, #66 bars a tool name entering the toolkit *at all*, #60 bars a *taxonomy* imposed on
+adopters, and #13 bars *build steps* while keeping a script path — so a reader could answer from
+none of them whether a manifest name may appear in a role's text, or whether a command flag may be
+buried in a `mirrors` string. Both are answered now at
+[`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls),
+the second by ruling that nothing inside a command string is matched at all, so the question is
+about where a fact is readable rather than about which tokens are forbidden.
+
+**The rule was propagating by restatement-with-attribution, which is the failure the collection was
+filed about.** Two of the six cite #13 while rewording it; three carry a body edited after the item
+collecting them was already open; and a **seventh** home had landed in the tree before any of this
+was written, [#19](https://github.com/ragnor-rs/mjolnir/issues/19)'s sweep stating the boundary in
+its own words and crediting the collection for it. ⚠️ **What the edit record cannot settle** is
+whether a given sentence predates the collection by minutes or postdates it by days: it keeps
+timestamps and not diffs, and two of the six were filed within three minutes of it. What it does
+settle is that the restating did not stop while an item to collect it was open.
+
+⛔ **What the absence cost is the half that is not about tidiness.** An adopter whose bring-up
+command, acceptance suite and environment restore are all local commands reads the surface, finds a
+key for two of the three and nothing at all for the third, and meets nothing saying whether that
+third is a missing facet or the boundary working as designed. The honest response to an absence
+nobody can classify is an item per local command, which grows the surface in the one direction the
+boundary exists to prevent — so what the statement had to be was a test a reader runs, with the
+cases worked in the open, rather than a list of what stays local:
+[`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls).
