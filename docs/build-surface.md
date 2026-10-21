@@ -248,6 +248,16 @@ expects a script. Measured, the shapes are three:
 | D, E | one script each, plus a host provisioning script beside it | one live target each |
 | F | one script with a required environment argument, which **refuses the remote target by name** rather than half-attempting it | one implemented, one refused |
 
+**What each resolves against is a second axis, and it is not the code root.** B's and F's scripts
+take the environment as a required argument and resolve the host from a library beside them, so the
+root they resolve against is a **target** rather than a directory; D's and E's resolve one target
+each; C's substitutions are supplied by whoever triggers the hosted build. ⚠️ **A's resolves against
+a ref, and the default is the wrong one**: the dispatch's `ref` input defaults to the integration
+branch, so publishing the stand's branch has to name it explicitly, and the branch chooses which
+image tag is published — one tag per stand kind, because one tag for both delivered a build to a
+stand nobody had deployed to. So a deploy facet that assumed a directory would be wrong in six cases
+out of six.
+
 **So "a project whose deploy is one script keeps that script" describes four of six.** C has no
 script to keep — its deploy is a configuration file a hosted service executes — and A's is a
 workflow dispatch, which is the host's. ⛔ **Neither is a gap**, by
