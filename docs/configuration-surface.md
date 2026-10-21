@@ -1027,9 +1027,10 @@ it is a measurement of this repository's own backlog rather than of the six proj
 was derived from.
 
 **Six work items stated the same boundary, each on whichever item happened to need it**, while the
-surface stated none of it. Measured 2026-10-21, against the bodies as they stood that day:
+surface stated none of it. What each body held on 2026-10-21, the day the statement was written and
+each of the six reduced to a citation of it:
 
-| the item | the carve-out it carries |
+| the item | what it stated |
 |---|---|
 | #13 — the deploy role | hosts, services, secrets, build steps and tier selection stay local, and a project whose deploy is one script keeps that script, called from the skeleton |
 | #24 — the branch model | worktree setup that installs dependencies, copies assets, allocates ports or names a container project is called from the shared procedure, never absorbed into it |
@@ -1044,17 +1045,18 @@ adopters, and #13 bars *build steps* while keeping a script path — so a reader
 none of them whether a manifest name may appear in a role's text, or whether a command flag may be
 buried in a `mirrors` string. Both are answered now at
 [`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls),
-the second by ruling that nothing inside a command string is matched at all, so the question is
+the second by ruling that the procedure matches nothing inside a command string, so the question is
 about where a fact is readable rather than about which tokens are forbidden.
 
 **The rule was propagating by restatement-with-attribution, which is the failure the collection was
 filed about.** Two of the six cite #13 while rewording it; three carry a body edited after the item
-collecting them was already open; and a **seventh** home had landed in the tree before any of this
-was written, [#19](https://github.com/ragnor-rs/mjolnir/issues/19)'s sweep stating the boundary in
-its own words and crediting the collection for it. ⚠️ **What the edit record cannot settle** is
-whether a given sentence predates the collection by minutes or postdates it by days: it keeps
-timestamps and not diffs, and two of the six were filed within three minutes of it. What it does
-settle is that the restating did not stop while an item to collect it was open.
+collecting them was already open; and a **seventh** home is in the tree,
+[#19](https://github.com/ragnor-rs/mjolnir/issues/19)'s sweep stating the boundary in its own words
+and crediting the collection for it. ⚠️ **What the edit record cannot settle** is whether a given
+sentence predates the collection by minutes or postdates it by days: it keeps timestamps and not
+diffs, and all six were filed inside one four-hour window — two of them in the three minutes before
+the collection and one in the two minutes after. What it does settle is that the restating did not
+stop while an item to collect it was open.
 
 ⛔ **What the absence cost is the half that is not about tidiness.** An adopter whose bring-up
 command, acceptance suite and environment restore are all local commands reads the surface, finds a

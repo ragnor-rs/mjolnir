@@ -56,32 +56,34 @@ have one of their own.
 
 ⛔ **Both ways of getting that wrong read identically from outside, which is why both are stated.**
 A fact a role reads and this surface does not state is a **gap**, and a gap is written down here by
-name — one mirrored command per workflow is #58's, and the conditions under which a local verdict
-counts are #66's — so a reader meets the missing facet instead of discovering it. A fact nothing but
-the project's own command reads is **not** a gap and no key is owed for it: an adopter who files one
-item per local command grows the surface in the one direction this boundary exists to prevent, and
-an absence nobody can classify is what makes filing it the honest thing to do.
+name — a workflow running more than one mirrored command is #58's, and the conditions under which a
+local verdict counts are #66's — so a reader meets the missing facet rather than finding it. A fact
+nothing but the project's own command reads is **not** a gap and no key is owed for it: an adopter
+who files one item per local command grows the surface in the one direction this boundary exists to
+prevent, and an absence nobody can classify is what makes filing it the honest thing to do.
 
 ⛔ **What configuration carries is a command the procedure runs or a path it names, and the
 procedure learns nothing about either.** It detects no manifest, infers no package manager, owns no
 build, and knows nothing of what produced a verdict. What it reads back is an exit status and
-whatever output form the section asking for the command states — the two lines
-[§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran) states are the one
-instance, and they are a form a project writes *to* rather than a report anything here parses.
+whatever output form the section asking for the command states — a form a project writes *to*, so
+that nothing here has to read a runner's own report. Each such form is stated at the key that asks
+for it and never generally, [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
+and [§ 12](#12-ordering) each stating one.
 
 ⚠️ **A command is stated whole, and the procedure supplies no part of it.** An interpreter a role
 prefixes is the stack entering the toolkit one token at a time: it is a guess about the language a
 configured script is written in, it is wrong the first time a project writes one in another
-language, and the configuration never said so. `day_log.script` ([§ 9](#9-day-log)) is the live
-instance of the other form — a path a role prefixes — and is marked **transitional** where it is
-declared, so what settles it is the extraction that key already waits on rather than a second rule
-here.
+language, and the configuration never said so. § 12 states this of its own key already; what is
+general is here, and `day_log.script` ([§ 9](#9-day-log)) is the one key still carrying the other
+form — a path a role prefixes — marked **transitional** where it is declared, so what settles it is
+the extraction that key already waits on rather than a second rule here.
 
-⛔ **A fact that is only ever one project's reaches a role through that project's own probe or
-script, never through a key**: a host, a service, a port, a credential, a container name, a
+⛔ **A fact that is only ever one project's reaches a role through that project's own command,
+script or hook, never through a key**: a host, a service, a port, a credential, a container name, a
 resource limit. What this surface holds about such a thing is the shape a role needs and nothing of
-what the thing is — `exclusive_resources` ([§ 10](#10-branch-model)) names a resource, a cap and
-what contends for it, while whether capacity exists is answered where the resource lives.
+what the thing is — `exclusive_resources` ([§ 10](#10-branch-model)) names what is held, how many
+may be held and what holds a place, while what happens on contention is the enforcing hook's by
+that section's own rule.
 
 ⛔ **The toolkit's own text names none of it either, and that half is a search rather than a
 reading.** No tracker, status word, label prefix, tool, task name, manifest or flag of any
@@ -93,9 +95,11 @@ landed as `tools/check_no_project_names.py` with its own limits recorded beside 
 ⚠️ **So a directory is a key rather than a token to forbid, and the two rules do not collide.** The
 directory a command runs in is read by the procedure, which makes it surface and is #61's command
 root; a flag carrying that directory inside a command string states the same fact a second time,
-where no role can read it. ⛔ **Nothing is matched inside a command string** — the procedure runs it
-and reads its status — so no token in one is forbidden, and what the rule reaches is the fact being
-readable *only* there.
+where no role can read it. ⛔ **The procedure matches nothing inside a command string** — it runs
+the string and reads what the asking key says to read — so what the rule above reaches is the fact
+being readable *only* there, and not the token. ⚠️ **Which is a statement about the procedure and
+not about every check**: a search holding a file may still forbid a spelling wherever it occurs,
+within its own stated scope.
 
 **The test, run on the four absences this statement was written from.** All four are commands a
 project genuinely has and none of them is on this surface, so the column that decides each one is
@@ -110,8 +114,8 @@ the middle one:
 
 ⚠️ **The four do not sort by whether the command is local, which is why the test is run rather than
 the question answered by eye.** Every one of them is a local command; two carry a fact a role reads
-and two do not, and the one whose key already exists had been met as a missing facet and read as
-one.
+and two do not, and of those two one already has its key while the other is an open gap — so
+neither *local* nor *unstated* is the property that decides any of them.
 
 ## The file itself
 
