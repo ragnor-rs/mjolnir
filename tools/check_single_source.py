@@ -793,13 +793,20 @@ def _outcome_cell(row: str) -> tuple[int, int] | None:
     then reports STAYED GREEN -- believed and unexercised. Measured: a boundary
     section cited from two description cells took this plant, and the run said
     green with the one branch it names never entered.
+
+    ⛔ The pipe is found by the grammar `split_row` uses and not by `rfind`,
+    because an **escaped** pipe is a cell's content rather than its edge. A
+    naive search returns whatever follows the last `\\|` in the row -- `b`, for a
+    cell ending `a \\| b` -- so the plant mutates a slice the check never reads
+    as a cell, and the row is skipped for carrying no outcome. Reproduced on a
+    synthesised row; no cell in the table carries one today, which is why the
+    span and the check have to agree by construction rather than by inspection.
     """
     stripped = row.rstrip()
-    if not stripped.endswith("|"):
+    bars = [m.start() for m in re.finditer(r"(?<!\\)\|", stripped)]
+    if len(bars) < 2 or bars[-1] != len(stripped) - 1:
         return None
-    end = len(stripped) - 1
-    start = stripped.rfind("|", 0, end)
-    return None if start < 0 else (start + 1, end)
+    return bars[-2] + 1, bars[-1]
 
 
 def _plant_in_an_outcome_cell(tree: Tree, mutate) -> bool:

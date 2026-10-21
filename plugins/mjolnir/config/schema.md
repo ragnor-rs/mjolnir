@@ -86,17 +86,20 @@ may be held and what holds a place, while what happens on contention is the enfo
 that section's own rule.
 
 ⛔ **The toolkit's own text names none of it either, and that half is a search rather than a
-reading.** No tracker, status word, label prefix, tool, task name, manifest or flag of any
-particular stack appears in a carrier's text. The two exemptions — `docs/`, which quotes the
+reading.** So the first of the two questions the carve-outs left open is answered: **a tool name and
+a manifest name may not appear in a carrier's text**, nor may any other value or stack token, and
+⛔ **which classes those are is not enumerated here** — the list lives in #19's sweep, landed as
+`tools/check_no_project_names.py` with its own limits recorded beside it, and a second copy of it
+would be free to disagree with the one that runs. The two exemptions — `docs/`, which quotes the
 measurements this toolkit was derived from, and `examples/`, which is data — are stated with the
-values rule in [§ The file itself](#the-file-itself), and the search holding all of it is #19's,
-landed as `tools/check_no_project_names.py` with its own limits recorded beside it.
+values rule in [§ The file itself](#the-file-itself).
 
-⚠️ **So a directory is a key rather than a token to forbid, and the two rules do not collide.** The
-directory a command runs in is read by the procedure, which makes it surface and is #61's command
-root; a flag carrying that directory inside a command string states the same fact a second time,
-where no role can read it. ⛔ **The procedure matches nothing inside a command string** — it runs
-the string and reads what the asking key says to read — so what the rule above reaches is the fact
+⚠️ **And the second question is answered the same way: a directory is a key rather than a token to
+forbid, so the two rules do not collide.** The directory a command runs in is read by the
+procedure, which makes it surface and is #61's command root; a flag carrying that directory inside
+a command string states the same fact a second time, where no role can read it. ⛔ **The procedure
+matches nothing inside a command string** — it runs the string and reads what the asking key says
+to read — so what the rule above reaches is the fact
 being readable *only* there, and not the token. ⚠️ **Which is a statement about the procedure and
 not about every check**: a search holding a file may still forbid a spelling wherever it occurs,
 within its own stated scope.
