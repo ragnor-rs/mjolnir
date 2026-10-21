@@ -87,7 +87,8 @@ that section's own rule.
 
 ⛔ **A toolchain or runtime version is on that list, and the test is what puts it there.** It is
 read by the wrapper a project ships, by its build's own toolchain declaration, by the setup step of
-a host run, or by an image — and by no role, which is the middle column above. ⚠️ **Nor is it the
+a host run, or by an image — and by no role, which is the column the test below decides on. ⚠️ **Nor
+is it the
 other candidate it looks like**: a precondition a command does not check for itself is a presence, a
 state or a credential wherever one was measured, so a version is not that either, and the facet
 asking for those preconditions is not where a version goes

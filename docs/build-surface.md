@@ -7,8 +7,11 @@ which derived the process axes by reading every copy of every process role: this
 reading what each of the six projects **builds, checks and deploys with** — every workflow file,
 every manifest and lockfile, every command definition, every deploy script, and the passages of the
 instructions files that state when a verdict counts. The findings below are measurements rather
-than preferences, and the few preferences are labelled as such. Each one names the schema section or
-the work item it bears on.
+than preferences, and each one names the schema section or the work item it bears on. ⚠️ **Two
+other kinds of sentence appear and are told apart on sight**: a **conclusion a measurement forces**
+about a facet's shape, which is written as the measurement and then the shape it rules out; and a
+**preference**, where a measurement leaves two honest options — each of those is labelled where it
+stands.
 
 Projects are referred to as A–F, as they are there. Naming them is forbidden here, and the counts
 are what carry the argument anyway.
@@ -24,16 +27,16 @@ The entry point whose exit status is a verdict, and the directory it runs in:
 
 | | what produces the verdict | the root it runs in |
 |---|---|---|
-| A | a Python runner mirroring every pull-request job, plus `make lint` and `make e2e` | three: the checkout the runner lives in, the parent directory it is invoked from, and a directory **inside a running container** |
+| A | a Python runner mirroring every pull-request job, plus `make lint` and `make e2e` | two: the client repository the runner lives in, and a directory **inside a running container** — both reached from a parent checkout that holds none of the code and is where the invocation is made |
 | B | `./gradlew build` with four exclusions, `./gradlew detekt`, and a Flutter task behind a Gradle one | the code root only |
 | C | `npm run` per script — `lint`, `format`, `check`, `lint:styles`, seven `test:*` suites | two package roots; the code root has no manifest and runs nothing |
 | D | `./gradlew detekt test`, stated as the gating rule | the code root only, where one module's `test` task shells out to npm |
 | E | `./gradlew detekt test`, `ruff check <tree>`, `pytest` | the code root, plus one package root for `pytest` |
 | F | `./gradlew detekt test --no-daemon`, `ruff check <four trees>`, `pytest` by marker, a docs script, `bash -n` and shellcheck | the code root only, every command taking paths as arguments |
 
-**Two of six run a verdict command somewhere other than the code root, and one of those two has no
-command valid at the code root at all** — C, whose instructions file states that the root carries no
-manifest and that npm cannot run there. That is the shape
+**Three of six run a verdict command somewhere other than the code root — A, C and E — and one of
+the three has no command valid at the code root at all**: C, whose instructions file states that the
+root carries no manifest and that npm cannot run there. That is the shape
 [#61](https://github.com/ragnor-rs/mjolnir/issues/61) was written from, and reading C again confirms
 every clause of it: two package roots, each with its own manifest, `lint` and `format` present in
 **both** and meaning different things, and the test runner in one root with the type checker and the
@@ -69,12 +72,12 @@ measured in one project. Across six stacks the shapes are:
 
 | the shape | where | what defeats it |
 |---|---|---|
-| a **replay** — the build reports work it did not do | D and F both set the build cache on; D's stated gating command names no invalidation, and F's host command passes a flag that stops the build *daemon* without invalidating anything | not a flag: the cache and the incremental state, each named |
-| a **suite that never ran** — its dependency was absent and skipping is correct | B, four suites gated on one environment variable, which left 87 assertions over its money rules running on one machine | the executed count, which is [`schema § 16`](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran) |
+| a **replay** — the build reports work it did not do | D and F both switch the build cache on in a properties file; D's stated gating command names nothing that defeats it, and the only such flag on F's host command is one whose subject is the build *daemon* rather than the cache or the incremental state. ⚠️ Read from the configuration: neither was executed twice to watch a second run skip the work | not a flag: the cache and the incremental state, each named |
+| a **suite that never ran** — its dependency was absent and skipping is correct | B, four suites gated on one environment variable, three of them over its money rules, which ran nowhere but one machine while the aggregate build reported success | the executed count, which is [`schema § 16`](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran) |
 | the **wrong root** | A, where only the host's invocation reproduces the finding | the root, as above |
 | the **wrong tree** | A, whose runner derives the container name per checkout, because a constant sends every exec to whichever stack holds the default name — the linters then report on another branch and exit zero | [`schema § 10 → Which tree a verdict belongs to`](../plugins/mjolnir/config/schema.md#which-tree-a-verdict-belongs-to) |
 | a command that **repairs what it judges** | C in both roots (`--fix`, `--write`), A in three targets, and C's host workflow runs the rewriting form and reports the diff | nothing in the facet today |
-| a **deploy** that replays | A: a named volume over the content directory is seeded from the image only while it is empty, so a new image served the old code on every stand deploy for a month | emptying the volume — a state to destroy, not a form of a command |
+| a **deploy** that replays | A: a named volume over the content directory is seeded from the image only while it is empty, so every stand deploy pulled a new image and served the old code until an entrypoint was made to copy it in on each start | emptying the volume — a state to destroy, not a form of a command |
 
 **The last row is why `invalidate:` cannot be a form of the command.** #66's field is described as
 the form that defeats a cached or incremental pass. Two of the six measured staleness defeats are
@@ -121,21 +124,33 @@ read by an image build, never by a role.
 
 ## Whether the host's verdict covers this code
 
-Three of six carry a probe that answers this before a local check is run, and the three answer with
-three different vocabularies:
+**Four of six carry a probe that answers this before a local check runs, and the four answer in four
+vocabularies.** Two of them are hooks that refuse the command; two are scripts a role reads.
 
 | | the answer the probe gives | what it does with uncertainty |
 |---|---|---|
 | A | operational · BLOCKED · unknown | **runs the checks locally** — anything it cannot establish counts as "run them here" |
 | B | four conditions, all of which must hold: a pull request exists, the workflow that *mirrors this command* ran, its head commit equals local `HEAD` with a clean tree, and nothing reports a startup failure | **fails open** — a needless local build costs minutes, and blocking the only available check risks shipping unchecked code |
 | C | exit 0 covers · 1 does not · 2 the pull request is conflicted · 3 undeterminable | the hook blocks only commands that produce a verdict and change nothing, with a named override |
+| F | a **reason** per unmet precondition, and only a blank reason means covered: the client is absent · this is not a git tree · there is no remote to ask about · the tree is dirty, so the host has never seen these edits · the head is unreadable · no run exists for this commit · the run's conclusion or status · how many steps its jobs executed | **stands aside** wherever a reason exists, and the local run proceeds |
 
-**Three facts the three probes agree on, which is what makes them a facet rather than three
-habits.** The mapping is on the **workflow name** and not the job name, because two workflows in B
-call their job the same thing. A path-filtered workflow means "the pull request has some live
-check" says nothing about the command in hand. And an empty check list is not a pass: in C it is
-usually a conflict, and in B a pending run exits non-zero from the host's own client, so reading
-that exit status throws the answer away in exactly the state the question was asked for.
+**What makes these a facet rather than four habits is that the four agree on five facts, each of
+which had to be learnt.** The mapping is on the **workflow name** and not the job name, because two
+workflows in B call their job the same thing. A path-filtered workflow means "the pull request has
+some live check" says nothing about the command in hand. An empty check list is not a pass: in C it
+is usually a conflict, and in B a pending run exits non-zero from the host's own client, so reading
+that exit status throws the answer away in exactly the state the question was asked for. The run
+must be for **this commit**, which B reads as head-equals-`HEAD` and F as a run listed for the sha.
+And a run that executed **no steps** is not an answer — F counts the steps of every job in the run
+and treats the count as part of the question.
+
+⛔ **Those five are
+[`schema § 2 → Reading a run's answer`](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)**,
+arrived at independently in four projects, one of which enumerates all four of that section's
+preconditions — uncommitted work, a run for this commit, steps executed, concluded green — in its
+own words. ⚠️ What none of the four states is the **remedy** on uncertainty, and the four disagree
+about it: two run the checks anyway, one stands aside, one fails open. So the facet carries the
+conditions and the project carries what to do when they cannot be established.
 
 **One condition no probe can be written against today.** Three of C's four code checks, and its
 type check among them, run only on a pull request whose base is a release branch — so for an
@@ -189,20 +204,28 @@ project whose host runs the fewest of its checks.
 
 | | the build tool | the language runtime | the linters | a lockfile |
 |---|---|---|---|---|
-| A | none declared; a container image per service | by the images | by the two lockfiles the host installs from | both of the theme's, one per ecosystem |
+| A | none declared; a container image per service | by the host workflows' setup steps and by the images | by the two lockfiles the host installs from | both of the theme's, one per ecosystem |
 | B | the wrapper's own properties file | a toolchain declaration in the build, and the one runtime-version file in all six projects | by the manifest's dependency versions | one, for the non-JVM module |
 | C | none | by the host workflow's setup step and by the images | by each root's manifest | both roots |
 | D | the wrapper, a major version ahead of B's | a toolchain declaration in the build | by the manifest | one, for the non-JVM module |
 | E | the wrapper | by the host workflow and the images only — no toolchain declaration in the build | one installed unpinned in the workflow | none at all |
 | F | the wrapper | a toolchain declaration in a convention plugin of its own | **pinned in the workflow, with the reason stated** | none at all |
 
-**Four facts, each measured rather than reasoned.** Across six projects there is exactly **one**
-runtime-version file of the kind a version manager reads — B's, for its non-JVM module. Node and
-Python versions exist only as inputs to host workflow steps, in four projects. **Four of the six run
-a JVM build and none of them locks its dependencies**, so a build is reproducible to the versions
-its manifests name and no further. And F is the only project that pins its linters with an argument
-for doing so: an unpinned linter reddens the build on a day nobody changed any code, which teaches
-people that red means "try again".
+**Six facts, each measured rather than reasoned.** Across six projects there is exactly **one**
+runtime-version file of the kind a version manager reads — B's, for its non-JVM module. Everywhere
+else a language runtime is an input to a host workflow's setup step, in five of the six, and in one
+of those five it is stated **twice with two different values**, by two workflows in one repository
+that install different major versions of the same runtime. **Four of the six run a JVM build and
+none of them locks its dependencies**, so a build is reproducible to the versions its manifests
+name and no further. F is the only project that pins its linters with an argument for doing so: an
+unpinned linter reddens the build on a day nobody changed any code, which teaches people that red
+means "try again". And A is the only one that pins the host's own actions by digest rather than by
+tag, in every workflow step that uses one — fourteen references against none anywhere else.
+
+⚠️ **The two-values case is what the non-goal ruling below has to survive, and it does.** Nothing
+reads either value to decide what to do next, so the disagreement is invisible to every role and is
+the project's own to settle inside the commands it already runs; a key would record the
+disagreement without resolving it.
 
 **Only one project states where a version string lives.** D carries a declared list of release
 files — a pattern per file, with one marked optional — which is
