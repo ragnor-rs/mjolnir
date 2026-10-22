@@ -918,6 +918,90 @@ def _path_filter(node: dict, where: str) -> None:
             )
 
 
+# § 2's trigger grammar, in one place. The event, the types of it the workflow
+# listens for, and the ref the run is against -- and ⛔ a second spelling of this
+# anywhere is the defect the facet exists against, a key stated in two
+# vocabularies being the thing § 17 refuses for the half of it that it owns.
+#
+# ⚠️ It is a parse and not a refusal: § 2 holds no pattern to this shape, a
+# trigger a consumer cannot read being no answer about the run rather than a
+# configuration to reject. What `_triggers` below refuses is the *clause* rules
+# the surface does state, which are reachable only once a pattern has parsed.
+TRIGGER = re.compile(
+    r"^\s*(?P<event>[A-Za-z_][\w-]*)"
+    r"(?:\s*\((?P<types>[^()]*)\))?"
+    r"\s*->\s*(?P<ref>\S.*?)\s*$"
+)
+
+
+def parse_trigger(pattern: str):
+    """(event, types, ref) for one § 2 trigger, or None where it does not parse.
+
+    `types` is the list the clause states, or None where the pattern carries no
+    clause at all -- which § 2 makes two different statements: no clause means
+    the workflow's event block states no `types:` key, and is never read as the
+    host's default set for that event.
+    """
+    match = TRIGGER.match(pattern)
+    if not match:
+        return None
+    clause = match.group("types")
+    types = None if clause is None else [t.strip() for t in clause.split(",")]
+    return match.group("event"), types, match.group("ref")
+
+
+def _triggers(entry: dict, where: str) -> None:
+    """§ 2's `triggers`, held to its shape and to its clause rules.
+
+    Read by no consumer in this tree and held anyway, for the reason
+    `_path_filter` is: the natural mistakes here are silent ones. ⚠️ The pattern
+    itself is **not** held -- § 2 refuses no pattern on purpose -- so what this
+    rejects is the key's shape and the two clause readings the surface does
+    state: a clause written empty, and a type written blank inside one. Both are
+    the same text as something somebody meant to write, which is why neither is
+    read as the absence it looks like.
+    """
+    if "triggers" not in entry:
+        return
+    value = entry["triggers"]
+    patterns = value if isinstance(value, list) else [value]
+    if not patterns or any(
+        not isinstance(p, str) or not p.strip() for p in patterns
+    ):
+        raise ConfigError(
+            where,
+            f"is {value!r}; § 2 states a trigger as `<event>(<types>) -> <ref>`, "
+            "one pattern or a list of them where a workflow has more than one. "
+            "Written blank it states what starts a run while naming no event, "
+            "and a conjunction improvised inside one string is the shape the "
+            "list exists instead of.",
+        )
+    for position, pattern in enumerate(patterns):
+        parsed = parse_trigger(pattern)
+        if parsed is None:
+            continue
+        _event, types, _ref = parsed
+        if types is None:
+            continue
+        at = where if not isinstance(value, list) else f"{where}[{position}]"
+        if types == [""]:
+            raise ConfigError(
+                at,
+                f"is {pattern!r}, whose type clause is empty; § 2 refuses that "
+                "rather than reading it as the absence it looks like. A trigger "
+                "whose workflow filters on no type states no clause at all, and "
+                "one that meant to state its types and stated none is the same "
+                "text.",
+            )
+        if any(not t for t in types):
+            raise ConfigError(
+                at,
+                f"is {pattern!r}, whose type clause states a blank type (§ 2). "
+                "It matches no event the host sends while reading as a type "
+                "somebody wrote.",
+            )
+
+
 def _mirrored_commands(data: dict) -> dict[str, str]:
     """Normalised command -> where the host's runs mirror it (§ 2).
 
@@ -986,6 +1070,10 @@ def _entry_commands(entry: dict, index: int):
             "a reader to a file their repository does not have.",
         )
     _path_filter(entry, f"{where}.paths")
+    # ⛔ The entry's and never a job's: § 2 puts the event block on the workflow,
+    # so a `triggers` inside a `jobs` member is a key nothing states and nothing
+    # would read.
+    _triggers(entry, f"{where}.triggers")
     # Presence and never value, for both keys below: a `mirrors` written with
     # nothing after it would otherwise satisfy the exclusivity rule and the
     # absence rule at once, so an entry could state both forms and be read as
@@ -2675,6 +2763,19 @@ def _planted_violations():
          "host.checks[0].jobs[0].paths",
          _a_job_list_of([{"job": "a-job", "mirrors": "a-mirrored-command",
                           "paths": []}])),
+        ("a trigger written with nothing after it", "host.checks[0].triggers",
+         _a_trigger_of(None)),
+        ("a trigger list written empty", "host.checks[0].triggers",
+         _a_trigger_of([])),
+        ("a trigger of a list written blank", "host.checks[0].triggers",
+         _a_trigger_of(["pull_request -> main", "  "])),
+        ("a type clause written empty", "host.checks[0].triggers",
+         _a_trigger_of("pull_request() -> *")),
+        ("a type clause written empty inside a list",
+         "host.checks[0].triggers[1]",
+         _a_trigger_of(["push -> main", "pull_request() -> *"])),
+        ("a type written blank inside a clause", "host.checks[0].triggers",
+         _a_trigger_of("pull_request(edited, ) -> *")),
         ("an entry naming no workflow", "host.checks[0].workflow",
          _an_entry_whose_workflow_is(None)),
         ("an entry whose workflow name is blank", "host.checks[0].workflow",
@@ -2972,6 +3073,25 @@ def _a_path_filter_of(paths):
         if not checks or not isinstance(checks[0], dict):
             checks.insert(0, {"workflow": "Planted", "mirrors": "a-mirrored-command"})
         checks[0]["paths"] = paths
+        return data
+
+    return mutate
+
+
+def _a_trigger_of(triggers):
+    """An entry whose `triggers` is the stated value.
+
+    ⚠️ The green side is asserted by every example and by this project's own
+    configuration, which between them carry the single-string form, the list
+    form and a pattern with a type clause -- so an arm widened until it refused
+    a legitimate trigger reddens the load rather than passing quietly.
+    """
+
+    def mutate(data: dict) -> dict:
+        checks = data.setdefault("host", {}).setdefault("checks", [])
+        if not checks or not isinstance(checks[0], dict):
+            checks.insert(0, {"workflow": "Planted", "mirrors": "a-mirrored-command"})
+        checks[0]["triggers"] = triggers
         return data
 
     return mutate

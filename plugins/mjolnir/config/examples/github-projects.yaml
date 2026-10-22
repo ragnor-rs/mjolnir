@@ -16,6 +16,14 @@ host:
       mirrors: "npm run lint"
       triggers: "pull_request -> main"
       paths: ["src/**", "package.json"]
+    # A type clause, and a second event kind as a second member of the list. The clause is
+    # stated because this workflow's own `on:` block states a `types:` key; the two entries
+    # above omit it because theirs do not, which is the whole of what an omission means.
+    - workflow: "Review gate"
+      mirrors: "npm run review:gate"
+      triggers:
+        - "pull_request(opened, edited, synchronize, ready_for_review) -> main"
+        - "pull_request_review(submitted) -> main"
     # § 2's second form: one workflow whose jobs mirror a command each, because they share a
     # checkout and a build and the project did not write them to be split. Each job states the
     # filter its own run carries; the workflow's `on:` filter is the entry's, above the list.

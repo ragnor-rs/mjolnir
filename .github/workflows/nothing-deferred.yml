@@ -23,9 +23,6 @@ on:
   # So resolving the last thread re-runs nothing, and the verdict stands until the next push,
   # body edit, review or manual re-run. That residue is stated in the document rather than
   # papered over.
-  #
-  # The surface's `triggers` facet states an event and a base, and can state neither the types
-  # above nor the second event — #82.
   pull_request:
     types: [opened, edited, synchronize, reopened, ready_for_review]
   pull_request_review:
@@ -47,8 +44,8 @@ jobs:
       # check has been shown it can fail — and shown it can pass, since an over-broad body
       # rule would redden every honest pull request alike. That command is the string
       # `host.checks` states this run mirrors — ⚠️ held together by eye and not by a check,
-      # since nothing here reads a workflow file. That is #49, and on this entry it is #82
-      # as well: the facet cannot state these triggers, so no comparison could pass.
+      # since nothing here reads a workflow file. That is #49; what the entry beside it has
+      # to state, both events and their types included, is the surface's and is stated there.
       #
       # The token is passed to the step rather than left in the git config, so the one thing
       # that holds it is the one process that needs it. No dependency is installed: the run

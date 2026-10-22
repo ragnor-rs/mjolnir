@@ -181,8 +181,8 @@ type check among them, run only on a pull request whose base is a release branch
 ordinary change into the main line the host runs one path-filtered formatter and nothing else, and
 the local verdict is the only verdict there is. The condition is the **base branch**, which is a
 property of the change rather than of the command, and
-[`schema § 2`](../plugins/mjolnir/config/schema.md#2-code-host)'s `triggers` carries the event and
-the base already; what reads it is
+[`schema § 2 → What a trigger states`](../plugins/mjolnir/config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref)
+carries the event, the types of it and the ref already; what reads it is
 [`schema § 17 → Whether the host's verdict covers this change`](../plugins/mjolnir/config/schema.md#whether-the-hosts-verdict-covers-this-change),
 whose `counts_when` is stated in that same form.
 
