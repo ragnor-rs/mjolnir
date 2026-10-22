@@ -2583,13 +2583,18 @@ no consumer carries one itself.** Its readers are the `local` check of
 whose host runs nothing, that list's `gate_green` — which is the check that used to have no source
 at all there.
 
-⛔ **`[]` is the stated absence and means every verdict is the host's**, by the rule this surface
-opens with: a project that has decided it runs nothing locally and a project that has not thought
-about it read identically otherwise. ⚠️ **A reader reports it as unavailable**, so a role that would
-have read a local verdict says what the project decided instead. ⚠️ **The pairing with `checks: []`
-is not refused**, for the reason § 13 gives when it declines to refuse the same pairing one facet
-over: a project whose host runs nothing today may carry workflows tomorrow, and a check with no
-source is reported unanswered rather than read as passing.
+⛔ **`[]` is the stated absence and means no verdict is produced outside the host's own runs**, by
+the rule this surface opens with: a project that has decided it runs nothing locally and a project
+that has not thought about it read identically otherwise. ⚠️ **It is deliberately not *every verdict
+is the host's***, which § 2's absence says in the other direction and which would make the two
+statements contradict each other on the one configuration that states both — the host owning every
+verdict there *is*, and there being none, are different facts. ⚠️ **A reader reports it as
+unavailable**, so a role that would have read a local verdict says what the project decided instead.
+⚠️ **The pairing with `checks: []` is not refused**, for the reason § 13 gives when it declines to
+refuse the same pairing one facet over: a project whose host runs nothing today may carry workflows
+tomorrow, and a check with no source is reported unanswered rather than read as passing — ⛔ **and
+where both are empty the project has stated no verdict anywhere**, which a reader reports as the two
+decisions it is rather than folding into one.
 
 **The keys, and what each is for.** ⛔ **`command` and `proves` are written on every entry and the
 other three are legitimately absent** — stated here in prose rather than by the `# required`
