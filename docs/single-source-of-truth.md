@@ -1691,6 +1691,24 @@ guard removed, the suite raises where it would have matched a pattern that is no
 red and not a silent pass, which is what the verification asks, but it is the one break whose
 output names no plant.
 
+⚠️ **The review of this change found two more, and the first was a contradiction rather than a
+mistake.** The ranking
+[§ 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is) states for a
+command two entries mirror was applied between entries and *not* inside one, so the same two
+triggers answered `reached` written as two entries and `unreadable` written as one entry's list —
+reproduced before it was fixed. There is now one ranking in the module, applied by one function, and
+a plant asserts the two shapes answer alike; the surface states the rule for both cases and states
+the path filters as the exception, being a conjunction rather than a disjunction. ⛔ **And the
+assertion that the trigger grammar is not the module's own held nothing, twice.** It matched the
+literal name of a pattern, then searched compiled patterns for the arrow — which a parenthesis
+inside a pattern truncates away, measured by planting a parser whose first group closed before the
+arrow and watching the check stay green. What is asserted now is countable: the reader's parser is
+called, and the one expression the module compiles is the path glob. ⚠️ **A parser written with
+`str.split` reaches neither assertion directly**, the arrow being a return annotation on half the
+file's functions, and that residue is stated with the check rather than left to read as covered —
+what catches that shape is the behavioural plants, which a split-based parser fails because it
+cannot read a type clause.
+
 What it deliberately does not check:
 
 - **Whether the facet matches the workflow files.** Nothing here reads `.github/`, so an entry

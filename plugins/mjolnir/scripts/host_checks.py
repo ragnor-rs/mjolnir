@@ -17,11 +17,14 @@ Three things it deliberately does not do:
     no trigger grammar either.** Every one of those is a project's fact, read
     through `config.py` at run time -- including the parse of § 2's
     `<event>(<types>) -> <ref>` form, which is `config.parse_trigger` and ⛔
-    **never a second spelling here**. What this module carries is the glob
-    characters a path filter is written with and the one ref pattern a *rule*
-    turns on, `*`; the self-test holds each to the surface, so renaming one
-    there reddens the build rather than silently turning off the match that
-    depends on it. ⛔ **It enumerates no events**: § 2 states that vocabulary is
+    **never a second spelling here**. What this module carries is the one ref
+    pattern a *rule* turns on, `*`, which the self-test holds to the surface so
+    that renaming it there reddens the build rather than silently turning off
+    the match that depends on it — and the glob characters a path filter is
+    written with, which ⚠️ **the surface does not state and the self-test
+    therefore cannot hold**: § 2 says only that a filter is a list of globs, so
+    which of them this module can answer about is its own judgement, erring
+    towards refusing a pattern. ⛔ **It enumerates no events**: § 2 states that vocabulary is
     the host's and that the facet holds no name against it, so an event this
     module has never seen is not this change's event rather than a trigger it
     may refuse.
@@ -86,11 +89,19 @@ SURFACE = os.path.join(
 # branches are named with one would read as out of scope for every run it makes.
 ANY = "*"
 
-# The four answers § 2 names, and the order a command mirrored more than once is
-# resolved in -- `reached` first, then the three that read as *run it here*.
-# ⛔ Stated as one tuple rather than as a precedence written into the loop: the
-# surface states both the set and the ranking, and a comparison spelled out in
-# code is the second statement of the ranking.
+# The four answers § 2 names, and the order a disjunction of them is resolved
+# in -- `reached` first, then the three that read as *run it here*.
+#
+# ⚠️ This tuple **is** a second statement of the ranking, the first being § 2's
+# prose, and the self-test holds it to that prose rather than claiming
+# otherwise: the set is asserted member by member, and the one ordering fact the
+# surface states -- that `reached` outranks the other three -- is asserted as a
+# phrase. ⛔ The relative order of the remaining three is this module's and
+# nothing holds it, which costs nothing a caller can see: all three read as
+# *run it here*, so only the reported reason differs between them.
+#
+# ⛔ What it is stated for is `_ranked` below, so that the three places a
+# precedence is needed read one tuple. Before it did, they disagreed.
 REACHED, OUT_OF_SCOPE, NO_ANSWER, UNREADABLE = (
     "reached", "out of scope", "no answer", "unreadable",
 )
@@ -141,9 +152,24 @@ def _glob(pattern: str) -> re.Pattern[str] | None:
     return re.compile("^" + "".join(out) + "$")
 
 
-ADMITS, EXCLUDES, UNREADABLE_GLOB, PATHS_UNSTATED = (
-    "admits", "excludes", "unreadable glob", "paths unstated",
+# How one trigger, or one level of a path filter, stands to a change. ⚠️
+# `UNESTABLISHED` is deliberately not named for either of the two facts that
+# reach it -- an event type the caller did not state, and a change whose paths
+# it did not state -- because both do, and a name belonging to one of them reads
+# as a defect to whoever meets it under the other.
+ADMITS, EXCLUDES, UNREADABLE_GLOB, UNESTABLISHED = (
+    "admits", "excludes", "unreadable glob", "unestablished",
 )
+
+# Which of § 2's answers each standing is. ⛔ A map rather than a branch per
+# standing, so that the ranking below is applied to standings and answers
+# alike and there is one ordering in this module rather than two.
+AS_AN_ANSWER = {
+    ADMITS: REACHED,
+    UNREADABLE_GLOB: UNREADABLE,
+    UNESTABLISHED: NO_ANSWER,
+    EXCLUDES: OUT_OF_SCOPE,
+}
 
 
 def _within(filters, paths: list[str]) -> str:
@@ -164,7 +190,7 @@ def _within(filters, paths: list[str]) -> str:
     if any(expression is None for expression in expressions):
         return UNREADABLE_GLOB
     if not paths:
-        return PATHS_UNSTATED
+        return UNESTABLISHED
     return ADMITS if any(
         expression.match(path) for expression in expressions for path in paths
     ) else EXCLUDES
@@ -188,7 +214,7 @@ def _fires(parsed, event: str, ref: str, kind: str | None) -> str:
     # filters on nothing and this change's type cannot exclude it.
     if types is not None:
         if kind is None:
-            return PATHS_UNSTATED
+            return UNESTABLISHED
         # A set, their order carrying nothing, which is § 2's own rule.
         if kind not in set(types):
             return EXCLUDES
@@ -222,57 +248,87 @@ def _answer_for(
             "because": "the entry states a trigger § 2's form does not cover: "
                        + ", ".join(f"`{pattern}`" for pattern in unreadable),
         }
-    standings = [_fires(found, event, ref, kind) for found in parsed]
-    if UNREADABLE_GLOB in standings:
+    # ⛔ **A trigger list is a disjunction and the two filter levels are a
+    # conjunction, so one ranking cannot be applied the same way to both.** A
+    # workflow with two triggers runs when *either* fires, which is why `ADMITS`
+    # wins here — the ranking § 2 states for a command mirrored twice, and for
+    # the same reason: a trigger that fires on this change means the run exists,
+    # so a sibling pattern nobody can parse does not unmake it. ⚠️ Measured as a
+    # contradiction before it was a rule: the same two triggers answered
+    # `reached` across two entries and `unreadable` inside one.
+    fired = _ranked([_fires(found, event, ref, kind) for found in parsed])
+    if fired == UNREADABLE:
         return {
             "answer": UNREADABLE,
-            "because": "a trigger of this entry states a ref pattern that is no "
-                       "glob this module can read (§ 2)",
+            "because": "no trigger of this entry fires on this change and one "
+                       "states a ref pattern that is no glob this module can "
+                       "read, so the entry cannot be answered about (§ 2)",
         }
-    if ADMITS not in standings:
-        if PATHS_UNSTATED in standings:
-            return {
-                "answer": NO_ANSWER,
-                "because": "a trigger of this entry filters on event types and "
-                           "the change's own type was not stated, so whether "
-                           "the run fires for it is unestablished (§ 2)",
-            }
+    if fired == NO_ANSWER:
+        return {
+            "answer": NO_ANSWER,
+            "because": "a trigger of this entry filters on event types and "
+                       "the change's own type was not stated, so whether "
+                       "the run fires for it is unestablished (§ 2)",
+        }
+    if fired == OUT_OF_SCOPE:
         return {
             "answer": OUT_OF_SCOPE,
             "because": f"no trigger of this entry fires on `{event} -> {ref}`, "
                        "so the host runs nothing for this change and the local "
                        "verdict is the only one there is (§ 17)",
         }
-    # Both levels, neither inherited: a command's run covers a change that is
-    # within the workflow's filter *and* the job's, where each states one.
-    for level, filters in record["paths"].items():
-        standing = _within(filters, paths)
-        if standing == UNREADABLE_GLOB:
-            return {
-                "answer": UNREADABLE,
-                "because": f"the {level}'s path filter states a glob § 2's form "
-                           "does not cover, so what the run watches cannot be "
-                           "read off the configuration",
-            }
-        if standing == PATHS_UNSTATED:
-            return {
-                "answer": NO_ANSWER,
-                "because": f"the {level} filters by path and the change's own "
+    # ⛔ And here `ADMITS` does **not** win: § 2 makes a command's run cover a
+    # change that is within the workflow's filter *and* the job's, neither
+    # inherited and neither an override — so one level admitting says nothing
+    # while the other excludes. What is ranked is only which of the three
+    # non-admitting standings to report.
+    levels = {
+        level: _within(filters, paths)
+        for level, filters in record["paths"].items()
+    }
+    blocked = {
+        level: standing for level, standing in levels.items()
+        if standing != ADMITS
+    }
+    if blocked:
+        worst = _ranked(list(blocked.values()))
+        level = next(
+            name for name, standing in blocked.items()
+            if AS_AN_ANSWER[standing] == worst
+        )
+        return {
+            "answer": worst,
+            "because": {
+                UNREADABLE: f"the {level}'s path filter states a glob § 2's form "
+                            "does not cover, so what the run watches cannot be "
+                            "read off the configuration",
+                NO_ANSWER: f"the {level} filters by path and the change's own "
                            "paths were not stated, so whether the run watches "
                            "this change is unestablished (§ 2)",
-            }
-        if standing == EXCLUDES:
-            return {
-                "answer": OUT_OF_SCOPE,
-                "because": f"the {level}'s path filter admits no path this change "
-                           "touches, so the host runs nothing for it (§ 17)",
-            }
+                OUT_OF_SCOPE: f"the {level}'s path filter admits no path this "
+                              "change touches, so the host runs nothing for it "
+                              "(§ 17)",
+            }[worst],
+        }
     return {
         "answer": REACHED,
         "because": f"{record['mirrored_by']} fires on `{event} -> {ref}` and its "
                    "filters admit this change -- so this is the run to read, and "
                    "how it concluded is § 2's four preconditions'",
     }
+
+
+def _ranked(standings: list[str]) -> str:
+    """The highest-ranked answer among these standings, by § 2's own order.
+
+    ⛔ One ordering in this module and not one per caller: `ANSWERS` is applied
+    to a trigger list, to a command two entries mirror, and to the filter
+    levels, so a precedence written out at any of those three would be a second
+    statement of the ranking — which is how the three came to disagree.
+    """
+    answers = {AS_AN_ANSWER[standing] for standing in standings}
+    return next(answer for answer in ANSWERS if answer in answers)
 
 
 def mirrors(configuration: config.Config, command: str) -> dict:
@@ -375,9 +431,12 @@ def covers(
             "job": record["job"],
             **answer,
         })
+    # The same ranking `_answer_for` applies inside one entry, for § 2's stated
+    # reason: a run that reaches this change exists, so there is something to
+    # read, whatever a sibling entry could not say.
+    answered = {r["answer"] for r in per_run}
     verdict = next(
-        (a for a in ANSWERS if any(r["answer"] == a for r in per_run)),
-        NO_ANSWER,
+        (answer for answer in ANSWERS if answer in answered), NO_ANSWER
     )
     return {
         "command": command,
@@ -488,19 +547,45 @@ def self_test() -> int:
     # module has no trigger parser of its own. § 2's form is one grammar, and a
     # second reading of it here would be free to disagree with the reader every
     # consumer loads the facet through.
+    # ⛔ Read off this module's own source, and ⛔ **not off a name and not off
+    # what a compiled pattern contains.** Two forms of this assertion were
+    # written and both held nothing: the first matched the literal name
+    # `TRIGGER` and would have passed a `_TRIGGER_RE`, and the second searched
+    # compiled patterns for § 2's arrow — which a parenthesis inside the
+    # pattern truncates away, measured by planting a parser whose first group
+    # closed before the arrow and watching the check stay green.
+    #
+    # ⚠️ What is asserted instead is positive and countable: the reader's parser
+    # is called, and the one expression this module compiles is the path glob.
+    # ⛔ **It does not reach a parser written with `str.split`** — nothing here
+    # does, the arrow being a return annotation on half the functions in this
+    # file — and that residue is stated with the check rather than left to
+    # read as covered.
+    with open(os.path.abspath(__file__), encoding="utf-8") as handle:
+        own_source = handle.read()
+    compiled = re.findall(r"re\.compile\(", own_source)
     check(
-        "the trigger grammar is the reader's parser and not a second one",
-        hasattr(config, "parse_trigger")
-        and not any(
-            name == "TRIGGER" for name in globals()
-        ),
-        "this module carries its own trigger pattern, which is a second "
-        "spelling of one grammar",
+        "the reader's trigger parser is what this module calls",
+        hasattr(config, "parse_trigger") and "config.parse_trigger(" in own_source,
+        "this module does not call `config.parse_trigger`, so whatever reads a "
+        "trigger here is a second spelling of one grammar",
+    )
+    check(
+        "and the one expression it compiles is the path glob",
+        len(compiled) == 1,
+        f"{len(compiled)} compiled expression(s) in this module, where § 2's "
+        "grammar is the reader's and a path glob is the only pattern left",
     )
     check(
         "§ 2 states `*` as the ref a trigger filters on none by",
         f"`{ANY}` for any" in surface,
         "the any-ref spelling is not stated with the trigger's three parts",
+    )
+    check(
+        "§ 2 states that `reached` outranks the other three",
+        f"`{REACHED}` outranks the other three" in surface,
+        "the one ordering fact `ANSWERS` copies is not on the surface, so the "
+        "ranking this module applies is held to nothing",
     )
     check(
         "§ 2 states that the event vocabulary is the host's and not this facet's",
@@ -663,6 +748,50 @@ def self_test() -> int:
                      A_PULL_REQUEST, "main", None, ["a-tree/a-file"])
         check(f"{label} is {UNREADABLE}", got["verdict"] == UNREADABLE,
               f"answered {got['verdict']!r} -- {got['because']}")
+
+    print("\none entry whose own trigger list has more than one member")
+    # ⛔ The finding this review reproduced: the same two triggers answered
+    # `reached` across two entries and `unreadable` written as one entry's list,
+    # so the module answered two ways about one configuration. Both shapes are
+    # planted here, and the pair is the assertion rather than either alone.
+    inside = _a_configuration([{
+        "workflow": "A workflow",
+        "mirrors": "a-mirrored-command",
+        "triggers": ["pull_request -> *", "pull_request -> release/[0-9]*"],
+    }])
+    across = _a_configuration([
+        {"workflow": "A workflow", "mirrors": "a-mirrored-command",
+         "triggers": "pull_request -> *"},
+        {"workflow": "Another workflow", "mirrors": "a-mirrored-command",
+         "triggers": "pull_request -> release/[0-9]*"},
+    ])
+    answers = [
+        covers(where, "a-mirrored-command", A_PULL_REQUEST, "main")["verdict"]
+        for where in (inside, across)
+    ]
+    check(
+        f"a trigger that fires beside one that cannot be read is {REACHED}",
+        answers[0] == REACHED,
+        f"answered {answers[0]!r}, so a sibling pattern nobody can parse unmade "
+        "a run that fires",
+    )
+    check(
+        "and the list and the two entries answer the same way",
+        answers[0] == answers[1],
+        f"answered {answers[0]!r} as one entry's list and {answers[1]!r} across "
+        "two entries, which is two answers about one configuration",
+    )
+    typed_beside = _a_configuration([{
+        "workflow": "A workflow",
+        "mirrors": "a-mirrored-command",
+        "triggers": ["pull_request -> *", "pull_request(edited) -> *"],
+    }])
+    got = covers(typed_beside, "a-mirrored-command", A_PULL_REQUEST, "main")
+    check(
+        f"a trigger with no clause beside a typed one is {REACHED}",
+        got["verdict"] == REACHED,
+        f"answered {got['verdict']!r} -- {got['because']}",
+    )
 
     print("\na command two entries mirror")
     both = _a_configuration([

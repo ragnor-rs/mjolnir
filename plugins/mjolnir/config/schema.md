@@ -853,10 +853,19 @@ cannot land.
 
 ⛔ **Each of the last three reads as *run it here*, and none of them as covered** —
 [§ 17](#whether-the-hosts-verdict-covers-this-change)'s fail-closed arm arriving at this facet's own
-end of the mapping. ⚠️ **And `reached` outranks the other three where a command is mirrored twice**,
-which is the one combination that is not fail-closed and is not an exception to it: a run that
-reaches this change exists, so there is something to read, and what it concluded is still the
-host's to say.
+end of the mapping. ⚠️ **And `reached` outranks the other three wherever more than one trigger
+could answer** — a command two entries mirror, and a workflow whose own `triggers` list has several
+members — which is the one combination that is not fail-closed and is not an exception to it: a run
+that reaches this change exists, so there is something to read, and what it concluded is still the
+host's to say. ⛔ **Both cases take the same ranking, because the reason is the same one**, and a
+consumer applying it to one of them and not the other answers two ways about one configuration —
+measured as exactly that, two triggers reading `reached` split across two entries and `unreadable`
+written as one entry's list.
+
+⛔ **The path filters are the exception and rank the other way**, the two levels being a
+conjunction rather than a disjunction: a command's run covers a change within the workflow's filter
+*and* the job's, so one level admitting says nothing while the other excludes, and what the ranking
+decides there is only which of the three non-covering answers to report.
 
 ### How a pull request lands
 
