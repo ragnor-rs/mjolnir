@@ -1434,6 +1434,75 @@ def validate(data: dict, facts: dict) -> None:
             "this is readable by a person and by nothing shipped (§ 10).",
         )
 
+    # § 10. Each exclusive resource, held key by key. ⛔ Every one of them is
+    # stated on the surface with no default, so an entry missing one is refused
+    # here rather than resolved to something the project never said -- and the
+    # direction that matters is the permissive one: a `claimed_by` nobody wrote
+    # is a resource no call ever claims, which is a guard installed and holding
+    # nothing while every reader reports the resource as configured.
+    resources = _get(data, "branch_model.exclusive_resources")
+    if resources is not None:
+        if not isinstance(resources, list):
+            raise ConfigError(
+                "branch_model.exclusive_resources",
+                f"is {resources!r}; § 10 states it as a list of entries, and `[]` where "
+                "nothing in this project is exclusive.",
+            )
+        subjects = vocabulary(
+            facts, "branch_model.exclusive_resources.subject", "what holds a place"
+        )
+        for index, entry in enumerate(resources):
+            at = f"branch_model.exclusive_resources[{index}]"
+            if not isinstance(entry, dict):
+                raise ConfigError(
+                    at,
+                    f"is {entry!r}; § 10 states each entry as a block of keys, every one of "
+                    "them written.",
+                )
+            for key in ("name", "cap", "subject", "claimed_by", "ttl"):
+                if entry.get(key) in (None, ""):
+                    raise ConfigError(
+                        f"{at}.{key}",
+                        "is missing. § 10 states every key of an entry and defaults none of "
+                        "them, each being a measurement of the resource rather than a "
+                        "preference about it.",
+                    )
+            if entry["subject"] not in subjects:
+                raise ConfigError(
+                    f"{at}.subject",
+                    f"is {entry['subject']!r}; § 10 states {' | '.join(subjects)}. A place is "
+                    "held by a tree or by a call, and the two release differently.",
+                )
+            for key in ("cap", "ttl"):
+                value = entry[key]
+                # ⛔ `bool` is excluded by name: it is an `int` in this language,
+                # so `cap: true` would read as a cap of one and install a guard
+                # the project never described.
+                if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                    raise ConfigError(
+                        f"{at}.{key}",
+                        f"is {value!r}; it is a whole number of at least one (§ 10). A cap "
+                        "below one is a resource nothing may ever hold, and a lifetime below "
+                        "one is a lease that has expired before the call it covers starts.",
+                    )
+            try:
+                re.compile(str(entry["claimed_by"]))
+            except re.error as error:
+                raise ConfigError(
+                    f"{at}.claimed_by",
+                    f"does not compile as a pattern -- {error}. ⛔ Refused rather than left to "
+                    "the guard: a pattern that cannot be compiled matches no call, so the "
+                    "resource reads as guarded and nothing is ever held (§ 10).",
+                ) from None
+            probe = entry.get("probe")
+            if probe is not None and (not isinstance(probe, str) or not probe.strip()):
+                raise ConfigError(
+                    f"{at}.probe",
+                    f"is {probe!r}; it is a command, or `null` where the resource cannot be "
+                    "asked how many are held (§ 10). An empty string is neither: it reads as "
+                    "a command and prints no count.",
+                )
+
     # § 14. The one key of the three halves of the boundary, and the one thing a
     # reader can hold about it: it is names. `[]` is a real statement and is
     # accepted -- a project whose roles need nothing beyond the shell's own
@@ -2029,7 +2098,7 @@ MARKED_REQUIRED_WHEN = [
 # surface happened to say. ⛔ This one carries the whole weight of the class,
 # since the reader keeps no list of its own to compare against -- drop the clause
 # from the surface and this is what reddens.
-MARKED_PROCEDURE = ["audit_trail", "fail_open"]
+MARKED_PROCEDURE = ["audit_trail", "fail_open", "waive_review"]
 
 MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
@@ -2806,6 +2875,40 @@ def _planted_violations():
         ("a retired command written with nothing after it", "done[0].run",
          at("done", [{"check": "merged", "run": None, "answered_by": "procedure",
                       "stop": "…"}])),
+        # § 10's entries. ⚠️ The `claimed_by` and `cap` plants are the two whose
+        # refusal direction is the permissive one: each of them leaves a reader
+        # reporting the resource as configured while no call ever claims it.
+        ("an exclusive set that is not a list", "branch_model.exclusive_resources",
+         at("branch_model.exclusive_resources", "the-local-stack")),
+        ("an exclusive entry that is not a block", "branch_model.exclusive_resources[0]",
+         at("branch_model.exclusive_resources", ["the-local-stack"])),
+        ("an exclusive entry naming nothing", "branch_model.exclusive_resources[0].name",
+         _a_resource_of(name=None)),
+        ("an exclusive entry stating no cap", "branch_model.exclusive_resources[0].cap",
+         _a_resource_of(cap=None)),
+        ("a cap of zero, which nothing may ever hold",
+         "branch_model.exclusive_resources[0].cap", _a_resource_of(cap=0)),
+        ("a cap written as a flag, which reads as one",
+         "branch_model.exclusive_resources[0].cap", _a_resource_of(cap=True)),
+        ("a cap that is not a whole number", "branch_model.exclusive_resources[0].cap",
+         _a_resource_of(cap=1.5)),
+        ("an exclusive entry stating no subject",
+         "branch_model.exclusive_resources[0].subject", _a_resource_of(subject=None)),
+        ("a subject outside its alternation", "branch_model.exclusive_resources[0].subject",
+         _a_resource_of(subject="session")),
+        ("an exclusive entry stating what claims it nowhere",
+         "branch_model.exclusive_resources[0].claimed_by", _a_resource_of(claimed_by=None)),
+        ("a claim pattern that does not compile, so no call ever claims it",
+         "branch_model.exclusive_resources[0].claimed_by",
+         _a_resource_of(claimed_by="a-command-that-claims-it(")),
+        ("an exclusive entry stating no lifetime", "branch_model.exclusive_resources[0].ttl",
+         _a_resource_of(ttl=None)),
+        ("a lifetime of zero, which expires before the call it covers starts",
+         "branch_model.exclusive_resources[0].ttl", _a_resource_of(ttl=0)),
+        ("a probe written blank, which reads as a command and prints no count",
+         "branch_model.exclusive_resources[0].probe", _a_resource_of(probe="   ")),
+        ("a probe that is no command at all", "branch_model.exclusive_resources[0].probe",
+         _a_resource_of(probe=["a-command-that-counts-them"])),
         ("a local check list that is not a list", "checks_local",
          at("checks_local", "a-local-command")),
         ("a local check entry that is not a block", "checks_local[0]",
@@ -3150,6 +3253,35 @@ def _a_local_check_of(**overrides):
         }
         entry.update(overrides)
         data["checks_local"] = [entry]
+        return data
+
+    return mutate
+
+
+def _a_resource_of(**overrides):
+    """§ 10's facet carried as one entry, with the stated keys replaced.
+
+    Written out rather than borrowed from whichever example carries a resource,
+    for the reason `_a_local_check_of` is: an example states a project's two
+    resources, and a plant that broke one key of a borrowed entry would redden on
+    whichever other entry of that list the project also wrote.
+
+    ⛔ A key whose override is `None` is **written** with nothing after it rather
+    than removed, the two being one value once a mapping is parsed -- and the
+    blank form is the one a reader asking for truthiness lets through.
+    """
+
+    def mutate(data: dict) -> dict:
+        entry = {
+            "name": "what is held",
+            "cap": 1,
+            "subject": "tree",
+            "claimed_by": "a-command-that-claims-it",
+            "probe": "a-command-that-counts-them",
+            "ttl": 600,
+        }
+        entry.update(overrides)
+        data.setdefault("branch_model", {})["exclusive_resources"] = [entry]
         return data
 
     return mutate

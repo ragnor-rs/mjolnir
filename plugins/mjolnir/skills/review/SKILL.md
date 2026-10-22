@@ -463,11 +463,13 @@ tree and the commit it came from.
 ([`§ 10`](../../config/schema.md#exclusive-resources)) — it starts no second instance, reads no
 verdict off whatever already holds the place, and takes nothing down: what holds it may be another
 session's live work, or the shared checkout's own long-running work, which is a person's to release
-and not a session's. ⚠️ **What happens on contention — wait, queue, refuse or ask — is § 10's
-enforcing hook's to say and not this file's**, so where nothing enforces it the role waits and says
-so. ⛔ **A check that could not have the place is reported blocked rather than skipped**, naming the
-holder. ⚠️ **Waiting looks exactly like hanging**, and over the cap a run does not merely slow
-itself — it slows what was already running and surfaces as a red nobody can attribute to a diff.
+and not a session's. ⚠️ **What happens on contention is the enforcing hook's to say and not this
+file's** — [`§ 7`](../../config/schema.md#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
+states it, along with what the count is read as and what gives a place back, so where nothing
+enforces it the role waits and says so. ⛔ **A check that could not have the place is reported
+blocked rather than skipped**, naming the holder. ⚠️ **Waiting looks exactly like hanging**, and
+over the cap a run does not merely slow itself — it slows what was already running and surfaces as
+a red nobody can attribute to a diff.
 ⛔ **A role that takes such a place names where it is released**, including on the paths that reach
 no merge, and the reply says whether the place is free; asking the holder to release one is allowed
 and taking it is not. A teardown that stops every holder on the machine belongs between items, never
@@ -560,6 +562,22 @@ it says a person's part is outstanding, and taking it out of that state is the a
 part is done. Whichever carrier is used, ⛔ **the answer is written as an answer**, because a state
 with two readings records nothing.
 
+⛔ **The form, and the keying a guard resolves it by, are
+[`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)'s** — ⛔ **not composed
+here**, a record a guard cannot parse being a record that reads as absent. One command writes it,
+and the question names which ask is being answered:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/enforce.py" record \
+  --change <owner>/<repository>#<number> --question read_by_a_person \
+  --given "<the answer as it came back>" --by "<who answered>"
+```
+
+⚠️ **4a's depth answer and 9a's go through the same command under their own questions**, which § 7
+states the vocabulary for. ⛔ **An answer this role reports and does not record is the one failure
+this whole step exists to prevent**, and the guard on the merge is what makes it visible rather than
+silent.
+
 ⚠️ **A host's mergeability field does not say whether an uninspected change can be merged** —
 measured on one reporting itself mergeable while its own state word said otherwise. ⛔ **Read the
 state word, not the boolean**, and say which it was. ⚠️ **Taking a change out of an uninspected
@@ -610,7 +628,7 @@ silence.
 |---|---|
 | **This role** | conducts the review, reproduces and fixes what it finds, drives the change's plan, answers the threads, drives the host's runs to an answer, and **records** the verdicts and the answer to every ask it made — 4a's depth and step 9's two |
 | **The finishing role** | the merge, reading it back from state, the item's move through the port, and the tree released — [`skills/finish/`](../finish/) |
-| **A hook** | **refusing** an act on what the record says: a merge with no recorded answer, a local check the host has already run, a resource over its cap — [`§ 7`](../../config/schema.md#7-carrier)'s hook carrier |
+| **A hook** | **refusing** an act on what the record says: a merge with no recorded answer, a local check the host has already run, a resource over its cap — [`§ 7 → What a hook refuses`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads), which also fixes the form an answer is recorded in and how it is keyed |
 
 ⛔ **The division is that procedure produces a record and enforcement reads it.** A role that
 assumes it owns the gate fights the hooks; a role that assumes a hook will stop it skips the record
@@ -619,7 +637,10 @@ where one is, the answer is what unblocks it; where none is, the answer is the w
 and the reply says which of the two situations it was in.
 
 ⛔ **A hook that refuses something is not argued with and not edited to get past.** Report the
-refusal as it came back, including when it is this role's own act that was refused.
+refusal as it came back, including when it is this role's own act that was refused — and ⛔ **the
+refusal already names what would unblock it**, by
+[`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads), so the remedy is in the
+message rather than something to work out.
 
 ## 12. The reply
 

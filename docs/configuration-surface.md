@@ -599,6 +599,63 @@ procedure that treats absence as an unset value fails on a project that is corre
   Hence the semantic-section map in
   [`schema.md § 4.4`](../plugins/mjolnir/config/schema.md#44-template).
 
+## The enforcement half: three keys, and the rest procedure
+
+Three projects run process hooks — eight scripts across eight events in one, five inline guards in
+another, three scripts in a third — and the roles that overlap across them are a capacity lease on a
+shared resource, a gate on a merge with no human review, post-merge cleanup, a stale-branch check,
+deny guards on a live path, and a recorder for a review answer. Run the boundary's test on each part
+of the first two, and the split falls where the thing being described stops generalising.
+
+| the part | does a role or a guard read it to decide what to do next | where it lands |
+|---|---|---|
+| what the resource is — a build daemon's slots, an app instance, a container stack, a database | no: nothing branches on it | nowhere. It reaches a guard as a name and a number and never as a kind |
+| how many may be held | yes | `cap`, which already existed |
+| what holds a place | yes | `subject`, which already existed |
+| which calls put it at stake | yes: a guard takes a place or does not | `claimed_by`, a key. Four projects' claiming commands have nothing in common but being commands |
+| how many are held right now | yes: it is half the comparison | `probe`, a key. ⛔ **The one question the procedure cannot answer about somebody else's resource** |
+| how long a lease counts | yes | `ttl`, a key |
+| the comparison itself — a sum, and over distinct keys | no: it is the same arithmetic everywhere | procedure |
+| what happens on contention | no | procedure |
+| which direction a guard fails in | no | procedure, and the one of these that is not obvious |
+
+⛔ **The four keys that were already there are the measurement, and the three new ones are the same
+measurement one layer down**:
+[`schema § 10 → Exclusive resources`](../plugins/mjolnir/config/schema.md#exclusive-resources)
+declares all of them, and
+[`schema § 7 → A lease on an exclusive resource`](../plugins/mjolnir/config/schema.md#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
+states what a guard does with them. The capacity rule measured on one project is *busy daemons plus
+leases too young to have registered one, capped at two* — so a facet with `cap` and `subject` and
+nothing else describes a lease nobody can take, there being no way to ask how many are held and no
+way to know which call is asking.
+
+**Why the fail direction is procedure and not a per-guard setting.** It is the one part of this that
+looks like a preference and is not: both directions have a failure that reads like success, and
+which of them is wrong is decided by the act rather than by the project. A guard that refuses every
+call it could not reason about is a guard somebody turns off, and then nothing is held at all — the
+same argument [`schema § 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)
+makes for not demanding a person everywhere. A guard that allows an act it could not reason about is
+only wrong where the act cannot be undone, and there the rule already exists: ⛔ **silence is not a
+yes where the answer would license something irreversible**, which
+[`schema § The loop`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
+states for an ask nothing answered and
+[`schema § 7 → Which direction a guard fails in`](../plugins/mjolnir/config/schema.md#which-direction-a-guard-fails-in)
+applies to a guard. A project that could configure this would be choosing whether its own merges
+happen unread.
+
+**What the merge gate can and cannot be keyed on, measured on two of the three projects.** One
+carries a pair of hooks — a recorder for the answer and a guard refusing a merge where no record
+exists — and the other carries a single hook holding every merge behind an ask that reads no record
+and that no review can silence. ⛔ **They are not two halves of one design**: the second cannot be
+satisfied, so it is argued with, and a guard that is argued with is a guard nobody has to satisfy
+again. The first is the one extracted, and what it needs that nothing stated is the record's own
+form — which is why
+[`schema § 7 → What a hook refuses, and the record it reads`](../plugins/mjolnir/config/schema.md#what-a-hook-refuses-and-the-record-it-reads)
+fixes the keying rather than leaving it to whichever role wrote the answer. The measured failure
+there is specific: that project's recorder keys the answer by repository and number, so a question
+that named the change ambiguously recorded nothing and left the merge blocked however it was
+answered.
+
 ## One rule that is procedure everywhere
 
 The estimate/measurement separation in

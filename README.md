@@ -119,7 +119,8 @@ to ask you are stated too —
 | [`tools/check_nothing_deferred.py`](tools/check_nothing_deferred.py) | The gate that refuses a merge while any item raised against the change is unresolved, counted in the body and in the threads on it |
 | [`tools/check_prose_width.py`](tools/check_prose_width.py) | The sweep that holds every tracked markdown file to the line width the configuration states, excluding the lines the format forbids breaking |
 | [`tools/check_no_audit_trail.py`](tools/check_no_audit_trail.py) | The gate that reads the markdown lines a change adds and refuses a dated pass record, a figure beside a former value, or a clause whose subject is the pass before this one |
-| [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/): a `Stop` hook holding a role's reply to the register, and a `PreToolUse` hook refusing a command that would carry a credential onto a surface outside the project |
+| [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/): a `SessionStart` hook putting the rules nothing mechanical reads into the session, a `Stop` hook holding a role's reply to the register, a `PreToolUse` hook refusing a command that would carry a credential onto a surface outside the project, and the enforcement half below. Which they are is what the file says, so no count of them is carried here |
+| [`plugins/mjolnir/scripts/enforce.py`](plugins/mjolnir/scripts/enforce.py) | The enforcement half: a guard that refuses a merge for which no answer to *is a person going to read this diff* is recorded on the change, naming what would unblock it; a lease that holds a place on whatever your configuration says contends, given back on every exit path that fires and expiring on the one that cannot; and the command that writes the record the guard reads |
 
 The loop's remaining roles land here as they are reconciled. ⛔ **No count of them is written
 here** — the table above says which are shipped, and
@@ -254,7 +255,20 @@ same kind of reason. The
 single statement of what it requires and why a project does not choose it. It is held in the
 session by a hook rather than by the gate, since a reply is not a file; the checks, and what they
 leave to a reader, are in
-[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-replys-register-held-in-the-session-not-on-the-gate).
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-reply-defers-nothing-held-in-the-session-not-on-the-gate).
+
+⛔ **A guard refuses an act on the strength of a record, never on a reading of the work.** Procedure
+produces the record and enforcement reads it, so the question *is a person going to read this diff*
+is asked and written onto the change whether or not a hook is installed — and where one is, a merge
+with no recorded answer is refused, with what would unblock it named in the refusal. The
+[enforcement rule](plugins/mjolnir/config/schema.md#what-a-hook-refuses-and-the-record-it-reads) is
+the single statement of the record's form and keying,
+[which direction a guard fails in](plugins/mjolnir/config/schema.md#which-direction-a-guard-fails-in)
+of the two answers to a record it could not read, and
+[the lease](plugins/mjolnir/config/schema.md#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
+of how a place on a contended resource is held and given back. A project that states nothing
+exclusive gets no capacity guard at all; what no check can reach is in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-enforcement-half-a-guard-that-refuses-and-a-place-that-comes-back).
 
 ### Who this page is written for
 

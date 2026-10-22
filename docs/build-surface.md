@@ -329,6 +329,28 @@ either. ⛔ **It is a non-goal, stated at**
 [`schema § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
 with the other facts a project's own command reads, and no key is owed for it.
 
+**The strongest argument for the opposite answer is a triple, and it does not survive being
+counted.** Three parts of the surface separately know which tools a project builds and tests with —
+the capacity probe at
+[`schema § 10 → Exclusive resources`](../plugins/mjolnir/config/schema.md#exclusive-resources), the
+spend guard's argument shape (#26) and the deploy script (#13) — which reads like three copies of
+one fact and therefore like a reason to declare the toolchain once. ⛔ **None of the three is
+derivable from a toolchain name**, measured on one project:
+
+- the capacity rule is not *the build tool* but **busy daemons plus leases too young to have
+  registered one, capped at two** — a sum rather than a maximum, because a build started outside the
+  loop holds a daemon with no lease while one just launched holds a lease with no daemon yet, and
+  reading it as a maximum let a third through the cap of two;
+- the spend rule is one **argument shape** of a runner that also runs that project's cheap suites,
+  so the tool name does not separate the paid call from the free one;
+- the deploy script is hosts, services and secrets, none of which a toolchain states.
+
+A declared toolchain would therefore be a fourth statement beside three irreducible ones — a copy to
+keep in sync, which is the defect the toolkit exists to delete. ⛔ **So each of the three stays
+where it is**, and nothing in the toolkit branches on what a probe is probing:
+[`schema § 7 → A lease on an exclusive resource`](../plugins/mjolnir/config/schema.md#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
+is where that is stated for the one of the three this surface carries a key for.
+
 ## What the reading did not force
 
 Stated so that the absences are read as results rather than as work left undone:
