@@ -851,29 +851,66 @@ def _normalised_command(command: str) -> str:
     return " ".join(command.split())
 
 
+def _path_filter(node: dict, where: str) -> None:
+    """§ 2's path filter, held to being a list of globs where it is stated.
+
+    Read by no consumer in this tree and held to a shape anyway, for the reason
+    § 13's `run` is: a single glob written as a string is the natural mistake,
+    and it stringifies into something a comparison would walk character by
+    character. ⚠️ Both levels go through here, so the entry's filter and a job's
+    are held identically -- a shape rule that applied to one of them would be
+    read as a statement about the other.
+
+    ⛔ The **key's presence** is what is read, not its value, which is § 2's rule
+    for every key here whose absence is itself an answer: a filter omitted means
+    the level carries none, while one written with nothing after it is the same
+    text as a filter somebody meant to write.
+    """
+    if "paths" not in node:
+        return
+    value = node["paths"]
+    if not isinstance(value, list) or not value:
+        raise ConfigError(
+            where,
+            f"is {value!r}; § 2 states a path filter as a list of globs, or "
+            "omitted where that level carries none. A single glob written as a "
+            "string is read as a list of its characters by anything that walks "
+            "it, and an empty list is the key written blank -- which § 2 refuses "
+            "rather than reading as the absence it looks like.",
+        )
+    for position, pattern in enumerate(value):
+        if not isinstance(pattern, str) or not pattern.strip():
+            raise ConfigError(
+                f"{where}[{position}]",
+                f"is {pattern!r}; each entry of a path filter is a glob (§ 2). A "
+                "blank one matches nothing while reading as a filter somebody "
+                "wrote.",
+            )
+
+
 def _mirrored_commands(data: dict) -> dict[str, str]:
-    """Normalised command -> the workflow whose run mirrors it (§ 2).
+    """Normalised command -> where the host's runs mirror it (§ 2).
 
-    `mirrors` states one command per entry today, and a workflow that runs
-    several has no form on the surface -- #58's gap. So § 13's refusal reads
-    **whatever an entry mirrors** rather than comparing against a single string:
-    a list is read as the commands it holds.
+    The value is the phrase § 13's refusal names, so a collision reports the
+    **job** where a job is what mirrors the command and the workflow where the
+    entry does. A map to the workflow alone would answer a question § 2 stopped
+    asking: one entry can now carry four commands, and *the `Checks` workflow
+    already mirrors it* is the per-workflow answer this form exists to replace.
 
-    ⚠️ That list is a *tolerance*, not a shape § 2 states, and it promises
-    nothing about #58: that item's own acceptance names a per-command path
-    filter, which is a list of mappings and is **refused** below rather than
-    guessed at. Whoever lands #58 edits this function, and the refusal is what
-    tells them so.
+    Both forms are walked, and ⛔ **an entry stating both is refused**: § 2 makes
+    them exclusive, and a reader preferring one would decide a question the
+    surface answers. An entry stating neither mirrors nothing, which is the
+    shape a workflow with no local counterpart has always had.
 
     ⚠️ A shape this cannot read is refused rather than skipped -- the list, an
-    entry, and a `mirrors` alike. Skipping any of the three would empty this map
-    in silence, and a collision check with nothing in its map is a check that
-    reports green. Measured on this function's first form, which refused an
-    unreadable `mirrors` and then tolerated the two shapes one key up: a
-    `host.checks` written as a string or a mapping, or an entry written as a
-    bare command, each let every colliding `run` load clean. `host.checks` is
-    required and non-empty-checked and has never been type-checked, so the
-    shapes were harmless until something read the entries.
+    entry, a `mirrors`, a `jobs` and a member of one alike. Skipping any of them
+    would empty this map in silence, and a collision check with nothing in its
+    map is a check that reports green. Measured on this function's first form,
+    which refused an unreadable `mirrors` and then tolerated the two shapes one
+    key up: a `host.checks` written as a string or a mapping, or an entry
+    written as a bare command, each let every colliding `run` load clean.
+    `host.checks` is required and non-empty-checked and has never been
+    type-checked, so the shapes were harmless until something read the entries.
     """
     out: dict[str, str] = {}
     checks = _get(data, "host.checks")
@@ -893,21 +930,114 @@ def _mirrored_commands(data: dict) -> dict[str, str]:
                 "`workflow` (§ 2). An entry this reader cannot walk takes "
                 "whatever it mirrors out of § 13's refusal in silence.",
             )
-        if entry.get("mirrors") is None:
-            continue
-        mirrors = entry["mirrors"]
-        commands = mirrors if isinstance(mirrors, list) else [mirrors]
-        for command in commands:
-            if not isinstance(command, str):
-                raise ConfigError(
-                    f"host.checks[{index}].mirrors",
-                    f"is {mirrors!r}, which is neither the local command § 2 "
-                    "states nor a list of them. § 13's refusal reads this to "
-                    "find a done check the host already runs, and would hold "
-                    "nothing against a shape it cannot read.",
-                )
-            out.setdefault(_normalised_command(command), entry.get("workflow") or "unnamed")
+        for command, mirrored_by in _entry_commands(entry, index):
+            out.setdefault(_normalised_command(command), mirrored_by)
     return out
+
+
+def _entry_commands(entry: dict, index: int):
+    """Yield (command, the phrase naming where it is mirrored) for one entry.
+
+    The two forms § 2 states, read in one place so that neither can grow a
+    refusal the other does not have. An entry stating neither yields nothing.
+    """
+    where = f"host.checks[{index}]"
+    workflow = entry.get("workflow")
+    # The key the whole facet is keyed on, held here because an entry without
+    # one has no key at all. It read as `unnamed` before: every entry missing a
+    # workflow collapsed into one answer, and § 13's refusal then named a
+    # workflow no file contains.
+    if not isinstance(workflow, str) or not workflow.strip():
+        raise ConfigError(
+            f"{where}.workflow",
+            f"is {workflow!r}; § 2 keys an entry by its workflow's name, so an "
+            "entry stating none has no key. Every consumer reads this facet by "
+            "that name, and a refusal naming a workflow nothing is called sends "
+            "a reader to a file their repository does not have.",
+        )
+    _path_filter(entry, f"{where}.paths")
+    # Presence and never value, for both keys below: a `mirrors` written with
+    # nothing after it would otherwise satisfy the exclusivity rule and the
+    # absence rule at once, so an entry could state both forms and be read as
+    # stating one.
+    if "jobs" in entry and "mirrors" in entry:
+        raise ConfigError(
+            f"{where}.jobs",
+            "is stated beside a `mirrors` on the same entry, and § 2 makes the "
+            "two exclusive: whichever one an entry states is the whole of what "
+            "it mirrors. Read together they leave a consumer choosing which of "
+            "two statements of one fact to believe.",
+        )
+    if "mirrors" in entry:
+        if entry["mirrors"] is None:
+            raise ConfigError(
+                f"{where}.mirrors",
+                "is written with nothing after it, which § 2 refuses rather than "
+                "reading as the absence it looks like: an entry mirroring no "
+                "local command states neither this key nor `jobs`, and one that "
+                "meant to state a command and stated none is the same text.",
+            )
+        yield _command(entry["mirrors"], f"{where}.mirrors"), f"the `{workflow}` workflow"
+        return
+    if "jobs" not in entry:
+        return
+    jobs = entry["jobs"]
+    if not isinstance(jobs, list) or not jobs:
+        raise ConfigError(
+            f"{where}.jobs",
+            f"is {jobs!r}; § 2 states it as the jobs of one workflow that mirror "
+            "a local command each, and an entry mirroring nothing states neither "
+            "this key nor `mirrors`. Written blank it reads as that absence while "
+            "looking like a list somebody filled in.",
+        )
+    for position, job in enumerate(jobs):
+        at = f"{where}.jobs[{position}]"
+        if not isinstance(job, dict):
+            raise ConfigError(
+                at,
+                f"is {job!r}, and has to be a mapping stating the job's `job` name "
+                "and the command it `mirrors` (§ 2).",
+            )
+        name = job.get("job")
+        if not isinstance(name, str) or not name.strip():
+            raise ConfigError(
+                f"{at}.job",
+                f"is {name!r}; § 2 states the job's id as the workflow file spells "
+                "it. Without it nothing can ask the host about this command's own "
+                "job, which is the whole of what this form adds.",
+            )
+        if job.get("mirrors") is None:
+            raise ConfigError(
+                f"{at}.mirrors",
+                "is required (§ 2): a job mirroring no local command is left out "
+                "of the list rather than written into it with nothing to mirror.",
+            )
+        _path_filter(job, f"{at}.paths")
+        yield (
+            _command(job["mirrors"], f"{at}.mirrors"),
+            f"the `{name}` job of the `{workflow}` workflow",
+        )
+
+
+def _command(mirrors, where: str) -> str:
+    """The one command a `mirrors` states, wherever it sits.
+
+    ⛔ A list is refused here and was tolerated before § 2 stated the second
+    form: several commands behind one workflow name are the jobs that mirror
+    them, each stating its own, so a list would be a second shape for a fact the
+    surface now states once -- and the one that cannot say which command a
+    filter or a job name belongs to. § 13's refusal reads this to find a done
+    check the host already runs, and would hold nothing against a shape it
+    cannot read.
+    """
+    if not isinstance(mirrors, str):
+        raise ConfigError(
+            where,
+            f"is {mirrors!r}, and § 2 states one local command per `mirrors`. "
+            "Several behind one workflow name are its `jobs`, each mirroring the "
+            "command its own run answers about.",
+        )
+    return mirrors
 
 
 def _every_key(data, prefix: str = ""):
@@ -1437,8 +1567,8 @@ def validate(data: dict, facts: dict) -> None:
             if collision:
                 raise ConfigError(
                     f"{where}.run",
-                    f"on the `{entry['check']}` check is {run!r}, which the "
-                    f"`{collision}` workflow already mirrors (§ 2). A done check "
+                    f"on the `{entry['check']}` check is {run!r}, which "
+                    f"{collision} already mirrors (§ 2). A done check "
                     "colliding with a run the host owns asks a shared machine for "
                     "an answer it already has; a check no entry mirrors is the one "
                     "that must run locally.",
@@ -2116,6 +2246,61 @@ def self_test() -> int:
             f"states {states!r}",
         )
 
+    # § 2's second form on the green side, which the plants below cannot assert:
+    # every one of them reddens, and a form that only ever reddens is a form no
+    # project can write. ⛔ The discrimination is the assertion and not the load:
+    # four commands behind one workflow name resolving to one answer is exactly
+    # what the one-command entry did, and it loaded clean the whole time.
+    four = _a_valid_example()
+    four["host"]["checks"] = [_four_jobs_behind_one_workflow()]
+    broken = _refused(four)
+    check(
+        "a workflow whose four jobs mirror four commands loads",
+        broken is None,
+        f"refused {broken!r}",
+    )
+    mirrored = _mirrored_commands(four)
+    answers = [
+        mirrored.get(f"the-{ordinal}-command")
+        for ordinal in ("first", "second", "third", "fourth")
+    ]
+    check(
+        "and each of the four is answered about by its own job, not by the workflow "
+        "they share",
+        all(answers) and len(set(answers)) == 4,
+        f"resolved {answers!r}",
+    )
+
+    # The collision the key exists for, still impossible from inside an entry:
+    # two workflows naming one job, each mirroring a different command. ⛔ A
+    # reader that keyed anything on the job name would answer both with one
+    # entry, which is the build refused on the strength of a title check.
+    shared = _a_valid_example()
+    shared["host"]["checks"] = [
+        {"workflow": "A first planted workflow",
+         "jobs": [{"job": "a-shared-name", "mirrors": "the-first-command"}]},
+        {"workflow": "A second planted workflow",
+         "jobs": [{"job": "a-shared-name", "mirrors": "the-second-command"}]},
+    ]
+    across = _mirrored_commands(shared)
+    check(
+        "two workflows naming one job keep their own answers",
+        len(across) == 2
+        and across.get("the-first-command") != across.get("the-second-command"),
+        f"resolved {across!r}",
+    )
+
+    # And the form a project whose workflow runs exactly one check writes, which
+    # is what it wrote before this form existed: answered about by the workflow.
+    plain = _mirrored_commands(
+        {"host": {"checks": [{"workflow": "Planted", "mirrors": "a-mirrored-command"}]}}
+    )
+    check(
+        "a workflow running one check is still answered about by its own name",
+        "Planted" in (plain.get("a-mirrored-command") or ""),
+        f"resolved {plain!r}",
+    )
+
     # One planted violation per refusal branch that does real work, which is the
     # standard tools/check_single_source.py sets and this suite did not meet: it
     # covered three of sixteen, so most of `validate` could not fail.
@@ -2318,14 +2503,55 @@ def _planted_violations():
                       "stop": "…"}])),
         ("a done check the host already runs", "done[0].run",
          _collides_with_a_mirrored_command),
-        ("a collision with the second command of a workflow that runs several", "done[0].run",
-         _collides_with_a_workflows_second_command),
+        ("several commands in one `mirrors` rather than in its jobs",
+         "host.checks[0].mirrors", _several_commands_in_one_mirrors),
         ("a mirrored command this reader cannot read", "host.checks[0].mirrors",
          _unreadable_mirrors),
         ("a host check list that is not a list", "host.checks",
          at("host.checks", "a-mirrored-command")),
         ("a host check entry that is not a block", "host.checks[0]",
          at("host.checks", ["a-mirrored-command"])),
+        ("a collision with the command one job of a workflow mirrors", "done[0].run",
+         _collides_with_a_jobs_command),
+        ("an entry mirroring both ways at once", "host.checks[0].jobs",
+         _mirroring_both_ways),
+        ("a job list that is not a list", "host.checks[0].jobs",
+         _a_job_list_of("a-job")),
+        ("a job list written blank", "host.checks[0].jobs", _a_job_list_of([])),
+        ("a job entry that is not a block", "host.checks[0].jobs[0]",
+         _a_job_list_of(["a-job"])),
+        ("a job entry naming no job", "host.checks[0].jobs[0].job",
+         _a_job_list_of([{"mirrors": "a-mirrored-command"}])),
+        ("a job entry whose name is blank", "host.checks[0].jobs[0].job",
+         _a_job_list_of([{"job": "  ", "mirrors": "a-mirrored-command"}])),
+        ("a job entry mirroring nothing", "host.checks[0].jobs[0].mirrors",
+         _a_job_list_of([{"job": "a-job"}])),
+        ("a job's mirrored command this reader cannot read",
+         "host.checks[0].jobs[0].mirrors",
+         _a_job_list_of([{"job": "a-job", "mirrors": {"command": "a-command"}}])),
+        ("a path filter written as one glob rather than a list",
+         "host.checks[0].paths", _a_path_filter_of("a-tree/**")),
+        ("a glob of a path filter written blank", "host.checks[0].paths[1]",
+         _a_path_filter_of(["a-tree/**", "  "])),
+        ("a path filter written as an empty list", "host.checks[0].paths",
+         _a_path_filter_of([])),
+        ("a path filter written with nothing after it", "host.checks[0].paths",
+         _a_path_filter_of(None)),
+        ("a job's path filter written as one glob", "host.checks[0].jobs[0].paths",
+         _a_job_list_of([{"job": "a-job", "mirrors": "a-mirrored-command",
+                          "paths": "a-tree/**"}])),
+        ("a job's path filter written as an empty list",
+         "host.checks[0].jobs[0].paths",
+         _a_job_list_of([{"job": "a-job", "mirrors": "a-mirrored-command",
+                          "paths": []}])),
+        ("an entry naming no workflow", "host.checks[0].workflow",
+         _an_entry_whose_workflow_is(None)),
+        ("an entry whose workflow name is blank", "host.checks[0].workflow",
+         _an_entry_whose_workflow_is("   ")),
+        ("a mirrored command written with nothing after it",
+         "host.checks[0].mirrors", _a_mirrors_of(None)),
+        ("a `mirrors` written blank beside a job list", "host.checks[0].jobs",
+         _mirroring_both_ways_one_blank),
         ("a carriers block that is not a block", "carriers", at("carriers", ["skill"])),
         ("a carrier outside the vocabulary", "carriers.day_log",
          at("carriers", {"day_log": "telepathy"})),
@@ -2489,39 +2715,162 @@ def _collides_with_a_mirrored_command(data: dict) -> dict:
     checks = data.setdefault("host", {}).setdefault("checks", [])
     if not checks or not isinstance(checks[0], dict) or not checks[0].get("mirrors"):
         checks.insert(0, {"workflow": "Planted", "mirrors": "a-mirrored-command"})
-    mirrors = checks[0]["mirrors"]
-    command = mirrors[0] if isinstance(mirrors, list) else mirrors
+    command = checks[0]["mirrors"]
     data["done"] = [
         {"check": "local", "run": command, "answered_by": "procedure", "stop": "…"}
     ]
     return data
 
 
-def _collides_with_a_workflows_second_command(data: dict) -> dict:
-    """The half of § 13's refusal that #58 is the open form of.
+def _several_commands_in_one_mirrors(data: dict) -> dict:
+    """The shape that was the tolerance before § 2 stated the second form.
 
-    A workflow running several commands has no form on the surface yet, so this
-    plant writes the shape the refusal is read against rather than one an example
-    carries: a check colliding with the **second** of them has to be refused the
-    same way as one colliding with the first. Without this plant that clause is
-    claimed by a comment and exercised by nothing.
+    It read as a workflow mirroring two commands with neither a job nor a filter
+    of its own, which is the second shape of the fact `jobs` now states once.
+    Planted so the refusal is exercised: the configurations this tolerance
+    accepted load against this reader and have to stop loading.
     """
     data.setdefault("host", {})["checks"] = [
         {"workflow": "Planted", "mirrors": ["the-first-command", "the-second-command"]}
     ]
+    return data
+
+
+def _four_jobs_behind_one_workflow() -> dict:
+    """§ 2's second form written out: one workflow name, four mirrored commands.
+
+    Written out rather than read from the example that illustrates the form, for
+    the reason `_an_e2e_register_with` is: a plant that broke one key of a
+    borrowed block would depend on how many jobs that example happens to carry,
+    and the count is the whole of what this fixture asserts. ⚠️ The fourth job
+    states no filter of its own, which is the arm an example with two jobs and
+    two filters leaves asserted nowhere.
+    """
+    return {
+        "workflow": "Planted",
+        "triggers": ["pull_request -> *"],
+        "jobs": [
+            {"job": "a-first-job", "mirrors": "the-first-command",
+             "paths": ["a-first-tree/**"]},
+            {"job": "a-second-job", "mirrors": "the-second-command",
+             "paths": ["a-second-tree/**"]},
+            {"job": "a-third-job", "mirrors": "the-third-command",
+             "paths": ["a-third-tree/**"]},
+            {"job": "a-fourth-job", "mirrors": "the-fourth-command"},
+        ],
+    }
+
+
+def _collides_with_a_jobs_command(data: dict) -> dict:
+    """§ 13's refusal against a command one job of a workflow mirrors.
+
+    The discrimination #33 and #39 could not make under the one-command entry,
+    asserted where it is decidable: a done check colliding with the **third** of
+    four commands behind one workflow name is refused exactly as one colliding
+    with a workflow's only command is. ⚠️ What a hook does with that answer is
+    its own item's; what is held here is that the answer is per command.
+    """
+    data.setdefault("host", {})["checks"] = [_four_jobs_behind_one_workflow()]
     data["done"] = [
-        {
-            "check": "local",
-            "run": "the-second-command",
-            "answered_by": "procedure",
-            "stop": "…",
-        }
+        {"check": "local", "run": "the-third-command", "answered_by": "procedure",
+         "stop": "…"}
     ]
     return data
 
 
+def _mirroring_both_ways(data: dict) -> dict:
+    """An entry stating a `mirrors` and a `jobs` list together."""
+    checks = data.setdefault("host", {}).setdefault("checks", [])
+    if not checks or not isinstance(checks[0], dict) or not checks[0].get("mirrors"):
+        checks.insert(0, {"workflow": "Planted", "mirrors": "a-mirrored-command"})
+    checks[0]["jobs"] = [{"job": "a-job", "mirrors": "a-second-command"}]
+    return data
+
+
+def _a_job_list_of(jobs):
+    """An entry whose `jobs` is the stated value, and which mirrors nothing else.
+
+    `mirrors` is cleared rather than left in place, so each of these reddens on
+    the branch it was written for instead of on the exclusivity refusal above --
+    which is the way a plant goes quietly wrong: it fails, the key it names is
+    the one expected, and the branch it was meant to assert is never reached.
+    """
+
+    def mutate(data: dict) -> dict:
+        checks = data.setdefault("host", {}).setdefault("checks", [])
+        if not checks or not isinstance(checks[0], dict):
+            checks.insert(0, {"workflow": "Planted"})
+        checks[0].pop("mirrors", None)
+        checks[0]["jobs"] = jobs
+        return data
+
+    return mutate
+
+
+def _a_path_filter_of(paths):
+    """An entry whose own `paths` is the stated value.
+
+    ⚠️ `None` is a plant here and not a no-op: the key is written with nothing
+    after it, which is a different shape from the key being absent, and the two
+    are the same value once a mapping is parsed. A reader asking for the value
+    rather than for the key reads the first as the second -- measured on this
+    change, where the filter was held by its value and `paths:` passed blank.
+    """
+
+    def mutate(data: dict) -> dict:
+        checks = data.setdefault("host", {}).setdefault("checks", [])
+        if not checks or not isinstance(checks[0], dict):
+            checks.insert(0, {"workflow": "Planted", "mirrors": "a-mirrored-command"})
+        checks[0]["paths"] = paths
+        return data
+
+    return mutate
+
+
+def _an_entry_whose_workflow_is(name):
+    """An entry whose `workflow` is the stated value, the key it is keyed on."""
+
+    def mutate(data: dict) -> dict:
+        checks = data.setdefault("host", {}).setdefault("checks", [])
+        if not checks or not isinstance(checks[0], dict):
+            checks.insert(0, {"mirrors": "a-mirrored-command"})
+        checks[0]["workflow"] = name
+        return data
+
+    return mutate
+
+
+def _a_mirrors_of(mirrors):
+    """An entry whose `mirrors` is the stated value, its jobs left out."""
+
+    def mutate(data: dict) -> dict:
+        checks = data.setdefault("host", {}).setdefault("checks", [])
+        if not checks or not isinstance(checks[0], dict):
+            checks.insert(0, {"workflow": "Planted"})
+        checks[0].pop("jobs", None)
+        checks[0]["mirrors"] = mirrors
+        return data
+
+    return mutate
+
+
+def _mirroring_both_ways_one_blank(data: dict) -> dict:
+    """Both forms on one entry, with the `mirrors` written blank.
+
+    The arm a value-read exclusivity rule lets through: blank, the key satisfies
+    *states no command* and *states no jobs beside a command* at once, so the
+    entry states both forms and is read as stating one.
+    """
+    checks = data.setdefault("host", {}).setdefault("checks", [])
+    if not checks or not isinstance(checks[0], dict):
+        checks.insert(0, {"workflow": "Planted"})
+    checks[0]["mirrors"] = None
+    checks[0]["jobs"] = [{"job": "a-job", "mirrors": "a-second-command"}]
+    return data
+
+
 def _unreadable_mirrors(data: dict) -> dict:
-    """A `mirrors` that is neither a command nor a list of them."""
+    """A `mirrors` that is no command at all, the list form having its own."""
     checks = data.setdefault("host", {}).setdefault("checks", [])
     if not checks or not isinstance(checks[0], dict):
         checks.insert(0, {"workflow": "Planted"})

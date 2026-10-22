@@ -1068,3 +1068,42 @@ nobody can classify is an item per local command, which grows the surface in the
 boundary exists to prevent — so what the statement had to be was a test a reader runs, with the
 cases worked in the open, rather than a list of what stays local:
 [`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls).
+
+## Four checks behind one workflow name, and the tolerance that hid it
+
+The host facet was written workflow by workflow, which is how every project here that controls its
+own workflows writes them. One project in the migration set does not: a single workflow runs **four
+jobs mirroring four unrelated local commands** — two languages' linters and test runs, a document
+gate, and a parse-and-lint of its shell scripts — and the four share a checkout and a build, so
+splitting them into four workflows pays for four of each. What that configuration cost every
+consumer is the same loss three times: a guard can only refuse or allow on *the workflow ran*, a
+precondition reading *a run exists for this commit* reads green for a command whose job was
+filtered out of it, and a coverage verdict computed per workflow reports a change covered on the
+strength of jobs that never ran for it.
+
+**This repository tested the opposite arm and the facet held, which is what made it evidence rather
+than a second instance.** A second gate arrived with #19, and the obvious shape was a second job of
+the existing workflow. The first attempt stated one of the two commands in `host.checks` and parked
+the other in a comment beside it; a review rejected that, the sweep became a workflow of its own,
+and the two commands were never joined with `&&` — a conjunction improvised inside one string being
+the shape the facet already refuses for its triggers. So the cost of avoiding the shape was measured
+here at one workflow file and one extra checkout, which is cheap enough that a second job sharing a
+workflow name should need a reason. ⚠️ **What this repository could not tell anybody is whether
+nesting is right**, having never had to nest.
+
+**The tolerance is the part that was invisible.** The reader accepted a `mirrors` holding a *list*
+of commands for as long as the gap was open — written deliberately, so that the refusal of a done
+check the host already runs would compare against whatever an entry mirrored rather than hold
+nothing, and recorded in the reader as promising nothing about the shape that would land. A
+configuration no section of the surface stated therefore loaded clean, and the only statement of
+its meaning was a docstring. ⛔ **That is the failure mode a tolerance has**: it is not a gap a
+reader meets, it is a shape that works until somebody states the other one, and the two then
+disagree about where a command's job and its filter live. Both are closed together at
+[`schema.md § 2 → A workflow whose jobs mirror more than one command`](../plugins/mjolnir/config/schema.md#a-workflow-whose-jobs-mirror-more-than-one-command),
+which states the nested form, refuses the list, and rules what the collision argument behind the
+workflow key does and does not reach.
+
+⚠️ **One half of that statement is held against nothing in this tree.** No workflow of this
+repository filters on paths — every entry of its own facet omits the key — so the rule that a filter
+sits at the level the workflow file states it at is exercised by the reader's own planted violations
+and by the example that illustrates the form, and by no configuration this project runs on.

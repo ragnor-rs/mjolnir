@@ -16,6 +16,19 @@ host:
       mirrors: "npm run lint"
       triggers: "pull_request -> main"
       paths: ["src/**", "package.json"]
+    # § 2's second form: one workflow whose jobs mirror a command each, because they share a
+    # checkout and a build and the project did not write them to be split. Each job states the
+    # filter its own run carries; the workflow's `on:` filter is the entry's, above the list.
+    - workflow: "Checks"
+      triggers: "pull_request -> main"
+      paths: ["docs/**", "schema/**"]
+      jobs:
+        - job: "docs"
+          mirrors: "npm run docs:check"
+          paths: ["docs/**"]
+        - job: "schema"
+          mirrors: "npm run schema:check"
+          paths: ["schema/**"]
   # The other half of the same squash habit: the host's switch is off, so the deletion is the
   # finishing role's — the remote ref only, the local branch and the tree being § 10's release.
   landing:
