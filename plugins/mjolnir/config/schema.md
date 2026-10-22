@@ -622,7 +622,9 @@ live state: which runs exist for this commit, and how each concluded.
 
 ⚠️ **The key is the workflow name, never the job name.** Two unrelated workflows named their job
 identically, and a job-keyed map refused a build on the strength of a check that only validated a
-title.
+title. ⛔ **An entry stating no workflow name has no key at all and is refused** — every consumer
+reads this facet by that name, so entries without one collapse into a single answer and a refusal
+then names a workflow the repository does not contain.
 
 ⚠️ **An entry states one mirrored command, or the jobs that mirror several.** The second form is
 the subsection below; a second command written in a comment beside the facet is a fact the surface
@@ -662,19 +664,25 @@ host:
 ```
 
 **The form is for a project whose workflows are not the toolkit's to reshape.** One project in the
-migration set runs four jobs behind one workflow name — two languages' linters and test runs, a
-document gate, and a parse-and-lint of its shell scripts — sharing one checkout and one build, so
-the four cannot be split into four workflows without paying for four of each. Against one `mirrors`
-per entry a consumer can answer only about the workflow: it cannot refuse a local run of the
-compiled language's tests while letting the document gate through, and a change touching one
-subtree reads as covered on the strength of three jobs that never ran for it.
+migration set runs four jobs behind one workflow name, sharing one checkout and one build, so the
+four cannot be split into four workflows without paying for four of each. Against one `mirrors` per
+entry a consumer can answer only about the workflow: it cannot refuse a local run of one of the
+four while letting another through, and a change touching one subtree reads as covered on the
+strength of the three jobs that never ran for it.
 
 ⛔ **`mirrors` and `jobs` are exclusive, and an entry carrying both is refused.** Whichever one an
 entry states is the whole of what it mirrors, and two statements of that leave a consumer choosing
 between them. An entry carrying **neither** is the shape it already was — a run the host makes that
 duplicates no local command — and is read as mirroring nothing rather than as an entry with
-something missing. ⚠️ **A `jobs` written with nothing after it is refused** instead of being read
-as that absence: an entry that meant to state its jobs and stated none mirrors nothing, silently.
+something missing.
+
+⛔ **A key written with nothing after it is refused rather than read as that absence**, and that
+covers `mirrors`, `jobs` and a path filter written as an empty list alike: an entry that meant to
+state one of them and stated none is the same text as an entry that meant to state nothing, and
+only one of the two readings is what its author wrote. ⚠️ **So the exclusivity above is read on the
+key being there and never on its value** — blank, a `mirrors` beside a `jobs` list satisfies
+*states no command* and *states no second form* at once, and the entry states both forms while
+reading as stating one.
 
 ⛔ **A job's name is scoped by the entry naming its workflow, and is never a key.** What makes the
 map a workflow's and never a job's is a collision *across* workflows, measured above, and that

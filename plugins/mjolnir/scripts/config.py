@@ -851,7 +851,7 @@ def _normalised_command(command: str) -> str:
     return " ".join(command.split())
 
 
-def _path_filter(value, where: str) -> None:
+def _path_filter(node: dict, where: str) -> None:
     """§ 2's path filter, held to being a list of globs where it is stated.
 
     Read by no consumer in this tree and held to a shape anyway, for the reason
@@ -860,16 +860,23 @@ def _path_filter(value, where: str) -> None:
     character. ⚠️ Both levels go through here, so the entry's filter and a job's
     are held identically -- a shape rule that applied to one of them would be
     read as a statement about the other.
+
+    ⛔ The **key's presence** is what is read, not its value, which is § 2's rule
+    for every key here whose absence is itself an answer: a filter omitted means
+    the level carries none, while one written with nothing after it is the same
+    text as a filter somebody meant to write.
     """
-    if value is None:
+    if "paths" not in node:
         return
-    if not isinstance(value, list):
+    value = node["paths"]
+    if not isinstance(value, list) or not value:
         raise ConfigError(
             where,
             f"is {value!r}; § 2 states a path filter as a list of globs, or "
             "omitted where that level carries none. A single glob written as a "
             "string is read as a list of its characters by anything that walks "
-            "it.",
+            "it, and an empty list is the key written blank -- which § 2 refuses "
+            "rather than reading as the absence it looks like.",
         )
     for position, pattern in enumerate(value):
         if not isinstance(pattern, str) or not pattern.strip():
@@ -934,10 +941,26 @@ def _entry_commands(entry: dict, index: int):
     The two forms § 2 states, read in one place so that neither can grow a
     refusal the other does not have. An entry stating neither yields nothing.
     """
-    workflow = entry.get("workflow") or "unnamed"
     where = f"host.checks[{index}]"
-    _path_filter(entry.get("paths"), f"{where}.paths")
-    if "jobs" in entry and entry.get("mirrors") is not None:
+    workflow = entry.get("workflow")
+    # The key the whole facet is keyed on, held here because an entry without
+    # one has no key at all. It read as `unnamed` before: every entry missing a
+    # workflow collapsed into one answer, and § 13's refusal then named a
+    # workflow no file contains.
+    if not isinstance(workflow, str) or not workflow.strip():
+        raise ConfigError(
+            f"{where}.workflow",
+            f"is {workflow!r}; § 2 keys an entry by its workflow's name, so an "
+            "entry stating none has no key. Every consumer reads this facet by "
+            "that name, and a refusal naming a workflow nothing is called sends "
+            "a reader to a file their repository does not have.",
+        )
+    _path_filter(entry, f"{where}.paths")
+    # Presence and never value, for both keys below: a `mirrors` written with
+    # nothing after it would otherwise satisfy the exclusivity rule and the
+    # absence rule at once, so an entry could state both forms and be read as
+    # stating one.
+    if "jobs" in entry and "mirrors" in entry:
         raise ConfigError(
             f"{where}.jobs",
             "is stated beside a `mirrors` on the same entry, and § 2 makes the "
@@ -945,16 +968,20 @@ def _entry_commands(entry: dict, index: int):
             "it mirrors. Read together they leave a consumer choosing which of "
             "two statements of one fact to believe.",
         )
-    if entry.get("mirrors") is not None:
+    if "mirrors" in entry:
+        if entry["mirrors"] is None:
+            raise ConfigError(
+                f"{where}.mirrors",
+                "is written with nothing after it, which § 2 refuses rather than "
+                "reading as the absence it looks like: an entry mirroring no "
+                "local command states neither this key nor `jobs`, and one that "
+                "meant to state a command and stated none is the same text.",
+            )
         yield _command(entry["mirrors"], f"{where}.mirrors"), f"the `{workflow}` workflow"
         return
     if "jobs" not in entry:
         return
     jobs = entry["jobs"]
-    # Presence rather than truthiness, which is this reader's rule for every key
-    # whose absence is itself a configuration: an entry that meant to state its
-    # jobs and stated none mirrors nothing, and would read as a workflow with no
-    # local counterpart at all.
     if not isinstance(jobs, list) or not jobs:
         raise ConfigError(
             f"{where}.jobs",
@@ -985,7 +1012,7 @@ def _entry_commands(entry: dict, index: int):
                 "is required (§ 2): a job mirroring no local command is left out "
                 "of the list rather than written into it with nothing to mirror.",
             )
-        _path_filter(job.get("paths"), f"{at}.paths")
+        _path_filter(job, f"{at}.paths")
         yield (
             _command(job["mirrors"], f"{at}.mirrors"),
             f"the `{name}` job of the `{workflow}` workflow",
@@ -2506,9 +2533,25 @@ def _planted_violations():
          "host.checks[0].paths", _a_path_filter_of("a-tree/**")),
         ("a glob of a path filter written blank", "host.checks[0].paths[1]",
          _a_path_filter_of(["a-tree/**", "  "])),
+        ("a path filter written as an empty list", "host.checks[0].paths",
+         _a_path_filter_of([])),
+        ("a path filter written with nothing after it", "host.checks[0].paths",
+         _a_path_filter_of(None)),
         ("a job's path filter written as one glob", "host.checks[0].jobs[0].paths",
          _a_job_list_of([{"job": "a-job", "mirrors": "a-mirrored-command",
                           "paths": "a-tree/**"}])),
+        ("a job's path filter written as an empty list",
+         "host.checks[0].jobs[0].paths",
+         _a_job_list_of([{"job": "a-job", "mirrors": "a-mirrored-command",
+                          "paths": []}])),
+        ("an entry naming no workflow", "host.checks[0].workflow",
+         _an_entry_whose_workflow_is(None)),
+        ("an entry whose workflow name is blank", "host.checks[0].workflow",
+         _an_entry_whose_workflow_is("   ")),
+        ("a mirrored command written with nothing after it",
+         "host.checks[0].mirrors", _a_mirrors_of(None)),
+        ("a `mirrors` written blank beside a job list", "host.checks[0].jobs",
+         _mirroring_both_ways_one_blank),
         ("a carriers block that is not a block", "carriers", at("carriers", ["skill"])),
         ("a carrier outside the vocabulary", "carriers.day_log",
          at("carriers", {"day_log": "telepathy"})),
@@ -2765,7 +2808,14 @@ def _a_job_list_of(jobs):
 
 
 def _a_path_filter_of(paths):
-    """An entry whose own `paths` is the stated value."""
+    """An entry whose own `paths` is the stated value.
+
+    ⚠️ `None` is a plant here and not a no-op: the key is written with nothing
+    after it, which is a different shape from the key being absent, and the two
+    are the same value once a mapping is parsed. A reader asking for the value
+    rather than for the key reads the first as the second -- measured on this
+    change, where the filter was held by its value and `paths:` passed blank.
+    """
 
     def mutate(data: dict) -> dict:
         checks = data.setdefault("host", {}).setdefault("checks", [])
@@ -2775,6 +2825,48 @@ def _a_path_filter_of(paths):
         return data
 
     return mutate
+
+
+def _an_entry_whose_workflow_is(name):
+    """An entry whose `workflow` is the stated value, the key it is keyed on."""
+
+    def mutate(data: dict) -> dict:
+        checks = data.setdefault("host", {}).setdefault("checks", [])
+        if not checks or not isinstance(checks[0], dict):
+            checks.insert(0, {"mirrors": "a-mirrored-command"})
+        checks[0]["workflow"] = name
+        return data
+
+    return mutate
+
+
+def _a_mirrors_of(mirrors):
+    """An entry whose `mirrors` is the stated value, its jobs left out."""
+
+    def mutate(data: dict) -> dict:
+        checks = data.setdefault("host", {}).setdefault("checks", [])
+        if not checks or not isinstance(checks[0], dict):
+            checks.insert(0, {"workflow": "Planted"})
+        checks[0].pop("jobs", None)
+        checks[0]["mirrors"] = mirrors
+        return data
+
+    return mutate
+
+
+def _mirroring_both_ways_one_blank(data: dict) -> dict:
+    """Both forms on one entry, with the `mirrors` written blank.
+
+    The arm a value-read exclusivity rule lets through: blank, the key satisfies
+    *states no command* and *states no jobs beside a command* at once, so the
+    entry states both forms and is read as stating one.
+    """
+    checks = data.setdefault("host", {}).setdefault("checks", [])
+    if not checks or not isinstance(checks[0], dict):
+        checks.insert(0, {"workflow": "Planted"})
+    checks[0]["mirrors"] = None
+    checks[0]["jobs"] = [{"job": "a-job", "mirrors": "a-second-command"}]
+    return data
 
 
 def _unreadable_mirrors(data: dict) -> dict:

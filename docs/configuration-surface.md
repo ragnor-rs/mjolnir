@@ -1104,6 +1104,6 @@ which states the nested form, refuses the list, and rules what the collision arg
 workflow key does and does not reach.
 
 ⚠️ **One half of that statement is held against nothing in this tree.** No workflow of this
-repository filters on paths — all thirteen entries omit the key — so the rule that a filter sits at
-the level the workflow file states it at is exercised by the reader's own planted violations and by
-the example that illustrates the form, and by no configuration this project runs on.
+repository filters on paths — every entry of its own facet omits the key — so the rule that a filter
+sits at the level the workflow file states it at is exercised by the reader's own planted violations
+and by the example that illustrates the form, and by no configuration this project runs on.
