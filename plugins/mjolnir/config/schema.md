@@ -836,6 +836,37 @@ run concluding green says nothing about a command whose job was skipped, filtere
 never started — the absence rule one level down, and the direction a per-workflow reading gets
 wrong, since it reports green on a job that never ran.
 
+⛔ **What a consumer answers about a mirrored run is one of four values, and only one of them may
+be read as coverage.** This facet states which run answers for a command and what reaches a given
+change; the host states how that run concluded. Between them there are exactly these answers, and
+⛔ **the three that are not coverage are each reported as themselves rather than folded into one**
+— ⚠️ **their remedies differ, which is the whole reason the fourth exists**: a conflicted change
+produces no run at all, and a reader told *no checks, go ahead* is sent to run a suite whose result
+cannot land.
+
+| Answer | What it is | What it is never |
+|---|---|---|
+| **reached** | an entry mirrors the command, a trigger of it fires on this change — its event, the type of that event, and its ref — and every stated path filter admits a path it touches, so this run is the one to read | green. How it concluded is the host's, under the four preconditions above, and this answer is one of their inputs rather than a summary of them |
+| **out of scope** | an entry mirrors it, and no trigger of it fires on this change or a filter admits no path the change touches — so the host legitimately runs nothing and the local verdict is the only one there is | a failure, and never something to wait for |
+| **no answer** | nothing to read, or nothing to read it against: `checks: []`, no entry mirroring this command, an entry stating no trigger, or a change whose own event type or paths were not established against an entry that filters on them | coverage, by the absence rule above |
+| **unreadable** | an entry mirrors it and states a trigger or a filter no consumer can parse | an answer about the change. The remedy is the configuration, and a local run does not supply it |
+
+⛔ **Each of the last three reads as *run it here*, and none of them as covered** —
+[§ 17](#whether-the-hosts-verdict-covers-this-change)'s fail-closed arm arriving at this facet's own
+end of the mapping. ⚠️ **And `reached` outranks the other three wherever more than one trigger
+could answer** — a command two entries mirror, and a workflow whose own `triggers` list has several
+members — which is the one combination that is not fail-closed and is not an exception to it: a run
+that reaches this change exists, so there is something to read, and what it concluded is still the
+host's to say. ⛔ **Both cases take the same ranking, because the reason is the same one**, and a
+consumer applying it to one of them and not the other answers two ways about one configuration —
+measured as exactly that, two triggers reading `reached` split across two entries and `unreadable`
+written as one entry's list.
+
+⛔ **The path filters are the exception and rank the other way**, the two levels being a
+conjunction rather than a disjunction: a command's run covers a change within the workflow's filter
+*and* the job's, so one level admitting says nothing while the other excludes, and what the ranking
+decides there is only which of the three non-covering answers to report.
+
 ### How a pull request lands
 
 ```yaml

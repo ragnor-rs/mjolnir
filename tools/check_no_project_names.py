@@ -1224,6 +1224,69 @@ def _plant_a_configured_label(tree: Tree) -> Tree:
     return _plant_in_a_carrier(f"\nThe item carries the `{label}` label.\n")(tree)
 
 
+def _a_facet_value(tree: Tree, key: str) -> str:
+    """A value this project's `host.checks` states under the given key.
+
+    The counterpart of `_a_configured` for § 2's facet, which that function
+    cannot reach: `host.checks` is a **list of entries**, so every fact in it
+    sits under a key that is a member's and not a path's -- the third shape a
+    list of key names cannot express, after the two `_a_configured` records.
+
+    ⛔ Read out of the configuration for that function's reason, and the keys it
+    is asked for are the three § 2 names as a consumer's own facts: the workflow
+    name a run is keyed by, the trigger pattern that starts it, and the path
+    filter it watches. A carrier naming any of them has copied a project's fact
+    into the shared procedure, which is what `host_checks.py` exists so that no
+    carrier has to do.
+    """
+    document = yaml.safe_load(tree.text.get(OWN_CONFIG, "")) or {}
+    entries = (document.get("host") or {}).get("checks") or []
+    members = sorted({
+        value
+        for entry in entries if isinstance(entry, dict)
+        for value in _scalars(entry.get(key)) if entry.get(key) is not None
+    })
+    if not members:
+        raise AssertionError(
+            f"{OWN_CONFIG} states no `{key}` on any `host.checks` entry, so this "
+            "plant tests nothing"
+        )
+    forbidden = tree.forbidden_values()
+    chosen = [member for member in members if member in forbidden]
+    if not chosen:
+        raise AssertionError(
+            f"every `{key}` {OWN_CONFIG} states is a value the surface publishes "
+            f"({', '.join(members)}), so this plant would carry a nameable value "
+            "and assert nothing"
+        )
+    return chosen[0]
+
+
+def _plant_a_configured_path_filter(tree: Tree) -> Tree:
+    """A path filter, stated in the configuration and named in a carrier.
+
+    ⛔ The filter is planted into the configuration as well as into the carrier,
+    and that is not a convenience. No workflow in **this** repository filters by
+    path, so `host.checks` states no filter and the arm would hold nothing here
+    -- a plant that read the live configuration would raise rather than assert,
+    and the first adopter whose workflows do filter would be the first to find
+    out. Planting both halves asserts the arm for that adopter's tree from this
+    one. ⚠️ The glob is a shape no path here has, so it cannot be the value of
+    anything else the sweep finds.
+    """
+    document = yaml.safe_load(tree.text.get(OWN_CONFIG, "")) or {}
+    entries = (document.get("host") or {}).get("checks") or []
+    if not entries or not isinstance(entries[0], dict):
+        raise AssertionError(
+            f"{OWN_CONFIG} states no `host.checks` entry to carry a filter, so "
+            "this plant tests nothing"
+        )
+    glob = "a-planted-tree/**"
+    entries[0]["paths"] = [glob]
+    tree.text[OWN_CONFIG] = yaml.safe_dump(document)
+    return _plant_in_a_carrier(f"\nThe run watches `{glob}`.\n")(tree)
+
+
 def _plant_in_a_named_root(roots: list[str], text: str):
     """Into a strict file inside one of the roots given, synthesised if none.
 
@@ -1545,6 +1608,20 @@ VIOLATIONS = [
     ("no value is carried in the strict set", "a configured value as a JSON value",
      lambda tree: _plant_in_a_json_carrier(
          '{"statusMessage": "%s"}\n' % _a_configured(tree, "tracker", "labels"))(tree)),
+    # ⛔ One per fact § 2's facet holds, because each is a separate thing a
+    # carrier could copy and the three have separate homes in an entry. The
+    # outcome they assert is #47's: every consumer of the host's checks reads
+    # `host.checks`, and none carries a workflow name, a trigger pattern or a
+    # path filter of its own -- which is a property of the *search* rather than
+    # of whoever read the skills last.
+    ("no value is carried in the strict set", "a workflow name, the key the facet is read by",
+     lambda tree: _plant_in_a_carrier(
+         f"\nWait for the `{_a_facet_value(tree, 'workflow')}` run.\n")(tree)),
+    ("no value is carried in the strict set", "a trigger pattern out of the facet",
+     lambda tree: _plant_in_a_carrier(
+         f"\nThe run starts on `{_a_facet_value(tree, 'triggers')}`.\n")(tree)),
+    ("no value is carried in the strict set", "a path filter out of the facet",
+     _plant_a_configured_path_filter),
     # The three ways this check can hold nothing and report green.
     ("no value is carried in the strict set", "a surface that publishes nothing",
      _plant_a_surface_publishing_nothing),

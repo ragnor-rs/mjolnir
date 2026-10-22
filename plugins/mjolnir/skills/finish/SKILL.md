@@ -193,7 +193,18 @@ silence as success.
 Which runs should exist, which local command each one mirrors, and which paths each watches are
 `host.checks`'s to state ([`§ 2`](../../config/schema.md#2-code-host)) — ⛔ **never this file's, and
 never derived from what the host happens to report.** A run's name does not say which command it
-duplicates.
+duplicates. ⛔ **And the facet is read through the one consumer, never by eye:**
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/host_checks.py" covers --command <the command> \
+  --event <this change's event> --ref <the ref it is against> \
+  --type <that event's type> --path <each path it touches>
+```
+
+⚠️ **Its answer is one of § 2's four and `reached` is not green** — it names the run whose
+conclusion is worth reading, and reading it is this role's, under the four preconditions above. The
+other three each read as *run it here*, and ⛔ **none of them as covered**, which is the direction
+an empty or unreadable facet has to err in.
 
 Watching rather than polling is the same subsection's:
 

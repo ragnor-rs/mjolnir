@@ -42,12 +42,19 @@ own `No audit trail` workflow and its own `host.checks` entry, and is recorded i
 scope is a **diff** rather than a tree — the rule's own carve-out leaves the past alone — which it
 shares with the gate above, as it shares having no `push` arm.
 
-`plugins/mjolnir/scripts/enforce.py` is the other one that does not run on the gate: it refuses an
-act in the session on the strength of a record somebody else wrote, and holds a place on what a
-project says contends. It has its own `Enforcement` workflow and its own `host.checks` entry, and is
-in [its own section](#the-enforcement-half-a-guard-that-refuses-and-a-place-that-comes-back) below —
+`plugins/mjolnir/scripts/enforce.py` holds no claim about this tree either: it refuses an act in the
+session on the strength of a record somebody else wrote, and holds a place on what a project says
+contends. What runs on the gate is its own assertion suite, in an `Enforcement` workflow with its
+own `host.checks` entry, and it is recorded in
+[its own section](#the-enforcement-half-a-guard-that-refuses-and-a-place-that-comes-back) below —
 where the half no check reaches, which is whether a place was actually given back on a machine
 nobody is watching, is stated with it.
+
+`plugins/mjolnir/scripts/host_checks.py` is not a check on this tree at all: it is the one consumer
+of `host.checks`, and what runs on the gate is its own assertion suite, in a `Host checks consumer`
+workflow with its own `host.checks` entry. It is recorded in
+[its own section](#the-hosts-own-runs-read-by-one-consumer) below, because the limits of what it can
+answer are what a role reading it has to know.
 
 `plugins/mjolnir/scripts/check_reply_defers_nothing.py` holds that a role's reply names no work the
 turn does not do, and it is the one here that does not run on the gate at all. It is in
@@ -435,6 +442,18 @@ can fail is an exemption nobody checked.
 so a multi-word value cannot be published at all and stays forbidden wherever a project
 configures it. Measured by planting a facet on the surface in both spellings: the single-token
 member is subtracted and the two-word one is not, with no edit to the sweep in either direction.
+
+⚠️ **A third shape a key-name reading cannot reach is § 2's facet**, and it is the one
+[#47](https://github.com/ragnor-rs/mjolnir/issues/47) turned into assertions. `host.checks` is a
+**list of entries**, so a workflow name, a trigger pattern and a path filter each sit under a key
+that is a member's and not a path's. Three plants now read those three facts out of the
+configuration and name each one in a carrier, which is what makes *no consumer carries a workflow
+name, a trigger pattern or a path filter of its own* a property of the search rather than of
+whoever read the roles last. ⛔ **The third of them plants the filter into the configuration as
+well**, because no workflow in this repository filters by path: read from the live facet that arm
+would raise rather than assert, and the first adopter whose workflows do filter would be the first
+to find out. ⚠️ Each half alone was measured green and the two together red, so the plant reddens
+by the glob it was written for and not by the configuration having been rewritten to carry it.
 
 What stops the derived set shrinking to nothing is three reported arms rather than an assertion
 that each key is still in use, there being no key list left to go stale: a surface whose published
@@ -1715,6 +1734,127 @@ of the two by the margin this whole document is about.
   skills root, so a second checkout of the same project at another path has its own places. ⚠️ That
   is right for a resource bound to a tree and wrong for a machine-wide one, and which of the two a
   given resource is is the project's `subject` rather than something the store can know.
+
+## The host's own runs, read by one consumer
+
+`plugins/mjolnir/scripts/host_checks.py --self-test` runs in the `Host checks consumer` workflow,
+with no credential and no network. ⛔ The rule is
+[schema § 2](../plugins/mjolnir/config/schema.md#2-code-host) and this document states none of it.
+What is recorded here is why the module exists and what it leaves alone.
+
+**It exists so that nothing else has to read the facet.** Before it, every consumer of
+`host.checks` was prose in a role's text telling a reader to take the mapping, the triggers and the
+path filters out of the configuration and reason about them — which is three readings of one
+statement, each free to disagree with the other two and with the project. The module is the one
+reading, and the two roles that drive the host's runs call it rather than describing it.
+
+⚠️ **It never reads the host, and that boundary is the one worth knowing.** Which runs exist for a
+commit, whether one executed steps and how it concluded are
+[§ 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)'s four
+preconditions, answered from live state by the role that asks; the host's run operations becoming a
+port of their own is #53. So ⛔ **`reached` is never *green*** — it names the run whose conclusion
+is worth reading, and a consumer that read it as a verdict would report a pass for a run nobody
+looked at.
+
+What it holds: a trigger's three parts against the change's own — the event, the type of it and the
+ref — the path filters at the two levels the surface states them at, and the four answers ranked.
+The kind is **computed**: a pattern, a path and an answer.
+
+⛔ **The trigger grammar is not this module's and the suite asserts that first** —
+[§ 2](../plugins/mjolnir/config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref)'s
+`<event>(<types>) -> <ref>` form has one parser, in the reader every consumer loads the facet
+through, and a second reading of it here would be free to disagree with it. So the first
+assertion in the suite is that this module carries no trigger pattern of its own. What it does
+carry is read back out of the surface: the one ref pattern a rule turns on, and the four answers
+by name.
+
+⛔ **It enumerates no events, and the arm that proves it is a plant** —
+[§ 2](../plugins/mjolnir/config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref)
+states that the event vocabulary is the host's and that the facet holds no name against one, so a
+change whose event no trigger of an entry names is **out of scope** and never *unreadable*: a
+trigger on some other event does not fire for this change, which is an answer rather than an
+absence.
+
+⚠️ **Three of the four answers read as *run it here*, and the suite asserts each separately**
+rather than asserting that the fourth is absent. An empty facet, a command no entry mirrors, an
+entry stating no trigger, a trigger whose event or ref does not fire, a type clause the change's
+own type is outside, a change whose type or paths were never stated, a filter admitting nothing the
+change touches and a pattern the surface's form does not cover are eight distinct states, and
+[§ 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is) gives them
+three different answers because their remedies differ. ⛔ The one direction that is not fail-closed
+is a command two entries mirror, where `reached` outranks the rest; that is asserted too, because
+reading the first entry found would report *out of scope* on the strength of whichever entry
+happens to be written above.
+
+⚠️ **Every plant was verified by breaking the branch it was written for**, one break per branch:
+a trigger's event read as always this change's, an omitted type clause read as a filter, a type
+outside a clause read as inside it, an unestablished type read as covered, a clause read as a
+sequence rather than a set, `*` read as an ordinary glob rather than as any ref, an unreadable ref
+pattern read as a non-match, `**` translated as one star, a level stating no filter read as a level
+admitting nothing, the answer ranking reversed, an unparseable glob read as a literal, an entry
+stating no trigger read as covering everything, and an empty facet collapsed into a definite
+not-mirrored. Each reddened the plants named for it and nothing else.
+
+⚠️ **Two of those are not hypothetical shapes.** Read as an ordinary glob, `*` stops at a path
+separator, so a project whose branches are named with one reads as out of scope for every run it
+makes — and `*` is the ref pattern almost every entry in this repository is written with. And an
+unestablished type read as covered is the fail-open direction
+[§ 17](../plugins/mjolnir/config/schema.md#whether-the-hosts-verdict-covers-this-change) rules
+against: it reports a run as the one to read for a change nobody established it fires on.
+
+⚠️ **Three findings came out of that pass rather than out of writing the suite.** Removing the
+absent-trigger guard reddened *nothing*, there being no plant for an entry that states no
+`triggers`. No configuration here is in that shape, which is why it had none and why it needed one:
+§ 2 permits the absence, so it is the shape a consumer meets first on an adopter's tree. The same
+absence had no green-side assertion in the reader either, and now has two — verified by making the
+key required and watching both redden. And `mirrors` was answering `reached`, borrowing the verdict
+name for a question with no change in it; it now answers a three-valued `mirrored`, whose third
+value is an empty facet and ⛔ **not a `false`** — collapsing those two would report a command as
+one the host does not run on the strength of a project having said nothing about its host at all.
+
+⚠️ **One break reddens by stopping rather than by a failed assertion.** With the absent-trigger
+guard removed, the suite raises where it would have matched a pattern that is not there. That is a
+red and not a silent pass, which is what the verification asks, but it is the one break whose
+output names no plant.
+
+⚠️ **The review of this change found two more, and the first was a contradiction rather than a
+mistake.** The ranking
+[§ 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is) states for a
+command two entries mirror was applied between entries and *not* inside one, so the same two
+triggers answered `reached` written as two entries and `unreadable` written as one entry's list —
+reproduced before it was fixed. There is now one ranking in the module, applied by one function, and
+a plant asserts the two shapes answer alike; the surface states the rule for both cases and states
+the path filters as the exception, being a conjunction rather than a disjunction. ⛔ **And the
+assertion that the trigger grammar is not the module's own held nothing, twice.** It matched the
+literal name of a pattern, then searched compiled patterns for the arrow — which a parenthesis
+inside a pattern truncates away, measured by planting a parser whose first group closed before the
+arrow and watching the check stay green. What is asserted now is countable: the reader's parser is
+called, and the one expression the module compiles is the path glob. ⚠️ **A parser written with
+`str.split` reaches neither assertion directly**, the arrow being a return annotation on half the
+file's functions, and that residue is stated with the check rather than left to read as covered —
+what catches that shape is the behavioural plants, which a split-based parser fails because it
+cannot read a type clause.
+
+What it deliberately does not check:
+
+- **Whether the facet matches the workflow files.** Nothing here reads `.github/`, so an entry
+  naming a workflow the repository does not contain, or omitting one it does, passes. That is #49 —
+  the same limit every sibling carries, and the sharper one here because this module is what makes
+  the facet load-bearing.
+- **Whether a trigger is one the host would honour.** The module parses § 2's form; a pattern
+  inside it naming an event no workflow may listen to, or a ref nothing matches, is a
+  configuration nobody here can falsify. § 2 states why the facet carries no event list to check
+  one against.
+- **What else bounds a run the host scopes by no ref.** A schedule's cron expression and a
+  dispatch's inputs are facts § 2 states nowhere, so `-> *` is the whole of what this module can
+  read about such a run.
+- **Whether `paths` is the filter the workflow really carries.** Both levels are read as written.
+  This repository filters nothing, so the arm holds nothing here on its own facts; what asserts it
+  is a plant that states a filter *and* names it in a carrier, in the sweep below.
+- **Whether a consumer called it.** A role's text naming the command is prose. What holds the
+  outcome mechanically is the sweep's value rule, which forbids a workflow name, a trigger pattern
+  and a path filter under a carrier root — recorded in
+  [§ The second sweep](#the-second-sweep-naming-no-other-project), with those three plants.
 
 ## Each check has a violation it is asserted to redden on
 

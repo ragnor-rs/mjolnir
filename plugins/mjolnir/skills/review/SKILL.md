@@ -409,7 +409,22 @@ or to whoever reads the change: it spends a shared machine for no new informatio
 the legitimate case — ⛔ **a check no `host.checks` entry mirrors is the one that must be run
 locally**, because nothing else will ever answer it — ⚠️ **already mirrored being a comparison
 against whatever an entry mirrors rather than against one string**, which is
-[`§ 2`](../../config/schema.md#2-code-host)'s fact and not this file's. ⛔ **Which commands those
+[`§ 2`](../../config/schema.md#2-code-host)'s fact and not this file's.
+
+⛔ **Which of the two a given command is, is read rather than judged**, and the same consumer
+answers both halves — the mapping, and whether the mirroring run reaches this change:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/host_checks.py" mirrors --command <the command>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/host_checks.py" covers --command <the command> \
+  --event <this change's event> --ref <the ref it is against> \
+  --type <that event's type> --path <each path it touches>
+```
+
+⚠️ **Three of the four answers read as *run it here* and none of them as covered**, so a command
+this role declines to run locally is one the first call reported mirrored *and* the second reported
+`reached`. ⛔ **`reached` is still not green** — how the run concluded is § 2's four preconditions',
+cited at the head of this step and never folded into this answer. ⛔ **Which commands those
 are is
 [`§ 17`](../../config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s to
 state and never this role's to assemble**, along with what each pass proves, what defeats a cached
