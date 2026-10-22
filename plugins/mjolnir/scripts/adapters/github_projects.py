@@ -940,6 +940,17 @@ def search_items(
     was. ⚠️ That is the one place this answer differs from the implementation next
     door, which cannot tell a result that fills the bound from one the bound cut.
 
+    ⚠️ **Whole is whole as the host answered, and that is not the same as current.**
+    Measured: a card added seconds earlier is **absent** from this list while the
+    issue's own card list already carries it, and the host's own `totalCount`
+    agrees with the short page -- four of four, with the fifth card missing and
+    `hasNextPage` false. So the omission is invisible to anything this module can
+    read, no guard here can catch it, and the honest statement is this one: a
+    filing role searching immediately after a filing may not see what it just
+    filed. ⛔ Nothing in this module waits on an index to make that go away: the
+    card's existence is established from the item's own read, which is where
+    `create_item` confirms it.
+
     ⛔ **An unknown field name or an unknown label is refused, never answered with
     an empty list.** Both come back empty from a board that holds the thing and
     from a board that does not, and this is the one search the filing role
