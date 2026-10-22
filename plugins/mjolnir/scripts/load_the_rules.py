@@ -25,10 +25,10 @@ rule, and this is it.
 
 ⚠️ **Both rules are handed to every session of a project that states a
 configuration, including the ones they are not live for yet.** A session is in
-no tree when it opens and may enter one later,
-and this event fires once -- so a rule scoped to the tree has to arrive before
-the tree exists or not at all. ⛔ The alternative is not a later injection: a
-session that enters a tree fires no event this hook can answer.
+no tree when it opens and may enter one later, and this event fires once -- so a
+rule scoped to the tree has to arrive before the tree exists or not at all. ⛔
+The alternative is not a later injection: a session that enters a tree fires no
+event this hook can answer.
 
 ⛔ **Fails open, and silently.** A session is not the place to report that a
 document could not be parsed: the cost of saying nothing is a session that
@@ -501,6 +501,10 @@ def self_test() -> int:
     # rather than at a literal, so a move of that path reddens here.
     print("\nAsserting a project that states no configuration is invited and handed no rule:")
     reader = shared_reader()
+    if reader is None:
+        print("  FAIL                   the reader beside this script could not be imported, "
+              "so neither answer below can be asserted")
+        return 1
     with tempfile.TemporaryDirectory() as directory:
         bare = Path(directory) / "states-nothing"
         bare.mkdir()
@@ -512,7 +516,7 @@ def self_test() -> int:
             print(f"  FAIL                   context reached an unconfigured project: "
                   f"{str(answered)[:80]!r}")
             failures += 1
-        if reader is not None and reader.CONFIG_PATH in message and str(SURFACE) in message:
+        if reader.CONFIG_PATH in message and str(SURFACE) in message:
             print("  ok                     and the invitation names the file to write and "
                   "where the keys are")
         else:
@@ -520,9 +524,9 @@ def self_test() -> int:
             failures += 1
 
         adopted = Path(directory) / "states-one"
-        stated = adopted / (reader.CONFIG_PATH if reader else "")
+        stated = adopted / reader.CONFIG_PATH
         stated.parent.mkdir(parents=True, exist_ok=True)
-        stated.write_text("roots:\n  code: \".\"\n", encoding="utf-8")
+        stated.write_text('roots:\n  code: "."\n', encoding="utf-8")
         answered = answer({"cwd": str(adopted)})
         reached = str(answered.get("hookSpecificOutput", {}).get("additionalContext", ""))
         if reached == loaded and loaded:

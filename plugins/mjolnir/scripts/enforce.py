@@ -787,10 +787,19 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
 
 def release_answer(payload: dict, *, config=None, now: float | None = None,
                    store: Path | None = None) -> dict:
-    """The answer for whichever event gives a place back."""
+    """The answer for whichever event gives a place back.
+
+    ⛔ This arm was already silent in a project that states no configuration,
+    the reader refusing and the answer being empty either way. It asks the
+    question anyway, so that both arms of this carrier ask it before anything
+    else: reaching the same silence through a refusal costs the surface's own
+    parse on every call in a project that holds nothing.
+    """
     event = str(payload.get("hook_event_name") or "")
     scope = RELEASE_EVENTS.get(event)
     if scope is None:
+        return {}
+    if config is None and not _states_a_configuration(payload.get("cwd")):
         return {}
     loaded = config if config is not None else _config(payload.get("cwd"))
     if loaded is None or not resources(loaded):

@@ -67,6 +67,7 @@ import os
 import re
 import sys
 
+
 def _yaml():
     """PyYAML, or a stop naming the install that is missing.
 
