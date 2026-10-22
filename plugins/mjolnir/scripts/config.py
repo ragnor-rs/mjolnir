@@ -624,6 +624,19 @@ class Config:
     def get(self, path: str, default=None):
         return _get(self.data, path, default)
 
+    def mirrors(self) -> list[dict]:
+        """§ 2's `host.checks` as a consumer reads it -- one record per command.
+
+        An accessor rather than a read of `self.data`, for the reason the class
+        opens with: every refusal the facet carries is in the walk, and a
+        consumer reaching past this would be a second reading of the one
+        statement § 2 exists to be. ⚠️ `[]` here is the project's stated
+        absence and not an empty answer -- what that means is `unavailable()`'s
+        to say, and `host_checks.py` answers *no answer* from it rather than
+        *not covered*.
+        """
+        return mirrored_runs(self.data)
+
     def unavailable(self) -> list[str]:
         """What this configuration cannot support, and why.
 
@@ -884,12 +897,13 @@ def _normalised_command(command: str) -> str:
 def _path_filter(node: dict, where: str) -> None:
     """§ 2's path filter, held to being a list of globs where it is stated.
 
-    Read by no consumer in this tree and held to a shape anyway, for the reason
-    § 13's `run` is: a single glob written as a string is the natural mistake,
-    and it stringifies into something a comparison would walk character by
-    character. ⚠️ Both levels go through here, so the entry's filter and a job's
-    are held identically -- a shape rule that applied to one of them would be
-    read as a statement about the other.
+    Read by `host_checks.py`, which answers whether a mirroring run reaches a
+    change, and held to a shape for the reason § 13's `run` is: a single glob
+    written as a string is the natural mistake, and it stringifies into
+    something a comparison would walk character by character. ⚠️ Both levels go
+    through here, so the entry's filter and a job's are held identically -- a
+    shape rule that applied to one of them would be read as a statement about
+    the other.
 
     ⛔ The **key's presence** is what is read, not its value, which is § 2's rule
     for every key here whose absence is itself an answer: a filter omitted means
@@ -994,7 +1008,8 @@ def _type_clauses(value, where: str) -> None:
 def _triggers(entry: dict, where: str) -> None:
     """§ 2's `triggers`, held to its shape and then to its clause rules.
 
-    Read by no consumer in this tree and held anyway, for the reason
+    Read by `host_checks.py`, which answers from the parse above whether a
+    mirroring run reaches a change, and held anyway for the reason
     `_path_filter` is: the natural mistakes here are silent ones.
     """
     if "triggers" not in entry:
@@ -1029,17 +1044,47 @@ def _mirrored_commands(data: dict) -> dict[str, str]:
     surface answers. An entry stating neither mirrors nothing, which is the
     shape a workflow with no local counterpart has always had.
 
-    ⚠️ A shape this cannot read is refused rather than skipped -- the list, an
-    entry, a `mirrors`, a `jobs` and a member of one alike. Skipping any of them
-    would empty this map in silence, and a collision check with nothing in its
-    map is a check that reports green. Measured on this function's first form,
-    which refused an unreadable `mirrors` and then tolerated the two shapes one
-    key up: a `host.checks` written as a string or a mapping, or an entry
-    written as a bare command, each let every colliding `run` load clean.
-    `host.checks` is required and non-empty-checked and has never been
-    type-checked, so the shapes were harmless until something read the entries.
+    ⚠️ A shape the facet cannot be read in is refused rather than skipped, and
+    the refusals are the walk's below rather than this function's -- skipping
+    any of them would empty this map in silence, and a collision check with
+    nothing in its map is a check that reports green. Measured on this
+    function's first form, which refused an unreadable `mirrors` and then
+    tolerated the two shapes one key up: a `host.checks` written as a string or
+    a mapping, or an entry written as a bare command, each let every colliding
+    `run` load clean. `host.checks` is required and non-empty-checked and had
+    never been type-checked, so the shapes were harmless until something read
+    the entries.
     """
     out: dict[str, str] = {}
+    for record in mirrored_runs(data):
+        out.setdefault(record["normalised"], record["mirrored_by"])
+    return out
+
+
+def mirrored_runs(data: dict) -> list[dict]:
+    """Every mirrored command the facet states, with the run that answers it.
+
+    § 2's facet as a consumer reads it, walked **once** here rather than once
+    per consumer: the mapping, what starts the run, and the path filters at the
+    two levels the surface states them at. The map above is this list keyed, and
+    `host_checks.py` is the consumer that answers from the rest of it -- ⛔ two
+    walks of one facet being two readings allowed to disagree about what the
+    project wrote, which is the defect the facet exists to delete one level up.
+
+    ⚠️ The entry's filter and the job's are carried **separately**, because § 2
+    makes neither inherited and neither an override: a command's run covers a
+    change within both, and a merged filter could not say which level excluded
+    it. `triggers` stays the entry's for the same section's reason -- the event
+    block is the workflow's and no job's -- and is carried on every record of
+    that entry rather than resolved here, a consumer with no trigger to match
+    having no answer rather than a default.
+
+    ⚠️ A shape this cannot read is refused rather than skipped -- the list and
+    an entry here, and a `mirrors`, a `jobs`, a member of one, a trigger and a
+    path filter below. Skipping any of them empties this list in silence, and
+    both consumers of it report an absence where the project stated a run.
+    """
+    out: list[dict] = []
     checks = _get(data, "host.checks")
     if not isinstance(checks, list):
         raise ConfigError(
@@ -1057,16 +1102,21 @@ def _mirrored_commands(data: dict) -> dict[str, str]:
                 "`workflow` (§ 2). An entry this reader cannot walk takes "
                 "whatever it mirrors out of § 13's refusal in silence.",
             )
-        for command, mirrored_by in _entry_commands(entry, index):
-            out.setdefault(_normalised_command(command), mirrored_by)
+        out.extend(_entry_commands(entry, index))
     return out
 
 
 def _entry_commands(entry: dict, index: int):
-    """Yield (command, the phrase naming where it is mirrored) for one entry.
+    """Yield one record per command this entry mirrors.
 
     The two forms § 2 states, read in one place so that neither can grow a
     refusal the other does not have. An entry stating neither yields nothing.
+
+    Each record carries the command as written, its normalised form, the phrase
+    naming where it is mirrored, the workflow's name, the job's id where a job
+    is what mirrors it, the entry's `triggers`, and the path filter at each of
+    the two levels -- which is every fact § 2 states about a run and the whole
+    of what a consumer has to answer from.
     """
     where = f"host.checks[{index}]"
     workflow = entry.get("workflow")
@@ -1087,6 +1137,18 @@ def _entry_commands(entry: dict, index: int):
     # so a `triggers` inside a `jobs` member is a key nothing states and nothing
     # would read.
     _triggers(entry, f"{where}.triggers")
+
+    def record(command: str, mirrored_by: str, job: str | None, filters) -> dict:
+        return {
+            "command": command,
+            "normalised": _normalised_command(command),
+            "mirrored_by": mirrored_by,
+            "workflow": workflow,
+            "job": job,
+            "triggers": entry.get("triggers"),
+            "paths": {"workflow": entry.get("paths"), "job": filters},
+        }
+
     # Presence and never value, for both keys below: a `mirrors` written with
     # nothing after it would otherwise satisfy the exclusivity rule and the
     # absence rule at once, so an entry could state both forms and be read as
@@ -1108,7 +1170,12 @@ def _entry_commands(entry: dict, index: int):
                 "local command states neither this key nor `jobs`, and one that "
                 "meant to state a command and stated none is the same text.",
             )
-        yield _command(entry["mirrors"], f"{where}.mirrors"), f"the `{workflow}` workflow"
+        yield record(
+            _command(entry["mirrors"], f"{where}.mirrors"),
+            f"the `{workflow}` workflow",
+            None,
+            None,
+        )
         return
     if "jobs" not in entry:
         return
@@ -1144,9 +1211,11 @@ def _entry_commands(entry: dict, index: int):
                 "of the list rather than written into it with nothing to mirror.",
             )
         _path_filter(job, f"{at}.paths")
-        yield (
+        yield record(
             _command(job["mirrors"], f"{at}.mirrors"),
             f"the `{name}` job of the `{workflow}` workflow",
+            name,
+            job.get("paths"),
         )
 
 
@@ -2478,6 +2547,38 @@ def self_test() -> int:
         f"resolved {answers!r}",
     )
 
+    # § 2's `triggers` on the green side, which the plants below cannot assert
+    # either and which no configuration in this tree is in: every example states
+    # a trigger, so the absence is a shape no load here would otherwise meet. ⛔
+    # And it has to stay loadable, the key being marked neither required nor
+    # defaulted -- a reader that refused it would refuse an adopter's first
+    # entry, written before anybody told them the key exists. ⚠️ Verified by
+    # making the key required and watching both of these redden.
+    #
+    # ⚠️ Placed ahead of the two raw walks below rather than beside the record
+    # read it belongs with, because those call the walk outside `_refused`: a
+    # key that became mandatory would stop the suite there with a traceback, and
+    # an assertion that never runs is one nobody can read a verdict from.
+    silent_trigger = _a_valid_example()
+    silent_trigger["host"]["checks"] = [
+        {"workflow": "A planted workflow", "mirrors": "a-mirrored-command"}
+    ]
+    broken = _refused(silent_trigger)
+    check(
+        "an entry stating no `triggers` loads",
+        broken is None,
+        f"refused {broken!r}",
+    )
+    carried = (
+        mirrored_runs(silent_trigger)[0]["triggers"] if broken is None else broken
+    )
+    check(
+        "and the record it yields carries the absence rather than a default",
+        broken is None and carried is None,
+        f"carried {carried!r}, so a consumer would match a change against a "
+        "pattern no project wrote",
+    )
+
     # The collision the key exists for, still impossible from inside an entry:
     # two workflows naming one job, each mirroring a different command. ⛔ A
     # reader that keyed anything on the job name would answer both with one
@@ -3110,6 +3211,11 @@ def _a_trigger_of(triggers):
     configuration, which between them carry the single-string form, the list
     form and a pattern with a type clause -- so an arm widened until it refused
     a legitimate trigger reddens the load rather than passing quietly.
+
+    ⛔ **One green shape none of them is in**, so it is asserted on its own: an
+    entry stating no `triggers` at all. § 2 marks the key neither required nor
+    defaulted, and a reader that refused the absence would refuse an adopter's
+    first entry -- written before anybody tells them the key exists.
     """
 
     def mutate(data: dict) -> dict:

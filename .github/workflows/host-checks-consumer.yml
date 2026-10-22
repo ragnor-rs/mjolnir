@@ -1,0 +1,44 @@
+name: Host checks consumer
+
+# The one consumer of `host.checks`, held to § 2 of plugins/mjolnir/config/schema.md: the two
+# trigger forms and the four answers it reports are read out of that section, an empty facet
+# answers no answer rather than not covered, a pattern the surface's forms do not cover is
+# unreadable rather than a non-match, and the path filters at the two levels bound a change
+# independently of one another.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2: a `host.checks` entry
+# states one mirrored command, so two commands behind one workflow name could not be stated on
+# the surface at all.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The module never reads the host — which runs exist for a commit and
+# how each concluded are the four preconditions, answered by the role that asks — so every
+# assertion here is about a configuration this repository already holds. Withholding the
+# credential is the belt to that brace: a call that started reaching a host would fail here
+# rather than succeed quietly.
+permissions: {}
+
+jobs:
+  host-checks-consumer:
+    name: Host checks consumer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Pinned rather than relying on whatever the runner image ships, for the reason the
+      # sibling workflows pin it: the consumer runs on the shared reader, which needs the
+      # parser, and a check that silently stops running is the failure this job exists to catch.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` states this run mirrors —
+      # ⚠️ held together by eye and not by a check, since nothing here reads a workflow file.
+      # That is #49.
+      - name: Hold the facet's consumer to the surface
+        run: python3 plugins/mjolnir/scripts/host_checks.py --self-test
