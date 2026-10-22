@@ -94,11 +94,6 @@ from port import ConfigError, HostUnavailable  # noqa: E402
 
 KIND = "github-projects"
 
-# How many nodes a page asks for. ⚠️ Not a ceiling on what is read -- the
-# follower below reads every page -- but the host's own maximum for one
-# connection, so a smaller number here costs requests and changes no answer.
-PAGE = 100
-
 # A bound on the follower, so a host that keeps claiming another page is a
 # refusal rather than a process nobody can stop. ⛔ Set far above any real board:
 # a run that reaches it has met a defect, not a big project.
@@ -289,7 +284,22 @@ def _graphql(query: str, **variables):
     for name, value in variables.items():
         if value is None:
             continue
-        flag = "-F" if isinstance(value, (int, float, bool)) else "-f"
+        # ⛔ A float is refused rather than sent. The client's typed field parses
+        # an **integer** and leaves anything else a string -- measured, a `Float!`
+        # variable comes back *provided invalid value* -- and the untyped field is
+        # a string by definition, so there is no form a float can arrive in. The
+        # one value that needs one is formatted into its document instead, and a
+        # caller reaching here with a float would otherwise get the host's refusal
+        # for a reason nothing in this module explains.
+        if isinstance(value, float):
+            raise ConfigError(
+                f"tracker.operations.{name}",
+                f"would send `{name}={value!r}` as a variable, which the host's "
+                "client has no typed form for: it parses an integer and leaves a "
+                "float a string. A value of this kind is written into its own "
+                "document rather than handed in as a variable.",
+            )
+        flag = "-F" if isinstance(value, (int, bool)) else "-f"
         args += [flag, f"{name}={value}"]
     answer = _gh(args)
     if isinstance(answer, dict) and answer.get("errors"):
@@ -381,8 +391,8 @@ def _paged(fetch, what: str, first: dict | None = None) -> list:
         pages += 1
         if pages > MAX_PAGES:
             raise HostUnavailable(
-                f"{what}: more than {MAX_PAGES} pages of {PAGE}, which is past any "
-                "real board and reads as a cursor that never ends."
+                f"{what}: more than {MAX_PAGES} pages, which is past any real "
+                "board and reads as a cursor that never ends."
             )
 
 
@@ -424,8 +434,9 @@ def _board_payload(owner: str, number: int, cursor):
     owner kinds, rather than by asking whether the owner is a user or an
     organisation first. The surface states one `project.owner` and does not say
     which kind it is -- measured, asking `user(login:)` for an organisation's
-    login answers an error rather than null, so a guess costs a failed call and a
-    wrong refusal.
+    login answers `null` **and** a `NOT_FOUND` error, which arrives here as a
+    failed call: a guess therefore costs a round trip and a refusal about the
+    wrong thing, while the owner interface answers either kind in one.
     """
     owned = _graphql(BOARD_QUERY, owner=owner, number=number, after=cursor)["repositoryOwner"]
     if owned is None:
@@ -543,31 +554,112 @@ def _status_field() -> dict:
     return _field(str(name), key=STATUS_FIELD_NAME)
 
 
-def _option_id(field: dict, word: str) -> str:
-    """The option id for a status word, by name.
+def _option_id(field: dict, word: str, *, key: str) -> str:
+    """The option id for one of a single-select column's names.
 
-    ⚠️ Refused with `statuses` named, the way the implementation next door refuses
-    a word plain issues cannot hold: a word with no option on the board is a
-    mapping this tracker cannot carry, and coercing it to the nearest column is a
-    card moved somewhere nobody asked for.
+    ⛔ **The key is the caller's**, because the same resolution answers for two
+    different statements: a status word comes from `statuses` (§ 4.2) and any other
+    column's value comes from the facet that points at that column. A refusal that
+    always named `statuses` would send somebody to the wrong part of their
+    configuration for every column but one.
+
+    ⚠️ The board is re-read once before refusing: an option added after this
+    process started is absent from a board resolved before it existed.
     """
     if word in field["options"]:
         return field["options"][word]
-    refreshed = _field(field["name"], key=STATUS_FIELD_NAME)
+    refreshed = _field(field["name"], key=key)
     if word in refreshed["options"]:
         return refreshed["options"][word]
     raise ConfigError(
-        "statuses",
+        key,
         f"names `{word}`, which the `{field['name']}` field has no option for. Its "
-        f"options are: {', '.join(sorted(refreshed['options'])) or 'none'}. A "
-        "status here is one of that field's options by name; add the column to the "
-        "board or map the role onto an option it already has.",
+        f"options are: {', '.join(sorted(refreshed['options'])) or 'none'}. A value "
+        "here is one of that column's options by name; add the option to the board "
+        "or name one it already has.",
     )
+
+
+def _as_number(value, *, key: str) -> float:
+    """A value a number column can hold, or a refusal naming the column.
+
+    ⛔ Both refusals are stated here rather than at the write: the value is
+    formatted into its document, so a word the host would read as a syntax error
+    has to be refused before anything is built -- and the caller is the only place
+    that knows which column was asked for.
+    """
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        raise ConfigError(
+            key,
+            f"was handed `{value!r}` for a number column, which is not a number. "
+            "The column's own type is what the value is shaped to, so this is a "
+            "facet writing the wrong kind of thing rather than a host refusal.",
+        ) from None
+    if number != number or number in (float("inf"), float("-inf")):
+        raise ConfigError(
+            key,
+            f"was handed `{value!r}` for a number column, which is not finite. The "
+            "value is formatted into the request, and a word the host would read as "
+            "a syntax error is refused here instead.",
+        )
+    return number
+
+
+# What a date column holds. ⛔ Held here rather than left to the host: a date is
+# the one value this module sends as an opaque string, so an unparseable one comes
+# back as a GraphQL error naming the scalar and not the column a facet pointed at.
+ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _as_date(value, *, key: str) -> str:
+    if not ISO_DATE.match(str(value)):
+        raise ConfigError(
+            key,
+            f"was handed `{value!r}` for a date column, which is not a date in "
+            "`YYYY-MM-DD`. That is the form the host's own scalar takes, and a "
+            "refusal naming the column is more use than one naming the scalar.",
+        )
+    return str(value)
 
 
 # --- the item ---------------------------------------------------------------
 
-ITEM_QUERY = """
+# What a card's values are asked for with, stated **once** and formatted into
+# every query that reads them. ⛔ Not written out per query: two copies of one
+# selection are two statements allowed to disagree, and the one that drifts is
+# whichever query a reader was not looking at -- a value type added to one and
+# not the other reads as a column with no value rather than as an omission.
+VALUE_FACTS = """
+fragment valueFacts on ProjectV2ItemFieldValue {
+  __typename
+  ... on ProjectV2ItemFieldSingleSelectValue {
+    name
+    optionId
+    field { ... on ProjectV2FieldCommon { name } }
+  }
+  ... on ProjectV2ItemFieldTextValue {
+    text
+    field { ... on ProjectV2FieldCommon { name } }
+  }
+  ... on ProjectV2ItemFieldNumberValue {
+    number
+    field { ... on ProjectV2FieldCommon { name } }
+  }
+  ... on ProjectV2ItemFieldDateValue {
+    date
+    field { ... on ProjectV2FieldCommon { name } }
+  }
+  ... on ProjectV2ItemFieldIterationValue {
+    title
+    iterationId
+    field { ... on ProjectV2FieldCommon { name } }
+  }
+}
+"""
+
+ITEM_QUERY = VALUE_FACTS + """
 query Item($owner:String!, $name:String!, $number:Int!) {
   repository(owner:$owner, name:$name) {
     issueOrPullRequest(number:$number) {
@@ -595,31 +687,6 @@ query Item($owner:String!, $name:String!, $number:Int!) {
         }
       }
     }
-  }
-}
-fragment valueFacts on ProjectV2ItemFieldValue {
-  __typename
-  ... on ProjectV2ItemFieldSingleSelectValue {
-    name
-    optionId
-    field { ... on ProjectV2FieldCommon { name } }
-  }
-  ... on ProjectV2ItemFieldTextValue {
-    text
-    field { ... on ProjectV2FieldCommon { name } }
-  }
-  ... on ProjectV2ItemFieldNumberValue {
-    number
-    field { ... on ProjectV2FieldCommon { name } }
-  }
-  ... on ProjectV2ItemFieldDateValue {
-    date
-    field { ... on ProjectV2FieldCommon { name } }
-  }
-  ... on ProjectV2ItemFieldIterationValue {
-    title
-    iterationId
-    field { ... on ProjectV2FieldCommon { name } }
   }
 }
 """
@@ -749,7 +816,7 @@ def item_number(item: dict | int) -> int:
 
 # --- searching the board ----------------------------------------------------
 
-ITEMS_QUERY = """
+ITEMS_QUERY = VALUE_FACTS + """
 query Items($owner:String!, $number:Int!, $after:String) {
   repositoryOwner(login:$owner) {
     ... on User { projectV2(number:$number) { items(first:100, after:$after) { ...itemPage } } }
@@ -781,31 +848,6 @@ fragment itemPage on ProjectV2ItemConnection {
       pageInfo { hasNextPage endCursor }
       nodes { ...valueFacts }
     }
-  }
-}
-fragment valueFacts on ProjectV2ItemFieldValue {
-  __typename
-  ... on ProjectV2ItemFieldSingleSelectValue {
-    name
-    optionId
-    field { ... on ProjectV2FieldCommon { name } }
-  }
-  ... on ProjectV2ItemFieldTextValue {
-    text
-    field { ... on ProjectV2FieldCommon { name } }
-  }
-  ... on ProjectV2ItemFieldNumberValue {
-    number
-    field { ... on ProjectV2FieldCommon { name } }
-  }
-  ... on ProjectV2ItemFieldDateValue {
-    date
-    field { ... on ProjectV2FieldCommon { name } }
-  }
-  ... on ProjectV2ItemFieldIterationValue {
-    title
-    iterationId
-    field { ... on ProjectV2FieldCommon { name } }
   }
 }
 """
@@ -1035,45 +1077,33 @@ mutation SetNumber($project:ID!, $card:ID!, $field:ID!) {
 """
 
 
-def _write_option(value):
-    return SET_OPTION, {"option": value}
-
-
-def _write_text(value):
-    return SET_TEXT, {"text": value}
-
-
-def _write_date(value):
-    return SET_DATE, {"date": value}
-
-
-def _write_number(value):
-    number = float(value)
-    if number != number or number in (float("inf"), float("-inf")):
-        raise ConfigError(
-            "tracker.project.field",
-            f"was handed `{value!r}` for a number column, which is not a finite "
-            "number. The value is formatted into the request, and a word the host "
-            "would read as a syntax error is refused here instead.",
-        )
-    return SET_NUMBER % {"number": repr(number)}, {}
-
-
-# `dataType -> what writes it`. ⛔ A mapping rather than a chain, for the reason
-# the value **reader** is one: a kind with no arm reads as a column nobody can
-# write, and the refusal has to name the type rather than fall through to the text
-# form and write something plausible.
+# `dataType -> the document that writes it, and the variable it carries the value
+# in`. ⛔ A mapping rather than a chain, for the reason the value **reader** is
+# one: a kind with no arm reads as a column nobody can write, and the refusal has
+# to name the type rather than fall through to the text form and write something
+# plausible. ⚠️ A `None` variable is the number, which has no typed form to travel
+# in and is formatted into its own document instead.
 WRITES = {
-    SINGLE_SELECT: _write_option,
-    TEXT: _write_text,
-    NUMBER: _write_number,
-    DATE: _write_date,
+    SINGLE_SELECT: (SET_OPTION, "option"),
+    TEXT: (SET_TEXT, "text"),
+    DATE: (SET_DATE, "date"),
+    NUMBER: (SET_NUMBER, None),
 }
 
 
 def _write_value(card: str, field: dict, value) -> None:
-    """One field value written, in the shape the column's own type takes."""
-    document, variables = WRITES[field["data_type"]](value)
+    """One field value written, in the shape the column's own type takes.
+
+    ⛔ The value arrives **already shaped and already refused** -- an option id
+    resolved by name, a finite number, a date in the host's form -- because the
+    caller is where the column a facet pointed at is known, and a refusal that
+    could not name it sends somebody to the wrong configuration.
+    """
+    document, variable = WRITES[field["data_type"]]
+    if variable is None:
+        document, variables = document % {"number": repr(value)}, {}
+    else:
+        variables = {variable: value}
     _graphql(
         document,
         project=_board()["id"],
@@ -1141,7 +1171,7 @@ def set_state(number: int, *, status: str) -> dict:
     so a role advancing to a role the item already holds spends no write.
     """
     field = _status_field()
-    option = _option_id(field, status)
+    option = _option_id(field, status, key="statuses")
     item = read_item(number)
     if item["status"] == status:
         return item
@@ -1163,31 +1193,26 @@ def set_field(number: int, field: str, value) -> dict:
     repository, the stamps -- is refused naming it and its type, because a facet
     pointing there is pointing at a value this procedure cannot own.
     """
-    column = _field(field, key=f"tracker.project.field.{field}")
+    key = f"tracker.project.field.{field}"
+    column = _field(field, key=key)
     kind = column["data_type"]
     if kind not in WRITABLE:
         raise ConfigError(
-            f"tracker.project.field.{field}",
+            key,
             f"is a `{kind}` field, which this tracker does not let a value be "
             f"written into. Writable here are: {', '.join(WRITABLE)}. A facet "
             "pointing at this column is pointing at something the host maintains, "
             "and the value belongs in a column of its own.",
         )
+    # ⛔ Shaped and refused here, where the column is named. Each arm is one
+    # statement of what that column can hold, and the text arm is the only one
+    # with nothing to refuse -- a column that takes any string takes this one.
     if kind == SINGLE_SELECT:
-        shaped = _option_id(column, str(value))
+        shaped = _option_id(column, str(value), key=key)
     elif kind == NUMBER:
-        try:
-            shaped = float(value)
-        except (TypeError, ValueError):
-            raise ConfigError(
-                f"tracker.project.field.{field}",
-                f"is a `{kind}` field and was handed `{value!r}`, which is not a "
-                "number. The column's own type is what the value is shaped to, so "
-                "this is a facet writing the wrong kind of thing rather than a host "
-                "refusal.",
-            ) from None
+        shaped = _as_number(value, key=key)
     elif kind == DATE:
-        shaped = str(value)
+        shaped = _as_date(value, key=key)
     else:
         shaped = str(value)
     item = read_item(number)
@@ -1331,11 +1356,13 @@ def advance_on_merge(number: int) -> dict:
     """
     item = read_item(number)
     owner, name = _repo().split("/")
-    issue = (
-        _graphql(CLOSED_BY_QUERY, owner=owner, name=name, number=int(number))
-        .get("repository", {})
-        .get("issue")
-    )
+    # ⚠️ `or {}` rather than a default on `get`: the host answers `repository:
+    # null` for a repository this credential cannot see, and a default only
+    # applies where the key is **absent** -- so the plain form raises an attribute
+    # error on the null, which is a traceback where this operation's own refusal
+    # belongs. The same form `read_item` takes, for the same reason.
+    answer = _graphql(CLOSED_BY_QUERY, owner=owner, name=name, number=int(number))
+    issue = (answer.get("repository") or {}).get("issue")
     if issue is None:
         raise HostUnavailable(
             f"the host answered null for #{number} in {owner}/{name} when asked "
@@ -1375,9 +1402,8 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "link_dependency": link_dependency,
     "link_for_close": link_for_close,
     "advance_on_merge": advance_on_merge,
-    # ⛔ No `checklist_read`, `checklist_write` or `checklist_item_delete`: an
-    # issue has no check-item object, and a board column is not one either. See
-    # the module docstring.
+    # ⛔ The three operations this tracker has nothing to implement against are
+    # named once, below, and read from there by the suite.
 })
 
 # The three the module docstring argues are absent because the tracker has
@@ -1385,7 +1411,6 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # self-test's completeness check rather than restated in it: a fourth absence
 # would otherwise be an operation nobody noticed going missing.
 DELIBERATELY_ABSENT = ("checklist_read", "checklist_write", "checklist_item_delete")
-
 
 
 def self_test() -> int:

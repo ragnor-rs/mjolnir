@@ -53,6 +53,7 @@ from adapters.github_projects import (  # noqa: E402
     SET_TEXT,
     SINGLE_SELECT,
     STATUS_FIELD_NAME,
+    VALUE_FACTS,
     TEXT,
     WRITABLE,
     WRITES,
@@ -331,9 +332,15 @@ class _Host:
         self.calls: list[str] = []
 
     def _answer_for(self, name: str):
+        # ⛔ Every exact match first, across both tables, and only then a prefix
+        # one. ⚠️ Measured on this fake rather than on the module: the document
+        # names are `Item` and `Items`, so a case overriding `Item` had its
+        # override answer a call for `Items` by prefix -- the item payload where a
+        # page of cards belongs, silently, in the one direction a case cannot see.
         for table in (self.answers, self.defaults):
             if name in table:
                 return table[name]
+        for table in (self.answers, self.defaults):
             for key, answer in table.items():
                 if name.startswith(key):
                     return answer
@@ -679,25 +686,81 @@ def self_test() -> int:
         "no query asks for a field by name, which is the shape the host refuses twice over",
         not any("fieldValueByName" in document for document in documents),
     )
+    # ⛔ One statement of the value selection, formatted into both queries that
+    # read values. A second copy is the class this change's own review reads a
+    # diff for: the copy that drifts is whichever query nobody was looking at, and
+    # a value type added to one and missing from the other reads as a column with
+    # no value rather than as an omission.
+    check(
+        "the value selection is stated once and used by both queries that read values",
+        VALUE_FACTS in ITEM_QUERY
+        and VALUE_FACTS in ITEMS_QUERY
+        and ITEM_QUERY.count("fragment valueFacts") == 1
+        and ITEMS_QUERY.count("fragment valueFacts") == 1,
+        f"{ITEM_QUERY.count('fragment valueFacts')} and "
+        f"{ITEMS_QUERY.count('fragment valueFacts')} copies",
+    )
+    # And the fake's own shadowing rule, which is about this suite rather than the
+    # module: `Item` is a prefix of `Items`.
+    shadowing = _Host({"Item": {"marker": "the override"}})
+    check(
+        "an override for one document does not answer a call for another it prefixes",
+        shadowing._answer_for("Items") is not shadowing.answers["Item"]
+        and shadowing._answer_for("Item") is shadowing.answers["Item"],
+        f"answered {shadowing._answer_for('Items')!r}",
+    )
     check(
         "a value that can travel as a variable does, rather than as the input object "
         "the host refuses",
         all(
             f"${variable}:" in document and "ProjectV2FieldValue" not in document
-            for document, variables in [WRITES[kind]("x") for kind in (SINGLE_SELECT, TEXT, DATE)]
-            for variable in variables
+            for kind, (document, variable) in WRITES.items()
+            if variable is not None
         ),
     )
-    number_document, number_variables = WRITES[NUMBER](2.5)
+    number_document, number_variable = WRITES[NUMBER]
     check(
-        "and the one that cannot is formatted in as a number, with nothing quotable left",
-        not number_variables and "value:{number:2.5}" in number_document,
-        f"built {number_document.strip().splitlines()[-4:]!r}",
+        "and the one that cannot carries no variable, taking the value into its document",
+        number_variable is None and "value:{number:%(number)s}" in number_document,
+        f"built {number_document.strip().splitlines()[-5:]!r}",
+    )
+    # ⛔ The two refusals a number column states, asked of the shaping rather than
+    # of the write: the value is formatted into a request, so a word the host would
+    # read as a syntax error must be refused before anything is built -- and the
+    # refusal names the column, which the write itself could not.
+    for value, what in ((float("inf"), "a value that is not finite"), ("three", "a word")):
+        reported = refused(
+            lambda value=value: under_test._as_number(value, key="tracker.project.field.Estimate")
+        )
+        check(
+            f"{what} handed to a number column is refused, naming the column",
+            reported == "tracker.project.field.Estimate",
+            f"reported {reported!r}",
+        )
+    reported = refused(
+        lambda: under_test._as_date("tomorrow", key="tracker.project.field.Due")
     )
     check(
-        "a number that is not finite is refused rather than formatted into a request",
-        refused(lambda: WRITES[NUMBER](float("inf"))) == "tracker.project.field",
-        f"reported {refused(lambda: WRITES[NUMBER](float('inf')))!r}",
+        "and a date that is not the host's own form is refused, naming the column",
+        reported == "tracker.project.field.Due",
+        f"reported {reported!r}",
+    )
+    check(
+        "while the form the host takes is passed through",
+        under_test._as_date("2026-10-23", key="k") == "2026-10-23",
+    )
+    # ⛔ A float variable is refused before any call. The client has no typed form
+    # for one -- measured against the live host -- so a caller reaching here would
+    # otherwise get the host's refusal for a reason nothing in the module explains.
+    silent_host = _Host({})
+    reported = with_host(
+        silent_host,
+        lambda: refused(lambda: under_test._graphql("query X { x }", thing=1.5)),
+    )
+    check(
+        "a float handed in as a variable is refused, naming the operation, before any call",
+        reported == "tracker.operations.thing" and silent_host.calls == [],
+        f"reported {reported!r} after {silent_host.calls}",
     )
     check(
         "and every type this module calls writable has something to write it",
@@ -904,6 +967,18 @@ def self_test() -> int:
         reported == "tracker.project.field.Estimate" and not writes(host),
         f"reported {reported!r} after {host.calls}",
     )
+    # ⛔ A column of options that is **not** the status column refuses on the
+    # facet that points at it, never on `statuses`. A resolution that always named
+    # the status key sent somebody to the wrong part of their configuration for
+    # every column but one.
+    _boards.clear()
+    host = _Host({"Item": _issue_payload(7)})
+    reported = with_host(host, lambda: refused(lambda: set_field(7, "Status", "Shipped")))
+    check(
+        "an option no column has is refused on the key the caller named, not on `statuses`",
+        reported == "tracker.project.field.Status" and not writes(host),
+        f"reported {reported!r} after {host.calls}",
+    )
 
     # --- searching the board ------------------------------------------------
     _boards.clear()
@@ -1091,6 +1166,22 @@ def self_test() -> int:
         "an item closed with nothing merged is not advanced, and says what state it is in",
         answered["advanced"] is False and answered["state"] == "CLOSED",
         f"answered {answered!r}",
+    )
+    # ⛔ A repository the credential cannot see answers `repository: null`, and a
+    # null is not an absent key -- so a default on the lookup does not apply to it
+    # and the plain form raises an attribute error where this operation's own
+    # refusal belongs. The arm is reachable through a transport that answers
+    # without an error array, which is what a suite is.
+    _boards.clear()
+    host = _Host({
+        "Item": _issue_payload(7),
+        "ClosedBy": {"repository": None},
+    })
+    reported = with_host(host, lambda: unavailable(lambda: advance_on_merge(7)))
+    check(
+        "a repository that answers null is this operation's refusal, not a traceback",
+        reported is not None and "could not be read" in reported,
+        f"got {reported!r}",
     )
 
     # --- `create_item`: the issue, then the card ----------------------------
