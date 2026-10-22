@@ -312,12 +312,11 @@ which the last of the four is the measured violation of.
    retargeted, and the branch deleted again. **Retarget the dependents first, then delete.**
 2. ⛔ **That the merge target is the change's own base**, which is not necessarily the default
    branch. A change based on the wrong one is a mistake to report, not to merge.
-3. ⛔ **That the tree is clean here too.** Asking for the branch to be deleted moves the working
-   tree off it, so [`§ 6`](../../config/schema.md#6-commit-behaviour)'s dirty-tree derivation
-   applies at the merge and not only at the commit. ⚠️ **That reason holds only where this role
-   asks for the deletion**, which [`§ 2`](../../config/schema.md#how-a-pull-request-lands)'s
-   `delete_branch` decides; the precondition stands either way, a dirty tree at the merge being
-   worth establishing before an irreversible act whoever deletes the branch.
+3. ⛔ **That the tree is clean here too**, so
+   [`§ 6`](../../config/schema.md#6-commit-behaviour)'s dirty-tree derivation applies at the merge
+   and not only at the commit. What it is established before is step 10, which removes the tree and
+   takes everything git does not track with it — and the merge is what makes that step reachable,
+   so a dirty tree is worth finding on this side of an irreversible act rather than the far side.
 4. ⛔ **That the tracker answers at all.** ⚠️ **A merge whose item never moved is invisible work**,
    and step 9 is where that is discovered — after the irreversible act. So the port is reached for
    a read **before** the merge, and an unreachable tracker holds it; `§ 3`'s fallback covers a
@@ -368,13 +367,22 @@ read more, and of the repository rather than of the change** — a pull request 
 merge-permission field, so nothing read in step 6 answers it.
 
 ⛔ **Who deletes the branch is that section's `delete_branch` and is not this role's to decide.**
-Under `procedure` this role asks for the deletion; under `host` it must **not**, the host's own
-switch having already done it, and a second attempt is refused on a ref that is gone; under
-`never` neither acts. ⚠️ **The key is about the remote ref** — the local branch and the tree are
-step 10's release regardless of it. ⚠️ **So under the two values that delete nothing here, the
-deletion is simply never asked for**, and under `procedure` a deletion asked for *as part of the
-merge* takes the local branch with it: that is step 10's release arriving early, not a second act,
-and the dirty-tree precondition above is why it is established first.
+Under `procedure` this role deletes it; under `host` it must **not**, the host's own switch having
+already done it, and a second attempt is refused on a ref that is gone; under `never` neither acts.
+⚠️ **The key is about the remote ref** — the local branch and the tree are step 10's release
+regardless of it.
+
+⛔ **Under `procedure` the deletion is step 10's and is never asked for as part of the merge.** The
+release already performs it, so asking for it here is one act with two performers — and the one
+performed in this step is the one that fails. ⚠️ **Measured twice from inside the claimed tree:**
+the merge landed and the call then died on its own local half, which wants the base branch checked
+out and finds it held by another tree, so it printed `fatal: '<base>' is already used by worktree at
+<path>` with no mention of the merge and left the ref standing. ⛔ **What decides it is whether the
+base is checked out elsewhere**, which under `work_in_shared_checkout: never` is the ordinary state
+rather than bad luck: every session is in a tree of its own and the shared checkout sits on the
+base. ⚠️ **So the merge call names the
+method and the subject and nothing about the branch**, and the ref outlives the merge by exactly the
+distance between this step and step 10.
 
 ⛔ **Read the merge back from state. Never from the exit status.** ⚠️ **The third of the four
 single-copy steps:** both success and refusal can print nothing, and one copy reported a merge that
@@ -384,13 +392,14 @@ single-copy steps:** both success and refusal can print nothing, and one copy re
 gh pr view <number> --json state,mergedAt,mergeCommit
 ```
 
-⚠️ **Measured, and the sharpest form of the same rule:** asking for the branch to be deleted as
-part of the merge, run from the tree that holds that branch, **lands the merge and then fails on
-the deletion** — a non-zero exit for an operation that succeeded. A role trusting the status
-retries a merge that is already in. ⛔ **So how far it got is read rather than inferred from the
-error, which can be absent entirely**: the change's own state *and* whether the branch ref still
-exists on the remote, which is the second half of the read-back and the only thing that says
-whether the server-side deletion happened. Then finish whatever those two say is left.
+⚠️ **The sharpest form of the same rule is the failure the rule above forbids**: a call that lands
+the merge and then dies on a local step exits non-zero for an operation that succeeded, and a role
+trusting the status retries a merge that is already in. ⛔ **So how far it got is read rather
+than inferred from the error, which can be absent entirely**: the change's own state *and* whether
+the branch ref still exists on the remote, which is the second half of the read-back and the only
+thing that says whether a server-side deletion happened. Then finish whatever those two say is
+left. ⚠️ **The ref standing here is not a failure under `procedure`** — it is step 10's to delete,
+by the rule above — so what this read settles is the `host` arm and any merge performed by hand.
 
 **Under `method: squash`, the subject of what lands is this role's to pass.** ⛔ **The squash
 subject carries the references, and a host appends none of them to a subject it was given.** Where
@@ -476,10 +485,13 @@ starting role assembles the taking** — the order is the rule, and the command 
 because a half-released claim is exactly what a failed release leaves.
 
 ⛔ **The command reaches the published ref too, and which of step 8's three arms applied decides
-whether it may.** Under `procedure` and under `host` the ref is already gone by the time this step
-runs, and the half reports what was gone rather than failing on it. ⛔ **Under `never` the ref is
-kept deliberately, and this step is not where that decision is reversed** — `--keep-ref` gives up
-the tree and the local branch and leaves the ref standing. ⚠️ **What it costs is nothing the loop
+whether it may.** Under `procedure` **this is where the ref goes**, step 8 having left it standing;
+under `host` it is already gone by then, and the half reports what was gone rather than failing on
+it. ⚠️ **So a ref still standing when this step begins is the configuration working** and not a
+deletion that failed — which is the reading the reply owes, the two being one observation.
+⛔ **Under `never` the ref is kept deliberately, and this step is not where that decision is
+reversed** — `--keep-ref` gives up the tree and the local branch and leaves the ref standing.
+⚠️ **What it costs is nothing the loop
 reads**: a landed claim claims no work item, so the item is takeable again with the ref still
 standing; the branch *name* goes on answering *taken*, which is the true answer about a ref that
 exists.
