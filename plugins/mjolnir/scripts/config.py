@@ -23,9 +23,9 @@ Three things it deliberately does not do:
 
     ⚠️ It does carry *sentinels* -- `none` for an absent carrier or tracker,
     `never` for a writer the procedure may not use, and the two § 13 members a
-    rule is written against: `local`, the check that carries a command, and
-    `procedure`, the answerer a command is run by. Each is a member of a set the
-    surface states, and which member a rule turns on is the part an alternation
+    rule is written against: `local`, the check whose source is § 17's facet,
+    and `procedure`, the answerer a command is run by. Each is a member of a set
+    the surface states, and which member a rule turns on is the part an alternation
     cannot say. No count of them is given here -- the first form of this
     sentence said *four* and was stale the moment § 13 added two. Every one is
     held to the surface by the self-test rather than by inspection, so renaming
@@ -48,9 +48,10 @@ Three things it deliberately does not do:
 
 **Absence is a configuration, not a gap.** `tracker.kind: none`, an empty
 `statuses` list, an empty `readiness` list, an empty `done` list,
-`host.checks: []`, and a facet whose `carrier` is `none` with a stated
-`absent_reason` all load silently and are not misconfigurations. An *unset* carrier is. `unavailable()` is how a role says what
-it cannot do without any of those reading as a broken install.
+`host.checks: []`, `checks_local: []`, and a facet whose `carrier` is `none`
+with a stated `absent_reason` all load silently and are not misconfigurations.
+An *unset* carrier is. `unavailable()` is how a role says what it cannot do
+without any of those reading as a broken install.
 
 Usage:
     config.py [--skills-root DIR]   print the resolved configuration as JSON
@@ -704,8 +705,22 @@ class Config:
             )
         if not self.get("host.checks"):
             out.append(
-                "The host runs no checks, so every verdict is local. An empty "
-                "check list reads as no answer, never as green."
+                "The host runs no checks, so every verdict is local and `done`'s "
+                "`gate_green` reads `checks_local` for its source (§ 17). An "
+                "empty check list reads as no answer, never as green."
+            )
+        # § 17, and the complement of the arm above: the two facets together are
+        # every verdict there is, so an empty list here is reported for the
+        # reason an empty `host.checks` is. ⛔ Where both are empty the project
+        # has stated no verdict anywhere, which is reported as the two lines it
+        # is rather than folded into one -- each is a separate decision, and a
+        # project that acquires workflows tomorrow clears only one of them.
+        if not self.get("checks_local"):
+            out.append(
+                "No local check is stated (`checks_local: []`), so no verdict is "
+                "produced outside the host's own runs and a `local` done check "
+                "has no source to read: a role reports it unanswered rather than "
+                "inventing a command (§ 17)."
             )
         # A role's own unset key. `day_log.script` is the first absence in this
         # toolkit that is load-bearing rather than theoretical: the day-log role
@@ -786,7 +801,22 @@ RETIRED = [
         "key named, and no revision is left to separate the two. See "
         "§ `The file itself`. Delete the key",
     ),
+    (
+        "done.run",
+        "a done check carries no command. The command, what its pass proves, "
+        "what defeats a cached pass, what it needs before it can run and when "
+        "its verdict is the one to read are a `checks_local` entry's, and a "
+        "`local` check reads that facet for its source. See § 17. Move the "
+        "command to `checks_local` and delete the key",
+    ),
 ]
+
+# A retired key sits at a path, and a path may cross a list: § 13's entries are
+# list members, so the surface declares `done.run` once and a configuration
+# writes it on whichever entry carries it. The indices come out before the
+# comparison, and the refusal names the path the configuration actually carries
+# -- `done[0].run` -- because that is what the person editing the file sees.
+INDEX = re.compile(r"\[\d+\]")
 
 # A facet whose carrier is `none` states why. This is the line between a
 # deliberate absence and an unset value, and it is the whole reason the two can
@@ -1061,9 +1091,16 @@ def _every_key(data, prefix: str = ""):
 
 
 def validate(data: dict, facts: dict) -> None:
-    for path, where in RETIRED:
-        if _has(data, path):
-            raise ConfigError(path, f"is retired -- {where}.")
+    # ⛔ Walked rather than looked up by path, because a retired key may sit
+    # inside a list: `_get` descends a dict and returns the default the moment it
+    # meets one, so `done.run` read that way is a refusal that never fires on the
+    # only shape a project can write it in -- silently, and green.
+    retired = {path for path, _ in RETIRED}
+    for _key, at in _every_key(data):
+        path = INDEX.sub("", at)
+        if path in retired:
+            where = next(reason for name, reason in RETIRED if name == path)
+            raise ConfigError(at, f"is retired -- {where}.")
 
     # A key the surface marked procedure, wherever a configuration put it. The
     # section the clause sits under is what the refusal cites, so the rule's own
@@ -1452,15 +1489,121 @@ def validate(data: dict, facts: dict) -> None:
                 f"is {entry['on_fail']!r}; the surface allows {' | '.join(on_fail)}.",
             )
 
-    # § 13. The same shape as `readiness` at the other end of the item, with two
-    # things that gate has no need of: who answers each check, and a refusal for
-    # a check whose command the host already runs.
+    # § 17. The verdicts no host run produces, and the one facet on this surface
+    # whose entries carry a command the procedure runs for a verdict. Requiredness
+    # is marked on the surface and answers whether the key is written; what each
+    # value has to *be* is here, as § 16's is.
+    mirrored = _mirrored_commands(data)
+    local_checks = _get(data, "checks_local")
+    if not isinstance(local_checks, list):
+        raise ConfigError(
+            "checks_local",
+            f"is {type(local_checks).__name__}, and § 17 states it as the verdicts "
+            "no host run produces -- a list of entries, or `[]` where every verdict "
+            "is the host's. A shape this reader cannot walk takes every local "
+            "command out of the collision refusal below in silence.",
+        )
+    for index, entry in enumerate(local_checks):
+        where = f"checks_local[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}, and has to be a mapping stating at least the "
+                "`command` whose exit status is the verdict and what a pass "
+                "`proves` (§ 17).",
+            )
+        command = entry.get("command")
+        # ⛔ One command, and a list refused for the reason § 2 refuses one inside
+        # a `mirrors`: a list cannot say which `proves`, which `invalidate` and
+        # which precondition belong to which command, and several verdicts are
+        # several entries. A list also stringifies into a key no mirrored command
+        # can match, which would pass a duplicate of the host's own run.
+        if not isinstance(command, str) or not command.strip():
+            raise ConfigError(
+                f"{where}.command",
+                f"is {command!r}; § 17 states one command per entry, written as a "
+                "string and stated whole. Several verdicts are several entries, "
+                "and a value of another shape runs as no command while matching "
+                "no `host.checks` entry either.",
+            )
+        proves = entry.get("proves")
+        if not isinstance(proves, str) or not proves.strip():
+            raise ConfigError(
+                f"{where}.proves",
+                f"is {proves!r}; § 17 states what a pass establishes beside the "
+                "command that produces it. A verdict with no claim beside it is "
+                "read as proving whatever the reader needed, which is the failure "
+                "the facet exists for arriving one step earlier.",
+            )
+        if "invalidate" in entry:
+            defeat = entry["invalidate"]
+            if not isinstance(defeat, str) or not defeat.strip():
+                raise ConfigError(
+                    f"{where}.invalidate",
+                    f"is {defeat!r}; § 17 states it as the command that defeats a "
+                    "cached, incremental or stale pass, and absent where nothing "
+                    "can go stale. Written blank it reads as that absence while "
+                    "looking like a defeat somebody configured, and a pass "
+                    "produced without it having run is not proof.",
+                )
+        requires = entry.get("requires")
+        if requires is not None:
+            # § 16's list, cited rather than given a second grammar -- so the
+            # shape it is held to is the same one, for the same reason: read as a
+            # sequence a string names one precondition per character, and the
+            # report that blocks the verdict would print the dependency a
+            # character at a time.
+            if not isinstance(requires, list):
+                raise ConfigError(
+                    f"{where}.requires",
+                    f"is {requires!r}; § 17 reads § 16's list -- the preconditions "
+                    "the command does not check itself, written as a list even "
+                    "where there is one.",
+                )
+            for position, precondition in enumerate(requires):
+                if not isinstance(precondition, str) or not precondition.strip():
+                    raise ConfigError(
+                        f"{where}.requires[{position}]",
+                        f"is {precondition!r}, which names no precondition (§ 17). "
+                        "An entry naming nothing blocks the verdict and names a "
+                        "blank, so the report reads as having said what was unmet.",
+                    )
+        if "counts_when" in entry:
+            # The shape only: § 2 states the trigger grammar and deliberately
+            # refuses no pattern, a trigger a consumer cannot parse being no
+            # answer about the run. ⚠️ Which is safe here and nowhere else -- an
+            # unestablished condition is *run it here* under § 17, so a pattern
+            # this reader lets through costs a local run rather than a green.
+            condition = entry["counts_when"]
+            patterns = condition if isinstance(condition, list) else [condition]
+            if not patterns or any(
+                not isinstance(p, str) or not p.strip() for p in patterns
+            ):
+                raise ConfigError(
+                    f"{where}.counts_when",
+                    f"is {condition!r}; § 17 states it in § 2's `triggers` form -- "
+                    "one pattern or a list of them, and omitted where the verdict "
+                    "counts for every change. Written blank it states a condition "
+                    "nothing can read while reading as a condition somebody set.",
+                )
+        collision = mirrored.get(_normalised_command(command))
+        if collision:
+            raise ConfigError(
+                f"{where}.command",
+                f"is {command!r}, which {collision} already mirrors (§ 2). A local "
+                "check colliding with a run the host owns asks a shared machine "
+                "for an answer it already has; a command no entry mirrors is the "
+                "one that must run locally, because nothing else will ever answer "
+                "it.",
+            )
+
+    # § 13. The same shape as `readiness` at the other end of the item, with one
+    # thing that gate has no need of: who answers each check.
     done = _get(data, "done")
     if not isinstance(done, list):
         raise ConfigError(
             "done", "must be a list; `[]` where the merge is the whole of it."
         )
-    mirrored = _mirrored_commands(data)
     for index, entry in enumerate(done):
         where = f"done[{index}]"
         if not isinstance(entry, dict):
@@ -1499,47 +1642,18 @@ def validate(data: dict, facts: dict) -> None:
                 "in place of an answer, and one with no message hands over the "
                 "failure without what it wants.",
             )
-        run = entry.get("run")
-        # The other side of the collision comparison, and it has to be held to a
-        # shape for the same reason `mirrors` is: `_normalised_command` stringifies
-        # whatever it is given, so a `run` written as a list -- the natural way to
-        # write a multi-word command -- becomes a key no mirrored command can ever
-        # match, and the refusal below it holds nothing while looking like it holds.
-        if run is not None and not isinstance(run, str):
-            raise ConfigError(
-                f"{where}.run",
-                f"is {run!r}; § 13 states it as one command, written as a string. "
-                "A value of another shape stringifies into something no "
-                "`host.checks` entry can match, so the refusal of a check the host "
-                "already runs would pass it in silence.",
-            )
-        if entry["check"] == "local":
-            if not run:
-                raise ConfigError(
-                    f"{where}.run",
-                    "required when the check is `local` (§ 13): there is nothing "
-                    "to run, and the verdict would have to be reported from a "
-                    "command that was never named.",
-                )
-            if entry["answered_by"] != "procedure":
-                raise ConfigError(
-                    f"{where}.answered_by",
-                    f"is {entry['answered_by']!r} on a check carrying a command. "
-                    "A command is the procedure's to run (§ 13), and a "
-                    "machine-answerable check configured as a person's stops "
-                    "every completion for a hand-over nobody needed. What a "
-                    "command needs standing up before it can run at all is "
-                    "#60's axis, not an answerer here.",
-                )
-        # Every check § 13 binds to an answerer, in both directions. The
-        # `local` arm above is the same rule and stays where it is because it
-        # needs the command in hand; these are the rest. ⛔ Both directions
-        # matter and only one of them is obvious: a machine check handed to a
-        # person is the check somebody turns off, and a person's check handed
-        # to the procedure is answered by reasoning about it and reported
-        # green, which is the failure § 13 exists for. `checklist_ticked` is
-        # bound to neither, and § 13 says why.
-        elif BOUND_ANSWERERS.get(entry["check"], entry["answered_by"]) != entry["answered_by"]:
+        # Every check § 13 binds to an answerer, in both directions. ⛔ Both
+        # directions matter and only one of them is obvious: a machine check
+        # handed to a person is the check somebody turns off, and a person's
+        # check handed to the procedure is answered by reasoning about it and
+        # reported green, which is the failure § 13 exists for.
+        # `checklist_ticked` is bound to neither, and § 13 says why.
+        #
+        # ⚠️ `local` is in that map like any other check now that no entry
+        # carries a command: it used to need an arm of its own because the
+        # refusal read the `run` beside it, and the rule it states is the same
+        # one -- a command is the procedure's to run (§ 17).
+        if BOUND_ANSWERERS.get(entry["check"], entry["answered_by"]) != entry["answered_by"]:
             raise ConfigError(
                 f"{where}.answered_by",
                 f"is {entry['answered_by']!r} on a check § 13 binds to "
@@ -1551,28 +1665,6 @@ def validate(data: dict, facts: dict) -> None:
                 "either way, since reading whether a list is ticked can be a "
                 "machine's work.",
             )
-        elif "run" in entry:
-            # Presence rather than truthiness, which is the reader's own rule one
-            # section up: a key written with nothing after it reads as absent and
-            # is refused instead, so `run:` left dangling on a check that runs
-            # none is as much a mistake as one carrying a command.
-            raise ConfigError(
-                f"{where}.run",
-                f"is {run!r} on a `{entry['check']}` check, whose verdict comes "
-                "from somewhere else (§ 13). A command nothing runs is a command "
-                "that reads as covered.",
-            )
-        if run:
-            collision = mirrored.get(_normalised_command(run))
-            if collision:
-                raise ConfigError(
-                    f"{where}.run",
-                    f"on the `{entry['check']}` check is {run!r}, which "
-                    f"{collision} already mirrors (§ 2). A done check "
-                    "colliding with a run the host owns asks a shared machine for "
-                    "an answer it already has; a check no entry mirrors is the one "
-                    "that must run locally.",
-                )
 
     carriers = _get(data, "carriers")
     if not isinstance(carriers, dict):
@@ -1694,6 +1786,7 @@ MARKED_REQUIRED = [
     "branch_model.kind",
     "branch_model.parallel_trees",
     "carriers",
+    "checks_local",
     "commit.staging",
     "commit.trailer",
     "context.artifacts.carrier",
@@ -1761,7 +1854,7 @@ MARKED_REQUIRED_WHEN = [
 # surface happened to say. ⛔ This one carries the whole weight of the class,
 # since the reader keeps no list of its own to compare against -- drop the clause
 # from the surface and this is what reddens.
-MARKED_PROCEDURE = ["audit_trail"]
+MARKED_PROCEDURE = ["audit_trail", "fail_open"]
 
 MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
@@ -2079,11 +2172,19 @@ def self_test() -> int:
             path not in declared,
             "the surface still states it, and this reader refuses it",
         )
-        broken = _refused(_a_valid_example_with(path, "."))
+        # ⛔ Planted through `_place`, which descends into a list where the path
+        # crosses one: `done.run` is a key of a list member and nothing can write
+        # it at the dotted path itself. The expectation is the path the
+        # configuration then carries -- `done[0].run` -- because a refusal that
+        # named the surface's spelling would send a reader to a key their file
+        # does not contain.
+        data = _a_valid_example()
+        at = _place(data, path, ".")
+        broken = _refused(data)
         check(
             f"a configuration still declaring `{path}` is refused, with the key named",
-            broken == path,
-            f"reported {broken!r}",
+            broken == at,
+            f"reported {broken!r}, expected {at!r}",
         )
 
     # The procedure-only class, which has no path to be looked up at: what is
@@ -2480,11 +2581,8 @@ def _planted_violations():
          at("done", [{"check": "merged", "answered_by": "the cat", "stop": "…"}])),
         ("a done check with no stop message", "done[0].stop",
          at("done", [{"check": "merged", "answered_by": "procedure"}])),
-        ("a local done check with no command", "done[0].run",
-         at("done", [{"check": "local", "answered_by": "procedure", "stop": "…"}])),
         ("a machine-answerable check handed to a person", "done[0].answered_by",
-         at("done", [{"check": "local", "run": "a-command", "answered_by": "human",
-                      "stop": "…"}])),
+         at("done", [{"check": "local", "answered_by": "human", "stop": "…"}])),
         ("a person's check answered by the procedure", "done[0].answered_by",
          at("done", [{"check": "human_verification", "answered_by": "procedure",
                       "stop": "…"}])),
@@ -2492,16 +2590,49 @@ def _planted_violations():
          at("done", [{"check": "gate_green", "answered_by": "human", "stop": "…"}])),
         ("the merge itself handed to a person", "done[0].answered_by",
          at("done", [{"check": "merged", "answered_by": "human", "stop": "…"}])),
-        ("a command on a check that runs none", "done[0].run",
-         at("done", [{"check": "merged", "run": "a-command", "answered_by": "procedure",
-                      "stop": "…"}])),
-        ("a dangling command on a check that runs none", "done[0].run",
+        # The retired key is planted by the arm that reads `RETIRED`, which places
+        # it on the first entry; what is planted here is the shape that arm cannot
+        # reach — the key written with nothing after it. ⛔ Presence and never
+        # truthiness, which is the reader's rule for every key whose absence is
+        # itself an answer: a blank `run:` is the same text as one somebody meant
+        # to fill in, and a retirement read on the value would let it through.
+        ("a retired command written with nothing after it", "done[0].run",
          at("done", [{"check": "merged", "run": None, "answered_by": "procedure",
                       "stop": "…"}])),
-        ("a command that is not one command", "done[0].run",
-         at("done", [{"check": "local", "run": ["a-command"], "answered_by": "procedure",
-                      "stop": "…"}])),
-        ("a done check the host already runs", "done[0].run",
+        ("a local check list that is not a list", "checks_local",
+         at("checks_local", "a-local-command")),
+        ("a local check entry that is not a block", "checks_local[0]",
+         at("checks_local", ["a-local-command"])),
+        ("a local check stating no command", "checks_local[0].command",
+         _a_local_check_of(command=None)),
+        ("a local check whose command is blank", "checks_local[0].command",
+         _a_local_check_of(command="   ")),
+        ("several commands in one local check rather than several entries",
+         "checks_local[0].command", _a_local_check_of(command=["a-command"])),
+        ("a local check stating nothing about what a pass proves",
+         "checks_local[0].proves", _a_local_check_of(proves=None)),
+        ("an invalidation written with nothing after it",
+         "checks_local[0].invalidate", _a_local_check_of(invalidate=None)),
+        ("an invalidation that is no command at all",
+         "checks_local[0].invalidate", _a_local_check_of(invalidate=["a-command"])),
+        # ⚠️ Labelled apart from § 16's two plants of the same shape, which they
+        # otherwise read as a repeat of: one list is declared there and cited
+        # here, and a refusal that stopped happening on one of the two would be
+        # invisible in a run whose lines are identical.
+        ("a local check's preconditions written as one string rather than a list",
+         "checks_local[0].requires",
+         _a_local_check_of(requires="a-daemon-the-command-does-not-check")),
+        ("a local check's precondition entry that names nothing",
+         "checks_local[0].requires[1]",
+         _a_local_check_of(requires=["a-daemon-the-command-does-not-check", "  "])),
+        ("a counting condition written with nothing after it",
+         "checks_local[0].counts_when", _a_local_check_of(counts_when=None)),
+        ("a counting condition written as an empty list",
+         "checks_local[0].counts_when", _a_local_check_of(counts_when=[])),
+        ("a counting condition one of whose patterns is blank",
+         "checks_local[0].counts_when",
+         _a_local_check_of(counts_when=["pull_request -> *", "  "])),
+        ("a local check the host already runs", "checks_local[0].command",
          _collides_with_a_mirrored_command),
         ("several commands in one `mirrors` rather than in its jobs",
          "host.checks[0].mirrors", _several_commands_in_one_mirrors),
@@ -2511,8 +2642,8 @@ def _planted_violations():
          at("host.checks", "a-mirrored-command")),
         ("a host check entry that is not a block", "host.checks[0]",
          at("host.checks", ["a-mirrored-command"])),
-        ("a collision with the command one job of a workflow mirrors", "done[0].run",
-         _collides_with_a_jobs_command),
+        ("a collision with the command one job of a workflow mirrors",
+         "checks_local[0].command", _collides_with_a_jobs_command),
         ("an entry mirroring both ways at once", "host.checks[0].jobs",
          _mirroring_both_ways),
         ("a job list that is not a list", "host.checks[0].jobs",
@@ -2705,7 +2836,7 @@ def _a_type_with_no_prefix(data: dict) -> dict:
 
 
 def _collides_with_a_mirrored_command(data: dict) -> dict:
-    """§ 13's refusal, against whatever command the fixture's host already runs.
+    """§ 17's refusal, against whatever command the fixture's host already runs.
 
     The command is read out of the example rather than written here, for the
     reason the fixture itself is taken from the directory: a literal would be
@@ -2715,11 +2846,7 @@ def _collides_with_a_mirrored_command(data: dict) -> dict:
     checks = data.setdefault("host", {}).setdefault("checks", [])
     if not checks or not isinstance(checks[0], dict) or not checks[0].get("mirrors"):
         checks.insert(0, {"workflow": "Planted", "mirrors": "a-mirrored-command"})
-    command = checks[0]["mirrors"]
-    data["done"] = [
-        {"check": "local", "run": command, "answered_by": "procedure", "stop": "…"}
-    ]
-    return data
+    return _a_local_check_of(command=checks[0]["mirrors"])(data)
 
 
 def _several_commands_in_one_mirrors(data: dict) -> dict:
@@ -2762,20 +2889,43 @@ def _four_jobs_behind_one_workflow() -> dict:
 
 
 def _collides_with_a_jobs_command(data: dict) -> dict:
-    """§ 13's refusal against a command one job of a workflow mirrors.
+    """§ 17's refusal against a command one job of a workflow mirrors.
 
     The discrimination #33 and #39 could not make under the one-command entry,
-    asserted where it is decidable: a done check colliding with the **third** of
+    asserted where it is decidable: a local check colliding with the **third** of
     four commands behind one workflow name is refused exactly as one colliding
     with a workflow's only command is. ⚠️ What a hook does with that answer is
     its own item's; what is held here is that the answer is per command.
     """
     data.setdefault("host", {})["checks"] = [_four_jobs_behind_one_workflow()]
-    data["done"] = [
-        {"check": "local", "run": "the-third-command", "answered_by": "procedure",
-         "stop": "…"}
-    ]
-    return data
+    return _a_local_check_of(command="the-third-command")(data)
+
+
+def _a_local_check_of(**overrides):
+    """§ 17's facet carried as one entry, with the stated keys replaced.
+
+    Written out rather than borrowed from whichever example states the facet, for
+    the reason `_an_e2e_register_with` is: a plant that broke one key of a
+    borrowed entry would redden on whatever else the borrowing left out and prove
+    nothing about the branch it was written for. ⚠️ The base states `command` and
+    `proves` and nothing else, since those two are the required pair and every
+    other key's plants are about a value being written at all.
+
+    ⛔ A key whose override is `None` is **written** with nothing after it rather
+    than removed: the two are the same value once a mapping is parsed, and the
+    blank form is the one a reader asking for truthiness lets through.
+    """
+
+    def mutate(data: dict) -> dict:
+        entry = {
+            "command": "a-local-command",
+            "proves": "what a pass of it establishes",
+        }
+        entry.update(overrides)
+        data["checks_local"] = [entry]
+        return data
+
+    return mutate
 
 
 def _mirroring_both_ways(data: dict) -> dict:
@@ -2994,6 +3144,35 @@ def _refuses_missing_code_root() -> str | None:
 def _a_valid_example_with(path: str, value) -> dict:
     """A complete example with one key written back into it."""
     return _with(_a_valid_example(), path, value)
+
+
+def _place(data: dict, path: str, value) -> str:
+    """Write `value` at `path`, descending into the first entry of any list.
+
+    Returns the path the configuration now carries it at, which is the dotted
+    one with an index wherever a list was crossed. ⛔ The index is why this
+    exists: a retired key declared inside a list member -- § 13's entries are
+    list members -- cannot be written at the surface's own spelling of its path,
+    and a plant that silently created a *dict* called `done` instead would
+    redden on the shape rule rather than on the retirement it was written for.
+    """
+    node, parts, at = data, path.split("."), []
+    for part in parts[:-1]:
+        if isinstance(node, list):
+            if not node:
+                node.append({})
+            at.append("[0]")
+            node = node[0]
+        node = node.setdefault(part, {})
+        at.append(f".{part}" if at else part)
+    if isinstance(node, list):
+        if not node:
+            node.append({})
+        at.append("[0]")
+        node = node[0]
+    node[parts[-1]] = value
+    at.append(f".{parts[-1]}" if at else parts[-1])
+    return "".join(at)
 
 
 def _refuses_a_root_with_no_config() -> tuple[str | None, bool]:

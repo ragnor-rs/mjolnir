@@ -77,8 +77,10 @@ is where the distinction matters, because a `done:` check reads a verdict.
 
 ## What a pass does not prove: six shapes, in five projects
 
-[#66](https://github.com/ragnor-rs/mjolnir/issues/66) names two of these and records both as
-measured in one project. Across six stacks the shapes are:
+[#66](https://github.com/ragnor-rs/mjolnir/issues/66) named two of these and recorded both as
+measured in one project; the facet they were written into is
+[`schema § 17`](../plugins/mjolnir/config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts).
+Across six stacks the shapes are:
 
 | the shape | where | what defeats it |
 |---|---|---|
@@ -93,8 +95,9 @@ measured in one project. Across six stacks the shapes are:
 measured staleness defeats are not forms of anything: a volume that has to be removed first, and a
 generated source tree that has to be rebuilt before the type checker is believable (C compiles its
 message catalogue in the workflow step before the check). A string naming a flag expresses neither,
-and in both projects something already performs the defeat. What the facet says instead is #66's,
-which carries the amendment.
+and in both projects something already performs the defeat. What the facet says instead is
+[`schema § 17 → What a pass does not prove`](../plugins/mjolnir/config/schema.md#what-a-pass-does-not-prove-and-the-command-that-defeats-a-stale-one):
+`invalidate` is a **command**, absent where nothing can go stale.
 
 ⛔ **None of that changes what the procedure may know**, by
 [`schema § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls):
@@ -105,9 +108,10 @@ status.
 
 Eight classes, measured. The key already exists for one tier —
 [`schema § 16`](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
-declares `requires:` and states its form once — and #66 would read the same field for a local
-verdict, where it is described as a precondition a consumer can evaluate. So what each class **is**
-decides whether that description holds:
+declares `requires:` and states its form once — and
+[`schema § 17`](../plugins/mjolnir/config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)
+reads the same field for a local verdict, where a precondition is one a consumer evaluates. So what
+each class **is** decides whether that description holds:
 
 | what the command needs and does not check | where | can a consumer evaluate it |
 |---|---|---|
@@ -126,7 +130,9 @@ a check whose tool is absent as a skip and exits 2 — *a check could not be run
 gate reports one assertion as skipped because the tree it reads is not in the checkout, and the
 script declines to call the run a clean pass. That is
 [`schema § 11 → A report names what it could not establish`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)
-arrived at independently, twice, and it is the behaviour #66 asks of an unmet `requires:`.
+arrived at independently, twice, and it is the behaviour
+[`schema § 17`](../plugins/mjolnir/config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)
+asks of an unmet `requires:`.
 
 **No measured precondition is a version.** Eight classes across six projects, and every one is a
 presence, a state or a credential. The one case where a version *is* a precondition nothing checks
@@ -176,7 +182,9 @@ ordinary change into the main line the host runs one path-filtered formatter and
 the local verdict is the only verdict there is. The condition is the **base branch**, which is a
 property of the change rather than of the command, and
 [`schema § 2`](../plugins/mjolnir/config/schema.md#2-code-host)'s `triggers` carries the event and
-the base already; what reads it is the facet #66 is open for.
+the base already; what reads it is
+[`schema § 17 → Whether the host's verdict covers this change`](../plugins/mjolnir/config/schema.md#whether-the-hosts-verdict-covers-this-change),
+whose `counts_when` is stated in that same form.
 
 ## The tiers, what each needs, and which are asked for
 
@@ -330,8 +338,9 @@ Stated so that the absences are read as results rather than as work left undone:
   [`schema § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)'s
   already, which also says the classes live in #19's sweep rather than on the surface; the sweep's
   stack class is in force, and nothing this reading found asks for a seventh ruling about it.
-- **No second ordered list.** The conditions under which a verdict counts are #66's one facet, not a
-  predicate list beside
+- **No second ordered list.** The conditions under which a verdict counts are one facet's five keys
+  ([`schema § 17`](../plugins/mjolnir/config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)),
+  not a predicate list beside
   [`schema § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list).
 - **The commands stay project-local.** Six stacks produced six command sets with nothing in common
   but their shape, which is the measurement behind that boundary rather than a preference about it.

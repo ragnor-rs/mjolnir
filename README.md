@@ -55,6 +55,7 @@ is checkable in the tree it links.
 | **Absence is a configuration, not a failure** | No board, no estimate, no item template, no due date, no tracker at all — each is a stated answer the procedure runs on, with the reason recorded where the key would have been |
 | **Nothing of it lives in your repository** | One file you write. No vendored copy, no templates directory, nothing to re-sync when the procedure improves |
 | **Your commands, run and reported** | What counts as done is an ordered list of checks you name, each with who answers it ([`§ 13`](plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)), and which item is next comes from a command you configure ([`§ 12`](plugins/mjolnir/config/schema.md#12-ordering)). Your build, your suites, your ordering argument |
+| **A pass that proves nothing is not a pass** | Say what each local check's verdict establishes, the command that defeats a cached one, what it needs before it can run, and which changes its verdict is the one to read for — and a replayed pass, an unmet precondition or a condition nothing could establish is reported rather than counted ([`§ 17`](plugins/mjolnir/config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)). A project whose host runs nothing still has a definition of done that can be asked |
 
 So it is not a spec-driven kit. It ships no spec format, no test taxonomy and no opinion about your
 architecture. What it does is make the loop *around* that work the same in every project, and hold

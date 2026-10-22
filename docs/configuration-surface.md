@@ -527,7 +527,7 @@ turns off.
 Hence the ordered list and its per-check answerer, in
 [`schema.md § 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check).
 ⚠️ **And hence the refusal of a check the host already runs**
-([`§ 13 → A done: check the host already runs`](../plugins/mjolnir/config/schema.md#a-done-check-the-host-already-runs-is-a-misconfiguration)):
+([`§ 17 → A local check the host already runs`](../plugins/mjolnir/config/schema.md#a-local-check-the-host-already-runs-is-a-misconfiguration)):
 every check in the table above is mirrored by no workflow at all — a hand test on the running
 application, an acceptance suite needing it up, and a checklist carried on the pull request —
 which is the shape the facet was derived from. A check that *is* mirrored needs no entry, because
@@ -691,12 +691,13 @@ and no money. ⛔ So the facet states the five values and the procedure holds th
 them, authoring none of it
 ([`schema.md § 15`](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded)).
 
-**Why it is a host check rather than an entry under `done:`.** A check the host already runs is
-refused as a `done:` entry by
-[`schema.md § 13`](../plugins/mjolnir/config/schema.md#a-done-check-the-host-already-runs-is-a-misconfiguration),
+**Why it is a host check rather than a local one.** A command the host already runs is refused as a
+local check by
+[`schema.md § 17`](../plugins/mjolnir/config/schema.md#a-local-check-the-host-already-runs-is-a-misconfiguration),
 and this one belongs on the host for the reason the measurement gives: it is the cheap half of a
 tier whose expensive half cannot run there at all. The suite itself is the opposite case — a
-command no workflow mirrors, which is what that facet's `local` check is for.
+command no workflow mirrors, which is what that facet states and what a `done:` list's `local`
+check reads.
 
 ## A tier that executed nothing, and the build that said so
 
@@ -744,9 +745,9 @@ neither, and asking it needs two numbers. ⛔ So the facet states the commands a
 procedure does the arithmetic — naming no runner, no task name and no report format, which is the
 same boundary the local-check and unrunnable-tier facets sit on.
 
-**Why it is a host check rather than an entry under `done:`.** For the reason the register one
-above is: a check the host already runs is refused as a `done:` entry by
-[`schema.md § 13`](../plugins/mjolnir/config/schema.md#a-done-check-the-host-already-runs-is-a-misconfiguration),
+**Why it is a host check rather than a local one.** For the reason the register one
+above is: a command the host already runs is refused as a local check by
+[`schema.md § 17`](../plugins/mjolnir/config/schema.md#a-local-check-the-host-already-runs-is-a-misconfiguration),
 and this is the cheap half — two numbers — of a tier whose expensive half is the run itself. ⚠️ And
 the honesty it adds is pointed at the **host's** verdict, where the four-valued rules already
 landed stop: a job whose every step ran and whose suite executed zero cases satisfies all of their

@@ -64,8 +64,15 @@ readiness:
 done:
   # The stated absence (§ 13), and the shape every role has to run against: nothing beyond
   # the merge says what finished means here. `gate_green` would name nothing either — the
-  # host runs no check above, so there is no run to read. `[]` rather than an unset key,
-  # because a decision and an oversight read identically otherwise.
+  # host runs no check above, and `checks_local` below is empty too, so there is no verdict
+  # anywhere to read. `[]` rather than an unset key, because a decision and an oversight read
+  # identically otherwise.
+  []
+
+checks_local:
+  # Both halves empty, which is the one pairing worth showing: the host runs nothing (§ 2) and
+  # nothing local produces a verdict either (§ 17). The reader reports both and refuses neither
+  # — this project maps one role, and that role answers no question about a verdict.
   []
 
 commit:

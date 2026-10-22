@@ -56,8 +56,12 @@ have one of their own.
 
 ⛔ **Both ways of getting that wrong read identically from outside, which is why both are stated.**
 A fact a role reads and this surface does not state is a **gap**, and a gap is written down here by
-name — a workflow running more than one mirrored command is #58's, and the conditions under which a
-local verdict counts are #66's — so a reader meets the missing facet rather than finding it. A fact
+name, so a reader meets the missing facet rather than finding it. ⚠️ **The two that were written
+down here are both stated now** — a workflow running more than one mirrored command is
+[§ 2](#a-workflow-whose-jobs-mirror-more-than-one-command)'s `jobs` form, and the conditions under
+which a local verdict counts are
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts) — which leaves this paragraph
+a rule with no open instance rather than a list to keep. A fact
 nothing but the project's own command reads is **not** a gap and no key is owed for it: an adopter
 who files one item per local command grows the surface in the one direction this boundary exists to
 prevent, and an absence nobody can classify is what makes filing it the honest thing to do.
@@ -121,14 +125,14 @@ the middle one:
 | the candidate | does a role read it to decide what to do next | where that leaves it |
 |---|---|---|
 | a command that brings a working tree up | no — nothing reads a verdict out of it, and the steps are the project's | `branch_model.mechanics` (§ 10): a pointer the procedure names and calls |
-| an acceptance suite no host run mirrors | yes — a `done:` check is answered out of its verdict | surface, and the key exists: the `local` entry and its `run` (§ 13) |
+| an acceptance suite no host run mirrors | yes — a `done:` check is answered out of its verdict | surface, and the key exists: a `checks_local` entry and its `command` (§ 17) |
 | a procedure that restores an environment | no | not surface: a project's own script, named by whichever role needs it |
-| a build whose tool reports a cached pass as work done | yes — whether a pass counts at all | surface, and the gap is #66's |
+| a build whose tool reports a cached pass as work done | yes — whether a pass counts at all | surface, and the key exists: that entry's `invalidate` (§ 17) |
 
 ⚠️ **The four do not sort by whether the command is local, which is why the test is run rather than
 the question answered by eye.** Every one of them is a local command; two carry a fact a role reads
-and two do not, and of those two one already has its key while the other is an open gap — so
-neither *local* nor *unstated* is the property that decides any of them.
+and two do not, and the two that do are answered by one facet with a key each — so neither *local*
+nor *unstated* is the property that decides any of them.
 
 ## The file itself
 
@@ -476,7 +480,9 @@ is the rule gone with nothing refusing it.
 the build did not start, no dependency the run has to stand up. ⚠️ **So a stand-in for a dependency
 is not a cheaper test in this tier; it is a missing one in the tier past it**, and the tiers past it
 have a discipline this does not state. The values the tier axis takes and the two facets they derive
-from are #60's, and what a local verdict proves is #66's — ⛔ **neither restated here**, because two
+from are #60's, and what a local verdict proves is
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s — ⛔ **neither restated
+here**, because two
 vocabularies for one tier is what
 [§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check) already refuses
 one list over.
@@ -535,7 +541,9 @@ supplies for a role to read and decide what to do next, which is the test for a 
 [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) states
 generally — ⚠️ **the rules themselves are read by the two legs named at the top of this
 subsection**, which is what being procedure rather than configuration means here. What a project
-*does* configure about its tiers is #60's and #66's. ⚠️ **A project may still hold rules of its
+*does* configure about its tiers is #60's and
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s. ⚠️ **A project may still
+hold rules of its
 own**, which are additions to this rather than a second statement of it — and the form the rest of
 that store is classified under is #40's.
 
@@ -614,7 +622,10 @@ local command each one mirrors, what triggers it, and which paths it watches. Ev
 it and none carries the facts itself: the preconditions the subsection below states, the reviewing
 role driving those runs green, the finishing role refusing to merge without them, and the guards
 that refuse a local check the host has already run. The facet is mandatory on a project whose host
-runs anything; `checks: []` is the one legitimate absence and means every verdict is local.
+runs anything; `checks: []` is the one legitimate absence and means every verdict is local — and
+those verdicts are stated too, at
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts), which is this facet's
+complement rather than a second copy of it.
 
 ⛔ **The mapping is configured, never inferred.** A run's name does not say which local command it
 duplicates, so no consumer derives the map from the host at run time — the host is read only for
@@ -2082,7 +2093,8 @@ outlives the file in silence.
 expanded by the role's own command, which is the shape `day_log.out_dir` (§ 9) already has, and
 what a configured path carries rather than a command is
 [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls)'s, with
-the form a local check's own command takes still #66's. A store that does
+the form a local check's own command takes stated at
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts). A store that does
 not exist yet is created by the first role that writes to it: unlike `roots.code` (§ 1), its
 absence is not a stop.
 
@@ -2143,12 +2155,23 @@ two roles, not the same check twice.
 ```yaml
 done:                                        # required
   - { check: gate_green,         answered_by: procedure, stop: "…" }
-  - { check: local,              answered_by: procedure, stop: "…",
-      run: "<a command no `host.checks` entry mirrors>" }   # required when the check is `local`
+  - { check: local,              answered_by: procedure, stop: "…" }
   - { check: human_verification, answered_by: human,     stop: "…" }
   - { check: checklist_ticked,   answered_by: human,     stop: "…" }
   - { check: merged,             answered_by: procedure, stop: "…" }
 ```
+
+```yaml
+# retired: done.run
+```
+
+⛔ **`run` is retired, and a `done:` entry still declaring it is refused with the key named.** It
+carried the command a `local` check runs, as the only place a verdict-producing command was named
+with no workflow behind it — and a command written into a check said nothing about what its pass
+*established*, what defeated a cached one, what it needed before it could run, or when its verdict
+was the one to read. [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts) states
+all five, so a `local` check reads that facet for its source and this list carries no commands at
+all.
 
 What **done** means is the project's statement, and the shape it takes is § 5's at the other end of
 the item: an ordered list of named checks drawn from a shared library, each with its own stop
@@ -2192,7 +2215,7 @@ done:
   | the check | answered by | and the other way round |
   |---|---|---|
   | `gate_green`, `merged` | `procedure` | a machine reading handed to a person is the check somebody turns off |
-  | `local` | `procedure` | a command is the procedure's to run |
+  | `local` | `procedure` | a command is the procedure's to run (§ 17) |
   | `human_verification` | `human` | a person's verification answered by reasoning about it |
   | `checklist_ticked` | **either**, and the project says which | — |
 
@@ -2208,28 +2231,31 @@ done:
   ⚠️ **It is the record and not the report**: a verdict that exists only in a role's reply is a
   verdict the next role cannot read, by
   [§ 11](#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it).
-- ⛔ **`answered_by: procedure` with a `run` is run, not handed over**, and its verdict is reported
-  with the command that produced it and the tree that produced it
-  ([§ 10](#which-tree-a-verdict-belongs-to)). ⚠️ **It is the finishing role that runs it**, not the
-  reviewing one, whose own local-check rule is about the change's plan rather than this list.
+- ⛔ **A `local` check is run, not handed over**, and its verdict is reported with the command that
+  produced it and the tree that produced it ([§ 10](#which-tree-a-verdict-belongs-to)). The command
+  and the conditions under which its pass counts are
+  [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s. ⚠️ **It is the finishing
+  role that runs it**, not the reviewing one, whose own local-check rule is about the change's plan
+  rather than this list.
 - ⛔ **A check names what it asks about and never its own preconditions.** What a check needs before
   it can run at all — a deployment, a credential, indexed material, money — and what it reports
   when it ran only in part is #60's axis. Two facets describing one unrunnable tier in two
-  vocabularies is the thing that must not happen here.
+  vocabularies is the thing that must not happen here. ⚠️ **What a *local* command needs before it
+  can run is stated where that command is**, as its `requires`
+  ([§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)) — beside the command and
+  not in an entry of this list, which is the same division one key over.
 
-⚠️ **`gate_green` on a project whose host runs nothing is a check with no source, not a check that
-passes.** `checks: []` is § 2's one legitimate absence and means every verdict is local, so the run
-`gate_green` would read does not exist — and by the rule above the role reports it unanswered.
-⚠️ **The reader has both halves in hand and deliberately refuses nothing**, because a project whose
-host runs nothing today may carry workflows tomorrow and the pairing is not wrong, only unanswerable
-now. A
-project in that position states the command as a `local` check instead — the only place a
-**verdict-producing** command is named with no workflow behind it, [§ 12](#12-ordering)'s `command`
-being the other local command this surface carries and the verdict of nothing.
-⚠️ **What such a verdict
-*proves* is not stated here**: a pass replayed out of a build cache having executed nothing, and a
-precondition the command does not check itself, are #66's — and that item is also where a local
-check gets a statement of its own rather than being this facet's `run`.
+⛔ **`gate_green` on a project whose host runs nothing reads its source from
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts), never from nothing at all.**
+`checks: []` is § 2's one legitimate absence and **means every verdict is local**, so the green this
+check asks about is the local verdicts — which is the only reading left once the host owns none, and
+the reason that absence is a configuration rather than a check that silently passes. ⚠️ **Where
+neither facet states anything the check is unanswered and is reported so**, by the rule above: a
+project whose host runs nothing and whose local list is empty has stated no verdict anywhere, and
+the reader refuses neither pairing, a project without workflows today being a project that may carry
+them tomorrow. ⚠️ **On such a project `gate_green` and `local` have one source**, § 2's absence
+meaning exactly that, and each verdict is reported once with the command that produced it rather
+than twice under two names.
 
 **`done: []` is the stated absence**, and it is what a project that configures nothing beyond the
 gate already has: completion is the merge and the host's own runs, and no further check is asked
@@ -2247,31 +2273,6 @@ asks that every pass, as procedure with no setting — along with who runs the c
 a project configuring it here would be asking one question twice, with the two statements allowed to
 disagree. What belongs here is a check a machine *cannot* answer about the work itself, not the
 inspection of the diff.
-
-### A `done:` check the host already runs is a misconfiguration
-
-⛔ **A `run` naming a command some `host.checks` entry already mirrors is refused, naming both the
-check and the workflow.** Not a second opinion and not a belt-and-braces: § 2 makes `checks` the
-single statement of which verdicts the host owns, the guards that refuse a local run of a command
-the host has already run read it there, and a `done:` check that collides with one asks a shared
-machine for an answer it already has.
-
-⚠️ **The complement is exactly what this facet is for.** A check **no** entry mirrors is the one
-that must run locally, because nothing else will ever answer it — which is the acceptance suite in
-the measurement above, mirrored by no workflow at all.
-
-⚠️ **Already mirrors is not a comparison against one string**, for the reason § 2 states beside
-`mirrors` itself and #58 exists to settle: a check colliding with the second of a workflow's
-commands is as duplicated as one colliding with the first. So what the refusal reads is **whatever
-an entry mirrors**: a command, or a list of them. ⛔ **The list is a tolerance and not a form this
-surface states** — #58 decides the landing shape, and the per-command path filter its acceptance
-names is **refused** here rather than guessed at. The tolerance runs in the strict direction only:
-it can find a collision, never excuse one.
-⚠️ **And the comparison is
-the command as both sides wrote it**, with only its runs of whitespace normalised — the same
-command to any shell, so a second spelling of one command is not a second command. Anything beyond
-that is two commands as far as this refusal can tell, which errs towards accepting a duplicate
-rather than towards refusing a legitimate check.
 
 ### In progress is not done, and a role that stops mid-list says what is left
 
@@ -2379,13 +2380,15 @@ uncovered change is allowed; an uncovered change nobody wrote down is not.**
 any of them.** What the procedure holds is the **agreement** between two file lists and the
 document that claims to describe one of them — a computed comparison, which is the strong kind of
 check and not the kind that quotes a sentence back at the text it came from. The tier this guards
-is the end-to-end one, whose place on the tier axis and whose own discipline are #60's and #66's
-and are not restated here.
+is the end-to-end one, whose place on the tier axis is #60's and whose own verdict's discipline is
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s, and neither is restated
+here.
 
 ⚠️ **So this runs where the suite cannot, and that asymmetry is the facet's whole reason to
 exist.** Driving a deployed system needs a stack, a credential, indexed material and money; asking
 *is this change covered* and *does the register still describe the suite* needs the file list and
-the diff. One is a project's own command and may be a `local` entry under
+the diff. One is a project's own command and may be a `checks_local` entry under
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts), read by a `local` check of
 [§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check); the other is
 mirrored as a host check like any other (§ 2). Measured in one project, where the two comparisons
 run in a workflow beside a suite the same workflow cannot start
@@ -2524,11 +2527,12 @@ a verdict that says only *zero* leaves whoever reads it to guess what. ⚠️ **
 dependency** — no `requires:`, and a report carrying no `skipped` line — the run says the dependency
 is **unnamed** rather than that there was none.
 
-⚠️ **The form is stated here and once.** #66 states a local check's command, what a pass
-establishes, and the `invalidate:` form that defeats a cached pass; its `requires:` is this list,
-and whichever of the two lands second **cites** the other rather than writing a second grammar for
-one rule. ⛔ **Evaluating a precondition is #66's and not this facet's**: what this one does with
-the list is name it, and a facet that also ran it would be two statements of one rule.
+⚠️ **The form is stated here and once.**
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts) states a local check's
+command, what a pass establishes, and the `invalidate:` command that defeats a cached pass; its
+`requires:` is this list, and it **cites** this section rather than writing a second grammar for one
+rule. ⛔ **Evaluating a precondition is that section's and not this facet's**: what this one does
+with the list is name it, and a facet that also ran it would be two statements of one rule.
 
 ⛔ **Reading a count is not the same act as judging it, and a count that could not be read is
 reported as unanswered.** Neither command's output is read as a zero when it cannot be read at all —
@@ -2542,8 +2546,9 @@ which. A project whose host stands the dependency up and a project whose host ca
 one statement, so the half that differs is which run has a dependency to stand up — not what its
 count has to show.
 
-⛔ **And the run states which tree it read the counts in, and with which commands.** This is the one
-facet whose verdict comes from running a *project's* own command, so
+⛔ **And the run states which tree it read the counts in, and with which commands.** This is a facet
+whose verdict comes from running a *project's* own command, as
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s is, so
 [§ 10](#which-tree-a-verdict-belongs-to)'s rule binds here at its sharpest: a command reaching a
 service bound to another tree answers about code this branch does not contain, in the direction that
 passes, and a count with no tree beside it gives a reader no way to tell.
@@ -2557,3 +2562,162 @@ never that nothing was skipped** — absence of signal is not an answer ([§ 2](
 a host check like any other (§ 2). ⚠️ **The role that launches a tier is #128's** and is not this
 facet's to state: what is configuration here is the declaration, the report and the floor, and what
 is procedure is the arithmetic over them.
+
+## 17. The local verdict, and the conditions under which it counts
+
+```yaml
+checks_local:                # the verdicts no host run produces; required
+  - command: "<the command whose exit status is the verdict, and which changes nothing>"
+    proves: "<what a pass establishes>"
+    invalidate: "<the command that defeats a cached, incremental or stale pass>"
+    requires: ["<a precondition the command does not check itself>"]
+    counts_when: "<pattern>"   # the changes this verdict is read for; § 2's trigger form
+```
+
+**This is [§ 2](#2-code-host)'s `checks` read from the other end**, and the two together are every
+verdict there is: that facet states which verdicts the host owns, and `checks: []` there **means
+every verdict is local** — a claim this surface made with nowhere to state one. ⛔ **So
+`checks_local` is the single statement of every verdict-producing command the host does not run, and
+no consumer carries one itself.** Its readers are the `local` check of
+[§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check) and, on a project
+whose host runs nothing, that list's `gate_green` — which is the check that used to have no source
+at all there.
+
+⛔ **`[]` is the stated absence and means no verdict is produced outside the host's own runs**, by
+the rule this surface opens with: a project that has decided it runs nothing locally and a project
+that has not thought about it read identically otherwise. ⚠️ **It is deliberately not *every verdict
+is the host's***, which § 2's absence says in the other direction and which would make the two
+statements contradict each other on the one configuration that states both — the host owning every
+verdict there *is*, and there being none, are different facts. ⚠️ **A reader reports it as
+unavailable**, so a role that would have read a local verdict says what the project decided instead.
+⚠️ **The pairing with `checks: []` is not refused**, for the reason § 13 gives when it declines to
+refuse the same pairing one facet over: a project whose host runs nothing today may carry workflows
+tomorrow, and a check with no source is reported unanswered rather than read as passing — ⛔ **and
+where both are empty the project has stated no verdict anywhere**, which a reader reports as the two
+decisions it is rather than folding into one.
+
+**The keys, and what each is for.** ⛔ **`command` and `proves` are written on every entry and the
+other three are legitimately absent** — stated here in prose rather than by the `# required`
+marker, for the reason § 2 states an entry's `workflow` that way: a marker names a key at a path,
+and a member of a list sits at no path a marker or a condition can reach.
+
+- ⛔ **`command` is one command, and a list of them is refused** — § 2's reason beside `mirrors`,
+  one facet over: a list is the shape that cannot say which `proves`, which `invalidate` and which
+  precondition belong to which command, and several verdicts are several entries. ⚠️ **It is stated
+  whole, and the procedure supplies no part of it** — the general rule at
+  [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls), which
+  settles the question this key was open for: a command is never a path a role prefixes with an
+  interpreter.
+- ⚠️ **And it changes nothing.** A command that repairs what it judges is not a local verdict, and
+  ⛔ **this is stated at the key rather than refused by the reader**: one measured command name is a
+  verdict under one root and a rewrite under another, and nothing tells the two apart mechanically
+  ([the measurement](../../../docs/build-surface.md#a-verdict-is-a-command-a-root-and-a-condition)).
+- ⛔ **`proves` is what a pass establishes, and it is stated rather than inferred from the command.**
+  A verdict with no claim beside it is read as proving whatever the reader needed it to prove, which
+  is the failure this whole section is about arriving one step earlier. It is what a report names
+  beside the verdict.
+- **`requires` is the preconditions the command does not check itself**, and it is
+  [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s list: ⛔ **that
+  section declares the key and states its form once, and this one cites it rather than writing a
+  second grammar for one rule.** What this section adds is the **evaluation**, which § 16 leaves
+  here: ⛔ **a precondition is checked, never assumed — an unmet one blocks the verdict and the
+  report names it, and one the procedure cannot evaluate is reported *undeterminable* and the run is
+  not called green.** ⚠️ **A credential is the measured case of the second**, answerable as presence
+  and never as validity. ⛔ **The facet does not grant the procedure the right to skip it**: an
+  unmet precondition is not downgraded to a warning, for the reason § 13's `answered_by: human`
+  check blocks rather than being optimistically assumed. ⚠️ **The third value is not new here** —
+  two of the six measured stacks already exit one, or decline to call a run clean, where a check
+  could not run
+  ([the measurement](../../../docs/build-surface.md#preconditions-a-command-does-not-check-itself)).
+
+**What runs an entry.** ⛔ **Stated here rather than in either role**, for the reason § 2's
+run-reading subsection is stated there: two roles read this facet, and a rule written in one role's
+skill is a second authority for the other. Where the project's `done:` list carries a `local` check
+— or a `gate_green` on a project whose host runs nothing — the entries are the **finishing** role's,
+run and never handed over (§ 13). Where it carries neither, they are the **reviewing** role's local
+run, whose own rule is that a check no `host.checks` entry mirrors is the one that must run locally.
+⚠️ **Which of the two it is, is read from the configuration and never from what a role finds**: a
+verdict nobody has produced yet and a verdict the other role owns are the same silence.
+
+⚠️ **An entry carries no path filter, and what that costs is stated rather than discovered.** § 2's
+filter answers whether a host run covers a change; a local check has no run to be filtered out of,
+so an entry relevant to one subtree is run for a change that touches another. That spends time and
+⛔ **can never report a green that is not this change's**, which is the direction the omission has
+to err in — and a project needing the discrimination states it in `counts_when` below rather than in
+a flag inside the command, where no role could read it.
+
+### What a pass does not prove, and the command that defeats a stale one
+
+⛔ **A local verdict can exit zero having proved nothing, and the ways it does are not the host's
+ways.** The host's are absence of signal — no run, a run that executed no step, a run for another
+commit — and § 2 carries all of them. These are the other kind: the command **succeeds**. Six shapes
+were measured across five of six stacks, and
+[the measurement](../../../docs/build-surface.md#what-a-pass-does-not-prove-six-shapes-in-five-projects)
+is where they live rather than here.
+
+⛔ **`invalidate` is the command that defeats a cached, incremental or stale pass, and it is a
+command rather than a form of the one it guards.** Two of the measured defeats are states to
+destroy — a volume that has to be emptied, a generated tree that has to be rebuilt before the check
+that reads it is believable — and a string naming a flag expresses neither. ⚠️ **It is absent where
+nothing can go stale**, which is a real configuration rather than an unset key: a command with
+nothing cached behind it has nothing to defeat.
+
+⛔ **A pass produced without a stated `invalidate` having run is not reported as proof, and the
+report names what did not run.** That is the whole of what the key buys: the verdict is a replay of
+an older one against code that has since changed, and a replay reads exactly like a pass. ⚠️ **The
+invalidation's own failure is not the verdict's** — a defeat that could not run leaves the pass
+unproved rather than red, which is § 2's precondition rule arriving at a local command.
+
+### Whether the host's verdict covers this change
+
+⛔ **`counts_when` is the condition under which this verdict is the one to read, and it is the
+change's property rather than the command's.** Four of the six stacks carry a probe answering
+*does the host's verdict cover this code* before a local check runs, and
+[the measurement](../../../docs/build-surface.md#whether-the-hosts-verdict-covers-this-code) counts
+what they agree on: six conditions, only one in all four, and every one of them already stated — § 2
+carries the four preconditions, the absence rule, the workflow-name key and the path filter. ⛔ **So
+this key states the one condition none of those reaches**: three of one project's four code checks
+run only on a change whose base is a release branch, so for an ordinary change the host runs almost
+nothing and the local verdict is the only verdict there is.
+
+**It takes § 2's `triggers` form** — `pull_request -> <base pattern>` with `*` for any base, and
+`push -> <branch>` — one pattern or a list of them. ⛔ **The same vocabulary and not a second one**:
+the host side of this mapping already states the event and the base that way, and two statements of
+one mapping must not disagree about form. ⚠️ **A pattern this surface's own reader does not parse is
+no answer about the change**, which § 2's absence rule already covers and which the next rule turns
+into an act.
+
+⛔ **A `counts_when` that cannot be established reads as *run it here*, never as covered, and the
+report says which half was unestablished.** The two halves are the change's own event and base, read
+from the change, and whether a mirroring host run covers it, read under § 2's four preconditions.
+⚠️ **The four measured projects disagree about this remedy** — two run the checks anyway, one stands
+aside, one fails open — so the facet carries the condition and the fail-closed arm is procedure: a
+needless local run costs minutes, and *covered* returned for a question nobody could answer ships
+unchecked code. ⛔ **`fail_open` is therefore a key this surface will never declare**, refused
+wherever a configuration states it, because it is the one switch that would turn this arm off:
+
+```yaml
+# procedure: fail_open
+```
+
+### A local check the host already runs is a misconfiguration
+
+⛔ **A `command` some `host.checks` entry already mirrors is refused, naming both the entry and the
+workflow.** Not a second opinion and not belt-and-braces: § 2 makes `checks` the single statement of
+which verdicts the host owns, the guards that refuse a local run of a command the host has already
+run read it there, and a local check colliding with one asks a shared machine for an answer it
+already has.
+
+⚠️ **The complement is exactly what this facet is for.** A command **no** entry mirrors is the one
+that must run locally, because nothing else will ever answer it — the acceptance suite mirrored by
+no workflow at all, measured in two projects
+([the measurement](../../../docs/configuration-surface.md#a-green-gate-is-not-a-definition-of-done)).
+
+⚠️ **Already mirrors is not a comparison against one string**: a command colliding with the second
+of a workflow's commands is as duplicated as one colliding with the first, so what the refusal reads
+is whatever an entry mirrors — a command, or the commands of its jobs
+([§ 2](#a-workflow-whose-jobs-mirror-more-than-one-command)). ⚠️ **And the comparison is the command
+as both sides wrote it**, with only its runs of whitespace normalised — the same command to any
+shell, so a second spelling of one command is not a second command. Anything beyond that is two
+commands as far as this refusal can tell, which errs towards accepting a duplicate rather than
+towards refusing a legitimate check.

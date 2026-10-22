@@ -228,12 +228,75 @@ STACK_TOKENS = {
     """,
 }
 
-# ⚠️ A language interpreter is deliberately **not** on that list, and the strict
-# set carries live instances of one -- a configured script run under it, and the
-# hook carrier that calls the reply check. Whether a
-# configured script is a path the procedure prefixes with an interpreter or a
-# command the procedure merely runs is #65's and #66's ruling about what
-# configuration carries, not this check's to pre-empt by reddening on it.
+# A stack's own flag, written with its dashes. ⛔ Separate from the list above
+# rather than a group of it, because that one is matched on word tokens -- a flag
+# tokenises to the bare word, and forbidding `offline` or `fix` as words would
+# redden on ordinary prose inside a code span. ⚠️ It is also the arm that was
+# missing while a flag was caught only where the command it belongs to was: a
+# role writing `--offline` alone tripped nothing, the surface's rule being that
+# no stack token appears in a carrier's text rather than no stack *command*.
+#
+# ⚠️ A closed list, which is the quoting weakness this repository states
+# elsewhere, and it errs the same way: a flag nobody wrote down passes and leaves
+# a reviewer to catch it, never a false red on a role's own flag. Four of these
+# are measured -- the cache-and-daemon pair one project's gating command carries,
+# and the two repairing forms another's checks run under -- and the rest are the
+# commonest spellings of the same two classes.
+STACK_FLAGS = {
+    "a build tool's own flag": """
+        --offline --no-daemon --no-build-cache --frozen-lockfile --legacy-peer-deps
+    """,
+    "a flag that makes a command repair what it judges": """
+        --fix --write
+    """,
+}
+
+# A language interpreter. ⛔ On this list in **one position only**: in front of
+# something this repository does not itself ship. The surface settles which
+# position that is -- a command is stated whole and the procedure supplies no part
+# of it, so an interpreter a role prefixes is a guess about the language a
+# *configured* script is written in, wrong the first time somebody writes one in
+# another language, and the configuration never said so.
+#
+# ⚠️ So the arm reads what *follows* the interpreter rather than the token, and
+# the two positions it lets through are the two where there is no guess: a file
+# this repository tracks, whose language the carrier beside it can see, and a
+# region where nothing follows the interpreter at all -- the shape a hook carrier
+# is in, where the command and its arguments are separate members of a JSON
+# object. ⛔ The first of those is computed from the file list rather than
+# pattern-matched, which is the strong kind of exemption: a path that stops being
+# tracked stops being exempt with no edit here.
+INTERPRETERS = {"python", "python3", "node", "deno", "ruby", "perl", "php", "Rscript"}
+
+# The one means a carrier has of naming a file the *plugin* ships: the harness
+# substitutes the plugin's own location for it, so the path is not resolvable
+# against the file list and is read by this spelling instead. The line it draws is
+# the one `PLUGIN_NON_CARRIER` draws one scope over -- the toolkit's own
+# implementation is not a project's stack.
+PLUGIN_ROOTED = re.compile(r"\$\{?CLAUDE_PLUGIN_ROOT\}?")
+
+# What a path looks like where a command names one. Read against the tracked file
+# list, so what is exempt is a file this repository holds and not a shape.
+PATH_LIKE = re.compile(r"[\w./-]+")
+
+# An interpreter permitted in front of a configured path, by name, with its
+# reason and the roots it is permitted in -- the shape `CITED_ARTIFACTS` above
+# has, and for the same reason: an exemption that is a table entry is one
+# somebody had to write down and justify, and a new instance of the same form
+# reddens instead of inheriting the licence.
+#
+# ⛔ Scoped to the roots its entry names, because a form permitted everywhere is
+# the class reopened. ⚠️ The entry is a *configured path*, not a role's own text:
+# the key it names is marked transitional where the surface declares it, and what
+# removes this entry is the extraction that key waits on rather than an edit here.
+TRANSITIONAL_PREFIXES = {
+    "<day_log.script>": (
+        "the one key still carrying a path a role prefixes rather than a command "
+        "stated whole -- marked transitional in § 9, and settled by the extraction "
+        "that key waits on",
+        ["plugins/mjolnir/skills/day-report/"],
+    ),
+}
 
 # `git` and `gh` are the shared procedure's own two commands. They are absent
 # from the lists above, and a command *rooted* at one of them is exempt from the
@@ -396,6 +459,23 @@ def _inline_list(rest: str) -> list[str] | None:
 
 
 STACK = _tokens(STACK_TOKENS)
+
+# Each flag as a whole token, dashes included. The right-hand boundary forbids a
+# word or a further dash after it, so `--fix` does not match `--fixture`; the
+# left-hand one forbids a word character, so a flag written as the tail of a
+# longer one is still its own token.
+STACK_FLAG = [
+    (re.compile(rf"(?<![\w-]){re.escape(flag)}(?![\w-])"), what)
+    for flag, what in _tokens(STACK_FLAGS)
+]
+
+# The interpreter as the head of what it prefixes. ⚠️ Matched anywhere in a
+# region rather than only at its start: a region is one line of a fenced block or
+# one code span, and the interpreter in the live instances sits after a prompt,
+# a key or a pipe as often as at the head.
+INTERPRETER = re.compile(
+    r"(?<![\w./-])(?:" + "|".join(sorted(map(re.escape, INTERPRETERS))) + r")(?![\w-])"
+)
 
 
 def rooted_at_procedure_command(region: str) -> bool:
@@ -852,7 +932,8 @@ def check_no_tracker_is_named_in_the_strict_set(tree: Tree) -> list[str]:
     return problems
 
 
-# A fourth exception, encoded rather than assumed, and the narrowest of them.
+# An exception, encoded rather than assumed, and the narrowest of them. ⚠️ No ordinal: the first
+# form of this comment said *fourth* and a fifth entry landed beside it, green.
 #
 # A carrier-classification map is keyed by the basenames projects actually gave
 # their carriers, and a project that named a hook after its build tool is a fact
@@ -901,6 +982,45 @@ def check_no_stack_is_named_in_the_strict_set(tree: Tree) -> list[str]:
                         f"(`{token}`). A role reads the command it runs from configuration; a "
                         "role that names one has learned what produced a verdict."
                     )
+            for pattern, what in STACK_FLAG:
+                found = pattern.search(region)
+                if found:
+                    problems.append(
+                        f"{path}: the command `{region.strip()[:70]}` names {what} "
+                        f"(`{found.group(0)}`). A flag is a stack token like the "
+                        "command it belongs to, and a flag written into a role is "
+                        "read by nobody: what defeats a stale pass is a command "
+                        "the project states (schema § 17)."
+                    )
+            for found in INTERPRETER.finditer(region):
+                prefixed = region[found.end():].strip(" \t\"',;:)]}")
+                if not prefixed or PLUGIN_ROOTED.search(prefixed):
+                    continue
+                head = PATH_LIKE.match(prefixed)
+                # ⚠️ `removeprefix` and never `lstrip`, which strips every
+                # leading `.` and `/` it meets: it turned `.claude/…` into
+                # `claude/…`, which is tracked under no name, so every path under
+                # the harness's own dotted root read as untracked and reddened.
+                if head and head.group(0).removeprefix("./") in tree.text:
+                    continue
+                permitted = next(
+                    (
+                        argument
+                        for argument, (_why, roots) in TRANSITIONAL_PREFIXES.items()
+                        if argument in prefixed and tree.inside(path, roots)
+                    ),
+                    None,
+                )
+                if permitted:
+                    continue
+                problems.append(
+                    f"{path}: the command `{region.strip()[:70]}` prefixes "
+                    f"`{prefixed[:40]}` with the interpreter `{found.group(0)}`. A "
+                    "command is stated whole and the procedure supplies no part of "
+                    "it (schema § What the procedure models): an interpreter a "
+                    "role writes is a guess about the language a configured script "
+                    "happens to be in."
+                )
             if DIRECTORY_CHANGE.search(region):
                 problems.append(
                     f"{path}: the command `{region.strip()[:70]}` is prefixed with a change of "
@@ -1102,6 +1222,45 @@ def _plant_a_configured_label(tree: Tree) -> Tree:
     """
     label = _a_configured(tree, "tracker", "labels")
     return _plant_in_a_carrier(f"\nThe item carries the `{label}` label.\n")(tree)
+
+
+def _plant_in_a_named_root(roots: list[str], text: str):
+    """Into a strict file inside one of the roots given, synthesised if none.
+
+    The counterpart of `a_strict_file` for an exemption whose entry names the
+    roots it holds in: a plant that landed in whichever file sorted first would
+    assert the scope of nothing. ⛔ Never a hardcoded path, for `a_strict_file`'s
+    own reason -- a renamed carrier root must redden a check rather than kill the
+    run with a KeyError in place of a verdict.
+    """
+
+    def apply(tree: Tree) -> Tree:
+        inside = [
+            p for p in sorted(tree.strict())
+            if p.endswith(".md") and Tree.inside(p, roots)
+        ]
+        path = inside[0] if inside else f"{roots[0]}SKILL.md"
+        tree.text[path] = tree.text.get(path, "# Planted\n") + text
+        return tree
+
+    return apply
+
+
+def _a_tracked_script(tree: Tree) -> str:
+    """A path this repository tracks, for the exemption computed from that list.
+
+    Read out of the file list rather than written here, for the reason the
+    configured-value plants read their values out of the configuration: a literal
+    would assert its own text, and this exemption's whole claim is that what makes
+    a path exempt is the repository holding it.
+    """
+    for path in sorted(tree.text):
+        if path.endswith(".py"):
+            return path
+    raise AssertionError(
+        "this repository tracks no script for an interpreter to be exempt in front "
+        "of, so that exemption asserts nothing"
+    )
 
 
 def _a_published_alternation_member(tree: Tree) -> str:
@@ -1334,6 +1493,25 @@ VIOLATIONS = [
      _plant_in_a_carrier("\nWrite it to `/var/log/day-report.txt`.\n")),
     ("no stack is named in the strict set", "a build tool in a hook, outside its comments",
      _plant_in_a_hook("# Make sure the task is still assigned.\nnpm run build\n")),
+    # One per group of the flag list, which is the arm that was missing while a
+    # flag was caught only where its command was. ⛔ Written alone, with no command
+    # in front of it, because that is the shape nothing reddened on.
+    ("no stack is named in the strict set", "a build tool's own flag written alone",
+     _plant_in_a_carrier("\nRun it with `--no-daemon` so the verdict is this tree's.\n")),
+    ("no stack is named in the strict set", "a flag that makes a command repair what it judges",
+     _plant_in_a_carrier("\nPass `--fix` and read the diff afterwards.\n")),
+    # The interpreter class, in the position the surface forbids: in front of
+    # something configuration supplies, where the language is a guess.
+    ("no stack is named in the strict set", "an interpreter prefixing a configured path",
+     _plant_in_a_carrier("\nRun `python3 <ordering.command>` from the skills root.\n")),
+    ("no stack is named in the strict set", "an interpreter prefixing a path nothing here holds",
+     _plant_in_a_carrier("\nRun `node ./tooling/report.js` before the review.\n")),
+    # ⛔ And the transitional entry outside the roots its own entry names, which is
+    # `CITED_ARTIFACTS`' scope assertion one class over: an exemption permitted
+    # everywhere is the class reopened.
+    ("no stack is named in the strict set",
+     "the transitional prefix outside the roots its entry names",
+     _plant_in_a_carrier("\nRun `python3 <day_log.script> --check` here too.\n")),
     # The same construct against rule 1's reader: `code()` pairs spans per line,
     # so a double span ahead of a command is where that pairing goes wrong.
     ("no stack is named in the strict set", "a build tool after a double span",
@@ -1386,7 +1564,7 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
      _plant_in_a_carrier_implementation("STATES = ('open', 'closed')\n")),
     ("no stack is named in the strict set", "a build tool a script a carrier calls invokes",
      _plant_in_a_carrier_implementation('subprocess.run(["npm", "run", "build"])\n')),
-    # The fourth exception, asserted in the direction that matters: a carrier
+    # The narrowest exception, asserted in the direction that matters: a carrier
     # map's KEY may name a build tool, because the key is the name a project
     # actually gave that carrier. ⚠️ Verified by disabling `carrier_name_exception`
     # and watching this plant redden -- an exemption nothing can fail is an
@@ -1411,6 +1589,30 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     ("no value is carried in the strict set", "a configured value as a JSON object key",
      lambda tree: _plant_in_a_json_carrier(
          '{"%s": {"type": "command"}}\n' % _a_configured(tree, "tracker", "labels"))(tree)),
+    # ⛔ One per position the interpreter arm lets through, because each is a
+    # different reason and a sweep widened past any of them reddens a shipped
+    # carrier. ⚠️ Verified by disabling each arm in turn and watching its own
+    # plant redden -- an exemption nothing can fail is an exemption nobody checked.
+    ("no stack is named in the strict set", "an interpreter in front of a path the plugin ships",
+     _plant_in_a_carrier(
+         '\nRun `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py"` first.\n')),
+    ("no stack is named in the strict set",
+     "an interpreter in front of a file this repository tracks",
+     lambda tree: _plant_in_a_carrier(
+         f"\nRun `python3 {_a_tracked_script(tree)}` from the root.\n")(tree)),
+    # The shape a hook carrier is in: the interpreter is the whole value of its
+    # own key, and what it runs is a separate member of the object.
+    ("no stack is named in the strict set", "an interpreter with nothing after it",
+     _plant_in_a_json_carrier(
+         '{\n  "command": "python3",\n  "args": ["a-path-of-its-own"]\n}\n')),
+    # The transitional entry inside the roots its own entry names, which the live
+    # tree also exercises -- planted here so the scope is asserted in both
+    # directions rather than only in the one the real text happens to be in.
+    ("no stack is named in the strict set",
+     "the transitional prefix inside the roots its entry names",
+     _plant_in_a_named_root(
+         TRANSITIONAL_PREFIXES["<day_log.script>"][1],
+         "\nRun `python3 <day_log.script> --month YYYY-MM` for the period.\n")),
 ]
 
 

@@ -409,8 +409,14 @@ or to whoever reads the change: it spends a shared machine for no new informatio
 the legitimate case — ⛔ **a check no `host.checks` entry mirrors is the one that must be run
 locally**, because nothing else will ever answer it — ⚠️ **already mirrored being a comparison
 against whatever an entry mirrors rather than against one string**, which is
-[`§ 2`](../../config/schema.md#2-code-host)'s fact and not this file's. ⚠️ **A command configured in
-the project's done list is not this role's to run**
+[`§ 2`](../../config/schema.md#2-code-host)'s fact and not this file's. ⛔ **Which commands those
+are is
+[`§ 17`](../../config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s to
+state and never this role's to assemble**, along with what each pass proves, what defeats a cached
+one, what it needs first and when its verdict is the one to read; ⚠️ **and whether they are this
+role's to run at all is read from the configuration** — that section states the division, and a
+`done:` list carrying a `local` check hands them to the finishing role instead. ⚠️ **A command
+configured in the project's done list is not this role's to run**
 ([`§ 13`](../../config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)):
 that list belongs to the finishing role, and running it here spends an expensive suite twice or
 leaves each role thinking the other had it. ⛔ **Two exceptions, each measured

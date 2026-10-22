@@ -264,11 +264,23 @@ step 6's verdict, and the reply says so.
 - ⛔ **Run it whole**, the way the starting role runs the readiness gate on the way in
   ([`§ 5`](../../config/schema.md#5-readiness-gate--an-ordered-predicate-list)): every check asked,
   every verdict reported, and a change failing two of them hears about both.
-- ⛔ **A check carrying a command is run here and never handed over**, with the command and ⛔ **the
+- ⛔ **A `local` check is run here and never handed over**, with the command and ⛔ **the
   tree it ran in** — [`§ 10`](../../config/schema.md#which-tree-a-verdict-belongs-to), the same rule
-  step 5's test plan is held to. ⚠️ **A check the host already runs is a misconfiguration rather
-  than a duplicate to skip**: the reader refuses it, naming the check and the workflow, so meeting
-  one here is a stop with the configuration named and not something to work around.
+  step 5's test plan is held to. ⛔ **Its command, what a pass of it proves, what defeats a cached
+  pass, what it needs before it can run at all and when its verdict is the one to read are
+  [`§ 17`](../../config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s,
+  and this file states none of them** — ⚠️ **the three that bite here**: a pass produced without the
+  stated invalidation having run is **not** proof and the report names what did not run, an unmet
+  precondition **blocks** the verdict and is named, and a counting condition nothing could establish
+  means *run it here* rather than covered. ⚠️ **A check the host already runs is a misconfiguration
+  rather than a duplicate to skip**: the reader refuses it, naming the entry and the workflow, so
+  meeting one here is a stop with the configuration named and not something to work around.
+- ⛔ **On a project whose host runs nothing, `gate_green` is answered from that same facet** and not
+  from an empty check list
+  ([`§ 13`](../../config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)):
+  `checks: []` means every verdict is local, so step 6 has no answer to read and the green this
+  check asks about is the local verdicts. ⚠️ **Where neither facet states a verdict the check is
+  unanswered**, which is this list's own could-not-be-answered rule below rather than a pass.
 - ⛔ **A check whose answerer is a person is not this role's to answer, and reading the diff is not
   an answer to it.** Read whatever record already exists — the reviewing role writes one for its own
   two questions, [`skills/review/`](../review/), and those are not these checks — or hand the check

@@ -333,7 +333,7 @@ rather than from a hand-kept list of roots.
 | 4 | The strict set matched a file at all | the carrier roots | computed |
 | 5 | Every file under a plugin is a carrier, a configuration or a manifest — nothing else | `plugins/**` | computed |
 | 6 | No tracker is named, in the slug spelling or the prose one | the strict set | forbidding |
-| 7 | No package manager, task runner, build tool, checker, manifest or lockfile; no directory change prefixing a command, no directory flag, no absolute path | the strict set | forbidding |
+| 7 | No package manager, task runner, build tool, checker, manifest or lockfile; no stack's own flag; no interpreter in front of something this repository does not ship; no directory change prefixing a command, no directory flag, no absolute path | the strict set | forbidding |
 | 8 | No value any configuration supplies | the strict set | forbidding |
 
 Check 5 is the one that makes the shape-matched strict set safe: a carrier in a directory the
@@ -375,7 +375,7 @@ It derives what it can, for the reason stated above about the check not becoming
 | the tracker names, from the `kind` alternatives of the surface's **tracker block** and every configuration's declared kind | the closed list of stack tool names |
 | the forbidden value set, from **every scalar the configurations state** — this project's own included — minus the vocabulary the surface publishes | nothing: no list of key names is kept here, and none is kept in step |
 | the file list, from `git ls-files`; the strict set, from the carrier shapes | a carrier directory's name, and the code-span and quoted-string forms of rules 1 and 2 |
-| the file to plant a violation into, from the strict set | the three exceptions below |
+| the file to plant a violation into, from the strict set | the exceptions below |
 
 ⚠️ The tracker names are read from the `tracker:` block specifically. A line-anchored read of
 every `kind:` cannot tell `host.kind: github` from `tracker.kind`, and the first draft subtracted
@@ -435,9 +435,11 @@ vocabulary cannot be read, a configuration that does not parse, and a configurat
 concrete value at all. Each is one of the planted violations, and the first of them is what proves
 the subtraction is read from the surface rather than copied into the script.
 
-### Three exceptions, encoded rather than assumed
+### The exceptions, encoded rather than assumed
 
-A literal reading of the convention would forbid all three, so each is in the script:
+A literal reading of the convention would forbid every one of these, so each is in the script. ⚠️ No
+count is given, for the reason the plant counts are not: the first form of this heading said *three*
+and the fourth entry landed under it, green.
 
 - **`config/examples/`** is whole example configurations and is data rather than procedure. It is
   the one place a concrete status word or label prefix is written down — the surface's own
@@ -451,6 +453,10 @@ A literal reading of the convention would forbid all three, so each is in the sc
 - **This repository's own slug**, derived rather than listed. Removing `host.repo` from the
   configuration reddens the build rather than quietly permitting every slug, which is one of the
   planted violations.
+- **The interpreter in front of one configured path**: `python3 <day_log.script>`, in its own table
+  with its reason and the roots it holds in. ⚠️ **It is the one exception here with a stated end** —
+  what removes it is the extraction that key waits on rather than an edit to the table, while every
+  other entry under this heading is permanent.
 - **The public artifacts cited as evidence.** Each is an artifact rather than a project in
   scope, and each sits in a table in the script with its reason beside it, so **an entry means
   editing that table and saying why** — which is what the second one did: the published
@@ -486,17 +492,27 @@ exempted the whole directory and so would have read straight past it.
   has a stable form, and forbidding a list of them would be a list to keep in sync. This is the
   same reason projects are lettered A–F in the documentation: the convention is held by what the
   documents *don't* contain, and the counts carry the argument instead.
-- **A language interpreter.** `python3` is on no list, and the strict set carries live instances
-  of one: a configured script run under it in the day-log skill, and the hook carrier that calls
-  the reply check. ⚠️ **The first of the two now has a ruling against it rather than an open
-  question.**
-  [schema § What the procedure models](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
-  states that a command is stated whole and the procedure supplies no part of it, which leaves
-  `python3 <day_log.script>` the one form on the surface that does not conform — marked
-  transitional where that key is declared, and settled by the extraction it already waits on rather
-  than by this check. The second instance is the toolkit calling its own code and is no project's
-  stack. ⛔ Either way this check does not redden on an interpreter, so one named in a carrier
-  stays a known hole — stated, because an unstated limit reads later as coverage.
+- **An interpreter in front of a file this repository ships.** The class is no longer a hole —
+  check 7 now reddens on an interpreter, in the one position
+  [schema § 17](../plugins/mjolnir/config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)
+  and the boundary rule it reads make wrong: in front of something **configuration** supplies,
+  where the language is a guess that is wrong the first time a project writes its script in
+  another one. What is left out is the complement, and it is two positions rather than a reading:
+  a path the repository **tracks**, computed from the file list, and a region where nothing
+  follows the interpreter at all — the shape the hook carrier is in, where `"command"` and
+  `"args"` are separate members of one object. ⚠️ So an interpreter in front of a tracked script
+  whose language the carrier beside it can see passes, by design; the residue is an interpreter in
+  front of an argument assembled in a *second* region, which this reading cannot pair up.
+  ⚠️ **And one live instance is permitted by name**: `python3 <day_log.script>` is a configured
+  path, which the ruling above does not fit — the key is marked transitional in
+  [schema § 9](../plugins/mjolnir/config/schema.md#9-day-log) and settled by the extraction it
+  waits on, so it sits in a table in the script with its reason and the roots it is permitted in,
+  and is asserted in both directions like every cited artifact.
+- **A flag nobody wrote down.** Check 7's flag list is closed, like its tool list, and it errs the
+  same way: the four measured spellings and the commonest of each class are in it, and a flag
+  outside it passes and leaves a reviewer to catch it. ⚠️ **What is no longer a hole is the
+  position**: a flag used to be caught only where the command it belongs to was, so `--offline`
+  written alone into a role tripped nothing at all.
 - **A stack token hidden in a script's comment.** Rule 1 strips comments before sweeping a
   script, so `# run npm run build first` in a hook is not read. That is the deliberate trade: a
   comment is prose, and sweeping it would redden on an ordinary English sentence. A command the
@@ -539,7 +555,7 @@ exempted the whole directory and so would have read straight past it.
   wider set makes load-bearing rather than theoretical — `decision` is one of this project's own
   labels and an ordinary English word the shipped roles use a dozen times over, and the sweep is
   green on every one of them.
-- **A build tool a project actually named a carrier after.** The fourth exception, and the
+- **A build tool a project actually named a carrier after.** Another exception, and the
   narrowest: a carrier-classification map is keyed by the basenames projects used, so a key naming
   a build tool is a fact the map must carry — dropping it makes the role it classifies read as a
   role that does not exist. ⛔ **The key is exempt and not the file and not the value beside it**,
