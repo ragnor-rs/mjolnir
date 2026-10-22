@@ -996,15 +996,102 @@ mutation AddCard($project:ID!, $content:ID!) {
 }
 """
 
-SET_VALUE = """
-mutation SetValue($project:ID!, $card:ID!, $field:ID!, $value:ProjectV2FieldValue!) {
+# One document per value kind, each taking the value as a **typed scalar**.
+#
+# ⛔ Measured against the live host: handing the whole value object in as one
+# variable is refused -- `Variable $value of type ProjectV2FieldValue! was
+# provided invalid value` -- because the client sends a variable as a string and
+# the host wants an input object. ⚠️ And the fix is not to build the input by
+# pasting the value into the document: a scalar variable per kind lets the host do
+# the typing and leaves nothing to quote. So the column's own `dataType` chooses
+# the document, which is the same dispatch `WRITES` below states once.
+_SET_VALUE = """
+mutation %(name)s($project:ID!, $card:ID!, $field:ID!, $%(variable)s:%(type)s!) {
   updateProjectV2ItemFieldValue(
-    input:{projectId:$project, itemId:$card, fieldId:$field, value:$value}
+    input:{
+      projectId:$project, itemId:$card, fieldId:$field,
+      value:{%(key)s:$%(variable)s}
+    }
   ) {
     projectV2Item { id }
   }
 }
 """
+
+SET_OPTION = _SET_VALUE % {
+    "name": "SetOption", "variable": "option", "type": "String",
+    "key": "singleSelectOptionId",
+}
+SET_TEXT = _SET_VALUE % {"name": "SetText", "variable": "text", "type": "String", "key": "text"}
+SET_DATE = _SET_VALUE % {"name": "SetDate", "variable": "date", "type": "Date", "key": "date"}
+
+# ⛔ The one value that cannot travel as a variable at all. Measured against the
+# live host: the client's typed field parses an integer and leaves anything else a
+# **string**, so `Float!` comes back as *provided invalid value* -- and the
+# untyped field is a string by definition. So the number is formatted into the
+# document, which is safe for exactly one reason and it is not a general one: the
+# value is a `float` by then, so it cannot carry a quote, a brace or a second
+# field, and a non-finite one is refused rather than formatted.
+SET_NUMBER = """
+mutation SetNumber($project:ID!, $card:ID!, $field:ID!) {
+  updateProjectV2ItemFieldValue(
+    input:{
+      projectId:$project, itemId:$card, fieldId:$field,
+      value:{number:%(number)s}
+    }
+  ) {
+    projectV2Item { id }
+  }
+}
+"""
+
+
+def _write_option(value):
+    return SET_OPTION, {"option": value}
+
+
+def _write_text(value):
+    return SET_TEXT, {"text": value}
+
+
+def _write_date(value):
+    return SET_DATE, {"date": value}
+
+
+def _write_number(value):
+    number = float(value)
+    if number != number or number in (float("inf"), float("-inf")):
+        raise ConfigError(
+            "tracker.project.field",
+            f"was handed `{value!r}` for a number column, which is not a finite "
+            "number. The value is formatted into the request, and a word the host "
+            "would read as a syntax error is refused here instead.",
+        )
+    return SET_NUMBER % {"number": repr(number)}, {}
+
+
+# `dataType -> what writes it`. ⛔ A mapping rather than a chain, for the reason
+# the value **reader** is one: a kind with no arm reads as a column nobody can
+# write, and the refusal has to name the type rather than fall through to the text
+# form and write something plausible.
+WRITES = {
+    SINGLE_SELECT: _write_option,
+    TEXT: _write_text,
+    NUMBER: _write_number,
+    DATE: _write_date,
+}
+
+
+def _write_value(card: str, field: dict, value) -> None:
+    """One field value written, in the shape the column's own type takes."""
+    document, variables = WRITES[field["data_type"]](value)
+    _graphql(
+        document,
+        project=_board()["id"],
+        card=card,
+        field=field["id"],
+        **variables,
+    )
 
 
 def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
@@ -1070,13 +1157,7 @@ def set_state(number: int, *, status: str) -> dict:
     if item["status"] == status:
         return item
     card = _require_card(item)
-    _graphql(
-        SET_VALUE,
-        project=_board()["id"],
-        card=card,
-        field=field["id"],
-        value=json.dumps({"singleSelectOptionId": option}),
-    )
+    _write_value(card, field, option)
     return read_item(number)
 
 
@@ -1104,10 +1185,10 @@ def set_field(number: int, field: str, value) -> dict:
             "and the value belongs in a column of its own.",
         )
     if kind == SINGLE_SELECT:
-        shaped = {"singleSelectOptionId": _option_id(column, str(value))}
+        shaped = _option_id(column, str(value))
     elif kind == NUMBER:
         try:
-            shaped = {"number": float(value)}
+            shaped = float(value)
         except (TypeError, ValueError):
             raise ConfigError(
                 f"tracker.project.field.{field}",
@@ -1117,18 +1198,12 @@ def set_field(number: int, field: str, value) -> dict:
                 "refusal.",
             ) from None
     elif kind == DATE:
-        shaped = {"date": str(value)}
+        shaped = str(value)
     else:
-        shaped = {"text": str(value)}
+        shaped = str(value)
     item = read_item(number)
     card = _require_card(item)
-    _graphql(
-        SET_VALUE,
-        project=_board()["id"],
-        card=card,
-        field=column["id"],
-        value=json.dumps(shaped),
-    )
+    _write_value(card, column, shaped)
     return read_item(number)
 
 
@@ -1523,7 +1598,9 @@ def _default_answers() -> dict:
         "Board": _board_payload_for(_page_of(FIELD_NODES)),
         "Item": _issue_payload(),
         "Items": {"repositoryOwner": {"projectV2": {"items": _page_of([])}}},
-        "SetValue": {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": "PVTI_card"}}},
+        # Prefix-matched across the four documents a value is written through,
+        # which all answer in the same shape.
+        "Set": {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": "PVTI_card"}}},
         "AddCard": {"addProjectV2ItemById": {"item": {"id": "PVTI_card"}}},
         "ClosedBy": {
             "repository": {
@@ -1901,10 +1978,38 @@ def self_test() -> int:
         values["Something new"] == {"unmapped": "ProjectV2ItemFieldUnknownValue"},
         f"read {values.get('Something new')!r}",
     )
-    documents = [BOARD_QUERY, ITEM_QUERY, ITEMS_QUERY, CLOSED_BY_QUERY, ADD_CARD, SET_VALUE]
+    documents = [
+        BOARD_QUERY, ITEM_QUERY, ITEMS_QUERY, CLOSED_BY_QUERY, ADD_CARD,
+        SET_OPTION, SET_TEXT, SET_NUMBER, SET_DATE,
+    ]
     check(
         "no query asks for a field by name, which is the shape the host refuses twice over",
         not any("fieldValueByName" in document for document in documents),
+    )
+    check(
+        "a value that can travel as a variable does, rather than as the input object "
+        "the host refuses",
+        all(
+            f"${variable}:" in document and "ProjectV2FieldValue" not in document
+            for document, variables in [WRITES[kind]("x") for kind in (SINGLE_SELECT, TEXT, DATE)]
+            for variable in variables
+        ),
+    )
+    number_document, number_variables = WRITES[NUMBER](2.5)
+    check(
+        "and the one that cannot is formatted in as a number, with nothing quotable left",
+        not number_variables and "value:{number:2.5}" in number_document,
+        f"built {number_document.strip().splitlines()[-4:]!r}",
+    )
+    check(
+        "a number that is not finite is refused rather than formatted into a request",
+        refused(lambda: WRITES[NUMBER](float("inf"))) == "tracker.project.field",
+        f"reported {refused(lambda: WRITES[NUMBER](float('inf')))!r}",
+    )
+    check(
+        "and every type this module calls writable has something to write it",
+        set(WRITES) == set(WRITABLE),
+        f"writes {sorted(WRITES)} of {sorted(WRITABLE)}",
     )
 
     # --- the guard, and what must not have happened -------------------------
@@ -1946,37 +2051,32 @@ def self_test() -> int:
     check("without making a host call", silent.calls == [], f"called {silent.calls}")
 
     # --- `set_state`: the column, by name, read before written --------------
+    #
+    # A write is recognised by the document it goes through, one per value kind.
+    def writes(host) -> list[str]:
+        return [call for call in host.calls if call.startswith("Set")]
+
     _boards.clear()
-    moved = _Host(
-        {
-            "Board": _board_payload_for(_page_of(FIELD_NODES)),
-            "Item": _issue_payload(7, status="Todo"),
-            "SetValue": {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": "PVTI_card"}}},
-        }
-    )
+    moved = _Host({"Item": _issue_payload(7, status="Todo")})
     with_host(moved, lambda: set_state(7, status="In Progress"))
     check(
         "an advance reads the item before it writes the column",
-        moved.calls.index("Item") < moved.calls.index("SetValue"),
+        writes(moved) and moved.calls.index("Item") < moved.calls.index(writes(moved)[0]),
         f"called {moved.calls}",
     )
-    written = next(
-        call for call in moved.calls if call == "SetValue"
+    check("and writes it once", len(writes(moved)) == 1, f"called {moved.calls}")
+    check(
+        "through the document that writes an option, which is what a column of states holds",
+        writes(moved) == ["SetOption"],
+        f"wrote through {writes(moved)}",
     )
-    check("and writes it once", moved.calls.count("SetValue") == 1, f"called {moved.calls}")
-    check("naming the mutation the host answers", written == "SetValue")
 
     _boards.clear()
-    already = _Host(
-        {
-            "Board": _board_payload_for(_page_of(FIELD_NODES)),
-            "Item": _issue_payload(7, status="In Progress"),
-        }
-    )
+    already = _Host({"Item": _issue_payload(7, status="In Progress")})
     with_host(already, lambda: set_state(7, status="In Progress"))
     check(
         "an advance to the column the card already holds writes nothing",
-        "SetValue" not in already.calls,
+        not writes(already),
         f"called {already.calls}",
     )
 
@@ -1995,7 +2095,7 @@ def self_test() -> int:
     )
     check(
         "and nothing was written for it",
-        "SetValue" not in unknown.calls,
+        not writes(unknown),
         f"called {unknown.calls}",
     )
 
@@ -2043,34 +2143,48 @@ def self_test() -> int:
     bind(configuration)
 
     # --- `set_field`: the column's own type decides the value ---------------
-    for column, value, shape in (
-        ("Estimate", 3, "number"),
-        ("Due", "2026-10-22", "date"),
-        ("Notes", "a note", "text"),
-        ("Status", "Done", "singleSelectOptionId"),
+    #
+    # ⛔ Asserted on the **document** and the **variable** the host is handed, not
+    # on a value this suite rebuilt: the measured defect was a value sent as one
+    # string where the host wants a typed input, and a case reading the string
+    # back would have called that correct.
+    for column, value, document, variable, sent_as in (
+        # ⚠️ The number carries no variable at all, so what this case reads is the
+        # document the host was handed: that is where the value is.
+        ("Estimate", 3, "SetNumber", "number:3.0", None),
+        ("Due", "2026-10-22", "SetDate", "date", "2026-10-22"),
+        ("Notes", "a note", "SetText", "text", "a note"),
+        ("Status", "Done", "SetOption", "option", "aaaaaaa4"),
     ):
         _boards.clear()
-        host = _Host(
-            {
-                "Board": _board_payload_for(_page_of(FIELD_NODES)),
-                "Item": _issue_payload(7),
-                "SetValue": {
-                    "updateProjectV2ItemFieldValue": {"projectV2Item": {"id": "PVTI_card"}}
-                },
-            }
-        )
+        host = _Host({"Item": _issue_payload(7)})
         sent: list[str] = []
         recording = host.__call__
 
-        def transport(args, parse=True, recording=recording, sent=sent):
-            sent.extend(part for part in args if part.startswith("value="))
+        # ⚠️ Recorded from the **write** call only. A filter on the variable name
+        # alone also caught the project's own number and the item's, which are
+        # `number=` on two reads -- so the case read three values where one was
+        # sent and reported a defect that was its own.
+        def transport(
+            args, parse=True, recording=recording, sent=sent,
+            variable=variable, document=document, sent_as=sent_as,
+        ):
+            if any(document in part for part in args):
+                sent.extend(
+                    part for part in args
+                    if part.startswith(f"{variable}=")
+                    or (sent_as is None and variable in part)
+                )
             return recording(args, parse)
 
         with_host(transport, lambda column=column, value=value: set_field(7, column, value))
+        carried = f"{variable}={sent_as}" if sent_as is not None else variable
         check(
-            f"a `{shape}` column is written in the shape its own type takes",
-            any(shape in part for part in sent),
-            f"sent {sent!r}",
+            f"a `{column}` column goes through `{document}`, carrying `{carried}`",
+            writes(host) == [document]
+            and len(sent) == 1
+            and (sent == [carried] if sent_as is not None else variable in sent[0]),
+            f"wrote through {writes(host)} carrying {sent!r}",
         )
 
     _boards.clear()
@@ -2094,7 +2208,7 @@ def self_test() -> int:
     reported = with_host(host, lambda: refused(lambda: set_field(7, "Estimate", "three")))
     check(
         "and a value the column's type cannot hold is refused before any write",
-        reported == "tracker.project.field.Estimate" and "SetValue" not in host.calls,
+        reported == "tracker.project.field.Estimate" and not writes(host),
         f"reported {reported!r} after {host.calls}",
     )
 
@@ -2310,7 +2424,7 @@ def self_test() -> int:
     )
     check(
         "and writes no status, which is the role's own advance to make",
-        "SetValue" not in host.calls,
+        not writes(host),
         f"called {host.calls}",
     )
 

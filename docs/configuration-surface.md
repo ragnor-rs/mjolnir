@@ -446,6 +446,12 @@ takes because of what came back, and none of them is derivable from the table ab
 | a board addressed by an owner's login | resolvable through the owner interface with a fragment per owner kind, so nothing has to know whether an owner is a person or an organisation. Asking the wrong one of the two by name answers an **error** rather than nothing, which is what makes the guess expensive |
 | a board with more items than one page | the page's own cursor, and nothing in the answer that says a list is short. ⚠️ The client's paginate flag follows top-level pages and not a nested connection, so the ceiling is silent: a round total is the signature of an unfollowed cursor |
 | a project number nothing resolves | `NOT_FOUND` with a non-zero exit, which is why an address the reader accepts and the tracker rejects arrives as a failed call naming the owner and the number rather than as an empty board |
+| a field value handed in as one variable — the whole input object the write takes | refused: *provided invalid value*, because the client sends a variable as a string and the host wants an object. So a write takes the value as a **typed scalar**, one document per kind of column, and nothing is pasted into a request |
+| a number sent as that typed scalar | refused in turn: the client's typed field parses an integer and leaves anything else a string, and the untyped one is a string by definition, so a `Float` cannot travel as a variable at all. The number is formatted into the document — safe for one reason that does not generalise, which is that it is a `float` by then and a non-finite one is refused before formatting |
+
+Both of the last two came out of writing rather than reading, with every read already green — which
+is the same shape the first implementation's three defects had, and the reason the live half of a
+run through this port is a write and not a report.
 
 ⚠️ **What the implementation's own suite cannot answer is what the host does with a payload**, which
 is why the read half is driven against a live board by hand and recorded on the work item: a board
