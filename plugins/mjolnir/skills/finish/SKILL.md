@@ -458,9 +458,9 @@ absorbed.** Where it is null there is nothing to run, and that is an answer.
 
 ⛔ **Confirm the landing from the host before removing anything**, per step 8 above — the tree and
 the branch are the only copies of the work until the merge is read back. ⚠️ **What this step
-releases is the tree and the local branch**, which no host setting reaches; the remote ref was
-step 8's, under
-[`§ 2`](../../config/schema.md#how-a-pull-request-lands)'s `delete_branch`.
+releases is the tree and the local branch, which no host setting reaches, and the published ref
+where [`§ 2`](../../config/schema.md#how-a-pull-request-lands)'s `delete_branch` makes it the
+procedure's** — three halves and one command, whose arms the paragraph below reads.
 
 ⚠️ **A tree takes everything git does not track with it, and nothing records what that was.** Read
 those files out before the removal or lose them; this is also why
