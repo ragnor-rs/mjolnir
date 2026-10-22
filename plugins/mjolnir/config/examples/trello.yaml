@@ -97,6 +97,11 @@ done:
       stop: "Drive the change by hand and record on the change what you saw." }
   - { check: merged, answered_by: procedure, stop: "The change has not landed." }
 
+# The stated absence (§ 17). The inner repository's workflow mirrors the one command there is,
+# and the hand-driven check above is a person's rather than a command — so there is no local
+# verdict to state, and `[]` says that rather than leaving the key out.
+checks_local: []
+
 commit:
   staging: explicit
   trailer: read_from_history

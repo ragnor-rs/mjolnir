@@ -89,6 +89,11 @@ done:
   - { check: gate_green, answered_by: procedure, stop: "The host's runs are not green for this commit." }
   - { check: merged, answered_by: procedure, stop: "The change has not landed." }
 
+# The stated absence (§ 17): the host above mirrors the one command this project has, so every
+# verdict is the host's and there is nothing for a `local` check to read. `[]` rather than an
+# unset key, because a decision and an oversight read identically otherwise.
+checks_local: []
+
 commit:
   staging: explicit
   trailer: read_from_history

@@ -104,6 +104,13 @@ done:
       stop: "Drive the change in the running application and report what you saw." }
   - { check: merged, answered_by: procedure, stop: "The change has not landed." }
 
+# One local verdict, and the other half of what this project checks: the host mirrors its two
+# commands above, and the suite that needs a store stood up is run nowhere but here (§ 17).
+checks_local:
+  - command: "<the integration suite command>"
+    proves: "the suite passes against a store this run stands up"
+    requires: ["a container daemon"]
+
 commit:
   staging: explicit
   trailer: read_from_history

@@ -196,6 +196,12 @@ done:
   - { check: merged, answered_by: procedure,
       stop: "The change has not landed on the integration branch." }
 
+# The stated absence (§ 17), and it is a measurement of this repository rather than a default:
+# every check here is mirrored by a workflow above, so a local check would collide with one and
+# be refused. Nothing is cached, nothing is stood up for a run, and each check answers about the
+# tree it runs in — so there is no verdict that is this side's alone.
+checks_local: []
+
 commit:
   staging: explicit
   # ⛔ Not read_from_history. The only author is this host's authenticated user; no tool,

@@ -87,11 +87,31 @@ readiness:
 # nobody needed.
 done:
   - { check: gate_green, answered_by: procedure, stop: "The host's runs are not green for this commit." }
-  - { check: local, run: "<the acceptance scenario command>", answered_by: procedure,
+  # The check carries no command: `local` reads `checks_local` below for its source (§ 17).
+  - { check: local, answered_by: procedure,
       stop: "The acceptance scenarios have not been run against a running instance." }
   - { check: checklist_ticked, answered_by: human,
       stop: "Work the checklist on the change and record what you saw." }
   - { check: merged, answered_by: procedure, stop: "The change has not landed." }
+
+# § 17, carried in full — the facet's complement of `host.checks` above, which mirrors one
+# command on release-branch changes only. Two entries, because two verdicts are two entries and
+# never two commands in one.
+checks_local:
+  - command: "<the acceptance scenario command>"
+    proves: "the scenarios pass against a running instance of this build"
+    # A state to destroy rather than a form of the command above: the instance is torn down and
+    # stood up again, or the suite replays its own earlier verdict against code that has moved.
+    invalidate: "<the command that tears the instance down>"
+    # Presences and a credential — never a version, which no role reads (§ 16's list).
+    requires: ["a running instance", "a browser on the machine", "a password for it"]
+    # The host mirrors its build on release-branch changes only, so for a change into the main
+    # line this verdict is the only verdict there is. Two patterns, hence a list.
+    counts_when: ["pull_request -> main", "push -> main"]
+  - command: "<the document gate>"
+    # Nothing cached and nothing stood up, so neither `invalidate` nor `requires` is written —
+    # an absence rather than a key left blank.
+    proves: "every document this change touches still describes the tree"
 
 commit:
   staging: all
