@@ -624,11 +624,9 @@ live state: which runs exist for this commit, and how each concluded.
 identically, and a job-keyed map refused a build on the strength of a check that only validated a
 title.
 
-⚠️ **An entry states one mirrored command, and a workflow may run more than one.** A workflow
-whose jobs mirror two local commands has no form here — the entry would carry two `mirrors`
-behind one workflow name — and a second command written in a comment beside the facet is a fact
-the surface does not hold. The gap is #58's, and it is real for an adopting project whose
-workflows already exist and are not the toolkit's to reshape.
+⚠️ **An entry states one mirrored command, or the jobs that mirror several.** The second form is
+the subsection below; a second command written in a comment beside the facet is a fact the surface
+does not hold under either of them.
 
 ⛔ **Where a project does control its own workflows, each mirrored command takes a workflow of
 its own.** Not because one job per workflow is better continuous integration, but because the
@@ -648,6 +646,71 @@ cannot parse a trigger has no answer about the run, which §2's absence rule alr
 billing-suspended run fails in seconds having started no steps; a path-filtered workflow
 legitimately runs nothing on a change outside its paths. An empty or silent check list reads as
 *no answer* — never as green, and never as coverage.
+
+### A workflow whose jobs mirror more than one command
+
+```yaml
+host:
+  checks:
+    - workflow: "…"            # the key, as above — a workflow's name and never a job's
+      triggers: "<pattern>"    # the workflow's own event block; a job carries none
+      paths: ["…"]             # the filter on that block; omitted where it carries none
+      jobs:                    # stated instead of `mirrors`, never beside it
+        - job: "<the job's id, as the workflow file spells it>"
+          mirrors: "<local command>"
+          paths: ["…"]         # this job's own filter; omitted where the job carries none
+```
+
+**The form is for a project whose workflows are not the toolkit's to reshape.** One project in the
+migration set runs four jobs behind one workflow name — two languages' linters and test runs, a
+document gate, and a parse-and-lint of its shell scripts — sharing one checkout and one build, so
+the four cannot be split into four workflows without paying for four of each. Against one `mirrors`
+per entry a consumer can answer only about the workflow: it cannot refuse a local run of the
+compiled language's tests while letting the document gate through, and a change touching one
+subtree reads as covered on the strength of three jobs that never ran for it.
+
+⛔ **`mirrors` and `jobs` are exclusive, and an entry carrying both is refused.** Whichever one an
+entry states is the whole of what it mirrors, and two statements of that leave a consumer choosing
+between them. An entry carrying **neither** is the shape it already was — a run the host makes that
+duplicates no local command — and is read as mirroring nothing rather than as an entry with
+something missing. ⚠️ **A `jobs` written with nothing after it is refused** instead of being read
+as that absence: an entry that meant to state its jobs and stated none mirrors nothing, silently.
+
+⛔ **A job's name is scoped by the entry naming its workflow, and is never a key.** What makes the
+map a workflow's and never a job's is a collision *across* workflows, measured above, and that
+argument does not reach inside an entry: a job's id is unique within its own workflow file by the
+host's own grammar, and nothing looks a job up except inside the workflow whose entry names it. The
+only name anything is keyed on is still the workflow's.
+
+⛔ **`mirrors` is one command, and a list of them is refused.** Several behind one workflow name are
+its jobs, each stating the command its own run answers about — so a list is a second shape for a
+fact stated here once, and the shape that cannot say which job or which filter a given command
+belongs to. ⚠️ **It was accepted before this form existed**, as the tolerance that kept a collision
+check from reading nothing, and configurations written that way stop loading.
+
+⚠️ **Two members may name one job**, where that job's steps mirror two local commands: the mapping
+runs from a command to the job mirroring it, and it is many-to-one in that direction. Refusing it
+would put a project back where this form exists to stop it being — holding a configuration the
+surface cannot state.
+
+**`paths` sits at the level the workflow file states it at**: the entry's is the filter on the
+event block, and a member's is that job's own where the job carries one. ⛔ **Neither is inherited
+and neither overrides the other** — a command's run covers a change that is within both, and a
+level stating no filter bounds nothing. Making one the other's default would turn the effective
+filter into a derivation, which is the one thing a check comparing this facet to the workflow files
+could not then perform.
+
+**`triggers` stays the entry's**, the event block being the workflow's and not any job's. What that
+block can and cannot state about event *types* is #82's, and this form settles only the level the
+key sits at.
+
+⛔ **A generated gate takes a workflow file of its own, and an installer never appends a job to a
+workflow it did not write.** This form describes what a project already runs, and a shape being
+expressible is not licence to create it: a file of its own is removed as a file, and a later run
+can tell its own artifact from the project's, while an appended job is a surgical edit to a file
+the project edits too. The cost is the one ruled acceptable above — a checkout per command. ⚠️
+**Where the file it would write already exists, the installer stops and names it**, rather than
+appending to it or writing over it.
 
 ### Reading a run's answer, and what a failure is
 
@@ -694,6 +757,11 @@ writing is refused at the start of a command anyway, so a role that polls is a r
 ⛔ **An up-to-date verdict is not a run.** A job reporting nothing to do and a cached pass have both
 answered about an earlier state; by the rule above that is *no answer* for this commit, and the
 honest report is that the check did not run.
+
+⛔ **Where a job mirrors the command in hand, the job is what all four are read on.** A workflow's
+run concluding green says nothing about a command whose job was skipped, filtered out of the run or
+never started — the absence rule one level down, and the direction a per-workflow reading gets
+wrong, since it reports green on a job that never ran.
 
 ### How a pull request lands
 
