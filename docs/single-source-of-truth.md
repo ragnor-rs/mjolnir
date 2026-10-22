@@ -1498,8 +1498,12 @@ is refused rather than read as nothing to hold
 - **Whether the written reason is a good one.** Any non-blank line under the exemptions heading is
   an entry. What this buys is that the gap is written where the next reader meets it; whether it
   should have been accepted is the reviewer's, and the run prints every entry so that it can be.
-- **Whether `host.checks` names this workflow.** Nothing here reads a workflow file, which is #49
-  — the same limit every sibling carries.
+- **Whether `host.checks` names this workflow.** Held, by the `Host checks drift` gate recorded
+  below rather than by this one
+  ([schema § 2](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions)).
+  ⚠️ What stays unheld there is the **command**: the mapping from a run to the command it mirrors is
+  configured and never inferred, so this file's `run:` and its entry's `mirrors` are still held
+  together by eye.
 
 ## A tier held to the count the tree declares
 
@@ -1614,8 +1618,116 @@ zero executed.
   that replays an older run's output is read as this run's. ⚠️ That is #66's `invalidate:` and is
   named rather than closed here — a cached pass is the local half of the same honesty, and whichever
   of the two lands second cites the other.
-- **Whether `host.checks` names this workflow.** Nothing here reads a workflow file, which is #49 —
-  the same limit every sibling carries.
+- **Whether `host.checks` names this workflow.** Held, by the `Host checks drift` gate recorded
+  below rather than by this one
+  ([schema § 2](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions)).
+  ⚠️ What stays unheld there is the **command**: the mapping from a run to the command it mirrors is
+  configured and never inferred, so this file's `run:` and its entry's `mirrors` are still held
+  together by eye.
+
+## The facet against the workflow files it describes
+
+`plugins/mjolnir/scripts/check_host_checks.py --self-test` runs in the `Host checks drift`
+workflow, with no credential and no network. ⛔ The rule is
+[schema § 2](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions) and
+this document states none of it: what is recorded here is the reach of the check.
+
+⚠️ **Its subject is the rest of `.github/workflows/`, and its own entry is in that subject.** Every
+sibling gate here answers about the tree's prose or about a carrier's behaviour; this one answers
+about the *statement* of what the host runs, which no other gate here reads. It needs no run and
+asks the host nothing — the configuration and the files beside it are the whole input — which is why
+it can be a host check at all.
+
+What it holds: the **name** an entry is keyed on, the **triggers** that start the run, the **paths**
+it watches — each in both directions, because neither shows from the other's output, and a rename is
+at once an entry naming a run the host does not make and a run no entry names, which is this gate's
+acceptance case. And the **jobs** an entry names where it states that form, one way only: a job the
+file defines and no member names is the ordinary case rather than drift
+([schema § 2](../plugins/mjolnir/config/schema.md#a-workflow-whose-jobs-mirror-more-than-one-command)).
+The kind is **computed**: two statements of one fact, compared. Where the host's definitions are not
+files a reader can open, the comparison is undeterminable whole and the run says so.
+
+⛔ **Nothing about the facet is read in this check's own file**
+([schema § 2](../plugins/mjolnir/config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref)).
+The entries come from `config.host_runs()`, every refusal § 2 carries living in that one walk, and
+the parse of `<event>(<types>) -> <ref>` is `config.parse_trigger` — a second spelling of either
+being the two-vocabularies defect this surface refuses one facet over, arriving as behaviour
+instead of as text.
+
+⚠️ **It is the per-entry accessor and the consumer beside it takes the per-command one**, both off
+the same walk. The distinction is load-bearing rather than tidy: an entry mirroring no local
+command yields no record per command and is still a run the host makes, so a per-command view would
+hide exactly the entries this check's second direction exists to find
+([schema § 2](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions)).
+
+⚠️ **Each of the three answers is planted, and so is the fourth reading.** ⛔ No count of the plants
+is written here, for the reason no count of this repository's gates is: the run prints its own
+figures and a number in this paragraph is wrong by the next plant.
+
+- **Violations that must redden**: a rename read from each end, an entry naming no definition, a
+  definition no entry names, a trigger each side states and the other does not, a type clause and a
+  ref the file does not state, a path filter on each side alone, two spellings of one filter, a job
+  no file defines, and a top-level key named as a job.
+- **Absences that must be reported and must *not* arrive as drift**: a host kind whose definitions
+  are not files, a definition stating no name, one that is not valid YAML, one that could not be
+  opened, an event block filtered on a key no pattern can state, a workflow filtering its events
+  differently from one another, an entry stating no `triggers`, a trigger the grammar does not
+  parse, and a job filter the host kind carries nowhere.
+- **Subject readings**: nothing stated beside nothing defined, which is *no subject*; and an empty
+  facet with definitions behind it, which is drift rather than a project standing down.
+- **Exemptions that must stay green**, among them a trigger list and a type clause in an order no
+  file is in, since both sides state sets; a definition's own job that no member names; and two
+  members naming one job.
+
+⛔ **An absence plant asserts two things, and the second is the reason it exists**: that the
+dimension is reported, and that it does *not* arrive in the problem list
+([schema § 2](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions)).
+Three of them need the suspension rules to hold that second half. A definition whose name cannot be
+read takes every entry keyed on it out of the name comparison, so the entry reads as naming nothing
+unless the comparison stands down; and a workflow excluding a set of refs has the refs it *can*
+state compared, so a correct entry is reported wrong unless the dimension is dropped. Each is drift
+on the strength of what the check could not establish — the one outcome
+[ruling 15](divergences-and-rulings.md#where-a-ruling-overrode-a-stated-counter-argument) rules
+out.
+
+⛔ **The reader's cost is asserted and not noted**, which is the red-believable rule at
+[schema § The loop](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable)
+reaching a property no problem list can carry. An adversarial definition — a thousand refs under one
+event, blank lines inside the block and left-margin keys after it — is read under an enforced wall
+clock that fails the run, with its answer asserted beside it, since a reader can be fast and wrong.
+A pattern that can backtrack exponentially is a gate that hangs the session it runs in rather than
+reddening, and the assertion was verified by defeating the budget and watching it redden.
+
+⚠️ **The shape it guards against is measured rather than imagined.** A pattern whose repetition is
+not line-anchored — `\s` matching a newline, so a blank line cannot be a repetition of its own and
+is glued to the line after it — has no reachable stopping point at a left-margin line, and proves
+its failure by partitioning the rest of the file. Over the same block it takes 0.097 s at five refs,
+0.59 s at six and 3.4 s at seven: about sixfold per added line, so past a minute before ten. The
+shipped reader takes 41 ms at a thousand.
+
+### What this check deliberately does not hold
+
+- ⛔ **Which side is wrong, and nothing is ever written**
+  ([schema § 2](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions)).
+  A check that repaired a facet would have to be believed about a repository's continuous
+  integration, and one that repaired a workflow file would be editing what the host executes. The
+  run names both statements and stops.
+- **The command an entry mirrors.** The mapping from a run to the command it duplicates is
+  configured and never inferred
+  ([schema § 2](../plugins/mjolnir/config/schema.md#2-code-host)), so comparing `mirrors` against a
+  step's `run:` is the one dimension this check may not add. Every workflow file here says so in a
+  comment beside the step, which is where that pair is held.
+- **Whether a workflow does what its name says.** The names, triggers, filters and job ids are
+  compared; what the steps run is not read at all.
+- **A workflow the host runs from outside this directory.** A reusable workflow called from
+  another repository, or one the host synthesises, is not a file here and is not in the subject.
+- **Whether a trigger is one the host accepts.** The event vocabulary stays the host's
+  ([schema § 2](../plugins/mjolnir/config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref)),
+  so a pattern naming a webhook that is not a trigger is compared like any other and is refused by
+  the host as the file loads, not here.
+- **The order the entries are written in.** This project lists them in the order their files sort,
+  and that is a property of the file rather than a rule of the surface — as is the habit of giving
+  a workflow and its single job the same name. Neither is held.
 
 ## The enforcement half: a guard that refuses, and a place that comes back
 
@@ -1838,9 +1950,11 @@ cannot read a type clause.
 What it deliberately does not check:
 
 - **Whether the facet matches the workflow files.** Nothing here reads `.github/`, so an entry
-  naming a workflow the repository does not contain, or omitting one it does, passes. That is #49 —
-  the same limit every sibling carries, and the sharper one here because this module is what makes
-  the facet load-bearing.
+  naming a workflow the repository does not contain, or omitting one it does, is answered about as
+  written. That comparison is the `Host checks drift` gate's
+  ([schema § 2](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions)),
+  recorded above, and the two read the facet through **one** walk of it —
+  `config.mirrors()` here, per command, and `config.host_runs()` there, per entry.
 - **Whether a trigger is one the host would honour.** The module parses § 2's form; a pattern
   inside it naming an event no workflow may listen to, or a ref nothing matches, is a
   configuration nobody here can falsify. § 2 states why the facet carries no event list to check

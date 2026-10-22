@@ -39,8 +39,9 @@ jobs:
         run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
 
       # One step, one command, and the same string `host.checks` states this run mirrors —
-      # ⚠️ held together by eye and not by a check, since nothing here reads a workflow file.
-      # That is #49.
+      # ⚠️ held together by eye, and § 2 rules that it must be: the mapping from a run to the
+      # command it mirrors is configured and never inferred. The workflow *name* above is held
+      # mechanically, by the `Host checks drift` run.
       #
       # This suite runs each plant beside the assertion it belongs to rather than as a first
       # phase, which is why the step is not named for its plants; the config reader beside it

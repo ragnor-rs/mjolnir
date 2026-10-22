@@ -31,7 +31,8 @@ jobs:
       # only once each check has been shown it can fail — and once the one carve-out has
       # been shown it can pass, which is the half a red-only suite says nothing about.
       # That command is also the string `host.checks` states this run mirrors — ⚠️ held
-      # together by eye and not by a check, since nothing here reads a workflow file.
-      # That is #49.
+      # together by eye, and § 2 rules that it must be: the mapping from a run to the command
+      # it mirrors is configured and never inferred. The workflow *name* above is held
+      # mechanically, by the `Host checks drift` run.
       - name: Assert each check can fail and the exemption can pass, then hold every document to the surface
         run: python3 tools/check_single_source.py --self-test

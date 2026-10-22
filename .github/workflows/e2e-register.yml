@@ -37,7 +37,9 @@ jobs:
       # One step, one command: the planted violations and the planted exemptions, and then
       # the plumbing against a repository the suite builds for itself — the base, the two
       # file lists and the diff, which the in-memory plants cannot reach. That command is
-      # also the string `host.checks` states this run mirrors — ⚠️ held together by eye and
-      # not by a check, since nothing here reads a workflow file. That is #49.
+      # also the string `host.checks` states this run mirrors — ⚠️ held together by eye, and
+      # § 2 rules that it must be: the mapping from a run to the command it mirrors is
+      # configured and never inferred. The workflow *name* above is held mechanically, by
+      # the `Host checks drift` run.
       - name: Assert the checks can fail, can pass, and read a real tree
         run: python3 plugins/mjolnir/scripts/check_e2e_register.py --self-test

@@ -38,6 +38,8 @@ jobs:
       # both sides, and then two real commands run in a directory the suite builds — which the
       # in-memory plants cannot reach, since every one of them is a subject that was already
       # built. That command is also the string `host.checks` states this run mirrors — ⚠️ held
-      # together by eye and not by a check, since nothing here reads a workflow file. That is #49.
+      # together by eye, and § 2 rules that it must be: the mapping from a run to the command it
+      # mirrors is configured and never inferred. The workflow *name* above is held mechanically,
+      # by the `Host checks drift` run.
       - name: Assert the checks can fail, can pass, and read two real commands
         run: python3 plugins/mjolnir/scripts/executed.py --self-test

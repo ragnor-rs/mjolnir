@@ -47,8 +47,13 @@ host:
   # Every entry is a workflow of its own rather than a job of another, per § 2. They are listed
   # in the order their files sort under .github/workflows/, so that reading the directory and
   # reading this list give the same sequence; and each workflow's name is the same string as
-  # its single job's name, so there is no key here that can be got wrong. ⛔ Nothing reads
-  # either property — holding this facet to those files mechanically is #49.
+  # its single job's name, so there is no key here that can be got wrong.
+  #
+  # ⛔ Every name, trigger and filter below is held to the file that defines it by the `Host
+  # checks drift` entry's own run, in both directions: an entry naming no definition and a
+  # definition no entry names are each reported. ⚠️ Neither the sort order nor the
+  # name-equals-job-name habit is held by it — both are properties of this file rather than
+  # rules of the surface, so they stay conventions a reader keeps.
   checks:
     - workflow: "Adapter suites"
       mirrors: "python3 plugins/mjolnir/scripts/adapter_suites.py"
@@ -88,6 +93,12 @@ host:
     # state in which every consumer would report no answer about a run this project really makes.
     - workflow: "Host checks consumer"
       mirrors: "python3 plugins/mjolnir/scripts/host_checks.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The entry beside it, and the other half of that circularity: this run holds every entry
+    # of this facet, its own included, against the files under .github/workflows/. A rename of
+    # the workflow above or of the file defining it reddens this run rather than passing it.
+    - workflow: "Host checks drift"
+      mirrors: "python3 plugins/mjolnir/scripts/check_host_checks.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
