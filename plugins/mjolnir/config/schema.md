@@ -611,7 +611,7 @@ host:
   checks:                  # the host's own runs, keyed by workflow name — never job name; required
     - workflow: "…"
       mirrors: "<local command>"   # the local command whose verdict this run duplicates
-      triggers: "<pattern>"        # what starts it; a list when there is more than one
+      triggers: "<event>(<types>) -> <ref>"  # what starts it; a list when there is more than one
       paths: ["…"]                 # path filters; omitted when the workflow runs on every change
 ```
 
@@ -648,17 +648,71 @@ procedure on itself is the worst place to keep a shape the surface cannot expres
 checkout per command; what it buys is `checks` remaining the single statement of what the host
 runs, with nothing carried beside it.
 
-⚠️ **`triggers` takes two forms, and a list where a workflow has both.** They are
-`pull_request -> <base pattern>`, with `*` for any base, and `push -> <branch>`. A single string
-was the first shape this facet had; the first entry ever written against it ran on every pull
-request *and* on pushes to the default branch, which that shape could not state — so the value is
-one pattern or a list of them, never a conjunction improvised inside one string. A consumer that
-cannot parse a trigger has no answer about the run, which §2's absence rule already covers.
-
 ⛔ **Absence of signal is not an answer.** A conflicted pull request produces zero runs; a
 billing-suspended run fails in seconds having started no steps; a path-filtered workflow
 legitimately runs nothing on a change outside its paths. An empty or silent check list reads as
 *no answer* — never as green, and never as coverage.
+
+### What a trigger states: the event, the types of it, and the ref
+
+```yaml
+host:
+  checks:
+    - workflow: "…"                                   # the key, as above
+      triggers: "<event>(<type>, …) -> <ref pattern>" # one pattern, or a list of them
+```
+
+**Three parts, and the middle one is the optional one**: the event the host fires, the types of
+that event the workflow listens for, and the ref the run is against, with `*` for any. `pull_request -> main`, `push -> main`, `pull_request(edited, ready_for_review) -> *` and
+`pull_request_review(submitted) -> *` are each one trigger.
+
+⚠️ **A single string was the first shape this facet had**, and the first entry ever written against
+it ran on every pull request *and* on pushes to the default branch, which that shape could not
+state — so the value is one pattern or a list of them, never a conjunction improvised inside one
+string. ⛔ **A second event kind is a second member of that list and never a second key**: a
+workflow listening for a pull request and for a review on one has two triggers in exactly the sense
+the list already exists for.
+
+⛔ **The types sit inside the pattern rather than in a key beside it**, for two reasons that hold
+independently. A workflow with two events gives each of them its own type list, so a sibling key
+would be a second list kept in step with this one by position — the shape this facet refuses one
+subsection down, where a `mirrors` holding a list could not say which job or which filter a given
+command belonged to. And [§ 17](#whether-the-hosts-verdict-covers-this-change)'s `counts_when` is
+stated in this same form on a `checks_local` entry, which has no sibling to carry it: a key beside
+`triggers` would leave one mapping stated in two vocabularies, which that section already refuses.
+
+⛔ **An omitted type clause means the workflow's event block states no `types:` key**, and never
+the host's default set for that event. ⚠️ **The defaults differ per event and this surface does not
+carry them.** Read as *the default*, an omitted clause could not be held against a workflow file
+without a per-event table nothing here holds — and that table would be a second statement of the
+host's own vocabulary, wrong the next time the host changes one. Read as *the file states no
+filter*, the same comparison is one the file answers by itself. ⛔ **So an entry whose workflow
+states a `types:` key states it here too**, and an omission is never a choice between *the default*
+and *nobody wrote it down*.
+
+⛔ **A clause written empty is refused rather than read as that absence, and so is a type written
+blank inside one.** `pull_request() -> *` is the same text as an entry that meant to state its
+types and stated none, and `pull_request(edited, ) -> *` states a type matching nothing while
+reading as a type somebody wrote — the two readings a blank `mirrors` and a blank path glob are
+each refused under one subsection below.
+
+**The types are a set, and their order carries nothing** — the host's own block is a list that
+reads as one. What compares the two compares sets, so a reordering is not drift.
+
+⛔ **The event vocabulary is the host's, and this facet neither enumerates it nor holds a name
+against it.** Writing an event here does not make it one a workflow may listen to —
+`pull_request_review_thread` is the measured case, a webhook the host sends and not a trigger a
+workflow file may name. What refuses such a name is the host as the file loads, and a surface
+carrying its own list of events would be a third party to that.
+
+**The ref is required, and `*` is how a trigger states that it filters on none.** ⚠️ **An event the
+host scopes by no ref — a schedule, a manual dispatch — is written `-> *` for the same reason, and
+that is the whole of what this facet states about such a run**: whatever else bounds it, a cron
+expression or a dispatch input, is a fact stated nowhere here. Every consumer of this key asks
+whether a run exists for *a change*, and a change has a ref.
+
+A consumer that cannot parse a trigger has no answer about the run, which the absence rule above
+already covers.
 
 ### A workflow whose jobs mirror more than one command
 
@@ -719,9 +773,9 @@ level stating no filter bounds nothing. Making one the other's default would tur
 filter into a derivation, which is the one thing a check comparing this facet to the workflow files
 could not then perform.
 
-**`triggers` stays the entry's**, the event block being the workflow's and not any job's. What that
-block can and cannot state about event *types* is #82's, and this form settles only the level the
-key sits at.
+**`triggers` stays the entry's**, the event block being the workflow's and not any job's — types
+and all, the subsection above stating what one of them says and this form settling only the level
+the key sits at.
 
 ⛔ **A generated gate takes a workflow file of its own, and an installer never appends a job to a
 workflow it did not write.** This form describes what a project already runs, and a shape being
@@ -2680,12 +2734,15 @@ this key states the one condition none of those reaches**: three of one project'
 run only on a change whose base is a release branch, so for an ordinary change the host runs almost
 nothing and the local verdict is the only verdict there is.
 
-**It takes § 2's `triggers` form** — `pull_request -> <base pattern>` with `*` for any base, and
-`push -> <branch>` — one pattern or a list of them. ⛔ **The same vocabulary and not a second one**:
-the host side of this mapping already states the event and the base that way, and two statements of
-one mapping must not disagree about form. ⚠️ **A pattern this surface's own reader does not parse is
-no answer about the change**, which § 2's absence rule already covers and which the next rule turns
-into an act.
+**It takes § 2's `triggers` form** — [the event, the types of it and the
+ref](#what-a-trigger-states-the-event-the-types-of-it-and-the-ref), one pattern or a list of them.
+⛔ **The same vocabulary and not a second one**: the host side of this mapping already states the
+event and the ref that way, and two statements of one mapping must not disagree about form. ⚠️ **A
+type clause is admitted here and asks a narrower question than it does there** — on a `host.checks`
+entry it describes a workflow's event block, and here it is a property of the change, so what it
+matches is the event that produced the state this verdict is being read against. ⚠️ **A pattern
+this surface's own reader does not parse is no answer about the change**, which § 2's absence rule
+already covers and which the next rule turns into an act.
 
 ⛔ **A `counts_when` that cannot be established reads as *run it here*, never as covered, and the
 report says which half was unestablished.** The two halves are the change's own event and base, read

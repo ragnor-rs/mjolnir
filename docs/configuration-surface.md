@@ -1135,3 +1135,47 @@ workflow key does and does not reach.
 repository filters on paths — every entry of its own facet omits the key — so the rule that a filter
 sits at the level the workflow file states it at is exercised by the reader's own planted violations
 and by the example that illustrates the form, and by no configuration this project runs on.
+
+## One entry's two events, and the types the pattern could not carry
+
+The same facet, a dimension over. `triggers` had two forms — an event and a base, or an event and a
+branch, one of them or a list — and one entry of this repository's own is the first written against
+it whose event **types** decide anything. The `Nothing deferred` workflow listens for
+`pull_request` with `types: [opened, edited, synchronize, reopened, ready_for_review]`, and neither
+form could spell that: the entry read `pull_request -> *`, which is the same text an entry for a
+workflow naming no types at all would carry.
+
+**`edited` is the one that is not decoration.** That gate reads the pull request body, and a body
+corrected in place pushes no commit — so without the type the check stays red until an unrelated
+push lands. The residue sat in a comment in the workflow file, which is the thing
+[`schema.md § 2`](../plugins/mjolnir/config/schema.md#2-code-host) says `checks` exists to prevent:
+every consumer reads it and none carries the facts itself.
+
+**The second dimension turned up only once the first was being written down.** That workflow needs
+a second **event kind** as well — findings arrive when a review is submitted, with no commit
+pushed, so it listens for `pull_request_review` too — and `triggers` could state that no better
+than it could state a type. Two gaps of one shape in one entry is what made the key worth extending
+rather than annotating.
+
+**Three questions, and the arguments that settled each.** They are stated as rules at
+[`schema.md § 2 → What a trigger states`](../plugins/mjolnir/config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref);
+what is here is why each went the way it did.
+
+| Question | Settled | The argument |
+|---|---|---|
+| Where types live | **Inside the pattern** — `pull_request(edited) -> *` | A workflow with two events gives each its own list, so a key beside `triggers` is a second list aligned by position. And § 17's `counts_when` is stated in this same form on an entry that has no such sibling, so the alternative gives one mapping two vocabularies |
+| What an omitted clause means | **The workflow's event block states no `types:` key** | Read as *the host's default set* it is uncheckable: the defaults differ per event, this surface carries none of them, and the table that would supply them is a second statement of the host's vocabulary. Read as *the file states no filter* the comparison is one the workflow file answers by itself |
+| Whether the facet should hold types at all | **Yes, extended** | No consumer reads a type today — #33's guard asks whether the host already runs a command, and the finishing role asks whether a run exists for *this commit*, which a run fired by `edited` is. Recording the limit would have been a legitimate outcome; what decided against it is #49, whose drift check cannot report on a dimension the facet cannot express |
+
+⚠️ **The event vocabulary is where the extension stops, and the bound was measured rather than
+chosen.** The third event that workflow wanted is one no workflow file may name at all, and
+[the measurement is where it already lived](single-source-of-truth.md#what-this-gate-deliberately-does-not-check)
+rather than restated here. What it settles for the facet is that a pattern naming an event is not a
+claim that a workflow may listen for it: the facet enumerates no events, and what refuses such a
+name is the host as the file loads.
+
+⚠️ **What this repository can say about the type clause is one entry's worth.** Every other
+workflow here states no `types:` key and its entry carries no clause, which is exactly the reading
+the omission rule gives it; the one that does is the whole of the evidence that the clause is worth
+having, and the second event kind rests on that same entry. What exercises the rest is the reader's
+planted violations and the example that illustrates the form.

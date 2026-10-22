@@ -548,9 +548,10 @@ with two readings records nothing.
 ⚠️ **A host's mergeability field does not say whether an uninspected change can be merged** —
 measured on one reporting itself mergeable while its own state word said otherwise. ⛔ **Read the
 state word, not the boolean**, and say which it was. ⚠️ **Taking a change out of an uninspected
-state may or may not start new runs**, which is `triggers`'
-([`§ 2`](../../config/schema.md#2-code-host)) fact and not this file's — so the runs are re-read
-afterwards rather than assumed to be the ones step 8 saw.
+state may or may not start new runs**, which is the `ready_for_review` type's fact and not this
+file's
+([`§ 2 → What a trigger states`](../../config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref))
+— so the runs are re-read afterwards rather than assumed to be the ones step 8 saw.
 
 ## 10. Where the plan or the look is the person's
 
