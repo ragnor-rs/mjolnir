@@ -432,6 +432,26 @@ a capability difference at all — the API answering them is one API. What proje
 differing in is which mechanism carries the type, the estimate and the template, which is a facet
 below and already has a home of its own.
 
+### What building the board's implementation measured
+
+The survey above read the copies; these are the host's own answers, measured while the
+implementation behind `kind: github-projects` was written. Each one is a shape the implementation
+takes because of what came back, and none of them is derivable from the table above.
+
+| What was asked | What came back |
+|---|---|
+| the same field asked for **by name** twice in one query | refused outright — `fieldConflict`, *has an argument conflict* — and legal only with an alias on each. So the implementation asks for none by name: it reads a card's whole value connection once and keys the answer on each value's own field name, which has no alias to get wrong and costs one request rather than one per field |
+| a card's values, for a card on a live board | only the columns that **hold** a value: the host-managed ones carry none at all, so a column read as empty and a column the host maintains are the same answer and a write has to be refused by the field's own type rather than by its value |
+| a number that names a pull request | the host's own typename says which of the two it is, and a merged pull request answers with a state no `statuses` list contains. ⚠️ A stronger guard than reading a URL for `/pull/`, and the implementation beside this one takes the weaker route because that is what was measured for it |
+| a board addressed by an owner's login | resolvable through the owner interface with a fragment per owner kind, so nothing has to know whether an owner is a person or an organisation. Asking the wrong one of the two by name answers an **error** rather than nothing, which is what makes the guess expensive |
+| a board with more items than one page | the page's own cursor, and nothing in the answer that says a list is short. ⚠️ The client's paginate flag follows top-level pages and not a nested connection, so the ceiling is silent: a round total is the signature of an unfollowed cursor |
+| a project number nothing resolves | `NOT_FOUND` with a non-zero exit, which is why an address the reader accepts and the tracker rejects arrives as a failed call naming the owner and the number rather than as an empty board |
+
+⚠️ **What the implementation's own suite cannot answer is what the host does with a payload**, which
+is why the read half is driven against a live board by hand and recorded on the work item: a board
+past one page read whole, a card's columns out of one query, and the pull-request guard refusing a
+real pull request number.
+
 ## What is an ordered list of named checks rather than procedure
 
 No count is given, for the reason [`schema.md § The
