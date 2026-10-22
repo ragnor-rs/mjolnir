@@ -733,13 +733,16 @@ trackers.
 
 ### What it deliberately does not check
 
-- **That an adapter is correct.** One implementation is installed, and the gate imports it: what
-  it asserts about it is that the install is load-bearing and that the report names exactly the
-  operations the implementation leaves alone. ⛔ It performs no operation against a host — the
-  job carries no credential, and every branch that invokes an operation runs against a double or
-  a stated-empty registry rather than against whatever happens to be built. So whether a call
-  actually does what the tracker's API documents is held by nothing here; it is held by running
-  it, and the measurements live on the work item. The remaining kinds are their own items.
+- **That an adapter is correct.** The gate imports whatever is installed, and what it asserts
+  about an implementation is that the install is load-bearing and that the report names exactly
+  the operations that implementation leaves alone. ⛔ It performs no operation against a host —
+  the job carries no credential, and every branch that invokes an operation runs against a double
+  or a stated-empty registry rather than against whatever happens to be built. An
+  implementation's **own** decisions — a cursor followed to the end, an id resolved by name, a
+  guard that refuses before it writes — are held by the gate recorded in the next section, which
+  is a different subject and a different workflow. So whether a call actually does what the
+  tracker's API documents is held by neither; it is held by running it, and the measurements live
+  on the work item. The remaining kinds are their own items.
 - **Any module but the contract.** `plugins/*/scripts/` sits outside the sweep's strict set,
   which that sweep argues in stack terms — an implementation is written in some language and
   saying so names the toolkit's stack rather than a project's. It gives no reason to exempt a
@@ -751,6 +754,79 @@ trackers.
 - **That a fallback is the right fallback.** Whether writing a gate result into a description is
   what a project wants where comments are impossible is a judgement the measurement behind it
   carries, not something a check can read. This is the *fidelity* limit one claim over.
+
+## Beside the contract: each implementation's own suite
+
+`plugins/mjolnir/scripts/adapter_suites.py` runs in the `Adapter suites` workflow, with no
+credential and no network. It asks the port what is installed and runs whatever suite each
+implementation exposes. ⛔ **One entry rather than one per tracker**: a gate entry per
+implementation would spell a tracker's name in this repository's configuration and again in a file
+name, and the port's `adapters/` package is the one place in the toolkit where a tracker's name
+belongs.
+
+What it holds is per implementation, and the implementation states it: the contract's suite reaches
+none of it. For the board behind `kind: github-projects` that is every list read whole or refused
+rather than returned short — the measured ceiling being a first page that reads as a complete
+answer — every id resolved from the board by the name a configuration gives, every value shaped by
+its own column's type, and every operation that writes reading the item first, so that a number
+naming a pull request is refused *before* the write rather than after it.
+
+Two kinds, as everywhere here. **Computed**: the operation set is compared against the list
+[schema § 3](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)
+states, so an operation the surface grows is unimplemented-and-unaccounted-for rather than quietly
+missing, and the implementation names the ones it leaves out on purpose in one place the suite
+reads. **Forbidding**: no shipped carrier — skill, command or hook — carries a board, field, card
+or option id, in any of the spellings the host hands out. That sweep is the mechanical half of
+`resolve: by_name`, and the shape it forbids is the measured one: a table of option ids pasted
+verbatim into three skills of one project, with the same ids inlined again in four mutations.
+
+⚠️ **An implementation with no suite is reported and not failed.** The first one built is proved
+against the live tracker this repository runs on, and a runner that reddened for it would be
+refusing a decision somebody made. What **is** a failure is finding no implementation at all: a
+runner holding nothing reports green, which is the shape every check here is written against.
+
+⚠️ **A suite lives in a module beside its implementation, and the code host decided that.** A file
+carrying both reaches the host with **no patch** — measured at about a hundred kilobytes in one
+file, with every other file in the same change patched — and the gate on the change then refuses it,
+because a marker in a file nothing read is not an absence of markers. ⛔ The suite's module name
+opens with `_`, which is the port's own rule for a module in `adapters/` that is not an
+implementation: discovery skips those, and the runner above reads the same rule rather than
+restating it — a suite imports the names it exercises, `KIND` among them, so without it a suite
+counts as a second implementation of its own kind.
+
+### What it deliberately does not check
+
+- **Anything the host does with a payload.** Every case answers through the seams the
+  implementation names — the client call, and the one probe that reads a failure rather than a
+  body — so a suite here cannot establish that a mutation lands, that a cursor the host issues is
+  the one it accepts back, or that a column holds what was written into it. That half is driven by
+  hand against a live board and recorded on the work item, which is the same division the contract
+  one section up draws.
+- **That a fallback or an absence is the right one.** Three operations have no implementation
+  behind the board because an issue has no check-item object; whether writing a task list into a
+  body is what a project wants is the judgement behind the fallback, not something a check reads.
+- **Which implementations ought to exist.** The runner reports what is installed. A kind the
+  surface states and nothing implements is a work item, and the port already reports it apart from
+  a project that needs no tracker.
+
+### The one kind of plant that cannot be in-suite
+
+The sweep for ids plants one of each spelling the host hands out and asserts the grammar reddens on
+each, beside a sentence about ids that has to stay green; the refusals around a short list plant a
+page that claims a successor with no cursor, a cursor the host repeats, and a cursor that never
+ends. ⛔ **The behavioural half cannot be planted from inside the suite**, because the thing to
+plant is the code under test: those assertions are proved to bite by breaking the implementation,
+running the suite, and reading *which* assertion goes red — the break being undone from a copy of
+the file. The breaks, and the assertion each one reddens, are recorded on the work item rather than
+here.
+
+⚠️ **Two of those breaks found the suite rather than the code**, and both are the same mistake in
+two shapes: a fixture thin enough that the operation failed for another reason, so an assertion
+about a write being refused passed while the write was unreachable. A pull request's payload
+therefore answers in the same shape an issue's does, and a fake answers every call the host would
+answer rather than only the ones the passing path makes — a fake that refuses an unexpected call
+turns a behavioural red into a traceback, and a traceback where a verdict belongs is a case nobody
+counted.
 
 ## Beside them: the claim on a work item
 
@@ -1515,11 +1591,11 @@ own.
 
 ⚠️ **Where the plants run differs, and only the ordering does.** The two document checks and the
 reply-register check run every plant as a first phase, before the tree is held to anything; the
-port contract and the configuration reader run each plant beside the assertion it belongs to,
-because each needs a configuration or a surface of its own synthesised for it and a first phase
-would build all of them twice. What the ordering buys — no check is believed until it has been
-shown it can fail — holds either way, and it is stated here rather than in a comment in one
-workflow, where nothing reading this document would find it.
+port contract, the configuration reader and each implementation's own suite run every plant beside
+the assertion it belongs to, because each needs a configuration or a surface of its own
+synthesised for it and a first phase would build all of them twice. What the ordering buys — no
+check is believed until it has been shown it can fail — holds either way, and it is stated here
+rather than in a comment in one workflow, where nothing reading this document would find it.
 
 That ordering is why the step names in `.github/workflows/` fall into two families. A run with a
 first phase names it — *Assert each check can fail, then …* — and a run without one has no phase
