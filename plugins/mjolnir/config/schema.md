@@ -929,6 +929,85 @@ meets a squashed message the first time somebody merges by hand. So § 10's land
 **both** of its tests — content, then the host's own record — and ⚠️ **gets no cheaper for the
 method being stated**, which is the one reader this facet does not simplify at all.
 
+### The facet against the host's own definitions
+
+Procedure rather than configuration, and stated here for the reason the run-reading subsection
+above is stated here: this facet is a hand-written description of files that live in the same
+repository, and every consumer reads the description. ⛔ **So where the host keeps its workflow
+definitions in files a reader can open, the facet is held to them mechanically, and no consumer
+trusts a statement that can be proved stale.** A renamed workflow, an edited filter or a changed
+trigger invalidates an entry without touching it: the guard that refuses a local run on the
+strength of a host run then ships unchecked code, and the role that waits for a run waits for one
+that will never exist. The drift is this surface's own defect class — two statements of one fact —
+except that here one statement is a file the host executes and the other is the facet above.
+
+**Four dimensions**, and the first three are compared **in both directions** — neither direction
+shows from the other's output, a renamed workflow being at once an entry naming a run the host does
+not make and a run no entry names, so a comparison run one way reports half of it.
+
+| Dimension | What an entry states | What the host's own definition states | Directions |
+|---|---|---|---|
+| name | `workflow`, the only key anything is read by | the definition's own name, read from the file and never from a job | both |
+| triggers | one pattern per `(event, types, ref)` | the event block: its events, each one's types, each one's refs | both |
+| paths | `paths`, omitted where the run covers every change | the filter on that event block | both |
+| jobs | each member's `job`, where the entry states that form | the ids of the `jobs:` block, read inside it and never from the document | one |
+
+⛔ **The jobs dimension is compared one way, and that is
+[the form's own rule](#a-workflow-whose-jobs-mirror-more-than-one-command) rather than a gap here.**
+A job mirroring no local command is left out of a `jobs` list rather than written into it, so a job
+the file defines and no member names is the ordinary case and not drift; two members may name one
+job for the same reason. What a comparison can say is the other direction — a member naming a job
+its workflow does not define, which is a run
+[the four preconditions](#reading-a-runs-answer-and-what-a-failure-is) could never be read on.
+
+⛔ **The derivation runs from the definition into this facet's vocabulary, never the other way.** A
+host's own keys are the host's, and what a comparison may do with one is read it: several refs on
+one event are several triggers of that event sharing its types, which is the list this facet
+already exists for. ⚠️ **The order of neither side carries anything** — the types are a set by the
+subsection above, and a workflow's events are a block that reads as one — so a reordering is not
+drift and a comparison that reported it would hand back a change over nothing.
+
+⛔ **Three answers, and only one of them is green.** The two statements agree; they disagree, which
+is drift; or a dimension could not be established, which is reported as itself. The third is the
+absence rule at the top of this section arriving at the facet instead of at a run: an unestablished
+dimension is *no answer* and is never read as agreement. ⚠️ **Which of the two sides is wrong is
+not a comparison's to say, and neither side is ever written** — a check that repaired a facet would
+have to be believed about a repository's continuous integration, and one that repaired a workflow
+file would be editing what the host executes.
+
+**What leaves a dimension unestablished, each being a statement rather than a fault:**
+
+- ⛔ **A host kind whose definitions are not files a reader can open.** The comparison is
+  undeterminable whole, and consumers proceed on the facet as stated — which is the honest arm
+  rather than a silent pass, and the reason this rule is stated as a property of the host kind and
+  not of every project.
+- ⛔ **A definition whose own name cannot be read suspends the name comparison rather than failing
+  it.** While one file's name is unestablished that file could be the one an entry names, so
+  reporting drift would be a comparison calling the facet wrong on the strength of what it could
+  not establish. ⚠️ **The name is never derived from the file's path** — a host that names an
+  unnamed workflow by its path states that rule, and a second statement of it here would be wrong
+  the next time the host changed it, and wrong silently.
+- ⛔ **A key the event block carries that no trigger pattern has a form for** — a set of refs
+  *excluded* rather than named is the measured case. The dimension is undeterminable rather than
+  compared on the part the facet can state: a workflow that fires on refs the facet cannot
+  enumerate is as right as the facet lets it be, and reporting drift against it is red forever with
+  no edit that clears it.
+- ⚠️ **An entry stating no `triggers` leaves that dimension unstated**, and this is the one place
+  the two keys part company: an omitted `paths` has a meaning stated above — the run covers every
+  change — and an omitted `triggers` has none, so there is nothing for a comparison to hold the
+  file to.
+
+⛔ **`checks: []` is *no subject* only where the host in fact defines nothing.** Both sides empty is
+the legitimate absence this section opens with, and a comparison says so rather than reporting
+green on it. ⚠️ **An empty facet with definitions behind it is this facet at its most drifted**, not
+a project standing down: every run the host makes is then a run no consumer knows about, which is
+the state where a comparison has most to say.
+
+⛔ **A definition that mirrors no local command still takes an entry.** This facet is the single
+statement of which runs exist, so the entry stating neither `mirrors` nor `jobs` is how a run with
+no local counterpart is stated — and leaving it out is drift of exactly the kind the second
+direction above exists to find.
+
 ## 3. Tracker port
 
 ```yaml

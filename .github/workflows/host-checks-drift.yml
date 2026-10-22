@@ -1,0 +1,41 @@
+name: Host checks drift
+
+# The gate that holds `host.checks` to the files in this directory. One mirrored command, so one
+# workflow, per § 2 of plugins/mjolnir/config/schema.md — the rule its siblings here cite too.
+#
+# ⚠️ The workflow name and the job name are deliberately the same string, as in every sibling:
+# `host.checks` is keyed by the workflow name and never by a job name, and identical names leave
+# no key to get wrong.
+#
+# ⛔ This is the one gate here whose subject is the rest of this directory, and the one entry of
+# `host.checks` that is compared against the file declaring it. A rename on either side of that
+# pair reddens it — which is the whole of what it is for, since every other file here states by
+# hand that nothing reads it.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: every scope of the automatic token is dropped, and the
+# checkout is told not to leave it behind in the git config. The configuration and the
+# definitions beside it are the whole input — nothing is asked of the host, which is why
+# this gate answers about the *statement* and never about a run.
+permissions: {}
+
+jobs:
+  host-checks-drift:
+    name: Host checks drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command: the planted violations, absences, subjects and exemptions run
+      # first, and the facet is held only once the check has been shown it can redden, can
+      # report what it could not establish, and can pass. ⛔ That command is also the string
+      # `host.checks` states this run mirrors — and unlike every sibling here, the name above
+      # it is read by the check this step runs.
+      - name: Assert the check can fail, can report and can pass, then hold the facet
+        run: python3 plugins/mjolnir/scripts/check_host_checks.py --self-test

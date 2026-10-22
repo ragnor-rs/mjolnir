@@ -637,6 +637,18 @@ class Config:
         """
         return mirrored_runs(self.data)
 
+    def host_runs(self) -> list[dict]:
+        """§ 2's `host.checks` as one record per entry, the run rather than the command.
+
+        The accessor beside `mirrors()` and the same single walk behind both.
+        ⚠️ **An entry mirroring nothing is here and not there**: § 2 makes the
+        facet the single statement of which runs exist, so a run with no local
+        counterpart is still a run -- which the check holding this facet to the
+        host's own definitions has to see, and which a per-command view
+        legitimately drops.
+        """
+        return host_runs(self.data)
+
     def unavailable(self) -> list[str]:
         """What this configuration cannot support, and why.
 
@@ -1085,6 +1097,38 @@ def mirrored_runs(data: dict) -> list[dict]:
     both consumers of it report an absence where the project stated a run.
     """
     out: list[dict] = []
+    for run in host_runs(data):
+        for mirrored in run["commands"]:
+            out.append(
+                {
+                    "command": mirrored["command"],
+                    "normalised": mirrored["normalised"],
+                    "mirrored_by": mirrored["mirrored_by"],
+                    "workflow": run["workflow"],
+                    "job": mirrored["job"],
+                    "triggers": run["triggers"],
+                    "paths": {"workflow": run["paths"], "job": mirrored["paths"]},
+                }
+            )
+    return out
+
+
+def host_runs(data: dict) -> list[dict]:
+    """§ 2's `host.checks` as one record per **entry**, walked once.
+
+    The facet keyed by the one key it has, with every refusal the facet carries
+    in this one walk. `mirrored_runs` above is this list exploded per mirrored
+    command, and the drift check beside it reads it per entry -- ⛔ two walks of
+    one facet being two readings allowed to disagree about what the project
+    wrote, which is the defect the facet exists to delete one level up.
+
+    ⚠️ **An entry mirroring nothing is a record here and no record there**, and
+    that is the whole reason this accessor exists beside the other: § 2 makes the
+    facet the single statement of which runs *exist*, so a run with no local
+    counterpart is an entry stating neither `mirrors` nor `jobs` -- which a
+    per-command view legitimately drops and a check holding the facet to the
+    host's own definitions may not.
+    """
     checks = _get(data, "host.checks")
     if not isinstance(checks, list):
         raise ConfigError(
@@ -1094,6 +1138,7 @@ def mirrored_runs(data: dict) -> list[dict]:
             "refusal reads them to find a done check the host already runs, and "
             "would hold nothing against a shape it cannot walk.",
         )
+    out: list[dict] = []
     for index, entry in enumerate(checks):
         if not isinstance(entry, dict):
             raise ConfigError(
@@ -1102,28 +1147,41 @@ def mirrored_runs(data: dict) -> list[dict]:
                 "`workflow` (§ 2). An entry this reader cannot walk takes "
                 "whatever it mirrors out of § 13's refusal in silence.",
             )
-        out.extend(_entry_commands(entry, index))
+        out.append(_entry_run(entry, index))
     return out
 
 
-def _entry_commands(entry: dict, index: int):
-    """Yield one record per command this entry mirrors.
+def _entry_run(entry: dict, index: int) -> dict:
+    """One entry's record: every fact § 2 states about the run, held to its shape.
 
-    The two forms § 2 states, read in one place so that neither can grow a
-    refusal the other does not have. An entry stating neither yields nothing.
-
-    Each record carries the command as written, its normalised form, the phrase
-    naming where it is mirrored, the workflow's name, the job's id where a job
-    is what mirrors it, the entry's `triggers`, and the path filter at each of
-    the two levels -- which is every fact § 2 states about a run and the whole
-    of what a consumer has to answer from.
+    `commands` is the per-command half, one member per command this entry
+    mirrors and empty where it mirrors none.
     """
     where = f"host.checks[{index}]"
+    workflow = _entry_workflow(entry, where)
+    _path_filter(entry, f"{where}.paths")
+    # ⛔ The entry's and never a job's: § 2 puts the event block on the workflow,
+    # so a `triggers` inside a `jobs` member is a key nothing states and nothing
+    # would read.
+    _triggers(entry, f"{where}.triggers")
+    return {
+        "index": index,
+        "where": where,
+        "workflow": workflow,
+        "triggers": entry.get("triggers"),
+        "paths": entry.get("paths"),
+        "jobs": entry.get("jobs") if "jobs" in entry else None,
+        "commands": list(_entry_commands(entry, index)),
+    }
+
+
+def _entry_workflow(entry: dict, where: str) -> str:
+    """The key the whole facet is keyed on, held because an entry without one has none.
+
+    It read as `unnamed` before: every entry missing a workflow collapsed into
+    one answer, and § 13's refusal then named a workflow no file contains.
+    """
     workflow = entry.get("workflow")
-    # The key the whole facet is keyed on, held here because an entry without
-    # one has no key at all. It read as `unnamed` before: every entry missing a
-    # workflow collapsed into one answer, and § 13's refusal then named a
-    # workflow no file contains.
     if not isinstance(workflow, str) or not workflow.strip():
         raise ConfigError(
             f"{where}.workflow",
@@ -1132,21 +1190,33 @@ def _entry_commands(entry: dict, index: int):
             "that name, and a refusal naming a workflow nothing is called sends "
             "a reader to a file their repository does not have.",
         )
-    _path_filter(entry, f"{where}.paths")
-    # ⛔ The entry's and never a job's: § 2 puts the event block on the workflow,
-    # so a `triggers` inside a `jobs` member is a key nothing states and nothing
-    # would read.
-    _triggers(entry, f"{where}.triggers")
+    return workflow
+
+
+def _entry_commands(entry: dict, index: int):
+    """Yield one record per command this entry mirrors.
+
+    The two forms § 2 states, read in one place so that neither can grow a
+    refusal the other does not have. An entry stating neither yields nothing,
+    which is a run the host makes with no local counterpart -- `host_runs`
+    above is the walk that still carries it.
+
+    Each record carries the command as written, its normalised form, the phrase
+    naming where it is mirrored, the job's id where a job is what mirrors it,
+    and that job's own path filter. ⚠️ The entry's own facts -- its workflow,
+    its triggers and its filter -- sit on the entry's record rather than being
+    copied onto each of these, `mirrored_runs` being what joins the two.
+    """
+    where = f"host.checks[{index}]"
+    workflow = _entry_workflow(entry, where)
 
     def record(command: str, mirrored_by: str, job: str | None, filters) -> dict:
         return {
             "command": command,
             "normalised": _normalised_command(command),
             "mirrored_by": mirrored_by,
-            "workflow": workflow,
             "job": job,
-            "triggers": entry.get("triggers"),
-            "paths": {"workflow": entry.get("paths"), "job": filters},
+            "paths": filters,
         }
 
     # Presence and never value, for both keys below: a `mirrors` written with

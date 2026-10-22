@@ -43,9 +43,11 @@ jobs:
       # One step, one command, planted violations first: the change is held only once each
       # check has been shown it can fail — and shown it can pass, since an over-broad body
       # rule would redden every honest pull request alike. That command is the string
-      # `host.checks` states this run mirrors — ⚠️ held together by eye and not by a check,
-      # since nothing here reads a workflow file. That is #49; what the entry beside it has
-      # to state, both events and their types included, is the surface's and is stated there.
+      # `host.checks` states this run mirrors — ⚠️ held together by eye, and § 2 rules that it
+      # must be: the mapping from a run to the command it mirrors is configured and never
+      # inferred. ⛔ Everything else about this file's event block *is* held mechanically, by
+      # the `Host checks drift` run — both events and both type lists, which is why this is
+      # the one entry in the configuration carrying a type clause.
       #
       # The token is passed to the step rather than left in the git config, so the one thing
       # that holds it is the one process that needs it. No dependency is installed: the run

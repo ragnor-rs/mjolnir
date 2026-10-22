@@ -37,7 +37,9 @@ jobs:
       # One step, one command: the planted violations and the planted exemptions run first, and
       # the change is held only once the check has been shown it can both fail and pass — an
       # over-broad grammar here would redden a document for the honest form of a sentence. That
-      # command is also the string `host.checks` states this run mirrors — ⚠️ held together by eye
-      # and not by a check, since nothing here reads a workflow file. That is #49.
+      # command is also the string `host.checks` states this run mirrors — ⚠️ held together by eye,
+      # and § 2 rules that it must be: the mapping from a run to the command it mirrors is
+      # configured and never inferred. The workflow *name* above is held mechanically, by the
+      # `Host checks drift` run.
       - name: Assert the check can fail and can pass, then hold the lines this change adds
         run: python3 tools/check_no_audit_trail.py --self-test

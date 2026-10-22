@@ -33,7 +33,8 @@ jobs:
           persist-credentials: false
 
       # One step, one command, planted violations first — and the same string `host.checks`
-      # states this run mirrors. ⚠️ Held together by eye and not by a check, since nothing
-      # here reads a workflow file. That is #49.
+      # states this run mirrors. ⚠️ Held together by eye, and § 2 rules that it must be: the
+      # mapping from a run to the command it mirrors is configured and never inferred. The
+      # workflow *name* above is held mechanically, by the `Host checks drift` run.
       - name: Assert the arm can fail, then hold the carrier to the surface
         run: python3 plugins/mjolnir/scripts/check_reply_defers_nothing.py --self-test
