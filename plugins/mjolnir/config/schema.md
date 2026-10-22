@@ -1528,6 +1528,40 @@ it breaks silently: a command expands into a transcript record carrying its own 
 injects a preamble naming its directory. A matcher that must key on one of those asserts both
 directions. A carrier of `hook` has no invocation name at all.
 
+### A hook in a project that states no configuration
+
+⛔ **A hook does nothing and says nothing in a project that states no configuration.** It is
+addressed by its event and by no name at all, by the subsection above, so an install reaches every
+project the person who installed it opens — including every project that has never adopted this
+toolkit. A guard that refuses there refuses on a rule nobody in that project agreed to, and a
+report there names a surface its reader has no copy of, on every call that fires the event. ⚠️ **It
+is the hook that this binds and not the whole install**: a role is addressed by name, and a person
+who invokes one is owed the answer that the project it was invoked in configures nothing.
+
+⛔ **One message is permitted, and it is the only thing an unconfigured project ever gets: an
+invitation, on the event that opens a session, to configure this project.** It names the file to
+write and where the keys are stated, it is addressed to the person rather than put into the
+session's own context, and it is said once as the session opens rather than on anything the session
+then does. An install nobody is told about is an install nobody adopts, and that is the whole of
+what the exception buys — so a second message, on any other event, is this rule being broken rather
+than this exception being used.
+
+⛔ **The configuration is resolved under the directory the event names** — the one the hook is
+running in, where the event names none — and through the reader every role runs on, at
+[§ 1](#1-roots)'s skills root. ⚠️ **No walk up the tree.** A hook that searched upwards would act
+on another project's facts in a directory stating none of its own, which a checkout with trees
+beside it makes routine rather than exotic.
+
+⚠️ **Absent and unreadable are different answers, and only the first is silent.** A configuration
+that is there and does not resolve is the project's own statement, badly written — so a carrier
+that reads values out of one reports that, by the subsection on which direction a guard fails in,
+and the two cases must not collapse into one: a project whose file has a typo in it would otherwise
+be invited to write the file it has already written.
+
+⚠️ **What the common case gets is therefore the invitation and nothing else**, and the install is
+complete anyway: a hook silent for want of a configuration and a hook absent are the same thing to
+a project that states none, which is a reading those two states are permitted to coincide in.
+
 ### What a hook refuses, and the record it reads
 
 ⛔ **A hook refuses an act on the strength of a record, never on a reading of the work.** The
@@ -1636,8 +1670,7 @@ usually reads.
 ⛔ **Where [§ 10](#exclusive-resources) states no exclusive resource, a guard reads nothing and no
 exit event does anything.** ⚠️ **That is the common case**, and a project in it has one fewer thing
 that can refuse a call rather than a partial install — so a guard installed and silent and a guard
-absent are the same thing here, which is the one place on this surface those two readings may
-coincide.
+absent are the same thing here, as they are for the project that states no configuration at all.
 
 ## 8. Language, register, audience — per artifact, not per project
 

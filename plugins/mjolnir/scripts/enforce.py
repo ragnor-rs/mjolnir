@@ -3,11 +3,13 @@
 
 The surface states what a hook may refuse and what it reads to refuse it -- see
 `schema.md § 7 -> What a hook refuses, and the record it reads`, the subsection
-beside it that fixes which direction a guard fails in, and the one after that
-which states the lease. This script is the carrier for all three:
+beside it that fixes which direction a guard fails in, the one after that which
+states the lease, and the one above them all which says what a hook does in a
+project that states no configuration. This script is the carrier for each:
 
     guard     a `PreToolUse` answer: refuse a merge with no recorded answer,
-              then hold a place on whatever the call puts at stake
+              then hold a place on whatever the call puts at stake -- and
+              nothing at all where the project states no configuration
     release   a `PostToolUse`, `Stop`, `SessionEnd` or `SubagentStop` answer:
               give back the places this session is holding
     record    write the recorded answer a guard reads onto a change
@@ -55,6 +57,7 @@ SURFACE = Path(__file__).resolve().parent.parent / "config" / "schema.md"
 # this file only if its anchor survives, which is the bargain every citation of
 # the surface already makes.
 ARM_ANCHORS = {
+    "unconfigured": "a-hook-in-a-project-that-states-no-configuration",
     "record": "what-a-hook-refuses-and-the-record-it-reads",
     "direction": "which-direction-a-guard-fails-in",
     "lease": "a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it",
@@ -755,6 +758,12 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
     command = str(tool_input.get("command") or "")
     if not command.strip():
         return {}
+    if config is None and not _states_a_configuration(payload.get("cwd")):
+        # ⛔ Silence, and not a report: this arm fires on every command in every
+        # project the install reaches, and a project that states no configuration
+        # has agreed to no rule this guard could hold. Separate from the branch
+        # below, which is a configuration that *is* stated and does not resolve.
+        return {}
     loaded = config if config is not None else _config(payload.get("cwd"))
     if loaded is None:
         return {"systemMessage": (
@@ -801,6 +810,25 @@ def release_answer(payload: dict, *, config=None, now: float | None = None,
         "Capacity: gave back " + ", ".join(sorted({str(g.get("resource")) for g in given}))
         + f". ({LEASE_CITATION})"
     )}
+
+
+def _states_a_configuration(cwd: str | None) -> bool:
+    """Whether the project this event names states a configuration at all.
+
+    ⛔ Asked through the shared reader rather than by testing a path here: where
+    a project's configuration lives is one statement, and a second copy of that
+    path drifts the first time either moves.
+
+    ⛔ False where the reader cannot be reached at all, which is the silent
+    direction deliberately: an install whose own reader is missing cannot hold a
+    project to a file it has no way to find.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set one line up
+        return bool(reader.configured(cwd or "."))
+    except Exception:  # noqa: BLE001 -- an unreachable reader answers no, per above
+        return False
 
 
 def _config(cwd: str | None):
@@ -1062,6 +1090,24 @@ def _a_probe(count: int | None = 0, code: int = 0, prints: str | None = None):
         return code, "" if count is None else f"{count}\n"
 
     return run
+
+
+def _a_root(where: Path, states: str | None) -> str:
+    """A project root stating this configuration, or stating none at all.
+
+    ⛔ Written at the reader's own `CONFIG_PATH` rather than at a path spelled
+    out here: a fixture built against a literal would stay green after that path
+    moved, while every live hook went silent in every project.
+    """
+    where.mkdir(parents=True, exist_ok=True)
+    if states is not None:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import config as reader  # noqa: PLC0415 -- the path is set one line up
+
+        stated = where / reader.CONFIG_PATH
+        stated.parent.mkdir(parents=True, exist_ok=True)
+        stated.write_text(states, encoding="utf-8")
+    return str(where)
 
 
 def _call(command: str, session: str = "a-session", cwd: str = ".",
@@ -1479,14 +1525,48 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                                     host=_a_host(comments=[]))
             check(f"{label}: no answer", answered == {}, repr(answered)[:140])
 
+        # --- what a project that states no configuration gets ---------------
+        #
+        # ⛔ Every answer the arm has, in a project that has adopted nothing:
+        # none of them. ⚠️ Reached through the reader rather than by handing the
+        # arm a `None`, here and in the pair below: the arm resolves its own
+        # configuration where none is passed, so a plant that passed one would be
+        # asserting about a branch no session takes.
+        out.append("")
+        out.append("A project that states no configuration is answered with nothing at all:")
+        for label, root in (
+            ("a root that is not there", "/nonexistent-root-for-the-self-test"),
+            ("a root with no configuration in it", _a_root(Path(directory) / "adopted-nothing",
+                                                           None)),
+        ):
+            where = fresh("unconfigured")
+            answered = guard_answer(_call("a-claiming-command", cwd=root), now=1000.0,
+                                    store=where)
+            check(f"{label}: a claiming call is answered with nothing", answered == {},
+                  repr(answered)[:140])
+            # ⛔ The irreversible act too, which is the one this arm exists to
+            # refuse: a host answering no record would deny if it were reached.
+            merging = guard_answer(_call("gh pr merge 7", cwd=root), now=1000.0, store=where,
+                                   host=_a_host(comments=[]))
+            check(f"{label}: and a merge is not refused either", merging == {},
+                  repr(merging)[:140])
+            check(f"{label}: and no place was held", not live_leases(where, 1000.0))
+            check(f"{label}: and no exit event gives anything back",
+                  release_answer(_exit("Stop", command="a-claiming-command"), now=1000.0,
+                                 store=where) == {})
+
         # --- the two directions a guard fails in ---------------------------
         out.append("")
         out.append("The two directions a guard fails in are the two the surface states:")
-        # ⛔ Reached through the reader rather than by handing the arm a `None`:
-        # the arm resolves its own configuration where none is passed, so a plant
-        # that passed one would be asserting about a branch no session takes.
+        # ⛔ A configuration that is *there* and does not resolve, which is the
+        # other half of the pair above: the file is the project's own facts badly
+        # written, so it is reported rather than read as a project that adopted
+        # nothing. A plant pointed at an absent file would take the silent branch
+        # and assert this message on a route no session reaches.
+        unreadable = _a_root(Path(directory) / "states-something-unreadable",
+                             "- not a block of keys\n")
         answered = guard_answer(
-            _call("a-claiming-command", cwd="/nonexistent-root-for-the-self-test"),
+            _call("a-claiming-command", cwd=unreadable),
             now=1000.0, store=fresh("unreadable"),
         )
         check("a configuration that could not be read holds the call to nothing, and says so",

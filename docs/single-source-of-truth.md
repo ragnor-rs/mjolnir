@@ -1029,6 +1029,15 @@ surface is a row the next session is handed, a paraphrase would be a second stat
 with nothing holding it to the first, and the heading row is read out of the document like every
 other row.
 
+⛔ **It is also the carrier for the one message a project that states no configuration ever gets**,
+by [schema § 7](../plugins/mjolnir/config/schema.md#a-hook-in-a-project-that-states-no-configuration):
+where the reader finds no configuration under the directory the event names, no rule is loaded and
+the person is invited to write one, with the file to write and the document its keys are stated in
+both named. ⚠️ **The two answers are exclusive**, and the run asserts each against the other — a
+carrier giving the same answer to both would pass a suite that held only one of them. ⚠️ **This
+script carries that message because it answers the event the exception is scoped to**, and for no
+other reason: loading the rules and inviting adoption are not one job.
+
 ⚠️ **One loader rather than one per rule, which is a departure from how the gates here are
 arranged.** Every check in this tree is its own script with its own mirrored command, because each
 answers a different question. These two do not: both are a table in a subsection, read at the one
@@ -1065,9 +1074,14 @@ standing in a tree.
   property in § 8's table, and nothing reads a command before it runs for anything in § 10's — the
   refusal that holds the second half is the harness's own and is not this project's to configure.
   The one arm here that does read a reply holds an act rather than a style, and is recorded below.
-- ⚠️ **It cannot tell which role is running**, so every session the plugin is enabled in is handed
-  both rules, not only one running a role. In the safe direction, and the ruling is
-  [#87](https://github.com/ragnor-rs/mjolnir/issues/87)'s.
+- ⚠️ **It cannot tell which role is running**, so every session of a project that states a
+  configuration is handed both rules, not only one running a role. In the safe direction, and the
+  ruling is [#87](https://github.com/ragnor-rs/mjolnir/issues/87)'s.
+- ⚠️ **The invitation is repeated once per session rather than once per project.** Nothing is
+  recorded about having said it, so a person who is never going to adopt the toolkit in a given
+  project reads one line at every session opened there. The alternative is a marker per project,
+  which trades that line for a state nobody can see and a message that stops arriving for reasons
+  nobody can read.
 
 ## The reply defers nothing: held in the session, not on the gate
 
@@ -1080,6 +1094,13 @@ Every other property of a reply — its opening, its length, its register, its e
 states uncertainty — is a rule
 [§ 8](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) states and a
 session reads, and no check in this tree reads one.
+
+⛔ **And only in a project that states a configuration**, by
+[schema § 7](../plugins/mjolnir/config/schema.md#a-hook-in-a-project-that-states-no-configuration).
+Asked before the reply is read at all, so a reply written in a project that adopted nothing gets no
+hand-back and no report — and nothing is recorded about the turn either, which is the half a silent
+answer hides: a project adopting the toolkit mid-session would otherwise find its one hand-back
+already spent by the turn that was held to nothing.
 
 **Why a hook rather than the gate.** The reply is the only artifact the loop produces that no later
 check ever reads: no commit, no body, no thread. Work named there and not done is green everywhere
@@ -1341,7 +1362,16 @@ What each arm holds:
 | `read` | text a role is about to act on | **forbidding** for the hidden half, **quoting** for the imperative half | reports, exits non-zero; the role names it and stops |
 | `write` | text a role is about to send outward | **forbidding** | refuses, naming the kind and the position and never the value |
 | `env` | the names the process can see | **forbidding** on the name, **forbidding** on the value | reports, and exits zero whatever it finds |
-| `hook` | a `Bash` command, plus the bodies it sends by file | **forbidding** | denies the tool call, through `PreToolUse` |
+| `hook` | a `Bash` command, plus the bodies it sends by file, in a project that states a configuration | **forbidding** | denies the tool call, through `PreToolUse` |
+
+⛔ **The `hook` arm answers nothing in a project that states no configuration**, by
+[schema § 7](../plugins/mjolnir/config/schema.md#a-hook-in-a-project-that-states-no-configuration),
+and the three arms a person invokes are unaffected — the rule is scoped to what fires on an event.
+⚠️ **What that costs is the outward half in every project that has adopted nothing**, which is
+worth stating plainly: this arm is not a detector, so what is given up there is a hold over one
+measured leak rather than an assurance anybody had. The suite runs every denying payload twice,
+once under a planted root that states a configuration and once under one that does not, so the two
+answers hold each other.
 
 ⚠️ **The `read` arm's two halves have different standing, and the run says so.** Markup that renders
 as nothing has a stable form, so finding it is the *forbidding* kind. An imperative aimed at a role
@@ -1749,10 +1779,22 @@ which of the three designs was the one that worked.
 
 | arm | what it reads | kind | what it does |
 |---|---|---|---|
-| `guard` (`PreToolUse`) | a `Bash` command, the record on the change it would merge, and the count a project's probe prints | **computed** for the count, **forbidding** for the record's presence | denies the call, or takes a place |
+| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge, and the count a project's probe prints | **computed** for the count, **forbidding** for the record's presence | denies the call, or takes a place |
 | `release` (`PostToolUse`, `Stop`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
 | `record` | nothing | — | writes the answer a guard reads onto the change |
 | `held` | the leases and the probe | **computed** | reports what is held, and what it could not establish |
+
+⛔ **Both hook arms answer nothing at all in a project that states no configuration**, by
+[schema § 7](../plugins/mjolnir/config/schema.md#a-hook-in-a-project-that-states-no-configuration),
+and that is a different answer from the one a project whose configuration does not *resolve* gets:
+there the call proceeds and the guard reports that it held nothing, which is the reversible
+direction of the fail rule beside it. ⚠️ **The distinction is what the suite now plants** — an
+absent file against a file that is there and is not a block of keys — because a plant pointed at an
+absent one asserts the report on a route no session reaches. ⚠️ **What it saves is the arm's own
+work and not what the session pays**: measured on this repository, the answer costs about 34ms where
+a configuration is read and under a tenth of a millisecond where the predicate says there is none,
+while the call still costs the same end to end either way, the interpreter's own start dominating
+both. A hook that answers nothing is not a hook that does not run.
 
 ⚠️ **The guard runs both refusals in one arm, and the ordering is the point.** A place taken by a
 call that is then denied is a place nothing releases, because a call refused before it runs reaches
