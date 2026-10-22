@@ -10,6 +10,53 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/boundary.py", "hook"],
             "timeout": 10,
             "statusMessage": "Holding what may leave the project"
+          },
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/enforce.py", "guard"],
+            "timeout": 20,
+            "statusMessage": "Reading the record this act is refused without"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/enforce.py", "release"],
+            "timeout": 10,
+            "statusMessage": "Giving back the place this call held"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/enforce.py", "release"],
+            "timeout": 10,
+            "statusMessage": "Giving back every place this session held"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/enforce.py", "release"],
+            "timeout": 10,
+            "statusMessage": "Giving back every place this subagent held"
           }
         ]
       }
@@ -37,6 +84,13 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/check_reply_defers_nothing.py"],
             "timeout": 10,
             "statusMessage": "Holding the reply to leaving no work unfinished"
+          },
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/enforce.py", "release"],
+            "timeout": 10,
+            "statusMessage": "Giving back every place the turn left held"
           }
         ]
       }

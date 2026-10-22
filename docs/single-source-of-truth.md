@@ -42,6 +42,13 @@ own `No audit trail` workflow and its own `host.checks` entry, and is recorded i
 scope is a **diff** rather than a tree — the rule's own carve-out leaves the past alone — which it
 shares with the gate above, as it shares having no `push` arm.
 
+`plugins/mjolnir/scripts/enforce.py` is the other one that does not run on the gate: it refuses an
+act in the session on the strength of a record somebody else wrote, and holds a place on what a
+project says contends. It has its own `Enforcement` workflow and its own `host.checks` entry, and is
+in [its own section](#the-enforcement-half-a-guard-that-refuses-and-a-place-that-comes-back) below —
+where the half no check reaches, which is whether a place was actually given back on a machine
+nobody is watching, is stated with it.
+
 `plugins/mjolnir/scripts/check_reply_defers_nothing.py` holds that a role's reply names no work the
 turn does not do, and it is the one here that does not run on the gate at all. It is in
 [its own section](#the-reply-defers-nothing-held-in-the-session-not-on-the-gate) too, and for the
@@ -1591,6 +1598,124 @@ zero executed.
 - **Whether `host.checks` names this workflow.** Nothing here reads a workflow file, which is #49 —
   the same limit every sibling carries.
 
+## The enforcement half: a guard that refuses, and a place that comes back
+
+`plugins/mjolnir/scripts/enforce.py --self-test` runs in the `Enforcement` workflow, with no
+credential and no network. ⛔ The rules are
+[schema § 7 → What a hook refuses, and the record it reads](../plugins/mjolnir/config/schema.md#what-a-hook-refuses-and-the-record-it-reads),
+[schema § 7 → Which direction a guard fails in](../plugins/mjolnir/config/schema.md#which-direction-a-guard-fails-in)
+and
+[schema § 7 → A lease on an exclusive resource](../plugins/mjolnir/config/schema.md#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it),
+and this document states none of them: what is recorded here is the reach of each arm and what it
+cannot see, which is narrower than the rules in directions the rules do not mention.
+
+**Why one carrier and not several.** The arms are one mechanism read from two ends: a guard that
+refuses an act, and the record or count it refuses on. The measured shape in the projects this was
+extracted from is the opposite — eight hook scripts in one project, five inline guards in another,
+three in a third — and the cost of that spread is what this replaces: a capacity lease whose
+release was registered on six events in one script and on none in the others, with nothing saying
+which of the three designs was the one that worked.
+
+| arm | what it reads | kind | what it does |
+|---|---|---|---|
+| `guard` (`PreToolUse`) | a `Bash` command, the record on the change it would merge, and the count a project's probe prints | **computed** for the count, **forbidding** for the record's presence | denies the call, or takes a place |
+| `release` (`PostToolUse`, `Stop`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
+| `record` | nothing | — | writes the answer a guard reads onto the change |
+| `held` | the leases and the probe | **computed** | reports what is held, and what it could not establish |
+
+⚠️ **The guard runs both refusals in one arm, and the ordering is the point.** A place taken by a
+call that is then denied is a place nothing releases, because a call refused before it runs reaches
+no completion event at all. Measured in the project this was extracted from: one denied build left
+its lease behind, and two of them pinned a cap of two with nothing running, after which every build
+queued and was then refused for the leases' whole lifetime. So every refusal this arm can make is
+made before any place is taken, and the suite asserts it directly — a merge call that also matches a
+`claimed_by` is refused and leaves no lease behind.
+
+⚠️ **What it cannot order is a sibling guard in another script.** The guards #26, #33 and #37 ask
+for are separate carriers on the same event, and a place taken here can still be left behind by one
+of those denying the call. That is what the lease's `ttl` bounds, and it is why a short lifetime is
+the safe direction rather than a tidy-up interval.
+
+⚠️ **Six exit paths were measured, and one of them cannot be tested because it never fires.** The
+project this came from registered its release on tool completion, tool failure, permission denial,
+stop, session end and subagent stop. On the installed harness, permission denial fires no event of
+any kind — not for a guard's own deny decision, not for a configured deny rule, not for a person
+answering *no* at the prompt. So the suite asserts the only thing that can be asserted about it: a
+lease whose call never reached a completion is given back by the end-of-turn sweep, and the carrier
+registers nothing for a denial because there is nothing to register. ⛔ A test per path would have
+sat red on that one forever, or been *fixed* by deleting the sweep that is doing its work —
+[schema § 7](../plugins/mjolnir/config/schema.md#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
+is where the path's status is stated rather than here.
+
+⚠️ **A backgrounded call is the path no event can close**, and the suite asserts the full sequence:
+the place is taken, every one of the four release events leaves it alone, and it is gone once its
+lifetime is up. A sweep that released it would hand the place back while the work ran.
+
+⚠️ **The arithmetic is a sum and the suite plants the maximum that let a third holder through.**
+With a cap of two, a probe reporting one, and one lease too young for that probe to see, the sum is
+two and the next call is refused — while the maximum of the two is one, the reading that was
+measured letting a third build through. The assertion computes both, so a carrier that quietly
+reverted to the maximum fails on the figure rather than on a wording.
+
+⚠️ **It plants both sides, as the boundary and prose-width checks do.** On the red side: a cap
+reached, a merge with no record, a record that could not be read, a change nothing could resolve, a
+merge naming no repository. On the green side, each of which must stay green: a project stating
+`exclusive_resources: []`, a read of the same change, a local merge of branches, the raw host arm
+reading the merge path rather than writing it, a count that could not be established, and a second
+session in the same tree sharing one place. ⛔ **Each green plant naming an exclusion was verified by
+switching that exclusion off** and watching it redden — the sum, the backgrounded skip, the expiry,
+the subject, the record's marker, the refusal ordering and the unestablished-count arm were each
+broken in turn, and each break reddened the assertion written for it rather than a neighbour.
+
+⚠️ **What the guard costs every call was measured rather than argued**, because a guard that makes a
+session slow is a guard somebody removes. On this repository, where nothing is exclusive, the arm
+answers an ordinary `Bash` call in about 170ms against about 95ms for the boundary hook beside it
+and about 45ms of interpreter startup — the difference being the configuration read, which parses
+the surface. ⛔ **No cache stands between the arm and the reader**: a stamp that said *nothing is
+exclusive here* would be a guard that a stale file can silently disable, which is the worse failure
+of the two by the margin this whole document is about.
+
+### What this check deliberately does not hold
+
+- **Whether a place a guard took was actually given back.** Nothing in a workflow observes a
+  session, and a machine whose session died mid-call has a lease no event will ever reach. The
+  `ttl` is what bounds that, and it bounds it to a window rather than closing it.
+- **Whether the answer in a record is true.** The guard reads that the review question was asked and
+  answered and who answered it. *Nobody is going to look* is an answer, *unanswered* is an answer,
+  and a person who writes one without having decided it has satisfied this check. ⛔ That is the
+  decidable end of the rule on purpose:
+  [schema § 7](../plugins/mjolnir/config/schema.md#what-a-hook-refuses-and-the-record-it-reads)
+  holds whether the question reached a person, because whether a person read a diff is not a
+  property a machine can establish.
+- **Whether the answerer is somebody other than the session.** This procedure's roles authenticate
+  as the same credential a person reviews with, so a record the session wrote and a record a person
+  wrote are indistinguishable on the host. What the record buys is that the question was asked at
+  all, and the reviewing role's own rule that a pass it ran is evidence and never approval is
+  procedure rather than something this reads.
+- **A merge performed by anything but a shell command.** The guard reads a `Bash` command. A merge
+  through the host's web interface, through another client, or by an automation rule on the host
+  itself reaches no event here. ⚠️ That is the same reach the boundary hook has, and the reason the
+  record is written on the change rather than into a session: a record on the change is still there
+  for whoever reads the history of one that was merged another way.
+- **A `claimed_by` that matches the wrong calls, or none.** The reader refuses a pattern that does
+  not compile — a pattern matching nothing is a resource that reads as guarded and holds nothing —
+  but a pattern that compiles and matches the wrong commands is a project's own statement about its
+  own commands, and nothing here can tell a narrow one from a mistaken one.
+- **What a probe's count means.** The procedure runs the command and reads one number. A probe that
+  counts the wrong thing, counts it twice, or reports a stale figure answers this check exactly as a
+  correct one does. ⛔ That is the boundary at
+  [schema § What the procedure models](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
+  arriving where it is sharpest: the procedure knows nothing of what the probe is probing, and the
+  three places a project's build tooling is separately encoded are not an argument for it learning.
+- **Two identical commands in flight in one session.** A place under `subject: call` is keyed by the
+  session and the command, there being no call identifier on either event, so two identical
+  commands share one place and the first release gives it back. Stated rather than discovered; a
+  project whose claiming commands differ by their arguments is unaffected.
+- **A lease store shared by two checkouts of one project.** The store is keyed by a digest of the
+  skills root, so a second checkout of the same project at another path has its own places. ⚠️ That
+  is right for a resource bound to a tree and wrong for a machine-wide one, and which of the two a
+  given resource is is the project's `subject` rather than something the store can know.
+
 ## Each check has a violation it is asserted to redden on
 
 `--self-test` plants one violation per check and asserts that check goes red, as the first step of
@@ -1631,7 +1756,10 @@ to pass. The end-to-end
 register check plants the three ways a change may be written down and the change that is outside
 every judged tree, and asserts its fixture's premises first for the same reason. The executed-count
 check plants an unset floor and a tree declaring no case — the two guards in its rule — beside two
-cases nothing was written to let through. ⛔ A red-only suite says nothing about any of them.
+cases nothing was written to let through. The enforcement check plants the whole of the common
+case — a project where nothing is exclusive, which must answer nothing for any call — beside the
+reads that share a path with a merge and must not be refused for it. ⛔ A red-only suite says
+nothing about any of them.
 **A green plant naming an exclusion is verified by switching that exclusion off** and watching it
 redden — one that cannot fail is one nobody checked — while a plant naming an omission has nothing
 to switch off, and what it asserts is that a grammar stayed narrow. ⚠️ A suite that keeps the two

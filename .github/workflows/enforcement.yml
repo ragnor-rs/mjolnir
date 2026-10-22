@@ -1,0 +1,44 @@
+name: Enforcement
+
+# The enforcement half of the procedure runs where a role runs: a guard reads a record and refuses
+# an act, and a sweep gives back a place a call was holding. So what a gate can hold is the carrier
+# and its wiring — that every exit path still gives a place back or is proved to fire no event at
+# all, that the sum against a cap is a sum and not a maximum, that a merge with no recorded answer
+# is still refused and names what would unblock it, that each of the two fail directions is the one
+# § 7 states, and that `hooks.json` still calls this script on every event an arm answers. A guard
+# that stopped being called reports green on every act it was supposed to refuse, and nothing in a
+# session ever says so — which is the failure this run catches, and the only one a gate can.
+#
+# ⚠️ What this cannot hold is the live half: whether a place a guard took was actually given back on
+# a machine nobody is watching. The lease's `ttl` is what bounds that, and the residue is stated in
+# docs/single-source-of-truth.md rather than left for a reader to assume away.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the project
+# controls its workflows, because a `host.checks` entry states one mirrored command.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The merge arm reads a record off the code host when it runs in a
+# session; the suite here reads it off a stand-in that answers as the host does, so a run holding
+# the guard has no business holding anything that could reach one.
+permissions: {}
+
+jobs:
+  enforcement:
+    name: Enforcement
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, planted violations beside the assertions they belong to — each
+      # needs a configuration and a store of its own synthesised for it, so a first phase would
+      # build all of them twice. ⚠️ The same string `host.checks` states this run mirrors, held
+      # together by eye and not by a check, since nothing here reads a workflow file. That is #49.
+      - name: Assert every exit path is covered, both fail directions hold, and the carrier calls this
+        run: python3 plugins/mjolnir/scripts/enforce.py --self-test

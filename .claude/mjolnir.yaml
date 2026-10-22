@@ -69,6 +69,13 @@ host:
     - workflow: "End-to-end register"
       mirrors: "python3 plugins/mjolnir/scripts/check_e2e_register.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The same reading again, on the capacity half: `exclusive_resources` below is `[]`, so the
+    # lease arm installs nothing here and this run holds the carrier's suite rather than a verdict
+    # about this tree. The merge half *is* live here, and it is live in every session once this
+    # lands — which is why the run asserts both fail directions and not only the refusal.
+    - workflow: "Enforcement"
+      mirrors: "python3 plugins/mjolnir/scripts/enforce.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ The same reading as the entry above: `executed` below is `none`, so this run holds the
     # carrier's own suite rather than a verdict about this tree. No tier here stands a dependency
     # up for a run, which is the only tier § 16 is about.

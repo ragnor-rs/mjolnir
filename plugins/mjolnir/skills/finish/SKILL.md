@@ -365,7 +365,18 @@ turn off are
   names it.
 - ⛔ **And the answer is written where the next pass can read it**, not only into the reply — the
   same rule the reviewing role's record is held to, and the reason a *later* answered in one window
-  is not re-asked from scratch in the next.
+  is not re-asked from scratch in the next. The form and the one command that writes it are
+  [`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)'s, which the
+  reviewing role's step 9 names; this role writes `merge_now` under the same keying.
+- ⛔ **A guard may refuse the merge call itself, and it is not argued with or edited to get past.**
+  Where one is installed it reads the reviewing leg's record and refuses a merge for which the
+  review question has none
+  ([`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)), and its refusal
+  already names what would unblock it. ⚠️ **Where the question went to nobody, the answer is still
+  recorded as unanswered** rather than left absent: by
+  [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
+  silence there narrows the assurance and does not hold the change, and a record nobody wrote is
+  what the guard reads as the question never having been asked.
 
 ⛔ **The method is named in the merge call and read from the configuration, never inferred** —
 [`§ 2 → How a pull request lands`](../../config/schema.md#how-a-pull-request-lands), which states

@@ -160,7 +160,14 @@ branch_model:
   exclusive_resources:
     # One stack for the whole project, and the ticket belongs to the tree: two sessions in one
     # tree share a place, two trees queue against each other.
-    - { name: "<the local service stack>", cap: 1, subject: tree }
+    - name: "<the local service stack>"
+      cap: 1
+      subject: tree
+      claimed_by: "<what the command that brings the stack up is matched against>"
+      # The stated absence: nothing here can be asked how many stacks are up, so the leases are
+      # the whole of the count and the lifetime has to cover the work rather than the launch.
+      probe: null
+      ttl: 3600
 context:
   artifacts:
     carrier: file

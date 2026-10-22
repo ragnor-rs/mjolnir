@@ -167,8 +167,21 @@ branch_model:
   exclusive_resources:
     # Two resources in one project, with different caps — the shape a single name could not
     # state. The instance is one per project; the build daemon runs two in flight.
-    - { name: "<the local application instance>", cap: 1, subject: tree }
-    - { name: "<the build daemon's slots>",       cap: 2, subject: call }
+    - name: "<the local application instance>"
+      cap: 1
+      subject: tree
+      claimed_by: "<what the command that boots the instance is matched against>"
+      probe: "<prints how many instances are up>"
+      ttl: 1800
+    - name: "<the build daemon's slots>"
+      cap: 2
+      subject: call
+      # The sum schema § 7 states: this probe counts the busy daemons, and a lease younger than
+      # `ttl` counts beside it, a build just launched holding no daemon yet. The lifetime is short
+      # for the same reason — it covers the launch and nothing more.
+      claimed_by: "<what a build command is matched against>"
+      probe: "<prints how many daemons are busy>"
+      ttl: 120
 context:
   artifacts:
     # Research, plan and progress artifacts: what one role hands the next (schema § 11).

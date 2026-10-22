@@ -1418,6 +1418,117 @@ it breaks silently: a command expands into a transcript record carrying its own 
 injects a preamble naming its directory. A matcher that must key on one of those asserts both
 directions. A carrier of `hook` has no invocation name at all.
 
+### What a hook refuses, and the record it reads
+
+⛔ **A hook refuses an act on the strength of a record, never on a reading of the work.** The
+division is [§ The loop](#the-loop--nine-roles)'s — procedure produces a record and enforcement
+reads it — and this subsection is the enforcement half of it: what a guard reads, what a refusal
+has to name, and what a project with nothing to guard gets.
+
+⚠️ **Stated here rather than in a role, because three parties read it and none of them owns it.**
+The reviewing role writes the answers, the finishing role merges, and a guard is addressed by its
+event rather than by either of them, [§ Invocation](#invocation) leaving no leg to hand it
+anything. A rule read by three parties and written in one of their files is a second authority for
+the other two.
+
+⛔ **A recorded answer is one comment on the change, keyed by the repository and the change's own
+number, stating the question, the answer as it came back, who answered it and when.** The keying
+is the load-bearing half: a bare number names a different change in every repository the route
+carries, so an answer recorded against one is an answer no guard can resolve, and the act stays
+refused however it was answered.
+
+The questions an answer is recorded for are the asks
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) and the reviewing role
+already state. ⛔ **This is the vocabulary a record is keyed by and not a second statement of those
+asks** — which of them a project's loop reaches, and what each one asks, is settled there:
+
+```yaml
+    recorded_answer:
+      question: review_depth | read_by_a_person | plan_run_by | merge_now
+```
+
+⛔ **`unanswered` is an answer and is written down as one.** Silence may narrow the work and never
+license an act, by the section above, so a question nothing answered is recorded as unanswered —
+and a guard reading that as *no record* would hold a change nothing on the route resumes.
+
+⛔ **The guard on a merge refuses where `read_by_a_person` has no recorded answer.** That is the
+decidable end of *no person has read this*: whether a person read a diff is not a property a
+machine can establish, and whether one was **asked** is.
+
+⛔ **A refusal names what would unblock it.** A guard whose refusal states only that it refused
+leaves the person running the role one route past it, which is editing the guard — and a guard
+edited to get past is a guard nobody ever has to satisfy again.
+
+⛔ **A guard never reads the answer written by the act it guards.** The merge ask is answered
+immediately before the merge, by the pass performing it, so a guard requiring that record would be
+satisfied by the very act it exists to hold. What it reads is the review question's answer, which
+another leg wrote.
+
+```yaml
+# procedure: waive_review
+```
+
+⛔ **`waive_review` is a key this surface will never declare, and a configuration stating it is
+refused with the key named.** It is the switch an adopting project reaches for first, and the one
+that cannot exist: § The loop makes the ask procedure for the reason § 6 gives for authorship, so a
+project that could turn the guard off is a project whose loop merges unasked. ⚠️ **What a project
+*does* decide is which checks a person answers at all** — [§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)'s
+list — and that is a different question from whether the ask that reaches a person is made.
+
+### Which direction a guard fails in
+
+⛔ **A guard that could not establish its record says so, and whether it then refuses is decided by
+whether the act can be undone.** [§ 11](#a-report-names-what-it-could-not-establish) and § 2's
+absence-of-signal rule settle that an unestablished fact is never read as a pass; neither of them
+settles whether the call proceeds, and both directions have a failure that reads like success.
+
+| the act | an unestablished record | why that way |
+|---|---|---|
+| reversible — a call that can be run again | proceeds, and the answer says the guard held nothing | a guard that refuses every call it cannot reason about is a guard somebody turns off, and then nothing is held |
+| irreversible — a merge, a deletion, a publish | refused, naming what could not be established | the same split § The loop makes for an ask nothing answered: silence is not a yes where the answer would license something irreversible |
+
+⚠️ **A guard that failed before it ran reports nothing at all**, and nothing in the session says
+the act was held to nothing — the residue being irreducible from inside a guard, since saying so is
+itself something the guard has to be running to do. What covers it is the gate: a carrier that
+stopped being called, or an arm whose grammar stopped matching, is what a check on the carrier
+catches, and it is the only half a check can reach.
+
+### A lease on an exclusive resource, and the exit paths that release it
+
+⛔ **A place on an exclusive resource ([§ 10](#exclusive-resources)) is held by a lease, and what
+is compared against that resource's `cap` is the resource's own count plus the leases too young for
+that count to have seen them.** ⛔ **A sum, and never a maximum of the two.** Measured on one
+project: a build started outside the loop holds the resource with no lease, while one just launched
+holds a lease the resource does not report yet, and reading the two as a maximum let a third
+through a cap of two.
+
+⛔ **`probe: null` is that key's stated absence, and then the leases are the whole of the count.**
+A project whose resource can be asked how many are held and one whose resource cannot are both
+ordinary, and the second is not a project whose count is zero.
+
+⛔ **Every exit path either releases the lease or is proved not to fire, and one path is closed by
+expiry alone.** ⚠️ **The proof is per path and is not a reading**: a path a guard registers nothing
+for, and a path whose event the harness does not publish, read identically from the carrier.
+
+| the call's exit | what releases the place |
+|---|---|
+| it finished, either way | the event after the call — a failure is an exit like any other |
+| it was refused before it ran | nothing fires, so the end-of-turn sweep is what releases it |
+| the turn ended, the session ended, or a subagent stopped | the sweep, over every place this session holds |
+| it was put in the background | ⛔ **expiry alone.** The call itself finishes at launch, so every sweep would hand the place back while the work ran, and each one skips it deliberately |
+
+⛔ **So `ttl` bounds what a leak costs rather than merely tidying up after one.** Measured on the
+same project: two leases left behind by calls refused before they ran pinned a cap of two with
+nothing running, after which every call queued and was then refused for the leases' whole lifetime.
+⚠️ **A long `ttl` is therefore the unsafe direction**, which is the opposite of how a timeout
+usually reads.
+
+⛔ **Where [§ 10](#exclusive-resources) states no exclusive resource, a guard reads nothing and no
+exit event does anything.** ⚠️ **That is the common case**, and a project in it has one fewer thing
+that can refuse a call rather than a partial install — so a guard installed and silent and a guard
+absent are the same thing here, which is the one place on this surface those two readings may
+coincide.
+
 ## 8. Language, register, audience — per artifact, not per project
 
 ```yaml
@@ -1613,8 +1724,8 @@ branch_model:
   tree_dir: "<the directory a tree is cut under>"   # required under worktree; null under in_place
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
   exclusive_resources:           # [] where nothing in this project is exclusive; required
-    - { name: "…", cap: 1, subject: tree }
-    - { name: "…", cap: 2, subject: call }
+    - { name: "…", cap: 1, subject: tree, claimed_by: "…", probe: "…",  ttl: 1800 }
+    - { name: "…", cap: 2, subject: call, claimed_by: "…", probe: null, ttl: 120 }
 ```
 
 Where a branch is cut, and therefore which working tree every step after the gate addresses.
@@ -2020,8 +2131,21 @@ named.
 
 A resource the trees cannot all help themselves to — a local service stack, a build daemon's
 slots, a machine-wide lock. How many may be held at once is `cap`, and what holds a place is
-`subject`, so neither "one" nor "a tree" is built into the facet. Each entry states three things,
-and ⛔ **each is stated rather than assumed**:
+`subject`, so neither "one" nor "a tree" is built into the facet. ⛔ **Every key of an entry is
+stated and none of them is defaulted**, because every one of them is a measurement of the resource
+rather than a preference about it, and a default here would be the procedure describing somebody
+else's machine:
+
+```yaml
+branch_model:
+  exclusive_resources:
+      name:       "<what is held>"
+      cap:        1
+      subject:    tree | call
+      claimed_by: "<what the command a call runs is matched against>"
+      probe:      "<prints how many are held right now, as one number on one line>"
+      ttl:        1800
+```
 
 - **`name`** — what is held.
 - **`cap`** — how many may be in flight at once. **Never assumed to be one:** caps of one *and*
@@ -2030,6 +2154,25 @@ and ⛔ **each is stated rather than assumed**:
 - **`subject`** — what holds a place: `tree`, where two sessions in one tree share one place and
   two trees queue against each other, or `call`, where each invocation holds its own so
   releasing one does not release its sibling.
+- **`claimed_by`** — what a call has to be for this resource to be at stake. ⛔ **A project fact
+  and not a shape the procedure knows**: a build tool, an instance launcher and a migration are
+  three unrelated commands, and a guard that recognised any of them would be the toolkit branching
+  on what the resource is. ⚠️ **It decides whether a place is taken, never how many there are** —
+  which is why it is a key beside `cap` rather than a narrowing of it.
+- **`probe`** — a command that prints how many are held right now, which is the one question the
+  procedure cannot answer about somebody else's resource. ⛔ **`null` is a stated absence**, not a
+  count of zero, and what each value leaves the arithmetic as is
+  [§ 7](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)'s.
+- **`ttl`** — the seconds a lease counts for before it expires, which bounds what one leaked lease
+  costs. ⚠️ **It is not a timeout on the work**: the work is not watched, and nothing here stops
+  anything.
+
+⛔ **The probe is the third place a project's build tooling is encoded, and that triple is not an
+argument for declaring the toolchain on this surface.** The capacity rule, the spend guard's
+argument shape (#26) and the deploy script (#13) each know which tools a project builds with, which
+reads like three copies of one fact — and none of the three is derivable from a toolchain name, so a
+declared toolchain would be a fourth statement beside three irreducible ones
+([the measurement](../../../docs/build-surface.md#the-toolchain-version-is-a-non-goal-and-the-boundary-is-where-that-is-stated)).
 
 ⛔ **A project with no exclusive resource runs no exclusivity check.** `[]` is the common case
 and the procedure must not synthesise a lease for it.
@@ -2040,9 +2183,12 @@ not implied — a project may cut a tree per item for isolation while never runn
 and whether a second tree can be live is what decides whether an exclusive resource is ever
 contended.
 
-What happens *on* contention — wait, queue, refuse, or ask — is the enforcing hook's to state,
-and is not configuration here. This facet states only what is exclusive, how many of it there
-are, and what holds a place.
+What happens *on* contention — wait, queue, refuse, or ask — is the enforcing hook's to state, and
+is not configuration here:
+[§ 7 → A lease on an exclusive resource](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
+is where it is stated, along with how the count is read and what releases a place. This facet
+states what is exclusive, how many of it there are, what holds a place, which calls put it at
+stake, what can be asked how many are held, and how long a lease counts.
 
 ## 11. Session context
 
