@@ -67,13 +67,26 @@ import os
 import re
 import sys
 
-try:
-    import yaml
-except ModuleNotFoundError:  # pragma: no cover - environment, not logic
-    sys.exit(
-        "config.py needs PyYAML to read a project's configuration.\n"
-        "Install it with: python3 -m pip install pyyaml"
-    )
+
+def _yaml():
+    """PyYAML, or a stop naming the install that is missing.
+
+    ⛔ Reached through here rather than imported at module load, because one
+    question this module answers needs no parser at all: whether a project
+    states a configuration is a path, and it is what every hook carrier asks
+    before it does anything. A missing library stopping the interpreter as this
+    module is imported would make a carrier fall silent in a project that *is*
+    configured -- the one answer that rule may never produce -- so the stop
+    happens where a parse is actually needed.
+    """
+    try:
+        import yaml  # noqa: PLC0415 -- deliberately not at module load; see above
+    except ModuleNotFoundError:  # pragma: no cover - environment, not logic
+        sys.exit(
+            "config.py needs PyYAML to read a project's configuration.\n"
+            "Install it with: python3 -m pip install pyyaml"
+        )
+    return yaml
 
 
 # --- where things are ------------------------------------------------------
@@ -543,6 +556,7 @@ def _load_yaml(text: str, where: str):
     hand-written configuration, and a traceback out of the parser names no key
     and tells the person reading it nothing they can act on.
     """
+    yaml = _yaml()
     try:
         return yaml.safe_load(text)
     except yaml.YAMLError as error:
@@ -2009,6 +2023,25 @@ def validate(data: dict, facts: dict) -> None:
         )
 
 
+def configured(skills_root: str = ".") -> bool:
+    """Whether this project states a configuration at all.
+
+    The question a hook carrier asks before it acts: a hook is addressed by an
+    event rather than by an invocation, so it fires in every project the install
+    reaches, including the ones that have never adopted this toolkit.
+
+    ⛔ **It answers nothing about whether that configuration loads.** A file that
+    is there and does not resolve is the project's own statement, badly written,
+    and a carrier reading values out of one reports that rather than going quiet
+    -- which is why this is a question of its own and not `load`'s boolean form.
+
+    ⛔ The same path `load` resolves, and no walk up the tree: where a project's
+    configuration lives is one statement, and a carrier searching upwards would
+    act on a parent project's facts in a directory that states none.
+    """
+    return os.path.isfile(os.path.join(skills_root or ".", CONFIG_PATH))
+
+
 def load(skills_root: str = ".", *, check_paths: bool = True) -> Config:
     """Resolve a project's configuration relative to its skills root.
 
@@ -2624,6 +2657,45 @@ def self_test() -> int:
         named,
         "the message did not carry the root",
     )
+
+    # ⛔ And the question a hook carrier asks instead of taking that stop, which
+    # every one of them reads from here: the same root, answered without a
+    # parser and without raising. ⚠️ Asserted in both directions, because a
+    # predicate stuck on one answer silences every carrier in every project or
+    # in none of them, and neither failure is visible from one side alone. The
+    # stated side is planted rather than read off this tree: the plugin may be
+    # installed beside a project that configures nothing.
+    check(
+        "a root with no configuration states none",
+        not configured(EXAMPLES),
+        f"{EXAMPLES} was read as stating one",
+    )
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as planted:
+        stated = os.path.join(planted, CONFIG_PATH)
+        os.makedirs(os.path.dirname(stated), exist_ok=True)
+        with open(stated, "w", encoding="utf-8") as handle:
+            handle.write('roots:\n  code: "."\n')
+        check(
+            "and a root that carries that file states one",
+            configured(planted),
+            f"{planted} was read as stating none",
+        )
+        # ⛔ Found at the whole of the path this module resolves and not by the
+        # file's name, which is what keeps the predicate and the load one
+        # statement: a carrier answering yes to a path `load` does not open
+        # would hold a project to a file nothing ever reads.
+        stray = os.path.join(planted, "elsewhere")
+        os.makedirs(stray, exist_ok=True)
+        with open(os.path.join(stray, os.path.basename(CONFIG_PATH)), "w",
+                  encoding="utf-8") as handle:
+            handle.write('roots:\n  code: "."\n')
+        check(
+            "while a file of that name somewhere else is not a configuration",
+            not configured(stray),
+            f"{stray} was read as stating one",
+        )
 
     # Every marked default is applied. Nothing used to assert this: emptying
     # `_set_default` left the whole suite green, because every example spells

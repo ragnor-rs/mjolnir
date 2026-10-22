@@ -15,7 +15,9 @@ reading:
     env     report every variable the shell holds that the project's own
             `environment.inherits` does not name
     hook    the same refusal as `write`, as a `PreToolUse` answer on the one
-            tool that reaches an outward surface
+            tool that reaches an outward surface -- and nothing at all where the
+            project states no configuration, per `schema.md § 7 -> A hook in a
+            project that states no configuration`
 
 ⛔ **No arm here is a detector, and none of them reports a text as safe.** The
 structural reading is three legs -- private data, text someone else wrote, and a
@@ -82,6 +84,13 @@ HOLD_CITATION = "schema § 14 → What a role holds, and what may cross the boun
 # catch, since nothing else ever reports a hook that was never invoked.
 CARRIER = Path(__file__).resolve().parent.parent / "hooks" / "hooks.json"
 CARRIER_EVENT = "PreToolUse"
+
+# What the hook arm asks before it reads a command at all, by the anchor of the
+# subsection stating it: a hook is silent in a project that states no
+# configuration. ⚠️ It binds the hook arm and not the three arms a person
+# invokes -- the rule is scoped to what fires on an event rather than to the
+# install, and the arms above are addressed by name.
+UNCONFIGURED_ANCHOR = "a-hook-in-a-project-that-states-no-configuration"
 
 # --- what renders as nothing -----------------------------------------------
 #
@@ -612,6 +621,26 @@ def body_files(command: str) -> list[str]:
     return found
 
 
+def states_a_configuration(cwd: str | None) -> bool:
+    """Whether the project this event names states a configuration at all.
+
+    ⛔ Asked through the shared reader rather than by testing a path here, for
+    the reason `inherits` above reads that reader: where a project's
+    configuration lives is one statement, and a copy of that path drifts the
+    first time either moves.
+
+    ⛔ False where the reader cannot be reached, which is the silent direction
+    deliberately: an install whose own reader is missing cannot hold a project
+    to a file it has no way to find.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set one line up
+        return bool(reader.configured(cwd or "."))
+    except Exception:  # noqa: BLE001 -- an unreachable reader answers no, per above
+        return False
+
+
 def hook_answer(payload: dict) -> dict:
     """The `PreToolUse` answer for one tool call.
 
@@ -619,11 +648,20 @@ def hook_answer(payload: dict) -> dict:
     project, *and* the text it carries has a credential shape. A credential in a
     command that reaches nothing outward is a role setting up its own shell, and
     denying that would be a hook that has to be turned off to work.
+
+    ⛔ And only in a project that states a configuration, by the surface's
+    subsection on what a hook does where none is stated. ⚠️ What that costs is
+    the outward half of § 14 in every project that has adopted nothing, which is
+    the consequence the rule is worth stating for: this arm is not a detector,
+    so what is given up is a hold over one measured leak rather than an
+    assurance anybody had.
     """
     if payload.get("tool_name") != "Bash":
         return {}
     command = str((payload.get("tool_input") or {}).get("command") or "")
     if not command.strip():
+        return {}
+    if not states_a_configuration(payload.get("cwd")):
         return {}
     reached = outward(command)
     if not reached:
@@ -719,6 +757,12 @@ def check_the_surface_still_states_this(text: str) -> list[str]:
                 f"the `{arm}` arm cites `{slug}`, which is not a heading of the surface. "
                 "Either the subsection was reworded or the arm it holds is gone."
             )
+    if UNCONFIGURED_ANCHOR not in anchors:
+        problems.append(
+            f"the surface has no subsection anchored `{UNCONFIGURED_ANCHOR}`, so the hook arm's "
+            "silence in a project that states no configuration is this file's rule rather than "
+            "the surface's."
+        )
     return problems
 
 
@@ -893,6 +937,24 @@ def _hook_payloads() -> list[tuple[str, dict, bool]]:
     ]
 
 
+def _a_configured_root(where: Path) -> str:
+    """A root that states a configuration, at the path the reader resolves.
+
+    ⛔ Written at the reader's own `CONFIG_PATH` rather than at a path spelled
+    out here: a fixture built against a literal would stay green after that path
+    moved, while every live hook went silent. ⚠️ The content is the least a
+    project can state -- nothing below reads a value out of it, the question
+    being whether the project states one at all.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import config as reader  # noqa: PLC0415 -- the path is set one line up
+
+    stated = where / reader.CONFIG_PATH
+    stated.parent.mkdir(parents=True, exist_ok=True)
+    stated.write_text('roots:\n  code: "."\n', encoding="utf-8")
+    return str(where)
+
+
 def _plant_in(text: str, what: str, replacement: str) -> str:
     """Break one thing in a file this script reads, leaving the rest valid."""
     if what not in text:
@@ -957,40 +1019,63 @@ def self_test() -> int:
     check("the write arm refuses", status == 1)
     check("and the secret is absent from its report", secret not in report)
     check("and so is any run of it", secret[4:20] not in report)
-    denied = hook_answer({"tool_name": "Bash", "tool_input": {
-        "command": f"gh pr comment 1 --body '{secret}'"}})
-    reason = json.dumps(denied)
-    check("the hook denies", denied.get("hookSpecificOutput", {})
-          .get("permissionDecision") == "deny")
-    check("and the secret is absent from its reason", secret not in reason)
 
-    out.append("")
-    out.append("A body passed by file is read, which is how a role writes one:")
     import tempfile
     with tempfile.TemporaryDirectory() as directory:
+        # ⛔ Every payload from here down names the project it is answered for,
+        # because the arm answers nothing in one that states no configuration. A
+        # suite that let the payload name none would be reading whatever
+        # directory it was launched from, and would pass on this machine while
+        # holding nothing on the next one.
+        adopted = _a_configured_root(Path(directory) / "adopted")
+        bare = str(Path(directory) / "bare")
+        os.makedirs(bare, exist_ok=True)
+
+        def answered_for(command: str, cwd: str = adopted) -> dict:
+            return hook_answer({"tool_name": "Bash", "cwd": cwd,
+                                "tool_input": {"command": command}})
+
+        denied = answered_for(f"gh pr comment 1 --body '{secret}'")
+        reason = json.dumps(denied)
+        check("the hook denies", denied.get("hookSpecificOutput", {})
+              .get("permissionDecision") == "deny")
+        check("and the secret is absent from its reason", secret not in reason)
+
+        out.append("")
+        out.append("A body passed by file is read, which is how a role writes one:")
         body = Path(directory) / "body.md"
         body.write_text(f"## Outcome\n\nthe key is {_token('ghp_', 'Y', 40)}\n")
-        answer = hook_answer({"tool_name": "Bash", "tool_input": {
-            "command": f"gh pr create --title t --body-file {body}"}})
+        answer = answered_for(f"gh pr create --title t --body-file {body}")
         check("a credential in a body file is refused",
               answer.get("hookSpecificOutput", {}).get("permissionDecision") == "deny")
         clean = Path(directory) / "clean.md"
         clean.write_text("## Outcome\n\nNothing credential-shaped here.\n")
         check("and a clean body file is not",
-              not hook_answer({"tool_name": "Bash", "tool_input": {
-                  "command": f"gh pr create --title t --body-file {clean}"}}))
+              not answered_for(f"gh pr create --title t --body-file {clean}"))
         missing = Path(directory) / "gone.md"
-        answered = hook_answer({"tool_name": "Bash", "tool_input": {
-            "command": f"gh pr create --title t --body-file {missing}"}})
+        answered = answered_for(f"gh pr create --title t --body-file {missing}")
         check("and a body file that could not be read is reported, never assumed clean",
               "could not be read" in str(answered.get("systemMessage", "")))
 
-    out.append("")
-    out.append("The hook answers each payload the way it must:")
-    for what, payload, must_deny in _hook_payloads():
-        answered = hook_answer(payload)
-        denied = answered.get("hookSpecificOutput", {}).get("permissionDecision") == "deny"
-        check(f"{'denies' if must_deny else 'allows'}: {what}", denied == must_deny)
+        out.append("")
+        out.append("The hook answers each payload the way it must:")
+        for what, payload, must_deny in _hook_payloads():
+            answered = hook_answer({**payload, "cwd": adopted})
+            denied = answered.get("hookSpecificOutput", {}).get("permissionDecision") == "deny"
+            check(f"{'denies' if must_deny else 'allows'}: {what}", denied == must_deny)
+
+        # ⛔ The same payloads against a project that states no configuration,
+        # which is the scope of the arm rather than a property of any command:
+        # every refusal above has to be absent, and so does the one report.
+        out.append("")
+        out.append("And answers nothing at all in a project that states no configuration:")
+        for what, payload, must_deny in _hook_payloads():
+            if not must_deny:
+                continue
+            silent = hook_answer({**payload, "cwd": bare})
+            check(f"silent on: {what}", silent == {}, repr(silent)[:120])
+        check("and a body it could not read is not reported there either",
+              answered_for(f"gh pr create --title t --body-file {missing}", cwd=bare) == {})
 
     out.append("")
     out.append("Neither report reads a clean run as a clearance:")

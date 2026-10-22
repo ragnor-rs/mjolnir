@@ -17,6 +17,10 @@ It runs as a `Stop` hook, which is the only place the finished reply exists: the
 harness hands the hook `last_assistant_message`, so nothing here parses a
 transcript or guesses at what was sent.
 
+⛔ **And only in a project that states a configuration** -- `schema.md § 7 -> A
+hook in a project that states no configuration`. A reply written in a project
+that adopted nothing is held to nothing here, hand-back and report alike.
+
 ⚠️ **What this arm does not catch, and every limit it has, are recorded once in
 `docs/single-source-of-truth.md` § The reply defers nothing.** This docstring
 deliberately does not restate them: two prose copies of a limit are the defect
@@ -635,9 +639,35 @@ def already_blocked(turn: str, *, record: bool) -> tuple[bool, str]:
     return False, ""
 
 
+def states_a_configuration(cwd: str | None) -> bool:
+    """Whether the project this event names states a configuration at all.
+
+    ⛔ Asked through the shared reader rather than by testing a path here: where
+    a project's configuration lives is one statement, and a copy of that path
+    drifts the first time either moves.
+
+    ⛔ False where the reader cannot be reached, which is the silent direction
+    deliberately: an install whose own reader is missing cannot hold a reply to a
+    rule it has no way to find the project's agreement to.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set one line up
+        return bool(reader.configured(cwd or "."))
+    except Exception:  # noqa: BLE001 -- an unreachable reader answers no, per above
+        return False
+
+
 def answer(payload: dict) -> dict:
     reply = payload.get("last_assistant_message") or ""
     if not reply.strip():
+        return {}
+    # ⛔ Before the reply is read at all, and silent: a project that states no
+    # configuration has adopted no rule about deferring, so neither the hand-back
+    # nor the report belongs there — `schema.md § 7 → A hook in a project that
+    # states no configuration`. ⚠️ Nothing is recorded either, so a project that
+    # adopts the toolkit mid-session still has its one hand-back.
+    if not states_a_configuration(payload.get("cwd")):
         return {}
     found = findings(reply)
     if not found:
@@ -1022,6 +1052,24 @@ def _plant_for_a_finding() -> str:
     raise AssertionError("no planted reply produces a finding")
 
 
+def _a_configured_root(where: Path) -> str:
+    """A root that states a configuration, at the path the reader resolves.
+
+    ⛔ Written at the reader's own `CONFIG_PATH` rather than at a path spelled
+    out here: a fixture built against a literal would stay green after that path
+    moved, while every live hook went silent. ⚠️ The content is the least a
+    project can state — nothing here reads a value out of it, the question being
+    whether the project states one at all.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import config as reader  # noqa: PLC0415 -- the path is set one line up
+
+    stated = where / reader.CONFIG_PATH
+    stated.parent.mkdir(parents=True, exist_ok=True)
+    stated.write_text('roots:\n  code: "."\n', encoding="utf-8")
+    return str(where)
+
+
 def self_test() -> int:
     """Assert the arm reddens where it must, stays green where it must, and that
     the answer asks for the work rather than for text.
@@ -1057,8 +1105,16 @@ def self_test() -> int:
     # already spent, and the first assertion below then fails on a check that is
     # working. Measured — this line was dropped once and that is exactly what it did.
     os.environ["CLAUDE_PLUGIN_DATA"] = tempfile.mkdtemp(prefix="reply-defers-nothing-self-test-")
+    # ⛔ Every payload below names the project it is answered for, because this
+    # arm answers nothing in one that states no configuration. A payload naming
+    # none would be read against whatever directory the suite was launched from,
+    # which passes here and holds nothing on a machine that runs it elsewhere.
+    planted = tempfile.mkdtemp(prefix="reply-defers-nothing-projects-")
+    adopted = _a_configured_root(Path(planted) / "adopted")
+    bare = str(Path(planted) / "bare")
+    os.makedirs(bare, exist_ok=True)
     reply = _plant_for_a_finding()
-    blocked = answer({"last_assistant_message": reply, "prompt_id": "turn-A"})
+    blocked = answer({"last_assistant_message": reply, "prompt_id": "turn-A", "cwd": adopted})
     said = blocked.get("hookSpecificOutput", {}).get("additionalContext", "")
     if blocked.get("decision") == "block" and ASK in said:
         print("  ok                     a finding blocks the stop and asks for the work")
@@ -1069,7 +1125,7 @@ def self_test() -> int:
     # ⛔ Asserted on the answer and not on `decision` alone: context handed back
     # continues the turn whether or not the answer blocks, so an arm that stopped
     # blocking but kept injecting would still cost the reader a reply.
-    again = answer({"last_assistant_message": reply, "prompt_id": "turn-A"})
+    again = answer({"last_assistant_message": reply, "prompt_id": "turn-A", "cwd": adopted})
     if ("decision" not in again and "hookSpecificOutput" not in again
             and "one hand-back" in again.get("systemMessage", "")):
         print("  ok                     the same turn is handed back once only, and asks nothing twice")
@@ -1077,7 +1133,7 @@ def self_test() -> int:
         print(f"  FAIL                   the same turn was handed back twice: {again}")
         failures += 1
 
-    unguardable = answer({"last_assistant_message": reply})
+    unguardable = answer({"last_assistant_message": reply, "cwd": adopted})
     if ("decision" not in unguardable
             and "Nothing was handed back" in unguardable.get("systemMessage", "")
             and ASK in unguardable.get("hookSpecificOutput", {}).get("additionalContext", "")):
@@ -1110,15 +1166,35 @@ def self_test() -> int:
             failures += 1
 
     print("\nAsserting a reply in register produces no answer at all:")
-    if not answer({"last_assistant_message": CLEAN, "prompt_id": "turn-B"}):
+    if not answer({"last_assistant_message": CLEAN, "prompt_id": "turn-B", "cwd": adopted}):
         print("  ok                     a clean reply is answered with nothing")
     else:
         print("  FAIL                   a clean reply produced an answer")
         failures += 1
-    if not answer({"prompt_id": "turn-C"}):
+    if not answer({"prompt_id": "turn-C", "cwd": adopted}):
         print("  ok                     a turn carrying no reply is answered with nothing")
     else:
         print("  FAIL                   a turn with no reply produced an answer")
+        failures += 1
+
+    # ⛔ The same parked reply in a project that states no configuration, which is
+    # this arm's scope rather than a property of the text: the hand-back has to be
+    # absent, and so does the report that stands in for it.
+    print("\nAsserting a project that states no configuration is answered with nothing:")
+    silent = answer({"last_assistant_message": reply, "prompt_id": "turn-D", "cwd": bare})
+    if silent == {}:
+        print("  ok                     a parked reply there is answered with nothing at all")
+    else:
+        print(f"  FAIL                   an unconfigured project was answered {silent}")
+        failures += 1
+    # ⛔ And no marker was written for that turn, which is the half a silent
+    # answer hides: a project adopting the toolkit mid-turn would otherwise find
+    # its one hand-back already spent by the turn nothing was held in.
+    spent = answer({"last_assistant_message": reply, "prompt_id": "turn-D", "cwd": adopted})
+    if spent.get("decision") == "block":
+        print("  ok                     and that turn's one hand-back was not spent by it")
+    else:
+        print(f"  FAIL                   the turn arrived already handed back: {spent}")
         failures += 1
 
     print("\nAsserting the carrier still calls this script on the event carrying a reply:")

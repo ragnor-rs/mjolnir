@@ -23,11 +23,12 @@ reported after the fact changed no text at all; a `SessionStart` answer's
 that reaches the writer before the writing is the only one that can carry a
 rule, and this is it.
 
-⚠️ **Both rules are handed to every session, including the ones they are not
-live for yet.** A session is in no tree when it opens and may enter one later,
-and this event fires once -- so a rule scoped to the tree has to arrive before
-the tree exists or not at all. ⛔ The alternative is not a later injection: a
-session that enters a tree fires no event this hook can answer.
+⚠️ **Both rules are handed to every session of a project that states a
+configuration, including the ones they are not live for yet.** A session is in
+no tree when it opens and may enter one later, and this event fires once -- so a
+rule scoped to the tree has to arrive before the tree exists or not at all. ⛔
+The alternative is not a later injection: a session that enters a tree fires no
+event this hook can answer.
 
 ⛔ **Fails open, and silently.** A session is not the place to report that a
 document could not be parsed: the cost of saying nothing is a session that
@@ -37,11 +38,21 @@ a file they may be mid-edit on. ⚠️ What covers the silence is the gate: this
 script's own run asserts every table is found and every row of each reaches the
 context.
 
+⛔ **And where the project states no configuration, the one message the surface
+permits an unconfigured project is written here** -- `schema.md § 7 -> A hook in
+a project that states no configuration`, which states that the invitation is the
+whole of what such a project gets and that every other carrier is silent in it.
+This is the carrier for that message because it answers the event the exception
+is scoped to, and for no other reason: the rules below are not loaded there, a
+project that configures nothing having adopted no procedure to be held to.
+
 Usage:
     load_the_rules.py              read a hook payload on stdin, answer on stdout
     load_the_rules.py --self-test  assert each table is read out of the surface, that
-                                   every row reaches the context, and that the carrier
-                                   registers this script on the event that opens a session
+                                   every row reaches the context, that an unconfigured
+                                   project is invited and handed no rule, and that the
+                                   carrier registers this script on the event that opens
+                                   a session
 """
 
 from __future__ import annotations
@@ -50,6 +61,7 @@ import io
 import json
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 # --- where the rules live --------------------------------------------------
@@ -108,6 +120,11 @@ CITATION_PATTERN = "{citation}"
 # existing.
 CARRIER = Path(__file__).resolve().parent.parent / "hooks" / "hooks.json"
 CARRIER_EVENT = "SessionStart"
+
+# The anchor of the subsection that states both of this script's answers -- the
+# invitation and the silence around it. Grammar, as above: a reword is free, a
+# reanchoring is not.
+UNCONFIGURED_ANCHOR = "a-hook-in-a-project-that-states-no-configuration"
 
 FENCE = re.compile(r"^\s{0,3}(?P<marker>`{3,}|~{3,})")
 HEADING = re.compile(r"^\s*#{1,6}\s+")
@@ -206,7 +223,53 @@ def context(text: str) -> str:
     return "\n\n---\n\n".join(blocks)
 
 
+def shared_reader():
+    """The configuration reader beside this script, or None where it is gone.
+
+    ⛔ Whether a project states a configuration is asked through it rather than
+    by testing a path here: where that file lives is one statement, and the
+    invitation below has to name the same path the reader resolves or it invites
+    somebody to write a file nothing will read.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import config  # noqa: PLC0415 -- the path is set one line up
+        return config
+    except Exception:  # noqa: BLE001 -- a session must not be interrupted by this
+        return None
+
+
+def invitation(reader) -> str:
+    """The one message a project that states no configuration is given.
+
+    ⛔ Every path in it comes from the reader or from this file's own location,
+    so there is nothing here to go stale: the file to write is the path the
+    reader resolves, and the keys are in the document it validates against.
+
+    ⚠️ It goes to the person and never into the session's context. The channel
+    that reaches a person is `systemMessage`, which the harness's own
+    documentation of this event names for exactly this purpose, while
+    `additionalContext` would hand the invitation to a session that cannot act
+    on it and would then carry it into every reply it writes.
+    """
+    return (
+        "mjolnir is installed and this project states no configuration, so nothing of it is "
+        f"running here and nothing of it will interrupt you. To adopt it, write "
+        f"`{reader.CONFIG_PATH}` under this directory: every key, its default and whether it "
+        f"is required are stated in {SURFACE}, with an example configuration per shape in "
+        f"{reader.EXAMPLES}."
+    )
+
+
 def answer(payload: dict) -> dict:
+    reader = shared_reader()
+    if reader is None:
+        # ⛔ Silent, per the module docstring: an install whose own reader is
+        # unreachable cannot tell whether this project adopted anything, and
+        # neither of the two answers below is safe to give without knowing.
+        return {}
+    if not reader.configured(str(payload.get("cwd") or ".")):
+        return {"systemMessage": invitation(reader)}
     loaded = context(SURFACE.read_text(encoding="utf-8"))
     if not loaded:
         return {}
@@ -415,6 +478,69 @@ def self_test() -> int:
                   f"{len(others)} rule(s) standing")
             failures += 1
 
+    print("\nAsserting the surface still states what an unconfigured project gets:")
+    anchors = {anchor_of(line) for line in text.splitlines() if HEADING.match(line)}
+    if UNCONFIGURED_ANCHOR in anchors:
+        print(f"  ok                     {UNCONFIGURED_ANCHOR}")
+    else:
+        print(f"  FAIL                   {UNCONFIGURED_ANCHOR} is not a heading of the surface, "
+              "so the invitation below is this file's rule rather than the surface's")
+        failures += 1
+    reworded = _plant_reworded_heading(text, UNCONFIGURED_ANCHOR, [])
+    if UNCONFIGURED_ANCHOR not in {anchor_of(line) for line in reworded.splitlines()
+                                   if HEADING.match(line)}:
+        print("  ok                     and reddens when that subsection is reanchored")
+    else:
+        print("  FAIL                   a reanchored subsection stayed green")
+        failures += 1
+
+    # ⛔ The two answers this hook has, each asserted against the other: an
+    # invitation where nothing is stated, every rule where something is. A suite
+    # holding one of them would pass a carrier that gave the same answer to both.
+    # ⚠️ The planted project's file is written at the path the reader resolves
+    # rather than at a literal, so a move of that path reddens here.
+    print("\nAsserting a project that states no configuration is invited and handed no rule:")
+    reader = shared_reader()
+    if reader is None:
+        print("  FAIL                   the reader beside this script could not be imported, "
+              "so neither answer below can be asserted")
+        return 1
+    with tempfile.TemporaryDirectory() as directory:
+        bare = Path(directory) / "states-nothing"
+        bare.mkdir()
+        answered = answer({"cwd": str(bare)})
+        message = str(answered.get("systemMessage", ""))
+        if "hookSpecificOutput" not in answered:
+            print("  ok                     no rule is handed to a session it holds nothing in")
+        else:
+            print(f"  FAIL                   context reached an unconfigured project: "
+                  f"{str(answered)[:80]!r}")
+            failures += 1
+        if reader.CONFIG_PATH in message and str(SURFACE) in message:
+            print("  ok                     and the invitation names the file to write and "
+                  "where the keys are")
+        else:
+            print(f"  FAIL                   the invitation named neither: {message[:120]!r}")
+            failures += 1
+
+        adopted = Path(directory) / "states-one"
+        stated = adopted / reader.CONFIG_PATH
+        stated.parent.mkdir(parents=True, exist_ok=True)
+        stated.write_text('roots:\n  code: "."\n', encoding="utf-8")
+        answered = answer({"cwd": str(adopted)})
+        reached = str(answered.get("hookSpecificOutput", {}).get("additionalContext", ""))
+        if reached == loaded and loaded:
+            print("  ok                     and a project that states one is handed every rule")
+        else:
+            print(f"  FAIL                   a configured project was handed {reached[:80]!r}")
+            failures += 1
+        if "systemMessage" not in answered:
+            print("  ok                     with nothing said to the person who configured it")
+        else:
+            print(f"  FAIL                   a configured project was invited to configure "
+                  f"itself: {str(answered.get('systemMessage'))[:80]!r}")
+            failures += 1
+
     print("\nAsserting the hook fails open and interrupts nothing:")
     out = io.StringIO()
     if hook(io.StringIO("not json at all"), out) == 0 and not out.getvalue():
@@ -448,8 +574,10 @@ def self_test() -> int:
         print(f"{failures} assertion(s) failed.")
         return 1
     print(
-        f"{len(RULES)} rule(s) are read from the surface and handed to every session: "
-        f"{len(loaded)} characters of context. Nothing here judges what a session then does."
+        f"{len(RULES)} rule(s) are read from the surface and handed to every session of a "
+        f"project that states a configuration: {len(loaded)} characters of context. A project "
+        "that states none is invited to write one and handed nothing. Nothing here judges what "
+        "a session then does."
     )
     return 0
 
