@@ -52,6 +52,14 @@ def installed_suites() -> dict[str, object]:
     for name, module in list(sys.modules.items()):
         if not name.startswith(f"{port.ADAPTER_PACKAGE}."):
             continue
+        # ⛔ The package's own rule, read here rather than restated: a module
+        # whose name opens with `_` is not an implementation, which is why
+        # discovery skips it. ⚠️ Without this a suite living in a module of its
+        # own counts as a second implementation of its own kind -- it imports the
+        # names it exercises, `KIND` among them -- and its suite would be run
+        # twice while the count read one too many.
+        if name.rpartition(".")[2].startswith("_"):
+            continue
         kind = getattr(module, "KIND", None)
         if kind:
             suites[kind] = getattr(module, "self_test", None)

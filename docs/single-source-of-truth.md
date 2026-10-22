@@ -785,6 +785,15 @@ against the live tracker this repository runs on, and a runner that reddened for
 refusing a decision somebody made. What **is** a failure is finding no implementation at all: a
 runner holding nothing reports green, which is the shape every check here is written against.
 
+⚠️ **A suite lives in a module beside its implementation, and the code host decided that.** A file
+carrying both reaches the host with **no patch** — measured at about a hundred kilobytes in one
+file, with every other file in the same change patched — and the gate on the change then refuses it,
+because a marker in a file nothing read is not an absence of markers. ⛔ The suite's module name
+opens with `_`, which is the port's own rule for a module in `adapters/` that is not an
+implementation: discovery skips those, and the runner above reads the same rule rather than
+restating it — a suite imports the names it exercises, `KIND` among them, so without it a suite
+counts as a second implementation of its own kind.
+
 ### What it deliberately does not check
 
 - **Anything the host does with a payload.** Every case answers through the seams the
