@@ -700,10 +700,9 @@ each refused under one subsection below.
 reads as one. What compares the two compares sets, so a reordering is not drift.
 
 ⛔ **The event vocabulary is the host's, and this facet neither enumerates it nor holds a name
-against it.** Writing an event here does not make it one a workflow may listen to:
-`pull_request_review_thread` is a webhook the host sends and **not** a workflow trigger, and a file
-naming it is rejected whole — measured twice as a push-event failure with no jobs and no
-pull-request run at all. What refuses such a name is the host as the file loads, and a surface
+against it.** Writing an event here does not make it one a workflow may listen to —
+`pull_request_review_thread` is the measured case, a webhook the host sends and not a trigger a
+workflow file may name. What refuses such a name is the host as the file loads, and a surface
 carrying its own list of events would be a third party to that.
 
 **The ref is required, and `*` is how a trigger states that it filters on none.** ⚠️ **An event the

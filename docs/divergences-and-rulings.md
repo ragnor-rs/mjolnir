@@ -150,8 +150,8 @@ Recorded so the next reader does not take it for an oversight:
   drift check comparing this facet to the workflow files, left with a dimension the facet cannot
   express, can only report drift on a correct entry, report green on one it has proven incomplete,
   or declare the dimension undeterminable — and each of the three is worse than the key being
-  richer. ⚠️ What the ruling rests on is **one entry** — thirteen of this repository's fourteen
-  workflows state no `types:` key at all.
+  richer. ⚠️ What the ruling rests on is **one entry**: every other workflow in this repository
+  states no `types:` key at all.
 - **(10) is provisional.** It was settled on one copy read in full and five read structurally.
   Three of the six deploy copies run 210 to 372 lines, and "almost nothing survives extraction"
   is close to the truth for this role — but it should be reached by reading the rest.

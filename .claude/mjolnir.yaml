@@ -83,9 +83,11 @@ host:
     - workflow: "No audit trail"
       mirrors: "python3 tools/check_no_audit_trail.py --self-test"
       triggers: ["pull_request -> *"]
-    # ⚠️ The only entry here whose workflow filters on an event type or listens for a second
-    # event, and the entry the type clause was added to the surface for: every other workflow
-    # in this repository states no `types:` key, which is what an omitted clause means.
+    # ⚠️ The entry the type clause was added to the surface for, and the one place in this file
+    # a clause is written at all: an entry carries one exactly where its workflow states a
+    # `types:` key, so the clause's absence above is a reading of those files and not an
+    # omission here. ⛔ No count of the entries on either side is carried, for the reason no
+    # count of this file's readers is: it would be wrong by the next workflow.
     - workflow: "Nothing deferred"
       mirrors: "python3 tools/check_nothing_deferred.py --self-test"
       triggers:

@@ -1139,8 +1139,8 @@ and by the example that illustrates the form, and by no configuration this proje
 ## One entry's two events, and the types the pattern could not carry
 
 The same facet, a dimension over. `triggers` had two forms — an event and a base, or an event and a
-branch, one of them or a list — and of the fourteen entries this repository has written against it,
-one is the first whose event **types** decide anything. The `Nothing deferred` workflow listens for
+branch, one of them or a list — and one entry of this repository's own is the first written against
+it whose event **types** decide anything. The `Nothing deferred` workflow listens for
 `pull_request` with `types: [opened, edited, synchronize, reopened, ready_for_review]`, and neither
 form could spell that: the entry read `pull_request -> *`, which is the same text an entry for a
 workflow naming no types at all would carry.
@@ -1168,13 +1168,14 @@ what is here is why each went the way it did.
 | Whether the facet should hold types at all | **Yes, extended** | No consumer reads a type today — #33's guard asks whether the host already runs a command, and the finishing role asks whether a run exists for *this commit*, which a run fired by `edited` is. Recording the limit would have been a legitimate outcome; what decided against it is #49, whose drift check cannot report on a dimension the facet cannot express |
 
 ⚠️ **The event vocabulary is where the extension stops, and the bound was measured rather than
-chosen.** `pull_request_review_thread` is a webhook the host sends and **not** a workflow trigger —
-a file naming it is rejected whole, twice here, as a push-event failure with no jobs and no
-pull-request run at all. So a pattern naming an event is not a claim that a workflow may listen for
-it, and the facet enumerates no events: what refuses such a name is the host as the file loads.
+chosen.** The third event that workflow wanted is one no workflow file may name at all, and
+[the measurement is where it already lived](single-source-of-truth.md#what-this-gate-deliberately-does-not-check)
+rather than restated here. What it settles for the facet is that a pattern naming an event is not a
+claim that a workflow may listen for it: the facet enumerates no events, and what refuses such a
+name is the host as the file loads.
 
-⚠️ **What this repository can say about the type clause is one entry's worth.** Thirteen of its
-fourteen workflows state no `types:` key and their entries carry no clause, which is exactly the
-reading the omission rule gives them; the fourteenth is the whole of the evidence that the clause
-is worth having, and the second event kind rests on the same single entry. What exercises the rest
-is the reader's planted violations and the example that illustrates the form.
+⚠️ **What this repository can say about the type clause is one entry's worth.** Every other
+workflow here states no `types:` key and its entry carries no clause, which is exactly the reading
+the omission rule gives it; the one that does is the whole of the evidence that the clause is worth
+having, and the second event kind rests on that same entry. What exercises the rest is the reader's
+planted violations and the example that illustrates the form.

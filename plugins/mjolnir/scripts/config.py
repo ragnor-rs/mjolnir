@@ -950,32 +950,21 @@ def parse_trigger(pattern: str):
     return match.group("event"), types, match.group("ref")
 
 
-def _triggers(entry: dict, where: str) -> None:
-    """§ 2's `triggers`, held to its shape and to its clause rules.
+def _type_clauses(value, where: str) -> None:
+    """§ 2's two clause refusals, over patterns already held to their shape.
 
-    Read by no consumer in this tree and held anyway, for the reason
-    `_path_filter` is: the natural mistakes here are silent ones. ⚠️ The pattern
-    itself is **not** held -- § 2 refuses no pattern on purpose -- so what this
-    rejects is the key's shape and the two clause readings the surface does
-    state: a clause written empty, and a type written blank inside one. Both are
-    the same text as something somebody meant to write, which is why neither is
-    read as the absence it looks like.
+    ⛔ Reached from both ends of the one mapping -- `host.checks[].triggers` and
+    § 17's `counts_when`, which is stated in the same form -- because a refusal
+    one of them has and the other does not is the two vocabularies § 17 refuses,
+    arriving as behaviour instead of as text.
+
+    ⚠️ The pattern itself is not held: § 2 refuses none, a trigger a consumer
+    cannot read being no answer about the run. What this rejects is a clause
+    written empty and a type written blank inside one -- each the same text as
+    something somebody meant to write, which is why neither is read as the
+    absence it looks like.
     """
-    if "triggers" not in entry:
-        return
-    value = entry["triggers"]
     patterns = value if isinstance(value, list) else [value]
-    if not patterns or any(
-        not isinstance(p, str) or not p.strip() for p in patterns
-    ):
-        raise ConfigError(
-            where,
-            f"is {value!r}; § 2 states a trigger as `<event>(<types>) -> <ref>`, "
-            "one pattern or a list of them where a workflow has more than one. "
-            "Written blank it states what starts a run while naming no event, "
-            "and a conjunction improvised inside one string is the shape the "
-            "list exists instead of.",
-        )
     for position, pattern in enumerate(patterns):
         parsed = parse_trigger(pattern)
         if parsed is None:
@@ -983,7 +972,7 @@ def _triggers(entry: dict, where: str) -> None:
         _event, types, _ref = parsed
         if types is None:
             continue
-        at = where if not isinstance(value, list) else f"{where}[{position}]"
+        at = f"{where}[{position}]" if isinstance(value, list) else where
         if types == [""]:
             raise ConfigError(
                 at,
@@ -1000,6 +989,30 @@ def _triggers(entry: dict, where: str) -> None:
                 "It matches no event the host sends while reading as a type "
                 "somebody wrote.",
             )
+
+
+def _triggers(entry: dict, where: str) -> None:
+    """§ 2's `triggers`, held to its shape and then to its clause rules.
+
+    Read by no consumer in this tree and held anyway, for the reason
+    `_path_filter` is: the natural mistakes here are silent ones.
+    """
+    if "triggers" not in entry:
+        return
+    value = entry["triggers"]
+    patterns = value if isinstance(value, list) else [value]
+    if not patterns or any(
+        not isinstance(p, str) or not p.strip() for p in patterns
+    ):
+        raise ConfigError(
+            where,
+            f"is {value!r}; § 2 states a trigger as `<event>(<types>) -> <ref>`, "
+            "one pattern or a list of them where a workflow has more than one. "
+            "Written blank it states what starts a run while naming no event, "
+            "and a conjunction improvised inside one string is the shape the "
+            "list exists instead of.",
+        )
+    _type_clauses(value, where)
 
 
 def _mirrored_commands(data: dict) -> dict[str, str]:
@@ -1674,6 +1687,11 @@ def validate(data: dict, facts: dict) -> None:
                     "counts for every change. Written blank it states a condition "
                     "nothing can read while reading as a condition somebody set.",
                 )
+            # ⛔ And the same clause refusals the other end of this mapping
+            # gets: § 17 states this key in § 2's form, so a shape refused
+            # there and accepted here is the second vocabulary that section
+            # refuses, arriving as behaviour rather than as text.
+            _type_clauses(condition, f"{where}.counts_when")
         collision = mirrored.get(_normalised_command(command))
         if collision:
             raise ConfigError(
@@ -2720,6 +2738,13 @@ def _planted_violations():
         ("a counting condition one of whose patterns is blank",
          "checks_local[0].counts_when",
          _a_local_check_of(counts_when=["pull_request -> *", "  "])),
+        ("a condition whose type clause is empty",
+         "checks_local[0].counts_when",
+         _a_local_check_of(counts_when="pull_request() -> *")),
+        ("a condition stating a blank type, at the other end of one form",
+         "checks_local[0].counts_when[1]",
+         _a_local_check_of(counts_when=["push -> main",
+                                        "pull_request(edited, ) -> *"])),
         ("a local check the host already runs", "checks_local[0].command",
          _collides_with_a_mirrored_command),
         ("several commands in one `mirrors` rather than in its jobs",
