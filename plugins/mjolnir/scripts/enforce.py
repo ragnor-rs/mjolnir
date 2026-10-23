@@ -750,11 +750,6 @@ def merge_guard(config, command: str, *, host=None) -> dict:
 # facet cannot hold, each of them about one commit.
 
 
-def _normalised(command: str) -> str:
-    """§ 17's comparison: the command as both sides wrote it, whitespace aside."""
-    return " ".join(str(command).split())
-
-
 def in_command_position(call: str, wanted: str) -> bool:
     """Does this call run `wanted`, as a command rather than as text?
 
@@ -768,6 +763,10 @@ def in_command_position(call: str, wanted: str) -> bool:
     command, and a project that wants one of those left alone names it in
     `never_guard` -- which is read through this same function, so the longer form
     is matched there before the shorter one is matched here.
+
+    ⛔ **§ 17's whitespace rule is not spelled again here**: both sides are cut
+    into words, and runs of whitespace are gone by the time anything is compared.
+    A third statement of that comparison is what this file would otherwise carry.
     """
     wanted_words = _words(wanted)
     if not wanted_words:
@@ -1005,7 +1004,7 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
     record = max(records, key=lambda r: len(r["normalised"]))
     exempt = next(
         (entry for entry in stated
-         if isinstance(entry, str) and in_command_position(command, _normalised(entry))),
+         if isinstance(entry, str) and in_command_position(command, entry)),
         None,
     )
     if exempt is not None:

@@ -190,11 +190,15 @@ whose `counts_when` is stated in that same form.
 [`schema § 18`](../plugins/mjolnir/config/schema.md#18-the-guard-on-a-command-the-host-has-already-run)
 is the one place that act is stated, and it takes B's four conditions as its own: a run exists for
 this commit, it mirrors *this command* by the workflow's name, it saw this code, and it is
-operational. ⛔ **What it does not take from any of the four is the conclusion.** B and F both read
-one, and reading it is how B's first version became a no-op while the host ran and a blocker once it
-had finished — the measured client exiting non-zero while runs are pending *and* when one has
-failed. A run that failed has spent the time and answered; what releases the call afterwards is the
-edit that follows, which leaves the tree carrying something the host has not seen.
+operational. ⛔ **What it does not take is the conclusion**, which F reads and
+[`schema § 2`](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)
+carries as its fourth precondition — and which B's first version reached for through the client's
+exit status, becoming a no-op while the host ran and a blocker once it had finished, that client
+exiting non-zero while runs are pending *and* when one has failed. A run that failed has spent the
+time and answered; what releases the call afterwards is the edit that follows, which leaves the tree
+carrying something the host has not seen. ⚠️ **B's own four conditions do not include one either**,
+which is the measurement rather than a design taken from it: the project that fails open is the
+project that stopped reading how the run went.
 
 ⚠️ **C's four exit codes are where the fourth answer comes from**, and it is the one none of the
 other three carries: its code 2 is *the pull request is conflicted*, which produces zero runs and
