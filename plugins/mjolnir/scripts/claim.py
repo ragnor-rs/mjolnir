@@ -68,22 +68,14 @@ UNESTABLISHED = "could not be established"
 SLUG_MAX = 18
 
 # The words the derivation drops before it starts counting, so that what survives the bound is
-# the title's own nouns and verbs rather than its first four articles and prepositions.
+# the title's own nouns and verbs rather than its first four articles and prepositions. That this
+# is one language's list, that a repository writing its items in another is held by the bound
+# alone, and why neither the list nor the bound is on the configuration surface, are the rule's
+# and are stated with it -- `config/schema.md` § 10 -> *The branch name a claim is taken on*.
 #
-# ⛔ **This is a list of function words in one language and not a general rule**, which is the one
-# thing about it worth stating rather than discovering: § 8 has the slug derived from the title as
-# the *repository's* language writes it, and for a repository writing its items in another
-# language nothing here matches, nothing is dropped, and the bound alone applies. That is a
-# weaker derivation in that case and not a broken one -- the result is still a pure function of
-# the string, which is the whole of what two sessions have to agree on.
-#
-# ⚠️ It is deliberately **not** on the configuration surface. A per-project list would put a
-# cosmetic choice in every adopter's configuration file and give two sessions reading two
-# configurations two spellings of one item's branch, which is the defect this derivation exists
-# to close rather than a feature.
-#
-# ⛔ Negations are not here. `no`, `not`, `nothing` and `never` carry the whole meaning of a great
-# many titles, and a slug that drops them names the opposite of its item.
+# ⛔ Negations are not here, which is the one thing about the list's *contents* that is a decision
+# rather than a reading of the language: `no`, `not`, `nothing` and `never` carry the whole
+# meaning of a great many titles, and a slug that drops them names the opposite of its item.
 MINOR_WORDS = frozenset(
     """
     a an the this that these those it its their
@@ -163,8 +155,9 @@ def slug_for(
             major.append(word)
     # ⚠️ The fallback is the arm that keeps a short title from slugging to nothing: `A: b -- c`
     # and a title that is all function words have no major word at all, and the number alone is
-    # a worse answer than the title's own words.
-    chosen = major or every
+    # a worse answer than the title's own words. ⛔ It drops repeats too, the no-word-twice half
+    # of the rule holding on both paths rather than on the common one.
+    chosen = major or list(dict.fromkeys(every))
     if not chosen:
         return ""
     if limit is None:
@@ -206,9 +199,12 @@ def tree_for(tree_dir: str | Path, item: str, title: str) -> Path:
 
     ⚠️ **It carries no divergence the branch name does not already carry.** The slug is
     `slug_for`'s, not a second rule and not prose for a role to apply: two sessions handed one
-    title derive one leaf, and two sessions handed two titles already derive two *branch names*,
-    which is the thing the ref refuses. A reword between two starts is therefore a second name
-    before it is a second directory, and the refusal lands on the name.
+    title derive one leaf, and two sessions handed two titles derive two *leaves* only where they
+    derive two **branch names**, which is the thing the ref refuses. A reword between two starts
+    is therefore a second name before it is a second directory, and the refusal lands on the
+    name. ⚠️ Since the bound is spent on a title's opening words, two titles that differ only
+    past that point derive one name and one leaf -- the refusal landing on the name harder rather
+    than less, there being only one name to take.
 
     A title that slugs to nothing leaves the identifier alone, as `branch_for` does: `70-` is a
     directory nobody can read.
@@ -1762,6 +1758,8 @@ def self_test() -> int:
         ("a title whose every candidate is one character keeps the words it has",
          "A: b -- c!!  d", SLUG_MAX, "a-b-c-d"),
         ("and so does a title that is all function words", "Of the and", SLUG_MAX, "of-the-and"),
+        ("while a repeat is dropped on that path too, as on the common one",
+         "A a, and an a", SLUG_MAX, "a-and-an"),
         ("a second script carries no function word this list knows, so the bound alone applies",
          "Две сессии делят один бэклог", SLUG_MAX, "две-сессии-делят"),
         ("a script of its own survives rather than becoming hyphens",
