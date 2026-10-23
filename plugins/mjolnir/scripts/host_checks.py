@@ -504,7 +504,31 @@ def conclusion(steps: int, passed: bool, superseded_by: str | None = None) -> di
     precondition as the precondition it was, so a caller in that position says
     *precondition 3 is unanswered* rather than asking here and being told the run
     never started. The command line makes both facts required for that reason.
+
+    ⛔ **Two inputs are refused rather than read as the absence they resemble**,
+    which is § 2's own rule for every key here whose absence means something: a
+    step count below zero is no count the host produces, and it would fall past
+    the zero-step arm into a reading about the change; and a successor id given
+    blank is the same text as one the caller meant to fill in, which would read
+    as *no successor* and send a reader to a verdict instead of to a run.
+    ⚠️ Raised rather than returned, the four readings being the whole of what
+    this function may answer -- a fifth value for *you asked wrongly* is a value
+    callers would have to handle alongside the four the surface states.
     """
+    if isinstance(steps, bool) or not isinstance(steps, int) or steps < 0:
+        raise ValueError(
+            f"steps is {steps!r}; it is how many steps the run's jobs executed, a "
+            "whole number of at least zero. A count below zero is no count the host "
+            "produces and would read past the never-started arm as a reading about "
+            "the change (§ 2)."
+        )
+    if superseded_by is not None and not str(superseded_by).strip():
+        raise ValueError(
+            "superseded_by is blank; § 2 makes a successor's absence the id not being "
+            "given at all, and a blank one is the same text as an id somebody meant to "
+            "write. Read as the absence it sends a consumer to a verdict rather than "
+            "to the run that answers."
+        )
     if superseded_by:
         return {
             "reading": SUPERSEDED,
@@ -803,6 +827,25 @@ def self_test() -> int:
         "the successor was not named, so the consumer is told a run is no answer "
         "and not where the answer is",
     )
+    # ⛔ The two inputs that resemble an absence, each asserted to be refused
+    # rather than read as one. Both fail in the permissive direction: a negative
+    # count falls past the never-started arm into a reading about the change, and
+    # a blank successor reads as *no successor* and sends a reader to a verdict.
+    for label, args in (
+        ("a step count below zero", (-1, False, None)),
+        ("a step count that is not a count", ("4", False, None)),
+        ("a step count written as a flag", (True, False, None)),
+        ("a successor id given blank", (4, False, "   ")),
+        ("a successor id given empty", (4, False, "")),
+    ):
+        try:
+            conclusion(*args)
+            refused = False
+        except ValueError:
+            refused = True
+        check(f"{label} is refused rather than read as the absence", refused,
+              "the input was read as though it had not been given, which is the "
+              "permissive direction on both of them")
     # ⛔ Read off this module's own source, and ⚠️ **off the half of it above
     # this suite**: the assertion has to name the words it forbids, so a scan of
     # the whole file would be a check that can never pass. The split is at the
@@ -1193,10 +1236,17 @@ def main(argv: list[str] | None = None) -> int:
     # would be unavailable in the one place it is most needed, which is a role
     # standing in a tree whose configuration is what the change is editing.
     if args.what == "conclusion":
-        print(json.dumps(
-            conclusion(args.steps, args.passed == "yes", args.superseded_by),
-            indent=2, ensure_ascii=False,
-        ))
+        # ⛔ Named on stderr and exited non-zero, never printed as a reading: an
+        # input this function refuses is the caller's question being malformed,
+        # and a fifth value on the way out would be a reading § 2 does not have.
+        try:
+            answered = conclusion(
+                args.steps, args.passed == "yes", args.superseded_by
+            )
+        except ValueError as exc:
+            print(exc, file=sys.stderr)
+            return 2
+        print(json.dumps(answered, indent=2, ensure_ascii=False))
         return 0
     try:
         configuration = config.load(args.skills_root)

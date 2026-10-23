@@ -1953,9 +1953,13 @@ it: the measured hazard is that one `cancelled` arrives on two of the four readi
 on that word answers one of the two for both — while looking like a careful reading. ⛔ **And a step
 count the caller could not establish is not an input either**: the subcommand requires both facts,
 so a caller in that position reports precondition 3 unanswered rather than being told the run never
-started. ⚠️ **Which run to read and what it concluded stay two questions with two vocabularies**,
-for the reason the facet declines to reuse `reached` one key over: a word meaning two findings is
-the defect, not the economy.
+started. ⛔ **Two inputs that resemble an absence are refused rather than read as one** — a step
+count below zero, which would fall past the never-started arm into a reading about the change, and
+a successor id given blank, which would read as *no successor* and send a reader to a verdict
+instead of to the run that answers. Each is planted, and the refusal leaves the function with the
+four readings and no fifth value. ⚠️ **Which run to read and what it concluded stay two questions
+with two vocabularies**, for the reason the facet declines to reuse `reached` one key over: a word
+meaning two findings is the defect, not the economy.
 
 **It also answers where the project's jobs run**
 ([§ 2](../plugins/mjolnir/config/schema.md#where-the-hosts-jobs-run)), so that an installer writing
