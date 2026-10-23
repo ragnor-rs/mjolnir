@@ -84,6 +84,12 @@ GUARDED_CITATION = ("schema § 18 → What may be guarded, and the two ways a re
 # their remedies differ, which is the whole reason the third exists -- a reader
 # told *nothing has run* on a conflicted change is sent to run a suite whose
 # result cannot land.
+# What every answer of this arm is headed by. ⚠️ The guard's subject rather than
+# its answer: one of the four answers below is spelled *already run* too, and a
+# report headed by the same words twice reads as a stutter rather than as a
+# verdict -- measured on this repository's own first live refusal.
+REPORT_PREFIX = "The host's own runs"
+
 ALREADY_RUN = "already run"
 NOTHING_HAS_RUN = "nothing has run"
 NOTHING_CAN_RUN = "nothing can run"
@@ -793,7 +799,7 @@ def _held_nothing(why: str, answer: str = UNESTABLISHED) -> dict:
     can tell from one that is not installed, and the three proceeding answers
     have three different remedies.
     """
-    return {"systemMessage": f"Already run — {answer}: {why} ({ALREADY_RUN_CITATION})."}
+    return {"systemMessage": f"{REPORT_PREFIX} — {answer}: {why} ({ALREADY_RUN_CITATION})."}
 
 
 def _this_code(root: str) -> tuple[str, bool, str | None]:
@@ -1009,8 +1015,8 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
     )
     if exempt is not None:
         return {"systemMessage": (
-            f"Already run: `{exempt}` is one of this project's `never_guard` commands, so this "
-            f"call was not held to the host's runs ({GUARDED_CITATION})."
+            f"{REPORT_PREFIX}: `{exempt}` is one of this project's `never_guard` commands, so "
+            f"this call was not held to them ({GUARDED_CITATION})."
         )}
     held = environment if environment is not None else os.environ
     escape = config.get("already_run.escape")
@@ -1021,7 +1027,7 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
         why = str(held.get(str(escape)) or "").strip()
         if why:
             return {"systemMessage": (
-                f"Already run: stood down by `{escape}` — {why} ({GUARDED_CITATION})."
+                f"{REPORT_PREFIX}: stood down by `{escape}` — {why} ({GUARDED_CITATION})."
             )}
     slug = config.get("host.repo")
     if not slug:
@@ -1090,7 +1096,7 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
         else "Edit the tree, so the host's run stops answering about the code in hand"
     )
     return _deny(
-        f"Already run — {ALREADY_RUN}: {record['mirrored_by']} reports {state} for this "
+        f"{REPORT_PREFIX} — {ALREADY_RUN}: {record['mirrored_by']} reports {state} for this "
         f"commit, {head[:12]} ({ALREADY_RUN_CITATION}). ⛔ Its conclusion is not what "
         f"is read here — the run exists for this code and executed its steps, so running "
         f"`{record['normalised']}` locally spends the time a second time and holds whatever "
