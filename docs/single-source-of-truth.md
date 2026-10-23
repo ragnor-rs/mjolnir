@@ -1821,11 +1821,21 @@ rather than hoped for.** Its rule is
 [schema § 18](../plugins/mjolnir/config/schema.md#18-the-guard-on-a-command-the-host-has-already-run)
 and the facet it reads is § 2's, through the same reader every consumer loads it with — ⛔ **it
 carries no workflow name, no trigger and no path filter of its own.** Three reads are possible per
-call and each is bounded well inside the carrier's own timeout; ⚠️ **none of them is made until the
-call has already matched a mirrored command in command position**, which is a comparison over the
-parsed words and reaches the host on no ordinary call at all. ⛔ **The client's exit status is read
-as the answer nowhere**: the measured client exits non-zero while runs are pending and also when one
-has failed, so a guard reading it is a no-op while the host runs and a blocker once it has finished.
+call, each bounded at five seconds inside the carrier's own thirty; ⚠️ **none of them is made until
+the call has already matched a mirrored command in command position**, which is a comparison over
+the parsed words and reaches the host on no ordinary call at all. ⛔ **The client's exit status is
+read as the answer nowhere**: the measured client exits non-zero while runs are pending and also
+when one has failed, so a guard reading it is a no-op while the host runs and a blocker once it has
+finished.
+
+⚠️ **What the arm costs was measured on this repository in both of its two cases**, since the
+ordinary one is what every call in every session pays. An ordinary `Bash` call: **147ms**, against
+**74ms** for the boundary hook beside it and **36ms** of interpreter startup — ⛔ **which is the
+figure this arm was added underneath rather than one it moved**, the facet already being walked by
+the configuration read and the match being a comparison over words. A call that does match a
+mirrored command: **984ms**, nearly all of it the host round trip. ⚠️ **The second figure is paid
+by the calls this guard exists for and by no others**, and it buys the minutes of a duplicated run
+and the place a lease would have held while it ran.
 
 ⚠️ **Six exit paths were measured, and one of them cannot be tested because it never fires.** The
 project this came from registered its release on tool completion, tool failure, permission denial,

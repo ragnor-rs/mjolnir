@@ -888,7 +888,7 @@ def _how_the_run_stands(found: dict, record: dict, slug: str, root: str,
     """
     if str(found.get("conclusion") or "") in NOT_OPERATIONAL:
         return (
-            f"the host reports `{record['mirrored_by']}` as {found['conclusion']} for this "
+            f"the host reports {record['mirrored_by']} as {found['conclusion']} for this "
             "commit, which is a fact about where the run was made rather than about this code",
             None,
         )
@@ -1059,17 +1059,17 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
         if conflicted:
             return _held_nothing(
                 f"this change is conflicted, so the host produces no run for it at all — "
-                f"`{record['mirrored_by']}` has nothing to report until that is resolved, and "
+                f"{record['mirrored_by']} has nothing to report until that is resolved, and "
                 "a local run answers nothing that can land",
                 answer=NOTHING_CAN_RUN,
             )
         if unread:
             return _held_nothing(
-                f"no run of `{record['mirrored_by']}` exists for this commit, and whether that "
+                f"no run of {record['mirrored_by']} exists for this commit, and whether that "
                 f"is because the change is conflicted could not be established: {unread}",
             )
         return _held_nothing(
-            f"the host has made no run of `{record['mirrored_by']}` for this commit",
+            f"the host has made no run of {record['mirrored_by']} for this commit",
             answer=NOTHING_HAS_RUN,
         )
     standing, unread = _how_the_run_stands(mine[0], record, slug, root, run=host)
@@ -1090,7 +1090,7 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
         else "Edit the tree, so the host's run stops answering about the code in hand"
     )
     return _deny(
-        f"Already run — {ALREADY_RUN}: `{record['mirrored_by']}` reports {state} for this "
+        f"Already run — {ALREADY_RUN}: {record['mirrored_by']} reports {state} for this "
         f"commit, {head[:12]} ({ALREADY_RUN_CITATION}). ⛔ Its conclusion is not what "
         f"is read here — the run exists for this code and executed its steps, so running "
         f"`{record['normalised']}` locally spends the time a second time and holds whatever "
