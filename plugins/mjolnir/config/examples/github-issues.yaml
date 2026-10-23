@@ -188,3 +188,10 @@ executed:
   revisit_when: >-
     A case lands that needs a store, a service or a daemon created for the run — the first moment
     a pass and a run that executed nothing stop reading alike.
+
+spend_guard:
+  # The first day again: everything this project runs is free, so nothing is denied. ⚠️ Worth
+  # stating even here, because the facet's cheapest failure is a project that acquires a paid
+  # suite and never comes back to the key — an empty list is a decision somebody can see has gone
+  # stale, while a missing one is a key nobody knew to look for.
+  deny: []
