@@ -2226,12 +2226,28 @@ carrying the first few words of the title, the other the whole of it — and eac
 **created** the ref, so the common arm of the test-and-set above never engaged and the tree
 directory arbitrated a step later. ⚠️ **All three divergences were length rather than spelling**,
 so a derivation stating only a character mapping would have licensed every one of them: the bound,
-and where it cuts, are as much the rule as the mapping is.
+and what it is spent on, are as much the rule as the mapping is.
 
 What the derivation does: normalise the title, lowercase it, replace every run of characters that
-is neither a letter nor a number with one separator, trim, and cut to a stated bound at a
-separator so no word is halved. A title that leaves nothing behind leaves the number standing
-alone rather than a trailing separator.
+is neither a letter nor a number with one separator, and then **select whole words** up to a
+stated bound — the language's function words and single characters dropped first, a word the title
+repeats not carried twice, and the rest taken in the title's own order while the next one still
+fits. A title that leaves nothing behind leaves the number standing alone rather than a trailing
+separator.
+
+⛔ **Words are selected and never cut.** A bound spent on characters ends a name on half a word,
+and a name is read by a person deciding which of several trees is theirs. ⚠️ The two consequences
+to state rather than discover: a title whose **first** surviving word is longer than the bound
+keeps that word whole and overruns it, and a reword that leaves a title's opening alone now
+answers **one** leaf rather than two — which is the direction that helps a directory keep
+answering whose it is, the question being asked on the identifier either way.
+
+⚠️ **The function words are one language's and the bound is the rule's.** A repository writing its
+items in another language matches none of them, drops nothing, and is held by the bound alone:
+a weaker derivation there and not a broken one, the result still being a function of the string.
+⛔ **Neither the list nor the bound is on this surface.** A per-project list is a cosmetic choice
+that would give two sessions reading two configurations two spellings of one item's branch, which
+is what this subsection exists to close.
 
 ⚠️ **§ 8's translation stands outside the identity.** Where the item's language differs from the
 repository's, [§ 8](#8-language-register-audience--per-artifact-not-per-project) requires the slug

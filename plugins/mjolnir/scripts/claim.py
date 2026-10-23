@@ -60,10 +60,41 @@ REFS_PREFIX = "refs/heads/"
 # self-test, so a reword travels rather than breaking it.
 UNESTABLISHED = "could not be established"
 
-# How long a slug may be. A bound is needed for the truncation to be part of the derivation
-# rather than a thing the filesystem does later at a length that varies by machine; the value is
-# a readability choice and nothing reads it but the derivation below.
-SLUG_MAX = 60
+# How long a slug may be. A bound is needed for the cut to be part of the derivation rather than
+# a thing the filesystem does later at a length that varies by machine; the value is a readability
+# choice and nothing reads it but the derivation below. ⚠️ It bounds the **slug**, and the tree's
+# leaf and the branch's last segment carry `<identifier>-` in front of it, so a leaf runs a few
+# characters longer than this.
+SLUG_MAX = 18
+
+# The words the derivation drops before it starts counting, so that what survives the bound is
+# the title's own nouns and verbs rather than its first four articles and prepositions.
+#
+# ⛔ **This is a list of function words in one language and not a general rule**, which is the one
+# thing about it worth stating rather than discovering: § 8 has the slug derived from the title as
+# the *repository's* language writes it, and for a repository writing its items in another
+# language nothing here matches, nothing is dropped, and the bound alone applies. That is a
+# weaker derivation in that case and not a broken one -- the result is still a pure function of
+# the string, which is the whole of what two sessions have to agree on.
+#
+# ⚠️ It is deliberately **not** on the configuration surface. A per-project list would put a
+# cosmetic choice in every adopter's configuration file and give two sessions reading two
+# configurations two spellings of one item's branch, which is the defect this derivation exists
+# to close rather than a feature.
+#
+# ⛔ Negations are not here. `no`, `not`, `nothing` and `never` carry the whole meaning of a great
+# many titles, and a slug that drops them names the opposite of its item.
+MINOR_WORDS = frozenset(
+    """
+    a an the this that these those it its their
+    and or nor but so if than then as
+    of to in on at by for from with into onto over under through
+    about after before between against per
+    is are was were be been being am
+    has have had do does did can could will would may might must should
+    which who whom whose what when where how why there here
+    """.split()
+)
 
 # An item identifier this module can recover from a branch name on its own: a run of digits that
 # is the whole of the last segment or is followed by a hyphen. ⛔ Deliberately narrow. A tracker
@@ -92,7 +123,9 @@ class ClaimError(RuntimeError):
 # --------------------------------------------------------------------------------------------
 
 
-def slug_for(title: str, limit: int | None = SLUG_MAX) -> str:
+def slug_for(
+    title: str, limit: int | None = SLUG_MAX, minor: frozenset[str] = MINOR_WORDS
+) -> str:
     """The item's title as a branch slug: a pure function of the string it is handed.
 
     ⚠️ **Of the string it is handed**, which is not always the title as the tracker stores it:
@@ -105,22 +138,42 @@ def slug_for(title: str, limit: int | None = SLUG_MAX) -> str:
     numbers survive by Unicode category rather than by an ASCII range, because a project writing
     its items in its own script gets a ref it can read rather than a row of hyphens.
 
-    ⚠️ `limit` is the derivation's own, and `None` is what the suite reads the untruncated form
-    with. ⛔ **The bound is part of the rule rather than something the filesystem imposes later
-    at a length that varies by machine.** It is the arm that has actually broken: of the three
-    measured divergences, all three were one session carrying the whole title and another
-    carrying the first few words, and a character mapping with no length rule licenses both.
+    ⛔ **Words are selected, and never cut.** The bound is spent on whole words of the title --
+    its function words (`minor`) dropped first, a word already taken not taken twice, and words
+    added in the title's own order while the next one still fits. A title whose *first* surviving
+    word is longer than the bound keeps that word whole and overruns, because a slug holding half
+    a word is less readable than a long one and the overrun is bounded by the title.
+
+    ⚠️ `limit` is the derivation's own and `minor` is too; `None` and the empty set are what the
+    suite reads the unbounded and unselected forms with. ⛔ **The bound is part of the rule
+    rather than something the filesystem imposes later at a length that varies by machine.** It
+    is the arm that has actually broken: of the three measured divergences, all three were one
+    session carrying the whole title and another carrying the first few words, and a character
+    mapping with no length rule licenses both.
     """
     text = unicodedata.normalize("NFC", title).strip().lower()
     kept = "".join(ch if unicodedata.category(ch)[0] in ("L", "N") else "-" for ch in text)
-    slug = re.sub(r"-+", "-", kept).strip("-")
-    if limit is not None and len(slug) > limit:
-        head = slug[:limit]
-        # Cut back to a word boundary -- unless the bound already fell on one, in which case
-        # cutting back would drop a whole word for nothing.
-        if slug[limit] != "-" and "-" in head:
-            head = head[: head.rindex("-")]
-        slug = head.strip("-")
+    every = [word for word in re.sub(r"-+", "-", kept).strip("-").split("-") if word]
+    # A single character is dropped with the function words: it is what a possessive or a
+    # contraction leaves behind once the apostrophe has become a separator (`host's` -> `host`,
+    # `s`), and it carries nothing.
+    major: list[str] = []
+    for word in every:
+        if len(word) > 1 and word not in minor and word not in major:
+            major.append(word)
+    # ⚠️ The fallback is the arm that keeps a short title from slugging to nothing: `A: b -- c`
+    # and a title that is all function words have no major word at all, and the number alone is
+    # a worse answer than the title's own words.
+    chosen = major or every
+    if not chosen:
+        return ""
+    if limit is None:
+        return "-".join(chosen)
+    slug = chosen[0]
+    for word in chosen[1:]:
+        if len(slug) + 1 + len(word) > limit:
+            break
+        slug = f"{slug}-{word}"
     return slug
 
 
@@ -1568,34 +1621,39 @@ def self_test() -> int:
             ],
         ),
     ]
-    # Plant: **the bound removed**, which leaves a character mapping alone -- the rule the start
+    # Plant: **the bound removed**, which leaves the word mapping alone -- the rule the start
     # role's "the item's title, slugged" amounted to. ⛔ The first form of this plant asserted
     # that two hardcoded names differ, which reads only `MEASURED` and never the derivation: it
     # stayed green with `slug_for` replaced by a function returning a constant, so it was not a
-    # plant at all. Found reviewing this branch.
+    # plant at all. Found reviewing the branch that wrote it.
     #
-    # Without the bound the derivation answers the *longer* of the two names two sessions
-    # actually published, for two of the three items -- so the mapping admits the divergence and
-    # the bound is what closes it.
-    unbounded = {
-        item: f"feature/{item}-{slug_for(title, limit=None)}" for item, title, _ in MEASURED
-    }
-    reached = [item for item, _, names in MEASURED if unbounded[item] == names[1]]
+    # ⚠️ The plant is read on **length** and no longer on a name a sibling published, because
+    # the derivation now drops a title's function words and so answers neither of the two
+    # spellings the divergence was measured in. What the pair of published names is still
+    # evidence for is the thing they had in common: every one of them is longer than the bound,
+    # in both of each item's two spellings, so a rule with no bound admits all six and the
+    # bound admits none -- and the assertion below is reached rather than vacuous because the
+    # unbounded form of each title overruns it.
+    unbounded = {item: slug_for(title, limit=None) for item, title, _ in MEASURED}
+    published = [
+        name.split("/", 1)[1][len(str(item)) + 1 :] for item, _, names in MEASURED for name in names
+    ]
     suite.ok(
-        "with the bound removed the derivation answers a name two sessions actually published "
-        "(so the bound is what holds it)",
-        len(reached) >= 2,
-        f"reached {reached} of {[i for i, _, _ in MEASURED]}",
+        "every slug two sessions actually published is longer than the bound, so a rule with no "
+        "bound is what admitted them",
+        all(len(slug) > SLUG_MAX for slug in published),
+        ", ".join(f"{len(s)}:{s}" for s in published),
     )
-    # ⚠️ And the third item is the stronger case rather than a miss: its sibling's longer name
-    # was *itself* a truncation, at a third length again. A rule with no bound does not admit
-    # two names, it admits every prefix -- which is why two sessions reached two different cuts
-    # of one title.
-    item41, title41, names41 = MEASURED[0]
     suite.ok(
-        "and a mapping with no bound admits lengths neither session chose",
-        unbounded[item41] not in names41 and names41[1].startswith(unbounded[item41][:40]),
-        f"{unbounded[item41]} vs {names41[1]}",
+        "and with the bound removed this derivation overruns it too (so the bound is what holds "
+        "the length rather than the title being short)",
+        all(len(slug) > SLUG_MAX for slug in unbounded.values()),
+        ", ".join(f"{len(s)}:{s}" for s in unbounded.values()),
+    )
+    suite.ok(
+        "while the derivation's own answer is within it, for every measured title",
+        all(len(slug_for(title)) <= SLUG_MAX for _, title, _ in MEASURED),
+        ", ".join(slug_for(title) for _, title, _ in MEASURED),
     )
     suite.ok(
         "while the bound answers one name, which is neither of the two",
@@ -1635,24 +1693,85 @@ def self_test() -> int:
     long_title = MEASURED[2][1]
     long_slug, full = slug_for(long_title), slug_for(long_title, limit=None)
     suite.ok("a long title is bounded", len(long_slug) <= SLUG_MAX, long_slug)
-    suite.ok("the untruncated form would not have been", len(full) > SLUG_MAX, full)
-    suite.ok("and the cut falls on a word boundary, never mid-word",
-             full.startswith(long_slug) and full[len(long_slug)] == "-", long_slug)
+    suite.ok("the unbounded form would not have been", len(full) > SLUG_MAX, full)
     suite.ok("and leaves no trailing separator", not long_slug.endswith("-"), long_slug)
-    suite.ok("a bound landing exactly on a separator keeps the whole word before it",
+    suite.ok("a word that will not fit ends the slug, and the bound can be reached exactly",
              slug_for("one two three", limit=7) == "one-two",
              slug_for("one two three", limit=7))
 
-    for label, title, expected in (
-        ("punctuation collapses to one separator", "A: b -- c!!  d", "a-b-c-d"),
-        ("case is dropped", "TwO SeSSiOnS", "two-sessions"),
-        ("digits survive", "§ 10 and #70", "10-and-70"),
+    # The word rule, which is what the bound is spent on. ⚠️ `minor=frozenset()` reads a title's
+    # own vocabulary out of the derivation itself, so these are assertions about the title rather
+    # than about a word list written out a second time here.
+    vocabulary = {
+        item: slug_for(title, limit=None, minor=frozenset()).split("-")
+        for item, title, _ in MEASURED
+    }
+    # Plant: **a character cut at the same bound** -- the rule before words were selected, and
+    # what every reading of "the title, slugged" licenses. ⚠️ Asserted over the three titles
+    # rather than one, because a cut lands mid-word only where the bound does not happen to fall
+    # on a separator, and for two of these three it does.
+    halved = [
+        item
+        for item, title, _ in MEASURED
+        if slug_for(title, limit=None)[:SLUG_MAX].rsplit("-", 1)[-1] not in vocabulary[item]
+    ]
+    suite.ok(
+        "a character cut at the same bound ends on half a word (so selecting whole words is "
+        "what holds it)",
+        bool(halved),
+        ", ".join(slug_for(t, limit=None)[:SLUG_MAX] for i, t, _ in MEASURED if i in halved),
+    )
+    suite.ok(
+        "while every segment the derivation answers is a whole word of its title",
+        all(
+            segment in vocabulary[item]
+            for item, title, _ in MEASURED
+            for segment in slug_for(title).split("-")
+        ),
+        ", ".join(slug_for(title) for _, title, _ in MEASURED),
+    )
+    suite.ok(
+        "and a single word longer than the bound stands whole rather than halved",
+        slug_for("Incomprehensibility") == "incomprehensibility",
+        slug_for("Incomprehensibility"),
+    )
+
+    # Plant: **the function words kept**, which is the same bound spent on a title's articles and
+    # prepositions instead of its nouns and verbs.
+    unselected = [slug_for(title, minor=frozenset()) for _, title, _ in MEASURED]
+    suite.ok(
+        "with the function words kept, the bound is spent on them (so dropping them is what "
+        "fits the title's own words in)",
+        any(set(slug.split("-")) & MINOR_WORDS for slug in unselected),
+        ", ".join(unselected),
+    )
+    suite.ok(
+        "while the derivation's answer carries none of them",
+        not any(set(slug_for(title).split("-")) & MINOR_WORDS for _, title, _ in MEASURED),
+        ", ".join(slug_for(title) for _, title, _ in MEASURED),
+    )
+
+    for label, title, limit, expected in (
+        ("punctuation collapses to one separator",
+         "Two:  sessions -- share!!  backlog", None, "two-sessions-share-backlog"),
+        ("case is dropped", "TwO SeSSiOnS", SLUG_MAX, "two-sessions"),
+        ("digits survive, and the function word between them does not",
+         "§ 10 and #70", SLUG_MAX, "10-70"),
+        ("a word the title repeats is not carried twice",
+         "A run, and a run cancelled", None, "run-cancelled"),
+        ("a title whose every candidate is one character keeps the words it has",
+         "A: b -- c!!  d", SLUG_MAX, "a-b-c-d"),
+        ("and so does a title that is all function words", "Of the and", SLUG_MAX, "of-the-and"),
+        ("a second script carries no function word this list knows, so the bound alone applies",
+         "Две сессии делят один бэклог", SLUG_MAX, "две-сессии-делят"),
         ("a script of its own survives rather than becoming hyphens",
-         "Две сессии", "две-сессии"),
+         "Две сессии", SLUG_MAX, "две-сессии"),
         ("a decomposed title slugs as its composed form does",
-         unicodedata.normalize("NFD", "resum\u00e9"), unicodedata.normalize("NFC", "resum\u00e9")),
+         unicodedata.normalize("NFD", "resum\u00e9"), SLUG_MAX,
+         unicodedata.normalize("NFC", "resum\u00e9")),
     ):
-        suite.ok(f"the derivation: {label}", slug_for(title) == expected, slug_for(title))
+        answered = slug_for(title, limit=limit)
+        suite.ok(f"the derivation: {label}", answered == expected, answered)
 
     suite.ok(
         "a title that slugs to nothing leaves the number alone, not a trailing hyphen",
@@ -1672,7 +1791,11 @@ def self_test() -> int:
     # own tail rather than a second slug rule, and the shipped candidate test answers for both of
     # two leaves one item could be started under.
     TREES = "../p-trees"
-    REWORDED = ("Two sessions share one backlog", "Two sessions share one backlog: the claim")
+    # ⚠️ A reword of the title's **opening**, because the bound is spent on a title's first few
+    # words: a reword that leaves those alone -- a subtitle added, a tail rewritten -- now answers
+    # one leaf rather than two, which is the direction that helps the directory keep answering
+    # whose it is and is why the question is asked on the prefix either way.
+    REWORDED = ("Two sessions share one backlog", "One backlog, shared by two sessions")
     leaves = [tree_for(TREES, 70, title).name for title in REWORDED]
 
     # Plant: the two halves composed the other way round, `<slug>-<item>` -- the form that reads
@@ -1704,7 +1827,7 @@ def self_test() -> int:
     )
     suite.ok(
         "the configured directory is joined and never slugged into the leaf",
-        tree_for("../p-trees", 70, "A title") == Path("../p-trees/70-a-title"),
+        tree_for("../p-trees", 70, "A title") == Path("../p-trees/70-title"),
         str(tree_for("../p-trees", 70, "A title")),
     )
     suite.ok(
@@ -1730,7 +1853,9 @@ def self_test() -> int:
         said = take(
             one, None, None, item="70", prefix="feature", title=title, tree_dir=str(trees)
         )
-        cut = trees / "70-two-sessions-share-one-backlog"
+        # ⚠️ The derivation rather than a frozen string: what this arm holds is that `take` cut
+        # the tree where `tree_for` says, and the spelling itself is held by the assertions above.
+        cut = tree_for(trees, "70", title)
         suite.ok("the tree is cut where the derivation says", cut.is_dir(), said)
         suite.ok("and the report names that path, which is the path to enter", str(cut) in said, said)
         suite.ok(
