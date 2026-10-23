@@ -10,8 +10,8 @@ mjolnir is that process as **one shared procedure over per-project configuration
 [nine roles](plugins/mjolnir/config/schema.md#the-loop--nine-roles), from filing a work item to
 the day's log, reading whatever differs between your projects out of one file you write once.
 
-Installed as a Claude Code plugin. **No clone, no submodule, no symlink, and no copy of anything in
-your project.** Adopting it in the next project costs that one file and nothing else.
+Installed as a Claude Code plugin. **No clone, no submodule, no symlink, and no copy of the
+procedure in your project.** Adopting it in the next project costs that one file you write.
 
 ```
 /plugin marketplace add ragnor-rs/mjolnir
@@ -53,7 +53,7 @@ is checkable in the tree it links.
 | **It models the process you already run** | Filing, gating, starting, finishing, reviewing, logging a day. There is no spec artifact to adopt, no phase to pass through, and no persona to learn |
 | **Your tracker stays your tracker** | Your statuses, your labels, your ordering, your definition of done — read through a port with a stated fallback for every capability your tracker lacks, rather than replaced by a board of its own ([`§ 3`](plugins/mjolnir/config/schema.md#3-tracker-port)) |
 | **Absence is a configuration, not a failure** | No board, no estimate, no item template, no due date, no tracker at all — each is a stated answer the procedure runs on, with the reason recorded where the key would have been |
-| **Nothing of it lives in your repository** | One file you write. No vendored copy, no templates directory, nothing to re-sync when the procedure improves |
+| **Nothing of it lives in your repository** | One file you write. No vendored copy, no templates directory, nothing to re-sync when the procedure improves. The exception is the handful of files only your host and your git can read — a gate workflow, a hook — and those the toolkit writes, marks as generated, re-derives from your configuration and takes back out again ([the install](plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)) |
 | **Your commands, run and reported** | What counts as done is an ordered list of checks you name, each with who answers it ([`§ 13`](plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)), and which item is next comes from a command you configure ([`§ 12`](plugins/mjolnir/config/schema.md#12-ordering)). Your build, your suites, your ordering argument |
 | **A pass that proves nothing is not a pass** | Say what each local check's verdict establishes, the command that defeats a cached one, what it needs before it can run, and which changes its verdict is the one to read for — and a replayed pass, an unmet precondition or a condition nothing could establish is reported rather than counted ([`§ 17`](plugins/mjolnir/config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)). A project whose host runs nothing still has a definition of done that can be asked |
 
@@ -72,8 +72,11 @@ Two commands above, then one file. Write your project's own facts into `.claude/
 start from whichever of
 [`plugins/mjolnir/config/examples/`](plugins/mjolnir/config/examples/) matches your tracker, and
 [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md) says what every key means.
-That file is the whole of what adoption costs — there is nothing to vendor and nothing to keep up
-to date.
+That file is the whole of what adoption costs you to write — there is nothing to vendor and nothing
+to keep up to date. What the toolkit writes back, for the things only your host and your git can
+read, is
+[a short marked list it removes again](plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)
+rather than yours to maintain.
 
 ## What you type
 
@@ -121,6 +124,7 @@ to ask you are stated too —
 | [`tools/check_no_audit_trail.py`](tools/check_no_audit_trail.py) | The gate that reads the markdown lines a change adds and refuses a dated pass record, a figure beside a former value, or a clause whose subject is the pass before this one |
 | [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/): a `SessionStart` hook putting the rules nothing mechanical reads into the session, a `Stop` hook holding a role's reply to the register, a `PreToolUse` hook refusing a command that would carry a credential onto a surface outside the project, and the enforcement half below. Which they are is what the file says, so no count of them is carried here |
 | [`plugins/mjolnir/scripts/enforce.py`](plugins/mjolnir/scripts/enforce.py) | The enforcement half: a guard that refuses a merge for which no answer to *is a person going to read this diff* is recorded on the change, naming what would unblock it; a lease that holds a place on whatever your configuration says contends, given back on every exit path that fires and expiring on the one that cannot; and the command that writes the record the guard reads |
+| [`plugins/mjolnir/scripts/install.py`](plugins/mjolnir/scripts/install.py) | The install half: the step that writes the artifacts only your host and your git can read, marks each one as generated, leaves your tree byte-identical on a second run, takes back out what your configuration stops asking for, and refuses with the value, the path or the entry named rather than improvising one — [the rule](plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out), and its limits in [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-install-half-what-the-toolkit-writes-into-a-project) |
 
 The loop's remaining roles land here as they are reconciled. ⛔ **No count of them is written
 here** — the table above says which are shipped, and

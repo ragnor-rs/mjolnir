@@ -1,0 +1,43 @@
+name: Installer
+
+# The step that writes the toolkit's own artifacts into a repository, held to the section of
+# plugins/mjolnir/config/schema.md that states what an install may do: every artifact marked at its
+# head, removable, byte-identical on a second run, and refusing with the thing named rather than
+# improvising. Where a generated gate goes is § 2's ruling, which the module reads rather than
+# restates, and the suite asserts it carries no directory of its own.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2: a `host.checks` entry
+# states one mirrored command, so two commands behind one workflow name could not be stated on
+# the surface at all.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The step reads a configuration and writes files into trees it creates
+# for the run; it reaches no host and no tracker. Withholding the credential is the belt to that
+# brace — a call that started reaching one would fail here rather than succeed quietly.
+permissions: {}
+
+jobs:
+  installer:
+    name: Installer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Pinned rather than relying on whatever the runner image ships, for the reason the sibling
+      # workflows pin it: the step runs on the shared reader, which needs the parser, and a check
+      # that silently stops running is the failure this job exists to catch.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` states this run mirrors.
+      # ⚠️ The suite's one unchecked precondition is git on PATH: a hook has to be installed into
+      # a repository, so one arm initialises a tree of its own and asserts it did before it
+      # asserts anything about a file in it.
+      - name: Hold the install step to the surface
+        run: python3 plugins/mjolnir/scripts/install.py --self-test

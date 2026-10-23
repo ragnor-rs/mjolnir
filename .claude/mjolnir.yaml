@@ -100,6 +100,15 @@ host:
     - workflow: "Host checks drift"
       mirrors: "python3 plugins/mjolnir/scripts/check_host_checks.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ What this run holds is the step's own suite and not a verdict about this tree: nothing
+    # here is registered as an installable artifact, so pointed at this project the step reports
+    # an empty registry and writes nothing. The entry is here because the step ships from this
+    # repository and nothing else would ever assert it — and because one arm of that suite
+    # inserts an entry into a copy of THIS file, which is the only hand-written configuration in
+    # reach of a test.
+    - workflow: "Installer"
+      mirrors: "python3 plugins/mjolnir/scripts/install.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]

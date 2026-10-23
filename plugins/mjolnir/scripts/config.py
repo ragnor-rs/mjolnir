@@ -2201,7 +2201,7 @@ MARKED_REQUIRED_WHEN = [
 # surface happened to say. ⛔ This one carries the whole weight of the class,
 # since the reader keeps no list of its own to compare against -- drop the clause
 # from the surface and this is what reddens.
-MARKED_PROCEDURE = ["audit_trail", "fail_open", "waive_review"]
+MARKED_PROCEDURE = ["audit_trail", "fail_open", "install", "waive_review"]
 
 MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
