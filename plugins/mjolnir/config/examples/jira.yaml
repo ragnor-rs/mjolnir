@@ -13,6 +13,16 @@ host:
     - workflow: "Build"
       mirrors: "<the build command>"
       triggers: "pull_request -> release/*"
+  # This account carries its own runners, so the default label reaches nothing here: a job
+  # asking for it never starts at all, which reads as a check that never reports rather than
+  # one that fails. ⚠️ The runners take ONE job at a time, which is what makes `budget_minutes`
+  # a queue budget — a short job at the back of the line is cancelled having never started, and
+  # the number of jobs a workflow splits into is what decides how long that line is.
+  runner:
+    label: "<the label this account's runners carry>"
+    concurrent_jobs: 1
+    budget_minutes: 45
+    supersedes: "<the group a newer run retires an older one in>"
   # The release-branch shape: a merge commit, so what landed on a release branch and when is
   # readable off the history itself, and the branches are kept rather than deleted by either side.
   # ⚠️ `never` is a value and not an omission — the host's switch off and the procedure not

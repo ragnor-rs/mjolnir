@@ -663,6 +663,19 @@ class Config:
         """
         return host_runs(self.data)
 
+    def runner(self) -> dict | None:
+        """§ 2's `host.runner`, or `None` where this project states none.
+
+        The accessor beside the two above, and the facet's whole public face:
+        an installer writing a workflow file reads the label, the budget and the
+        supersession group from here and ⛔ **writes no literal of its own**, and
+        the check holding the facet to the host's own definitions reads the same
+        record. ⚠️ `None` is the project's stated absence -- the host kind's own
+        default answers, and what that default is lives where the per-kind
+        template does rather than on this surface.
+        """
+        return host_runner(self.data)
+
     def unavailable(self) -> list[str]:
         """What this configuration cannot support, and why.
 
@@ -747,6 +760,21 @@ class Config:
                 "The host runs no checks, so every verdict is local and `done`'s "
                 "`gate_green` reads `checks_local` for its source (§ 17). An "
                 "empty check list reads as no answer, never as green."
+            )
+        # § 2. The runner statement's absence, reported for the reason § 15's is:
+        # a role or an installer that would have asked where this project's jobs
+        # run learns that the project declared the host kind's own default,
+        # rather than meeting a key that is not there. ⛔ And it is reported as an
+        # absence and never as a label -- the default is the host's, carried
+        # nowhere on this surface, so naming one here would be this reader
+        # inventing the fact the facet exists to have stated.
+        if self.get("host.runner") is None:
+            out.append(
+                "No runner is stated (`host.runner` is absent), so every job of "
+                "this project's workflows runs on the host kind's own default, "
+                "every job's budget is a run budget rather than a queue budget, "
+                "and nothing holds a workflow file to a label, a budget or a "
+                "supersession group (§ 2)."
             )
         # § 17, and the complement of the arm above: the two facets together are
         # every verdict there is, so an empty list here is reported for the
@@ -1303,6 +1331,92 @@ def _entry_commands(entry: dict, index: int):
         )
 
 
+def host_runner(data: dict) -> dict | None:
+    """§ 2's `host.runner`, held to its shape, or `None` where none is stated.
+
+    The one facet of § 2 that is the **project's** rather than an entry's: it
+    states one answer for every job the host runs, which is why it is walked
+    here beside the per-entry accessors rather than inside one.
+
+    ⛔ `None` is the stated absence and not a gap -- § 2 makes the block omitted
+    where the host kind's own default runner is the answer, and that default is
+    the host's and is carried nowhere on this surface. A reader that invented
+    one would hold every workflow file to a label the project never chose.
+
+    ⛔ **Presence and never truthiness**, which is § 2's rule for every key here
+    whose absence is itself an answer: `supersedes:` written with nothing after
+    it is the same text as one somebody meant to fill in, and the omission that
+    means *no run of this project's retires another* is the key not being there.
+    """
+    block = _get(data, "host.runner")
+    if block is None:
+        return None
+    if not isinstance(block, dict):
+        raise ConfigError(
+            "host.runner",
+            f"is {block!r}; § 2 states it as the block saying where this project's "
+            "jobs run -- a label, the account's capacity and one job's budget. "
+            "Omitted, it means the host kind's own default answers; written as "
+            "anything else it reads as a statement and holds nothing.",
+        )
+    # ⛔ Stated, the block states all three. § 2 defaults none of them: each is a
+    # measurement of an account rather than a preference about it, and the
+    # permissive direction is what makes that matter -- a budget nobody wrote is
+    # a generated job that can hold the only runner there is for as long as it
+    # likes, while every reader reports the runner as configured.
+    for key in ("label", "concurrent_jobs", "budget_minutes"):
+        if block.get(key) in (None, ""):
+            raise ConfigError(
+                f"host.runner.{key}",
+                "is missing. § 2 states all three of `label`, `concurrent_jobs` and "
+                "`budget_minutes` wherever the block is stated at all, and defaults "
+                "none of them.",
+            )
+    label = block["label"]
+    if not isinstance(label, str) or not label.strip():
+        raise ConfigError(
+            "host.runner.label",
+            f"is {label!r}; § 2 states it as the label every job of this project's "
+            "workflows states. A job asking for a label the account has no runner "
+            "for never starts at all, so a value nothing can match is a check that "
+            "never reports rather than one that fails.",
+        )
+    for key in ("concurrent_jobs", "budget_minutes"):
+        value = block[key]
+        # ⛔ `bool` is excluded by name, as § 10's `cap` excludes it: it is an
+        # `int` in this language, so `concurrent_jobs: true` would read as a
+        # single-runner account and turn every budget into a queue budget on a
+        # project that said no such thing.
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ConfigError(
+                f"host.runner.{key}",
+                f"is {value!r}; it is a whole number of at least one (§ 2). An "
+                "account that takes no job at once runs nothing, and a budget below "
+                "one minute is a job cancelled before it can start.",
+            )
+    supersedes = block.get("supersedes")
+    if "supersedes" in block and (
+        not isinstance(supersedes, str) or not supersedes.strip()
+    ):
+        raise ConfigError(
+            "host.runner.supersedes",
+            f"is {supersedes!r}; § 2 states it as the group a newer run retires an "
+            "older one in, and omits the key where none does. Written blank it is "
+            "the same text as a group somebody meant to name, and the two readings "
+            "send a consumer meeting a cancelled run opposite ways.",
+        )
+    return {
+        "label": label.strip(),
+        "concurrent_jobs": block["concurrent_jobs"],
+        "budget_minutes": block["budget_minutes"],
+        "supersedes": supersedes.strip() if isinstance(supersedes, str) else None,
+        # ⚠️ Derived and not a key: § 2 states that `concurrent_jobs` is what
+        # gives the budget its meaning, so the one fact a consumer reads off the
+        # pair is carried here rather than recomputed per reader.
+        "budget_is_a_queue_budget": block["concurrent_jobs"] == 1,
+    }
+
+
 def _command(mirrors, where: str) -> str:
     """The one command a `mirrors` states, wherever it sits.
 
@@ -1811,6 +1925,13 @@ def validate(data: dict, facts: dict) -> None:
                 f"{where}.on_fail",
                 f"is {entry['on_fail']!r}; the surface allows {' | '.join(on_fail)}.",
             )
+
+    # § 2. Where this project's jobs run, walked for its refusals alone -- the
+    # value is read back through the accessor by whatever needs it. ⛔ Called
+    # even though nothing here uses the result: the walk *is* the refusal, and a
+    # facet validated only when a consumer happens to ask is a facet an adopter
+    # writes wrong and learns about from a generated workflow that never starts.
+    host_runner(data)
 
     # § 17. The verdicts no host run produces, and the one facet on this surface
     # whose entries carry a command the procedure runs for a verdict. Requiredness
@@ -2469,6 +2590,57 @@ def self_test() -> int:
             f"reported {reported!r}",
         )
 
+    # § 2's runner statement, both arms held against the examples rather than
+    # against a fixture. ⛔ The green side of the walk, which the plants above
+    # cannot show: every refusal in `host_runner` is asserted there, and an arm
+    # widened until it rejected a legitimate block would pass all twelve of them
+    # while making the facet unusable. ⚠️ Found by the condition and never
+    # named, for the reason § 3's per-kind blocks are: a shape no example
+    # carries has to fail here rather than be tested against whichever file this
+    # code happened to pick.
+    stating = [c for c in loaded.values() if c.runner() is not None]
+    check(
+        "an example states a `host.runner`, so the block is exercised",
+        bool(stating),
+        "no example states where its jobs run, so every refusal in the walk is "
+        "asserted and nothing asserts the walk accepts a block somebody wrote",
+    )
+    if stating:
+        read = stating[0].runner()
+        check(
+            "and it reads back the label, the capacity and the budget",
+            read["label"] and read["concurrent_jobs"] >= 1 and read["budget_minutes"] >= 1,
+            f"read {read!r}",
+        )
+        check(
+            "and a single-runner account makes the budget a queue budget",
+            read["budget_is_a_queue_budget"] == (read["concurrent_jobs"] == 1),
+            "the pair § 2 says gives the budget its meaning was not derived from it",
+        )
+    silent = [c for c in loaded.values() if c.runner() is None]
+    check(
+        "an example states none, so the absent case is exercised too",
+        bool(silent),
+        "every example states where its jobs run, so the legitimate absence -- "
+        "the host kind's own default answering -- is asserted nowhere",
+    )
+    if silent:
+        reported = silent[0].unavailable()
+        check(
+            "and the absence is reported rather than passed over",
+            any("`host.runner` is absent" in line for line in reported),
+            f"reported {reported!r}",
+        )
+        # ⛔ The direction that matters: § 2 keeps the per-kind default off this
+        # surface, so a report naming one would be the reader inventing the fact
+        # the facet exists to have stated -- and every workflow file would then
+        # be held to a label nobody chose.
+        check(
+            "and names no default label of its own",
+            not any("ubuntu" in line.lower() for line in reported),
+            f"reported {reported!r}",
+        )
+
     missing_root = _refuses_missing_code_root()
     check(
         "a `code` root that does not exist stops rather than proceeding",
@@ -3017,6 +3189,31 @@ def _planted_violations():
         ("a retired command written with nothing after it", "done[0].run",
          at("done", [{"check": "merged", "run": None, "answered_by": "procedure",
                       "stop": "…"}])),
+        # § 2's runner statement. ⚠️ Every one of these fails in the permissive
+        # direction: each leaves a reader reporting a runner as configured while
+        # the fact a generated job needs is one the project never stated.
+        ("a runner block that is not a block", "host.runner",
+         at("host.runner", "a-runner-label")),
+        ("a runner stating no label", "host.runner.label", _a_runner_of(label=None)),
+        ("a runner label that is not a label at all", "host.runner.label",
+         _a_runner_of(label=["a-runner-label"])),
+        ("a runner label written blank", "host.runner.label", _a_runner_of(label="   ")),
+        ("a runner stating no capacity", "host.runner.concurrent_jobs",
+         _a_runner_of(concurrent_jobs=None)),
+        ("a capacity of zero, which runs nothing", "host.runner.concurrent_jobs",
+         _a_runner_of(concurrent_jobs=0)),
+        ("a capacity written as a flag, which reads as a single runner",
+         "host.runner.concurrent_jobs", _a_runner_of(concurrent_jobs=True)),
+        ("a runner stating no budget", "host.runner.budget_minutes",
+         _a_runner_of(budget_minutes=None)),
+        ("a budget of zero, which cancels before the job starts",
+         "host.runner.budget_minutes", _a_runner_of(budget_minutes=0)),
+        ("a budget that is not a whole number of minutes", "host.runner.budget_minutes",
+         _a_runner_of(budget_minutes=1.5)),
+        ("a supersession group written blank, which reads as the absence",
+         "host.runner.supersedes", _a_runner_of(supersedes="   ")),
+        ("a supersession group that is no group at all", "host.runner.supersedes",
+         _a_runner_of(supersedes=7)),
         # § 10's entries. ⚠️ The `claimed_by` and `cap` plants are the two whose
         # refusal direction is the permissive one: each of them leaves a reader
         # reporting the resource as configured while no call ever claims it.
@@ -3424,6 +3621,37 @@ def _a_resource_of(**overrides):
         }
         entry.update(overrides)
         data.setdefault("branch_model", {})["exclusive_resources"] = [entry]
+        return data
+
+    return mutate
+
+
+def _a_runner_of(**overrides):
+    """§ 2's `host.runner` written whole, with the stated keys replaced.
+
+    Written out rather than borrowed from whichever example states the block,
+    for the reason `_a_resource_of` is: a plant that broke one key of a borrowed
+    block would redden on whatever else that project's block left out and prove
+    nothing about the branch it was written for.
+
+    ⛔ A key whose override is `None` is **written** with nothing after it rather
+    than removed, the two being one value once a mapping is parsed -- and the
+    blank form is the one a reader asking for truthiness lets through.
+
+    ⚠️ The green side of this block is asserted separately, by the examples and
+    by the absent-case arm: a refusal widened until it rejected a legitimate
+    runner statement would redden the load rather than passing quietly.
+    """
+
+    def mutate(data: dict) -> dict:
+        block = {
+            "label": "a-runner-label",
+            "concurrent_jobs": 1,
+            "budget_minutes": 30,
+            "supersedes": "a-supersession-group",
+        }
+        block.update(overrides)
+        data.setdefault("host", {})["runner"] = block
         return data
 
     return mutate

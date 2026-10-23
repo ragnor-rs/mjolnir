@@ -1677,6 +1677,16 @@ file defines and no member names is the ordinary case rather than drift
 The kind is **computed**: two statements of one fact, compared. Where the host's definitions are not
 files a reader can open, the comparison is undeterminable whole and the run says so.
 
+**A fifth dimension landed with the runner statement, and it is the one that is not an entry's**:
+each job's own `runs-on` and `timeout-minutes` and each workflow's concurrency group, held to
+`host.runner` ([schema § 2](../plugins/mjolnir/config/schema.md#where-the-hosts-jobs-run)). ⚠️ **On
+this repository it holds nothing, and the run says that rather than letting its green read as
+agreement**: this project states no `host.runner`, so it has declared the host kind's own default —
+which that section keeps off the surface — and there is no label, budget or group for a file to be
+held to. ⛔ **That silence is the arm with the most to get wrong**, since a check that guessed the
+default would report drift on a project that is correct, which is why the green side of it is a
+plant of its own below rather than an inference from the baseline.
+
 ⛔ **Nothing about the facet is read in this check's own file**
 ([schema § 2](../plugins/mjolnir/config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref)).
 The entries come from `config.host_runs()`, every refusal § 2 carries living in that one walk, and
@@ -1697,17 +1707,34 @@ figures and a number in this paragraph is wrong by the next plant.
 - **Violations that must redden**: a rename read from each end, an entry naming no definition, a
   definition no entry names, a trigger each side states and the other does not, a type clause and a
   ref the file does not state, a path filter on each side alone, two spellings of one filter, a job
-  no file defines, and a top-level key named as a job.
+  no file defines, and a top-level key named as a job. And on the runner dimension, each on a
+  planted statement the files were first put in agreement with: a job on another label, a job
+  naming none, a job on another budget, a job with nothing bounding it, a workflow in another
+  group, a group that cancels nothing in progress and so retires nothing, and a workflow with no
+  group at all.
 - **Absences that must be reported and must *not* arrive as drift**: a host kind whose definitions
   are not files, a definition stating no name, one that is not valid YAML, one that could not be
   opened, an event block filtered on a key no pattern can state, a workflow filtering its events
   differently from one another, an entry stating no `triggers`, a trigger the grammar does not
-  parse, and a job filter the host kind carries nowhere.
+  parse, a job filter the host kind carries nowhere, and — on the runner dimension — a label
+  chosen when the run starts, a set of labels where the facet states one, a budget the host
+  evaluates and a concurrency group it evaluates.
 - **Subject readings**: nothing stated beside nothing defined, which is *no subject*; and an empty
   facet with definitions behind it, which is drift rather than a project standing down.
 - **Exemptions that must stay green**, among them a trigger list and a type clause in an order no
-  file is in, since both sides state sets; a definition's own job that no member names; and two
-  members naming one job.
+  file is in, since both sides state sets; a definition's own job that no member names; two
+  members naming one job; a runner stated with every job meeting it; and ⛔ **no runner stated
+  while the files say whatever they like**, which is the arm this repository is in and the one a
+  guessed default would redden
+  ([schema § 2](../plugins/mjolnir/config/schema.md#where-the-hosts-jobs-run)).
+
+⚠️ **That last exemption was verified by disabling it, twice.** With the label comparison's
+*no statement* arm replaced by a guessed `ubuntu-latest` the plant goes red; with the budget
+comparison's arm replaced by a guessed thirty minutes it goes red again, and that second run
+reddens the suite's **baseline** too — which is the shape a guessed default has on every project
+in this repository. ⛔ **What is not covered by disabling is the group arm on its own**, a plant
+that states no supersession group having no group divergence to be found; it is the same guard and
+the same three lines, and that residue is written here rather than left to read as asserted.
 
 ⛔ **An absence plant asserts two things, and the second is the reason it exists**: that the
 dimension is reported, and that it does *not* arrive in the problem list
@@ -1747,8 +1774,13 @@ shipped reader takes 41 ms at a thousand.
   ([schema § 2](../plugins/mjolnir/config/schema.md#2-code-host)), so comparing `mirrors` against a
   step's `run:` is the one dimension this check may not add. Every workflow file here says so in a
   comment beside the step, which is where that pair is held.
-- **Whether a workflow does what its name says.** The names, triggers, filters and job ids are
-  compared; what the steps run is not read at all.
+- **Whether a workflow does what its name says.** The names, triggers, filters, job ids, runner
+  labels, budgets and concurrency groups are compared; what the steps run is not read at all.
+- ⛔ **Where the jobs run, on a project that states no runner.** The host kind's own default label
+  is not on the configuration surface and is not in this check either
+  ([schema § 2](../plugins/mjolnir/config/schema.md#where-the-hosts-jobs-run)), so the dimension
+  has no subject rather than a guessed one — which is a limit this document states because a green
+  run cannot show it, and which is why the run prints the absence in its own line.
 - **A workflow the host runs from outside this directory.** A reusable workflow called from
   another repository, or one the host synthesises, is not a file here and is not in the subject.
 - **Whether a trigger is one the host accepts.** The event vocabulary stays the host's
@@ -1909,6 +1941,28 @@ preconditions, answered from live state by the role that asks; the host's run op
 port of their own is #53. So ⛔ **`reached` is never *green*** — it names the run whose conclusion
 is worth reading, and a consumer that read it as a verdict would report a pass for a run nobody
 looked at.
+
+⚠️ **The boundary survived the module gaining a reading of how a run concluded.** The three facts
+that reading takes — how many steps the run's jobs executed, whether the host calls it a pass, and
+the id of any run that retired it — are the caller's to read off the host, and the module turns
+them into one of
+[§ 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)'s four
+readings without asking the host anything. ⛔ **The host's own conclusion word is deliberately not
+an input**, and the suite reads this module's own source to assert that no conclusion name is in
+it: the measured hazard is that one `cancelled` arrives on two of the four readings, so a map keyed
+on that word answers one of the two for both — while looking like a careful reading. ⛔ **And a step
+count the caller could not establish is not an input either**: the subcommand requires both facts,
+so a caller in that position reports precondition 3 unanswered rather than being told the run never
+started. ⚠️ **Which run to read and what it concluded stay two questions with two vocabularies**,
+for the reason the facet declines to reuse `reached` one key over: a word meaning two findings is
+the defect, not the economy.
+
+**It also answers where the project's jobs run**
+([§ 2](../plugins/mjolnir/config/schema.md#where-the-hosts-jobs-run)), so that an installer writing
+a generated workflow reads the label, the budget and the supersession group from one place and
+⛔ **writes no literal of its own**. ⚠️ **Where a project states none the answer names no default**,
+and the suite asserts that too — the per-kind label is the host's and is nowhere on the surface, so
+a report that invented one would be this module supplying the fact the facet exists to have stated.
 
 What it holds: a trigger's three parts against the change's own — the event, the type of it and the
 ref — the path filters at the two levels the surface states them at, and the four answers ranked.
