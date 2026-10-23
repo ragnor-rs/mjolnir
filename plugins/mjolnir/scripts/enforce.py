@@ -8,17 +8,25 @@ states the lease, and the one above them all which says what a hook does in a
 project that states no configuration. This script is the carrier for each:
 
     guard     a `PreToolUse` answer: refuse a merge with no recorded answer,
-              then hold a place on whatever the call puts at stake -- and
-              nothing at all where the project states no configuration
+              refuse a local run the host's own runs have already made, then
+              hold a place on whatever the call puts at stake -- and nothing at
+              all where the project states no configuration
     release   a `PostToolUse`, `Stop`, `SessionEnd` or `SubagentStop` answer:
               give back the places this session is holding
     record    write the recorded answer a guard reads onto a change
     held      report what is held right now, and by what
 
-⛔ **Nothing here judges the work.** A guard reads a record somebody else wrote
-and a count somebody else's command printed; where either is missing it says so
-in those words. The two directions it may fail in are the surface's and not this
-file's choice, and both are exercised below.
+⛔ **Nothing here judges the work.** A guard reads a record somebody else wrote,
+a count somebody else's command printed and runs somebody else's host made;
+where any of them is missing it says so in those words. The two directions it
+may fail in are the surface's and not this file's choice, and both are exercised
+below -- the merge refusing on what it could not establish and the local run
+proceeding on it.
+
+⚠️ **The third refusal is an arm here rather than a carrier of its own**, which
+is what keeps the ordering in one place: a sibling script denying a call after
+this one has taken a place leaves that place behind, a denied call reaching no
+exit event at all. `schema.md § 18` is its rule, and the facet it reads is § 2's.
 
 ⚠️ **What this cannot hold is the live half**: whether the place a guard took was
 actually given back, on a machine nobody is watching. The `ttl` is what bounds
@@ -61,11 +69,42 @@ ARM_ANCHORS = {
     "record": "what-a-hook-refuses-and-the-record-it-reads",
     "direction": "which-direction-a-guard-fails-in",
     "lease": "a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it",
+    "already_run": "18-the-guard-on-a-command-the-host-has-already-run",
+    "guardable": "what-may-be-guarded-and-the-two-ways-a-refusal-stands-down",
 }
 
 RECORD_CITATION = "schema § 7 → What a hook refuses, and the record it reads"
 LEASE_CITATION = ("schema § 7 → A lease on an exclusive resource, and the exit paths that "
                   "release it")
+ALREADY_RUN_CITATION = "schema § 18 → The guard on a command the host has already run"
+GUARDED_CITATION = ("schema § 18 → What may be guarded, and the two ways a refusal stands "
+                    "down")
+
+# § 18's four answers. ⛔ The last three all proceed and are still reported apart:
+# their remedies differ, which is the whole reason the third exists -- a reader
+# told *nothing has run* on a conflicted change is sent to run a suite whose
+# result cannot land.
+ALREADY_RUN = "already run"
+NOTHING_HAS_RUN = "nothing has run"
+NOTHING_CAN_RUN = "nothing can run"
+UNESTABLISHED = "unestablished"
+
+# What a project's own probe prints where the host can run these jobs, and ⛔ the
+# only string that satisfies the operational condition through that key: anything
+# else proceeds, which is the fail-open direction arriving at somebody else's
+# command.
+OPERATIONAL = "operational"
+
+# What the host reports for a run that never became one. ⚠️ A conclusion and not
+# a status: the two cases § 2 names -- a suspended billing account and a run
+# awaiting an action -- surface here rather than as an absent run, which is why
+# condition 3 stands apart from the conclusion at all.
+NOT_OPERATIONAL = {"startup_failure", "action_required", "stale"}
+
+# The words that end one command inside a call, so what follows begins another in
+# command position. ⛔ Read as tokens rather than searched for as text: a quoted
+# argument carrying one of them is an argument.
+SEPARATORS = {"&&", "||", "|", ";", "&", "(", ")", "{", "}", "!", "\n"}
 
 # The carrier, and every event an arm here answers. ⛔ Held rather than assumed:
 # an event that stopped being registered leaves the arm dead in every session,
@@ -163,6 +202,12 @@ FIELD_FLAGS = ("-f", "--raw-field", "-F", "--field", "--input")
 # that hangs must cost the call a known delay rather than the whole hook.
 PROBE_TIMEOUT = 5
 HOST_TIMEOUT = 8
+
+# ⚠️ Tighter than the merge guard's, because this arm may make three reads where
+# that one makes two and runs on every call rather than on a merge: the whole of
+# what it may cost has to stay inside the carrier's own timeout, and a guard that
+# makes a session slow is a guard somebody removes.
+ALREADY_RUN_TIMEOUT = 5
 
 # How much of a command a report quotes.
 SHOWN = 160
@@ -697,6 +742,363 @@ def merge_guard(config, command: str, *, host=None) -> dict:
     )
 
 
+# --- the run the host has already made -------------------------------------
+#
+# ⛔ The facet is not read here and no part of it is carried: which run mirrors a
+# command, what triggers it and which paths it watches are `host.checks`, reached
+# through the reader's own accessor. What this half adds is the three facts a
+# facet cannot hold, each of them about one commit.
+
+
+def _normalised(command: str) -> str:
+    """§ 17's comparison: the command as both sides wrote it, whitespace aside."""
+    return " ".join(str(command).split())
+
+
+def in_command_position(call: str, wanted: str) -> bool:
+    """Does this call run `wanted`, as a command rather than as text?
+
+    ⛔ **The measured defect this exists for**: a predicate matching the raw
+    string took a build slot for a text search whose prose merely contained the
+    build command. So the call is parsed into words, cut at the operators that
+    end one command, and each piece is compared from its first word -- which a
+    quoted argument carrying the same text can never reach.
+
+    ⚠️ **A prefix and not an equality.** A flagged form of a command is that
+    command, and a project that wants one of those left alone names it in
+    `never_guard` -- which is read through this same function, so the longer form
+    is matched there before the shorter one is matched here.
+    """
+    wanted_words = _words(wanted)
+    if not wanted_words:
+        return False
+    segment: list[str] = []
+    for word in [*_words(call), ";"]:
+        if word in SEPARATORS:
+            # ⛔ A leading assignment is not the command: `FOO=bar a-command` runs
+            # the command, and a segment read from its first word would miss it.
+            while segment and "=" in segment[0] and not segment[0].startswith("="):
+                segment = segment[1:]
+            if segment[:len(wanted_words)] == wanted_words:
+                return True
+            segment = []
+            continue
+        segment.append(word)
+    return False
+
+
+def _held_nothing(why: str, answer: str = UNESTABLISHED) -> dict:
+    """The proceeding answer, naming which of § 18's values it is.
+
+    ⛔ Never silent. A guard that proceeds without saying so is a guard nobody
+    can tell from one that is not installed, and the three proceeding answers
+    have three different remedies.
+    """
+    return {"systemMessage": f"Already run — {answer}: {why} ({ALREADY_RUN_CITATION})."}
+
+
+def _this_code(root: str) -> tuple[str, bool, str | None]:
+    """(the commit in the tree, whether it carries anything uncommitted, or why not).
+
+    ⚠️ Both halves of § 2's first precondition are asked of the tree rather than
+    of the host: what is unpushed is what the next read answers, a run existing
+    for this commit at all.
+    """
+    try:
+        head = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            capture_output=True, text=True, timeout=PROBE_TIMEOUT,
+        )
+        status = subprocess.run(
+            ["git", "-C", str(root), "status", "--porcelain"],
+            capture_output=True, text=True, timeout=PROBE_TIMEOUT,
+        )
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return "", False, f"{type(error).__name__} while reading the commit in this tree"
+    if head.returncode != 0 or not head.stdout.strip():
+        return "", False, ("the commit in this tree could not be read, so no run can be "
+                           "matched to it")
+    return head.stdout.strip(), bool(status.stdout.strip()), None
+
+
+def runs_for_commit(slug: str, head: str, root: str, run=None) -> tuple[list[dict], str | None]:
+    """Every run the host made for this commit, or why they could not be read.
+
+    ⛔ **The client's exit status is not read as the answer anywhere here.** The
+    measured client exits non-zero while runs are pending and also when one has
+    failed, so a guard reading it is a no-op while the host runs and a blocker
+    once it has finished. What is read is the runs themselves; a non-zero exit is
+    the host not answering, which proceeds.
+
+    ⚠️ **The page is bounded and the bound errs towards proceeding**: a commit
+    with more runs than this asks for may come back without the mirroring one,
+    and the answer is then *nothing has run* rather than a refusal.
+    """
+    runner = run if run is not None else _run_host_in
+    try:
+        code, out = runner(
+            ["run", "list", "--repo", slug, "--commit", head, "--limit", "50",
+             "--json", "databaseId,workflowName,status,conclusion"],
+            root, ALREADY_RUN_TIMEOUT,
+        )
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return [], f"{type(error).__name__} while asking the host which runs exist for this commit"
+    if code != 0:
+        return [], "the host did not say which runs exist for this commit"
+    try:
+        loaded = json.loads(out or "[]")
+    except json.JSONDecodeError:
+        return [], "the host's answer about this commit's runs did not parse"
+    return [r for r in loaded if isinstance(r, dict)], None
+
+
+def change_is_conflicted(slug: str, root: str, run=None) -> tuple[bool, str | None]:
+    """Whether this change is one the host can run nothing for.
+
+    ⚠️ Asked only where no run was found, which is the one state the two answers
+    share a shape in: § 2 records that *no checks reported* is almost always the
+    conflicted case and reads as *nothing to wait for* to anyone not told.
+    """
+    runner = run if run is not None else _run_host_in
+    try:
+        code, out = runner(
+            ["pr", "view", "--repo", slug, "--json", "mergeable"], root, ALREADY_RUN_TIMEOUT,
+        )
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return False, f"{type(error).__name__} while asking whether this change is conflicted"
+    if code != 0:
+        # ⛔ Not an error to report: a branch with no change open on it is the
+        # ordinary state this guard proceeds in, and it is the first of § 18's
+        # conditions rather than a failure to establish one.
+        return False, None
+    try:
+        loaded = json.loads(out or "{}")
+    except json.JSONDecodeError:
+        return False, "the host's answer about this change did not parse"
+    return str((loaded or {}).get("mergeable") or "").upper() == "CONFLICTING", None
+
+
+def _how_the_run_stands(found: dict, record: dict, slug: str, root: str,
+                        run=None) -> tuple[str | None, str | None]:
+    """(why this run is not one to be refused on, or None — then why that is unknown).
+
+    ⛔ **Where the facet names a job, the job is what this is read on**, by § 2: a
+    workflow concluding anything says nothing about a command whose job was
+    skipped, filtered out of the run or never started, and a per-workflow reading
+    reports a run on a job that never ran.
+    """
+    if str(found.get("conclusion") or "") in NOT_OPERATIONAL:
+        return (
+            f"the host reports `{record['mirrored_by']}` as {found['conclusion']} for this "
+            "commit, which is a fact about where the run was made rather than about this code",
+            None,
+        )
+    if not record.get("job"):
+        return None, None
+    runner = run if run is not None else _run_host_in
+    try:
+        code, out = runner(
+            ["run", "view", str(found.get("databaseId")), "--repo", slug, "--json", "jobs"],
+            root, ALREADY_RUN_TIMEOUT,
+        )
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return None, f"{type(error).__name__} while reading the jobs of the run for this commit"
+    if code != 0:
+        return None, "the host did not say which jobs this commit's run executed"
+    try:
+        loaded = json.loads(out or "{}")
+    except json.JSONDecodeError:
+        return None, "the host's answer about this run's jobs did not parse"
+    jobs = [j for j in (loaded or {}).get("jobs") or [] if isinstance(j, dict)]
+    mine = [j for j in jobs if j.get("name") == record["job"]]
+    if not mine:
+        return (
+            f"the run for this commit executed no job named `{record['job']}`, so nothing in it "
+            "answers about this command",
+            None,
+        )
+    # ⛔ § 2's third precondition, and the reason it stands apart from a
+    # conclusion: a run whose billing is suspended fails in seconds having
+    # started no step, and a job that executed none has answered nothing.
+    if not mine[0].get("steps"):
+        return (
+            f"the job `{record['job']}` executed no step for this commit, which is no answer "
+            "about this command rather than an answer of any kind",
+            None,
+        )
+    return None, None
+
+
+def _operational(config, found: dict, root: str, run=None) -> tuple[bool, str]:
+    """§ 18's one condition a project may answer in place of the host.
+
+    ⛔ Anything but the stated word proceeds, the probe's own failure included: a
+    probe that cannot answer is not a host that can.
+    """
+    stated = config.get("already_run.operational_when")
+    if not stated:
+        # The host's own answer, already read beside the run's standing. Reaching
+        # here means nothing it reported was a startup failure or an awaited
+        # action, which is the whole of what this condition asks.
+        return True, ""
+    runner = run if run is not None else _run_in_shell
+    try:
+        code, out = runner(str(stated), root, PROBE_TIMEOUT)
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return False, (f"{type(error).__name__} while asking this project's own probe whether "
+                       "the host can run these jobs")
+    if code != 0:
+        return False, ("this project's `operational_when` probe exited non-zero, so whether the "
+                       "host can run these jobs is unestablished")
+    printed = out.strip().splitlines()[0].strip() if out.strip() else ""
+    if printed != OPERATIONAL:
+        return False, (f"this project's `operational_when` probe printed {printed[:40]!r} rather "
+                       f"than `{OPERATIONAL}`, so the host is not reported able to run these jobs")
+    return True, ""
+
+
+def _run_host_in(args: list[str], root: str, timeout: int) -> tuple[int, str]:
+    """The host client, run from the tree whose change is being asked about.
+
+    ⚠️ Rooted deliberately: the client resolves which change is open from the
+    branch it is standing on, and a call made wherever the hook happened to start
+    would answer about another tree or about none.
+    """
+    proc = subprocess.run(
+        ["gh", *args], cwd=str(root), capture_output=True, text=True, timeout=timeout,
+    )
+    return proc.returncode, proc.stdout
+
+
+def already_run_guard(config, command: str, *, host=None, probe=None,
+                      environment=None, code=None) -> dict:
+    """Refuse a local run of a command the host's own runs have already made.
+
+    ⛔ **Nothing is read here that the facet already states.** Which run mirrors
+    the command is `host.checks`, read through the shared reader's accessor, and
+    the keying is the workflow's name — never a job's, which is the measured
+    defect § 2 records. What this arm adds is the three per-commit facts no facet
+    can carry: a run exists for this commit, it executed steps, and it is
+    operational.
+
+    ⚠️ **How that run concluded is deliberately not read**, by § 18: a red run has
+    spent the time and answered, and what releases the call afterwards is the work
+    itself — an edit leaves the tree carrying something the host has not seen.
+    """
+    stated = config.get("already_run.never_guard")
+    if stated is None:
+        # The reader refuses a configuration that states no list, so reaching this
+        # means the guard is running against one nothing validated. Holding
+        # nothing is the open direction, which is this guard's throughout.
+        return {}
+    records = [
+        record for record in config.mirrors()
+        if record.get("normalised") and in_command_position(command, record["normalised"])
+    ]
+    if not records:
+        # ⛔ The silent arm, and the one every call in every project takes: a
+        # command no entry mirrors is § 17's complement, and `checks: []` reaches
+        # here with nothing to match at all.
+        return {}
+    # The most specific entry, so a project mirroring both a command and a longer
+    # form of it is answered about the form the call actually ran.
+    record = max(records, key=lambda r: len(r["normalised"]))
+    exempt = next(
+        (entry for entry in stated
+         if isinstance(entry, str) and in_command_position(command, _normalised(entry))),
+        None,
+    )
+    if exempt is not None:
+        return {"systemMessage": (
+            f"Already run: `{exempt}` is one of this project's `never_guard` commands, so this "
+            f"call was not held to the host's runs ({GUARDED_CITATION})."
+        )}
+    held = environment if environment is not None else os.environ
+    escape = config.get("already_run.escape")
+    if escape:
+        # ⛔ The value is the reason, so a variable set to nothing is not an
+        # escape: a blank why would stand every refusal down for whoever exported
+        # it once and forgot.
+        why = str(held.get(str(escape)) or "").strip()
+        if why:
+            return {"systemMessage": (
+                f"Already run: stood down by `{escape}` — {why} ({GUARDED_CITATION})."
+            )}
+    slug = config.get("host.repo")
+    if not slug:
+        return _held_nothing(
+            "this project's configuration names no repository, so the host cannot be asked "
+            "which runs exist for this commit"
+        )
+    root = config.code_root
+    head, dirty, unread = (code if code is not None else _this_code)(root)
+    if unread:
+        return _held_nothing(unread)
+    if dirty:
+        # § 2's first precondition, read for the opposite act: an edit the host
+        # never received is an edit no run answered about, so the local run is
+        # the only verdict there is.
+        return _held_nothing(
+            "this tree carries changes the host has not seen, so no run of its own answers "
+            "about the code in hand",
+            answer=NOTHING_HAS_RUN,
+        )
+    runs, unread = runs_for_commit(slug, head, root, run=host)
+    if unread:
+        return _held_nothing(unread)
+    # ⚠️ The workflow's name and never a job's, which is § 2's keying rule: two
+    # unrelated workflows named their job identically, and a job-keyed reading
+    # refused a build on a check that only validated a title. ⚠️ The first of
+    # several is the newest, the host listing them that way, and a re-run is the
+    # answer that stands -- the same reading § 11 gives every artifact.
+    mine = [r for r in runs if r.get("workflowName") == record["workflow"]]
+    if not mine:
+        # ⛔ Both of § 18's middle answers land here and they are reported apart:
+        # a change the host cannot run anything for has the opposite remedy from
+        # one it simply has not run yet.
+        conflicted, unread = change_is_conflicted(slug, root, run=host)
+        if conflicted:
+            return _held_nothing(
+                f"this change is conflicted, so the host produces no run for it at all — "
+                f"`{record['mirrored_by']}` has nothing to report until that is resolved, and "
+                "a local run answers nothing that can land",
+                answer=NOTHING_CAN_RUN,
+            )
+        if unread:
+            return _held_nothing(
+                f"no run of `{record['mirrored_by']}` exists for this commit, and whether that "
+                f"is because the change is conflicted could not be established: {unread}",
+            )
+        return _held_nothing(
+            f"the host has made no run of `{record['mirrored_by']}` for this commit",
+            answer=NOTHING_HAS_RUN,
+        )
+    standing, unread = _how_the_run_stands(mine[0], record, slug, root, run=host)
+    if unread:
+        return _held_nothing(unread)
+    if standing:
+        return _held_nothing(standing, answer=NOTHING_HAS_RUN)
+    operational, why = _operational(config, mine[0], root, run=probe)
+    if not operational:
+        return _held_nothing(why)
+    state = mine[0].get("conclusion") or mine[0].get("status") or "unreported"
+    # ⛔ The remedy is named as something somebody can do rather than as a
+    # description of the refusal, by § 7: a guard whose refusal states only that
+    # it refused leaves one route past it, which is editing the guard.
+    unblocks = (
+        f"Set `{config.get('already_run.escape')}` to why this run is wanted anyway"
+        if config.get("already_run.escape")
+        else "Edit the tree, so the host's run stops answering about the code in hand"
+    )
+    return _deny(
+        f"Already run — {ALREADY_RUN}: `{record['mirrored_by']}` reports {state} for this "
+        f"commit, {head[:12]} ({ALREADY_RUN_CITATION}). ⛔ Its conclusion is not what "
+        f"is read here — the run exists for this code and executed its steps, so running "
+        f"`{record['normalised']}` locally spends the time a second time and holds whatever "
+        f"place the call puts at stake. {unblocks}."
+    )
+
+
 def capacity_guard(config, command: str, session: str, cwd: str, background: bool,
                    *, now: float, store: Path | None = None, probe=None) -> dict:
     """Hold a place on whatever this call puts at stake, or refuse the call.
@@ -750,7 +1152,8 @@ def capacity_guard(config, command: str, session: str, cwd: str, background: boo
 
 
 def guard_answer(payload: dict, *, config=None, now: float | None = None,
-                 store: Path | None = None, probe=None, host=None) -> dict:
+                 store: Path | None = None, probe=None, host=None, runs=None,
+                 code=None) -> dict:
     """The `PreToolUse` answer for one call."""
     if payload.get("tool_name") != GUARDED_TOOL:
         return {}
@@ -773,7 +1176,17 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
     refused = merge_guard(loaded, command, host=host)
     if refused:
         return refused
-    return capacity_guard(
+    # ⛔ Before any place is taken, for the reason the arm below is ordered after
+    # the merge guard: a place taken by a call that is then denied is a place
+    # nothing releases. ⚠️ And this arm proceeds far more often than it refuses,
+    # so its `systemMessage` is returned only where it had something to say.
+    # ⚠️ Its host reader is its own and not the merge guard's: the two arms ask
+    # different questions of the client and one of them is rooted in the tree,
+    # so one stand-in for both would answer with the wrong shape.
+    answered = already_run_guard(loaded, command, host=runs, probe=probe, code=code)
+    if answered.get("hookSpecificOutput"):
+        return answered
+    held = capacity_guard(
         loaded,
         command,
         str(payload.get("session_id") or ""),
@@ -783,6 +1196,14 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
         store=store,
         probe=probe,
     )
+    # ⛔ A refusal below wins, and the arm above still gets to say what it found:
+    # two arms answering one call must not silence each other, and only one of
+    # the two can refuse at a time.
+    if held.get("hookSpecificOutput") or not answered.get("systemMessage"):
+        return held
+    if not held.get("systemMessage"):
+        return answered
+    return {"systemMessage": answered["systemMessage"] + " " + held["systemMessage"]}
 
 
 def release_answer(payload: dict, *, config=None, now: float | None = None,
@@ -1090,6 +1511,90 @@ def _a_host(comments: list[str] | None = None, number: int | None = 7, code: int
         return 1, ""
 
     return run
+
+
+# ⛔ Placeholder names throughout, as `host_checks.py`'s fixtures are: a workflow
+# name, a command or a path belonging to a project is a fact this toolkit must not
+# carry, and a fixture is where one would arrive unnoticed.
+A_MIRRORED_RUN = [{
+    "workflow": "A workflow",
+    "mirrors": "a-mirrored-command",
+    "triggers": "pull_request -> *",
+}]
+
+A_MIRRORED_JOB = [{
+    "workflow": "A workflow",
+    "triggers": "pull_request -> *",
+    "jobs": [{"job": "a-job", "mirrors": "a-mirrored-command"}],
+}]
+
+
+def _a_project(checks, never_guard=None, escape=None, operational_when=None,
+               repo: str = "an-owner/a-repository"):
+    """A loadable configuration carrying this facet and this guard's own keys.
+
+    ⛔ Built from an example and loaded through the shared reader rather than
+    hand-written here, for the reason `host_checks.py` builds its fixtures that
+    way: the records this arm reads are the reader's own walk of § 2, so a plant
+    assembling them by hand would assert the plant.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import yaml  # noqa: PLC0415 -- a fixture's dependency, not the arm's
+    import config as reader  # noqa: PLC0415 -- the path is set two lines up
+
+    with open(SURFACE.parent / "examples" / "github-issues.yaml", encoding="utf-8") as handle:
+        data = yaml.safe_load(handle)
+    data["host"]["repo"] = repo
+    data["host"]["checks"] = checks
+    # § 17's collision refusal reads `host.checks`, so the example's own local
+    # list is cleared rather than left to collide with a planted entry.
+    data["checks_local"] = []
+    stated = {"never_guard": list(never_guard or [])}
+    if escape is not None:
+        stated["escape"] = escape
+    if operational_when is not None:
+        stated["operational_when"] = operational_when
+    data["already_run"] = stated
+    return reader.load_text(yaml.safe_dump(data), ".", check_paths=False)
+
+
+def _a_run(workflow: str = "A workflow", status: str = "completed",
+           conclusion: str | None = "success") -> dict:
+    return {
+        "databaseId": 1,
+        "workflowName": workflow,
+        "status": status,
+        "conclusion": conclusion,
+    }
+
+
+def _a_host_making(runs=None, jobs=None, mergeable=None, code: int = 0):
+    """A stand-in for the host, answering the three reads this guard makes."""
+
+    def run(args, _root, _timeout):
+        if code:
+            return code, ""
+        if args[:2] == ["run", "list"]:
+            return 0, json.dumps(runs if runs is not None else [])
+        if args[:2] == ["run", "view"]:
+            return 0, json.dumps({"jobs": jobs if jobs is not None else []})
+        if args[:2] == ["pr", "view"]:
+            # ⚠️ Non-zero is a branch with no change open on it, which is the
+            # ordinary state and not a failure to establish anything.
+            if mergeable is None:
+                return 1, ""
+            return 0, json.dumps({"mergeable": mergeable})
+        return 1, ""
+
+    return run
+
+
+def _a_tree(head: str = "a-commit-in-the-tree", dirty: bool = False,
+            unread: str | None = None):
+    def read(_root):
+        return head, dirty, unread
+
+    return read
 
 
 def _a_probe(count: int | None = 0, code: int = 0, prints: str | None = None):
@@ -1533,6 +2038,206 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             answered = guard_answer(payload, config=config, now=1000.0, store=fresh("merge"),
                                     host=_a_host(comments=[]))
             check(f"{label}: no answer", answered == {}, repr(answered)[:140])
+
+        # --- the run the host has already made ------------------------------
+        out.append("")
+        out.append("A command the host has already run for this commit is refused:")
+
+        def already(command: str, project=None, runs=None, jobs=None, mergeable=None,
+                    host_code: int = 0, tree=None, environment=None, probe=None) -> dict:
+            return already_run_guard(
+                project if project is not None else _a_project(A_MIRRORED_RUN),
+                command,
+                host=_a_host_making(runs=runs if runs is not None else [_a_run()],
+                                    jobs=jobs, mergeable=mergeable, code=host_code),
+                code=tree if tree is not None else _a_tree(),
+                environment=environment if environment is not None else {},
+                probe=probe,
+            )
+
+        def said(answer: dict) -> str:
+            return str(answer.get("systemMessage", ""))
+
+        answered = already("a-mirrored-command")
+        check("the mirrored command in command position is refused", denied(answered),
+              repr(answered)[:160])
+        check("and the refusal names the run it was refused on",
+              "A workflow" in reason(answered), reason(answered)[:160])
+        check("and names what would unblock it",
+              "Edit the tree" in reason(answered), reason(answered)[:200])
+
+        # ⛔ The measured defect this arm exists against: a predicate matching the
+        # raw string took a build slot for a text search whose prose merely
+        # carried the command.
+        out.append("")
+        out.append("A call whose prose merely carries that command is not that command:")
+        for label, command in (
+            ("a search for it", "a-searching-command 'a-mirrored-command' a-file"),
+            ("a message naming it", "a-printing-command a-mirrored-command"),
+            ("it as a flag's value", "a-command --with-argument a-mirrored-command"),
+            ("a longer word beginning with it", "a-mirrored-command-that-is-another"),
+        ):
+            answered = already(command)
+            check(f"{label}: no answer", answered == {}, repr(answered)[:160])
+        for label, command in (
+            ("after a separator", "a-command && a-mirrored-command"),
+            ("after a leading assignment", "A_VARIABLE=a-value a-mirrored-command"),
+            ("with flags of its own", "a-mirrored-command --with-a-flag"),
+        ):
+            check(f"{label}: still the command, and refused", denied(already(command)),
+                  repr(already(command))[:160])
+
+        # ⛔ The exit-status measurement. The client exits non-zero while runs are
+        # pending *and* when one has failed, so both readings are planted: a
+        # pending run is not green, and a failed one is not absent.
+        out.append("")
+        out.append("A pending run does not read as green, and a failed one does not read as absent:")
+        for label, run_state in (
+            ("a run still in progress", _a_run(status="in_progress", conclusion=None)),
+            ("a run that concluded red", _a_run(conclusion="failure")),
+            ("a run still queued", _a_run(status="queued", conclusion=None)),
+        ):
+            answered = already("a-mirrored-command", runs=[run_state])
+            check(f"{label}: refused, the run existing for this commit", denied(answered),
+                  repr(answered)[:160])
+        check("and the host answering nothing at all proceeds rather than refusing",
+              not denied(already("a-mirrored-command", host_code=1)))
+        check("naming it as unestablished rather than as no run",
+              UNESTABLISHED in said(already("a-mirrored-command", host_code=1)),
+              said(already("a-mirrored-command", host_code=1))[:160])
+
+        out.append("")
+        out.append("Each state where the host's run does not answer about this code proceeds:")
+        for label, kwargs, answer in (
+            ("the tree carries uncommitted work",
+             {"tree": _a_tree(dirty=True)}, NOTHING_HAS_RUN),
+            # ⚠️ The head having moved is this same answer and reaches it by the
+            # same route: the runs are asked for by commit, so a commit the host
+            # has no run of comes back empty however many runs the branch has.
+            ("the commit in the tree is one the host has no run of",
+             {"tree": _a_tree(head="a-commit-the-host-has-not-seen"), "runs": []},
+             NOTHING_HAS_RUN),
+            # ⛔ The path-filtered case, which is why *some live check* says
+            # nothing about the command in hand: the host ran something for this
+            # commit, and it was not the run that mirrors this command.
+            ("a run exists for this commit and the mirroring workflow is not it",
+             {"runs": [_a_run(workflow="Another workflow")]}, NOTHING_HAS_RUN),
+            # ⛔ § 2's environment failure, which is a fact about where the run
+            # was made rather than about the change — and therefore a run that
+            # answered nothing, not a fact this arm could not establish.
+            ("the host never started the run",
+             {"runs": [_a_run(conclusion="startup_failure")]}, NOTHING_HAS_RUN),
+            ("the run is awaiting an action",
+             {"runs": [_a_run(conclusion="action_required")]}, NOTHING_HAS_RUN),
+            ("the commit in the tree could not be read",
+             {"tree": _a_tree(unread="a reason")}, UNESTABLISHED),
+        ):
+            answered = already("a-mirrored-command", **kwargs)
+            check(f"{label}: the call proceeds", not denied(answered), repr(answered)[:160])
+            check(f"{label}: and the answer is `{answer}`", answer in said(answered),
+                  said(answered)[:200])
+
+        # ⛔ The fourth value, and the reason it is not folded into the first: an
+        # empty run list on a conflicted change has the opposite remedy, and a
+        # reader told *nothing has run* is sent to run a suite that cannot land.
+        out.append("")
+        out.append("A conflicted change is told apart from one nothing has run for:")
+        conflicted = already("a-mirrored-command", runs=[], mergeable="CONFLICTING")
+        check("the call proceeds", not denied(conflicted))
+        check("and the answer is the conflict rather than the absence",
+              NOTHING_CAN_RUN in said(conflicted) and NOTHING_HAS_RUN not in said(conflicted),
+              said(conflicted)[:200])
+        check("and it names the remedy as resolving it rather than running anything",
+              "conflicted" in said(conflicted), said(conflicted)[:200])
+        check("while the same empty list with no conflict is the other answer",
+              NOTHING_HAS_RUN in said(already("a-mirrored-command", runs=[], mergeable="MERGEABLE")))
+
+        # ⛔ The keying rule, held on the one shape that can disagree with it: a
+        # workflow whose job mirrors the command, where a job-keyed reading
+        # refused a build on the strength of a check that validated a title.
+        out.append("")
+        out.append("Where the facet names a job, the job is what the run is read on:")
+        jobbed = _a_project(A_MIRRORED_JOB)
+        check("a run whose job executed steps is refused",
+              denied(already("a-mirrored-command", project=jobbed,
+                             jobs=[{"name": "a-job", "steps": [{"name": "a-step"}]}])))
+        check("a run that executed no job of that name proceeds",
+              not denied(already("a-mirrored-command", project=jobbed,
+                                 jobs=[{"name": "another-job", "steps": [{"name": "a-step"}]}])))
+        check("and a job that executed no step proceeds, which is not its conclusion",
+              not denied(already("a-mirrored-command", project=jobbed,
+                                 jobs=[{"name": "a-job", "steps": []}])))
+
+        # --- the two ways a refusal stands down -----------------------------
+        out.append("")
+        out.append("The two ways a refusal stands down, and the way that is not one:")
+        exempted = _a_project(A_MIRRORED_RUN, never_guard=["a-mirrored-command --with-a-flag"])
+        check("a `never_guard` command is not refused",
+              not denied(already("a-mirrored-command --with-a-flag", project=exempted)))
+        check("and the answer names the list it was exempted by",
+              "never_guard" in said(already("a-mirrored-command --with-a-flag",
+                                            project=exempted)))
+        check("while the shorter form it is a variant of is still refused",
+              denied(already("a-mirrored-command", project=exempted)))
+        escaped = _a_project(A_MIRRORED_RUN, escape="A_VARIABLE")
+        check("the escape set to a reason stands the refusal down",
+              not denied(already("a-mirrored-command", project=escaped,
+                                 environment={"A_VARIABLE": "because the evidence is wrong"})))
+        check("and the answer carries the reason the person gave",
+              "the evidence is wrong" in said(
+                  already("a-mirrored-command", project=escaped,
+                          environment={"A_VARIABLE": "because the evidence is wrong"})))
+        check("the escape set to nothing is not an escape",
+              denied(already("a-mirrored-command", project=escaped,
+                             environment={"A_VARIABLE": "   "})))
+        check("and the refusal then names the variable as what would unblock it",
+              "A_VARIABLE" in reason(already("a-mirrored-command", project=escaped,
+                                             environment={"A_VARIABLE": ""})))
+
+        out.append("")
+        out.append("A project's own probe answers the operational condition, and only that one:")
+        probed = _a_project(A_MIRRORED_RUN, operational_when="a-command-that-probes")
+        check("a probe printing the stated word leaves the refusal standing",
+              denied(already("a-mirrored-command", project=probed,
+                             probe=_a_probe(prints=f"{OPERATIONAL}\n"))))
+        for label, probe in (
+            ("a probe printing anything else", _a_probe(prints="a-state-of-some-kind\n")),
+            ("a probe that exits non-zero", _a_probe(code=1)),
+            ("a probe that prints nothing", _a_probe(prints="")),
+        ):
+            answered = already("a-mirrored-command", project=probed, probe=probe)
+            check(f"{label}: the call proceeds", not denied(answered), repr(answered)[:160])
+            check(f"{label}: and the answer names the probe rather than the host",
+                  "operational_when" in said(answered), said(answered)[:200])
+
+        # ⛔ The project with nothing mirrored, which is a configuration rather
+        # than a misconfiguration: there is no command to match, so no call here
+        # is ever answered.
+        out.append("")
+        out.append("A project whose host runs no check is guarded by nothing:")
+        empty = _a_project([])
+        for command in ("a-mirrored-command", "a-command-of-any-kind --with-a-flag"):
+            check(f"no answer for: {command}", already(command, project=empty) == {},
+                  repr(already(command, project=empty))[:140])
+
+        # ⛔ The ordering, asserted on this arm as it is on the merge guard: a
+        # place taken by a call this arm then refuses is a place nothing releases.
+        out.append("")
+        out.append("A call this arm refuses leaves no place behind either:")
+        where = fresh("already-run-ordering")
+        claiming = _a_project(A_MIRRORED_RUN)
+        claiming.data["branch_model"]["exclusive_resources"] = [
+            _a_resource(cap=1, claimed_by="a-mirrored-command")
+        ]
+        answered = guard_answer(
+            _call("a-mirrored-command"), config=claiming, now=1000.0, store=where,
+            host=_a_host(comments=[]), runs=_a_host_making(runs=[_a_run()]),
+            code=_a_tree(),
+        )
+        check("the call is refused", denied(answered), repr(answered)[:160])
+        check("and nothing was held on its way to being refused",
+              not live_leases(where, 1000.0),
+              f"{len(live_leases(where, 1000.0))} lease(s) left behind")
 
         # --- what a project that states no configuration gets ---------------
         #

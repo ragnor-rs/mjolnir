@@ -94,6 +94,12 @@ done:
 # unset key, because a decision and an oversight read identically otherwise.
 checks_local: []
 
+# § 18, on the first day: the one mirrored command above is a verdict that changes nothing, so
+# there is nothing to keep this guard off and `[]` says that rather than leaving the key out.
+# No escape and no probe — the host's own answer is the only one this project has.
+already_run:
+  never_guard: []
+
 commit:
   staging: explicit
   trailer: read_from_history

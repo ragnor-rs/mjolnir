@@ -3067,3 +3067,105 @@ as both sides wrote it**, with only its runs of whitespace normalised — the sa
 shell, so a second spelling of one command is not a second command. Anything beyond that is two
 commands as far as this refusal can tell, which errs towards accepting a duplicate rather than
 towards refusing a legitimate check.
+
+## 18. The guard on a command the host has already run
+
+```yaml
+already_run:                 # the guard on a local run the host's own runs have already made
+  never_guard: ["<a command this guard never refuses, whatever the host has run>"]  # required
+  escape: "<the environment variable that stands one refusal down>"  # absent where there is none
+  operational_when: "<a command printing `operational` where the host can run these jobs>"
+```
+
+**The act is a local run of a command [§ 2](#2-code-host)'s facet says the host mirrors**, and the
+refusal is the inverse of the one [§ 7](#what-a-hook-refuses-and-the-record-it-reads) states: that
+guard refuses an act nobody answered for, and this one refuses an act somebody has already paid
+for. ⛔ **The record it reads is the host's own runs**, which is a record in exactly § 7's sense —
+written by another leg and never by the act in hand. What it costs to forget is paid twice, the
+minutes of the run and the place a [§ 10](#exclusive-resources) lease holds while a parallel session
+waits for it.
+
+⛔ **Which direction it fails in is already decided and is not this section's to choose.** A local
+run is a call that can be run again, so § 7's
+[table](#which-direction-a-guard-fails-in) puts every unestablished fact on the *proceeds* side: no
+pull request, no run, a host that could not be read, a client that did not answer. ⚠️ **The
+asymmetry against the merge guard is the point rather than an inconsistency** — a needless local run
+costs minutes, and a merge is not undone.
+
+**What it reads, and what each part already states.** ⛔ **No consumer carries a workflow name, a
+trigger pattern or a path filter, this one included**: which run mirrors the command in hand is
+§ 2's facet, read by the
+[workflow name and never a job name](#2-code-host), and whether that run reaches a given change is
+the [four answers](#reading-a-runs-answer-and-what-a-failure-is) — of which only **reached** is a
+run to read. ⚠️ **Two unrelated workflows named their job identically**, and a job-keyed version of
+this guard refused a build on the strength of a check that only validated a title.
+
+⛔ **Three of § 2's four preconditions are read here and the fourth deliberately is not.** A run
+exists for this commit, it executed steps, and it is visibly operational: those three are what make
+the local run a duplicate. ⛔ **How it concluded is not among them**, which is the one place this
+guard parts company with the roles that read the same runs — a red run has spent the time and
+answered, and the code it answered about is still the code in the tree. ⚠️ **What releases the call
+after a red is the work itself**: an edit leaves the tree carrying something the host has not seen,
+which is the first precondition failing and the call proceeding.
+
+⛔ **A host client's exit status is not the answer, and reading it as one throws the answer away in
+exactly the state this guard exists for.** The measured client exits non-zero while runs are
+*pending* and also when one has *failed*, so a first version that read it was a no-op while the host
+ran and a blocker once it had finished — precisely backwards. ⚠️ **So a pending run does not read as
+green and a failed one does not read as absent**: both are a run that exists for this commit, which
+is the question asked here.
+
+**The four answers, and why the fourth is not folded into the first.**
+
+| Answer | What it is | What it does |
+|---|---|---|
+| **already run** | a run mirroring this command exists for this commit, executed steps and is operational | refuses, naming the workflow, the run and what unblocks it |
+| **nothing has run** | no run of it answers about this code — no pull request yet, a tree carrying edits the host has not seen, a path filter that legitimately excludes the change, a run that started no step, or a job the run never executed | proceeds: the local verdict is the only one there is |
+| **nothing can run** | the change is conflicted, so the host produces no run for it at all | proceeds, ⛔ **and says so rather than reporting the answer above**: the remedy is to resolve the conflict, and a reader told *no checks, go ahead* is sent to run a suite whose result cannot land |
+| **unestablished** | the host could not be read, its client did not answer, the commit in the tree could not be read, or a stated probe could not say whether the host can run these jobs | proceeds, naming which half was unestablished ([§ 11](#a-report-names-what-it-could-not-establish)) |
+
+⚠️ **The first two of those are the same shape from the host and have opposite remedies**, which is
+why the third exists as its own value — § 2 already records that *no checks reported* is almost
+always the conflicted case and reads as *nothing to wait for* to anyone who has not been told.
+
+### What may be guarded, and the two ways a refusal stands down
+
+⛔ **Only a command that produces a verdict and changes nothing may be refused.** That is
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s rule at its own `command`
+key, read one facet over: a command that repairs what it judges is work rather than a duplicated
+verdict, and refusing it refuses the fix. ⚠️ **And the surface cannot tell the two apart
+mechanically** — one measured command name is a verdict under one root and a rewrite under another —
+so `never_guard` is where a project states the ones this guard leaves alone. **Three kinds were
+measured on the project that runs this**: the fixing variants of its checks, one command that is a
+fix in one package and a pure check in another, and the paid suites its host never runs at all.
+
+⛔ **The match is on the command's position and never on the text of the call.** A call whose
+*prose* carries a guarded command — a search for it, a message naming it — runs something else, and
+a predicate matching the raw string took a build slot for a text search. ⚠️ **The comparison itself
+is § 17's**, the command as both sides wrote it with only its runs of whitespace normalised; what
+this section adds is where in the call it has to appear.
+
+⛔ **`escape` is a variable's name and never a value** ([§ 14](#what-the-shell-inherits-is-a-list-of-names)),
+and what stands the refusal down is the person setting it to a reason. A blank value is not an
+escape: the value *is* why, so a variable set to nothing says nothing. ⚠️ **It is the pressure valve
+that keeps a fail-open guard from being deleted the first time its evidence is wrong**, and a guard
+somebody deletes holds nothing at all afterwards. ⛔ **It stands down one call and is not a
+configuration key that turns the guard off** — that key is the one § 7 refuses by name, one guard
+over.
+
+⛔ **`operational_when` is the one condition a project may answer in place of the host.** Where a
+project already owns a probe answering *can the host run these jobs*, pointing at it is this
+toolkit's own argument applied to itself: there is one implementation of that question and a guard
+is not a second one. ⚠️ **It reaches that condition and no other** — whether a run exists, whether
+it mirrors this command and whether it saw this code are per-commit facts a project-level probe
+does not answer, so those three are read from the host whichever way this key is stated.
+**Anything but `operational` proceeds**, which is the fail-open direction arriving at a command
+somebody else wrote: a probe that cannot answer is not a host that can.
+
+⚠️ **`never_guard: []` is the stated absence and `already_run` is written by every project**, for
+the reason [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s empty list is:
+a project that has looked at its mirrored commands and found none to exempt and a project that has
+never looked read identically otherwise. ⛔ **A project whose `checks` is empty is guarded by
+nothing**, § 2's absence meaning there is no mirrored command to match — which is a configuration
+rather than a misconfiguration, and the same reading § 7 gives a project that states no exclusive
+resource.
