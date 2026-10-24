@@ -1,0 +1,54 @@
+name: Live guard
+
+# The guard that holds a shell command which could open a session on a machine outside this one.
+# What a gate can hold is the reading and its wiring: that every call shape a configured session
+# command arrives in is still held — behind an assignment, behind a wrapper, in a later segment of
+# a compound, inside a substitution, with a user in front of the machine or a path after it — that
+# every shape which merely *names* the command is still let through, that a machine the project
+# named as not live still passes silently, that each of the four facts whose absence § 20 fails
+# closed on still holds the call, and that `hooks.json` still calls this script on the event its
+# arm answers. A guard that stopped being called holds nothing while every reader goes on
+# reporting it installed, and nothing in a session ever says so.
+#
+# ⚠️ What this cannot hold is stated in docs/single-source-of-truth.md rather than left for a
+# reader to assume away: the machine is read as a call's first plain word, so a command whose
+# target sits elsewhere is put to a person rather than passed, and a name spelled another way is
+# another name.
+#
+# ⛔ Nothing here is a verdict about this repository's own machines. No command this project runs
+# opens a session anywhere else — every check is a suite over the tree it runs in — so the tree
+# this runs in is the green side of the facet, and the session commands the suite judges are the
+# ones it plants for itself.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the project
+# controls its workflows, because a `host.checks` entry states one mirrored command.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind, and no network. ⛔ Sharper here than on its siblings: a run holding
+# the guard that stands between a session and a machine has no business holding anything that
+# could reach one.
+permissions: {}
+
+jobs:
+  live-guard:
+    name: Live guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command: the call shapes that must be held and the ones that must not, the
+      # machines a project named as not live beside the one it did not, each unestablished fact
+      # beside the verdict it produces, and then the surface and the carrier held to still stating
+      # and still calling what this file performs. ⚠️ That command is also the string `host.checks`
+      # states this run mirrors — held together by eye, and § 2 rules that it must be: the mapping
+      # from a run to the command it mirrors is configured and never inferred. The workflow *name*
+      # above is held mechanically, by the `Host checks drift` run.
+      - name: Assert what could reach a machine is held, what merely names one is not, and the carrier calls this
+        run: python3 plugins/mjolnir/scripts/live.py --self-test

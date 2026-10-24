@@ -110,6 +110,12 @@ host:
     - workflow: "Installer"
       mirrors: "python3 plugins/mjolnir/scripts/install.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The same reading as the two entries above, on the guard that holds a session: no command
+    # in this repository opens one on another machine, so `live_guard` below is `[]` and this run
+    # holds the carrier's own suite rather than a verdict about this tree.
+    - workflow: "Live guard"
+      mirrors: "python3 plugins/mjolnir/scripts/live.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -432,3 +438,19 @@ spend_guard:
   # No `resume_bar_usd`: a resume here pays to rewrite a prompt cache like any other, and there is
   # no spend beside it for the figure to be worth interrupting a person about. The key is
   # legitimately unset, and the arm that would read it says nothing.
+
+live_guard:
+  # ⛔ No command this repository runs opens a session anywhere else. Every check here is a suite
+  # over the tree it runs in, the code host is reached by its own client and the tracker through
+  # that client too — so there is no machine to be live, and the list is empty. `[]` rather than
+  # an unset key, by § 20: a project that looked at its commands and found none that leave this
+  # machine and a project that never looked read alike otherwise.
+  #
+  # ⚠️ The empty list is also what makes this repository the green side of its own check: the
+  # carrier's suite plants the session commands it has to hold, and the tree it actually runs in
+  # is the project that must get no verdict at all.
+  session_tools: []
+  # No `allowlist` and no `local_names`: both are read only once an entry above matches, and with
+  # no entry there is nothing for either to decide. ⛔ A path stated here would name a file on
+  # whatever machine this is checked out on, which is the one thing § 20 keeps outside every
+  # working tree.

@@ -124,9 +124,10 @@ to ask you are stated too —
 | [`tools/check_nothing_deferred.py`](tools/check_nothing_deferred.py) | The gate that refuses a merge while any item raised against the change is unresolved, counted in the body and in the threads on it |
 | [`tools/check_prose_width.py`](tools/check_prose_width.py) | The sweep that holds every tracked markdown file to the line width the configuration states, excluding the lines the format forbids breaking |
 | [`tools/check_no_audit_trail.py`](tools/check_no_audit_trail.py) | The gate that reads the markdown lines a change adds and refuses a dated pass record, a figure beside a former value, or a clause whose subject is the pass before this one |
-| [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/): a `SessionStart` hook putting the rules nothing mechanical reads into the session, a `Stop` hook holding a role's reply to the register, a `PreToolUse` hook refusing a command that would carry a credential onto a surface outside the project, and the enforcement and spend halves below. Which they are is what the file says, so no count of them is carried here |
+| [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/): a `SessionStart` hook putting the rules nothing mechanical reads into the session, a `Stop` hook holding a role's reply to the register, a `PreToolUse` hook refusing a command that would carry a credential onto a surface outside the project, and the enforcement, spend and live halves below. Which they are is what the file says, so no count of them is carried here |
 | [`plugins/mjolnir/scripts/enforce.py`](plugins/mjolnir/scripts/enforce.py) | The enforcement half: a guard that refuses a merge for which no answer to *is a person going to read this diff* is recorded on the change, naming what would unblock it; a lease that holds a place on whatever your configuration says contends, given back on every exit path that fires and expiring on the one that cannot; and the command that writes the record the guard reads |
 | [`plugins/mjolnir/scripts/install.py`](plugins/mjolnir/scripts/install.py) | The install half: the step that writes the artifacts only your host and your git can read, and takes them back out. What it may do, and what it refuses rather than improvise, is [the rule](plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out) — no copy of it is carried here — with what the step's own suite reaches, and what it leaves alone, in [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-install-half-what-the-toolkit-writes-into-a-project) |
+| [`plugins/mjolnir/scripts/live.py`](plugins/mjolnir/scripts/live.py) | The live half: a guard that holds a command your configuration says opens a session on another machine, naming the segment, the machine it reaches and the file a name is cleared in — putting it to you where you would answer the prompt and refusing it outright where the session would answer for itself, and passing in silence where the machine is one you named as not live |
 | [`plugins/mjolnir/scripts/spend.py`](plugins/mjolnir/scripts/spend.py) | The spend half: a guard that puts a command your configuration says costs money to you on every invocation — or refuses it outright where you said so — naming the segment that spends and what you said it costs, and reading the command's own position in the call rather than the text of it, so a path mentioned in an edit is not a call of anything; and the one price the harness states before a turn runs, reported against a bar you set and reported as *no figure* where it gave none |
 
 The loop's remaining roles land here as they are reconciled. ⛔ **No count of them is written
@@ -291,6 +292,24 @@ of the parse and the defect that was paid for once, and
 of the go and of the one price the harness states before a turn runs. A project that denies no
 command gets no spend hook at all; what no check can reach is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-spend-half-a-call-put-to-somebody-and-the-one-price-stated-beforehand).
+
+⛔ **Nothing opens a session on your live machine without somebody being asked.** You name the
+commands that open one; the machines that are *not* live are named in a file outside every working
+tree, so your repository carries the mechanism and your machine carries the names — and a machine
+nobody has written that file on yet is one where every name reads as live, which is the safe way
+round. ⛔ **The verdict turns on who would answer the prompt**: you get the ask where you would
+answer it, and the call is refused outright where the session would answer on its own behalf,
+because a prompt a session can clear for itself is not approval. The
+[live rule](plugins/mjolnir/config/schema.md#20-a-command-that-could-open-a-session-on-a-live-machine)
+is the single statement of the list and its keys,
+[which verdict](plugins/mjolnir/config/schema.md#which-verdict-and-who-would-answer-the-prompt)
+of the line the whole guard rests on,
+[the machines named](plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)
+of why the list is inverted and where it lives, and
+[the four ways it fails closed](plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed)
+of what a fact it cannot establish does. A project whose commands reach no other machine gets no
+live hook at all; what no check can reach is in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-live-half-a-session-put-to-somebody-and-the-names-that-clear-one).
 
 ### Who this page is written for
 

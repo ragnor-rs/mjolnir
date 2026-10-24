@@ -219,6 +219,44 @@ COMMAND_FLAGS = {"-exec", "-execdir", "-ok", "-okdir", "-c", "--command"}
 SHOWN = 160
 
 
+def _lexer(command: str) -> shlex.shlex:
+    """The lexer `words` reads a call with, built in one place.
+
+    ⛔ One construction, because every setting on it is a measurement -- each is
+    stated beside `words` below -- and a second copy of them would be a second
+    reading of the shell, free to disagree with the first about where a command
+    is. `readable` asks the same lexer whether it could read a call at all.
+    """
+    lexer = shlex.shlex(command, posix=True, punctuation_chars="();<>|&\n")
+    lexer.whitespace_split = True
+    lexer.whitespace = " \t\r"
+    lexer.commenters = ""
+    return lexer
+
+
+def readable(command: str) -> bool:
+    """Whether this call is one the lexer could read, rather than fall back on.
+
+    ⛔ Answered here rather than inferred from `words`, whose fallback returns
+    tokens either way: a caller comparing the two lists would be reimplementing
+    this question, and the fallback is deliberately not distinguishable by its
+    output. What reads it is the sibling guard whose verdict turns on it -- a call
+    nothing can parse has no reliable command positions in it, which
+    `schema.md § 20 -> The four ways it fails closed` makes one of the four.
+
+    ⚠️ It says nothing about whether the *shell* would run the call. A quote
+    nobody closed is unreadable to both; a construct this lexer reads and the
+    shell rejects, or the reverse, is a difference neither this nor `words` can
+    report, and the fallback is what keeps such a call guarded rather than
+    waved through.
+    """
+    try:
+        list(_lexer(command))
+    except ValueError:
+        return False
+    return True
+
+
 def words(command: str) -> list[str]:
     """Every token of a call, with the separators kept as tokens of their own.
 
@@ -236,12 +274,8 @@ def words(command: str) -> list[str]:
     ordinary character, a real comment's `#` stands in the command position and
     matches nothing, which is the same answer by a cheaper route.
     """
-    lexer = shlex.shlex(command, posix=True, punctuation_chars="();<>|&\n")
-    lexer.whitespace_split = True
-    lexer.whitespace = " \t\r"
-    lexer.commenters = ""
     try:
-        return list(lexer)
+        return list(_lexer(command))
     except ValueError:
         # A call this lexer cannot read is a call the shell cannot read either,
         # and the fallback reads the words between the separators rather than

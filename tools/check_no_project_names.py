@@ -8,9 +8,12 @@ The acceptance item for that convention says the **search is the check**, rather
 than a reading of the procedure, so this script is the search and the gate runs
 it.
 
-Seven of the nine checks here are of the *forbidding* kind, which is sound only
-when the thing forbidden has a stable form; the two computed ones exist to stop
-the other seven holding nothing. Two rules keep the forbidding kind sound:
+Most of the checks here are of the *forbidding* kind, which is sound only when
+the thing forbidden has a stable form; the computed ones -- that the strict set
+is swept at all, and that no carrier escapes it -- exist to stop the rest holding
+nothing. ⛔ No count of either group is written here: the first form of this
+sentence carried one, and the check this file grew next made it wrong. Two rules
+keep the forbidding kind sound:
 
 1. **A stack token counts only as code, never as prose.** In markdown that means
    inside a code span or a fenced block; in a script it means outside the
@@ -174,6 +177,25 @@ CONFIG_SLUG = re.compile(r"^\s*repo:\s*[\"']?(?P<slug>[A-Za-z0-9_.-]+/[A-Za-z0-9
 
 HOME_PATH = re.compile(r"(?:/Users/|/home/|\$HOME\b|\$\{HOME\}|(?<![\w.])~/[A-Za-z0-9_.])")
 ADDRESS = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
+
+# A machine named by its address. ⛔ The one identity shape of a *machine* with a
+# form stable enough for the forbidding kind: a hostname is any word and an alias
+# is any word somebody chose, so neither is reachable by a pattern at all --
+# which is why `schema.md § 20` keeps the names a guard clears a call with in a
+# file outside every working tree rather than holding them with a sweep. What
+# this catches is the one spelling that cannot be anything else.
+#
+# ⚠️ Matched anywhere rather than in a value position, unlike the tracker
+# identifiers above: four dotted numbers is not the shape of a version, an
+# encoding or a standard's number, so the false-red direction rule 2 exists for
+# is not open here. Measured before taking it: the tree carried none.
+#
+# ⚠️ The trailing guard forbids a *fifth* number rather than any dot: written as
+# a plain `(?![\w.])` it let an address at the end of a sentence through, the
+# full stop after it being the character it refused — measured, on this check's
+# own plant, which is the one state where a forbidding grammar reads as holding
+# and holds nothing.
+MACHINE_ADDRESS = re.compile(r"(?<![\w.])\d{1,3}(?:\.\d{1,3}){3}(?!\.?\d)")
 
 # Tracker-side identifiers. A Jira key and a Trello object id are matched only in
 # a *value* position -- a whole code span, a whole quoted string, or a URL path --
@@ -890,6 +912,27 @@ def check_no_address_is_named(tree: Tree) -> list[str]:
     return problems
 
 
+def check_no_machine_is_named(tree: Tree) -> list[str]:
+    """No machine is named by its address, anywhere in the tree.
+
+    The convention's own words for the class are `schema.md § 20`'s: no host,
+    alias, user, jump path or fingerprint enters this toolkit. ⛔ **Only the
+    decidable end of that is held here** -- an address, which cannot be anything
+    else -- and the rest is held by where the names live rather than by a
+    pattern: a sweep for a hostname is a sweep for every word.
+    """
+    problems = []
+    for path in tree.everything():
+        for match in MACHINE_ADDRESS.finditer(tree.text[path]):
+            line = tree.text[path].count("\n", 0, match.start()) + 1
+            problems.append(
+                f"{path}:{line}: names the machine at `{match.group(0)}`. A machine's address is "
+                "a project's fact wherever it is written, and the guard that holds a session "
+                "reads its names from a file outside every working tree."
+            )
+    return problems
+
+
 def check_no_tracker_identifier_is_named(tree: Tree) -> list[str]:
     problems = []
     for path in tree.everything():
@@ -1104,6 +1147,7 @@ CHECKS = [
     ("no tracker is named in the strict set", check_no_tracker_is_named_in_the_strict_set),
     ("no stack is named in the strict set", check_no_stack_is_named_in_the_strict_set),
     ("no value is carried in the strict set", check_no_value_is_carried_in_the_strict_set),
+    ("no machine is named", check_no_machine_is_named),
 ]
 
 
@@ -1430,6 +1474,11 @@ def _plant_address(tree: Tree) -> Tree:
     return tree
 
 
+def _plant_machine_address(tree: Tree) -> Tree:
+    tree.text["README.md"] += "\nThe box answers on 203.0.113.7.\n"
+    return tree
+
+
 def _plant_jira_key_as_a_value(tree: Tree) -> Tree:
     tree.text["docs/configuration-surface.md"] += "\nMeasured on `PROJ-1421`.\n"
     return tree
@@ -1521,6 +1570,7 @@ VIOLATIONS = [
     ("no home directory is named", "a tilde path", _plant_tilde_path),
     ("no home directory is named", "a home path in the sibling script", _plant_home_path_in_the_sibling_script),
     ("no address is named", "an email address", _plant_address),
+    ("no machine is named", "a machine named by its address", _plant_machine_address),
     ("no tracker identifier is named", "a Jira key written as a value", _plant_jira_key_as_a_value),
     ("no tracker identifier is named", "a Trello object id written as a value", _plant_trello_id_as_a_value),
     ("no tracker identifier is named", "a Jira site", _plant_jira_site),

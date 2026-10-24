@@ -342,9 +342,10 @@ The convention in the README — that this repository names no *other* project �
 own rule that [no value appears under a carrier
 root](../plugins/mjolnir/config/schema.md#the-configuration-surface) both say the **search is the
 check** rather than a reading of the procedure. `tools/check_no_project_names.py` is that search,
-in its own workflow. **Seven of its nine checks are of the *forbidding* kind**, so most of the
-script stands or falls on whether the thing forbidden has a stable form; the two computed ones
-exist to stop the other seven holding nothing.
+in its own workflow. **Most of its checks are of the *forbidding* kind**, so most of the script
+stands or falls on whether the thing forbidden has a stable form; the two computed ones exist to
+stop the rest holding nothing. ⛔ No count of either group is carried here or in the script: the
+first form of both sentences carried one, and the check the sweep grew next made it wrong.
 
 Two scopes. The repository-wide one looks for what identifies someone else's project; the strict
 one — the carrier roots, never the whole tree — looks for a value, a tracker or a stack in text
@@ -363,6 +364,7 @@ rather than from a hand-kept list of roots.
 | 6 | No tracker is named, in the slug spelling or the prose one | the strict set | forbidding |
 | 7 | No package manager, task runner, build tool, checker, manifest or lockfile; no stack's own flag; no interpreter in front of something this repository does not ship; no directory change prefixing a command, no directory flag, no absolute path | the strict set | forbidding |
 | 8 | No value any configuration supplies | the strict set | forbidding |
+| 9 | No machine named by its address, which is the one identity shape of a *machine* with a form a pattern can hold — a hostname is any word and an alias is any word somebody chose, so those are held by the names living outside every working tree ([schema § 20 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)) rather than by this sweep | same | forbidding |
 
 Check 5 is the one that makes the shape-matched strict set safe: a carrier in a directory the
 shapes do not reach — `plugins/other/skils/`, one letter out — would otherwise be swept by nothing
@@ -2283,6 +2285,85 @@ that direction directly.
 - **What the figure says about any command.** The price arm reads one event's own cost. It is not a
   meter: nothing here knows what a session has spent, and no key states a budget it could be
   measured against.
+
+## The live half: a session put to somebody, and the names that clear one
+
+`plugins/mjolnir/scripts/live.py --self-test` runs in the `Live guard` workflow, with no credential
+and no network. ⛔ The rules are
+[schema § 20](../plugins/mjolnir/config/schema.md#20-a-command-that-could-open-a-session-on-a-live-machine),
+[schema § 20 → Which verdict](../plugins/mjolnir/config/schema.md#which-verdict-and-who-would-answer-the-prompt),
+[schema § 20 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)
+and
+[schema § 20 → The four ways it fails closed](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed),
+and this document states none of them: what is recorded here is the reach of the arm and what it
+cannot see, which is narrower than the rules in directions the rules do not mention.
+
+| arm | what it reads | kind | what it does |
+|---|---|---|---|
+| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command's own command positions, the entries the project wrote, the file those entries name and the mode the event arrived in | **forbidding** | puts the call to the person, refuses it, or says nothing |
+
+⛔ **The command position is the sibling guard's and is imported rather than copied**
+([schema § 19 → The command position](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)).
+One parse, one set of lexer settings, one answer about which token is the command — and the suite's
+own position shapes are asserted here as well, because what this carrier would get wrong is not the
+parse but the use of it. ⚠️ **The verification is recorded rather than claimed**: with the import
+replaced by a match on the raw text, fourteen assertions redden, and the ones that redden are the
+shapes where the command is named and not called.
+
+⚠️ **Every green plant was verified by breaking the mechanism it names**, which is how two holes in
+this suite were found rather than argued. A call reaching a machine the project named as not live
+passes silently — and with the allowlist never read, forty-three assertions redden, while a first
+version of the same plant changed only the no-path branch and reddened one. A call whose machine
+sits behind a flag the entry states takes a separate word passes — and nothing asserted that until
+the plant was pointed at an **allowlisted** machine behind such a flag: every verdict-shaped
+assertion passes with the flag rule dead, because a flag's value in no list is held exactly as a
+live machine is.
+
+⚠️ **The mode table is asserted per member and in both groups**, since the two are what the whole
+decision turns on: with the session-answered arm answering like a person-answered one, five
+assertions redden; with an unrecognised mode read as person-answered, two. ⛔ **And the table is
+the harness's vocabulary rather than this surface's**, so a mode the harness adds is read as
+unrecognised and refused until somebody classifies it — the direction that costs a refusal rather
+than a silent pass.
+
+### What this check deliberately does not hold
+
+- **A machine that is not the call's first plain word.** The reading is positional:
+  [schema § 20](../plugins/mjolnir/config/schema.md#20-a-command-that-could-open-a-session-on-a-live-machine)
+  states it and states the direction it is wrong in. A command that takes its target second — a
+  copy whose source is local and whose destination is remote — has its *first* word read as the
+  machine, which is in no list, so the call is put to a person. ⛔ Deliberately not resolved per
+  command: the alternative is a target grammar per tool in the toolkit, which is every project's
+  tooling entering it one flag at a time.
+- **A name spelled another way.** The comparison is lexical and whole-word: the same machine
+  reached by an address rather than by the name the list carries, or by a second alias nobody
+  added, is not the name in the file. ⚠️ That is the inversion working in the safe direction for a
+  live machine and in the annoying one for an allowlisted one — the unnamed alias of a *cleared*
+  machine gets a prompt.
+- **A session opened through an interpreter, a wrapper script of the project's own, or a flag whose
+  value is a whole command string.** The same residue the spend half has, one guard over, and for
+  the same reason: the thing in the command position is the interpreter, and no list of
+  interpreters may live here.
+- **Whether the machine behind an allowlisted name is still not live.** The file is a statement
+  somebody wrote on a machine. A name left in it after that machine became live answers this check
+  exactly as a correct one does, and nothing here can read what a name points at.
+- **A session that is not a shell command.** The guard reads a `Bash` call. A connection made by a
+  tool of its own, by an editor action, or by something a workflow starts on the host reaches no
+  event here — the same reach every other hook in this plugin has.
+- **Whether a person in fact answered.** What the ask buys is that the call does not run until it is
+  answered; what the refusal buys is that the answer has to be asked for in the conversation. Who
+  answers, and whether they knew which machine it was, is not a property a machine here can
+  establish — the same decidable end
+  [schema § 7](../plugins/mjolnir/config/schema.md#what-a-hook-refuses-and-the-record-it-reads)
+  takes for the review question.
+- **A mode the harness renames.** The vocabulary is read from the payload, so a renamed mode is an
+  unrecognised one and is refused. ⛔ The gate catches a *dropped* arm and not a renamed mode: the
+  carrier's own table is asserted for shape and disjointness, and what a mode means to the harness
+  is not something a run in this repository can read.
+- **Whether a project's `valued_flags` is complete.** A flag nobody listed consumes nothing, so its
+  value stands where the machine would and the call is held — a false prompt rather than a silent
+  pass. Nothing here can tell a list that is short from one that is right.
+
 ## The install half: what the toolkit writes into a project
 
 `plugins/mjolnir/scripts/install.py --self-test` runs in the `Installer` workflow, with no
@@ -2480,9 +2561,12 @@ cases nothing was written to let through. The enforcement check plants the whole
 case — a project where nothing is exclusive, which must answer nothing for any call — beside the
 reads that share a path with a merge and must not be refused for it. The spend check plants both of
 its halves by hand — every shape a denied command arrives in against every shape that merely names
-it, which is the correction it was extracted carrying. The install step plants a project that asks
-for no artifact at all, which must write nothing and report nothing, and a value stated empty,
-which must satisfy an artifact's needs rather than wait forever on it. ⛔ A red-only suite says
+it, which is the correction it was extracted carrying. The live check plants the same two halves
+one guard over and a third beside them: a machine the project named as not live, which must pass
+silently, and which is the green side its own inversion rests on. The install step plants a project
+that asks for no artifact at all, which must write nothing and report nothing, and a value stated
+empty, which must satisfy an artifact's needs rather than wait forever on it. ⛔ A red-only suite
+says
 nothing about any of them.
 **A green plant naming an exclusion is verified by switching that exclusion off** and watching it
 redden — one that cannot fail is one nobody checked — while a plant naming an omission has nothing
