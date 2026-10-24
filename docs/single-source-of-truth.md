@@ -1010,9 +1010,11 @@ whatever it finds deletes somebody else's work.
   three answers and the third is *unestablished*, never *the tree is idle*. ⚠️ Check 8 holds the
   at-or-below half against a real process; what no check here holds is the **unreadable** branch,
   because a machine where the table cannot be read is not a fixture this suite can build. On such a
-  machine the arm reports rather than answers, which is the safe direction. It is
-  [#34](https://github.com/ragnor-rs/mjolnir/issues/34)'s test called rather than a second one, and
-  [#31](https://github.com/ragnor-rs/mjolnir/issues/31)'s sweep is its other consumer.
+  machine the arm reports rather than answers, which is the safe direction. ⚠️ **Its other consumer
+  is now shipped code rather than an item**: the sweep over landed trees reads this arm instead of a
+  second one, and the section below carries what that consumer does and does not hold — so the
+  unreadable branch is unheld in **two** suites and for the same reason, which is the one shape a
+  reader could otherwise take as covered twice.
 - **A claim broken with the override.** Check 6 holds that the refusal happens and that it names
   the decision as a person's; it cannot hold that the person was right. ⛔ That is the *fidelity*
   limit this document states one claim over, and the reason the override is a flag rather than a
@@ -1100,8 +1102,8 @@ is the shorter of the two.
   is what would separate the two shapes and § 10 forbids it by name — a claim taken a minute ago is
   an ancestor too, and a sweep keyed on ancestry would delete the tree of an item somebody had just
   started. Without a credential a merge-commit landing therefore reads as an orphaned candidate and
-  the tree is **kept**, which is the safe direction and is why the count of seventeen is a disk
-  cost rather than a data one.
+  the tree is **kept**, which is the safe direction and is why the accumulation § 10 measures is a
+  disk cost rather than a data one.
 - **The occupancy reading itself.** Every sweep arm in this suite injects it, because a machine
   where the open-file table cannot be read is not a fixture that can be built either way. What is
   held here is that each of its three answers reaches the right verdict; what holds the reading is
@@ -1116,8 +1118,9 @@ is the shorter of the two.
   tree removed with a file in it, which is why the surface states the empty list as the safe form
   and why the entry's shape is refused by the reader rather than tolerated.
 - **That a removal was what somebody wanted.** A merged branch is removed without asking per
-  occasion, deliberately — the asking is what produced the count of seventeen. What stands in for
-  it is that nothing uncertain is ever removed, which is checks 1, 2, 3, 6 and 8 together.
+  occasion, deliberately — asking per occasion is what produced the accumulation § 10 measures.
+  What stands in for it is that nothing uncertain is ever removed, which is checks 1, 2, 3, 6 and 8
+  together.
 - **The trees a harness cut for its own helpers.** Check 10 holds that they are named and left
   alone; reaping them is a different question with a different owner, and a sweep that removed
   them would be removing trees whose branches it never read.
