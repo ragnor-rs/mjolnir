@@ -17,11 +17,12 @@ for each:
 ⛔ **Nothing here judges the work, and nothing here knows what spends.** The
 denied commands, their costs and every budget are the project's
 (`schema.md § 18`); what this file carries is the command position, the match,
-the decision and the report. ⛔ **And no interpreter, no runner and no tool is
-named below**, by `schema.md § What the procedure models`: the wrappers that
-stand between a call and its command are POSIX's, and a list of stacks here
-would be the first project in another language getting a guard that holds
-nothing.
+the decision and the report. ⛔ **No interpreter and no project's tooling is
+named below**, by `schema.md § What the procedure models`: a list of runners or
+stacks here would be the first project writing one in another language getting a
+guard that holds nothing. ⚠️ **The wrappers that are named are POSIX's own** and
+stand between any call and its command whatever the stack, which is the one
+thing a parse has to know to find where a command is.
 
 ⚠️ **What this cannot hold is the spend it never sees.** A paid command reached
 through an interpreter stands in no command position of its own, and a project
@@ -118,11 +119,16 @@ PRICED_SOURCES = {"resume", "fork"}
 # happened to contain a denied script's path, and a guard that blocks honest
 # work is a guard somebody turns off.
 
-# A token that ends one command and starts another. ⚠️ A brace is in here with
-# the pipes and the semicolons: a group runs its contents as commands, so a
-# denied call inside one stands in a command position and a reader that kept the
-# brace would have resolved the group's own `{` as the command.
-SEPARATORS = set(";&|()\n{}")
+# A token that ends one command and starts another.
+SEPARATORS = set(";&|()\n")
+
+# A brace that groups commands, matched as a **whole token** rather than by its
+# characters. ⛔ A group runs its contents as commands, so a denied call inside
+# one stands in a command position -- while the placeholder some utilities take
+# is the same two characters and is an argument. Measured by review: the
+# character test refused a copy whose destination was the denied path, which is
+# the false-refusal direction this whole parse exists to stay out of.
+GROUPING = {"{", "}"}
 
 # A redirection, which is **not** a separator: `<command> > <path>` is one
 # command, and splitting there would put the path in a command position. That is
@@ -130,29 +136,84 @@ SEPARATORS = set(";&|()\n{}")
 # a command is honest work.
 REDIRECTIONS = set("<>&")
 
+# A here-document, whose body is **text and not commands**. ⛔ Its lines are
+# newline-separated like any other, so a parse that did not skip them refused a
+# document that merely quoted the denied command -- the same defect as the one
+# this guard was extracted carrying, one construct over, and measured by review.
+# ⚠️ The delimiter of the dash form arrives with the dash attached, which is why
+# the comparison strips it rather than the token.
+HEREDOC = "<<"
+
+# A line continuation, which is not a token at all. ⚠️ Left in place, the escaped
+# newline became a separator of its own where the next line was indented, which
+# cut one command in two -- taking its arguments out of reach of an `args_match`
+# and reading the continuation's first word as a command.
+CONTINUATION = re.compile(r"\\\r?\n")
+
 # An environment assignment, which stands before a command rather than being
 # one.
 ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 
-# A wrapper runs the command that follows it, so the command is one token
-# further right -- and its own flags move the command further right again. ⛔ The
-# flags that take a **separate** value are named per wrapper, for the measurement
-# this toolkit's other guards already carry: dropping every word that opens with
-# a dash and reading the next one puts a flag's value where the command stands,
-# and the guard is then installed and holding nothing.
+# A shell word that introduces a command rather than being one. ⛔ The body of a
+# condition or a loop is where a paid command is most naturally run once per
+# input, and the word in front of it stood in the command position: measured by
+# review, the first command of every `if`/`for`/`while` body was invisible.
+# ⚠️ `in` is deliberately absent -- the words after it are a list and not
+# commands, so skipping it would read a denied path in that list as a call of it.
+INTRODUCERS = {"then", "do", "else", "elif", "exec", "command", "coproc", "!"}
+
+# A runner runs the command that follows it, so the command is one token further
+# right -- and its own flags move it further right again. ⛔ The flags that take
+# a **separate** value are named per runner, for the measurement
+# `schema.md § 18 -> The command position` states: a flag's value must never be
+# read as the command.
 #
-# ⚠️ These are the POSIX wrappers rather than any project's tooling, by the
+# ⚠️ These are the shell's own runners rather than any project's tooling, by the
 # boundary rule this file's docstring cites. A project whose own paid command is
 # spelled like one of them is still guarded, because every command position of a
 # call is matched rather than the innermost one.
+# ⚠️ **And a second number per runner, because some of them take an argument of
+# their own before the command**: a duration, a lock file, a priority. Measured
+# by review, each reproduced: the runner's own first argument stood where the
+# command should be, and the command behind it was invisible. One record per
+# runner — the flags whose value is a separate word, and how many plain words of
+# its own stand before the command it runs.
 WRAPPERS = {
-    "sudo": {"-u", "--user", "-g", "--group", "-p", "--prompt", "-h", "--host",
-             "-U", "--other-user", "-r", "--role", "-t", "--type", "-C",
-             "--close-from", "-D", "--chdir", "-R", "--chroot"},
-    "env": {"-u", "--unset", "-C", "--chdir", "-S", "--split-string"},
-    "time": {"-f", "--format", "-o", "--output"},
-    "nohup": set(),
+    "sudo": ({"-u", "--user", "-g", "--group", "-p", "--prompt", "-h", "--host",
+              "-U", "--other-user", "-r", "--role", "-t", "--type", "-C",
+              "--close-from", "-D", "--chdir", "-R", "--chroot", "-T",
+              "--command-timeout", "-a", "--auth-type", "-c", "--login-class"}, 0),
+    "doas": ({"-u", "-C"}, 0),
+    # ⚠️ Zero rather than one for the two that take a user: the user arrives as
+    # the value of a flag in the form that then runs a command as its own words,
+    # and the form that takes the user as a plain word runs its command as a
+    # quoted string instead — which is the interpreter residue § 18 states.
+    "runuser": ({"-u", "--user", "-g", "--group", "-G", "--supp-group", "-s",
+                 "--shell", "-c", "--command"}, 0),
+    "su": ({"-s", "--shell", "-g", "--group", "-G", "--supp-group", "-c", "--command"}, 0),
+    "env": ({"-u", "--unset", "-C", "--chdir", "-S", "--split-string"}, 0),
+    "time": ({"-f", "--format", "-o", "--output"}, 0),
+    "timeout": ({"-k", "--kill-after", "-s", "--signal"}, 1),
+    "nice": ({"-n", "--adjustment"}, 0),
+    "ionice": ({"-c", "--class", "-n", "--classdata", "-p", "--pid"}, 0),
+    "chrt": ({"-p", "--pid"}, 1),
+    "stdbuf": ({"-i", "--input", "-o", "--output", "-e", "--error"}, 0),
+    "flock": ({"-w", "--wait", "--timeout", "-E", "--conflict-exit-code",
+               "-c", "--command"}, 1),
+    "xargs": ({"-I", "-i", "--replace", "-L", "-l", "--max-lines", "-n", "--max-args",
+               "-P", "--max-procs", "-s", "--max-chars", "-E", "-e", "--eof",
+               "-d", "--delimiter", "-a", "--arg-file"}, 0),
+    "setsid": (set(), 0),
+    "nohup": (set(), 0),
 }
+
+# A flag whose **value** is a command, wherever it stands in a call. ⛔ The
+# utilities that run a command once per input take it this way rather than as
+# their own argument, so the command behind one is reached by reading the flag
+# and not by reading the utility's name — which is also why no utility name is
+# needed here. Measured by review: a search running the paid command per match
+# was invisible.
+COMMAND_FLAGS = {"-exec", "-execdir", "-ok", "-okdir", "-c", "--command"}
 
 # How much of a segment a report quotes.
 SHOWN = 160
@@ -189,26 +250,121 @@ def words(command: str) -> list[str]:
         return [w for w in re.split(r"([;&|()\n{}])", command) for w in w.split() if w]
 
 
-def segments(command: str) -> list[list[str]]:
-    """The call's commands, each as its own list of words.
+def nested(command: str) -> tuple[str, list[str]]:
+    """The call with every substitution taken out, and each one's own text.
+
+    ⛔ A substitution runs a command, so its body is a command text of its own —
+    and the lexer cannot see into one, because inside double quotes the whole
+    substitution is a single token. Measured by review: `OUT="$(<the paid
+    command>)"` reached the shell unasked, which is the ordinary way to capture
+    output, and a backtick pair was invisible quoted or not.
+
+    ⚠️ Single quotes are tracked and nothing inside them is a substitution, which
+    is the shell's own rule: a path mentioned inside `'…'` is text.
+
+    ⚠️ The body is **replaced by a space** in the text that comes back, so each
+    command text is segmented exactly once and one spend is reported once.
+    """
+    out: list[str] = []
+    bodies: list[str] = []
+    index, end, quoted = 0, len(command), False
+    while index < end:
+        char = command[index]
+        if char == "'":
+            quoted = not quoted
+            out.append(char)
+            index += 1
+            continue
+        if quoted:
+            out.append(char)
+            index += 1
+            continue
+        if char == "\\" and index + 1 < end:
+            out.append(command[index:index + 2])
+            index += 2
+            continue
+        # `$(…)` and the process-substitution forms, which differ only in what
+        # the shell does with the body's output.
+        if char in "$<>" and command[index + 1:index + 2] == "(":
+            depth, scan = 0, index + 1
+            while scan < end:
+                if command[scan] == "(":
+                    depth += 1
+                elif command[scan] == ")":
+                    depth -= 1
+                    if depth == 0:
+                        break
+                scan += 1
+            bodies.append(command[index + 2:scan])
+            out.append(" ")
+            index = scan + 1
+            continue
+        if char == "`":
+            scan = command.find("`", index + 1)
+            if scan == -1:
+                out.append(char)
+                index += 1
+                continue
+            bodies.append(command[index + 1:scan])
+            out.append(" ")
+            index = scan + 1
+            continue
+        out.append(char)
+        index += 1
+    return "".join(out), bodies
+
+
+def calls(command: str) -> list[str]:
+    """Every command text this call runs: itself, and each one nested in it."""
+    outer, bodies = nested(CONTINUATION.sub(" ", command))
+    found = [outer]
+    for body in bodies:
+        found.extend(calls(body))
+    return found
+
+
+def _segments_of(call: str) -> list[list[str]]:
+    """One command text's own commands, each as its own list of words.
 
     Separators end a segment; a redirection and its target are dropped, for the
-    reason stated beside `REDIRECTIONS`. An empty segment is kept out, so a
-    trailing separator is not a command that spends nothing.
+    reason stated beside `REDIRECTIONS`; a here-document's whole body is dropped,
+    for the reason stated beside `HEREDOC`.
     """
     out: list[list[str]] = [[]]
-    skip = False
-    for token in words(command):
-        if skip:
-            skip = False
+    tokens = words(call)
+    index = 0
+    while index < len(tokens):
+        token = tokens[index]
+        index += 1
+        if token.startswith(HEREDOC) and set(token) <= set("<-"):
+            # The delimiter, then everything up to the line that repeats it. ⚠️ A
+            # body nothing terminates runs to the end of the call, which is what
+            # the shell does with it too.
+            delimiter = tokens[index].lstrip("-") if index < len(tokens) else None
+            index += 1
+            while index < len(tokens) and tokens[index] != delimiter:
+                index += 1
+            index += 1
             continue
         if token and set(token) <= REDIRECTIONS and (set(token) & set("<>")):
-            skip = True
+            index += 1
             continue
-        if token and set(token) <= SEPARATORS:
+        if token in GROUPING or (token and set(token) <= SEPARATORS):
             out.append([])
             continue
         out[-1].append(token)
+    return out
+
+
+def segments(command: str) -> list[list[str]]:
+    """Every command of the call and of everything nested in it.
+
+    An empty segment is kept out, so a trailing separator is not a command that
+    spends nothing.
+    """
+    out: list[list[str]] = []
+    for call in calls(command):
+        out.extend(_segments_of(call))
     return [segment for segment in out if segment]
 
 
@@ -224,13 +380,35 @@ def command_chain(segment: list[str]) -> list[tuple[str, list[str]]]:
     index = 0
     while index < len(segment):
         token = segment[index]
-        if ASSIGNMENT.match(token):
+        if ASSIGNMENT.match(token) or token == "--":
+            # An assignment stands before a command, and `--` is never one.
             index += 1
             continue
-        out.append((token, [w for w in segment[index + 1:] if not ASSIGNMENT.match(w)]))
-        flags = WRAPPERS.get(os.path.basename(token))
-        if flags is None:
+        # ⛔ The arguments are every word after the position, assignments
+        # included: a leading `NAME=value` stands *before* a command and is
+        # stripped by the branch above, while one standing after it is an
+        # argument like any other. Filtering them here hid exactly the call a
+        # project distinguishes by a `KEY=value` argument, which is an
+        # `args_match` that silently matches nothing — the direction this facet
+        # cannot fail in. Found by reading the diff.
+        out.append((token, list(segment[index + 1:])))
+        if token in INTRODUCERS:
+            # It is a position, so a command spelled like one of these words is
+            # still matched — and the scan continues, because what follows it is
+            # a command rather than its arguments.
+            index += 1
+            continue
+        runner = WRAPPERS.get(os.path.basename(token))
+        if runner is None:
+            # ⛔ Not a runner, so this is the command — and the scan stops here
+            # rather than reading further words, which is the whole positional
+            # rule. What is still read is a flag whose value is a command: the
+            # one way a command stands behind something that is not a runner.
+            for at in range(index + 1, len(segment) - 1):
+                if segment[at] in COMMAND_FLAGS:
+                    out.append((segment[at + 1], list(segment[at + 2:])))
             return out
+        flags, positionals = runner
         index += 1
         while index < len(segment):
             word = segment[index]
@@ -241,23 +419,39 @@ def command_chain(segment: list[str]) -> list[tuple[str, list[str]]]:
                 index += 1
                 continue
             if word.startswith("-"):
-                flag, equals, _value = word.partition("=")
+                flag, equals, value = word.partition("=")
                 index += 1
+                if flag in COMMAND_FLAGS:
+                    # ⛔ Its value is a command rather than a setting, so it is a
+                    # position: the runners that take one this way would
+                    # otherwise have their command read as a flag's value and
+                    # skipped. ⚠️ Where that value is a multi-word string the
+                    # shell splits, only its first word stands here, which is the
+                    # interpreter residue § 18 states.
+                    if equals:
+                        out.append((value, []))
+                    elif index < len(segment):
+                        out.append((segment[index], list(segment[index + 1:])))
+                        index += 1
+                    continue
                 if not equals and flag in flags and index < len(segment):
                     index += 1
                 continue
             break
+        # The runner's own words, before the command it runs.
+        index += min(positionals, max(0, len(segment) - index))
     return out
 
 
 def names_the_command(called: str, configured: str) -> bool:
     """Whether a token in a command position is the command an entry names.
 
-    ⛔ Compared as a path rather than as a word: one command is spelled
-    absolutely, relatively and bare for the shell to resolve, so what matches is
-    equality or a suffix at a path separator in either direction. A name that
-    merely ends in the configured one is a different command, and the separator
-    is what tells those two apart.
+    The comparison is `schema.md § 18`'s `command` bullet and is not restated
+    here. ⚠️ What is local to this function is the limit: the comparison is
+    lexical, so a path reached through a symlink or spelled in another case is
+    not this one -- stated in `docs/single-source-of-truth.md` § The spend half
+    rather than resolved, a hook that stats the filesystem on every call of
+    every session being the costlier of the two answers.
     """
     if not called.strip() or not configured.strip():
         return False
@@ -551,7 +745,12 @@ def check_the_carrier_still_calls_this(text: str) -> list[str]:
     hooks = carrier.get("hooks") or {}
     mine = Path(__file__).name
     problems = []
-    for event in (GUARD_EVENT, PRICE_EVENT):
+    # ⛔ The arm each event has to call, and not merely this file's name: the two
+    # arms answer different events, so a carrier naming the script with the other
+    # arm's argument — or with none, which prints usage and answers nothing —
+    # leaves both events wired and both dead. Measured by review, where swapping
+    # them left this check green.
+    for event, arm in ((GUARD_EVENT, "guard"), (PRICE_EVENT, "price")):
         called = None
         for group in hooks.get(event) or []:
             for item in group.get("hooks") or []:
@@ -566,6 +765,11 @@ def check_the_carrier_still_calls_this(text: str) -> list[str]:
             )
             continue
         group, named = called
+        if arm not in named.split():
+            problems.append(
+                f"{CARRIER.name} calls {mine} on {event} without the `{arm}` arm, so that "
+                f"event is wired to an answer it is not the event for."
+            )
         if "${CLAUDE_PLUGIN_ROOT}" not in named:
             problems.append(
                 f"{CARRIER.name} names {mine} on {event} by a path the plugin root does not "
@@ -656,6 +860,28 @@ def _a_root(where: Path, states: str | None) -> str:
     return str(where)
 
 
+def _plant_in_alternation(text: str, added: str, drop: str | None = None) -> str:
+    """The surface's own approval line, widened by a value or missing one.
+
+    ⛔ Found by the key the reader walks rather than by the words beside it, so a
+    reworded comment moves the plant instead of silencing it. Raises where the
+    line is gone, which is the no-op this file's other plants are held to.
+    """
+    for line in text.splitlines():
+        head, _, rest = line.partition(":")
+        if head.strip() != APPROVAL.rpartition(".")[2] or "|" not in rest:
+            continue
+        value, _, comment = rest.partition("#")
+        values = [v.strip() for v in value.split("|")]
+        if drop is not None:
+            values = [v for v in values if v != drop]
+        replaced = f"{head}: {' | '.join(values)}{added}"
+        if comment:
+            replaced += f"   # {comment.strip()}"
+        return text.replace(line, replaced, 1)
+    raise AssertionError(f"no line of the surface declares `{APPROVAL}` as an alternation")
+
+
 def _reword_heading(text: str, slug: str) -> str:
     out, planted = [], False
     for line in text.splitlines():
@@ -679,6 +905,13 @@ CARRIER_PLANTS = [
      lambda text: text.replace("spend.py", "spend_something_else.py")),
     ("a carrier whose expansion of the plugin root is mistyped",
      lambda text: text.replace("CLAUDE_PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOTS")),
+    # ⛔ The two arms swapped, and the arm dropped: a carrier in either state
+    # names this script on both events and answers nothing on either.
+    ("a carrier calling each arm on the other's event",
+     lambda text: text.replace('"guard"', '"a-placeholder"').replace(
+         '"price"', '"guard"').replace('"a-placeholder"', '"price"')),
+    ("a carrier naming no arm at all",
+     lambda text: text.replace(', "guard"', "").replace(', "price"', "")),
 ]
 
 # The call shapes a denied command actually arrives in, enumerated by hand: a
@@ -700,9 +933,50 @@ MUST_REFUSE = [
     ("at the end of a pipe", "a-free-command | <deny> --the-paid-tier"),
     ("on the second line of one call", "a-free-command\n<deny> --the-paid-tier"),
     ("inside a substitution", "a-free-command $(<deny> --the-paid-tier)"),
+    ("inside a substitution the shell expands in quotes",
+     'a-free-command "$(<deny> --the-paid-tier)"'),
+    ("as the value of an assignment, substituted", 'AN_OUTPUT=$(<deny> --the-paid-tier)'),
+    ("as the value of an assignment, substituted and quoted",
+     'AN_OUTPUT="$(<deny> --the-paid-tier)"'),
+    ("inside the older substitution spelling", "a-free-command `<deny> --the-paid-tier`"),
+    ("inside a process substitution", "a-diffing-command <(<deny> --the-paid-tier) a-file"),
     ("inside a brace group", "{ <deny> --the-paid-tier; }"),
+    ("as the body of a condition", "if a-free-command; then <deny> --the-paid-tier; fi"),
+    ("as the body of a loop", "for i in a b; do <deny> --the-paid-tier; done"),
+    ("as the alternative of a condition",
+     "if a-free-command; then a-free-command; else <deny>; fi"),
+    ("behind the word that replaces the shell", "exec <deny> --the-paid-tier"),
+    ("behind a negation", "! <deny> --the-paid-tier"),
+    ("as the command a search runs per match",
+     "a-searching-command . -name a-file -exec <deny> --the-paid-tier {} ;"),
+    ("across a line continuation, which is not a separator",
+     "<deny> \\\n  --the-paid-tier"),
+    ("after a word carrying a fragment, which is not a comment",
+     "a-free-command --url=https://a-host/a-path#a-fragment ; <deny> --the-paid-tier"),
     ("with its output redirected", "<deny> --the-paid-tier > a-file"),
     ("with an argument quoted", "<deny> --the-paid-tier \"a value; with a separator\""),
+]
+
+# One real call shape per runner the table names, written out rather than
+# generated from it — see the loop that reads this for why that is the point.
+# Each shape is the way that runner is actually invoked, its own arguments
+# included.
+RUNNER_SHAPES = [
+    ("sudo", "sudo -u a-user <deny> --the-paid-tier"),
+    ("doas", "doas -u a-user <deny> --the-paid-tier"),
+    ("runuser", "runuser -u a-user <deny> --the-paid-tier"),
+    ("su", "su -s a-shell -c <deny>"),
+    ("env", "env A_VARIABLE=a-value <deny> --the-paid-tier"),
+    ("time", "time -p <deny> --the-paid-tier"),
+    ("timeout", "timeout -k 5 30 <deny> --the-paid-tier"),
+    ("nice", "nice -n 10 <deny> --the-paid-tier"),
+    ("ionice", "ionice -c 3 <deny> --the-paid-tier"),
+    ("chrt", "chrt -f 10 <deny> --the-paid-tier"),
+    ("stdbuf", "stdbuf -o L <deny> --the-paid-tier"),
+    ("flock", "flock -w 5 a-lock-file <deny> --the-paid-tier"),
+    ("xargs", "xargs -I a-token <deny> --the-paid-tier"),
+    ("setsid", "setsid <deny> --the-paid-tier"),
+    ("nohup", "nohup <deny> --the-paid-tier"),
 ]
 
 MUST_ALLOW = [
@@ -713,7 +987,26 @@ MUST_ALLOW = [
     ("the denied path as the value of a flag", "a-free-command --input <deny>"),
     ("a command whose name merely ends in the denied one", "a-prefix-<deny> --the-paid-tier"),
     ("a command of the same base name in another place", "another-place/<base> --the-paid-tier"),
-    ("a chain of free commands", "a-free-command && another-free-command"),
+    # ⚠️ The denied path is in this one on purpose, in an argument position of
+    # each segment: a chain of commands that merely *could* not match asserts
+    # nothing about the position rule, which is what the chain is read for here.
+    ("a chain of free commands reading the denied path",
+     "a-free-command --input <deny> && another-free-command <deny>"),
+    # ⛔ The false-refusal shapes found by review, each reproduced before it was
+    # fixed: a document that quotes the command, a placeholder that is not a
+    # group, a continuation that is not a separator, and a path inside single
+    # quotes, where the shell itself expands nothing.
+    ("a here-document whose body quotes the command",
+     "a-writing-command <<'A_DELIMITER' > a-file\n<deny> --the-paid-tier is the paid step\n"
+     "A_DELIMITER"),
+    ("the same body under the dash form of the delimiter",
+     "a-writing-command <<-A_DELIMITER\n<deny> --the-paid-tier\nA_DELIMITER"),
+    ("a placeholder standing before the denied path",
+     "a-searching-command . -name a-file -exec a-copying-command {} <deny> ;"),
+    ("the denied path as an argument across a line continuation",
+     "a-reading-command \\\n    <deny>"),
+    ("the denied path inside single quotes", "a-printing-command '<deny> --the-paid-tier'"),
+    ("the denied path as a word of a loop's own list", "for f in <deny>; do a-free-command; done"),
 ]
 
 
@@ -749,20 +1042,70 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     check("and no resume is priced either",
           price_answer(_resume(figure=99.0), config=nothing) == {})
 
+    # ⛔ The tables themselves, which are a surface nothing else holds: a
+    # mistyped runner, a flag written without its dash or a shape whose first
+    # word is not the runner it names matches nothing the parse ever produces,
+    # and every assertion below it stays green — the other shapes do not contain
+    # the broken entry. A plant on the mechanism says nothing about whether each
+    # row of its data is live.
+    out.append("The tables this parse reads are well-formed, row by row:")
+    bad = [name for name in WRAPPERS
+           if not name or name != os.path.basename(name) or not name.isalpha()
+           or name != name.lower()]
+    check("every runner is a bare lowercase name", not bad, f"{bad}")
+    bad = [f"{name}:{flag}" for name, (flags, _n) in WRAPPERS.items() for flag in flags
+           if not flag.startswith("-") or len(flag.split()) != 1]
+    check("every valued flag is one dashed word", not bad, f"{bad}")
+    bad = [name for name, (_f, count) in WRAPPERS.items()
+           if isinstance(count, bool) or not isinstance(count, int) or count < 0]
+    check("every runner states how many words of its own stand first", not bad, f"{bad}")
+    bad = [word for word in INTRODUCERS if not word or len(word.split()) != 1]
+    check("every introducing word is one word", not bad, f"{bad}")
+    bad = [flag for flag in COMMAND_FLAGS
+           if not flag.startswith("-") or len(flag.split()) != 1]
+    check("every command-valued flag is one dashed word", not bad, f"{bad}")
+    bad = [shape for runner, shape in RUNNER_SHAPES
+           if shape.split()[0] != runner or shape.count("<deny>") != 1]
+    check("every runner's shape opens with that runner and names the denied command once",
+          not bad, f"{bad}")
+    # ⛔ And carries no *other* runner's name, which is what catches the one
+    # malformation the rules above let through: two entries written with the
+    # comma between them missing are joined into one string by the language
+    # itself, and the pair then asserts about one runner while the other's row
+    # is gone. Measured on a sibling carrier's own word list.
+    bad = [f"{runner}:{word}" for runner, shape in RUNNER_SHAPES for word in shape.split()
+           if word in WRAPPERS and word != runner]
+    check("and names no second runner, so no two rows were joined by a missing comma",
+          not bad, f"{bad}")
+    bad = [shape for _label, shape in MUST_REFUSE + MUST_ALLOW
+           if "<deny>" not in shape and "<base>" not in shape]
+    check("every planted shape carries the denied command", not bad, f"{bad}")
+
     out.append("")
     out.append("Every call shape a denied command arrives in is refused:")
     for label, shape in MUST_REFUSE:
         command = shape.replace("<deny>", paid)
         answered = guard_answer(_call(command), config=one)
         check(label, decision(answered) == "ask", f"{command[:60]!r} → {answered!r}"[:140])
-    # ⛔ One plant per wrapper, derived from the table rather than written out: a
-    # wrapper added there with no assertion of its own would be covered only by
-    # the stack above, where a single working wrapper is enough to reach the
-    # command and the rest are asserted by nothing.
-    for wrapper in sorted(WRAPPERS):
-        command = f"{wrapper} {paid} --the-paid-tier"
-        check(f"behind `{wrapper}`, which the table names",
-              decision(guard_answer(_call(command), config=one)) == "ask")
+    # ⛔ One plant per runner, written out rather than derived from the table.
+    # ⚠️ This is a **deliberate** second statement of the table's own membership,
+    # for the reason the reader's marker inventories are: a plant generated from
+    # `WRAPPERS` asserts whatever `WRAPPERS` happens to say, so a runner missing
+    # from the table is missing from its own plant too and the suite certifies
+    # itself. Measured by review, which is how the runners below were found
+    # absent. ⛔ And each shape carries the runner's own arguments, because a
+    # runner that takes a duration or a lock file before its command is one a
+    # bare `<runner> <command>` plant would pass without ever reaching it.
+    for runner, shape in RUNNER_SHAPES:
+        check(f"behind `{runner}`: {shape.replace('<deny>', '…')}",
+              decision(guard_answer(_call(shape.replace("<deny>", paid)),
+                                    config=one)) == "ask",
+              repr(guard_answer(_call(shape.replace("<deny>", paid)), config=one))[:120])
+    named = {runner for runner, _shape in RUNNER_SHAPES}
+    check("every runner the table names has a shape of its own above",
+          named >= set(WRAPPERS), f"missing: {sorted(set(WRAPPERS) - named)}")
+    check("and every shape above names a runner the table carries",
+          named <= set(WRAPPERS), f"unknown: {sorted(named - set(WRAPPERS))}")
 
     out.append("")
     out.append("And the shapes that are not a call of it are allowed — the defect paid for once:")
@@ -796,14 +1139,31 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     check("a flag and its value together are one string to the pattern",
           decision(guard_answer(_call(f"{base} --tier the-paid-one"), config=_a_config(
               [_a_denial(base, args_match="--tier the-paid-one")]))) == "ask")
+    # ⚠️ Anchored at both ends on purpose: an unanchored pattern matches the
+    # quoted token as a substring whether the quotes were removed or not, so the
+    # assertion would pass against a lexer that kept them. Measured by review.
     check("and an argument's quotes are gone before the pattern reads it",
           decision(guard_answer(_call(f"{base} '--tier the-paid-one'"), config=_a_config(
-              [_a_denial(base, args_match="--tier the-paid-one")]))) == "ask")
+              [_a_denial(base, args_match="^--tier the-paid-one$")]))) == "ask")
     # ⛔ The plant that reaches the redirection arm, and the only one that can:
     # a redirection is not a separator, so its target never stands in a command
     # position and the allow-direction shapes above pass with that arm dead. What
     # the arm decides is whether `> <path>` is read as an *argument* of the
     # command, and an anchored pattern is what tells the two apart.
+    # ⛔ An argument that looks like an environment assignment is still an
+    # argument. A leading `NAME=value` stands before a command and is stripped;
+    # one standing after it is what some runners take their settings as, and
+    # filtering it out of the arguments made an `args_match` naming one match
+    # nothing at all — a denial that reads as configured and refuses no call.
+    assigned = _a_config([_a_denial(base, args_match="A_SETTING=the-paid-one")])
+    check("an argument spelled like an assignment is matched as an argument",
+          decision(guard_answer(_call(f"{base} A_SETTING=the-paid-one"),
+                                config=assigned)) == "ask",
+          repr(guard_answer(_call(f"{base} A_SETTING=the-paid-one"), config=assigned))[:140])
+    check("and the same spelling before the command is still stripped, not matched",
+          guard_answer(_call(f"A_SETTING=the-paid-one {base}"), config=assigned) == {},
+          repr(guard_answer(_call(f"A_SETTING=the-paid-one {base}"), config=assigned))[:140])
+
     anchored = _a_config([_a_denial(base, args_match="--the-paid-tier$")])
     check("a redirection is not an argument of the command it redirects",
           decision(guard_answer(_call(f"{base} --the-paid-tier > a-file"),
@@ -854,17 +1214,47 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
           guard_answer(_call("a-free-command && another-free-command"), config=one) == {})
     check("and two denied segments are both named",
           len(matches(f"{paid} --one; {paid} --two", entries(one))) == 2)
+    # ⛔ A redirection's target stands in no command position at all, read off
+    # the positions rather than off a verdict: every allow-side shape above
+    # passes with the redirection arm dead, so the direct reading is the only
+    # thing that holds it. Measured by review.
+    check("a redirection's target is in no command position",
+          [token for token, _args in command_chain(segments("a-free-command > a-file")[0])]
+          == ["a-free-command"],
+          repr(segments("a-free-command > a-file"))[:120])
+    check("and a here-document's body is in no segment at all",
+          segments("a-writing-command <<'A_DELIMITER'\na-command-in-the-body\nA_DELIMITER")
+          == [["a-writing-command"]],
+          repr(segments("a-writing-command <<'A_DELIMITER'\na-command-in-the-body\n"
+                        "A_DELIMITER"))[:160])
 
     out.append("")
     out.append("What the refusal says, which no verdict asserts by itself:")
-    costly = _a_config([_a_denial(base, reason="a-stated-cost-per-run")])
-    asked = guard_answer(_call(base), config=costly)
+    costly = _a_config([_a_denial(base, args_match="--the-paid-tier",
+                                  reason="a-stated-cost-per-run")])
+    asked = guard_answer(_call(f"a-free-command && {base} --the-paid-tier"), config=costly)
     check("the project's own cost reaches the person", "a-stated-cost-per-run" in reason(asked),
-          reason(asked)[:160])
+          reason(asked)[:200])
     check("the rule it is refused under is cited", PRICE_CITATION in reason(asked),
-          reason(asked)[:160])
+          reason(asked)[:200])
     check("and the ask says what unblocks it", "unblocks" in reason(asked),
-          reason(asked)[:160])
+          reason(asked)[:200])
+    # ⛔ Every other fact the refusal is supposed to carry, read out of the
+    # message rather than out of the record behind it: a report branch produces
+    # no verdict, so a red/green suite is blind to it unless a phrase is
+    # asserted. § 18 states that the refusal names the segment that matched —
+    # which, before this, was asserted only against the internal record.
+    check("the segment that spends is named by number", "segment 2" in reason(asked),
+          reason(asked)[:200])
+    check("the entry's own command is named", base in reason(asked), reason(asked)[:200])
+    check("and the argument pattern that narrowed it", "--the-paid-tier" in reason(asked),
+          reason(asked)[:200])
+    check("the answer is keyed to the event the harness asked on",
+          asked.get("hookSpecificOutput", {}).get("hookEventName") == GUARD_EVENT,
+          repr(asked)[:160])
+    bare_entry = guard_answer(_call(base), config=_a_config([_a_denial(base)]))
+    check("and an entry with no pattern says nothing about one",
+          "whose arguments carry" not in reason(bare_entry), reason(bare_entry)[:200])
     refused = guard_answer(_call(base), config=_a_config(
         [_a_denial(base, reason="a-stated-cost-per-run")], approval="denied"))
     check("the stricter approval refuses rather than asks", decision(refused) == "deny",
@@ -874,6 +1264,14 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     check("an approval this carrier cannot read refuses rather than asking",
           decision(guard_answer(_call(base), config=_a_config(
               [_a_denial(base)], approval="something-else"))) == "deny")
+    # ⛔ A pattern that cannot be compiled matches no call, and this is the arm
+    # that decides what it does instead. The shared reader refuses such an entry
+    # at load, so nothing reaches this through a validated configuration — but a
+    # guard that refused every call of the command would be refusing on a
+    # configuration defect, which is the answer this asserts.
+    check("a pattern that does not compile refuses nothing rather than everything",
+          guard_answer(_call(f"{base} --the-paid-tier"), config=_a_config(
+              [_a_denial(base, args_match="--the-paid-tier(")])) == {})
 
     out.append("")
     out.append("The price a resume states, read before the first turn runs:")
@@ -904,12 +1302,33 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
           price_answer(_resume(figure=99.0), config=_a_config([])) == {})
     check("a bar written as a flag prices none either, `true` comparing equal to one",
           price_answer(_resume(figure=99.0), config=_a_config([], bar=True)) == {})
-    expired = price_answer(_resume(figure=2.5, expired=True), config=priced)
+    check("a figure the harness states for a forked session is priced too",
+          bool(price_answer(_resume(figure=2.5, source="fork"),
+                            config=priced).get("systemMessage")))
+    check("and a forked session it priced nowhere is reported as no figure",
+          "no figure" in str(price_answer(_resume(figure=None, source="fork"),
+                                          config=priced).get("systemMessage")).lower())
+    # ⚠️ Both arms of the cache clause, because one phrase contains the other:
+    # *not expired* carries *expired*, so an assertion reading the shorter word
+    # cannot tell the two reports apart. Measured by review.
+    expired = str(price_answer(_resume(figure=2.5, expired=True),
+                               config=priced).get("systemMessage"))
+    fresh = str(price_answer(_resume(figure=2.5, expired=False),
+                             config=priced).get("systemMessage"))
     check("the cache's own state is reported where the harness states it",
-          "expired" in str(expired.get("systemMessage")),
-          str(expired.get("systemMessage"))[:160])
+          "likely expired" in expired and "likely not expired" not in expired,
+          expired[:160])
+    check("and the other way where it states the opposite",
+          "likely not expired" in fresh, fresh[:160])
+    check("a resume the harness said nothing about the cache for says nothing about it",
+          "prompt cache had" not in str(price_answer(_resume(figure=2.5),
+                                                     config=priced).get("systemMessage")))
+    # ⛔ The payload that reaches the event gate: one the arm would otherwise
+    # answer. A payload carrying no figure and no priced source exits at a later
+    # gate, so it passes with this one dead. Measured by review.
     check("and the price arm answers nothing on another event",
-          price_answer({"hook_event_name": "Stop", "cwd": "."}, config=priced) == {})
+          price_answer({"hook_event_name": "Stop", "cwd": ".", "source": "resume",
+                        FIGURE: 99.0}, config=priced) == {})
     check("the guard arm answers nothing on another tool",
           guard_answer({"tool_name": "Edit", "cwd": ".",
                         "tool_input": {"command": paid}}, config=one) == {})
@@ -927,6 +1346,13 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         out.append("")
         out.append("A project that states no configuration gets nothing at all:")
         bare = _a_root(Path(directory) / "states-nothing", None)
+        # ⛔ The predicate first, because both silences below are reachable by
+        # another route: a project that states nothing also fails to *load*, so
+        # an arm whose configuration gate was gone would still answer nothing.
+        # What makes these two assertions about § 7's rule is that the question
+        # was asked and answered no. Measured by review.
+        check("the shared reader says this project states none",
+              states_a_configuration(bare) is False)
         check("no answer on a command",
               guard_answer({**_call(paid), "cwd": bare}) == {})
         check("and none on a resume",
@@ -981,8 +1407,12 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         pattern = first.get("args_match")
         arguments = "" if not isinstance(pattern, str) else f" {shlex.quote(pattern)}"
         answered = guard_answer(_call(f"{called}{arguments}"), config=loaded)
-        check(f"{name}: its own denied call is held",
-              decision(answered) in DECISIONS.values(),
+        # ⛔ The decision this example's own `approval` resolves to, and not
+        # merely *a* decision: an arm accepting either would pass a project that
+        # wrote the stricter value and got the ask.
+        wanted = DECISIONS.get(str(loaded.get(APPROVAL)))
+        check(f"{name}: its own denied call is held, as `{loaded.get(APPROVAL)}` states",
+              wanted is not None and decision(answered) == wanted,
               f"{called!r} → {answered!r}"[:140])
         check(f"{name}: and the cost it states reaches the person",
               str(first.get("reason")) in reason(answered), reason(answered)[:160])
@@ -1008,6 +1438,17 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     )
     check("and reddens when the surface states no approval at all",
           bool(check_the_decisions_are_the_surfaces(stripped)))
+    # ⛔ Each comparison arm separately, because the plant above reddens only the
+    # unreadable-surface arm: a surface that grew a third value and a surface
+    # that dropped one are the two drifts this check exists for, and neither was
+    # asserted. Measured by review. ⚠️ The surface's own line is mutated rather
+    # than a copy of it being written here, so a reworded line moves the plant.
+    widened = _plant_in_alternation(text, " | a-third-value")
+    check("and reddens on a value the surface states and this carrier decides nothing for",
+          widened != text and bool(check_the_decisions_are_the_surfaces(widened)))
+    narrowed = _plant_in_alternation(text, "", drop="denied")
+    check("and reddens on a value this carrier decides for and the surface stopped stating",
+          narrowed != text and bool(check_the_decisions_are_the_surfaces(narrowed)))
 
     out.append("")
     out.append("The carrier still calls this script on both events:")
@@ -1032,6 +1473,17 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check(f"the {arm} arm answers a payload it cannot read with silence",
               hook(stream, answer, printed) == 0 and not printed.getvalue(),
               printed.getvalue()[:120])
+    # ⛔ And an answer it *can* read reaches the harness, which the two
+    # assertions above cannot say: they assert silence, so both hooks could be
+    # answering nothing at all with the suite green. Measured by review.
+    printed = io.StringIO()
+    hook(io.StringIO(json.dumps({**_call(f"{paid} --the-paid-tier"), "cwd": "."})),
+         lambda payload: guard_answer(payload, config=one), printed)
+    written = printed.getvalue()
+    check("and an answer it can read is written to the harness as one line of JSON",
+          written.count("\n") == 1
+          and json.loads(written)["hookSpecificOutput"]["permissionDecision"] == "ask",
+          written[:160])
 
     print("\n".join(out))
     print()

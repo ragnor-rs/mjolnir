@@ -273,10 +273,10 @@ exclusive gets no capacity guard at all; what no check can reach is in
 
 ⛔ **A command that costs money does not run because nobody was there to stop it.** You list the
 calls that spend, what each costs and whether a go covers one invocation; the guard reads where the
-command *is* in the call — behind an assignment, behind an elevation wrapper, in the third segment
-of a chain — and puts it to you with your own figure attached, so the one thing it never does is
-refuse a call that merely mentions the path. A session nobody is watching gets no answer, and then
-the call does not run. The
+command *is* in the call — behind an assignment, behind an elevation wrapper, inside a substitution,
+in a later segment of a chain — and puts it to you with your own figure attached, so the one
+thing it never does is refuse a call that merely mentions the path. A session nobody is watching
+gets no answer, and then the call does not run. The
 [spend rule](plugins/mjolnir/config/schema.md#18-a-command-that-spends-and-the-supervision-it-is-refused-without)
 is the single statement of the list and its keys,
 [the command position](plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)

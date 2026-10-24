@@ -659,8 +659,8 @@ answered.
 ## The spend half: three instances, and the key that is not sugar
 
 Three projects have a command that costs money when it runs, and only one of them has a guard. The
-first is where the guard comes from: one tier of its suite costs a few dollars a run against a
-budget that is finite and **has already been exhausted once**, which is the tier
+first is where the guard comes from: one tier of its suite costs real money a run against a budget
+that is finite and **has already been exhausted once**, which is the tier
 [`build-surface.md`](build-surface.md#the-tiers-what-each-needs-and-which-are-asked-for) records
 with the figure, beside the one environment another project refuses by name because its quota is
 what caps that product's throughput. The second runs an end-to-end suite that spends a paid

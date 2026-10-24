@@ -2071,10 +2071,8 @@ def validate(data: dict, facts: dict) -> None:
         if not isinstance(reason, str) or not reason.strip():
             raise ConfigError(
                 f"{where}.reason",
-                f"is {reason!r}; § 18 states what the call costs, in the project's "
-                "own terms, beside the command that spends it. A refusal that "
-                "cannot say what the call would have cost is one whoever meets it "
-                "has to guess at.",
+                f"is {reason!r}; § 18 states it as what the call costs, in the "
+                "project's own terms, and it is what a refusal names.",
             )
         if "args_match" in entry:
             pattern = entry["args_match"]
@@ -2976,6 +2974,24 @@ def self_test() -> int:
                 check(
                     f"and names `{named}` among them, its carrier being none",
                     any(named in line for line in reported),
+                    f"reported {reported!r}",
+                )
+            # ⛔ The absences that are a stated *empty list* rather than a
+            # carrier, each held the same way and for the same reason: this
+            # repository writes every one of them, so each branch runs in this
+            # suite and nothing read its output. Found by review on the § 18
+            # change, where that facet's report line could be deleted whole with
+            # every assertion here still green.
+            for path, stated in (
+                ("host.checks", "the host runs no checks"),
+                ("checks_local", "no local check is stated"),
+                ("spend_guard.deny", "no command is denied as a spend"),
+            ):
+                if config.get(path):
+                    continue
+                check(
+                    f"and names `{path}` among them, the project stating it empty",
+                    any(path in line for line in reported),
                     f"reported {reported!r}",
                 )
             # The resolved identity, which is the only guard § 1 has against a

@@ -2529,7 +2529,9 @@ rule differently enough that neither could be configured as the other — which 
 with an answerer per check rather than a flag
 ([the measurement](../../../docs/configuration-surface.md#a-green-gate-is-not-a-definition-of-done)).
 ⚠️ A procedure that demanded a person everywhere would be the check somebody turns off, which is
-the reasoning #26's spend guard already rests on.
+the reasoning
+[§ 18](#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs)'s spend guard rests on
+one facet over.
 
 The two vocabularies an entry draws on, stated once — and written under the key they belong to
 rather than bare, because § 5's `check` is a different library and one name cannot state both:
@@ -3079,7 +3081,7 @@ spend_guard:
       args_match: "<the pattern the arguments carry, where the command alone does not decide>"
       reason: "<what the call costs, in the project's own terms>"
   approval: per_invocation | denied   # default: per_invocation
-  resume_bar_usd: "<the price a resume is reported above>"   # absent prices no resume
+  resume_bar_usd: 0.25       # the price a resume is reported above; absent prices none
 ```
 
 **What spends is a project's fact and what refuses it is procedure.** ⛔ **The denied commands,
@@ -3091,10 +3093,10 @@ argue its way around and a guard that denies the call.
 
 ⛔ **`deny: []` is the stated absence and means no command here spends**, by the rule this surface
 opens with — a project that has decided none of its commands costs money and a project that has not
-thought about it read identically otherwise. ⚠️ **A reader reports it as unavailable**, and the
-guard is then installed and silent: the same reading
-[§ 7](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it) gives a project that
-states no exclusive resource, and it is what an install owes a project with nothing to guard.
+thought about it read identically otherwise. ⚠️ **A reader reports it as unavailable**, which is
+what an install owes a project with nothing to guard; and the guard is then installed and silent,
+which [§ 7](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it) states of a
+project with no exclusive resource and is the same reading here.
 
 **The keys of an entry, and what each is for.** ⛔ **`command` and `reason` are written on every
 entry and `args_match` is legitimately absent** — stated here in prose rather than by the
@@ -3113,7 +3115,12 @@ condition can reach.
   suites and its paid tier alike, so the binary decides nothing and the arguments decide everything.
   ⚠️ **It is searched against the arguments joined by single spaces** — the one shape that can state
   a flag together with its value — and the arguments are the shell's own parse, so a quoted one is
-  matched without its quotes. Absent, the command alone decides.
+  matched without its quotes. Absent, the command alone decides. ⛔ **The join starts at the first
+  argument, so a pattern anchored with `^` matches only the call whose paid argument comes first**:
+  a global flag written before it is part of the same string and moves it off the anchor. ⚠️ **And a
+  pattern with no word boundary in it matches across the join**, one argument's end running into the
+  next one's start — so a narrowing that has to hold is written with `\b` or `(^| )` rather than
+  with a bare phrase.
 - ⛔ **`reason` is what the call costs, in the project's own terms, and it is stated rather than
   derived.** It is what a refusal names, and a refusal that cannot say what the call would have cost
   is one whoever meets it has to guess at — the argument
@@ -3171,20 +3178,26 @@ calls.** The legitimate uses of a paid command are frequent — the measured pro
 command, differently scoped, several times a week — so an approval that outlived the call it was
 given for would be a go for calls nobody saw. ⚠️ **What an unanswered ask becomes is the harness's
 and not this facet's**: a session nobody is watching gets no answer and the call does not run, which
-is where *unsupervised* is decided, and it is § The loop's own rule that silence may narrow the work
-and never license an act.
+is where *unsupervised* is decided — and it is
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)'s rule about an ask nothing
+answered arriving at a call rather than at a leg.
 
 ⛔ **`denied` refuses the call outright**, for a spend no approval inside a session should be able
 to release: the remedy a refusal names is then a person running the command themselves, outside
 every loop. ⚠️ **It is the stricter value and not the default**, a guard nobody can satisfy being
 one somebody edits.
 
-⛔ **`resume_bar_usd` is the one price the harness states before a turn runs, and a resume above it
-is reported with the figure.** Resuming a long session after a gap pays to rewrite the prompt cache,
-and the amount is handed to the event that opens the session rather than inferred — the cheapest
-thing this facet can read, and the only cost the harness volunteers
+⛔ **`resume_bar_usd` is the one price the harness states before a turn runs, and a session priced
+above it is reported with the figure.** Resuming a long session after a gap pays to rewrite the
+prompt cache, and the amount is handed to the event that opens the session rather than inferred —
+the cheapest thing this facet can read, and the only cost the harness volunteers
 ([the measurement](../../../docs/configuration-surface.md#why-there-is-no-threshold-on-the-surface)).
-⚠️ **The unit is the figure's own**, which is why the key names it.
+⚠️ **The unit is the figure's own**, which is why the key names it. ⚠️ **A resume is the case the
+key is named for and not the only one the figure arrives on** — a forked session is priced too, and
+a session carrying the figure is compared against the bar whatever the harness calls it, so a source
+the harness starts pricing needs no key and no edit. ⚠️ **What the report carries beside the figure
+is whatever the same event stated about the cache** — whether it had likely expired, which is why
+the price is what it is — and nothing that was not stated.
 
 ⛔ **A resume the harness gave no figure for is reported as *no figure*, and never as free.** That
 is § 2's absence-of-signal rule arriving at a price: an unstated cost and a cost of zero read
