@@ -110,9 +110,9 @@ def form(configuration: config.Config) -> dict | None:
         return None
     one = quoted(stated["reference"]).replace(quoted(config.PLACEHOLDER), DIGITS)
     # ⚠️ The group is written in both arms and the quantifier is the whole
-    # difference, which is deliberate: a gate file read by a person should differ
-    # by the one character the configuration decided, rather than by two shapes
-    # somebody has to compare.
+    # difference, which is deliberate: two gate files differing by the one
+    # character the configuration decided read as one form configured two ways,
+    # where two unrelated shapes read as two rules.
     sequence = f"({one}){'+' if stated['repeated'] else ''}"
     return {
         **stated,
