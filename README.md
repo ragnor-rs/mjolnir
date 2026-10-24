@@ -295,10 +295,10 @@ command gets no spend hook at all; what no check can reach is in
 
 ⛔ **Nothing opens a session on your live machine without somebody being asked.** You name the
 commands that open one; the machines that are *not* live are named in a file outside every working
-tree, so your repository carries the mechanism and your machine carries the names — and a machine
-nobody has written that file on yet is one where every name reads as live, which is the safe way
-round. ⛔ **The verdict turns on who would answer the prompt**: you get the ask where you would
-answer it, and the call is refused outright where the session would answer on its own behalf,
+tree, so your repository carries the mechanism and your machine carries the names — and on a
+machine with no such file yet, every name reads as live, which is the safe way round. ⛔ **The
+verdict turns on who would answer the prompt**: you get the ask where you would answer it, and
+the call is refused outright where the session would answer on its own behalf,
 because a prompt a session can clear for itself is not approval. The
 [live rule](plugins/mjolnir/config/schema.md#20-a-command-that-could-open-a-session-on-a-live-machine)
 is the single statement of the list and its keys,
