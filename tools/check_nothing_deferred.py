@@ -367,6 +367,27 @@ def _threads(owner: str, name: str, number: int, token: str) -> tuple[str | None
 FILE_CEILING = 3000
 
 
+def _added_whole(entry: dict) -> list[tuple[str, str]] | None:
+    """Every line of an added file, from the checkout, or None if it is not one.
+
+    ⛔ `status == "added"` is the whole of the licence. A file the host reports
+    as modified has lines this change did not write, and reading it whole would
+    hand somebody else's marker to this change — the one thing the added-lines
+    rule exists to prevent. A file that is not in the tree, or is not text,
+    answers None and stays unread rather than being read as empty.
+    """
+    if entry.get("status") != "added":
+        return None
+    path = entry.get("filename")
+    if not path or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as handle:
+            return [(path, line) for line in handle.read().splitlines()]
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
 def _added(owner: str, name: str, number: int,
            token: str) -> tuple[list[tuple[str, str]], list[str]]:
     """(path, added line) for every line this change writes, and what went unread.
@@ -376,6 +397,16 @@ def _added(owner: str, name: str, number: int,
     returned as the second value rather than skipped: a marker in a file
     nothing read is not an absence of markers, and absence of signal is not an
     answer.
+
+    ⛔ **With one exception, and it is exact rather than a relaxation.** Where
+    the host says a file was **added** and supplies no patch for it, every line
+    of that file in the checkout is a line this change writes — there is no
+    earlier version for any of them to have come from. So the file is read from
+    the tree and the answer is the same one the patch would have given, which
+    is why this does not weaken the added-lines rule the way reading a
+    *modified* file whole would. ⚠️ Measured on a change adding one module of
+    some sixteen hundred lines: the host supplied no patch for it, and the gate
+    reported a file nothing read on a change that had deferred nothing.
     """
     out: list[tuple[str, str]] = []
     unread: list[str] = []
@@ -387,7 +418,11 @@ def _added(owner: str, name: str, number: int,
         for entry in files:
             patch = entry.get("patch")
             if patch is None:
-                unread.append(entry["filename"])
+                whole = _added_whole(entry)
+                if whole is None:
+                    unread.append(entry["filename"])
+                else:
+                    out.extend(whole)
                 continue
             for line in patch.splitlines():
                 match = DIFF_ADDED.match(line)
@@ -754,6 +789,37 @@ def self_test() -> int:
         else:
             print(f"  STAYED GREEN           {name}: {label}")
             failures += 1
+
+    # ⛔ The one carve-out in how a change's added lines are read, asserted in
+    # both directions and at the function that decides it. A file the host
+    # reports **added** and supplies no patch for is read whole from the
+    # checkout, every line of it being a line this change writes; a file it
+    # reports **modified** stays unread, because reading that one whole would
+    # hand somebody else's marker to this change.
+    import tempfile as _tempfile
+    with _tempfile.TemporaryDirectory() as root:
+        was = os.getcwd()
+        try:
+            os.chdir(root)
+            with open("an-added-file.py", "w", encoding="utf-8") as handle:
+                handle.write("one = 1\ntwo = 2\n")
+            for label, entry, expected in (
+                ("an added file with no patch is read whole from the checkout",
+                 {"status": "added", "filename": "an-added-file.py"},
+                 [("an-added-file.py", "one = 1"), ("an-added-file.py", "two = 2")]),
+                ("a modified file with no patch stays unread",
+                 {"status": "modified", "filename": "an-added-file.py"}, None),
+                ("an added file that is not in the tree stays unread",
+                 {"status": "added", "filename": "a-file-that-is-not-there.py"}, None),
+            ):
+                if _added_whole(entry) == expected:
+                    print(f"  held                   {label}")
+                else:
+                    print(f"  DID NOT HOLD           {label}: {_added_whole(entry)!r}")
+                    failures += 1
+        finally:
+            os.chdir(was)
+
     if failures:
         print(f"\n{failures} assertion(s) did not hold. A check that cannot fail is not a check.")
     return 1 if failures else 0

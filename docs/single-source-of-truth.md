@@ -63,6 +63,13 @@ workflow with its own `host.checks` entry. It is recorded in
 [its own section](#the-hosts-own-runs-read-by-one-consumer) below, because the limits of what it can
 answer are what a role reading it has to know.
 
+`plugins/mjolnir/scripts/install.py` holds no claim about this tree at all: it is the step that
+writes the toolkit's own artifacts into an adopting repository, and what runs on the gate is its
+own assertion suite, in an `Installer` workflow with its own `host.checks` entry. It is recorded in
+[its own section](#the-install-half-what-the-toolkit-writes-into-a-project) below, where the half
+no check reaches — whether the gate a generated workflow installs is the gate somebody wanted — is
+stated with it.
+
 `plugins/mjolnir/scripts/check_reply_defers_nothing.py` holds that a role's reply names no work the
 turn does not do, and it is the one here that does not run on the gate at all. It is in
 [its own section](#the-reply-defers-nothing-held-in-the-session-not-on-the-gate) too, and for the
@@ -687,6 +694,23 @@ on this gate's own pull request. ⛔ The honest reading is that check 2 is **pro
 holds nothing retroactively, and a reader who takes the scope as evidence the threads were already
 there has it backwards.
 
+⛔ **One carve-out in how the added lines are read, and it is exact rather than a relaxation.**
+Where the host supplies no patch for a file — a binary, a diff over its per-file size limit —
+that file is reported unread, which is
+[schema § 2](../plugins/mjolnir/config/schema.md#2-code-host)'s rule that absence of signal is not
+an answer: a marker in a file nothing read is not an absence of markers. ⚠️ **Where the host
+reports that file *added*, it is read whole from the checkout instead**: every line of an added
+file is a line the change writes, there being no earlier version for any of them to have come
+from, so the answer is the one the patch would have given.
+⛔ **A *modified* file stays unread**, and that bound is the whole of what keeps this from
+weakening the rule — reading one of those whole would hand somebody else's marker to this change,
+which is what
+[schema § *Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred)'s scope
+over the lines a change **adds** exists to prevent. ⚠️ Measured on a change adding a module of
+some sixteen hundred lines: the host supplied no patch, and the gate reported a file nothing read
+on a change that had deferred nothing. Both directions of the carve-out are asserted, with a third
+arm for an added file that is not in the tree, which stays unread rather than reading as empty.
+
 ### What this gate deliberately does not check
 
 - **The closing half of the rule.** No item closes carrying an unresolved item either, and that is
@@ -837,7 +861,10 @@ runner holding nothing reports green, which is the shape every check here is wri
 ⚠️ **A suite lives in a module beside its implementation, and the code host decided that.** A file
 carrying both reaches the host with **no patch** — measured at about a hundred kilobytes in one
 file, with every other file in the same change patched — and the gate on the change then refuses it,
-because a marker in a file nothing read is not an absence of markers. ⛔ The suite's module name
+because a marker in a file nothing read is not an absence of markers. ⚠️ **The gate reads one such
+file now** — an *added* one, from the checkout, by the carve-out recorded with it below — which
+narrows this reason to a file the host reports **modified** rather than retiring it
+altogether. ⛔ The suite's module name
 opens with `_`, which is the port's own rule for a module in `adapters/` that is not an
 implementation: discovery skips those, and the runner above reads the same rule rather than
 restating it — a suite imports the names it exercises, `KIND` among them, so without it a suite
@@ -2256,6 +2283,158 @@ that direction directly.
 - **What the figure says about any command.** The price arm reads one event's own cost. It is not a
   meter: nothing here knows what a session has spent, and no key states a budget it could be
   measured against.
+## The install half: what the toolkit writes into a project
+
+`plugins/mjolnir/scripts/install.py --self-test` runs in the `Installer` workflow, with no
+credential and no network. ⛔ The rule is
+[schema § What the toolkit installs](../plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)
+and this document states none of it. What is recorded here is why the step is separate, what its
+suite holds, and what it leaves alone.
+
+**It is separate from the step that asks.** The interrogation that writes a project's
+configuration takes its question set from the surface's own section list, so it is built after
+every facet it asks about. The artifacts need none of those answers, and each was therefore gated
+on the last item in the backlog by way of a half of it with no dependency on any facet at all. The
+split is what ungates them; nothing about the interrogation changes, and no configuration anybody
+has written becomes invalid by it.
+
+**The artifacts are each their own work item, and the registry states which are built.** What each
+file says and which configured value it reads belongs on the item that builds it; a placeholder in
+the registry would be this step inventing a gate, which is the one thing the split exists to
+prevent. So ⛔ **a registry holding nothing is reported as an answer**, by
+[§ 2](../plugins/mjolnir/config/schema.md#2-code-host)'s rule that absence of signal is not one,
+and never as a complete install. ⚠️ **The arm is an equivalence rather than *the report is
+non-empty***, so it holds in whichever direction the registry stands, and no count of what is in it
+is written here.
+
+What it holds, per artifact: the marker at the head and the body below it unchanged; a shebang
+keeping the first line; the mode the artifact's kind states, which a hook has to carry or git does
+not call it; a second run leaving the file and its mode alone; a file carrying no marker neither
+written over nor removed, in both directions the step runs in; an absent value naming itself with
+nothing written; a `host.checks` entry refused before anything is written and put back after it
+where the insertion fails; the entry inserted into the project's own configuration without
+re-rendering it, and taken back out when the artifact is; and a place that could not be resolved
+reported as that rather than as nothing being there. The kinds are the two this document draws:
+**computed** throughout — a path, a mode, a byte comparison, a reader's verdict — with no
+forbidding arm among them.
+
+⛔ **Where a generated gate goes is not this module's**, by
+[§ 2](../plugins/mjolnir/config/schema.md#a-workflow-whose-jobs-mirror-more-than-one-command),
+which this document does not restate either. Which directory a host kind keeps its definitions in
+is the drift check's one host fact, read from there — and **both halves of the arm asserting that
+are computed from the fact rather than matched as text**, because a forbidding arm has to write
+down what it forbids and then finds its own list. ⚠️ Each half was measured defeated. The
+read half was a search for the sibling module's name, true however the module behaved. The spelling
+half matched the joined path inside a quoted literal, and the idiom this codebase uses is a `join`
+of its two components — the sibling module's own spelling — so nothing was ever found. Both are now
+read off the parse tree, by component rather than by path.
+
+⚠️ **The configuration is edited textually and never re-rendered**, a round trip through a parser
+taking out every comment a project wrote about its own facts with nothing reporting the loss.
+⚠️ **Two fixture shapes are needed and neither substitutes for the other**, which is measured by
+breaking the walk one way at a time and reading which block reddens:
+
+| the break | which fixture holds it | why that one |
+|---|---|---|
+| the member indent computed as *the key plus two* rather than read off the list | the **dumped** configuration, alone | its members sit at the key's own column, so a derived indent writes a member the file cannot parse |
+| a nested block list read as the end of the list | this repository's **own file**, alone | one of its entries states `triggers` as a block list, so the walk stops inside a member and the entry lands between a key and its own values |
+| a parser round trip in place of the textual edit | this repository's **own file**, and the comment arm of the dumped one | only a hand-written file has lines a round trip can lose |
+
+⚠️ **So the hand-written shape is not a better fixture but a different one**: a dumped
+configuration has no comments, its keys are sorted and its list sits at its key's column, while a
+hand-written one has the opposite of all three, and each shape is the only one that reddens for one
+of the two walk defects. The one hand-written configuration in reach of a test is this project's
+own file.
+
+⛔ **The property the whole split rests on — that this step asks nothing
+([schema § What the toolkit installs](../plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out))
+— is asserted and not merely stated.** A step that asked one question would be waiting on the
+interrogation it was separated from, and the three artifacts would be gated on it again by a route
+no reader of either item would look for. ⚠️ **It is read as a parse tree rather than as text**, for
+the reason the directory arm above is computed: a lexical form of either one has to write down the
+spellings it forbids and then finds its own list. Both were measured — the first form of each
+reported the violation it exists to catch.
+
+⚠️ **Every plant is verified by breaking the mechanism it names**, one break at a time, and the
+list of breaks is the suite's own output rather than a copy here. ⛔ **What is worth recording is
+the class of break that reddens nothing**, because each instance of it is an arm that holds nothing
+and the only reason the arm beside it exists:
+
+- **An arm matched against the thing it forbids finds its own text.** Three were measured. A regex
+  carrying the workflow directory matched the line it was written on. A search for the sibling
+  module's name was true however the module behaved. A list of the spellings that read from
+  whoever ran the step contained those spellings. All three are read off the parse tree now, and
+  the directory one by **component**, because the spelling this codebase uses is a `join` of the
+  two parts rather than the path.
+- **An arm compared against the function that produced the value.** The marker's head was asserted
+  equal to what builds it, so both sides moved together: a build identifier added to the head line,
+  and the removal instruction emptied to one character, each left the suite green. What is asserted
+  now is the two things the marker has to say.
+- **A refusal asserted by a word every refusal shares.** `no` appears in all four of the walk's
+  refusals, two of them through *cannot*, so returning the wrong reason was green. Each refusal is
+  now named by its own sentence.
+- **An arm satisfied by the registry being empty rather than by the branch it names.** Two:
+  *nothing was written where a workflow would go*, and *nothing is written* read off the answer's
+  own `path` field rather than off the tree.
+- **A rollback asserted on the route that never writes.** The three arms about an unstatable entry
+  all used an entry the reader refuses *before* any write, so they passed because nothing was
+  written rather than because anything was taken back out — and the post-write rollback, and the
+  directory it has to remove, had no arm at all. The route that reaches them is a `host.checks`
+  the reader accepts and the textual walk refuses.
+- **A stop asserted where nothing states the thing it stops on.** *A machine-wide hooks path is a
+  stop* was written as *either nothing states one or this answers nowhere*, which passes on any
+  machine where nothing does. The scope is planted now.
+- **A read-back asserted through the shape it cannot reach.** `register`'s restore and its
+  does-not-carry-the-change condition each needed a route where the file and the configuration in
+  hand disagree; neither had one.
+- **Half a rule asserted.** `needs` is satisfied by an empty collection *and* by an explicit
+  absence; only the first had a fixture, and the second is unreachable from any loadable
+  configuration, so it is asserted at the function with that stated.
+
+⚠️ **And one plant reddened by stopping rather than by its arm** — the asking break sat ahead of the
+branch that runs the suite, so the run died before reaching the assertion. Moved inside the step it
+reddens the arm written for it, in both the asking and the stream-reading form.
+
+⚠️ **One precondition the suite does not check for itself: git on `PATH`.** A hook has to be
+installed into a repository, so one arm initialises a tree of its own — and asserts that it did,
+and that git answered where that tree's hooks are called from, **before** it asserts anything about
+a file in it. Read as a skip, a missing git would turn the whole hook half of the suite green while
+holding nothing, which is
+[§ 11](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)'s direction
+applied to a suite's own fixture.
+
+### What this check deliberately does not hold
+
+- **Whether a generated artifact is the artifact somebody wanted.** What each file *says* is its
+  own work item's, asserted there; this suite holds that whatever an artifact states is written
+  byte for byte below the marker and nothing else. A gate that enforces the wrong rule correctly
+  installed is green here.
+- **The artifacts the split was made for.** Every property above is held against fixtures of each
+  kind rather than against a registered artifact. ⚠️ **Stated rather than left to be inferred from
+  a green run**: the suite proves the step, and each artifact's own item proves the artifact.
+- **A question the step *delegates*.** The arm asserting it asks nothing reads this module's own
+  parse tree for a call or an attribute by name, so a question put through another module, or a
+  read of the standard input by a route that does not name it, is invisible to it. The direct forms
+  are held; the indirect ones are a reader's.
+- **That every arm is load-bearing.** The suite reports its own count and cannot execute nothing
+  and exit zero, but the floor it asserts is that it ran at all — most of its arms could be deleted
+  and that floor would still pass. What holds each one is the break written for it, not the count.
+- **Whether the host then runs the workflow that was installed.** That is the facet against the
+  host's own definitions, and the drift gate reads it one claim over — but only for a file already
+  in the tree. A workflow written and never pushed is held by neither.
+- **A project's own file at a path a future artifact will take.** The stop is per artifact and per
+  run: a repository is not swept for files the toolkit might one day want to write, so an adopter
+  finds out at install time rather than before it.
+- **Whether `core.hooksPath` is the route a project ought to take.** The step reads the
+  **repository's own** scope and decides neither route; choosing between a tracked hooks directory
+  and this step is the hook's own work item. ⚠️ A repository stating neither gets git's own answer,
+  which is outside the tracked tree — so an artifact installed there does not survive a fresh
+  clone, and nothing here reports that. ⛔ A path stated for the whole machine is a stop and not a
+  third route: git would call hooks from there, so a copy inside the repository would never run,
+  and that directory is not somewhere this step may write.
+- **Whatever is not committed**, and **issues and pull requests**, for the reasons the document
+  checks above give: this suite reads trees it creates and the configuration in the checkout, and
+  the workflow holds no credential.
 
 ## Each check has a violation it is asserted to redden on
 
@@ -2301,8 +2480,10 @@ cases nothing was written to let through. The enforcement check plants the whole
 case — a project where nothing is exclusive, which must answer nothing for any call — beside the
 reads that share a path with a merge and must not be refused for it. The spend check plants both of
 its halves by hand — every shape a denied command arrives in against every shape that merely names
-it, which is the correction it was extracted carrying. ⛔ A red-only suite says nothing about any of
-them.
+it, which is the correction it was extracted carrying. The install step plants a project that asks
+for no artifact at all, which must write nothing and report nothing, and a value stated empty,
+which must satisfy an artifact's needs rather than wait forever on it. ⛔ A red-only suite says
+nothing about any of them.
 **A green plant naming an exclusion is verified by switching that exclusion off** and watching it
 redden — one that cannot fail is one nobody checked — while a plant naming an omission has nothing
 to switch off, and what it asserts is that a grammar stayed narrow. ⚠️ A suite that keeps the two

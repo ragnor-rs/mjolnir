@@ -3456,3 +3456,81 @@ resume at all**, and then this arm says nothing — a legitimately unset key, by
 event, and a command's own cost is not a figure anything hands over — which is why the rest of this
 facet is a list a project writes rather than an amount anything measures
 ([the measurement](../../../docs/configuration-surface.md#why-there-is-no-threshold-on-the-surface)).
+## What the toolkit installs into a project, and what takes it out
+
+**Adoption costs one file a project writes, and a short list of files the toolkit writes.** The
+second half is this section. What the procedure needs and cannot express anywhere else is a file in
+the adopting repository: a host gate is a workflow file or the host never runs it, and a rail that
+has to fire on a git operation is a git hook or git never calls it. ⛔ **So the claim is not that
+nothing is written — it is that nothing written is a project's to maintain**, and the four
+properties below are what make that true rather than a hope. ⚠️ **Which mechanism a given rail is
+carried by is not stated here**, this section holding what an install may do rather than what any
+artifact is for.
+
+⛔ **This is procedure and declares no key.** Which artifacts a project gets is decided by facets
+it has already stated, so there is nothing further to configure and no configuration anybody has
+written becomes invalid by this section. ⛔ **And no key turns it off**, by the device
+[§ An artifact states what is true now](#an-artifact-states-what-is-true-now) and
+[§ 17](#whether-the-hosts-verdict-covers-this-change) each use for the same reason — a project that
+could switch this off would be choosing to keep a file the toolkit wrote and no longer knows about:
+
+```yaml
+# procedure: install
+```
+
+⛔ **The install asks nothing.** The step that interrogates a tracker and a host to *write* a
+project's configuration is a different step, and this one waits on no answer from it: every
+artifact is wanted or not wanted by facts already stated. ⚠️ **Which is what makes the two
+separable at all** — the question set grows with this surface, and an artifact that had to wait for
+it would wait on every facet added after it.
+
+**The four properties, each held of every artifact:**
+
+| | |
+|---|---|
+| **Marked** | A generated-by marker at the artifact's head names it and says what takes it out. ⚠️ **At the head and nowhere else is the rule a reader is held to**: a project's own file that merely mentions the marker is still the project's. ⛔ **Nothing in the marker moves between runs** — a date, a version or a commit there would be the record of a pass [§ An artifact states what is true now](#an-artifact-states-what-is-true-now) forbids an artifact outright, *and* would defeat the third property below |
+| **Removable** | An artifact the toolkit wrote is one the toolkit takes back out, and a project that stops asking for a gate gets the file **removed** rather than orphaned. ⛔ **Both of the things installing wrote come out** — the file and the entry it registered, since an entry naming a run the repository no longer makes misdirects every consumer of the facet. ⛔ **A file carrying no marker is never removed and never written over**, whichever direction the step is running in |
+| **Idempotent** | A second run leaves the tree byte-identical — asserted on the bytes and not on what the step reports. ⚠️ **The mode is part of that**, where the artifact's kind has one: a file whose bytes match and whose mode does not is not unchanged |
+| **Refusing rather than improvising** | A value absent, a path occupied, a `host.checks` entry the surface cannot state, a host whose definitions are not files, a place that cannot be resolved at all: each is an answer with the thing named, and none leaves a partial install behind. ⛔ **A place that could not be resolved is reported as that** — never as nothing being there, which is [§ 11](#a-report-names-what-it-could-not-establish)'s rule arriving where a green run would otherwise mean a file left installed in a tree the step could not look at |
+
+⛔ **An artifact whose content needs a value the configuration does not state is not written, and
+the step names the value.** It is not written with a default, and it is not written half-rendered.
+⚠️ **A value stated empty is not a missing one** — an empty list and an explicit absence are a
+project's stated facts, by this surface's own rule that absence is a configuration, so an artifact
+whose presence turns on such a facet is simply not wanted rather than waiting forever.
+
+⛔ **Where a generated gate goes, and whether it may join a file that already exists, is
+[§ 2](#a-workflow-whose-jobs-mirror-more-than-one-command).** This section reads that section and
+states none of it again. ⛔ **And where its jobs run is
+[§ 2 → Where the host's jobs run](#where-the-hosts-jobs-run)**, which already rules what this step
+does with it: the block is written where the project states one, and nothing about it is chosen
+here. A value that block states and the project does not is the `needs` rule above rather than a
+second mechanism.
+
+⛔ **An artifact a mechanism will not act on unless it carries a mode is written with it.** The
+measured case is a hook: git treats a non-executable one as absent, so a rail installed without the
+bit is a rail that is not installed while the step reports it written. ⚠️ **And where the mechanism
+is told to look somewhere outside the repository, there is nowhere to write** — a hooks path stated
+for the whole machine is a stop naming it, not a directory to install into, because the artifact
+would land outside the project and a copy inside it would never be called.
+
+**Registration is part of installing, not a step after it.** A generated gate is a run the host
+makes, so it is an entry in [§ 2](#2-code-host)'s `checks` like every other — written beside the
+artifact, and ⛔ **an entry this surface cannot state is refused with the entry named, before
+anything is written**. ⛔ **So is one whose workflow name an entry already states**, § 2 keying the
+facet on that name: an install may not create the one shape every consumer of it would have to
+choose between, and the refusal names the name. ⚠️ **The configuration file is edited and never
+re-rendered**: a project's own comments about its own facts are part of that file, as is the
+terminator its lines are written with, and a round trip through a parser takes every one of them out
+with nothing reporting the loss.
+
+⛔ **And the edit is read back, on two conditions rather than one**: a file that stops loading is
+put back, and so is a file that loads and **does not carry the change**. The second is not the
+first — a configuration can state a key twice, where the text an edit went into is not the text the
+reader resolves, and without the second condition the step reports a clean install while writing
+another copy of the same entry on every run.
+
+⚠️ **A project that states no configuration gets nothing written and is told so.** Not the silence
+[§ 7](#a-hook-in-a-project-that-states-no-configuration) rules for a carrier addressed by an event:
+this step is invoked by name, and that subsection already makes the answer owed to whoever invokes
+a role in a project configuring nothing.

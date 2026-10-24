@@ -1,7 +1,11 @@
-# Working on the toolkit: what an install writes, and what a session serves
+# Working on the toolkit: what registering it writes, and what a session serves
 
 The two commands that register this tree as its own marketplace are on the front page, under
-[*Working on the toolkit itself*](../README.md#working-on-the-toolkit-itself). What they write,
+[*Working on the toolkit itself*](../README.md#working-on-the-toolkit-itself). ⚠️ **Register, not
+install into a project**: the second sense is the artifacts the toolkit writes into an adopting
+repository, which is
+[`schema.md`'s own section](../plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)
+and not this document. What these two commands write,
 which copy of the plugin a session resolves, and the two consequences of that worth knowing before
 editing are here — one hop off the front page, because the reader of this document is whoever is
 editing this tree rather than whoever is deciding whether to adopt it. The single statement of
@@ -13,8 +17,11 @@ none of them.
 
 `user` rather than `local`, because whoever works on the toolkit is also the person adopting it in
 every other project on the same machine, and one registration serves both: self-hosting here, and
-every other project — whose adoption then costs exactly one file, `.claude/mjolnir.yaml`, with no
-install step at all.
+every other project — whose adoption then costs one file to write, `.claude/mjolnir.yaml`, and no
+second registration of its own. ⚠️ **What the toolkit writes back into such a project** — the
+artifacts only its host and its git can read — is a different act from the registration this
+document is about, and is
+[`schema.md`'s own section on it](../plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out).
 
 `local` does not confine a registration the way its name suggests, which is the sharper reason to
 pass `user` explicitly rather than a matter of reach. Only the *declaration* lands in one project's
