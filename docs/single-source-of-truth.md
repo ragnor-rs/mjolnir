@@ -1357,9 +1357,17 @@ further reply, so **injecting context costs a reply whether or not the answer bl
   and the reason that would is open-ended prose. ⛔ **So the parking that reply carried is missed by
   rule**, on the direction the bullet above states, and the green side of both withdrawn forms is
   planted so the withdrawal is asserted rather than remembered.
-- ⚠️ **Which role is running.** A `Stop` payload says nothing about it, so this holds every reply in
-  a session where the plugin is enabled rather than a role's. In the safe direction — more replies
-  held, never fewer — and the ruling is [#87](https://github.com/ragnor-rs/mjolnir/issues/87)'s.
+- ⚠️ **Which role is running** — the reach this check has rather than a gap in it, and the ruling
+  behind it is
+  [schema § 7 → What a hook can establish about the role it is running under](../plugins/mjolnir/config/schema.md#what-a-hook-can-establish-about-the-role-it-is-running-under).
+  A `Stop` payload names the reply, the turn, the session and the directory — and no role, so this
+  holds every reply in a project that states a configuration rather than a role's. ⚠️ **The
+  narrowing the ruling leaves available is the unsafe direction here**, which is why the scope
+  stays: a hook can join its turn to the transcript and ask whether a role was *entered in this
+  turn*, and a role entered in one turn is still being run in the next five — all of whose replies
+  would then be held to nothing. Held widely, what the over-reach costs is a reply no role produced
+  being asked not to park work; narrowed, what it costs is the parkings of every turn of a role
+  after its first. The second is the error this check exists to stop.
 - ⚠️ **Whether the work actually got done.** The hand-back asks for it and the turn continues;
   nothing here reads the tree afterwards to see that it did. What reads that is the gate on the
   change, one artifact over.

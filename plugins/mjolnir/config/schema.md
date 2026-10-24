@@ -1787,6 +1787,67 @@ be invited to write the file it has already written.
 complete anyway: a hook silent for want of a configuration and a hook absent are the same thing to
 a project that states none, which is a reading those two states are permitted to coincide in.
 
+### What a hook can establish about the role it is running under
+
+⛔ **A hook cannot establish which role is running, and no rule may be written as though it
+could.** [§ Invocation](#invocation) says a carrier of `hook` has no invocation name at all; this
+is the other half of that statement — what the event carries once the hook is running.
+⚠️ **Measured per event rather than derived from the addressing**, because the events differ from
+one another: one of them names a role and the rest name none.
+
+| the event | what it carries about a role |
+|---|---|
+| `SessionStart` | nothing, and no turn either — so not even the narrower question below can be asked here |
+| `UserPromptSubmit` | the prompt as typed, which carries the invocation where the person used it. ⚠️ **The person's own text, not the harness stating that a role began** — the same event fires for text no role invoked, a notification from a background task included |
+| `PreToolUse` and `PostToolUse` on the `Skill` call | the role, namespaced, in `tool_input.skill`. ⛔ **The one event that names one**, and it names the role being *entered* rather than one running |
+| `PreToolUse` and `PostToolUse` on every other call | the call and its input, and nothing about the role it is made under |
+| `Stop` | the reply, the turn, the session and the directory; nothing about a role |
+| `SubagentStop` | the subagent's own type and transcript. ⚠️ A name-shaped field naming the wrong thing: it is what the parent launched, never what the parent is running |
+| `SessionEnd` | the reason it ended; nothing about a role |
+
+⚠️ **And the one event that names a role names it only on one of two entry paths.** A role entered
+by its invocation reaches the session without any call at all, so the `Skill` row above is the path
+where the session entered the role itself — which is not the project's to choose. The record both
+paths leave is the injected preamble, which is [§ Invocation](#invocation)'s warning measured: the
+two carriers leave two different records, and a matcher keyed on either asserts both directions.
+
+⛔ **So the question a hook can answer is narrower, and it is per turn: whether a role was entered
+in this turn, and which one.** Every event but the session's own opening carries the turn, and the
+transcript's records carry the same turn, so the two join and the records of one turn either carry a
+role's entry or they do not.
+
+⛔ **And that is not the question a rule scoped to the loop needs.** A role spans turns, no event
+fires when one ends and no record marks it, so a session five turns into a role is indistinguishable
+from a session in no role at all. Measured: a call made inside a role, and the same call made in a
+later turn of the same session, differed in the command they named and in nothing else.
+
+⛔ **The three readings that look like the answer each answer a different question**, which is why
+no hook here takes one:
+
+| the reading | what it actually answers |
+|---|---|
+| the working directory, and the branch under it | which **item** the session is on, by [§ 10](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it)'s tree per item — the same answer in every role, and in none |
+| the transcript | which role was **last entered**, which never stops being true: nothing records one ending, so the entry is still the latest one a turn after the role finished |
+| a value the carrier writes | nothing a guard may read. A role's text can only ask the session to write it, which makes the record the act's own — refused by [§ What a hook refuses](#what-a-hook-refuses-and-the-record-it-reads)'s rule that a guard never reads the answer written by the act it guards. ⚠️ And it has no release: [§ A lease](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)'s every-exit-path rule has no path to name, since no event fires when a role ends, leaving expiry alone over a span nothing bounds |
+
+⛔ **So a hook holds its rule on every call its matcher fires on, and that reach is stated where the
+hook is recorded rather than inferred from a green run.** This is [§ 2](#2-code-host)'s
+absence-of-signal rule in one more place: a hook that says nothing about its reach reads exactly
+like a hook whose reach is the rule's own, and those are two different installs.
+
+⛔ **A rule is only a hook's to hold where holding it that widely fails safe.** The test, asked once
+when the hook is written and never at run time:
+
+| the ask | and then |
+|---|---|
+| Is the rule's subject the **act the event names** — a command, a call, a merge — decidable from the event's own fields and a record outside the session? | a hook holds it exactly, and the role was never part of it. ⚠️ **The common case**: a build slot contends and a check the host has already run is wasted work, whichever leg of the loop asked for it |
+| Is the rule's subject the **leg of the loop**, so that deciding it needs the role? | a hook holds it on every call the event carries, and whether that is permitted is the ask below |
+| Does holding it that widely fail in the safe direction — more held and never fewer, nothing refused that the rule would have allowed? | the hook holds it widely and its reach is recorded. Otherwise the rule is not a hook's at all: it belongs where [§ 8](#the-reply-to-the-person-running-a-role) puts the register, read rather than enforced |
+
+⛔ **No key configures any of this, and none will be declared.** The carrier is this section's own
+axis and the question here is what a hook can read; a key per hook would be a project declaring an
+answer the harness does not hand it, which every later pass would then trust.
+
 ### What a hook refuses, and the record it reads
 
 ⛔ **A hook refuses an act on the strength of a record, never on a reading of the work.** The
