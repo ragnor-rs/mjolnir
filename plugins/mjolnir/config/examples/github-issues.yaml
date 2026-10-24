@@ -109,6 +109,15 @@ commit:
   staging: explicit
   trailer: read_from_history
 
+# § 20. One section, and it is here because another role reads it: the deploy collects it out of
+# every change in the batch and runs what it collected. ⛔ Not a convention — a heading nothing
+# collects belongs in a contributing guide rather than behind a gate.
+body_sections:
+  - heading: "Before this can be deployed"
+    read_by: "the role that deploys a batch"
+    # The green side, without which every change needing nothing would have to invent something.
+    nothing_needed: "Nothing."
+
 carriers:
   day_log: skill
   file: skill

@@ -3588,6 +3588,76 @@ resume at all**, and then this arm says nothing — a legitimately unset key, by
 event, and a command's own cost is not a figure anything hands over — which is why the rest of this
 facet is a list a project writes rather than an amount anything measures
 ([the measurement](../../../docs/configuration-surface.md#why-there-is-no-threshold-on-the-surface)).
+
+## 20. The sections a pull request body must carry
+
+```yaml
+body_sections:              # the sections a body states, beyond what § 6 already rules; required
+  - heading: "<the heading text, as a body spells it, in the repository's language (§ 8)>"
+    read_by: "<what collects this section out of the change>"
+    nothing_needed: "<the answer the section carries where the change needs nothing of it>"
+```
+
+**A section belongs here when another role reads it.** [§ 6](#the-pull-request-title-and-body)
+rules the body a summary and a test plan and leaves the closing reference to
+[§ 3](#the-operations-and-what-an-absent-capability-does); what this facet adds is the case those
+two do not reach — a section one role **writes** and a second **collects**, out of every change a
+batch carries, and then acts on. ⛔ **That is the test for membership and the only one**: a heading
+a project merely likes is a convention, and a convention enforced by a gate is this surface's own
+defect class arriving as continuous integration. ⚠️ **The measured instance is a deployment's own
+preparation** — what a change needs done to an environment before it can ship — collected by the
+role that deploys a batch and run as the batch's first step; and what made it a facet rather than
+one project's workflow file is that the section was enforced by a gate and stated on no surface
+([the measurement](../../../docs/configuration-surface.md#a-section-one-role-writes-and-another-runs)).
+
+⛔ **`[]` is the stated absence and means no section beyond § 6's**, by the rule this surface opens
+with: a project whose deploys need no per-change preparation, and a project that never thought
+about it, read identically otherwise. ⚠️ **A reader reports it as unavailable** and ⛔ **no gate is
+installed for it** — which is the absence being a configuration rather than a gate that holds
+nothing, and the direction that matters, since a run asserting nothing reports green.
+
+**The keys, and what each is for.** ⛔ **All three are written on every entry**, stated here in
+prose rather than by the `# required` marker, for the reason
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts) states a local check's
+`command` that way: a marker names a key at a path, and a member of a list sits at no path a marker
+or a condition can reach.
+
+- ⛔ **`heading` is the text and not the level.** Which level a body puts a section at, and how it
+  cases the words, are formatting — so what is stated here is the words, and a body setting them as
+  `h2` or `h4` has stated the section either way. ⚠️ **It is written in the repository's language
+  and register ([§ 8](#8-language-register-audience--per-artifact-not-per-project)), which one
+  project's split-by-audience rule makes different from its tracker's**: the body is the artifact,
+  so the body's language decides, and a heading transliterated out of the tracker's matches nothing
+  a body carries. ⛔ **Two entries stating one heading are refused** — the collector reads the
+  section by that text, so a second entry under it leaves every reader of the facet choosing
+  between two statements of what one section is for.
+- ⛔ **`read_by` is what collects the section, and it is stated rather than inferred.** It is the
+  membership test above written down on the entry: an entry that cannot name what reads it is a
+  convention, and the facet refuses to carry conventions. ⚠️ **It is also what a refusal names** —
+  a body handed back over a missing heading, with nothing saying who was waiting on it, is a
+  refusal whose remedy the author has to guess.
+- ⛔ **`nothing_needed` is the answer that closes the section with nothing in it, and every entry
+  states one.** ⚠️ **Without it the facet would have no green side at all**: a required section
+  whose only passing form is content turns every change needing nothing into a change that has to
+  invent some, and what a body then carries is a sentence written to satisfy a gate. ⛔ **And the
+  answer is the whole of the section or it is not the answer** — a section stating it and then
+  stating something else has said both, and the role collecting it would have to choose.
+
+⛔ **The open-items section is not one of these, and it is not stated here.**
+[§ Nothing is deferred](#nothing-is-deferred) requires it of every body and no key turns that off,
+while an entry of this facet is one a project may stop stating — so a section carried here would be
+a rule a project could configure away, which that section's own precedence rule already refuses.
+⚠️ **Its heading is therefore procedure's and is held by the gate that reads it**, rather than
+being a fourth entry whose absence would be legitimate.
+
+**What reads this facet.** The verdict is produced by a checker shipped with this surface, run as a
+host check like any other ([§ 2](#2-code-host)) and by the local caller the same entry's `mirrors`
+names — ⛔ **one implementation and two callers**, since a gate and a local run disagreeing about a
+body is the state this facet exists to remove rather than to create. ⚠️ **The run is started by the
+event and not by a push**, so a body corrected in place is re-read with no new commit: the trigger
+carries the edit event, which is also why the check is a run of its own rather than a job inside a
+suite whose triggers do not.
+
 ## What the toolkit installs into a project, and what takes it out
 
 **Adoption costs one file a project writes, and a short list of files the toolkit writes.** The
