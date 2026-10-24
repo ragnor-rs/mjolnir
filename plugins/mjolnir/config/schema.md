@@ -4147,8 +4147,14 @@ condition can reach.
   running the role one route past it, which is editing the guard
   ([§ 7](#what-a-hook-refuses-and-the-record-it-reads)). ⚠️ **It is a form and not a rewrite**: what
   it replaces the call with is a pipeline or a different command, which is not something a reader of
-  the arguments can derive — and ⛔ **a form that would itself be held is an entry that refuses every
-  route it offers**, which is why the two keys are exclusive rather than both honoured.
+  the arguments can derive. ⛔ **And a call that *is* that form passes**, compared as the whole call
+  with its runs of whitespace normalised: the common form of a bounded one carries the very command
+  it is the remedy for, so without this an entry would refuse every route it offers. ⚠️ **Equality
+  and not containment** — a call carrying the form *and other things* is refused — which keeps this
+  from becoming the match on the text of a call that
+  [§ 19 → The command position](#the-command-position-and-why-the-whole-call-is-not-one) exists to
+  replace: it compares a call against a form a project wrote, rather than searching a call for a
+  command.
 - ⛔ **`reason` is what the call would put in the window, in the project's own terms**, and it is
   stated rather than derived — the same argument
   [§ 19](#19-a-command-that-spends-and-the-supervision-it-is-refused-without) makes at its own

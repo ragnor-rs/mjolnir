@@ -218,6 +218,26 @@ def bounded_already(arguments: list[str], bound: str) -> bool:
     )
 
 
+def is_the_form(command: str, instead) -> bool:
+    """Whether this call *is* the bounded form the refusal would name.
+
+    ⛔ The one text comparison in this facet, and it is narrow on purpose: the
+    whole call against a form the project wrote, with runs of whitespace
+    normalised, rather than a search for a command inside a call. Without it the
+    common shape of a bounded form — the same command piped through a bounding
+    one — stands in a command position of its own and is refused as the thing it
+    is the remedy for, so the entry refuses every route it offers (§ 22 at
+    `instead`).
+
+    ⚠️ Equality and not containment: a call that carries the form **and other
+    things** is refused, which is the conservative direction and is what keeps
+    this from becoming the text match § 19's position rule exists to replace.
+    """
+    if not isinstance(instead, str) or not instead.strip():
+        return False
+    return " ".join(command.split()) == " ".join(instead.split())
+
+
 def one_command(command: str) -> bool:
     """Whether this call is one command, which is the only call a rewrite is made on.
 
@@ -276,6 +296,8 @@ def holds(config, command: str) -> list[dict]:
                         continue
                 bound = entry.get("bound")
                 if isinstance(bound, str) and bounded_already(arguments, bound):
+                    continue
+                if is_the_form(command, entry.get("instead")):
                     continue
                 found.append({
                     "entry": entry,
@@ -1076,6 +1098,26 @@ def self_test() -> int:  # noqa: PLR0912, PLR0915 -- one assertion per rule, rea
         longer = guard_answer(_call(f"{UNBOUNDED_COMMAND} --A-BOUNDING-FLAGGED 10"), config=bounds)
         check("a flag that merely starts with the bound's own is not that flag",
               rewritten(longer).endswith(A_BOUND), repr(longer)[:160])
+
+        out.append("")
+        out.append("The bounded form a refusal names then runs, which is what makes it a route:")
+        # ⛔ A form carrying the command it is the remedy for, which is the shape
+        # a real one takes: without the rule at `instead`, this entry would refuse
+        # the very call its own refusal told the session to run.
+        piped = f"{UNBOUNDED_COMMAND} | a-bounding-command"
+        routed = _a_config([_an_entry(UNBOUNDED_COMMAND, instead=piped)])
+        refused = guard_answer(_call(UNBOUNDED_COMMAND), config=routed)
+        check("the unbounded call is refused and the form is named",
+              decision(refused) == "deny" and piped in reason(refused), reason(refused)[:200])
+        check("and the form the refusal named is not itself refused",
+              guard_answer(_call(piped), config=routed) == {},
+              repr(guard_answer(_call(piped), config=routed))[:160])
+        check("however its spacing is written",
+              guard_answer(_call(f"{UNBOUNDED_COMMAND}   |  a-bounding-command"),
+                           config=routed) == {})
+        check("while a call carrying the form and other things is still refused",
+              decision(guard_answer(_call(f"a-free-command && {piped}"),
+                                    config=routed)) == "deny")
 
         out.append("")
         out.append("A narrowing pattern decides which spelling of one command is held:")
