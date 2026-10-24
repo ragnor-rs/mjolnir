@@ -5,12 +5,19 @@ The rule is
 `plugins/mjolnir/config/schema.md § 2 -> The facet against the host's own definitions`,
 which states it and carries the argument behind it. Neither is restated here.
 
-⛔ Four dimensions are compared, each in both directions, because neither
-direction shows from the other's output: the **name** an entry is keyed on, the
-**triggers** that start the run, the **paths** it watches, and the **jobs** an
-entry names where it states them. A renamed workflow leaves an entry naming a
-run the host does not make *and* a run no entry names, and a check reading one
-side only reports half of it.
+⛔ Five dimensions are compared, the first three in both directions, because
+neither direction shows from the other's output: the **name** an entry is keyed
+on, the **triggers** that start the run, the **paths** it watches, the **jobs**
+an entry names where it states them, and the **runner** the project states its
+jobs run on. A renamed workflow leaves an entry naming a run the host does not
+make *and* a run no entry names, and a check reading one side only reports half
+of it.
+
+⚠️ **The runner dimension is the project's rather than an entry's**, and is the
+one dimension a project may legitimately have nothing on either side of: § 2
+keeps the host kind's default label off the surface, so a project stating no
+`host.runner` has nothing for a file to be held to, and this check stands silent
+on it rather than guessing a label and reporting drift on a correct project.
 
 ⛔ Nothing here is a verdict about the code. A drifted facet misdirects every
 consumer that reads it -- the guards that refuse a local run on the strength of a
@@ -114,6 +121,14 @@ UNSTATABLE = {
     "paths-ignore": "paths",
 }
 
+# What opens a host expression, evaluated when the run starts rather than when
+# the file is read. ⛔ A runner label, a budget or a supersession group written
+# with one in it is a fact about the run and not about the file, so the
+# dimension is reported undeterminable rather than compared as text: a project
+# whose jobs do land where it says would otherwise read as drifted, which is the
+# one outcome ruling 15 of `docs/divergences-and-rulings.md` rules out.
+AN_EXPRESSION = "${{"
+
 # What a trigger states as its ref where the event block filters on none (§ 2).
 ANY_REF = "*"
 
@@ -145,7 +160,28 @@ class Definition:
         self.triggers = UNKNOWN
         self.paths = UNKNOWN
         self.jobs = UNKNOWN
+        # § 2's runner dimension, read per job rather than per file: a label is
+        # a job's key and a workflow may spread its jobs across runners, so a
+        # single value here would answer about whichever job came first.
+        # `UNKNOWN` against a job is that job's own undeterminable reading, and
+        # `None` is the job stating nothing -- the two § 2 refuses to collapse.
+        self.runners: dict = {}
+        self.budgets: dict = {}
+        # The supersession group is the workflow's, the host putting it on the
+        # document. ⚠️ Two facts rather than one: a group that does not cancel
+        # what is in progress supersedes nothing, so the pair is what the facet's
+        # `supersedes` is compared against.
+        self.group = UNKNOWN
+        self.cancels_in_progress = UNKNOWN
         self.unstatable: list[str] = []
+        # ⛔ The runner dimension's reasons are kept apart from the four above,
+        # and that is not tidiness: a project stating no `host.runner` has
+        # nothing for a file to be held to, so a job whose label is an
+        # expression leaves *nothing* undeterminable there. Folded into
+        # `unstatable` these would deny such a project its green forever, over a
+        # comparison it never asked for. Each is tagged with the key it kills,
+        # and `undeterminable` emits only the ones the facet states.
+        self.runner_unstatable: list[tuple[str, str]] = []
 
     def __repr__(self) -> str:  # pragma: no cover - diagnostics
         return f"<Definition {self.path} name={self.name!r}>"
@@ -220,8 +256,17 @@ def read_definition(text: str | Exception, path: str) -> Definition:
         # key read as a job id makes `concurrency` a job, and an entry naming one
         # then passes a check that was supposed to catch it.
         found.jobs = {str(job) for job in jobs}
+        for job, body in jobs.items():
+            _runner_of(str(job), body, found)
     else:
         found.unstatable.append("states no `jobs:` block this reader can walk")
+
+    # ⛔ After the jobs walk and not before it: the host lets a job carry a
+    # `concurrency` of its own, and a file written that way states a group this
+    # reader is looking for one level up. Read at the document alone it comes
+    # back as *no group*, which is drift reported against a project that is
+    # correct -- red forever with no edit that clears it.
+    _supersession(document, jobs if isinstance(jobs, dict) else {}, found)
 
     if True in document:
         block = document[True]
@@ -238,6 +283,113 @@ def read_definition(text: str | Exception, path: str) -> Definition:
     except Unstatable as reason:
         found.unstatable.append(str(reason))
     return found
+
+
+def _runner_of(job: str, body, found: Definition) -> None:
+    """One job's runner label and budget, or why neither could be established.
+
+    ⛔ Three readings per key and not two, which is § 2's rule arriving at a
+    job: the value the file states, `None` where the job states none -- which is
+    drift against a facet that states one, the host's own fallback being
+    whatever it is -- and `UNKNOWN` where the file says something this reader
+    may not compare as text.
+
+    ⚠️ A list of labels is `UNKNOWN` rather than drift. The host admits one, and
+    § 2's `label` is singular, so a job written that way states something the
+    facet has no form for -- and reporting drift against it is red forever with
+    no edit that clears it.
+    """
+    if not isinstance(body, dict):
+        found.runners[job] = UNKNOWN
+        found.budgets[job] = UNKNOWN
+        for key in ("label", "budget"):
+            found.runner_unstatable.append((
+                key,
+                f"states the `{job}` job as {body!r}, which this reader cannot walk for "
+                f"the runner it asks for",
+            ))
+        return
+
+    label = body.get("runs-on")
+    if label is None:
+        found.runners[job] = None
+    elif isinstance(label, str) and AN_EXPRESSION not in label:
+        found.runners[job] = label.strip()
+    else:
+        found.runners[job] = UNKNOWN
+        found.runner_unstatable.append((
+            "label",
+            f"states the `{job}` job's `runs-on:` as {label!r}, which is a fact about the "
+            f"run rather than about the file -- an expression the host evaluates, or a set "
+            f"of labels where § 2 states one",
+        ))
+
+    budget = body.get("timeout-minutes")
+    if budget is None:
+        found.budgets[job] = None
+    elif isinstance(budget, bool) or not isinstance(budget, int):
+        found.budgets[job] = UNKNOWN
+        found.runner_unstatable.append((
+            "budget",
+            f"states the `{job}` job's `timeout-minutes:` as {budget!r}, which is not a "
+            f"whole number of minutes this reader can compare against a stated budget",
+        ))
+    else:
+        found.budgets[job] = budget
+
+
+def _supersession(document: dict, jobs: dict, found: Definition) -> None:
+    """The workflow's concurrency group, and whether it retires what is running.
+
+    ⛔ Two facts and not one. A group with nothing cancelling in progress
+    supersedes nothing, so a file that states the stated group and lets both
+    runs finish is drift against a facet saying a newer run retires an older --
+    and a comparison on the group alone would call that agreement.
+
+    ⛔ **A job carrying a `concurrency` of its own kills the dimension.** The
+    host puts the key at both levels and the facet states one group for the
+    workflow, so a file that supersedes per job states something the facet has
+    no form for. ⚠️ Measured as a false drift: read at the document alone such a
+    file comes back as stating *no group*, and the comparison then reports a
+    correct project wrong, with no edit that clears it.
+    """
+    per_job = sorted(
+        str(job) for job, body in jobs.items()
+        if isinstance(body, dict) and "concurrency" in body
+    )
+    if per_job:
+        found.runner_unstatable.append((
+            "supersedes",
+            "states a `concurrency:` on the "
+            + ", ".join(f"`{job}`" for job in per_job)
+            + f" job{'s' if len(per_job) > 1 else ''}, and § 2 states one group for the "
+            f"whole workflow -- so what a newer run would retire cannot be compared "
+            f"against what the facet states",
+        ))
+        return
+    block = document.get("concurrency")
+    if block is None:
+        found.group, found.cancels_in_progress = None, False
+        return
+    if isinstance(block, str):
+        block = {"group": block}
+    if not isinstance(block, dict):
+        found.runner_unstatable.append((
+            "supersedes",
+            f"states `concurrency:` as {block!r}, which this reader cannot walk for the "
+            f"group a newer run would retire an older one in",
+        ))
+        return
+    group = block.get("group")
+    if not isinstance(group, str) or AN_EXPRESSION in group:
+        found.runner_unstatable.append((
+            "supersedes",
+            f"states its concurrency group as {group!r}, which is a fact about the run "
+            f"rather than about the file -- an expression the host evaluates when it starts",
+        ))
+        return
+    found.group = group.strip()
+    found.cancels_in_progress = bool(block.get("cancel-in-progress"))
 
 
 def _derive(block, found: Definition):
@@ -352,11 +504,16 @@ class Subject:
     the assertions.
     """
 
-    def __init__(self, kind, entries: list, texts, where: Where | None):
+    def __init__(self, kind, entries: list, texts, where: Where | None, runner=None):
         self.kind = kind
         self.entries = entries
         self.texts = texts
         self.where = where
+        # § 2's `host.runner` as the reader walked it, or `None` where the
+        # project states none. ⛔ Held as the walked record rather than as the
+        # raw block, so this file compares what every other consumer reads --
+        # and so a block the reader would refuse never reaches a comparison.
+        self.runner = runner
         self._checks = None
         self._definitions = None
 
@@ -396,7 +553,10 @@ class Subject:
         # shallow copy makes the assertions below order-dependent, which is the
         # shape that passes while asserting the wrong thing.
         texts = UNKNOWN if self.texts is UNKNOWN else dict(self.texts)
-        return Subject(self.kind, copy.deepcopy(self.entries), texts, self.where)
+        return Subject(
+            self.kind, copy.deepcopy(self.entries), texts, self.where,
+            copy.deepcopy(self.runner),
+        )
 
 
 def read_subject(skills_root: str) -> Subject:
@@ -410,9 +570,13 @@ def read_subject(skills_root: str) -> Subject:
     config = reader.load(skills_root)
     kind = config.get("host.kind")
     entries = config.get("host.checks")
+    # ⛔ Through the reader's own accessor and never off the dict: § 2 makes
+    # this one statement, and a second walk of it here would be allowed to
+    # disagree with what the installer writing a workflow file reads.
+    runner = config.runner()
     where = DEFINITIONS.get(kind)
     if where is None:
-        return Subject(kind, entries, UNKNOWN, None)
+        return Subject(kind, entries, UNKNOWN, None, runner)
     root = os.path.join(config.code_root, where.directory)
     texts: dict[str, str] = {}
     for name in sorted(os.listdir(root)) if os.path.isdir(root) else []:
@@ -424,7 +588,7 @@ def read_subject(skills_root: str) -> Subject:
                 texts[path] = handle.read()
         except (OSError, UnicodeDecodeError) as error:
             texts[path] = error
-    return Subject(kind, entries, texts, where)
+    return Subject(kind, entries, texts, where, runner)
 
 
 def _named(subject: Subject) -> dict[str, Definition]:
@@ -580,6 +744,85 @@ def check_every_job_an_entry_names_is_its_workflows_own(subject: Subject) -> lis
     return problems
 
 
+def check_every_jobs_runner_is_the_stated_label(subject: Subject) -> list[str]:
+    """Every job's `runs-on`, held to `host.runner.label` where one is stated (§ 2)."""
+    if subject.definitions is UNKNOWN or subject.runner is None:
+        return []
+    wanted = subject.runner["label"]
+    problems = []
+    for found in subject.definitions:
+        for job, label in sorted(found.runners.items()):
+            if label is UNKNOWN or label == wanted:
+                continue
+            problems.append(
+                f"{found.path} runs the `{job}` job on "
+                + (f"`{label}`" if label is not None else "no stated runner")
+                + f" and `host.runner.label` is `{wanted}` (§ 2). A job asking for a label "
+                f"the account has no runner behind never starts at all, which is a check "
+                f"that never reports rather than one that fails."
+            )
+    return problems
+
+
+def check_every_jobs_budget_is_the_stated_one(subject: Subject) -> list[str]:
+    """Every job's `timeout-minutes`, held to `host.runner.budget_minutes` (§ 2)."""
+    if subject.definitions is UNKNOWN or subject.runner is None:
+        return []
+    wanted = subject.runner["budget_minutes"]
+    queued = subject.runner["budget_is_a_queue_budget"]
+    problems = []
+    for found in subject.definitions:
+        for job, budget in sorted(found.budgets.items()):
+            if budget is UNKNOWN or budget == wanted:
+                continue
+            problems.append(
+                f"{found.path} gives the `{job}` job "
+                + (f"a budget of {budget} minute(s)" if budget is not None
+                   else "no `timeout-minutes:` at all, so the host's own fallback bounds it")
+                + f" and `host.runner.budget_minutes` is {wanted} (§ 2)."
+                + (" On an account whose runners take one job at a time that budget is what "
+                   "the queue is bounded by, so the gap is measured in jobs behind this one."
+                   if queued else "")
+            )
+    return problems
+
+
+def check_the_supersession_group_is_the_stated_one(subject: Subject) -> list[str]:
+    """Each workflow's concurrency group, held to `host.runner.supersedes` (§ 2).
+
+    ⛔ Compared in one direction and only where the facet states the key: a
+    project whose runs supersede nothing omits `supersedes`, and holding every
+    file to *carrying no group* would refuse a workflow that serialises itself
+    for a reason this facet knows nothing about.
+    """
+    if subject.definitions is UNKNOWN or subject.runner is None:
+        return []
+    wanted = subject.runner["supersedes"]
+    if wanted is None:
+        return []
+    problems = []
+    for found in subject.definitions:
+        if found.group is UNKNOWN:
+            continue
+        if found.group != wanted:
+            problems.append(
+                f"{found.path} "
+                + (f"states the concurrency group `{found.group}`"
+                   if found.group is not None else "states no concurrency group")
+                + f" and `host.runner.supersedes` is `{wanted}` (§ 2). A consumer told a "
+                f"cancelled run was superseded is sent to a successor that was never "
+                f"arranged."
+            )
+        elif not found.cancels_in_progress:
+            problems.append(
+                f"{found.path} states the `{wanted}` concurrency group and does not cancel "
+                f"what is in progress, so a newer run retires nothing (§ 2). The facet says "
+                f"a run of this project's supersedes an older one, and this file lets both "
+                f"finish."
+            )
+    return problems
+
+
 CHECKS = [
     ("every entry names a workflow the host defines",
      check_every_entry_names_a_workflow_the_host_defines),
@@ -591,6 +834,12 @@ CHECKS = [
      check_every_entrys_paths_are_its_workflows_own),
     ("every job an entry names is its workflow's own",
      check_every_job_an_entry_names_is_its_workflows_own),
+    ("every job runs where the project says its jobs run",
+     check_every_jobs_runner_is_the_stated_label),
+    ("every job carries the stated budget",
+     check_every_jobs_budget_is_the_stated_one),
+    ("the supersession group is the stated one",
+     check_the_supersession_group_is_the_stated_one),
 ]
 
 
@@ -609,9 +858,21 @@ def undeterminable(subject: Subject) -> list[str]:
             f"proceeds on the facet as stated (§ 2)."
         ]
     notes = []
+    # Which of the runner dimension's three keys this project states, and so
+    # which of a definition's runner reasons deny this run its green. ⛔ A key
+    # the facet does not state is not an unestablished comparison -- it is no
+    # comparison, which § 2 makes the ordinary case rather than an absence.
+    runner_keys = set()
+    if subject.runner is not None:
+        runner_keys = {"label", "budget"}
+        if subject.runner["supersedes"] is not None:
+            runner_keys.add("supersedes")
     for found in subject.definitions:
         for reason in found.unstatable:
             notes.append(f"{found.path} {reason}")
+        for key, reason in found.runner_unstatable:
+            if key in runner_keys:
+                notes.append(f"{found.path} {reason}")
     named = _named(subject)
     unnamed = _unnamed(subject)
     for run in subject.checks:
@@ -851,6 +1112,100 @@ def _plant_a_top_level_key_named_as_a_job(subject: Subject) -> Subject:
     return _entry(0, mirrors=None, jobs=[{"job": "concurrency", "mirrors": "a-command"}])(subject)
 
 
+# § 2's runner dimension. ⚠️ The baseline states no `host.runner` -- which is
+# the legitimate absence and is asserted as an exemption of its own below -- so
+# every plant here has to put **both** sides in play: a statement, and files
+# that agree with it. `_states_a_runner` is that agreeing pair, and each
+# violation below is it with one agreement withdrawn.
+
+A_RUNNER = {
+    "label": "a-runner-label",
+    "concurrent_jobs": 1,
+    "budget_minutes": 30,
+    "supersedes": "a-supersession-group",
+}
+
+A_DEFAULT_LABEL = "    runs-on: ubuntu-latest\n"
+
+
+def _a_stated_runner() -> dict:
+    """`A_RUNNER` as the reader walks it, and never as a record built here.
+
+    ⛔ Through `config.host_runner`, for the reason the `Subject` class states
+    about the other two sides: a hand-built record is one no refusal of the
+    reader's ever sees, so a plant could compare a block that does not load and
+    a derived key could drift from the derivation without anything noticing.
+    ⚠️ `budget_is_a_queue_budget` is exactly that key -- written out here it was
+    a second statement of a rule § 2 gives the reader.
+    """
+    return reader.host_runner({"host": {"runner": dict(A_RUNNER)}})
+
+
+def _states_a_runner(subject: Subject) -> Subject:
+    """Both sides stating where the jobs run, in agreement.
+
+    ⛔ Every job of every definition, not the first one found: a label is a
+    job's key, so a plant that rewrote one job would leave the other disagreeing
+    and every violation below would redden on the wrong half.
+    """
+    subject.runner = _a_stated_runner()
+    group = (
+        f"concurrency:\n  group: {A_RUNNER['supersedes']}\n"
+        "  cancel-in-progress: true\n"
+    )
+    for path, text in list(subject.texts.items()):
+        if isinstance(text, Exception):
+            continue
+        text = text.replace(
+            A_DEFAULT_LABEL,
+            f"    runs-on: {A_RUNNER['label']}\n"
+            f"    timeout-minutes: {A_RUNNER['budget_minutes']}\n",
+        )
+        text = text.replace("concurrency:\n  group: first\n", "")
+        subject.texts[path] = group + text
+    return subject
+
+
+def _plant_a_job_on_another_runner(subject: Subject) -> Subject:
+    return _edit("second.yml", f"    runs-on: {A_RUNNER['label']}\n",
+                 "    runs-on: another-runner-label\n")(_states_a_runner(subject))
+
+
+def _plant_a_job_with_no_runner_at_all(subject: Subject) -> Subject:
+    return _edit("first.yml", f"    runs-on: {A_RUNNER['label']}\n", "")(
+        _states_a_runner(subject)
+    )
+
+
+def _plant_a_job_on_another_budget(subject: Subject) -> Subject:
+    return _edit("second.yml", "    timeout-minutes: 30\n", "    timeout-minutes: 5\n")(
+        _states_a_runner(subject)
+    )
+
+
+def _plant_a_job_with_no_budget(subject: Subject) -> Subject:
+    """The measured hazard: a job on a single-runner account with nothing bounding it."""
+    return _edit("first.yml", "    timeout-minutes: 30\n", "")(_states_a_runner(subject))
+
+
+def _plant_another_supersession_group(subject: Subject) -> Subject:
+    return _edit("second.yml", f"  group: {A_RUNNER['supersedes']}\n",
+                 "  group: another-group\n")(_states_a_runner(subject))
+
+
+def _plant_a_group_that_retires_nothing(subject: Subject) -> Subject:
+    """The group stated and nothing cancelled: both runs finish and neither supersedes."""
+    return _edit("first.yml", "  cancel-in-progress: true\n", "")(_states_a_runner(subject))
+
+
+def _plant_a_workflow_with_no_group(subject: Subject) -> Subject:
+    return _edit(
+        "second.yml",
+        f"concurrency:\n  group: {A_RUNNER['supersedes']}\n  cancel-in-progress: true\n",
+        "",
+    )(_states_a_runner(subject))
+
+
 VIOLATIONS = [
     ("every entry names a workflow the host defines", "a workflow renamed with the facet left alone",
      _plant_a_renamed_workflow),
@@ -878,6 +1233,20 @@ VIOLATIONS = [
      _plant_a_job_the_file_does_not_define),
     ("every job an entry names is its workflow's own", "a top-level key named as a job",
      _plant_a_top_level_key_named_as_a_job),
+    ("every job runs where the project says its jobs run", "a job on another runner",
+     _plant_a_job_on_another_runner),
+    ("every job runs where the project says its jobs run", "a job naming no runner",
+     _plant_a_job_with_no_runner_at_all),
+    ("every job carries the stated budget", "a job on another budget",
+     _plant_a_job_on_another_budget),
+    ("every job carries the stated budget", "a job with nothing bounding it",
+     _plant_a_job_with_no_budget),
+    ("the supersession group is the stated one", "a workflow in another group",
+     _plant_another_supersession_group),
+    ("the supersession group is the stated one", "a group that retires nothing",
+     _plant_a_group_that_retires_nothing),
+    ("the supersession group is the stated one", "a workflow with no group at all",
+     _plant_a_workflow_with_no_group),
 ]
 
 
@@ -936,6 +1305,50 @@ def _plant_a_job_filter_the_kind_cannot_carry(subject: Subject) -> Subject:
                             "paths": ["plugins/**"]}])(subject)
 
 
+def _plant_a_runner_chosen_at_run_time(subject: Subject) -> Subject:
+    return _edit("second.yml", f"    runs-on: {A_RUNNER['label']}\n",
+                 "    runs-on: ${{ matrix.os }}\n")(_states_a_runner(subject))
+
+
+def _plant_a_set_of_labels_where_one_is_stated(subject: Subject) -> Subject:
+    return _edit("first.yml", f"    runs-on: {A_RUNNER['label']}\n",
+                 "    runs-on: [self-hosted, linux]\n")(_states_a_runner(subject))
+
+
+def _plant_a_budget_the_host_evaluates(subject: Subject) -> Subject:
+    return _edit("second.yml", "    timeout-minutes: 30\n",
+                 "    timeout-minutes: ${{ fromJSON(vars.BUDGET) }}\n")(
+        _states_a_runner(subject)
+    )
+
+
+def _plant_a_group_the_host_evaluates(subject: Subject) -> Subject:
+    return _edit("first.yml", f"  group: {A_RUNNER['supersedes']}\n",
+                 "  group: ${{ github.workflow }}-${{ github.ref }}\n")(
+        _states_a_runner(subject)
+    )
+
+
+def _plant_a_group_stated_on_the_job(subject: Subject) -> Subject:
+    """The host puts `concurrency` at both levels and the facet states one group.
+
+    ⚠️ **A false drift before it was an absence.** Read at the document alone, a
+    file that supersedes per job comes back as stating no group at all, and the
+    comparison reported a correct project wrong — red forever, since moving the
+    key up is the one edit that clears it and the file is right as written.
+    """
+    return _edit(
+        "second.yml",
+        f"concurrency:\n  group: {A_RUNNER['supersedes']}\n  cancel-in-progress: true\n",
+        "",
+    )(
+        _edit("second.yml", "  second:\n",
+              "  second:\n    concurrency:\n"
+              f"      group: {A_RUNNER['supersedes']}\n"
+              "      cancel-in-progress: true\n")(_states_a_runner(subject))
+    )
+
+
 ABSENCES = [
     ("a host kind whose definitions are not files", _plant_a_kind_with_no_readable_definitions),
     ("a definition stating no `name:`", _plant_a_definition_with_no_name),
@@ -946,6 +1359,11 @@ ABSENCES = [
     ("an entry stating no `triggers`", _plant_an_entry_stating_no_triggers),
     ("a trigger § 2's grammar does not parse", _plant_a_trigger_the_grammar_does_not_parse),
     ("a job filter the host kind carries nowhere", _plant_a_job_filter_the_kind_cannot_carry),
+    ("a runner chosen when the run starts", _plant_a_runner_chosen_at_run_time),
+    ("a set of labels where § 2 states one", _plant_a_set_of_labels_where_one_is_stated),
+    ("a budget the host evaluates", _plant_a_budget_the_host_evaluates),
+    ("a supersession group the host evaluates", _plant_a_group_the_host_evaluates),
+    ("a supersession group stated on the job", _plant_a_group_stated_on_the_job),
 ]
 
 
@@ -1019,6 +1437,37 @@ def _plant_two_members_naming_one_job(subject: Subject) -> Subject:
                            {"job": "second", "mirrors": "a-second-command-of-that-job"}])(subject)
 
 
+def _plant_a_runner_stated_and_met(subject: Subject) -> Subject:
+    """Both sides stating one runner, one budget and one group: the green side."""
+    return _states_a_runner(subject)
+
+
+def _plant_no_runner_stated_and_the_files_disagreeing(subject: Subject) -> Subject:
+    """§ 2's legitimate absence, asserted on the shape that would tempt a guess.
+
+    ⛔ The files are deliberately left saying **different** things -- one job on
+    a label the others are not, one with a budget and the rest without, one
+    workflow in a group -- while the project states no `host.runner`. A check
+    that had guessed the host kind's default, or taken the majority label as the
+    answer, would report drift here. The project has stated that the kind's own
+    default is the answer, and this check has no subject in that dimension.
+
+    ⚠️ **Verified by disabling the exemption, twice.** With the label check's
+    `runner is None` arm replaced by a guessed `ubuntu-latest`, this plant goes
+    red; with the budget check's arm replaced by a guessed thirty minutes, it
+    goes red again -- and that second run reddens the **baseline** too, which is
+    the shape a guessed default has on every project in this repository. The
+    group arm is the same `runner is None` guard and the same three lines; what
+    is not asserted by disabling is the group arm alone, because a plant stating
+    no `supersedes` cannot carry a group divergence to be found.
+    """
+    subject.runner = None
+    return _edit("second.yml", A_DEFAULT_LABEL, "    runs-on: a-label-nobody-stated\n")(
+        _edit("first.yml", A_DEFAULT_LABEL,
+              A_DEFAULT_LABEL + "    timeout-minutes: 7\n")(subject)
+    )
+
+
 EXEMPTIONS = [
     ("a trigger list in another order", _plant_reordered_triggers),
     ("a type clause in another order", _plant_reordered_types),
@@ -1030,6 +1479,9 @@ EXEMPTIONS = [
     ("a filter written as a block sequence", _plant_a_block_sequence_filter),
     ("a job of the file no member names", _plant_a_job_no_member_names),
     ("two members naming one job", _plant_two_members_naming_one_job),
+    ("a runner stated and every job meeting it", _plant_a_runner_stated_and_met),
+    ("no runner stated, the files saying what they like",
+     _plant_no_runner_stated_and_the_files_disagreeing),
 ]
 
 
@@ -1313,6 +1765,16 @@ def main(argv: list[str]) -> int:
         f"\n`host.checks` states {len(subject.checks)} run(s) and "
         f"{len(subject.definitions)} definition(s) under {subject.directory} state the same "
         "names, triggers, paths and jobs."
+    )
+    # ⛔ Said rather than left to be inferred from the green above: a dimension
+    # this run did not compare is not a dimension it agreed on, and the absent
+    # runner statement is the one place that distinction is invisible otherwise.
+    print(
+        "`host.runner` states where the jobs run, and every job meets it."
+        if subject.runner is not None else
+        "`host.runner` is absent, so where the jobs run was not compared at all: § 2 "
+        "makes that the host kind's own default answering, and this check holds no "
+        "label, budget or supersession group against a file."
     )
     return 0
 

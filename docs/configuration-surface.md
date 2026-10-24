@@ -209,6 +209,40 @@ the three that are obvious. The measurements that forced each to be independent:
    stated method, never restated as a second copy of it. ⚠️ **What the same measurement does not
    support is the facet making the landed reading cheaper**, which was the obvious reason to want
    it: that reading keeps both of its tests, for the reason the section gives.
+
+   **A third facet landed inside the axis once the toolkit started generating workflow files, and
+   it came from one project's runner account rather than from the survey.** One project in the
+   migration set declares a non-default runner label on every job, because its host account
+   carries its own runners — and a job asking for the host kind's default label on that account
+   **never starts at all**. The consequence is the one that makes the fact load-bearing rather
+   than cosmetic: a generated gate carrying the default is a check that never reports, replacing
+   one that did, and a run that never reports is the absence-of-signal case this same section
+   already refuses to read as green. So where the jobs run is stated, an installer writes it, and
+   the statement is held to the workflow files —
+   [`schema.md § 2 → Where the host's jobs run`](../plugins/mjolnir/config/schema.md#where-the-hosts-jobs-run).
+
+   Two further measurements on the same account, both of which the obvious shape of the facet
+   would have left out:
+
+   - **Its runners take one job at a time, so a job's budget is spent queued.** A short check at
+     the back of the line is cancelled having never started — no runner recorded, no step run —
+     and the pull request then carries a conclusion indistinguishable from a failing check. That
+     is why the capacity is on the surface beside the budget rather than left as a fact about a
+     runner: at one job, `budget_minutes` is a queue budget, and a consumer that read the
+     conclusion and stopped would send somebody to fix a diff over a queue.
+   - **The number of jobs a workflow splits into is what decides how long the queue is.** Which
+     prices, rather than overturns, this section's own ruling that each mirrored command takes a
+     workflow of its own: the cost there was stated as a checkout per command, and on a
+     single-runner account it is also a place in the line. ⚠️ The ruling stands — the alternative
+     is still a configuration `checks` cannot state — and the price is now written down once
+     instead of being rediscovered per project.
+
+   ⚠️ **What the surface deliberately does not carry is the default itself.** A per-kind table of
+   runner labels here would be a second statement of the host's own naming, wrong the next time
+   the host changed one and wrong silently — the same argument that keeps the event vocabulary off
+   this surface. The consequence is a stated limit rather than a hidden one: a project that writes
+   no `host.runner` has nothing for the drift check to hold its files to, and that check says so
+   rather than guessing.
 3. **Code root.** One project's code is a git-ignored subdirectory that is its own repository
    under a different owner, not a submodule. Its skills write the root explicitly into every git
    call and stop if the directory is absent, because a fresh clone of the outer repository does
@@ -676,7 +710,7 @@ could recognise.** The second's paid command is an ordinary invocation of the ru
 its cheap suites; the third's are invoked exactly like the free unit tests beside them — same
 command prefix, adjacent names, same runner. ⛔ **So the decision rests on the arguments, and
 `args_match` is load-bearing rather than sugar on a command name**:
-[`schema § 18`](../plugins/mjolnir/config/schema.md#18-a-command-that-spends-and-the-supervision-it-is-refused-without)
+[`schema § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
 declares it beside `command` for that reason, and a facet with `command` alone would describe one of
 the three.
 
@@ -697,7 +731,7 @@ same command differently scoped, run deliberately several times a week, so an ap
 re-ask per session would be an approval nobody would keep; another project's spend is a release to a
 metered environment, where an answer given inside a session is a go for an act that reaches a live
 system. ⛔ **The parse varies in no project at all**, which is why
-[`schema § 18 → The command position`](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)
+[`schema § 19 → The command position`](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)
 states it as procedure, and the correction it carries is the reason it is extracted rather than
 rewritten: the guard's own header records an earlier version that grepped the raw command and
 refused a text edit whose prose contained a script path.
@@ -963,7 +997,7 @@ run-time reading to enforce it against"** — § 11's own in-tree rule passes th
 the reader already holds, and is refused there rather than stated and hoped for. The qualitative
 rules are stated instead, and the one live reading goes where something already reads it: the spend
 guard's own bar at
-[`schema § 18 → What an approval is per`](../plugins/mjolnir/config/schema.md#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs),
+[`schema § 19 → What an approval is per`](../plugins/mjolnir/config/schema.md#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs),
 which reports a resume priced above it and reports **no figure** where the harness gave none, and
 [#31](https://github.com/ragnor-rs/mjolnir/issues/31), the role that restores a session, for the
 context half of the same payload.

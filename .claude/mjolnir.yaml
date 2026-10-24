@@ -136,6 +136,14 @@ host:
     - workflow: "Spend guard"
       mirrors: "python3 plugins/mjolnir/scripts/spend.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+  # ⛔ No `runner` here, and that absence is the statement § 2 makes it: every workflow above runs
+  # on this host kind's own default, which the surface deliberately does not name, so there is
+  # nothing to write down. ⚠️ What it costs is stated rather than discovered — the drift run two
+  # entries up holds no label, budget or supersession group against any file under
+  # .github/workflows/ on this project, and says so at the end of a green run rather than letting
+  # the green read as agreement. A project whose account carries its own runners writes the block
+  # and gets all three held; this one has one job per workflow on a shared pool and no queue of
+  # its own, so every budget here is a run budget and no run of this project's supersedes another.
   # ⚠️ Measured on this repository rather than declared for it (#76), and the measurement is the
   # argument for the key existing at all: `main` is linear, which is equally consistent with
   # squash and with rebase, so every landing before this line picked a method by reading the
@@ -238,6 +246,18 @@ done:
 # be refused. Nothing is cached, nothing is stood up for a run, and each check answers about the
 # tree it runs in — so there is no verdict that is this side's alone.
 checks_local: []
+
+# § 18. Every check above is a verdict that changes nothing — each one reports and repairs
+# nothing — so none of them is a command this guard has to be kept off, and `[]` is the
+# measurement rather than a key left at its emptiest. ⚠️ `escape` names a variable and never a
+# value: setting it to a reason stands one refusal down, which is what keeps a fail-open guard
+# from being deleted the first time its evidence is wrong. ⛔ No `operational_when`: nothing in
+# this repository owns a probe answering whether the host can run these jobs, so the host's own
+# answer is the only one there is and a second implementation would be the duplication this
+# toolkit exists to delete.
+already_run:
+  never_guard: []
+  escape: "MJOLNIR_RUN_ANYWAY"
 
 commit:
   staging: explicit

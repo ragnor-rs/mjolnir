@@ -785,6 +785,59 @@ the project edits too. The cost is the one ruled acceptable above — a checkout
 **Where the file it would write already exists, the installer stops and names it**, rather than
 appending to it or writing over it.
 
+### Where the host's jobs run
+
+```yaml
+host:
+  runner:                 # where this project's jobs run, omitted where the kind's own answers
+    label: "<the label every job of this project's workflows states>"
+    concurrent_jobs: 1    # how many jobs the account's runners take at once
+    budget_minutes: 30    # one job's budget, spent queued as well as running
+    supersedes: "<the group a newer run retires an older one in>"   # omitted where none does
+```
+
+**A generated workflow has to say where its jobs run, and `checks` above does not carry it.**
+[A generated gate takes a workflow file of its own](#a-workflow-whose-jobs-mirror-more-than-one-command),
+and a file has a `runs-on` whether or not anybody decided one — so the decision is either stated
+here or made by whatever writes the file. ⛔ **Where the block is stated, an installer writes it and
+chooses nothing** — the label, the budget and the group come from here, and a literal of the
+installer's own beside a statement that disagrees with it is the drift this facet exists against.
+
+⛔ **The whole block is omitted where the host kind's own default runner is the answer, and that
+absence is the ordinary case rather than a gap.** ⚠️ **What that default is, the surface does not
+state** — it is the host's, exactly as the event vocabulary one subsection up is, and a per-kind
+table of labels here would be a second statement of the host's own naming, wrong the next time the
+host changes one and wrong silently. What an installer writes for a project that states nothing is
+its own template's label, which is where the per-kind fact already lives.
+
+⛔ **Stated, the block states all three of `label`, `concurrent_jobs` and `budget_minutes`, and
+none of them is defaulted.** Each is a measurement of an account rather than a preference about it,
+and a default would pick one project's answer for every project that did not notice the key.
+`supersedes` is the one key whose omission is a statement: no run of this project's retires another.
+
+**Why the account's capacity is on the surface at all, and not left as a fact about a runner.**
+⚠️ **Measured on a project whose host account carries its own runners**: they take **one job at a
+time**, and a job's budget is then spent **queued** as well as running. A short job at the back of
+the line is **cancelled having never started** — no runner recorded, no step run, and a conclusion
+on the pull request that reads exactly like a failing check. ⛔ **So `concurrent_jobs` is what gives
+`budget_minutes` its meaning**: at one, the key is a queue budget and not a run budget, and a
+consumer meeting a cancelled run on such a project is meeting the queue rather than the change. The
+reading itself is the subsection below's, shared by every consumer.
+
+⚠️ **And the same measurement prices a shape the subsection above rules acceptable.** On a
+single-runner account the **number of jobs** a workflow splits into is what decides how long the
+queue is, so one workflow per mirrored command is not free there: each checkout is also a place in
+the line. Stated once, here, rather than rediscovered per project — ⛔ **it changes no rule**, the
+alternative still being a configuration `checks` cannot state.
+
+⛔ **A stated label is held to the host's own definitions**, by
+[the comparison this section's last subsection states](#the-facet-against-the-hosts-own-definitions).
+It is the dimension with the sharpest failure: a job asking for a label its
+account has no runner for never starts at all, so a generated gate carrying the wrong one is a
+check that never reports, replacing one that did. ⚠️ **The comparison fires only where the block is
+stated.** A project that states nothing has declared the kind's default, which this surface does
+not enumerate, so there is nothing to hold a file to — and that is a limit rather than a pass.
+
 ### Reading a run's answer, and what a failure is
 
 Procedure rather than configuration, and stated here rather than in each role, because more than one
@@ -808,6 +861,38 @@ fails in seconds having started no step, and a conflicted change produces no run
 precondition that fails is reported as the step it was**, never folded into the conclusion. ⚠️ **No
 checks reported** is almost always the conflicted case, and reads as *nothing to wait for* to anyone
 who has not been told.
+
+⛔ **How a run concluded is one of four readings, and the two preconditions above are what divide
+them.** One reading is green, one is about the change, and two are *no answer* — ⚠️ **and the two
+that are not are told apart from each other**, their remedies being opposite: one is waited for and
+one is read somewhere else entirely.
+
+| Reading | What the host's own record says | What it is never |
+|---|---|---|
+| **green** | the run executed steps and concluded green — preconditions 3 and 4 both met | a statement about any other commit, by precondition 2 |
+| **failed** | it executed steps and did not pass: the only one of the four that reaches the change at all | ⛔ a *finding*. A run that executed a step and then lost its credential lands here too, and which of the two it is the paragraph below settles — from the log, never from the conclusion |
+| **no answer, never started** | it concluded having executed no step — cancelled in the queue, billing suspended, a runner the label never reached | a failing check. ⛔ Reported as the queue or the environment it was, naming which |
+| **no answer, superseded — read the newer run** | a newer run for the same group retired it, which a `supersedes` arranges deliberately | an outcome of the code. ⛔ The consumer is sent to the successor, never to a verdict |
+
+⛔ **The four divide on whether a step ran and whether a successor exists, never on whether the
+failure was the change's.** That second question is the paragraph below's and it cuts *across*
+**failed** rather than splitting the table — a run that executed a step and then could not reach a
+service is **failed** here and no finding there, and a reading that tried to answer both would need
+the log, which is not a fact a conclusion carries.
+
+⛔ **This is the absence rule at the top of this section one step further in**: a run that concluded
+without executing a step is no answer, and a run a successor retired says *read the successor*.
+⚠️ **On the one host measured the two no-answer readings share a conclusion** — `cancelled` — so the
+conclusion alone does not separate them, and what does is the step count for one and the existence
+of a later run for the other. ⛔ **That is why no consumer keys this reading on a conclusion name**:
+the word is the host's, carried nowhere here, and one that means two things cannot be the input.
+⛔ **A consumer that reads the conclusion and stops has three of these four collapsed into a failing
+check**, which is the state this reading exists to end: the queue is waited for, the superseded run
+is replaced by its successor, and only the third is a finding.
+
+⚠️ **Which run to read is the table further up and is a different question from this one.** That
+one answers whether a run exists for this command and this change; this one answers what the run it
+named concluded. ⛔ **`reached` is the input to this reading and never a substitute for it.**
 
 ⛔ **An environment failure is not a finding.** A run that could not start, an absent credential, a
 service the runner cannot reach: each is a fact about where the check ran and none is a fact about
@@ -941,16 +1026,24 @@ strength of a host run then ships unchecked code, and the role that waits for a 
 that will never exist. The drift is this surface's own defect class — two statements of one fact —
 except that here one statement is a file the host executes and the other is the facet above.
 
-**Four dimensions**, and the first three are compared **in both directions** — neither direction
+**Five dimensions**, and the first three are compared **in both directions** — neither direction
 shows from the other's output, a renamed workflow being at once an entry naming a run the host does
 not make and a run no entry names, so a comparison run one way reports half of it.
 
-| Dimension | What an entry states | What the host's own definition states | Directions |
+| Dimension | What the facet states | What the host's own definition states | Directions |
 |---|---|---|---|
 | name | `workflow`, the only key anything is read by | the definition's own name, read from the file and never from a job | both |
 | triggers | one pattern per `(event, types, ref)` | the event block: its events, each one's types, each one's refs | both |
 | paths | `paths`, omitted where the run covers every change | the filter on that event block | both |
 | jobs | each member's `job`, where the entry states that form | the ids of the `jobs:` block, read inside it and never from the document | one |
+| runner | `host.runner`, where the project states it at all | each job's own runner label and budget, and the workflow's supersession group | one |
+
+⛔ **The runner dimension is the one that is not an entry's**, and the first four columns above are
+read per entry while this one is read per project: `host.runner` states one answer for every job
+the host runs, so a definition is compared against it whether or not an entry names that workflow.
+⚠️ **It is the one dimension a project may have nothing on either side of** — the block omitted and
+the default answering — and a comparison then has no subject here rather than a green one, by
+[the subsection that states it](#where-the-hosts-jobs-run).
 
 ⛔ **The jobs dimension is compared one way, and that is
 [the form's own rule](#a-workflow-whose-jobs-mirror-more-than-one-command) rather than a gap here.**
@@ -959,6 +1052,14 @@ the file defines and no member names is the ordinary case and not drift; two mem
 job for the same reason. What a comparison can say is the other direction — a member naming a job
 its workflow does not define, which is a run
 [the four preconditions](#reading-a-runs-answer-and-what-a-failure-is) could never be read on.
+
+⛔ **The runner dimension is compared one way for a different reason: the other direction needs a
+fact this surface refuses to carry.** A job whose label is not the stated one is drift, and that is
+the whole of what a comparison can say. A project that states no `host.runner` has declared the
+host kind's own default, which [the subsection above](#where-the-hosts-jobs-run) keeps off this
+surface — so there is nothing to hold a file to, and a comparison that guessed a label would report
+drift on a correct project. ⚠️ **The budget and the supersession group go the same way and for the
+same reason**: each is compared where the block states it and is no subject where it does not.
 
 ⛔ **The derivation runs from the definition into this facet's vocabulary, never the other way.** A
 host's own keys are the host's, and what a comparison may do with one is read it: several refs on
@@ -996,6 +1097,18 @@ file would be editing what the host executes.
   the two keys part company: an omitted `paths` has a meaning stated above — the run covers every
   change — and an omitted `triggers` has none, so there is nothing for a comparison to hold the
   file to.
+- ⛔ **A job whose runner, budget or supersession group the file states as something other than a
+  plain value.** A label chosen by a matrix, a budget written as an expression the host evaluates
+  at run time, a group built out of one: each is a fact about the run rather than about the file,
+  and comparing the text of it against a stated value would report drift on a project whose jobs do
+  in fact land where it says. ⚠️ **The job is reported by name**, not the file alone, since the
+  remedy is per job.
+- ⛔ **A supersession group the file states on a job rather than on the workflow.** The host carries
+  the key at both levels and this facet states one group for the whole workflow, so a file written
+  that way states something the facet has no form for. ⚠️ **Measured as a false drift before it was
+  an absence**: read at the workflow alone such a file comes back as stating *no* group, which
+  reports a correct project wrong and is red forever — the one edit that would clear it is moving a
+  key the project put where it meant to.
 
 ⛔ **`checks: []` is *no subject* only where the host in fact defines nothing.** Both sides empty is
 the legitimate absence this section opens with, and a comparison says so rather than reporting
@@ -2226,12 +2339,29 @@ carrying the first few words of the title, the other the whole of it — and eac
 **created** the ref, so the common arm of the test-and-set above never engaged and the tree
 directory arbitrated a step later. ⚠️ **All three divergences were length rather than spelling**,
 so a derivation stating only a character mapping would have licensed every one of them: the bound,
-and where it cuts, are as much the rule as the mapping is.
+and what it is spent on, are as much the rule as the mapping is.
 
 What the derivation does: normalise the title, lowercase it, replace every run of characters that
-is neither a letter nor a number with one separator, trim, and cut to a stated bound at a
-separator so no word is halved. A title that leaves nothing behind leaves the number standing
-alone rather than a trailing separator.
+is neither a letter nor a number with one separator, and then **select whole words** up to a
+stated bound — the language's function words and single characters dropped first, a word the title
+repeats not carried twice, and the rest taken in the title's own order while the next one still
+fits. A title that leaves nothing behind leaves the number standing alone rather than a trailing
+separator.
+
+⛔ **Words are selected and never cut.** A bound spent on characters ends a name on half a word,
+and a name is read by a person deciding which of several trees is theirs. ⚠️ The two consequences
+to state rather than discover: a title whose **first** surviving word is longer than the bound
+keeps that word whole and overruns it, and a reword that leaves a title's opening alone now
+answers **one** leaf rather than two — which is the direction that helps a directory keep
+answering whose it is, the question being asked on the identifier either way.
+
+⚠️ **The function words are one language's and the bound is the rule's.** A repository writing its
+items in another language matches none of them, so only the single-character rule and the bound
+apply there: a weaker derivation and not a broken one, the result still being a function of the
+string.
+⛔ **Neither the list nor the bound is on this surface.** A per-project list is a cosmetic choice
+that would give two sessions reading two configurations two spellings of one item's branch, which
+is what this subsection exists to close.
 
 ⚠️ **§ 8's translation stands outside the identity.** Where the item's language differs from the
 repository's, [§ 8](#8-language-register-audience--per-artifact-not-per-project) requires the slug
@@ -2313,7 +2443,7 @@ branch_model:
 ⛔ **The probe is the third place a project's build tooling is encoded, and that triple is not an
 argument for declaring the toolchain on this surface.** The capacity rule, the spend guard's
 argument shape
-([§ 18](#18-a-command-that-spends-and-the-supervision-it-is-refused-without))
+([§ 19](#19-a-command-that-spends-and-the-supervision-it-is-refused-without))
 and the deploy script (#13) each know which tools a project builds with, which
 reads like three copies of one fact — and none of the three is derivable from a toolchain name, so a
 declared toolchain would be a fourth statement beside three irreducible ones
@@ -2530,7 +2660,7 @@ with an answerer per check rather than a flag
 ([the measurement](../../../docs/configuration-surface.md#a-green-gate-is-not-a-definition-of-done)).
 ⚠️ A procedure that demanded a person everywhere would be the check somebody turns off, which is
 the reasoning
-[§ 18](#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs)'s spend guard rests on
+[§ 19](#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs)'s spend guard rests on
 one facet over.
 
 The two vocabularies an entry draws on, stated once — and written under the key they belong to
@@ -3072,7 +3202,124 @@ shell, so a second spelling of one command is not a second command. Anything bey
 commands as far as this refusal can tell, which errs towards accepting a duplicate rather than
 towards refusing a legitimate check.
 
-## 18. A command that spends, and the supervision it is refused without
+## 18. The guard on a command the host has already run
+
+```yaml
+already_run:                 # the guard on a local run the host's own runs have already made
+  never_guard: ["<a command this guard never refuses, whatever the host has run>"]  # required
+  escape: "<the environment variable that stands one refusal down>"  # absent where there is none
+  operational_when: "<a command printing `operational` where the host can run these jobs>"
+```
+
+**The act is a local run of a command [§ 2](#2-code-host)'s facet says the host mirrors**, and the
+refusal is the inverse of the one [§ 7](#what-a-hook-refuses-and-the-record-it-reads) states: that
+guard refuses an act nobody answered for, and this one refuses an act somebody has already paid
+for. ⛔ **The record it reads is the host's own runs**, which is a record in exactly § 7's sense —
+written by another leg and never by the act in hand. What it costs to forget is paid twice, the
+minutes of the run and the place a [§ 10](#exclusive-resources) lease holds while a parallel session
+waits for it.
+
+⛔ **Which direction it fails in is already decided and is not this section's to choose.** A local
+run is a call that can be run again, so § 7's
+[table](#which-direction-a-guard-fails-in) puts every unestablished fact on the *proceeds* side: no
+pull request, no run, a host that could not be read, a client that did not answer. ⚠️ **The
+asymmetry against the merge guard is the point rather than an inconsistency** — a needless local run
+costs minutes, and a merge is not undone.
+
+**What it reads, and what each part already states.** ⛔ **No consumer carries a workflow name, a
+trigger pattern or a path filter, this one included**: which run mirrors the command in hand is
+§ 2's facet, read by the
+[workflow name and never a job name](#2-code-host), and whether that run reaches a given change is
+the [four answers](#reading-a-runs-answer-and-what-a-failure-is) — of which only **reached** is a
+run to read. ⚠️ **Two unrelated workflows named their job identically**, and a job-keyed version of
+this guard refused a build on the strength of a check that only validated a title.
+
+⛔ **Three of § 2's four preconditions are read here and the fourth deliberately is not.** A run
+exists for this commit, it is **in flight or executed a step**, and it is visibly operational: those
+three are what make the local run a duplicate. ⛔ **How it concluded is not among them**, which is
+the one place this guard parts company with the roles that read the same runs — a red run has spent
+the time and answered, and the code it answered about is still the code in the tree. ⚠️ **What
+releases the call after a red is the work itself**: an edit leaves the tree carrying something the
+host has not seen, which is the first precondition failing and the call proceeding.
+
+⛔ **The second of those is two states and not one, and reading it as one was a measured defect.**
+§ 2's *executed steps* is a test for a run that is **over**; a run the host is still working on has
+executed nothing yet and is the duplicate this guard exists for, the time being spent as the call
+is made. ⚠️ **So a run that concluded without reaching a step is no answer** — cancelled in the
+queue, skipped, or concluding neutral having started nothing — ⛔ **and that is read on the
+workflow's own jobs rather than inferred from a conclusion word**, which is what keeps this rule out
+of the host's cancellation vocabulary. A run cancelled in the queue is routine rather than exotic
+where an account's runners take one job at a time, and refusing on one refuses the only check there
+was.
+
+⚠️ **A command two entries mirror is answered on whichever of them the host ran.** That is § 2's
+own ranking — `reached` outranking the rest wherever more than one entry could answer — ⛔ **applied
+here and not re-derived**, because an arm reading one record reports *nothing has run* while naming
+a workflow that is not the one the run belongs to.
+
+⛔ **A host client's exit status is not the answer, and reading it as one throws the answer away in
+exactly the state this guard exists for.** The measured client exits non-zero while runs are
+*pending* and also when one has *failed*, so a first version that read it was a no-op while the host
+ran and a blocker once it had finished — precisely backwards. ⚠️ **So a pending run does not read as
+green and a failed one does not read as absent**: both are a run that exists for this commit, which
+is the question asked here.
+
+**The four answers, and why the fourth is not folded into the first.**
+
+| Answer | What it is | What it does |
+|---|---|---|
+| **already run** | a run mirroring this command exists for this commit, executed steps and is operational | refuses, naming the workflow, the run and what unblocks it |
+| **nothing has run** | no run of it answers about this code — no pull request yet, a tree carrying edits the host has not seen, a path filter that legitimately excludes the change, a run that started no step, or a job the run never executed | proceeds: the local verdict is the only one there is |
+| **nothing can run** | the change is conflicted, so the host produces no run for it at all | proceeds, ⛔ **and says so rather than reporting the answer above**: the remedy is to resolve the conflict, and a reader told *no checks, go ahead* is sent to run a suite whose result cannot land |
+| **unestablished** | the host could not be read, its client did not answer, the commit in the tree could not be read, or a stated probe could not say whether the host can run these jobs | proceeds, naming which half was unestablished ([§ 11](#a-report-names-what-it-could-not-establish)) |
+
+⚠️ **The first two of those are the same shape from the host and have opposite remedies**, which is
+why the third exists as its own value — § 2 already records that *no checks reported* is almost
+always the conflicted case and reads as *nothing to wait for* to anyone who has not been told.
+
+### What may be guarded, and the two ways a refusal stands down
+
+⛔ **Only a command that produces a verdict and changes nothing may be refused.** That is
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s rule at its own `command`
+key, read one facet over: a command that repairs what it judges is work rather than a duplicated
+verdict, and refusing it refuses the fix. ⚠️ **And the surface cannot tell the two apart
+mechanically** — one measured command name is a verdict under one root and a rewrite under another —
+so `never_guard` is where a project states the ones this guard leaves alone. **Three kinds were
+measured on the project that runs this**: the fixing variants of its checks, one command that is a
+fix in one package and a pure check in another, and the paid suites its host never runs at all.
+
+⛔ **The match is on the command's position and never on the text of the call.** A call whose
+*prose* carries a guarded command — a search for it, a message naming it — runs something else, and
+a predicate matching the raw string took a build slot for a text search. ⚠️ **The comparison itself
+is § 17's**, the command as both sides wrote it with only its runs of whitespace normalised; what
+this section adds is where in the call it has to appear.
+
+⛔ **`escape` is a variable's name and never a value** ([§ 14](#what-the-shell-inherits-is-a-list-of-names)),
+and what stands the refusal down is the person setting it to a reason. A blank value is not an
+escape: the value *is* why, so a variable set to nothing says nothing. ⚠️ **It is the pressure valve
+that keeps a fail-open guard from being deleted the first time its evidence is wrong**, and a guard
+somebody deletes holds nothing at all afterwards. ⛔ **It stands down one call and is not a
+configuration key that turns the guard off** — that key is the one § 7 refuses by name, one guard
+over.
+
+⛔ **`operational_when` is the one condition a project may answer in place of the host.** Where a
+project already owns a probe answering *can the host run these jobs*, pointing at it is this
+toolkit's own argument applied to itself: there is one implementation of that question and a guard
+is not a second one. ⚠️ **It reaches that condition and no other** — whether a run exists, whether
+it mirrors this command and whether it saw this code are per-commit facts a project-level probe
+does not answer, so those three are read from the host whichever way this key is stated.
+**Anything but `operational` proceeds**, which is the fail-open direction arriving at a command
+somebody else wrote: a probe that cannot answer is not a host that can.
+
+⚠️ **`never_guard: []` is the stated absence and `already_run` is written by every project**, for
+the reason [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s empty list is:
+a project that has looked at its mirrored commands and found none to exempt and a project that has
+never looked read identically otherwise. ⛔ **A project whose `checks` is empty is guarded by
+nothing**, § 2's absence meaning there is no mirrored command to match — which is a configuration
+rather than a misconfiguration, and the same reading § 7 gives a project that states no exclusive
+resource.
+
+## 19. A command that spends, and the supervision it is refused without
 
 ```yaml
 spend_guard:

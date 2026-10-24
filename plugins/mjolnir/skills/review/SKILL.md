@@ -444,6 +444,21 @@ states it at
 and the finishing role is what walks it — so this role reports the verdicts it has and the answers
 it was given, and ⛔ **never what they add up to**.
 
+⛔ **And how a reached run concluded is read through that same consumer**, from the three facts
+this role reads off the host rather than off the conclusion word, which arrives the same on two of
+the four readings:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/host_checks.py" conclusion \
+  --steps <how many its jobs executed> --passed <yes|no> \
+  --superseded-by <the run that retired this one, where one did>
+```
+
+⚠️ **Two of the four are *no answer*, and ⛔ neither is a fix cycle's subject** — a job cancelled in
+the queue having executed no step is the project's runner account and not the diff, and a run a
+newer one retired is answered by reading the successor the answer names. ⛔ **Nor is either of them
+green**: the gate is not driven by waiting out a queue and calling it cleared.
+
 ⛔ **A failing check is never merged on, and no cause excuses it** — not a red that fails on the
 base rather than on this change, not one that died before reaching what it tests, not one a local
 run has answered green instead. A local run is evidence for the report and never a substitute for

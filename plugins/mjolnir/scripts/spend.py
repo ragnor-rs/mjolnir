@@ -3,7 +3,7 @@
 
 The surface states which calls a project has decided cost money, what a refusal
 names, and the one price the harness states before a turn runs -- see
-`schema.md § 18 -> A command that spends, and the supervision it is refused
+`schema.md § 19 -> A command that spends, and the supervision it is refused
 without`, the subsection beside it that resolves the command position, and the
 one after that which states what an approval is per. This script is the carrier
 for each:
@@ -16,7 +16,7 @@ for each:
 
 ⛔ **Nothing here judges the work, and nothing here knows what spends.** The
 denied commands, their costs and every budget are the project's
-(`schema.md § 18`); what this file carries is the command position, the match,
+(`schema.md § 19`); what this file carries is the command position, the match,
 the decision and the report. ⛔ **No interpreter and no project's tooling is
 named below**, by `schema.md § What the procedure models`: a list of runners or
 stacks here would be the first project writing one in another language getting a
@@ -55,7 +55,7 @@ SURFACE = Path(__file__).resolve().parent.parent / "config" / "schema.md"
 # this file only if its anchor survives, which is the bargain every citation of
 # the surface already makes.
 ARM_ANCHORS = {
-    "facet": "18-a-command-that-spends-and-the-supervision-it-is-refused-without",
+    "facet": "19-a-command-that-spends-and-the-supervision-it-is-refused-without",
     "position": "the-command-position-and-why-the-whole-call-is-not-one",
     "approval": "what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs",
     # The two § 7 rules this carrier obeys rather than states: an install is
@@ -65,10 +65,10 @@ ARM_ANCHORS = {
     "direction": "which-direction-a-guard-fails-in",
 }
 
-FACET_CITATION = "schema § 18 → A command that spends, and the supervision it is refused without"
-POSITION_CITATION = "schema § 18 → The command position, and why the whole call is not one"
+FACET_CITATION = "schema § 19 → A command that spends, and the supervision it is refused without"
+POSITION_CITATION = "schema § 19 → The command position, and why the whole call is not one"
 PRICE_CITATION = (
-    "schema § 18 → What an approval is per, and the one price stated before a turn runs"
+    "schema § 19 → What an approval is per, and the one price stated before a turn runs"
 )
 
 # The carrier, and the events the two arms answer. ⛔ Held rather than assumed:
@@ -165,7 +165,7 @@ INTRODUCERS = {"then", "do", "else", "elif", "exec", "command", "coproc", "!"}
 # A runner runs the command that follows it, so the command is one token further
 # right -- and its own flags move it further right again. ⛔ The flags that take
 # a **separate** value are named per runner, for the measurement
-# `schema.md § 18 -> The command position` states: a flag's value must never be
+# `schema.md § 19 -> The command position` states: a flag's value must never be
 # read as the command.
 #
 # ⚠️ These are the shell's own runners rather than any project's tooling, by the
@@ -187,7 +187,7 @@ WRAPPERS = {
     # ⚠️ Zero rather than one for the two that take a user: the user arrives as
     # the value of a flag in the form that then runs a command as its own words,
     # and the form that takes the user as a plain word runs its command as a
-    # quoted string instead — which is the interpreter residue § 18 states.
+    # quoted string instead — which is the interpreter residue § 19 states.
     "runuser": ({"-u", "--user", "-g", "--group", "-G", "--supp-group", "-s",
                  "--shell", "-c", "--command"}, 0),
     "su": ({"-s", "--shell", "-g", "--group", "-G", "--supp-group", "-c", "--command"}, 0),
@@ -427,7 +427,7 @@ def command_chain(segment: list[str]) -> list[tuple[str, list[str]]]:
                     # otherwise have their command read as a flag's value and
                     # skipped. ⚠️ Where that value is a multi-word string the
                     # shell splits, only its first word stands here, which is the
-                    # interpreter residue § 18 states.
+                    # interpreter residue § 19 states.
                     if equals:
                         out.append((value, []))
                     elif index < len(segment):
@@ -446,7 +446,7 @@ def command_chain(segment: list[str]) -> list[tuple[str, list[str]]]:
 def names_the_command(called: str, configured: str) -> bool:
     """Whether a token in a command position is the command an entry names.
 
-    The comparison is `schema.md § 18`'s `command` bullet and is not restated
+    The comparison is `schema.md § 19`'s `command` bullet and is not restated
     here. ⚠️ What is local to this function is the limit: the comparison is
     lexical, so a path reached through a symlink or spelled in another case is
     not this one -- stated in `docs/single-source-of-truth.md` § The spend half
@@ -485,7 +485,7 @@ def matches(command: str, stated: list[dict]) -> list[dict]:
                         if not re.search(pattern, " ".join(arguments)):
                             continue
                     except re.error:
-                        # Refused at load by the shared reader (§ 18), so this is
+                        # Refused at load by the shared reader (§ 19), so this is
                         # the arm nothing reaches through a validated
                         # configuration. It does not match on a pattern it cannot
                         # compile: a guard that refused every call of the command
@@ -582,7 +582,7 @@ def guard_answer(payload: dict, *, config=None) -> dict:
         # the act can be undone, and the act here is not known to be a spend at
         # all: what a broken configuration cannot say is whether this call is one
         # of the denied ones, so the refusing arm would refuse every call in the
-        # project — the edit that repairs the configuration included (§ 18).
+        # project — the edit that repairs the configuration included (§ 19).
         return {"systemMessage": (
             "Spend guard: the project's configuration could not be read, so this command was "
             f"held to nothing. ({FACET_CITATION})"
@@ -609,7 +609,7 @@ def price_answer(payload: dict, *, config=None) -> dict:
         return {}
     bar = loaded.get(RESUME_BAR)
     if not isinstance(bar, (int, float)) or isinstance(bar, bool):
-        # An unset bar prices no resume, and then this arm says nothing (§ 18).
+        # An unset bar prices no resume, and then this arm says nothing (§ 19).
         return {}
     stated = payload.get(FIGURE)
     source = str(payload.get("source") or "")
@@ -1242,7 +1242,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     # ⛔ Every other fact the refusal is supposed to carry, read out of the
     # message rather than out of the record behind it: a report branch produces
     # no verdict, so a red/green suite is blind to it unless a phrase is
-    # asserted. § 18 states that the refusal names the segment that matched —
+    # asserted. § 19 states that the refusal names the segment that matched —
     # which, before this, was asserted only against the internal record.
     check("the segment that spends is named by number", "segment 2" in reason(asked),
           reason(asked)[:200])

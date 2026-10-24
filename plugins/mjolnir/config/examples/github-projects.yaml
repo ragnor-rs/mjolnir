@@ -119,6 +119,15 @@ checks_local:
     proves: "the suite passes against a store this run stands up"
     requires: ["a container daemon"]
 
+# § 18, and the one arm a project discovers by being refused: the linter above has a fixing
+# variant, and the two are told apart by a flag rather than by a name — so the fixing form is
+# named here and the guard leaves it alone, the refusal otherwise refusing the repair rather
+# than a duplicated verdict. ⚠️ Written as the command's own form, because the match is on the
+# command in position and the two forms are two commands.
+already_run:
+  never_guard: ["npm run lint -- --fix"]
+  escape: "SKIP_ALREADY_RUN"
+
 commit:
   staging: explicit
   trailer: read_from_history

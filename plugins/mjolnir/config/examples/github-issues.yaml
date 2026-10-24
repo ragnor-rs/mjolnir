@@ -14,6 +14,11 @@ host:
     - workflow: "CI"
       mirrors: "npm test"
       triggers: "pull_request -> main"
+  # No `runner` here, and that is the statement rather than a gap: this project's jobs run on
+  # the host kind's own default, so there is nothing to write down and nothing holding a
+  # workflow file to a label. Compare jira.yaml, whose account carries its own runners — and
+  # where the default label would be a check that never reports. What the default *is* lives
+  # with the host kind and not on this surface.
   # Squash, with the host's own delete-on-merge switch turned on — so the procedure must not ask
   # for the deletion a second time. ⚠️ That switch is off on a new repository, so `host` here is a
   # project that went and turned it on, which is the point of showing it: the key states who
@@ -93,6 +98,12 @@ done:
 # verdict is the host's and there is nothing for a `local` check to read. `[]` rather than an
 # unset key, because a decision and an oversight read identically otherwise.
 checks_local: []
+
+# § 18, on the first day: the one mirrored command above is a verdict that changes nothing, so
+# there is nothing to keep this guard off and `[]` says that rather than leaving the key out.
+# No escape and no probe — the host's own answer is the only one this project has.
+already_run:
+  never_guard: []
 
 commit:
   staging: explicit

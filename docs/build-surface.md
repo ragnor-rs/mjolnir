@@ -186,6 +186,44 @@ carries the event, the types of it and the ref already; what reads it is
 [`schema § 17 → Whether the host's verdict covers this change`](../plugins/mjolnir/config/schema.md#whether-the-hosts-verdict-covers-this-change),
 whose `counts_when` is stated in that same form.
 
+**What acts on the answer is one guard, and the union above is what it reads.**
+[`schema § 18`](../plugins/mjolnir/config/schema.md#18-the-guard-on-a-command-the-host-has-already-run)
+is the one place that act is stated, and it takes B's four conditions as its own: a run exists for
+this commit, it mirrors *this command* by the workflow's name, it saw this code, and it is
+operational. ⛔ **What it does not take is the conclusion**, which F reads and
+[`schema § 2`](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)
+carries as its fourth precondition — and which B's first version reached for through the client's
+exit status, becoming a no-op while the host ran and a blocker once it had finished, that client
+exiting non-zero while runs are pending *and* when one has failed. A run that failed has spent the
+time and answered; what releases the call afterwards is the edit that follows, which leaves the tree
+carrying something the host has not seen. ⚠️ **B's own four conditions do not include one either**,
+which is the measurement rather than a design taken from it: the project that fails open is the
+project that stopped reading how the run went.
+
+⚠️ **C's four exit codes are where the fourth answer comes from**, and it is the one none of the
+other three carries: its code 2 is *the pull request is conflicted*, which produces zero runs and
+reads exactly like *no run exists* while having the opposite remedy. The facet keeps the two apart
+rather than folding the conflict into the absence.
+
+**Two of the four disagree about who answers the operational question, and the facet carries both.**
+A and C own a probe their own tooling already runs, and C's guard header states the rule outright —
+there is one implementation of *can the host run these jobs* and the hook is not a second one. B and
+F read the host. ⛔ **The split is not between two designs but between one condition and three**:
+whether a run exists, mirrors this command and saw this code are per-commit facts a project-level
+probe cannot answer, so those stay with the guard and only the operational one is delegated, which
+is what `operational_when` states.
+
+**What C deliberately leaves alone is the rule that populates the exemption list.** Only a command
+producing a verdict and changing nothing may be refused, and three kinds fail that test there: the
+fixing variants of its own checks, one command that is a fix in one package and a pure check in
+another, and the paid suites its host never runs at all. ⚠️ **The second of those is why the list is
+configuration rather than a heuristic** — telling the two apart needs a path heuristic more fragile
+than the duplicate run it would prevent, which is
+[`schema § 18 → What may be guarded`](../plugins/mjolnir/config/schema.md#what-may-be-guarded-and-the-two-ways-a-refusal-stands-down)'s
+own argument and § 17's *a verdict changes nothing* read one facet over. ⚠️ **And C carries a named
+override with the user saying why**, which the same subsection states: a fail-open guard whose
+evidence is wrong once is a guard somebody deletes, and a deleted guard holds nothing afterwards.
+
 ## The tiers, what each needs, and which are asked for
 
 [#60](https://github.com/ragnor-rs/mjolnir/issues/60)'s four bullets were written from F, and its
@@ -334,7 +372,7 @@ counted.** Three parts of the surface separately know which tools a project buil
 the capacity probe at
 [`schema § 10 → Exclusive resources`](../plugins/mjolnir/config/schema.md#exclusive-resources), the
 spend guard's argument shape at
-[`schema § 18`](../plugins/mjolnir/config/schema.md#18-a-command-that-spends-and-the-supervision-it-is-refused-without)
+[`schema § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
 and the deploy script (#13) — which reads like three copies of
 one fact and therefore like a reason to declare the toolchain once. ⛔ **None of the three is
 derivable from a toolchain name**, measured on one project:

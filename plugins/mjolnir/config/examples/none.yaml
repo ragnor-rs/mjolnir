@@ -75,6 +75,14 @@ checks_local:
   # — this project maps one role, and that role answers no question about a verdict.
   []
 
+already_run:
+  # Nothing above is mirrored, so no call here ever matches and the guard is silent — which is
+  # § 18's configuration rather than a partial install, the same reading § 7 gives a project
+  # that states no exclusive resource. ⚠️ The key is still written: a project that acquires a
+  # workflow tomorrow states its exemptions then, and reads today's empty list as the decision
+  # it was.
+  never_guard: []
+
 commit:
   staging: explicit
   trailer: read_from_history
