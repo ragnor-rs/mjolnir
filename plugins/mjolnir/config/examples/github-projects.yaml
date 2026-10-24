@@ -132,6 +132,13 @@ commit:
   staging: explicit
   trailer: read_from_history
 
+# § 20, and the entry names the carrier below it rather than a person: the deploy role reads this
+# section out of every change the batch carries, which is the whole membership test.
+body_sections:
+  - heading: "Before this can be deployed"
+    read_by: "the deploy role"
+    nothing_needed: "Nothing."
+
 carriers:
   day_log: skill
   file: skill
@@ -173,6 +180,13 @@ branch_model:
   # the steps are the pointer below.
   tree_dir: ".worktrees"
   mechanics: ".claude/worktrees.md"   # the tree's own setup and teardown steps
+  # The non-empty shape, and the one the pointer above implies: a tree that has something installed
+  # into it holds ignored files that running the install again writes back. ⚠️ The environment file
+  # the pointer copies in is deliberately absent from this list — a copied secret is written by
+  # nothing a rebuild runs, so a tree holding one is kept and the file named.
+  regenerable:
+    - "<the build output directory>"
+    - "<the dependency cache>"
   exclusive_resources:
     # Two resources in one project, with different caps — the shape a single name could not
     # state. The instance is one per project; the build daemon runs two in flight.
@@ -256,3 +270,16 @@ spend_guard:
   # The resume price is read here too, and the bar is this project's: the window it pays to
   # rewrite is the same window the deploy above is driven from.
   resume_bar_usd: 0.5
+
+live_guard:
+  # The same environment the deploy above reaches, guarded one layer lower: the release goes
+  # through the command named there, and ⛔ a shell that opens a session on the same machine
+  # reaches it without passing any of that. The two are not alternatives — the spend guard holds
+  # the release and this one holds every other way onto the box.
+  session_tools:
+    - command: "<the command that opens a session on another machine>"
+      valued_flags: ["--JUMP-HOST-FLAG"]
+  allowlist: "<the absolute path of the file naming the machines that are not live>"
+  # Nothing is reached without leaving this machine: the environment is the host's, and the local
+  # checkout runs no service of its own. ⚠️ Absent rather than empty — no name is read as local,
+  # which is the stricter of the two readings.

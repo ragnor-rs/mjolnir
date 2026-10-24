@@ -342,9 +342,10 @@ The convention in the README — that this repository names no *other* project �
 own rule that [no value appears under a carrier
 root](../plugins/mjolnir/config/schema.md#the-configuration-surface) both say the **search is the
 check** rather than a reading of the procedure. `tools/check_no_project_names.py` is that search,
-in its own workflow. **Seven of its nine checks are of the *forbidding* kind**, so most of the
-script stands or falls on whether the thing forbidden has a stable form; the two computed ones
-exist to stop the other seven holding nothing.
+in its own workflow. **Most of its checks are of the *forbidding* kind**, so most of the script
+stands or falls on whether the thing forbidden has a stable form; the two computed ones exist to
+stop the rest holding nothing. ⛔ No count of either group is carried here or in the script: the
+first form of both sentences carried one, and the check the sweep grew next made it wrong.
 
 Two scopes. The repository-wide one looks for what identifies someone else's project; the strict
 one — the carrier roots, never the whole tree — looks for a value, a tracker or a stack in text
@@ -363,6 +364,7 @@ rather than from a hand-kept list of roots.
 | 6 | No tracker is named, in the slug spelling or the prose one | the strict set | forbidding |
 | 7 | No package manager, task runner, build tool, checker, manifest or lockfile; no stack's own flag; no interpreter in front of something this repository does not ship; no directory change prefixing a command, no directory flag, no absolute path | the strict set | forbidding |
 | 8 | No value any configuration supplies | the strict set | forbidding |
+| 9 | No machine named by its address, which is the one identity shape of a *machine* with a form a pattern can hold — a hostname is any word and an alias is any word somebody chose, so those are held by the names living outside every working tree ([schema § 21 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)) rather than by this sweep | same | forbidding |
 
 Check 5 is the one that makes the shape-matched strict set safe: a carrier in a directory the
 shapes do not reach — `plugins/other/skils/`, one letter out — would otherwise be swept by nothing
@@ -1010,9 +1012,11 @@ whatever it finds deletes somebody else's work.
   three answers and the third is *unestablished*, never *the tree is idle*. ⚠️ Check 8 holds the
   at-or-below half against a real process; what no check here holds is the **unreadable** branch,
   because a machine where the table cannot be read is not a fixture this suite can build. On such a
-  machine the arm reports rather than answers, which is the safe direction. It is
-  [#34](https://github.com/ragnor-rs/mjolnir/issues/34)'s test called rather than a second one, and
-  [#31](https://github.com/ragnor-rs/mjolnir/issues/31)'s sweep is its other consumer.
+  machine the arm reports rather than answers, which is the safe direction. ⚠️ **Its other consumer
+  is now shipped code rather than an item**: the sweep over landed trees reads this arm instead of a
+  second one, and the section below carries what that consumer does and does not hold — so the
+  unreadable branch is unheld in **two** suites and for the same reason, which is the one shape a
+  reader could otherwise take as covered twice.
 - **A claim broken with the override.** Check 6 holds that the refusal happens and that it names
   the decision as a person's; it cannot hold that the person was right. ⛔ That is the *fidelity*
   limit this document states one claim over, and the reason the override is a flag rather than a
@@ -1049,6 +1053,111 @@ whatever it finds deletes somebody else's work.
   states the item rather than having one guessed out of a slug. ⛔ Where it is neither stated nor
   recoverable the guard does not run, and the ref name is the whole of the claim again — which is
   the pre-derivation behaviour and is recorded here rather than reported as covered.
+
+## Beside the claim: the sweep that removes a tree whose branch has landed
+
+`plugins/mjolnir/scripts/prune.py --self-test` runs in the `Landed trees` workflow, with no
+credential and no network. It is recorded here for a reason none of its siblings has: ⛔ **every
+other run in the list fails by reporting something wrong, and this one can fail by deleting a
+working tree** — which is the only copy of everything in it that version control does not track.
+
+The rule is
+[schema § 10 → Pruning a tree whose branch has landed](../plugins/mjolnir/config/schema.md#pruning-a-tree-whose-branch-has-landed),
+and ⛔ this document states none of it. ⚠️ **Nor does the module carry a second reading of *has this
+landed***: it imports the claim's own, which is what the section above is about, and its suite
+asserts that the surface still states the subsection it performs and that the carrier still calls
+it on the event that opens a session.
+
+| # | Check | Scope | Kind |
+|---|---|---|---|
+| 0 | A landed tree is **removed**, and the local branch goes with it | a clone whose branch landed by content, with no host asked | computed |
+| 1 | A branch that has not landed is never removed, and the report says which reading kept it | one clone, one tree | computed |
+| 2 | A branch whose landing the host could not answer for is kept, and the missing answer is named | a liveness reading carrying an unestablished half | computed |
+| 3 | A tree holding an ignored file no rebuild writes again is kept and the file **named**; declaring that path regenerable removes the same tree | one tree, both directions | computed |
+| 4 | An ignored symlink is never precious, and what it pointed at survives the removal | a symlink to a file and a directory of symlinks, both ignored | computed |
+| 5 | A bare entry matches the path wherever it appears, a directory entry covers everything beneath it, and a name matching nothing covers nothing | the matching rule alone | computed |
+| 6 | An untracked change keeps the tree **even with everything declared regenerable** | one tree, the list set to match all | computed |
+| 7 | The main checkout is not a tree the sweep looks at | every entry of a worktree listing | computed |
+| 8 | A tree another live session occupies is kept, the occupant named; an unreadable table keeps it too | the occupancy reading in each of its three answers | computed |
+| 9 | The caller's own tree is **stopped on**, and a later session standing outside it removes the same tree | this process's own working directory, moved and moved back | computed |
+| 10 | A tree the harness cut inside the checkout is named and not removed | a real nested worktree | computed |
+| 11 | The published ref is reached under `procedure` and left standing under `host` and under `never`, the tree and local branch going either way | three configurations, one per value | computed |
+| 12 | A budget that runs out stops the sweep and **names** every tree it did not look at | a clock the suite advances | computed |
+| 13 | A kept tree is read again on the next sweep rather than recalled, and nothing is written into it | two consecutive sweeps over one tree | computed |
+| 14 | A project that states no configuration, and one that cuts no tree, are each answered with silence | two synthesised projects | forbidding |
+| 15 | A configuration that is stated and does not resolve is reported, and a sweep that cannot run reports examining nothing | a project whose file is broken | computed |
+| 16 | The budget plus one tree's reserve is shorter than the timeout the carrier registers | the carrier and this module together | computed |
+| 17 | A landed tree carrying a commit the reading never saw is kept, the commit **named**, and the person told; with nothing unpushed the same tree is removed | a branch pushed, landed by content, then committed to without pushing | computed |
+| 18 | A ref the host deleted on merge still answers *landed*, read from the branch on this machine, and the sweep prunes under `delete_branch: host` | the same fixture with its published ref deleted | computed |
+| 19 | A tree **outside** the stated tree directory is named and not removed, whether a harness cut it inside the checkout or a person cut it beside one; a tree **under** a tree directory that is itself inside the checkout is pruned | three real worktrees across two repositories | computed |
+| 20 | A reading that raises for one tree leaves the other's verdict standing, the removal that happened still reported; only a failure to list the trees at all is the run's | one tree's reading raised deliberately | computed |
+| 21 | A removal that reported success while the tree is still there is not a removal, and the person is told | a remover that returns success and removes nothing | computed |
+| 22 | An ignored path whose own name carries the rename separator is read whole, and one outside ASCII arrives unquoted | two such paths in a real tree | computed |
+| 23 | A registration whose directory is gone is read as prunable and cleared, rather than reported at every session open | a tree removed from under its registration | computed |
+| 24 | The stop reads the directory it is **handed** — the session's — so a session standing in its own tree holds it whatever this process's cwd is | both answers of the shipped reading | computed |
+| 25 | The event hands the sweep the configured list, `delete_branch`, the tree directory resolved against the code root, and the session's directory | the arguments captured at the boundary | computed |
+| 26 | An entry naming nothing exempts nothing; an entry anchored at the root matches there and nowhere else | the matching rule alone | computed |
+| 27 | A tree whose contents could not be read is unestablished, never empty; an unreadable directory is not all-symlinks | a directory with its mode taken away | computed |
+
+⚠️ **Check 16 is the one that looks like bookkeeping and is not**, for the reason § 10 gives about
+a carrier the harness kills: what the check holds is that the timeout covers the budget **plus**
+what one tree is allowed to cost, an inequality of one second being satisfiable and useless.
+
+### What this check deliberately does not hold
+
+- **The host's own record of a merge, and with it the whole merge-commit shape.** The landed
+  reading's second test needs a credential and the suite's remote is a bare repository on disk, so
+  what carries every verdict here is the **content** arm. ⛔ That matters more for this consumer
+  than for the claim: a branch that landed as a **merge commit** is an ancestor of the integration
+  branch and carries no commits of its own, so the content arm does not fire and the host's record
+  is the only test that recognises it. ⚠️ **Which is not a reading this suite could add.** Ancestry
+  is what would separate the two shapes and § 10 forbids it by name — a claim taken a minute ago is
+  an ancestor too, and a sweep keyed on ancestry would delete the tree of an item somebody had just
+  started. Without a credential a merge-commit landing therefore reads as an orphaned candidate and
+  the tree is **kept**, which is the safe direction and is why the accumulation § 10 measures is a
+  disk cost rather than a data one.
+- **The occupancy reading itself.** Every sweep arm in this suite injects it, because a machine
+  where the open-file table cannot be read is not a fixture that can be built either way. What is
+  held here is that each of its three answers reaches the right verdict; what holds the reading is
+  the claim's suite, against a real process.
+- **A session a harness genuinely refuses to let out of its tree.** Check 9 moves this process's
+  own working directory, which is the whole of what the reading asks — but the *unavailability* of
+  an exit is a property of the harness, so a launch-pinned session is reasoned about rather than
+  built. ⚠️ The two cases are indistinguishable from inside the sweep anyway: both are a tree the
+  caller is standing in, and both are kept.
+- **Whether a `regenerable` entry names something a rebuild really writes again.** That is a
+  project's claim about its own build and no check can verify it. ⛔ The failure direction is a
+  tree removed with a file in it, which is why the surface states the empty list as the safe form
+  and why the entry's shape is refused by the reader rather than tolerated.
+- **That a removal was what somebody wanted.** A merged branch is removed without asking per
+  occasion, deliberately — asking per occasion is what produced the accumulation § 10 measures.
+  What stands in for it is that nothing uncertain is ever removed, which is checks 1, 2, 3, 6 and 8
+  together.
+- **The trees a harness cut for its own helpers.** Checks 10 and 19 hold that they are named and
+  left alone; reaping them is a different question with a different owner, and a sweep that removed
+  them would be removing trees whose branches it never read.
+- **Ignored files inside a submodule.** The superproject's status says nothing about them — a
+  submodule holding only ignored content is clean — while the removal takes the submodule with the
+  tree. ⛔ So the measured incident the oracle exists for is reachable again one directory deeper,
+  and no check here holds it: the fixture would need a submodule, and the shape is not one this
+  project has. Recorded rather than guarded.
+- **A long-lived process of the person's own, in the same login session.** The occupancy reading is
+  the POSIX session, which is what tells a run's own helper from another session — and the cost of
+  that choice is the inverse case: a server started from the same terminal the session was launched
+  from shares its session and reads as *not another session*. ⚠️ Narrowing it would reintroduce the
+  measured failure it was built for, where a keep-awake helper held every tree forever, so the
+  trade is recorded rather than split.
+- **What one tree's own calls cost.** The reserve keeps a tree from *starting* without headroom; it
+  cannot bound a call already running, none of which carries a timeout of its own. A tree whose
+  host lookup hangs still outruns the event's limit, and a killed carrier emits nothing — which is
+  the one shape in this whole section that no assertion can reach from outside those calls.
+- **A worktree path containing a newline.** `-z` is what makes the parse correct for one, and the
+  fixture is a tree whose path carries **spaces** rather than a newline: the latter is permitted by
+  the filesystem and is not a directory this suite will create. What is held is the parse's shape;
+  what is reasoned is that the record boundary is now the separator git documents.
+- **That anybody reads the report.** It is addressed to the person on the event that opens a
+  session, and no gate holds a person to having read it — the same limit every report on this
+  route has.
 
 ## The rules loaded rather than checked
 
@@ -2283,6 +2392,91 @@ that direction directly.
 - **What the figure says about any command.** The price arm reads one event's own cost. It is not a
   meter: nothing here knows what a session has spent, and no key states a budget it could be
   measured against.
+
+## The live half: a session put to somebody, and the names that clear one
+
+`plugins/mjolnir/scripts/live.py --self-test` runs in the `Live guard` workflow, with no credential
+and no network. ⛔ The rules are
+[schema § 21](../plugins/mjolnir/config/schema.md#21-a-command-that-could-open-a-session-on-a-live-machine),
+[schema § 21 → Which verdict](../plugins/mjolnir/config/schema.md#which-verdict-and-who-would-answer-the-prompt),
+[schema § 21 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)
+and
+[schema § 21 → The four ways it fails closed](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed),
+and this document states none of them: what is recorded here is the reach of the arm and what it
+cannot see, which is narrower than the rules in directions the rules do not mention.
+
+| arm | what it reads | kind | what it does |
+|---|---|---|---|
+| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command's own command positions, the entries the project wrote, the file those entries name and the mode the event arrived in | **forbidding** | puts the call to the person, refuses it, or says nothing |
+
+⛔ **The command position is the sibling guard's and is imported rather than copied**
+([schema § 19 → The command position](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)).
+One parse, one set of lexer settings, one answer about which token is the command — and the suite's
+own position shapes are asserted here as well, because what this carrier would get wrong is not the
+parse but the use of it. ⚠️ **The verification is recorded rather than claimed**: with the import
+replaced by a match on the raw text, fourteen assertions redden, and the ones that redden are the
+shapes where the command is named and not called.
+
+⚠️ **Every green plant was verified by breaking the mechanism it names**, which is how two holes in
+this suite were found rather than argued. A call reaching a machine the project named as not live
+passes silently — and with the allowlist never read, forty-three assertions redden, while a first
+version of the same plant changed only the no-path branch and reddened one. A call whose machine
+sits behind a flag the entry states takes a separate word passes — and nothing asserted that until
+the plant was pointed at an **allowlisted** machine behind such a flag: every verdict-shaped
+assertion passes with the flag rule dead, because a flag's value in no list is held exactly as a
+live machine is.
+
+⚠️ **The mode table is asserted per member and in both groups**, since the two are what the whole
+decision turns on: with the session-answered arm answering like a person-answered one, five
+assertions redden; with an unrecognised mode read as person-answered, two. ⛔ **And the table is
+the harness's vocabulary rather than this surface's**, so a mode the harness adds is read as
+unrecognised and refused until somebody classifies it — the direction that costs a refusal rather
+than a silent pass.
+
+### What this check deliberately does not hold
+
+- **A machine that is not the call's first plain word.** The reading is positional:
+  [schema § 21](../plugins/mjolnir/config/schema.md#21-a-command-that-could-open-a-session-on-a-live-machine)
+  states it and states the direction it is wrong in. A command that takes its target second — a
+  copy whose source is local and whose destination is remote — has its *first* word read as the
+  machine, which is in no list, so the call is put to a person. ⛔ Deliberately not resolved per
+  command: the alternative is a target grammar per tool in the toolkit, which is every project's
+  tooling entering it one flag at a time.
+- **A name spelled another way.** The comparison is lexical and whole-word: the same machine
+  reached by an address rather than by the name the list carries, or by a second alias nobody
+  added, is not the name in the file. ⚠️ That is the inversion working in the safe direction for a
+  live machine and in the annoying one for an allowlisted one — the unnamed alias of a *cleared*
+  machine gets a prompt.
+- **A session opened through an interpreter, a wrapper script of the project's own, or a flag whose
+  value is a whole command string.** The same residue the spend half has, one guard over, and for
+  the same reason: the thing in the command position is the interpreter, and no list of
+  interpreters may live here.
+- **Whether the machine behind an allowlisted name is still not live.** The file is a statement
+  somebody wrote on a machine. A name left in it after that machine became live answers this check
+  exactly as a correct one does, and nothing here can read what a name points at.
+- **A session that is not a shell command.** The guard reads a `Bash` call. A connection made by a
+  tool of its own, by an editor action, or by something a workflow starts on the host reaches no
+  event here — the same reach every other hook in this plugin has.
+- **Whether a person in fact answered.** What the ask buys is that the call does not run until it is
+  answered; what the refusal buys is that the answer has to be asked for in the conversation. Who
+  answers, and whether they knew which machine it was, is not a property a machine here can
+  establish — the same decidable end
+  [schema § 7](../plugins/mjolnir/config/schema.md#what-a-hook-refuses-and-the-record-it-reads)
+  takes for the review question.
+- **A mode the harness renames.** The vocabulary is read from the payload, so a renamed mode is an
+  unrecognised one and is refused. ⛔ The gate catches a *dropped* arm and not a renamed mode: the
+  carrier's own table is asserted for shape and disjointness, and what a mode means to the harness
+  is not something a run in this repository can read.
+- **Whether a project's `valued_flags` is complete.** A flag nobody listed consumes nothing, so its
+  value stands where the machine would and the call is held — a false prompt rather than a silent
+  pass. Nothing here can tell a list that is short from one that is right.
+- **A call that cannot be parsed and only *mentions* a session command.** The positional rule is
+  suspended there, by
+  [schema § 21 → The four ways it fails closed](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed),
+  so an unclosed quote around prose naming the command is held. ⚠️ A false prompt in the one state
+  where the alternative is reading positions out of a parse that did not happen — and the report
+  names the whole call rather than a segment of it, there being no segments to count.
+
 ## The install half: what the toolkit writes into a project
 
 `plugins/mjolnir/scripts/install.py --self-test` runs in the `Installer` workflow, with no
@@ -2328,6 +2522,17 @@ re-rendering it, and taken back out when the artifact is; and a place that could
 reported as that rather than as nothing being there. The kinds are the two this document draws:
 **computed** throughout — a path, a mode, a byte comparison, a reader's verdict — with no
 forbidding arm among them.
+
+⛔ **The registry's order is install order, and every removing route walks the reverse of it**, by
+[§ What the toolkit installs](../plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)'s
+removable property. ⚠️ A registry may hold an artifact that only works while a sibling is there,
+and one order for both directions produces the intermediate state the order exists to avoid: the
+called file gone and the caller still installed, which is a red check on every change rather than
+something inert. ⚠️ **Two routes remove and both were measured walking forwards** — the explicit
+removal, and a configuration that stops asking — so both arms read the order off the acts rather
+than off the report, which stays in registry order. ⚠️ **And a directory the toolkit owns does not
+outlive its last artifact**, while a directory the project owns is left standing empty: the
+toolkit writes into the host's own workflow directory and does not own it.
 
 ⛔ **Where a generated gate goes is not this module's**, by
 [§ 2](../plugins/mjolnir/config/schema.md#a-workflow-whose-jobs-mirror-more-than-one-command),
@@ -2461,6 +2666,61 @@ applied to a suite's own fixture.
   checks above give: this suite reads trees it creates and the configuration in the checkout, and
   the workflow holds no credential.
 
+## The body gate: the sections a change has to answer
+
+`plugins/mjolnir/scripts/check_body_sections.py --self-test` runs in the `Body sections`
+workflow, with no credential and no network. ⛔ The rule is
+[schema § 20](../plugins/mjolnir/config/schema.md#20-the-sections-a-pull-request-body-must-carry)
+and this document states none of it. What is recorded here is what the suite holds, what the
+script deliberately does not carry, and the one property the whole design turns on.
+
+**One implementation and two callers, asserted rather than claimed.** A host run and a local run
+disagreeing about a body is the state the facet exists to remove, so it is the thing the suite
+proves: the arms render the vendored copy, execute it as a separate process against the same
+planted bodies the source is held to, and assert the same exit status and the same verdict on
+each. ⚠️ **Three bodies, not one** — answering both sections, answering one, answering neither —
+because a copy agreeing on green alone would agree with any implementation that never refuses.
+
+**What the file is split into, and why the split is load-bearing.** Everything above a sentinel
+line is the rule and is what the install step vendors; everything below is the renderer and the
+suite. ⛔ The acceptance this carries is
+[§ 20](../plugins/mjolnir/config/schema.md#20-the-sections-a-pull-request-body-must-carry)'s —
+a generated file carries no heading the configuration did not state — and it is held **on the
+parse tree**: every string literal of a rendered copy is either one the vendored half already
+carried or one the fixture configuration stated, and anything else is named. ⚠️ Measured against
+a whole-file render, which carried the suite's own fixture headings into the artifact.
+
+**What a body is read from, in order, and the one reading that is not a verdict.** An explicit
+file, then the environment variable the generated workflow sets off the event, then the host's own
+CLI for the pull request on this branch. ⛔ A body that could not be read is reported as that and
+on a status of its own, by
+[§ 11](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish): read as an
+empty body it would refuse every section at once, and the refusal would name work nobody can do.
+⚠️ **An empty `PR_BODY` is a body and not an absence** — a body edited down to nothing is exactly
+what the gate is for.
+
+What else the suite holds: a section answered at any heading level, in any case, and with the
+emphasis a body wraps a heading in; the configured *nothing* answer accepted bare, as a bullet,
+and without its trailing period; a section closed with a horizontal rule still read as answered; a
+heading quoted inside a fence read as not stated at all; a heading stated twice refused; an empty
+section refused; and the *nothing* answer with anything beside it refused, which is the arm that
+makes the whole-section rule load-bearing. ⚠️ Every refusal is reported, never the first, so a body
+missing three sections hears about three. The kinds are **computed** throughout: each arm is a
+verdict over a body this suite wrote, and the one list the script carries — the sections — is
+empty in the copy that ships.
+
+⛔ **The grammar is shared with the gate on open items and the heading is not**, by
+[§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred). How a section is
+found in a body is one implementation here, which that gate imports; the heading it looks for
+stays with it, because a section carried in this facet is one a project may stop stating and that
+one is a section no project may stop carrying.
+
+**What this repository is not a subject of.** `body_sections` here is `[]`, so no gate is
+installed in this tree and no body of this repository is held by one. The install's own suite is
+where the artifacts are exercised, against a fixture built from the example that states a section
+— and the generated workflow and its registered entry are then handed to the drift check, so the
+two statements of that run are held to each other exactly as every hand-written entry here is.
+
 ## What a pull request title opens with, derived once
 
 `plugins/mjolnir/scripts/title_form.py --self-test` runs in the `Title form` workflow, with no
@@ -2588,12 +2848,17 @@ cases nothing was written to let through. The enforcement check plants the whole
 case — a project where nothing is exclusive, which must answer nothing for any call — beside the
 reads that share a path with a merge and must not be refused for it. The spend check plants both of
 its halves by hand — every shape a denied command arrives in against every shape that merely names
-it, which is the correction it was extracted carrying. The install step plants a project that asks
-for no artifact at all, which must write nothing and report nothing, and a value stated empty,
-which must satisfy an artifact's needs rather than wait forever on it — and, since the registry
-holds one, a project stating no title form, which must get no gate and no entry while the same
-fixture stating one gets both. The title form's own suite plants a project stating no form, whose
-every title must get *no answer* rather than either verdict. ⛔ A red-only suite says
+it, which is the correction it was extracted carrying. The live check plants the same two halves
+one guard over and a third beside them: a machine the project named as not live, which must pass
+silently, and which is the green side its own inversion rests on. The install step plants a project
+that asks for no artifact at all, which must write nothing and report nothing, and a value stated
+empty, which must satisfy an artifact's needs rather than wait forever on it — and, since the
+registry holds one, a project stating no title form, which must get no gate and no entry while the
+same fixture stating one gets both. The title form's own suite plants a project stating no form,
+whose every title must get *no answer* rather than either verdict. The sweep over landed trees
+plants both directions of **every** arm it has rather than of the holes alone — a must-remove
+beside each must-keep — because a sweep that removes nothing passes a red-side-only suite whole,
+and the half that would then be untested is the half that deletes files. ⛔ A red-only suite says
 nothing about any of them.
 **A green plant naming an exclusion is verified by switching that exclusion off** and watching it
 redden — one that cannot fail is one nobody checked — while a plant naming an omission has nothing

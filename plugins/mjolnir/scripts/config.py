@@ -838,6 +838,31 @@ class Config:
                 "spend guard is installed and refuses nothing here. ⛔ Not an "
                 "absence of signal: the project states it (§ 19)."
             )
+        # § 20, and the stated absence of a list rather than of a carrier: the
+        # body is held to § 6 whatever this says, so what `[]` buys is the
+        # difference between a project that decided no other role reads a
+        # section of its bodies and one that never asked. ⛔ Reported as the
+        # gate not being installed and never as a body that passed -- a run
+        # asserting nothing is the shape the facet exists against.
+        if not self.get("body_sections"):
+            out.append(
+                "No body section is required beyond § 6's (`body_sections: []`), "
+                "so no body gate is installed and a body is held to the summary, "
+                "the test plan and the closing reference alone (§ 20)."
+            )
+        # § 21, and the stated absence of a list rather than of a carrier, for the
+        # reason § 19's is: the guard is installed in every project the install
+        # reaches, so what `[]` buys is the difference between a project that
+        # decided no command of its own leaves this machine and one that never
+        # asked. ⛔ The complement is not reported -- a project carrying entries
+        # has a guard that acts, which is behaviour rather than an absence.
+        if not self.get("live_guard.session_tools"):
+            out.append(
+                "No command opens a session on another machine "
+                "(`live_guard.session_tools: []`), so the live guard is installed "
+                "and holds nothing here. ⛔ Not an absence of signal: the project "
+                "states it (§ 21)."
+            )
         # A role's own unset key. `day_log.script` is the first absence in this
         # toolkit that is load-bearing rather than theoretical: the day-log role
         # cannot run without it, and reporting that -- naming the key -- is what
@@ -1777,6 +1802,34 @@ def validate(data: dict, facts: dict) -> None:
             "this is readable by a person and by nothing shipped (§ 10).",
         )
 
+    # § 10. What a rebuild writes again, which is the only half of the pruning
+    # oracle a project states. ⛔ Whether the key is *written* is the surface's
+    # `# required_when` marker and not a rule here; what is held here is its
+    # shape, and the direction that matters is the permissive one -- an entry
+    # that is not a path reads as an exemption and licenses the removal of a
+    # tree holding the file it failed to name.
+    #
+    # ⚠️ Each entry is held to being a non-empty string and to nothing further.
+    # Whether a path exists is not a question about the configuration: the paths
+    # are relative to a tree that does not exist yet, and most of them name
+    # something no tree has until its build has run once.
+    regenerable = _get(data, "branch_model.regenerable")
+    if regenerable is not None:
+        if not isinstance(regenerable, list):
+            raise ConfigError(
+                "branch_model.regenerable",
+                f"is {regenerable!r}; § 10 states it as a list of ignored paths a rebuild "
+                "writes again, and `[]` where a tree of this project holds none.",
+            )
+        for index, entry in enumerate(regenerable):
+            if not isinstance(entry, str) or not entry.strip():
+                raise ConfigError(
+                    f"branch_model.regenerable[{index}]",
+                    f"is {entry!r}; each entry is a path (§ 10). ⛔ Refused rather than "
+                    "skipped: an entry that names nothing exempts nothing, and the tree it "
+                    "was written to protect is removed with the file still in it.",
+                )
+
     # § 10. Each exclusive resource, held key by key. ⛔ Every one of them is
     # stated on the surface with no default, so an entry missing one is refused
     # here rather than resolved to something the project never said -- and the
@@ -2198,6 +2251,60 @@ def validate(data: dict, facts: dict) -> None:
                 "it.",
             )
 
+    # § 20. The sections a body must carry beyond § 6's. Requiredness is the
+    # surface's marker and answers whether the key is written; what each entry
+    # has to *be* is here, as § 17's is -- and for the same stated reason: a
+    # member of a list sits at no path a marker can reach, so all three of its
+    # keys are held in prose there and in code here.
+    body_sections = _get(data, "body_sections")
+    if not isinstance(body_sections, list):
+        raise ConfigError(
+            "body_sections",
+            f"is {type(body_sections).__name__}, and § 20 states it as the sections a "
+            "body carries beyond § 6's -- a list of entries, or `[]` where a project "
+            "requires none. A shape this reader cannot walk is a gate installed over "
+            "sections nobody can read.",
+        )
+    seen_headings: dict[str, int] = {}
+    for index, entry in enumerate(body_sections):
+        where = f"body_sections[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}, and has to be a mapping stating the `heading` a body "
+                "spells, what `read_by` collects it, and the `nothing_needed` answer "
+                "that closes it (§ 20).",
+            )
+        for key, what in (
+            ("heading", "the heading text a body spells, in the repository's language"),
+            ("read_by", "what collects this section out of the change"),
+            ("nothing_needed", "the answer the section carries where nothing is needed"),
+        ):
+            value = entry.get(key)
+            if not isinstance(value, str) or not value.strip():
+                raise ConfigError(
+                    f"{where}.{key}",
+                    f"is {value!r}; § 20 states it as {what}, written on every entry. "
+                    "Written blank it reads as a key somebody set while stating "
+                    "nothing, and the gate then holds a body to a heading that is "
+                    "not there.",
+                )
+        # ⛔ The collision § 20 refuses, and it is keyed the way the gate reads a
+        # heading: the text alone, cased however a body cases it. Two entries
+        # under one heading leave every reader of the facet choosing between two
+        # statements of what one section is for -- § 2's own argument for keying
+        # `checks` on the workflow name, arriving at the other end of the body.
+        folded = entry["heading"].strip().casefold()
+        if folded in seen_headings:
+            raise ConfigError(
+                f"{where}.heading",
+                f"is {entry['heading']!r}, which body_sections[{seen_headings[folded]}] "
+                "already states (§ 20). The section is collected by that text, so a "
+                "second entry under it is two statements of what one section is for, "
+                "and a gate reading either would be right.",
+            )
+        seen_headings[folded] = index
+
     # § 18. The guard on a command the host has already run. Requiredness is the
     # surface's marker and answers whether `never_guard` is written; what these
     # three values have to *be* is here, as § 17's are.
@@ -2421,6 +2528,94 @@ def validate(data: dict, facts: dict) -> None:
             "as a bar somebody set.",
         )
 
+    # § 21. The commands that open a session elsewhere, held key by key -- and
+    # every refusal here is in the permissive direction, which is the one that
+    # matters: an entry a guard cannot act on is a connection nothing ever puts
+    # to anybody, while every reader goes on reporting the guard as configured.
+    # The shape rules are here for the reason § 19's are: requiredness is marked
+    # on the surface and answers whether a key is written, and a member of a list
+    # sits at no path a marker can reach.
+    tools = _get(data, "live_guard.session_tools")
+    if not isinstance(tools, list):
+        raise ConfigError(
+            "live_guard.session_tools",
+            f"is {tools!r}; § 21 states it as the commands that open a session on "
+            "another machine -- a list of entries, or `[]` where no command here "
+            "does. A shape this reader cannot walk is a guard with nothing to "
+            "match, installed and silent.",
+        )
+    for index, entry in enumerate(tools):
+        where = f"live_guard.session_tools[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}, and has to be a mapping stating at least the "
+                "`command` that opens the session (§ 21).",
+            )
+        command = entry.get("command")
+        if not isinstance(command, str) or not command.strip():
+            raise ConfigError(
+                f"{where}.command",
+                f"is {command!r}; § 21 states one command per entry, matched "
+                "against the command position of each segment of a call. A value "
+                "of another shape stands in no command position, so the entry "
+                "holds nothing while reading as a guard somebody configured.",
+            )
+        if "valued_flags" in entry:
+            flags = entry["valued_flags"]
+            if not isinstance(flags, list):
+                raise ConfigError(
+                    f"{where}.valued_flags",
+                    f"is {flags!r}; § 21 states it as the flags of that command "
+                    "whose value is a separate word, as a list, and absent where "
+                    "it takes none.",
+                )
+            for at_flag, flag in enumerate(flags):
+                # ⛔ Held to being one dashed word, which is what the reading of a
+                # call can act on: a flag written without its dash matches no word
+                # of any call, so its value stands where the machine should be and
+                # the guard reads a port or a key file as the machine it is about
+                # to reach -- the failure § 21 names this key for.
+                if (
+                    not isinstance(flag, str)
+                    or not flag.strip().startswith("-")
+                    or len(flag.split()) != 1
+                ):
+                    raise ConfigError(
+                        f"{where}.valued_flags[{at_flag}]",
+                        f"is {flag!r}; § 21 states each as a flag of that command, "
+                        "which is one word written with its dashes. Anything else "
+                        "matches no word of any call, and then the flag's own value "
+                        "is read as the machine.",
+                    )
+    allowlist = _get(data, "live_guard.allowlist")
+    if tools and (not isinstance(allowlist, str) or not allowlist.strip()):
+        # ⛔ Required where an entry is, and in prose rather than by the
+        # conditional marker: that marker compares a key against a stated value,
+        # and what makes this key needed is a *list with something in it*. ⚠️ The
+        # refusal is about the key and not the file: a path naming no file on the
+        # machine in hand is § 21's stricter-rather-than-silent case and is the
+        # guard's to answer, while a project with no key at all has nowhere for
+        # the names to live and no way to stop being prompted.
+        raise ConfigError(
+            "live_guard.allowlist",
+            f"is {allowlist!r}; § 21 states it wherever `session_tools` carries an "
+            "entry -- the file the machines that are not live are named in, outside "
+            "every working tree. With no file to read, every name reads as live and "
+            "nothing a project does clears the guard.",
+        )
+    local = _get(data, "live_guard.local_names")
+    if local is not None and (
+        not isinstance(local, list)
+        or any(not isinstance(name, str) or not name.strip() for name in local)
+    ):
+        raise ConfigError(
+            "live_guard.local_names",
+            f"is {local!r}; § 21 states it as the names reached without leaving "
+            "this machine, each a name, and absent where no name is read as local. "
+            "A blank member matches nothing and reads as a name somebody listed.",
+        )
+
 
 def configured(skills_root: str = ".") -> bool:
     """Whether this project states a configuration at all.
@@ -2529,6 +2724,7 @@ def _examples() -> list[str]:
 # below, and a marker added fails it until somebody writes the key down here.
 MARKED_REQUIRED = [
     "already_run.never_guard",
+    "body_sections",
     "branch_model.exclusive_resources",
     "branch_model.kind",
     "branch_model.parallel_trees",
@@ -2548,6 +2744,7 @@ MARKED_REQUIRED = [
     "host.repo",
     "language.repo",
     "language.work_item",
+    "live_guard.session_tools",
     "ordering.carrier",
     "readiness",
     "roots.code",
@@ -2577,6 +2774,12 @@ MARKED_REQUIRED = [
 RELATIVELY_DECLARED = ("work_item.type_branch_prefix.bug", "bugfix")
 
 MARKED_REQUIRED_WHEN = [
+    # § 10's one, meaningless under the mode that creates no tree: with nothing
+    # ever pruned there is no removal for an ignored path to be lost to. ⚠️ Its
+    # sibling `tree_dir` is **not** here, carrying the same condition in prose
+    # and a rule of its own -- that refusal names what the role was left unable
+    # to do, which a marker's message cannot say.
+    ("branch_model.regenerable", "branch_model.kind", "worktree"),
     # § 15's five, each meaningless where the facet is absent and each needed by
     # one of the two comparisons: the first three by the register-against-suite
     # one, the last two by the change-against-both one.
@@ -3385,6 +3588,7 @@ def self_test() -> int:
                 ("host.checks", "the host runs no checks"),
                 ("checks_local", "no local check is stated"),
                 ("spend_guard.deny", "no command is denied as a spend"),
+                ("live_guard.session_tools", "no command opens a session elsewhere"),
             ):
                 if config.get(path):
                     continue
@@ -3619,6 +3823,36 @@ def _planted_violations():
          "branch_model.exclusive_resources[0].probe", _a_resource_of(probe="   ")),
         ("a probe that is no command at all", "branch_model.exclusive_resources[0].probe",
          _a_resource_of(probe=["a-command-that-counts-them"])),
+        # ⚠️ Both of these refuse in the permissive direction, which is why each
+        # has a plant of its own: a list written as one path exempts nothing and
+        # an entry that names nothing exempts nothing, and in either case the
+        # tree the key was written to protect is removed with the file in it.
+        ("a regenerable set that is not a list", "branch_model.regenerable",
+         at("branch_model.regenerable", "a-build-directory")),
+        ("a regenerable entry that names no path", "branch_model.regenerable[0]",
+         at("branch_model.regenerable", ["   "])),
+        ("a regenerable entry that is not a path at all", "branch_model.regenerable[0]",
+         at("branch_model.regenerable", [["a-build-directory"]])),
+        ("a body-section list that is not a list", "body_sections",
+         at("body_sections", "A section this project requires")),
+        ("a body-section entry that is not a block", "body_sections[0]",
+         at("body_sections", ["A section this project requires"])),
+        ("a body section stating no heading", "body_sections[0].heading",
+         _a_body_section_of(heading=None)),
+        ("a body-section heading written blank", "body_sections[0].heading",
+         _a_body_section_of(heading="   ")),
+        ("a body-section heading that is no text at all", "body_sections[0].heading",
+         _a_body_section_of(heading=["A section this project requires"])),
+        ("a body section naming nothing that reads it", "body_sections[0].read_by",
+         _a_body_section_of(read_by=None)),
+        ("a body section whose reader is written blank", "body_sections[0].read_by",
+         _a_body_section_of(read_by="  ")),
+        ("a body section stating no answer for a change needing nothing",
+         "body_sections[0].nothing_needed", _a_body_section_of(nothing_needed=None)),
+        ("a nothing answer written blank, which no body can state",
+         "body_sections[0].nothing_needed", _a_body_section_of(nothing_needed="  ")),
+        ("two body-section entries under one heading", "body_sections[1].heading",
+         _two_entries_under_one_heading),
         ("a local check list that is not a list", "checks_local",
          at("checks_local", "a-local-command")),
         ("a local check entry that is not a block", "checks_local[0]",
@@ -3825,6 +4059,35 @@ def _planted_violations():
          at("spend_guard.resume_bar_usd", "expensive")),
         ("a resume bar below nothing", "spend_guard.resume_bar_usd",
          at("spend_guard.resume_bar_usd", -1)),
+        # § 21's entries, and every one of these refusals is permissive too: each
+        # leaves a reader reporting the guard as configured while the entry holds
+        # no call, or leaves the names it would clear with nowhere to live.
+        ("a session-tool list that is not a list", "live_guard.session_tools",
+         at("live_guard.session_tools", "a-command-that-opens-a-session")),
+        ("a session-tool entry that is not a block", "live_guard.session_tools[0]",
+         at("live_guard.session_tools", ["a-command-that-opens-a-session"])),
+        ("a session-tool entry naming no command",
+         "live_guard.session_tools[0].command", _a_session_tool_of(command=None)),
+        ("a session-tool entry whose command is blank",
+         "live_guard.session_tools[0].command", _a_session_tool_of(command="   ")),
+        ("several commands in one session-tool entry rather than several entries",
+         "live_guard.session_tools[0].command",
+         _a_session_tool_of(command=["a-command-that-opens-a-session"])),
+        ("a flag list that is not a list",
+         "live_guard.session_tools[0].valued_flags",
+         _a_session_tool_of(valued_flags="-a-flag")),
+        ("a valued flag written without its dash, which matches no word of a call",
+         "live_guard.session_tools[0].valued_flags[0]",
+         _a_session_tool_of(valued_flags=["a-flag"])),
+        ("a valued flag written as two words",
+         "live_guard.session_tools[0].valued_flags[0]",
+         _a_session_tool_of(valued_flags=["-a-flag a-value"])),
+        ("a session command stated with no file for the names that clear it",
+         "live_guard.allowlist", _a_session_tool_with_no_allowlist),
+        ("a list of names that is not a list", "live_guard.local_names",
+         at("live_guard.local_names", "a-local-name")),
+        ("a local name written blank, which matches nothing",
+         "live_guard.local_names", at("live_guard.local_names", ["   "])),
     ]
 
 
@@ -3988,6 +4251,44 @@ def _collides_with_a_jobs_command(data: dict) -> dict:
     return _a_local_check_of(command="the-third-command")(data)
 
 
+def _a_body_section_of(**overrides):
+    """§ 20's facet carried as one entry, with the stated keys replaced.
+
+    Written out rather than borrowed from whichever example states the facet,
+    for the reason `_a_local_check_of` below is. ⚠️ The base states all three
+    keys, every one of them being required on every entry, so each plant here
+    is about one key being absent, blank or of another shape.
+    """
+
+    def mutate(data: dict) -> dict:
+        entry = {
+            "heading": "A section this project requires",
+            "read_by": "whatever collects it out of the change",
+            "nothing_needed": "Nothing.",
+        }
+        entry.update(overrides)
+        data["body_sections"] = [entry]
+        return data
+
+    return mutate
+
+
+def _two_entries_under_one_heading(data: dict) -> dict:
+    """§ 20's collision: one heading, two statements of what the section is for.
+
+    ⛔ The two entries differ in `read_by`, so the refusal is about the heading
+    rather than about a duplicated entry — a reader deduplicating whole entries
+    would let this through, and the gate reading either one would be right.
+    """
+    data["body_sections"] = [
+        {"heading": "A section this project requires",
+         "read_by": "one reader", "nothing_needed": "Nothing."},
+        {"heading": "a SECTION this project REQUIRES",
+         "read_by": "another reader", "nothing_needed": "None."},
+    ]
+    return data
+
+
 def _a_local_check_of(**overrides):
     """§ 17's facet carried as one entry, with the stated keys replaced.
 
@@ -4038,6 +4339,44 @@ def _a_denial_of(**overrides):
         return data
 
     return mutate
+
+
+def _a_session_tool_of(**overrides):
+    """§ 21's facet carried as one entry, with the stated keys replaced.
+
+    Written out rather than borrowed from whichever example names a session
+    command, for the reason `_a_denial_of` above is: an example states a
+    project's own commands, and a plant that broke one key of a borrowed entry
+    would redden on whichever other entry that project also wrote.
+
+    ⚠️ The `allowlist` beside it is written on every plant, because § 21 requires
+    it wherever an entry exists: without it each of these would redden on the
+    missing sibling instead of on the key it was written for -- the hazard the
+    end-to-end fixture one facet over records.
+    """
+
+    def mutate(data: dict) -> dict:
+        entry = {"command": "a-command-that-opens-a-session"}
+        entry.update(overrides)
+        node = data.setdefault("live_guard", {})
+        node["session_tools"] = [entry]
+        node.setdefault("allowlist", "/a-place-outside-every-tree/a-list-of-names")
+        return data
+
+    return mutate
+
+
+def _a_session_tool_with_no_allowlist(data: dict) -> dict:
+    """§ 21's facet carrying an entry and no file for the names that clear it.
+
+    ⛔ The one plant of this facet the helper above cannot write, since that one
+    supplies the sibling deliberately: what this breaks is the requirement
+    itself, which has no key line of its own to mutate.
+    """
+    node = data.setdefault("live_guard", {})
+    node["session_tools"] = [{"command": "a-command-that-opens-a-session"}]
+    node.pop("allowlist", None)
+    return data
 
 
 def _a_resource_of(**overrides):

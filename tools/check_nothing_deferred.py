@@ -29,10 +29,14 @@ shipped -- the deferral was visible and nothing refused it.
 
 What it hardcodes is grammar, in the same sense its siblings do: the heading a
 body states its open items under, the form of a `none` answer, the marker
-words, and the shape of an unticked list item. Making the first two
-configuration -- a body-section gate an adopting project installs, with the
-headings read from its own configuration and its own language -- is #51's, and
-this script is the one implementation that item would call.
+words, and the shape of an unticked list item. ⛔ **The first two stay here,
+and that is a ruling rather than an omission.** The configured body-section
+facet beside this one is a list a project may stop stating, and this section
+is one no project may stop carrying -- so carrying its heading there would make
+the rule configurable, which the rule's own precedence refuses. ⚠️ **What is
+shared is the grammar and not the heading**: how a section is found in a body
+is the toolkit's one implementation, imported below, and both gates read a
+section the same way.
 
 Usage:
     check_nothing_deferred.py              hold this change to the rule
@@ -50,6 +54,20 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
+
+# The toolkit's own body-section grammar, imported rather than re-implemented.
+# ⚠️ The path is derived from this file's own location, so a run from a
+# worktree reads that tree's module rather than the primary checkout's -- the
+# failure that otherwise prints a convincing verdict about a file nobody is
+# editing.
+_PLUGIN_SCRIPTS = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "plugins", "mjolnir", "scripts",
+)
+if _PLUGIN_SCRIPTS not in sys.path:
+    sys.path.insert(0, _PLUGIN_SCRIPTS)
+
+import check_body_sections as body_sections  # noqa: E402
 
 # --- the grammar -----------------------------------------------------------
 #
@@ -174,44 +192,18 @@ class Change:
     def sections(self, name: str) -> list[list[str]]:
         """Every section under the heading named, in document order.
 
-        ⚠️ Fenced blocks are skipped by a line toggle rather than matched by a
-        paired regex, which is the correction both sibling scripts already
-        carry: one trailing space after a fence's language tag makes a paired
-        regex pair one block's closer with the next block's opener. Here that
-        would let a body quoting the required shape in an example hijack the
-        real section -- and this document tells authors what that shape is, so
-        a body showing it is the likely case rather than the exotic one.
-
-        Every match is returned, never the first, because a second section is
-        not a repeat of the first: a body stating `None.` and then listing
-        items further down reads as answered under any rule that takes one.
+        ⛔ **The grammar is the toolkit's and not a second copy of it.** What a
+        body section is -- an ATX heading at any level, matched on its text
+        alone, with fenced blocks skipped and every match returned rather than
+        the first -- is one implementation, in the module this delegates to,
+        and the reasons each of those rules exists are stated there. Two
+        parsers for one grammar is the defect this repository deletes
+        everywhere else, and the heading this gate reads is the heading that
+        module's own gate reads.
         """
         if self.body is None:
             return []
-        found: list[list[str]] = []
-        current: list[str] | None = None
-        fenced = False
-        for line in self.body.splitlines():
-            if line.lstrip().startswith("```"):
-                fenced = not fenced
-                if current is not None:
-                    current.append(line)
-                continue
-            if not fenced:
-                match = HEADING.match(line)
-                if match:
-                    title = match.group(2).strip().strip("*_`:").strip().lower()
-                    if current is not None:
-                        found.append(current)
-                        current = None
-                    if title == name:
-                        current = []
-                    continue
-            if current is not None:
-                current.append(line)
-        if current is not None:
-            found.append(current)
-        return found
+        return body_sections.sections(self.body, name)
 
 
 # --- reading the change off the host ---------------------------------------

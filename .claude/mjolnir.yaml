@@ -58,6 +58,9 @@ host:
     - workflow: "Adapter suites"
       mirrors: "python3 plugins/mjolnir/scripts/adapter_suites.py"
       triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Body sections"
+      mirrors: "python3 plugins/mjolnir/scripts/check_body_sections.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Boundary"
       mirrors: "python3 plugins/mjolnir/scripts/boundary.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -109,6 +112,19 @@ host:
     # comment goes stale the day an artifact is registered.
     - workflow: "Installer"
       mirrors: "python3 plugins/mjolnir/scripts/install.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The destructive carrier, and the reason its entry is worth a sentence: every other run in
+    # this list fails by reporting something wrong, while this one can fail by deleting a working
+    # tree. What the suite behind it holds is therefore both directions per arm — a must-keep and a
+    # must-remove — since a sweep that removes nothing passes a red-side-only check.
+    - workflow: "Landed trees"
+      mirrors: "python3 plugins/mjolnir/scripts/prune.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The same reading as the two entries above, on the guard that holds a session: no command
+    # in this repository opens one on another machine, so `live_guard` below is `[]` and this run
+    # holds the carrier's own suite rather than a verdict about this tree.
+    - workflow: "Live guard"
+      mirrors: "python3 plugins/mjolnir/scripts/live.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
@@ -292,6 +308,13 @@ commit:
   # would hand back whatever history happened to carry.
   trailer: none
 
+# § 20. Nothing here is deployed and no role collects a section out of a change, so there is no
+# section to require beyond what § 6 already rules and no gate to install. ⛔ The open-items
+# section is not an entry here and must not become one: it is procedure's, required of every
+# body with no key that turns it off, and an entry of this facet is one a project may stop
+# stating.
+body_sections: []
+
 carriers:
   day_log: skill
   file: skill
@@ -350,6 +373,14 @@ branch_model:
   # copy, no port, no container, and nothing to tear down. The cheapest proof that a project
   # whose trees are free to create still has to state the model.
   mechanics: null
+  # The two ignored paths a tree here acquires by being worked in, both written again by the next
+  # run that needs them: the interpreter's byte-code cache, and the file the desktop drops into
+  # any directory somebody opens. ⚠️ `.claude/worktrees/` is deliberately absent even though
+  # `.gitignore` names it: a tree a harness cut for a helper is not written back by anything, so a
+  # tree still holding one is kept and the path reported rather than removed with it inside.
+  regenerable:
+    - "__pycache__"
+    - ".DS_Store"
   # Nothing contends. The only check this project runs is a python script with no daemon, no
   # service and no machine-wide lock, so no lease is taken and none is synthesised.
   exclusive_resources: []
@@ -447,3 +478,19 @@ spend_guard:
   # No `resume_bar_usd`: a resume here pays to rewrite a prompt cache like any other, and there is
   # no spend beside it for the figure to be worth interrupting a person about. The key is
   # legitimately unset, and the arm that would read it says nothing.
+
+live_guard:
+  # ⛔ No command this repository runs opens a session anywhere else. Every check here is a suite
+  # over the tree it runs in, the code host is reached by its own client and the tracker through
+  # that client too — so there is no machine to be live, and the list is empty. `[]` rather than
+  # an unset key, by § 21: a project that looked at its commands and found none that leave this
+  # machine and a project that never looked read alike otherwise.
+  #
+  # ⚠️ The empty list is also what makes this repository the green side of its own check: the
+  # carrier's suite plants the session commands it has to hold, and the tree it actually runs in
+  # is the project that must get no verdict at all.
+  session_tools: []
+  # No `allowlist` and no `local_names`: both are read only once an entry above matches, and with
+  # no entry there is nothing for either to decide. ⛔ A path stated here would name a file on
+  # whatever machine this is checked out on, which is the one thing § 21 keeps outside every
+  # working tree.

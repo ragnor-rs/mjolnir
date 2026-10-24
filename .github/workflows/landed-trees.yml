@@ -1,0 +1,42 @@
+name: Landed trees
+
+# The sweep that removes a working tree whose branch has landed, held to the subsection of
+# plugins/mjolnir/config/schema.md that states it. No copy of that section is carried here, and no
+# second reading of *has this landed* either — the module imports the claim's own and its suite
+# asserts the surface still states the rule it performs.
+#
+# A workflow of its own rather than a job of a sibling, per § 2: where a project controls its own
+# workflows, each mirrored command takes a workflow of its own, the cost being a checkout per
+# command and what it buys being `checks` remaining the single statement of what the host runs.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The suite builds bare repositories on disk and clones of them, and
+# every arm that would reach a host or the machine's open-file table is injected — so a step that
+# started reaching one would fail here rather than succeed quietly.
+permissions: {}
+
+jobs:
+  landed-trees:
+    name: Landed trees
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Pinned rather than relying on whatever the runner image ships, for the reason the sibling
+      # workflows pin it: the arms about the event that opens a session run on the shared reader,
+      # which needs the parser, and a check that silently stops running is the failure every
+      # suite here exists to catch.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` states this run mirrors. ⛔ The
+      # destructive side is what the suite is written against: each keep arm has a must-remove
+      # plant beside it, because a sweep that removes nothing passes every red-side check there is.
+      - name: Assert each rule can fail, then hold the sweep to it
+        run: python3 plugins/mjolnir/scripts/prune.py --self-test

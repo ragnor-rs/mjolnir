@@ -113,6 +113,11 @@ commit:
   staging: explicit
   trailer: read_from_history
 
+# § 20's stated absence. This project deploys from a branch and nothing collects a section out of
+# a change, so there is no section to require and no gate to install. `[]` rather than an unset
+# key, for the reason `checks_local` above is written that way.
+body_sections: []
+
 carriers:
   day_log: skill
   file: skill
@@ -164,6 +169,12 @@ branch_model:
   parallel_trees: true
   tree_dir: "../<project>-trees"
   mechanics: ".claude/worktrees.md"
+  # The stack writes its own volumes and logs into the tree, and bringing it up again writes them
+  # back. The material the pointer copies in is not here, for the reason the removal is destructive
+  # at all: nothing a rebuild runs would put it back.
+  regenerable:
+    - "<the stack's own volume directory>"
+    - "<the log directory>"
   exclusive_resources:
     # One stack for the whole project, and the ticket belongs to the tree: two sessions in one
     # tree share a place, two trees queue against each other.
@@ -238,3 +249,16 @@ spend_guard:
   # Left at the default, written out: the person who drives the tier by hand is the same person
   # this ask reaches, and they run it deliberately rather than rarely.
   approval: per_invocation
+
+live_guard:
+  # The simplest shape this facet has: one command that opens a session, named, with no flag list
+  # beside it because the form this project writes carries the machine as its first word.
+  session_tools:
+    - command: "<the command that opens a session on another machine>"
+  # ⛔ Outside every working tree, which is the whole point: this repository carries the mechanism
+  # and the machine carries the names. A path under the checkout would put somebody's
+  # infrastructure in the history of a repository anybody can clone.
+  allowlist: "<the absolute path of the file naming the machines that are not live>"
+  # The names that reach nothing: a loopback name is not another machine's identity, which is the
+  # test that decides which of these two lists a name belongs in.
+  local_names: ["<the loopback name this project's own services are reached by>"]

@@ -109,6 +109,15 @@ commit:
   staging: explicit
   trailer: read_from_history
 
+# § 20. One section, and it is here because another role reads it: the deploy collects it out of
+# every change in the batch and runs what it collected. ⛔ Not a convention — a heading nothing
+# collects belongs in a contributing guide rather than behind a gate.
+body_sections:
+  - heading: "Before this can be deployed"
+    read_by: "the role that deploys a batch"
+    # The green side, without which every change needing nothing would have to invent something.
+    nothing_needed: "Nothing."
+
 carriers:
   day_log: skill
   file: skill
@@ -149,6 +158,10 @@ branch_model:
   # A sibling of the shared checkout. The leaf is `<number>-<slug>` and is derived, not stated.
   tree_dir: "../<project>-trees"
   mechanics: null
+  # Nothing is installed into a tree here, so nothing in one is written again by a rebuild: every
+  # ignored file a tree holds is a file a removal would be the only copy of. The stated-empty form,
+  # which keeps a tree rather than losing one.
+  regenerable: []
   exclusive_resources: []
 
 context:
@@ -206,3 +219,10 @@ spend_guard:
   # suite and never comes back to the key — an empty list is a decision somebody can see has gone
   # stale, while a missing one is a key nobody knew to look for.
   deny: []
+
+live_guard:
+  # The first day again, on the other guard: nothing here runs anywhere but this machine, so there
+  # is no session command to name. ⚠️ Stated empty for the same reason as the list above — the day
+  # this project acquires a machine it deploys to, an empty list is a decision somebody can see has
+  # gone stale.
+  session_tools: []

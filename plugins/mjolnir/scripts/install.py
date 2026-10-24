@@ -81,6 +81,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from typing import NamedTuple
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -101,6 +102,12 @@ import check_host_checks  # noqa: E402
 # reader of it. A pattern composed here would be free to refuse what the
 # finishing role writes, which is the drift that facet exists to close.
 import title_form  # noqa: E402
+
+# ⛔ Imported for its rendering and not for its rule. The body gate's two
+# artifacts are registered at the foot of this file, and what the vendored
+# checker says is that module's -- this one holds the four properties above and
+# reads `body_sections` through the reader like any other configured fact.
+import check_body_sections  # noqa: E402
 
 try:
     import yaml
@@ -171,7 +178,16 @@ def rendered(artifact: "Artifact", body: str) -> str:
 
 # --- what an artifact is ---------------------------------------------------
 
-WORKFLOW, HOOK = "workflow", "hook"
+WORKFLOW, HOOK, SCRIPT = "workflow", "hook", "script"
+
+# Where a generated script goes in an adopting repository, stated here once and
+# nowhere else. ⛔ Unlike a workflow's directory this is **not** a host fact: no
+# host and no git reads it, so there is nothing to hold it to and nothing to
+# read it from. What makes it safe to state here is the pair of properties
+# above it -- every file under it carries the marker, and the removal takes
+# them back out, so the directory is the toolkit's for as long as a project
+# asks for one artifact and gone from the tree when it stops.
+TOOLKIT_DIRECTORY = ".mjolnir"
 
 # The mode each kind's file has to carry. ⛔ A hook is **executable or git does
 # not call it at all** -- newer git says so in as many words and treats the file
@@ -179,8 +195,11 @@ WORKFLOW, HOOK = "workflow", "hook"
 # step reports it written. ⚠️ Measured on this module's own hook fixture: 0644,
 # `os.access(..., X_OK)` false, answer `written`. A workflow file is data the
 # host reads and carries no mode of its own, which is `None` here rather than a
-# number nobody needs.
-MODES = {HOOK: 0o755, WORKFLOW: None}
+# number nobody needs. ⚠️ **And so is a generated script**, which is run as an
+# argument to an interpreter by the workflow that calls it and by the command
+# `host.checks` names: nothing execs it, so a bit it does not need would be a
+# mode this step then has to keep.
+MODES = {HOOK: 0o755, WORKFLOW: None, SCRIPT: None}
 
 # The answers this step gives per artifact. ⛔ Every one of them is an answer:
 # none of them is a skip, and `waiting` in particular is not a pass -- an
@@ -329,13 +348,32 @@ class Artifact:
 # beside a statement that disagrees with it is the drift the facet exists
 # against.
 
-# What each host kind's own default runner is. ⛔ Not on the surface, and
-# deliberately: § 2 keeps the per-kind default off it, a table of labels there
-# being a second statement of the host's own naming -- wrong the next time the
-# host changes one, and wrong silently. ⚠️ **This is the "own template" § 2
-# names** as where the fact does live, and it is read only for a project that
-# states no `host.runner` at all.
-A_KINDS_OWN_RUNNER = {"github": "ubuntu-latest"}
+class Template(NamedTuple):
+    """What a host kind's own workflow files look like, for every generator here.
+
+    ⛔ **Not on the surface, and deliberately.** § 2 keeps the per-kind default
+    off it, a table of labels there being a second statement of the host's own
+    naming -- wrong the next time the host renames one, and wrong silently.
+    ⚠️ **This is the "own template" § 2 names** as where the fact does live, and
+    the label is read only for a project that states no `host.runner` at all.
+
+    ⛔ **And it is here rather than in `check_host_checks`.** That module's host
+    facts are what a *reader* needs to open a definition, and § 2 states in as
+    many words that a kind is added there by adding a reader and never a
+    default. A label is the opposite fact: it is what a generator writes for a
+    project that stated none, so it lives with the template it is written into.
+
+    ⚠️ **One table, read by every gate this module writes.** Two of them want
+    the label, so a second map of it beside this one would be the restated fact
+    § 2's own drift argument is about -- stated twice here rather than once here
+    and once on the surface, which is the same defect one level down.
+    """
+
+    default_label: str
+    checkout: str
+
+
+TEMPLATES = {"github": Template("ubuntu-latest", "actions/checkout@v4")}
 
 
 def runner_of(configuration: config.Config) -> dict:
@@ -356,13 +394,13 @@ def runner_of(configuration: config.Config) -> dict:
         return {"label": stated["label"], "budget": stated["budget_minutes"],
                 "group": stated["supersedes"]}
     kind = configuration.get("host.kind")
-    if kind not in A_KINDS_OWN_RUNNER:
+    if kind not in TEMPLATES:
         raise ValueError(
             f"no default runner label is known for the `{kind}` host kind, and § 2 "
             "keeps that default off the configuration surface -- so there is "
             "nothing to write a generated job's `runs-on` from."
         )
-    return {"label": A_KINDS_OWN_RUNNER[kind], "budget": None, "group": None}
+    return {"label": TEMPLATES[kind].default_label, "budget": None, "group": None}
 
 
 def _scalar(value) -> str:
@@ -480,6 +518,119 @@ def _title_gate(configuration: config.Config) -> str:
     return "\n".join(lines) + "\n"
 
 
+# --- the body gate's two artifacts -----------------------------------------
+#
+# ⛔ Everything in this block is § 20's and not this module's. What a required
+# section is, which keys an entry states and what a body has to do to answer
+# one are the surface's; what the vendored checker says about a body is
+# `check_body_sections`'s. What is here is the pair of files that gate needs in
+# a repository -- because the host runs files and nothing else -- and the
+# `host.checks` entry that registers the run.
+
+BODY_GATE_SCRIPT_LEAF = "check_body_sections.py"
+
+# ⛔ Written with a forward slash and never joined by the platform's separator.
+# It is a path **the host reads**, in a workflow file and in a `host.checks`
+# entry, so a backslash from a run on the other platform would be a command no
+# runner can execute and an entry naming a file nothing can find.
+BODY_GATE_COMMAND = f"python3 {TOOLKIT_DIRECTORY}/{BODY_GATE_SCRIPT_LEAF}"
+
+BODY_GATE_WORKFLOW = "Pull request body sections"
+BODY_GATE_LEAF = "mjolnir-body-sections.yml"
+BODY_GATE_JOB = "pull-request-body-sections"
+
+# ⛔ The edit event is in here rather than left to the kind's defaults, and it
+# is the reason this gate is a run of its own. § 20 states why: a body
+# corrected in place produces no push, so without it a refusal stands on a body
+# that no longer exists until something unrelated is committed.
+BODY_GATE_TYPES = ("opened", "edited", "synchronize", "reopened", "ready_for_review")
+BODY_GATE_TRIGGER = f"pull_request({', '.join(BODY_GATE_TYPES)}) -> *"
+
+# The two artifacts this gate installs, named once. ⛔ Named rather than reached
+# by position in the registry: every arm below asks about this pair and not about
+# whatever else a later item registers beside it, and an arm indexing into the
+# registry reads the wrong artifact silently the first time one is appended.
+BODY_GATE_ARTIFACTS = ("body-sections-checker", "body-sections-gate")
+
+
+def body_gate_wanted(configuration: config.Config) -> bool:
+    """Whether this project asks for the body gate at all.
+
+    ⛔ Read off `body_sections` and nothing else. § 20 makes `[]` a stated
+    absence, so a project requiring no section is not waiting on a value -- it
+    gets no gate, and that is a configuration rather than an install left half
+    done.
+    """
+    return bool(configuration.get("body_sections"))
+
+
+def body_gate_script(configuration: config.Config) -> str:
+    """The vendored checker, with this project's own sections rendered in."""
+    return check_body_sections.render(check_body_sections.from_config(configuration))
+
+
+def body_gate_workflow(configuration: config.Config) -> str:
+    """The workflow that runs the vendored checker on this host kind.
+
+    ⛔ **No literal of this module's where the configuration states one.** The
+    runner label, the budget and the supersession group come from § 2's
+    `host.runner` through the reader's own accessor; a project stating no block
+    gets the kind's template label and this step waits for nothing, which is §
+    2's ordinary case rather than an absent value.
+
+    ⚠️ **The body comes off the event and never out of the checkout.** A body
+    edited in place fires the event again with the new text, while the checkout
+    is the same commit it always was -- so reading the body from the event is
+    what makes `edited` worth triggering on at all.
+    """
+    template = TEMPLATES[configuration.get("host.kind")]
+    runner = configuration.runner()
+    label = template.default_label if runner is None else runner["label"]
+    lines = [
+        f"name: {BODY_GATE_WORKFLOW}",
+        "",
+        "# This gate refuses a pull request whose body omits a section this project's",
+        "# configuration requires. The sections are in the checker this runs, rendered",
+        "# there from `body_sections`; nothing about them is written in this file.",
+        "",
+        "on:",
+        "  pull_request:",
+        f"    types: [{', '.join(BODY_GATE_TYPES)}]",
+        "",
+        "# No credential: the body arrives on the event and the checker asks the host",
+        "# for nothing.",
+        "permissions: {}",
+        "",
+    ]
+    if runner is not None and runner.get("supersedes"):
+        lines += [
+            "concurrency:",
+            f"  group: {runner['supersedes']}-${{{{ github.ref }}}}",
+            "  cancel-in-progress: true",
+            "",
+        ]
+    lines += [
+        "jobs:",
+        f"  {BODY_GATE_JOB}:",
+        f"    name: {BODY_GATE_WORKFLOW}",
+        f"    runs-on: {label}",
+    ]
+    if runner is not None:
+        lines.append(f"    timeout-minutes: {runner['budget_minutes']}")
+    lines += [
+        "    steps:",
+        f"      - uses: {template.checkout}",
+        "        with:",
+        "          persist-credentials: false",
+        "",
+        "      - name: Hold the body to the sections this project requires",
+        "        env:",
+        "          PR_BODY: ${{ github.event.pull_request.body }}",
+        f"        run: {BODY_GATE_COMMAND}",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def _title_gate_entry(configuration: config.Config) -> dict | None:
     """The `host.checks` entry the title gate registers, or None where there is none.
 
@@ -503,16 +654,49 @@ def _title_gate_entry(configuration: config.Config) -> dict | None:
     }
 
 
+def body_gate_entry(configuration: config.Config) -> dict:
+    """§ 2's entry for the run this gate makes.
+
+    ⛔ It states a `mirrors`, and that is § 20's own distinction from a gate
+    whose rule is a pattern over the event payload: the command named here is
+    the same file the workflow runs, so a local run of it duplicates the
+    host's verdict and the guard on a duplicated verdict is right to say so.
+    """
+    return {
+        "workflow": BODY_GATE_WORKFLOW,
+        "mirrors": BODY_GATE_COMMAND,
+        "triggers": BODY_GATE_TRIGGER,
+    }
+
+
 # ⛔ The live registry. Each member is a rule somebody else's work item states,
 # handed over as data: what the file says, which configured value decides whether
-# it is wanted, and which `host.checks` entry registers it.
+# it is wanted, and which `host.checks` entry registers it. This module holds the
+# four properties above and reads none of them.
 #
-# ⚠️ **No `needs`, and that is #68's ruling rather than an omission.** The two
-# absences are told apart there: a project stating no `host.pull_request_title`
-# does not want this artifact at all, and a project stating the block
-# incompletely is refused by the shared reader before this step is reached. So
-# there is no value this artifact could be *waiting* on.
+# ⚠️ **The order is load-bearing inside the body pair.** The checker is written
+# before the workflow that runs it, so a run interrupted between the two leaves a
+# file nothing calls rather than a workflow calling a file that is not there --
+# the first is inert and the second is a red check on every change.
+#
+# ⚠️ **The title gate states no `needs`, and that is #68's ruling rather than an
+# omission.** The two absences are told apart there: a project stating no
+# `host.pull_request_title` does not want this artifact at all, and a project
+# stating the block incompletely is refused by the shared reader before this step
+# is reached. So there is no value that artifact could be *waiting* on -- which
+# is what separates it from the body pair, whose `needs` names the one key a
+# project may legitimately not have written yet.
 ARTIFACTS: tuple[Artifact, ...] = (
+    Artifact(
+        "body-sections-checker", SCRIPT, BODY_GATE_SCRIPT_LEAF,
+        needs=("body_sections",), wanted=body_gate_wanted, body=body_gate_script,
+    ),
+    Artifact(
+        "body-sections-gate", WORKFLOW, BODY_GATE_LEAF,
+        needs=("body_sections",), wanted=body_gate_wanted,
+        body=body_gate_workflow, entry=body_gate_entry,
+        registers_as=BODY_GATE_WORKFLOW,
+    ),
     Artifact(
         name="pull-request-title",
         kind=WORKFLOW,
@@ -612,6 +796,13 @@ def place(configuration: config.Config, artifact: Artifact) -> str | None:
     if artifact.kind == HOOK:
         directory = hook_directory(root)
         return None if directory is None else os.path.join(directory, artifact.leaf)
+    if artifact.kind == SCRIPT:
+        # ⛔ Always resolvable, which is the one way this kind differs from the
+        # two above: nothing outside the repository decides where it goes, so
+        # there is no answer here that is *nowhere*. The refusals it can still
+        # meet are the shared ones -- a file there carrying no marker, a value
+        # the configuration does not state.
+        return os.path.join(root, TOOLKIT_DIRECTORY, artifact.leaf)
     return None
 
 
@@ -1016,6 +1207,12 @@ def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dic
                                   "project's own and is neither removed nor written over")
         if write:
             os.remove(path)
+            _swept(path, artifact)
+            # ⛔ The entry is found the way `standing_entry` finds one and never
+            # by composing it and testing equality: that test is still in there
+            # for an artifact declaring no `registers_as`, so this site loses
+            # none of it while gaining the by-name lookup a withdrawn facet
+            # needs.
             standing = artifact.standing_entry(configuration)
             if standing is not None:
                 refusal = unregister(configuration, standing)
@@ -1130,6 +1327,32 @@ def _place_it(path: str, text: str, artifact: Artifact) -> str | None:
     return made
 
 
+def _swept(path: str, artifact: Artifact) -> None:
+    """Take the toolkit's own directory out once its last artifact has gone.
+
+    ⛔ **Only the toolkit's own, and only when it is empty.** A workflow
+    directory and a hooks directory are the *project's* -- the toolkit writes
+    into them and does not own them -- so an empty one there is the project's
+    to keep. The directory this kind writes into exists because the toolkit
+    asked for it, and a project that stops asking for every artifact in it is
+    owed the directory back: an empty directory left standing is the orphan the
+    removable property is about, one level up from the file.
+    """
+    if artifact.kind != SCRIPT:
+        return
+    directory = os.path.dirname(path)
+    if os.path.basename(directory) != TOOLKIT_DIRECTORY:
+        return
+    try:
+        if not os.listdir(directory):
+            os.rmdir(directory)
+    except OSError:
+        # Something else is in it, or it is gone already. Neither is this
+        # step's to report: what it promised was the file, and the directory
+        # is a courtesy it takes only where it is unambiguous.
+        pass
+
+
 def _put_back(path: str, here: str | None, made: str | None) -> None:
     """Undo `_place_it`, including the directory it created where it created one.
 
@@ -1159,12 +1382,29 @@ def run(
     run validates against a configuration missing the first's entry, so two
     artifacts registering one workflow name were both written and the file then
     carried the collision § 2 keys the facet to prevent.
+
+    ⛔ **What the registry's order means is *install* order, so the artifacts a
+    configuration no longer asks for come out in the reverse of it and before
+    anything is written.** ⚠️ A registry may hold an artifact that only works
+    while a sibling is there -- a workflow calling a checker is the shipped
+    case -- and walking one order for both directions produces exactly the
+    intermediate state the order exists to avoid: the called file gone and the
+    caller still installed, which is a red check on every change rather than
+    something inert. ⚠️ **The report stays in registry order** whichever order
+    the acts were taken in, a reader of it reading a registry rather than a
+    schedule.
     """
     members = ARTIFACTS if artifacts is None else artifacts
-    states = []
-    for artifact in members:
+    wanted, unwanted = [], []
+    for index, artifact in enumerate(members):
+        (wanted if artifact.wanted(configuration) else unwanted).append((index, artifact))
+    # ⛔ Keyed by position and never by name: two members may legitimately carry
+    # one name -- a fixture list does -- and a name-keyed answer would report
+    # one artifact's state twice while losing the other's.
+    by_position = {}
+    for index, artifact in list(reversed(unwanted)) + wanted:
         state = one(configuration, artifact, write=write)
-        states.append(state)
+        by_position[index] = state
         if write and state.get("registered") is not None:
             try:
                 configuration = config.load(configuration.skills_root)
@@ -1173,6 +1413,7 @@ def run(
                 # a failure here is the file having moved under the run. Leave
                 # the configuration as it stands rather than guessing.
                 pass
+    states = [by_position[index] for index in range(len(members))]
     report = []
     if not members:
         report.append(
@@ -1204,13 +1445,22 @@ def removal(
     ⛔ **And a place that cannot be resolved is not *nothing is there*.** ⚠️
     Measured as `not wanted`, which is no incompleteness, so this step exited
     green with a marked artifact still installed in a tree it could not look at.
+
+    ⛔ **The registry is walked in the reverse of its install order**, for the
+    reason `run` above states: an artifact that only works while a sibling is
+    there comes out before that sibling, never after it. ⚠️ The report is still
+    in registry order, as it is there.
     """
     members = ARTIFACTS if artifacts is None else artifacts
-    states = []
-    for artifact in members:
+    by_position: dict[int, dict] = {}
+
+    def answered(index: int, state: dict) -> None:
+        by_position[index] = state
+
+    for index, artifact in reversed(list(enumerate(members))):
         path = place(configuration, artifact)
         if path is None:
-            states.append(_state(
+            answered(index, _state(
                 artifact, UNDETERMINED, None,
                 because="this step cannot resolve where this artifact would be, so it "
                         "can say neither that none is installed nor that one was taken "
@@ -1218,12 +1468,12 @@ def removal(
             ))
             continue
         if not os.path.exists(path):
-            states.append(_state(artifact, NOT_WANTED, path))
+            answered(index, _state(artifact, NOT_WANTED, path))
             continue
         with open(path, encoding="utf-8") as handle:
             here = handle.read()
         if not _marked(here):
-            states.append(_state(
+            answered(index, _state(
                 artifact, OCCUPIED, path,
                 because="a file is there carrying no marker, so it is the project's own "
                         "and this step does not remove it",
@@ -1231,22 +1481,24 @@ def removal(
             continue
         standing = artifact.standing_entry(configuration)
         if not write:
-            states.append(_state(artifact, REMOVED, path, dry_run=True,
-                                 unregisters=standing))
+            answered(index, _state(artifact, REMOVED, path, dry_run=True,
+                                   unregisters=standing))
             continue
         os.remove(path)
+        _swept(path, artifact)
         if standing is not None:
             refusal = unregister(configuration, standing)
             if refusal is not None:
-                states.append(_state(
+                answered(index, _state(
                     artifact, REMOVED, path, entry=standing,
                     because=f"the artifact was removed and its entry was not: {refusal}",
                 ))
                 continue
             configuration = config.load(configuration.skills_root)
-            states.append(_state(artifact, REMOVED, path, unregistered=standing))
+            answered(index, _state(artifact, REMOVED, path, unregistered=standing))
             continue
-        states.append(_state(artifact, REMOVED, path))
+        answered(index, _state(artifact, REMOVED, path))
+    states = [by_position[index] for index in range(len(members))]
     report = [
         f"{state['artifact']}: {state['answer']} — {state.get('because', '')}".strip()
         for state in states if state["answer"] in INCOMPLETE
@@ -1338,6 +1590,23 @@ def _a_rail(**rest) -> Artifact:
     )
     defaults.update(rest)
     return Artifact(**defaults)
+
+
+def _registered(name: str) -> Artifact:
+    """The live registry's member under this name.
+
+    ⛔ By name and never by position. The registry is the one place a new
+    artifact lands, so an arm indexing into it reads whichever artifact the
+    next item happens to append before it -- and the failure is silent, the
+    suite asserting a workflow's properties against a script.
+    """
+    for artifact in ARTIFACTS:
+        if artifact.name == name:
+            return artifact
+    raise AssertionError(
+        f"no artifact named {name!r} is registered; the registry states "
+        f"{[artifact.name for artifact in ARTIFACTS]}"
+    )
 
 
 def _a_repository(root: str) -> bool:
@@ -2401,13 +2670,10 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
 
     print()
     print("the title gate: written from the facet, and from no literal here")
-    check(
-        "every kind whose definitions this step can write has a runner template",
-        set(check_host_checks.DEFINITIONS) <= set(A_KINDS_OWN_RUNNER),
-        "a kind with somewhere to write and no default label would raise rather "
-        "than answer, since a generated job with no `runs-on` is a file the host "
-        "refuses to load",
-    )
+    # ⛔ That every writable kind has a template is asserted once, further down
+    # with the rest of the registry's own preconditions -- the claim this gate
+    # needs and the claim the body gate needs being the same claim, and a second
+    # copy of it here the restated fact the single-source check is about.
     check(
         "every registered artifact declares the name it registers under",
         all(
@@ -2419,7 +2685,7 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
     )
     with tempfile.TemporaryDirectory() as tmp:
         project = _a_project(tmp, title=A_TITLE_FORM)
-        gate = ARTIFACTS[0]
+        gate = _registered("pull-request-title")
         written = one(project, gate, write=True)
         check("a project stating a title form gets the gate",
               written["answer"] == WRITTEN, str(written))
@@ -2439,7 +2705,7 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
               repr(document.get("permissions")))
         job = document["jobs"][TITLE_GATE_JOB]
         check("and the job runs on this host kind's own default",
-              job["runs-on"] == A_KINDS_OWN_RUNNER["github"], repr(job))
+              job["runs-on"] == TEMPLATES["github"].default_label, repr(job))
         check("with no budget and no supersession group, the project stating none",
               "timeout-minutes" not in job and "concurrency" not in document,
               repr(document))
@@ -2551,7 +2817,7 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
     print("the gate's own facts come from the project, and are chosen nowhere here")
     with tempfile.TemporaryDirectory() as tmp:
         project = _a_project(tmp, title=EVERY_PULL_REQUEST, runner=A_RUNNER)
-        state = one(project, ARTIFACTS[0], write=True)
+        state = one(project, _registered("pull-request-title"), write=True)
         document = yaml.safe_load(_read(state["path"]))
         block = document.get(True, document.get("on"))
         check(
@@ -2581,13 +2847,13 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
     print("the facet edited, and the facet withdrawn")
     with tempfile.TemporaryDirectory() as tmp:
         project = _a_project(tmp, title=A_TITLE_FORM)
-        one(project, ARTIFACTS[0], write=True)
+        one(project, _registered("pull-request-title"), write=True)
         # ⛔ A project editing the half of the facet the entry carries gets the
         # entry replaced. ⚠️ Measured as a collision: the step's own output under
         # its own key read as a second entry, so the install refused for ever and
         # named a remedy — choose between the two — nobody could perform.
         edited = dict(A_TITLE_FORM, into=["release/*", "main"])
-        state = one(_restate(project, edited), ARTIFACTS[0], write=True)
+        state = one(_restate(project, edited), _registered("pull-request-title"), write=True)
         check("an edited facet is written rather than refused",
               state["answer"] == WRITTEN, str(state))
         entries = config.load(tmp).get("host.checks")
@@ -2601,7 +2867,7 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         # entry composed from the facet deciding wantedness cannot be
         # reconstructed once that facet is gone, so a reconstruction took out the
         # file and left the entry.
-        gone = one(_restate(project, None), ARTIFACTS[0], write=True)
+        gone = one(_restate(project, None), _registered("pull-request-title"), write=True)
         check("withdrawing the facet removes the gate", gone["answer"] == REMOVED, str(gone))
         check("and the file is gone", not os.path.exists(gone["path"]))
         left = config.load(tmp).get("host.checks")
@@ -2613,12 +2879,22 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         silent = _a_project(tmp, title=None)
         answered = run(silent, write=True)
         check("nothing is reported", answered["report"] == [], str(answered["report"]))
+        # ⛔ This gate's own answer, found by name. The fixture's example states
+        # sections as well as a title form, so the report carries the body pair
+        # beside this one -- and an arm reading the first member would be
+        # answering about whichever artifact the registry happens to list first.
+        silent_answers = {s["artifact"]: s for s in answered["artifacts"]}
         check("and the gate's answer is a stated absence",
-              answered["artifacts"][0]["answer"] == NOT_WANTED, str(answered))
+              silent_answers["pull-request-title"]["answer"] == NOT_WANTED,
+              str(answered))
         check("nothing was written where it would have gone",
-              not os.path.exists(place(silent, ARTIFACTS[0])))
+              not os.path.exists(place(silent, _registered("pull-request-title"))))
+        # ⛔ No entry **under this gate's name**, rather than an empty facet: the
+        # body pair legitimately registers one in the same fixture, and asserting
+        # the facet empty would make this arm red for somebody else's artifact.
         check("and the facet states no entry for it",
-              config.load(tmp).get("host.checks") == [])
+              registered_as(config.load(tmp), TITLE_GATE_WORKFLOW) is None,
+              str(config.load(tmp).get("host.checks")))
         # ⛔ The plant verified rather than asserted: the same fixture with the
         # facet stated has to answer the other way, or this green side is green
         # about a step that writes nothing for anybody.
@@ -2626,7 +2902,7 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             stated = _a_project(other, title=A_TITLE_FORM)
             check(
                 "while the same fixture stating one does get it, so the green side holds",
-                one(stated, ARTIFACTS[0], write=True)["answer"] == WRITTEN,
+                one(stated, _registered("pull-request-title"), write=True)["answer"] == WRITTEN,
             )
 
     print()
@@ -2637,6 +2913,192 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("nothing is reported", quiet["report"] == [], str(quiet["report"]))
         check("and the one answer is a stated absence",
               quiet["artifacts"][0]["answer"] == NOT_WANTED, str(quiet))
+
+    print()
+    print("the body gate: two artifacts, and neither written where none is wanted")
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⛔ The fixture states a section, which is what makes the arms below
+        # about a gate rather than about an absence. ⚠️ Asserted first: read
+        # from an example that stopped stating one, every arm here would pass
+        # on nothing being wanted.
+        asking = _a_project(tmp)
+        check("the fixture project states a section to require",
+              bool(asking.get("body_sections")),
+              "the example this fixture is built from states none, so the arms "
+              "below would hold nothing")
+        done = run(asking, write=True)
+        answers = {s["artifact"]: s for s in done["artifacts"]}
+        check("both artifacts are written",
+              all(answers[name]["answer"] == WRITTEN
+                  for name in BODY_GATE_ARTIFACTS),
+              str(done["artifacts"]))
+        check("and the install reports nothing incomplete", done["report"] == [],
+              str(done["report"]))
+        script = answers["body-sections-checker"]["path"]
+        flow = answers["body-sections-gate"]["path"]
+        check("the checker lands under the toolkit's own directory",
+              script == os.path.join(asking.code_root, TOOLKIT_DIRECTORY,
+                                     BODY_GATE_SCRIPT_LEAF), script)
+        check("the workflow lands where this host kind keeps its definitions",
+              flow == os.path.join(
+                  asking.code_root,
+                  check_host_checks.DEFINITIONS["github"].directory, BODY_GATE_LEAF),
+              flow)
+        stated = asking.get("body_sections")
+        check("the checker carries the headings this project stated",
+              all(entry["heading"] in _read(script) for entry in stated))
+        # ⛔ The acceptance bullet, held on the artifact rather than on the
+        # renderer: the workflow is the file a reader meets first, and a
+        # heading in it would be a project's vocabulary in a file this step
+        # regenerates from a different source.
+        check(
+            "and the workflow carries none of them",
+            not any(entry["heading"] in _read(flow) for entry in stated),
+            "a heading literal in the generated workflow is one the gate would "
+            "then enforce from two places",
+        )
+        check("the entry registered mirrors the command the workflow runs",
+              answers["body-sections-gate"].get("registered", {}).get("mirrors")
+              == BODY_GATE_COMMAND and BODY_GATE_COMMAND in _read(flow),
+              str(answers["body-sections-gate"].get("registered")))
+        again = {s["artifact"]: s
+                 for s in run(config.load(tmp), write=True)["artifacts"]}
+        check("a second run changes nothing",
+              all(again[name]["answer"] == UNCHANGED
+                  for name in BODY_GATE_ARTIFACTS),
+              str([again[name] for name in BODY_GATE_ARTIFACTS]))
+        # ⛔ The facet held to the file it describes, by the check that holds
+        # it everywhere else. ⚠️ This is the arm that would have caught a
+        # trigger written one way in the entry and another in the template --
+        # two statements of one fact, which is the drift that check exists for.
+        drift = check_host_checks.run(check_host_checks.read_subject(tmp))
+        check("the generated workflow and its entry do not drift",
+              not any(drift.values()),
+              str({k: v for k, v in drift.items() if v}))
+
+    print()
+    print("what a sibling depends on comes out first, and the directory with it")
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⛔ The order is read off the acts rather than off the report, which is
+        # in registry order by design. ⚠️ Measured with one order for both
+        # directions: the checker went first, so an interruption between the
+        # two left a workflow calling a file that was not there — a red check
+        # on every change, which is the state the install order exists to
+        # avoid and which walking it forwards reproduced exactly.
+        project = _a_project(tmp)
+        run(project, write=True)
+        taken: list[str] = []
+        real = os.remove
+
+        def watched(path, _real=real):
+            taken.append(os.path.basename(path))
+            _real(path)
+
+        os.remove = watched
+        try:
+            removal(config.load(tmp), write=True)
+        finally:
+            os.remove = real
+        check(
+            "the workflow is taken out before the checker it calls",
+            taken.index(BODY_GATE_LEAF) < taken.index(BODY_GATE_SCRIPT_LEAF),
+            str(taken),
+        )
+        check(
+            "and the toolkit's own directory does not outlive its last artifact",
+            not os.path.isdir(os.path.join(project.code_root, TOOLKIT_DIRECTORY)),
+            "an empty directory left standing is the orphan the removable "
+            "property is about, one level up from the file",
+        )
+        check(
+            "while the project's own workflow directory is left alone",
+            os.path.isdir(os.path.join(
+                project.code_root, check_host_checks.DEFINITIONS["github"].directory)),
+            "that directory is the project's, and an empty one there is theirs to keep",
+        )
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⛔ The same order on the other route: a configuration that stops
+        # asking removes through `run`, not through `removal`, and the two were
+        # measured walking opposite orders with only one of them corrected.
+        project = _a_project(tmp)
+        run(project, write=True)
+        turned_off = config.load(tmp)
+        turned_off.data["body_sections"] = []
+        order: list[str] = []
+        real = os.remove
+
+        def noted(path, _real=real):
+            order.append(os.path.basename(path))
+            _real(path)
+
+        os.remove = noted
+        try:
+            answered_off = run(turned_off, write=True)
+        finally:
+            os.remove = real
+        off = {s["artifact"]: s for s in answered_off["artifacts"]}
+        check("turning the gate off takes both artifacts out",
+              [off[name]["answer"] for name in BODY_GATE_ARTIFACTS]
+              == [REMOVED, REMOVED],
+              str([off[name] for name in BODY_GATE_ARTIFACTS]))
+        check("in the same reverse order",
+              order.index(BODY_GATE_LEAF) < order.index(BODY_GATE_SCRIPT_LEAF),
+              str(order))
+        check("and the report is still in registry order",
+              [s["artifact"] for s in answered_off["artifacts"]]
+              == [a.name for a in ARTIFACTS],
+              str([s["artifact"] for s in answered_off["artifacts"]]))
+        check("the entry the workflow registered is gone too",
+              not config.load(tmp).get("host.checks"),
+              str(config.load(tmp).get("host.checks")))
+
+    print()
+    print("a project requiring no section gets no gate, and that is not an absence")
+    with tempfile.TemporaryDirectory() as tmp:
+        quiet = _a_project(tmp)
+        quiet.data["body_sections"] = []
+        answered = run(quiet, write=True)
+        none_wanted = {s["artifact"]: s for s in answered["artifacts"]}
+        check("both artifacts are reported as not wanted",
+              [none_wanted[name]["answer"] for name in BODY_GATE_ARTIFACTS]
+              == [NOT_WANTED, NOT_WANTED],
+              str([none_wanted[name] for name in BODY_GATE_ARTIFACTS]))
+        check("nothing is reported incomplete", answered["report"] == [],
+              str(answered["report"]))
+        check("and no toolkit directory was created",
+              not os.path.isdir(os.path.join(quiet.code_root, TOOLKIT_DIRECTORY)))
+
+    print()
+    print("where the project states a runner, the generated file states that one")
+    with tempfile.TemporaryDirectory() as tmp:
+        stated = _a_project(tmp)
+        stated.data.setdefault("host", {})["runner"] = {
+            "label": "a-label-this-account-states",
+            "concurrent_jobs": 1,
+            "budget_minutes": 7,
+            "supersedes": "a-group-this-project-states",
+        }
+        text = body_gate_workflow(stated)
+        for label, wanted in (
+            ("the label", "runs-on: a-label-this-account-states"),
+            ("the budget", "timeout-minutes: 7"),
+            ("the supersession group", "group: a-group-this-project-states"),
+        ):
+            check(f"{label} comes from the configuration", wanted in text, text)
+        check(
+            "and the kind's own default is not in the file beside it",
+            TEMPLATES["github"].default_label not in text,
+            "a literal beside a statement that disagrees with it is the drift "
+            "the runner facet exists against",
+        )
+        without = _a_project(tmp)
+        plain = body_gate_workflow(without)
+        check("a project stating none gets the kind's template label",
+              f"runs-on: {TEMPLATES['github'].default_label}" in plain, plain)
+        check("and no budget it never stated",
+              "timeout-minutes" not in plain, plain)
+        check("and no supersession group either",
+              "concurrency" not in plain, plain)
 
     print()
     print("this project's own registry, read rather than assumed")
@@ -2666,6 +3128,19 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             "a statement in the report is not an incompleteness, and the status "
             "may not read one as the other",
         )
+    # ⛔ The two per-kind tables have to agree, and the direction that bites is
+    # this one: a kind whose definitions this toolkit can read resolves a place
+    # to write, so the generator is then reached and would fail on a template
+    # it does not hold. ⚠️ A `KeyError` there is the improvising failure wearing
+    # a stack trace — the step promises an answer with the thing named, and a
+    # crash is neither.
+    check(
+        "every host kind with readable definitions has a workflow template",
+        set(check_host_checks.DEFINITIONS) <= set(TEMPLATES),
+        f"{sorted(set(check_host_checks.DEFINITIONS) - set(TEMPLATES))} can be "
+        "written to and has no template, so a generated workflow for it raises "
+        "rather than refusing",
+    )
     check(
         "every registered artifact has somewhere to go in this repository",
         all(place(live, artifact) is not None for artifact in ARTIFACTS),
