@@ -2489,18 +2489,32 @@ literals, in whichever dialect; the identifier matched as a run of digits and ne
 repetition admitting two references where the project states it and refusing them where it does
 not; a reference that is the identifier alone deriving a form too; a rendered title accepted by the
 form it was rendered from; a render refused for no identifier, for a title that is references
-alone, for an identifier that is not digits, and for two identifiers on a form admitting one; and
+alone, for an identifier that is not digits, and for two identifiers on a form admitting one; a
+title no reference can match refused inside a deadline rather than hung over; and
 the four exit statuses the command line answers with. The kinds this document draws are
 **computed** throughout, with one **forbidding** arm — that the placeholder is read from the reader
 and spelled in no literal of the module's own, asserted on the parse tree with the documentation
 excluded, since an arm that writes down what it forbids finds its own prose.
 
-⚠️ **One arm compares two engines, and it is the reason the expression is composed in a named
-dialect rather than in "a regular expression".** The gate runs it through `grep -E` and a role
-reading a title back runs it through this language's own engine; a title the two read differently
-is a role reporting one thing and the gate another about one change. ⛔ **`grep` on `PATH` is this
-suite's one unchecked precondition**, so the arm asserts that `grep` *answered* before it compares
-anything — read as a skip, a missing `grep` turns the agreement green while holding nothing.
+⚠️ **The expression is composed in a named dialect rather than in "a regular expression", and the
+reason is that the two engines are not equally safe.** `grep -E` decides the language without
+backtracking. This language's own engine does not, and ⛔ **a reference ending in its own
+identifier makes the sequence ambiguous** — `<number>` alone is the shortest such form, and the
+suite states it as legitimate. **Measured**: 24 digits refused in 1.2 seconds, 28 in 19, and 40 in
+no time anybody waits, on the one call a role makes to read back a title it has just written. So
+the gate carries the expression and the role **walks** the sequence one reference at a time, which
+is linear.
+
+What holds the walk to the gate is then an arm comparing them, over every form including the
+ambiguous one, rather than the two being one call. ⚠️ **`grep` on `PATH` is this suite's one
+unchecked precondition**, so the arm asserts that `grep` *answered* before it compares anything;
+read as a skip, a missing `grep` turns the agreement green while holding nothing.
+
+⚠️ **The arm against that exponential is bounded by killing the call and not by timing it**, and
+that is a correction the arm was written twice for: the first form measured the elapsed time after
+the call, and the call it was written against never returns — so the plant produced a run the host
+kills hours later rather than a red. ⛔ **A hang is not a verdict**, which is why the pathological
+title goes through a subprocess with a deadline.
 
 **The green side is a project that states no form**, and it is the ordinary case rather than a
 carve-out: a title there opens with no reference, so there is no rule to fail. ⛔ **That answer is

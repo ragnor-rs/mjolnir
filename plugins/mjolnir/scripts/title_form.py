@@ -48,6 +48,13 @@ report was produced, 1 the title does not hold, 2 the configuration could not be
 read, 3 this project states no form at all. ⚠️ The last is § 11's rule at a
 command line -- *no answer* collapsed into 0 reads as a title that passed, and
 into 1 as a project whose titles are all wrong.
+
+⚠️ **A project stating no configuration at all reaches 3 as well**, and that is
+a deliberate collapse rather than an oversight: what a consumer of this command
+asks is whether there is a rule to hold a title to, and there is not either way.
+What separates them is the report, which names which of the two it met -- and the
+unconfigured arm names the file to write, by § 7's rule that whoever invokes a
+role by name is owed that answer.
 """
 
 from __future__ import annotations
@@ -117,6 +124,12 @@ def form(configuration: config.Config) -> dict | None:
     return {
         **stated,
         "expression": f"^{sequence}{BEFORE_THE_REST}.+$",
+        # One reference, anchored, which is what `holds` reads a title with. ⛔
+        # The same derivation and not a second one: the expression above is this
+        # with a quantifier and the rest of the title after it. ⚠️ It exists
+        # because the two engines are not equally safe, which the comment on
+        # `holds` states.
+        "one": f"^{one}",
         # What the form asks for, in words, for a refusal a person has to read.
         # ⛔ Derived rather than written, so it cannot describe a form the
         # expression beside it does not enforce.
@@ -171,6 +184,40 @@ def render(configuration: config.Config, numbers, rest: str) -> str:
     return references + BEFORE_THE_REST + rest.strip()
 
 
+def _opens_with(found: dict, title: str) -> bool:
+    """Whether `title` opens with this form, read one reference at a time.
+
+    ⛔ **The expression a gate carries is not run through this language's own
+    engine, and that is a measured defect rather than a preference.** The two
+    engines accept the same language and are not equally safe: `grep -E` decides
+    it without backtracking, while a reference ending in its own identifier —
+    `<number>` alone is the shortest such form, and this module's suite states it
+    as legitimate — makes the sequence ambiguous, and a backtracking engine then
+    takes exponential time to refuse one. ⚠️ **Measured**: a title of 24 digits
+    refused in 1.2 seconds, of 28 in 19, and of 40 in no time anybody waits — on
+    the one call a role makes to read back a title it has just written.
+
+    So the sequence is walked rather than matched: one reference anchored at the
+    position reached, advancing, then the separator and a non-empty remainder.
+    ⚠️ **What holds this to the gate is the suite's own arm comparing the two**,
+    over forms including the ambiguous one, rather than the two being one call.
+    """
+    at, seen = 0, 0
+    while True:
+        matched = re.match(found["one"], title[at:])
+        if not matched or matched.end() == 0:
+            break
+        at += matched.end()
+        seen += 1
+        if not found["repeated"]:
+            break
+    if seen == 0:
+        return False
+    rest = title[at:]
+    return (rest.startswith(BEFORE_THE_REST)
+            and len(rest) > len(BEFORE_THE_REST))
+
+
 def holds(configuration: config.Config, title: str):
     """(whether this title opens with the form, the reason) -- or (None, why not).
 
@@ -185,7 +232,7 @@ def holds(configuration: config.Config, title: str):
             "this project states no `host.pull_request_title`, so there is no "
             "rule to hold this title to (§ 2)."
         )
-    if re.match(found["expression"], title):
+    if _opens_with(found, title):
         return True, f"the title opens with {found['says']}."
     return False, (
         f"the title does not open with {found['says']}. It states {title!r}."
@@ -246,6 +293,20 @@ BOTH_ENGINES = (
     "x[A-KEY-1] The rest",
 )
 
+# The same comparison for the form whose reference is the identifier alone, which
+# is where the sequence is ambiguous. ⛔ A form's own titles rather than the ones
+# above: the list above is all refused by this form, so it would compare nothing
+# but agreement on *no*.
+PLAIN_TITLES = (
+    "12 The rest",
+    "1 2 The rest",
+    "12",
+    "12 ",
+    "The rest with no reference",
+    " 12 The rest",
+    "1a The rest",
+)
+
 
 def _grep(expression: str, title: str):
     """Whether `grep -E` matches, or None where it did not answer.
@@ -267,6 +328,29 @@ def _grep(expression: str, title: str):
     if done.returncode not in (0, 1):
         return None
     return done.returncode == 0
+
+
+def _answers_within(root: str, title: str, *, seconds: int):
+    """Whether this command refuses `title` for `root` inside `seconds`.
+
+    `True` refused, `False` held, `None` it did not answer in time or the
+    subprocess could not be started. ⛔ **A separate process, so the bound can be
+    enforced by killing it**: the arm this exists for holds against an
+    exponential match, and a call that never returns cannot be timed from the
+    inside — measured as a self-test the host kills hours later rather than a
+    red.
+    """
+    import subprocess
+
+    try:
+        done = subprocess.run(
+            [sys.executable, os.path.abspath(__file__), "check",
+             "--skills-root", root, "--title", title],
+            capture_output=True, text=True, check=False, timeout=seconds,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return {0: False, 1: True}.get(done.returncode)
 
 
 def _carries_the_placeholder(source: str) -> list[str]:
@@ -349,13 +433,13 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         )
         check(
             "and admits more than one reference, which is what the project stated",
-            bool(re.match(found["expression"], "[A-KEY-1][A-KEY-2] The rest")),
+            holds(project, "[A-KEY-1][A-KEY-2] The rest")[0] is True,
             found["expression"],
         )
         check(
             "and holds the reference's own characters as literals",
-            not re.match(found["expression"], "[A-KEY-1]X The rest")
-            and not re.match(found["expression"], "XA-KEY-1X The rest"),
+            holds(project, "[A-KEY-1]X The rest")[0] is False
+            and holds(project, "XA-KEY-1X The rest")[0] is False,
             found["expression"],
         )
         # ⛔ The direction the whole facet exists for: a title carrying no
@@ -366,7 +450,7 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
                   holds(project, title)[0] is False, str(holds(project, title)))
         check(
             "the identifier is a run of digits and not a wildcard",
-            not re.match(found["expression"], "[A-KEY-prose] The rest"),
+            holds(project, "[A-KEY-prose] The rest")[0] is False,
             found["expression"],
         )
         # ⚠️ A trailing reference inside the rest of the title is a title with
@@ -374,7 +458,7 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         # pattern anchored at one end only would read it as the form.
         check(
             "a reference later in the title is part of the rest",
-            bool(re.match(found["expression"], "[A-KEY-1] and [A-KEY-2] after it")),
+            holds(project, "[A-KEY-1] and [A-KEY-2] after it")[0] is True,
             found["expression"],
         )
 
@@ -383,10 +467,10 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
     with tempfile.TemporaryDirectory() as tmp:
         single = _a_project(tmp, ONE_ONLY)
         expression = form(single)["expression"]
-        check("one reference holds", bool(re.match(expression, "[A-KEY-1] The rest")))
+        check("one reference holds", holds(single, "[A-KEY-1] The rest")[0] is True)
         check(
             "two do not, which is the configured difference rather than a second shape",
-            not re.match(expression, "[A-KEY-1][A-KEY-2] The rest"),
+            holds(single, "[A-KEY-1][A-KEY-2] The rest")[0] is False,
             expression,
         )
         # ⛔ The acceptance this item was filed on: the enforced form changes with
@@ -405,9 +489,29 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             plain = _a_project(other, PLAIN)
             check(
                 "a reference that is the identifier alone derives a form too",
-                bool(re.match(form(plain)["expression"], "12 The rest"))
-                and not re.match(form(plain)["expression"], "The rest"),
+                holds(plain, "12 The rest")[0] is True
+                and holds(plain, "The rest")[0] is False,
                 form(plain)["expression"],
+            )
+            # ⛔ The form above is the shortest one whose sequence is **ambiguous**
+            # — a reference ending in its own identifier — and that is where a
+            # backtracking engine goes exponential. ⚠️ Measured on the expression
+            # run through this language's own engine: 24 digits refused in 1.2
+            # seconds, 28 in 19, and 40 in no time anybody waits. The walk is
+            # what makes it linear.
+            #
+            # ⛔ **Bounded by killing the call and not by timing it**, which is
+            # the correction this arm was written twice for: the first form
+            # measured the elapsed time *after* the call, and the call it was
+            # written against never returns — so the plant produced a run the
+            # host kills hours later rather than a red. A hang is not a verdict.
+            refused = _answers_within(plain.skills_root, "9" * 40, seconds=20)
+            check(
+                "and a title no reference can match is refused rather than hung over",
+                refused is True,
+                f"answered {refused!r}; the sequence is ambiguous here, so a title "
+                "read by backtracking is a role that never returns from reading "
+                "back what it wrote",
             )
 
     print()
@@ -443,28 +547,37 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("and for two identifiers on a project whose form admits one", refused)
 
     print()
-    print("the expression reads the same to the gate's engine and to this module's")
+    print("the gate's engine and this module's walk decide the same titles")
     with tempfile.TemporaryDirectory() as tmp:
         project = _a_project(tmp, A_FORM)
-        expression = form(project)["expression"]
-        answered = _grep(expression, BOTH_ENGINES[0])
+        answered = _grep(form(project)["expression"], BOTH_ENGINES[0])
         check(
             "grep answered, which is this suite's one unchecked precondition",
             answered is not None,
             "grep did not answer, so the agreement below would be asserted "
             "against nothing; grep on PATH is what this arm needs",
         )
-        if answered is not None:
-            disagreed = [
-                title for title in BOTH_ENGINES
-                if _grep(expression, title) != bool(re.match(expression, title))
-            ]
-            check(
-                "and the two engines agree on every title, so one expression serves both",
-                not disagreed,
-                f"they disagree on {disagreed}, which is the gate refusing what a "
-                "role reports as holding, or the reverse",
-            )
+    if answered is not None:
+        # ⛔ Every form, not the one this arm was first written against: what the
+        # walk and the expression have to agree on is a *language*, and the
+        # ambiguous form below is the one where they could most easily part.
+        for label, stated, titles in (
+            ("admitting many", A_FORM, BOTH_ENGINES),
+            ("admitting one", ONE_ONLY, BOTH_ENGINES),
+            ("the identifier alone", PLAIN, PLAIN_TITLES),
+        ):
+            with tempfile.TemporaryDirectory() as tmp:
+                found = form(_a_project(tmp, stated))
+                disagreed = [
+                    title for title in titles
+                    if _grep(found["expression"], title) != _opens_with(found, title)
+                ]
+                check(
+                    f"a form {label}: the two agree on every title",
+                    not disagreed,
+                    f"they disagree on {disagreed}, which is the gate refusing what "
+                    "a role reports as holding, or the reverse",
+                )
 
     print()
     print("a project stating no form has no answer, which is not a pass")
@@ -506,6 +619,27 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             main(["check", "--skills-root", silent.skills_root, "--title", "A title"]) == 3,
             "no answer collapsed into either verdict is a title read as passing "
             "or a project read as always wrong",
+        )
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⛔ The fourth status, asserted rather than claimed. ⚠️ A configuration
+        # that is there and does not load is the project's own facts badly
+        # written, which is a different answer from a project that states none —
+        # and both are different from a title that failed.
+        os.makedirs(os.path.join(tmp, ".claude"), exist_ok=True)
+        with open(os.path.join(tmp, config.CONFIG_PATH), "w", encoding="utf-8") as handle:
+            handle.write("host: [this is not a block of keys\n")
+        check(
+            "a configuration that will not load exits two rather than three",
+            main(["check", "--skills-root", tmp, "--title", "A title"]) == 2,
+            "a file that is there and does not resolve is not a project stating "
+            "nothing, and reported as one it reads as a decision somebody made",
+        )
+    with tempfile.TemporaryDirectory() as tmp:
+        check(
+            "and a project stating no configuration at all exits three, with the file named",
+            main(["--skills-root", tmp]) == NO_FORM,
+            "whoever invoked this by name is owed the answer that the project "
+            "states nothing, which § 7 makes an invitation rather than silence",
         )
 
     print()
