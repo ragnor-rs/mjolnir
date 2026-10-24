@@ -4209,6 +4209,12 @@ unbounded command is refused instead**, naming the bound to add: more refused an
 is [§ 7](#which-direction-a-guard-fails-in)'s safe direction for the one judgement this facet makes
 about a call it could act on two ways.
 
+⛔ **And a call carrying a comment is refused rather than rewritten**, because a bound appended
+behind one is a bound the shell never reads: the call then runs unbounded *and* the session is told
+its result was bounded, which is the one outcome worse than either. ⚠️ **A quoted word that merely
+opens with the comment character is refused with it** — the parse strips the quotes, so the two
+cannot be told apart, and this is the direction that costs a refusal rather than a window.
+
 ⛔ **A result is replaced only once its full text is on disk, read back from the path the
 replacement names.** A replacement whose sidecar was not written is a result the window has lost and
 nothing can recover, so a write that failed leaves the result whole and says so. ⚠️ **And a

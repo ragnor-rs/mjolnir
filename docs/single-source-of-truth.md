@@ -2548,7 +2548,7 @@ cannot see, which is narrower than the rules in directions the rules do not ment
 One parse, one set of lexer settings, one answer about which token is the command — and the suite's
 own position shapes are asserted here as well, because what this carrier would get wrong is not the
 parse but the use of it. ⚠️ **The verification is recorded rather than claimed**: with the entries
-matched against the raw text of the call instead of its positions, eighteen assertions redden, and
+matched against the raw text of the call instead of its positions, twenty assertions redden, and
 the ones that redden are the shapes where the command is named and not called.
 
 ⚠️ **Every green plant was verified by breaking the mechanism it names**, and one of them found a
@@ -2559,6 +2559,15 @@ rewritten, fifteen; with a file's signature frozen, the one assertion that a cha
 readable again; with the ledger emptied, seven. ⛔ **And with the sidecar reported written without
 being read back, the suite died with a traceback instead of naming an assertion** — the path it
 then quotes names no file — so that read is defensive now and reports what it could not read.
+
+⚠️ **Two defects of this carrier were found by probing the arms rather than by reading them**, and
+both are the same shape: the call was unharmed and the *report* was wrong. A rewrite appended its
+bound to a call carrying a comment, where the shell reads nothing — so the dump ran unbounded while
+the session was told its result was bounded, which is worse than either alone; such a call is
+refused now. And a result carrying a byte that is no character raised out of the sidecar write
+instead of reporting that nothing was replaced, swallowed by the arm's outer catch — ⚠️ **and the
+first fix for it was incomplete in a way only the assertion caught**, the file's name being
+computed from the same text one line above the guarded block.
 
 ⚠️ **The one arm that acts on a call rather than refusing it is asserted on what it produced and
 not on a verdict.** A rewrite answers with no decision at all, so *nothing* is what a passing call

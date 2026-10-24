@@ -132,6 +132,15 @@ REFUSE = "refuse"
 # How much of a segment a report quotes.
 SHOWN = 160
 
+# A word that opens a comment, after which the shell reads nothing of the line.
+# ⛔ The parse this carrier imports leaves `#` an ordinary character deliberately,
+# so a comment arrives as a token like any other -- and a bound appended behind
+# one is a bound the shell never reads, while the session is told its result is
+# bounded. ⚠️ A quoted argument that merely begins with the character is caught
+# here too: the parse strips the quotes, so the two cannot be told apart, and a
+# refusal naming the bound is the direction that costs nothing.
+A_COMMENT = "#"
+
 # How many reads one session's ledger keeps. ⛔ Derived and configured by nothing,
 # like the ledger's own place: what it bounds is what a long session's ledger
 # costs on disk, and a read pushed out of it is one this arm then lets through --
@@ -257,6 +266,13 @@ def one_command(command: str) -> bool:
     if len(found) != 1:
         return False
     if len(position.command_chain(found[0])) != 1:
+        return False
+    if any(word.startswith(A_COMMENT) for word in found[0]):
+        # ⛔ A call carrying a comment is refused rather than rewritten, for the
+        # reason stated at `A_COMMENT`: appending to it puts the bound where the
+        # shell reads nothing, so the dump runs unbounded *and* the session is
+        # told it was bounded — the one combination worse than refusing. Found by
+        # probing this arm rather than by reading it.
         return False
     return position.words(command) == found[0]
 
@@ -566,17 +582,27 @@ def sidecar_of(config, text: str) -> str | None:
     if not isinstance(stated, str) or not stated.strip():
         return None
     root = os.path.expanduser(os.path.expandvars(stated.strip()))
-    # Named by what it holds, so one result written twice is one file: a name
-    # carrying a counter or a time would leave a directory nobody can read.
-    name = f"{hashlib.sha256(text.encode('utf-8')).hexdigest()[:24]}.txt"
-    where = os.path.join(root, name)
     try:
+        # Named by what it holds, so one result written twice is one file: a name
+        # carrying a counter or a time would leave a directory nobody can read.
+        # ⛔ Inside the guarded block, because naming the file encodes the text
+        # exactly as writing it does: the first version left this line outside and
+        # the arm went on raising past its own report. Found by the assertion
+        # written for the write, which is the whole reason both are asserted.
+        name = f"{hashlib.sha256(text.encode('utf-8')).hexdigest()[:24]}.txt"
+        where = os.path.join(root, name)
         os.makedirs(root, exist_ok=True)
         with open(where, "w", encoding="utf-8") as handle:
             handle.write(text)
         with open(where, encoding="utf-8") as handle:
             back = handle.read()
-    except OSError:
+    except (OSError, UnicodeError):
+        # ⛔ The encoding half is not an `OSError` and was swallowed by the arm's
+        # outer catch instead, which answers nothing at all: a result carrying a
+        # byte that is no character — which a command's output can — raised out of
+        # here and the arm went silent, where § 22 has it report that nothing was
+        # replaced. The call was unharmed either way; what was lost was the
+        # report. Found by probing this arm rather than by reading it.
         return None
     return where if back == text else None
 
@@ -965,6 +991,11 @@ MUST_REFUSE_RATHER_THAN_REWRITE = [
     ("a substitution around it", "a-free-command $(<tool>)"),
     ("a brace group around it", "{ <tool>; }"),
     ("a second line", "<tool>\na-free-command"),
+    # ⛔ The comment shapes, which are the ones a rewrite gets silently wrong
+    # rather than visibly: the bound lands where the shell reads nothing.
+    ("a comment after it", "<tool> # why this was run"),
+    ("a comment after its own arguments", "<tool> --a-flag a-value # why"),
+    ("a word that merely opens with the comment character", "<tool> #an-argument"),
 ]
 
 # The commands a project would name, with no project in any of them.
@@ -1224,6 +1255,16 @@ def self_test() -> int:  # noqa: PLR0912, PLR0915 -- one assertion per rule, rea
         unwritable = _a_config([], limit=2000, sidecar=str(in_the_way / "under-it"))
         answered = result_answer(_came_back("a-free-command", long_result), config=unwritable)
         check("and a result that could not be written is reported, not replaced",
+              NO_SIDECAR in str(answered.get("systemMessage", ""))
+              and "hookSpecificOutput" not in answered, repr(answered)[:200])
+        # ⛔ The other way a write fails, and it is not an `OSError`: a result
+        # carrying a byte that is no character, which a command's output can.
+        # ⚠️ Asserted on the **report** and not on the call being unharmed — the
+        # call was unharmed before this was fixed, by the arm's outer catch, which
+        # answered nothing at all.
+        unencodable = "a-line\n" * 2000 + "\udcff"
+        answered = result_answer(_came_back("a-free-command", unencodable), config=curbed)
+        check("a result carrying a byte that is no character is reported the same way",
               NO_SIDECAR in str(answered.get("systemMessage", ""))
               and "hookSpecificOutput" not in answered, repr(answered)[:200])
 
