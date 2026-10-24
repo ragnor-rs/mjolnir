@@ -1177,14 +1177,12 @@ own variables has *stated* what it hands a role, and there is nothing for a reas
 is the enforcing half of the section above, and what forced it into a facet of its own is worth
 recording beside the measurements that forced that one.
 
-The published findings already quoted here rank what hurts a window — **incorrect beats missing
-beats noisy** — and the vendor's own framing names three ways to spend an attention budget, of
-which the first, summarising a window and restarting from it, is **lossy**. § 11 took the
-conclusion for the artifact: the handoff is a file somebody wrote and not what a summary left
-behind. What it did not reach is the other end of the same finding, which is that the window is
-spent one call at a time and every one of those calls is a decision nothing was holding. A guard
-that acted after the summary would be acting on what survived it; a guard at the call is acting on
-the thing itself.
+The [findings recorded above](#what-the-published-measurements-establish) rank what hurts a window
+and name summarising it as the lossy way to spend one; § 11 took the conclusion for the artifact,
+making the handoff a file somebody wrote rather than what a summary left behind. What it did not
+reach is the other end of the same finding: the window is spent one call at a time, and every one
+of those calls was a decision nothing was holding. A guard that acted after the summary would be
+acting on what survived it; a guard at the call is acting on the thing itself.
 
 So the facet is about **three places the harness publishes, and a fourth it does not**. A hook
 answering before a call may refuse it or replace its arguments outright; a hook answering after one
@@ -1197,13 +1195,13 @@ already states that a rule reaching it would be written against a measurement no
 ⛔ That is why nothing here refuses a compaction, and why the arms that ship are the three that
 answer on a call.
 
-**Why a result limit is a key while a window budget is not.** The subsection above refuses
-`budget: 60 %` because the harness exposes a window's utilization at one moment only and never
-while one fills, so the number names no reading. A result's own length is the opposite case: the
-event that fires after a call carries the result, and its size is readable exactly when there is
-something to decide about it. ⚠️ **The test the budget key failed is the one this one passes** —
-*is there a run-time reading to enforce it against* — which is why the same document can refuse one
-threshold and carry another without contradicting itself.
+**Why a result limit is a key while a window budget is not.** A result's own length is the opposite
+case to the one
+[refused above](#why-there-is-no-threshold-on-the-surface): the event that fires after a call
+carries the result, so its size is readable exactly when there is something to decide about it.
+⚠️ **It is the same test, passed rather than failed** — that subsection states what the test is, and
+this is why the same document can refuse one threshold and carry another without contradicting
+itself.
 
 **Why the exemption is a project's list rather than a case inside the guard.** This toolkit ships a
 role that **forbids** truncating its own evidence output, and states why: the measurement is
@@ -1221,17 +1219,26 @@ bounded result read as complete — the window would then hold a *wrong* premise
 one, which is the worst of the three ranks quoted above.
 
 ⚠️ **The two channels are not interchangeable, and which one reaches the session was measured rather
-than read off the names.** The field that shows a warning to the person running the session does not
-enter the next model request; the field that adds context does, and the reference states where it
-lands for each event — beside the tool result, for both of the events this facet answers on. So the
-reports divide by audience rather than by severity: a call that was rewritten tells the **session**,
-because the session is about to read a result it would otherwise misread; a configuration that could
-not be read tells the **person**, because nothing the session does next depends on it and the remedy
-is an edit to a file.
+than read off the names** — the measurements are
+[recorded per event](single-source-of-truth.md#the-rules-loaded-rather-than-checked) and are not
+restated here. ⛔ **What is new for this facet is the event**: the field that adds context is
+documented for the event before a call, and the client that is installed states its support for it
+outright, which is what the rewriting arm rests on. ⚠️ **It is still a field whose validity is per
+event rather than universal** — the same document records one event rejecting it and failing the
+operation outright — so this is a reading of a reference and a client rather than of a run in this
+repository.
 
-⚠️ **One thing the reference does not state is whether a decision and a replacement may be returned
-together**, so the arm returns one or the other and never both: a rewrite answers with the arguments
-and the context, and a refusal answers with the decision and its reason.
+So the reports divide by audience rather than by severity: a call that was rewritten tells the
+**session**, because the session is about to read a result it would otherwise misread; a
+configuration that could not be read tells the **person**, because nothing the session does next
+depends on it and the remedy is an edit to a file.
+
+⚠️ **What the client does with a *replaced result* was read out of it rather than from the
+reference**, which states only that the field replaces a result: a tool that is not an external one
+has its replacement validated against that tool's own output schema, and a mismatch keeps the
+original and adds an error. ⛔ **So the shape of a replacement is not a choice the facet had** — it
+is the shape the response arrived in, and a first version answering with text alone would have left
+every oversized result whole with one more message beside it.
 
 ## The revision key never moved, and the markers took its job
 

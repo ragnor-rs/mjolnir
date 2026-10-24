@@ -72,7 +72,9 @@ host:
       triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ Like the two guards below it, what this run holds is the carrier's own suite: no command
     # of this project is named as unbounded and no result limit is stated, so pointed at this tree
-    # the guard decides nothing and the calls it judges are the ones the suite plants.
+    # no *shell call* of this project's reaches a decision and the ones the suite judges are the
+    # ones it plants. ⛔ The read arm is the exception and is live here, `reread` below stating
+    # `refuse`: a read this session already made is refused in this repository like any other.
     - workflow: "Context guard"
       mirrors: "python3 plugins/mjolnir/scripts/context.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]

@@ -2548,26 +2548,41 @@ cannot see, which is narrower than the rules in directions the rules do not ment
 One parse, one set of lexer settings, one answer about which token is the command — and the suite's
 own position shapes are asserted here as well, because what this carrier would get wrong is not the
 parse but the use of it. ⚠️ **The verification is recorded rather than claimed**: with the entries
-matched against the raw text of the call instead of its positions, twenty assertions redden, and
-the ones that redden are the shapes where the command is named and not called.
+matched against the raw text of the call instead of its positions, twenty-five assertions redden,
+and the ones that redden are the shapes where the command is named and not called.
 
-⚠️ **Every green plant was verified by breaking the mechanism it names**, and one of them found a
-defect in the suite rather than in the guard. With the exemption never read, five assertions redden;
-with a call that already carries its own bound no longer recognised, five; with every call treated
-as one command so that every rewrite is attempted, nine; with none treated as one so that nothing is
-rewritten, fifteen; with a file's signature frozen, the one assertion that a changed file is
-readable again; with the ledger emptied, seven. ⛔ **And with the sidecar reported written without
-being read back, the suite died with a traceback instead of naming an assertion** — the path it
-then quotes names no file — so that read is defensive now and reports what it could not read.
+⚠️ **Every green was verified by breaking the mechanism it names, and the figure is what reddened.**
+With the exemption never read, four; with a call that already carries its own bound no longer
+recognised, seven; with the bounded form a refusal names no longer recognised as a route, three;
+with every call treated as one command so that every rewrite is attempted, seventeen; with none
+treated as one so that nothing is rewritten, twenty; with a file's signature frozen, the one
+assertion that a changed file is readable again; with the ledger forgetting, eight; with the session
+not told of a rewrite, five; with a replacement made whether or not it is shorter, eighteen; with
+the sidecar reported written without being read back, eight; with a command compared as a word
+rather than as a path, two; with no text read out of a structured response, two.
 
-⚠️ **Two defects of this carrier were found by probing the arms rather than by reading them**, and
-both are the same shape: the call was unharmed and the *report* was wrong. A rewrite appended its
-bound to a call carrying a comment, where the shell reads nothing — so the dump ran unbounded while
-the session was told its result was bounded, which is worse than either alone; such a call is
-refused now. And a result carrying a byte that is no character raised out of the sidecar write
-instead of reporting that nothing was replaced, swallowed by the arm's outer catch — ⚠️ **and the
-first fix for it was incomplete in a way only the assertion caught**, the file's name being
-computed from the same text one line above the guarded block.
+⚠️ **Twice, breaking a mechanism killed the suite instead of reddening an assertion** — a read-back
+of a path naming no file — so both reads are defensive now and report what they could not read. A
+suite that dies is a red run either way; what it loses is which assertion stopped holding, which is
+the whole of what a plant buys.
+
+⚠️ **Nine defects of this carrier were found by probing or reviewing the arms rather than by reading
+them**, and the ones worth recording here are the ones a reading would not have caught. The arm that
+replaces a result answered with a bare string, which the harness validates against the tool's own
+output schema: for the command tool that schema is a block of fields, so the replacement was
+discarded, the original kept and an error added beside it — the arm made the window *worse* while
+every assertion passed. The replacement now takes the shape the response arrived in. A rewrite
+answered with the command alone, and the harness assigns a hook's answer over the input wholesale
+rather than merging, so a backgrounded call came back to the foreground and a stated timeout
+vanished. The exemption was read per call on the refusing arm, so appending a chained exempt command
+spared everything in front of it — a way past that arm altogether. The sidecar's write and read-back
+translated line endings, so any result carrying a carriage return was reported unwritable with its
+bytes correct on disk. A bound stated as `--flag=N` matched no call, so the project's bound was
+appended over one the session had already chosen. A rewrite appended past a comment and past the
+end-of-flags marker, where the shell reads no flag at all — the dump then ran unbounded while the
+session was told it was bounded, which is worse than either alone. And the ledger was a whole-file
+read-modify-write, which lost six of eight entries of a parallel read batch; it is a file per read
+now, which is the shape the lease carrier in this plugin already uses.
 
 ⚠️ **The one arm that acts on a call rather than refusing it is asserted on what it produced and
 not on a verdict.** A rewrite answers with no decision at all, so *nothing* is what a passing call
@@ -2584,11 +2599,14 @@ could be misread are asserted the same way for the same reason.
   tooling, which
   [schema § 22](../plugins/mjolnir/config/schema.md#22-what-enters-the-window-bounded-where-the-call-is-made)
   keeps out by naming none. A wrong bound is a call that fails loudly on its own next run.
-- **What the harness does with a replaced result for a response that was not text.** The reference
-  states that the field replaces a tool's result text, and states nothing about a response carrying
-  structure. The arm reads every string the response carries and answers with a string, which is
-  what a window pays for either way; whether the harness substitutes it for a structured response
-  as it does for a flat one is **unestablished** here, and no run in this repository can read it.
+- **Whether a replacement the harness accepted is the one a model read.** What the harness *does*
+  with the field is no longer unestablished: it validates a non-external tool's replacement against
+  that tool's own output schema, keeps the original on a mismatch and adds an error beside it — read
+  out of the installed client rather than off the reference, which states none of it. ⛔ **So the
+  arm answers in the shape the response arrived in**, and what this check cannot hold is the other
+  half: no run here can confirm that the accepted replacement is what reached a window, the plugin's
+  hooks being served from the installed checkout rather than from a tree under work
+  ([what a session serves](working-on-the-toolkit.md#what-a-session-actually-serves)).
 - **A narrower re-read of a file already read whole.** The key is the path and the range as the call
   states them, so a read of part of a file this session read in full passes. ⚠️ That is also what
   releases a refusal from inside the session, by
@@ -2600,6 +2618,11 @@ could be misread are asserted the same way for the same reason.
   being served from the installed checkout rather than from a tree under work. ⚠️ If they arrive
   under the parent's, a subagent can be refused a read whose content its own window does not hold,
   and what releases it is the same route a summarised window takes: a different range.
+- **Whether what a read put in the window is what the ledger recorded.** The signature is taken when
+  the read has already happened, so a file written by something outside the session between the read
+  and the event is recorded as the content read. ⚠️ The refusal that follows names a file whose
+  current content the window does not hold — a false refusal with a stated route out, and the
+  direction a cross-event record would have to be carried to close.
 - **Whether what a session read is still in its window.** The ledger records that a read happened,
   and a window is summarised without being asked. A refusal after that names the file that is no
   longer there to read — which is the direction this arm is wrong in, and the reason the escape

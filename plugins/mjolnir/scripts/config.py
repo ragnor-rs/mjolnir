@@ -2729,7 +2729,11 @@ def validate(data: dict, facts: dict) -> None:
         # produces is the one § 7 says somebody edits the guard to get past;
         # with both, a rewrite and a replacement both apply and the guard would
         # have to choose which of the project's two statements to honour.
-        stated = [key for key in ("bound", "instead") if key in entry]
+        # ⚠️ Written with a value, rather than merely present: a key written with
+        # nothing after it is one a mapping carries as null, and counting it left
+        # the refusal naming two keys at a project that wrote one. Found by
+        # review on this change.
+        stated = [key for key in ("bound", "instead") if entry.get(key) is not None]
         if len(stated) != 1:
             raise ConfigError(
                 f"{where}.bound",
@@ -2770,17 +2774,54 @@ def validate(data: dict, facts: dict) -> None:
                     "never held (§ 22).",
                 ) from None
     exempt = _absent_as(_get(data, "context_guard.never_bound"), [])
-    if not isinstance(exempt, list) or any(
-        not isinstance(name, str) or not name.strip() for name in exempt
-    ):
+    if not isinstance(exempt, list):
         raise ConfigError(
             "context_guard.never_bound",
             f"is {exempt!r}; § 22 states it as the commands this guard neither "
-            "bounds nor replaces a result of -- each a command, and `[]` where "
-            "none is exempt. A blank member matches no call and reads as an "
-            "exemption somebody stated, which is the direction that costs a role "
-            "the measurement it forbids truncating.",
+            "bounds nor replaces a result of -- a list of entries, or `[]` where "
+            "none is exempt. A shape this reader cannot walk is an exemption "
+            "nothing matches, which is the direction that costs a role the "
+            "measurement it forbids truncating.",
         )
+    for index, entry in enumerate(exempt):
+        where = f"context_guard.never_bound[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}; § 22 states each exemption as a mapping stating "
+                "the `command` it exempts, with `args_match` where the command "
+                "alone does not decide -- the same two keys an `unbounded` entry "
+                "carries, matched the same way.",
+            )
+        command = entry.get("command")
+        if not isinstance(command, str) or not command.strip():
+            raise ConfigError(
+                f"{where}.command",
+                f"is {command!r}; § 22 states one command per exemption, matched "
+                "against the command position of each segment of a call. A value "
+                "of another shape stands in no command position, so the exemption "
+                "matches nothing while reading as one somebody stated.",
+            )
+        if "args_match" in entry:
+            pattern = entry["args_match"]
+            if not isinstance(pattern, str) or not pattern.strip():
+                raise ConfigError(
+                    f"{where}.args_match",
+                    f"is {pattern!r}; § 22 states it as the pattern the arguments "
+                    "carry, and absent where the command alone decides. Written "
+                    "blank it exempts every call of that command, which for an "
+                    "interpreter is a project exempting a language.",
+                )
+            try:
+                re.compile(pattern)
+            except re.error as error:
+                raise ConfigError(
+                    f"{where}.args_match",
+                    f"does not compile as a pattern -- {error}. ⛔ Refused rather "
+                    "than left to the guard: a pattern that cannot be compiled "
+                    "matches no call, so the exemption reads as stated and the "
+                    "role it was written for meets the guard anyway (§ 22).",
+                ) from None
     limit = _get(data, "context_guard.result_limit_chars")
     if isinstance(limit, bool) or (
         limit is not None and (not isinstance(limit, int) or limit <= 0)
@@ -4491,8 +4532,20 @@ def _planted_violations():
          _an_unbounded_call_of(args_match="--a-whole-log(")),
         ("a never-bound list that is not a list", "context_guard.never_bound",
          at("context_guard.never_bound", "a-command-this-guard-never-bounds")),
+        ("a never-bound entry that is not a block", "context_guard.never_bound[0]",
+         at("context_guard.never_bound", ["a-command-this-guard-never-bounds"])),
+        ("a never-bound entry naming no command", "context_guard.never_bound[0].command",
+         at("context_guard.never_bound", [{"args_match": "a-pattern"}])),
         ("a never-bound command written blank, which matches no call",
-         "context_guard.never_bound", at("context_guard.never_bound", ["   "])),
+         "context_guard.never_bound[0].command",
+         at("context_guard.never_bound", [{"command": "   "}])),
+        ("a never-bound entry whose narrowing pattern is blank, which exempts every call "
+         "of that command", "context_guard.never_bound[0].args_match",
+         at("context_guard.never_bound", [{"command": "an-interpreter", "args_match": "  "}])),
+        ("a never-bound entry whose narrowing pattern does not compile",
+         "context_guard.never_bound[0].args_match",
+         at("context_guard.never_bound",
+            [{"command": "an-interpreter", "args_match": "a-script("}])),
         ("a result limit written as a flag, which reads as one character",
          "context_guard.result_limit_chars", at("context_guard.result_limit_chars", True)),
         ("a result limit that is no length at all", "context_guard.result_limit_chars",

@@ -17,10 +17,11 @@ name: Context guard
 # reads whether the command accepted it, and what the harness does with a replaced result for a
 # tool whose response is not text is unstated in its own reference.
 #
-# ⛔ Nothing here is a verdict about this repository's own calls. No command of this project's own
-# is named as unbounded and no result limit is stated — every check is a suite over the tree it
-# runs in — so the tree this runs in is the green side of the facet, and the unbounded commands the
-# suite judges are the ones it plants for itself.
+# ⛔ Nothing here is a verdict about this repository's own shell calls. No command of this
+# project's own is named as unbounded and no result limit is stated — every check is a suite over
+# the tree it runs in — so the tree this runs in is the green side of those two arms, and the
+# unbounded commands the suite judges are the ones it plants for itself. ⚠️ The read arm is live in
+# this repository, which is a property of a session rather than of this run.
 #
 # A workflow of its own rather than a second job of a sibling, per § 2 of
 # plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the project
@@ -31,9 +32,11 @@ on:
   push:
     branches: [main]
 
-# No credential of any kind, and no network. ⛔ The suite writes only under a temporary directory
+# No credential of any kind, and no network. ⛔ The suite writes only under temporary directories
 # of its own — a replaced result's full text has to be written somewhere for the arm to be held to
-# writing it — and reads nothing of this repository but the surface and the carrier.
+# writing it — and what it reads of this repository is the surface, the carrier, the shared reader
+# and every shipped example configuration, which is what holds the keys it reads to the keys a
+# project actually resolves.
 permissions: {}
 
 jobs:

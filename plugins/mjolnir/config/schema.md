@@ -4086,7 +4086,9 @@ context_guard:
       bound: "<the flag and value that bounds it, added to the arguments>"
       instead: "<the bounded form to run, where no flag bounds this one>"
       reason: "<what the unbounded call would put in the window, in the project's own terms>"
-  never_bound: ["<a command this guard neither bounds nor replaces a result of>"]   # required
+  never_bound:               # required
+    - command: "<a command this guard neither bounds nor replaces a result of>"
+      args_match: "<the pattern the arguments carry, where the command alone does not decide>"
   result_limit_chars: 20000  # the size a result is replaced above; absent replaces none
   sidecar_dir: "<the directory a replaced result's full text is written to>"
   reread: refuse | allow     # default: refuse
@@ -4097,11 +4099,11 @@ than summarised afterwards.** ⛔ **What the toolkit carries is the command posi
 result, the replacement and where its full text goes, the ledger of what this session has read, the
 decision and the report; what the project carries is which of its commands produce output nothing
 bounds, what bounds each, which commands are never bounded, and the size above which a result is
-replaced.** Preventive rather than reactive is the whole of why it is a guard:
-[§ 11](#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it) states that a
-window is summarised without being asked, that what the summary dropped is gone, and that nothing
-left in the window says what was lost — so a mechanism acting after that acts on what survived, and
-the only lever that is not lossy is what enters.
+replaced.** Preventive rather than reactive is the whole of why it is a guard: what a summary of a
+window costs is
+[§ 11](#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it)'s to state and is
+not restated here, and ⛔ **what follows from it is this facet's** — a mechanism acting after a
+summary acts on what survived it, so the only lever that is not lossy is what enters.
 
 ⚠️ **It holds none of § 11's rules and shares that section's measurement.** That facet says where a
 role's durable state lives and that the artifact is the handoff across a boundary; this one holds
@@ -4111,12 +4113,15 @@ below is of the **call** — a command's own arguments, a result's own length, a
 modification time — taken at the moment there is something to compare
 ([the measurement](../../../docs/configuration-surface.md#why-there-is-no-threshold-on-the-surface)).
 
-⛔ **`unbounded: []` and `never_bound: []` are stated absences and mean no command here produces
-output nothing bounds, and none is exempt**, by the rule this surface opens with: a project that has
-looked at its commands and a project that has never looked read identically otherwise. ⚠️ **A reader
-reports each as unavailable**, and the guard is then installed and silent on that arm — which
+⛔ **`unbounded: []` is the stated absence and means no command here produces output nothing
+bounds**, by the rule this surface opens with: a project that has looked at its commands and a
+project that has never looked read identically otherwise. ⚠️ **A reader reports it as unavailable**,
+and the guard is then installed and silent on that arm — which
 [§ 7](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it) states of a project with
-no exclusive resource and is the same reading here.
+no exclusive resource and is the same reading here. ⚠️ **`never_bound: []` is reported by nothing**,
+being the ordinary configuration with nothing above it to be exempt from rather than something a
+role cannot do — which is the reading
+[§ 18](#what-may-be-guarded-and-the-two-ways-a-refusal-stands-down) gives its own exemption list.
 
 **The keys of an entry, and what each is for.** ⛔ **`command` and `reason` are written on every
 entry, exactly one of `bound` and `instead` is, and `args_match` is legitimately absent** — stated
@@ -4131,9 +4136,9 @@ condition can reach.
   a path rather than as a word.
 - ⛔ **`args_match` is § 19's key at its own facet**, and what it is for here is the command that is
   unbounded in one spelling and bounded in another — a log read whole against the same log read for
-  one commit. ⚠️ **It is searched against the arguments joined by single spaces**, with that
-  section's own two hazards unchanged: a pattern anchored with `^` matches only the call whose
-  argument comes first, and a pattern with no word boundary matches across the join.
+  one commit. ⚠️ **What it is matched against, and the two hazards of matching it that way, are
+  [§ 19's](#19-a-command-that-spends-and-the-supervision-it-is-refused-without) and are not restated
+  here**: a second copy of them is a copy allowed to drift from the one its reader resolves.
 - ⛔ **`bound` is the flag and value that bounds *this* command's output, and an entry stating one is
   rewritten rather than refused.** It is per entry and in the project because the flag is the
   command's: the toolkit names no command's flags, by
@@ -4167,11 +4172,12 @@ its own: a bare number is read in whatever unit its reader assumed. ⚠️ **Abs
 replaced**, which is a legitimately unset key ([§ The file itself](#the-file-itself)) and is
 reported as unavailable rather than read as a project with nothing to replace.
 
-⛔ **`sidecar_dir` is written wherever `result_limit_chars` is, and it is the one path on this
-surface a guard expands itself.** [§ 11](#the-store-and-when-an-in-tree-store-is-safe) has the
-reader store a path as written because a role's own command expands it; **no command stands between
-this event and this write**, and a path left unexpanded is a directory named `$TMPDIR` created
-inside whatever tree the session is standing in — which under
+⛔ **`sidecar_dir` is written wherever `result_limit_chars` is, and a guard expands the variables in
+it rather than leaving them to a command that never runs.**
+[§ 11](#the-store-and-when-an-in-tree-store-is-safe) has the reader store a path as written because
+a role's own command expands it; **no command stands between this event and this write**, and a path
+left unexpanded is a directory named `$TMPDIR` created inside whatever tree the session is standing
+in — which under
 [§ 10](#10-branch-model)'s worktree model is inside the thing being torn down. ⚠️ **It is outside
 every working tree for the same reason**, and a store under a system temp directory does not
 survive a reboot, which § 11 already states of its own.
@@ -4251,18 +4257,41 @@ adopted this loop, and the overhead is the same one everywhere.
 
 ### The commands a project names as never bounded
 
-⛔ **`never_bound` is read by the bound arm and the result arm alike, and a command named there is
-neither refused, nor rewritten, nor replaced on the way back.** The measured case is a role of this
-toolkit's own: the day-log role **forbids** truncating its evidence output, and states why — a
-truncated read forces the whole measurement, every transcript and the full archive, to be recomputed
-for the half that was cut off ([§ 9](#9-day-log)). ⚠️ **So a blanket bound would contradict a
-shipped role**, and the exemption is **configured and stated** the way
-[§ 2](#2-code-host) states a mirrored command, rather than carried as a special case inside a hook
-where no project could see it.
+⛔ **`never_bound` is read by the bound arm and the result arm, and a command named there is neither
+refused, nor rewritten, nor replaced on the way back.** ⚠️ **It does not reach the read arm**, which
+is keyed on a path and a range rather than on a command and whose own route past a refusal is stated
+above — so a project meeting that arm is not one whose exemption list is short.
 
-⛔ **It is a list of commands and never of paths**, matched at a command position like every entry
-above. What a role does with a file afterwards is that role's, and a guard that exempted paths would
-be deciding which of a project's files are allowed to be large.
+**The measured case is a role of this toolkit's own**, and it is the reason this list exists rather
+than an illustration of it: the day-log role forbids truncating its evidence output, and
+[§ 9](#9-day-log) carries both the rule and why. ⚠️ **What that role's own shape already does for
+it is stated here rather than left to be assumed**: it redirects the measurement to a file and
+reads the file, so the result of its command carries nothing to replace and the read arm replaces no
+read. ⛔ **The exemption is what covers the project whose evidence comes back in a result instead**,
+and it is **configured and stated** the way [§ 2](#2-code-host) states a mirrored command rather
+than carried as a special case inside a hook where no project could see it.
+
+⛔ **An entry's keys are `unbounded`'s two, and they are matched the same way** — the command at a
+command position, the pattern against the arguments joined by single spaces — so this list is not a
+second grammar to learn. ⛔ **And `args_match` is what makes the measured case configurable at all**:
+a script invoked through an interpreter stands in no command position of its own
+([§ 19 → The command position](#the-command-position-and-why-the-whole-call-is-not-one)), so the only
+command an exemption could name is the interpreter — ⚠️ **which would exempt every call of it**, and
+is the measured shape of the role above. The pattern is what narrows the interpreter back down to
+the one script, and an entry stating a bare interpreter is a project exempting a language.
+
+⛔ **It names commands and never paths.** What a role does with a file afterwards is that role's, and
+a guard that exempted paths would be deciding which of a project's files are allowed to be large.
+
+⛔ **The two arms read it at different widths, and the difference is the shape of what each one
+acts on.** The refusing arm reads it **per command position**: what spares an unbounded command is
+that command being exempt, never another command standing beside it in the same call — ⚠️ **read per
+call it was a way past the arm altogether**, since appending a chained exempt command spared
+everything in front of it. The replacing arm reads it **per call**, because what it would replace is
+one result carrying every command's output, so truncating it truncates the exempt command's own.
+⛔ **And a call the replacing arm cannot parse is treated as exempt wherever a project states any
+exemption at all** — an unestablished command position is [§ 7](#which-direction-a-guard-fails-in)'s
+proceeding side here, as every other unestablished fact in this facet is.
 
 ### Why every unestablished fact here proceeds
 

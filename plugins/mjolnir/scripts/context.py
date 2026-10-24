@@ -123,11 +123,18 @@ LIMIT = "context_guard.result_limit_chars"
 SIDECAR = "context_guard.sidecar_dir"
 REREAD = "context_guard.reread"
 
-# The value of `reread` that makes that arm hold anything. ⛔ Spelled out here
-# rather than derived: the surface states the alternation and the reader holds a
+# The value of `reread` that stands that arm down. ⛔ Spelled out here rather
+# than derived: the surface states the alternation and the reader holds a
 # configuration to it, and what a *member* means is this carrier's, which is the
 # treatment every other sentinel member gets.
-REFUSE = "refuse"
+#
+# ⛔ **The arm is read against this member and not against the refusing one**, so
+# anything else reads as refusing: the surface defaults the key to refusing, and
+# a key written with nothing after it is a mapping's null, which the default
+# never replaces and the alternation never rejects. Read the other way round it
+# stood the arm down in silence — the permissive direction, where every sibling
+# guard falls back to the stricter member. Found by review on this change.
+ALLOW = "allow"
 
 # How much of a segment a report quotes.
 SHOWN = 160
@@ -140,6 +147,9 @@ SHOWN = 160
 # here too: the parse strips the quotes, so the two cannot be told apart, and a
 # refusal naming the bound is the direction that costs nothing.
 A_COMMENT = "#"
+
+# The word after which a shell reads no more flags, only operands.
+END_OF_FLAGS = "--"
 
 # How many reads one session's ledger keeps. ⛔ Derived and configured by nothing,
 # like the ledger's own place: what it bounds is what a long session's ledger
@@ -166,14 +176,12 @@ def entries(config) -> list[dict]:
     return [entry for entry in stated if isinstance(entry, dict)]
 
 
-def never_bound(config) -> list[str]:
+def never_bound(config) -> list[dict]:
     """The commands this project exempts from both of the command arms."""
     stated = config.get(NEVER_BOUND)
-    return [
-        str(name).strip()
-        for name in (stated if isinstance(stated, list) else [])
-        if str(name).strip()
-    ]
+    if not isinstance(stated, list):
+        return []
+    return [entry for entry in stated if isinstance(entry, dict)]
 
 
 def limit_of(config):
@@ -191,22 +199,64 @@ def _names(called: str, configured: str) -> bool:
     return position.names_the_command(called, configured)
 
 
+def _is_exempt(config, called: str, arguments: list[str]) -> bool:
+    """Whether this one command position is one the project exempts.
+
+    ⛔ The per-position half of the exemption, which the refusing arm reads: what
+    spares an unbounded command is that command being exempt, never another
+    command standing beside it in the same call.
+    """
+    for entry in never_bound(config):
+        configured = entry.get("command")
+        if not isinstance(configured, str) or not _names(called, configured):
+            continue
+        pattern = entry.get("args_match")
+        if isinstance(pattern, str) and pattern.strip():
+            try:
+                if not re.search(pattern, " ".join(arguments)):
+                    continue
+            except re.error:
+                continue
+        return True
+    return False
+
+
 def exempt(config, command: str) -> str | None:
-    """The exemption this call matches, or None.
+    """The exemption this call matches, named as the report names it, or None.
 
     ⛔ Matched at a command position like every entry (§ 22 → The commands a
     project names as never bounded), so a call that merely *names* an exempt
     command is not exempt -- which is the direction that matters here, an
     exemption being the one thing in this facet that lets a call through.
+
+    ⛔ **And narrowed by the entry's own pattern where it states one**, which is
+    what makes the measured case configurable: a script run through an
+    interpreter stands in no command position of its own, so the command an
+    exemption can name is the interpreter, and without the pattern the project
+    would be exempting every call of it. Found by review on this change, where
+    the one role § 22 names as its reason could not be exempted at all.
     """
     stated = never_bound(config)
     if not stated or not position.readable(command):
         return None
     for segment in position.segments(command):
-        for called, _arguments in position.command_chain(segment):
-            for name in stated:
-                if _names(called, name):
-                    return name
+        for called, arguments in position.command_chain(segment):
+            for entry in stated:
+                configured = entry.get("command")
+                if not isinstance(configured, str) or not _names(called, configured):
+                    continue
+                pattern = entry.get("args_match")
+                if isinstance(pattern, str) and pattern.strip():
+                    try:
+                        if not re.search(pattern, " ".join(arguments)):
+                            continue
+                    except re.error:
+                        # Refused at load by the shared reader (§ 22), so nothing
+                        # reaches this through a validated configuration. An
+                        # exemption is not widened by a pattern that cannot be
+                        # compiled.
+                        continue
+                return configured
     return None
 
 
@@ -218,7 +268,12 @@ def bounded_already(arguments: list[str], bound: str) -> bool:
     would be refusing a call that had already met the rule. ⚠️ Both spellings of
     a flag, since one word carrying flag and value is the same statement as two.
     """
-    flag = bound.split()[0] if bound.split() else ""
+    # ⛔ The flag is the bound's first word **up to its own `=`**: a project may
+    # state its bound in either spelling, and reading the whole word as the flag
+    # left `--a-flag=200` matching no call at all — so the project's bound was
+    # appended over a bound the session had already chosen, which § 22 forbids.
+    # Found by review on this change.
+    flag = bound.split()[0].partition("=")[0] if bound.split() else ""
     if not flag:
         return False
     return any(
@@ -267,6 +322,12 @@ def one_command(command: str) -> bool:
         return False
     if len(position.command_chain(found[0])) != 1:
         return False
+    if END_OF_FLAGS in found[0]:
+        # ⛔ Past the end-of-flags marker a word is an operand, so a bound
+        # appended there is no longer a flag: the command runs unbounded while
+        # the session is told it was bounded, which is the comment case one
+        # construct over. Found by review on this change.
+        return False
     if any(word.startswith(A_COMMENT) for word in found[0]):
         # ⛔ A call carrying a comment is refused rather than rewritten, for the
         # reason stated at `A_COMMENT`: appending to it puts the bound where the
@@ -293,9 +354,17 @@ def holds(config, command: str) -> list[dict]:
     stated = entries(config)
     if not stated or not position.readable(command):
         return []
+    # ⛔ Against **every** entry's form and not only the matched one: a project
+    # whose entries chain — one command's bounded form running a second command
+    # the project also bounds — had the route one refusal offered refused by the
+    # other entry. Found by review on this change.
+    if any(is_the_form(command, entry.get("instead")) for entry in stated):
+        return []
     found = []
     for at, segment in enumerate(position.segments(command), start=1):
         for called, arguments in position.command_chain(segment):
+            if _is_exempt(config, called, arguments):
+                continue
             for entry in stated:
                 configured = entry.get("command")
                 if not isinstance(configured, str) or not _names(called, configured):
@@ -312,8 +381,6 @@ def holds(config, command: str) -> list[dict]:
                         continue
                 bound = entry.get("bound")
                 if isinstance(bound, str) and bounded_already(arguments, bound):
-                    continue
-                if is_the_form(command, entry.get("instead")):
                     continue
                 found.append({
                     "entry": entry,
@@ -338,8 +405,15 @@ def _refusal(reason: str) -> dict:
     }
 
 
-def _rewrite(command: str, told: str) -> dict:
+def _rewrite(tool_input: dict, command: str, told: str) -> dict:
     """The arguments replaced, and the session told they were.
+
+    ⛔ **The whole input is carried back with the command replaced in it**, not
+    the command alone: the harness assigns what a hook returns over the input
+    wholesale rather than merging it, so a rewrite that answered with one key
+    dropped every other the call carried — a backgrounded dump came back to the
+    foreground, and a timeout the session set was discarded. Found by review on
+    this change.
 
     ⛔ Both in one answer, and the second half is not decoration: a bound the
     session is not told about is a bounded result read as complete, which is the
@@ -350,7 +424,7 @@ def _rewrite(command: str, told: str) -> dict:
     return {
         "hookSpecificOutput": {
             "hookEventName": GUARD_EVENT,
-            "updatedInput": {"command": command},
+            "updatedInput": {**tool_input, "command": command},
             "additionalContext": told,
         }
     }
@@ -360,15 +434,18 @@ def _held_to_nothing(what: str) -> dict:
     return {"systemMessage": f"Context guard: {what} ({PROCEEDS_CITATION})."}
 
 
-def bound_guard(config, command: str) -> dict:
+def bound_guard(config, command: str, tool_input: dict) -> dict:
     """Refuse an unbounded call, rewrite one a flag bounds, or answer nothing."""
     if not entries(config):
         return {}
-    spared = exempt(config, command)
-    if spared is not None:
-        return {}
     if not position.readable(command):
         return _held_to_nothing(UNPARSEABLE)
+    # ⛔ The exemption is **not** read per call here, which it was: one exempt
+    # command anywhere in a compound spared every unbounded command beside it, so
+    # appending ` && <anything exempt>` was a general way past this arm. What
+    # spares a match is that match's **own** command being exempt, which is what
+    # `holds` reads. ⚠️ The result arm keeps the per-call reading, and that
+    # difference is § 22's. Found by review on this change.
     found = holds(config, command)
     if not found:
         return {}
@@ -380,7 +457,7 @@ def bound_guard(config, command: str) -> dict:
         bound = found[0]["entry"].get("bound")
         if isinstance(bound, str) and bound.strip():
             rewritten = f"{command.rstrip()} {bound.strip()}"
-            return _rewrite(rewritten, (
+            return _rewrite(tool_input, rewritten, (
                 f"This project states that `{found[0]['entry'].get('command')}` produces output "
                 f"nothing bounds — {found[0]['entry'].get('reason')} — so `{bound.strip()}` was "
                 f"added to this call before it ran ({ARMS_CITATION}). ⛔ What came back is "
@@ -411,17 +488,35 @@ def bound_guard(config, command: str) -> dict:
     )
 
 
-def read_key(tool_input: dict) -> str | None:
-    """How a read is keyed in the ledger, or None where it names no path."""
+def _where(tool_input: dict, cwd: str | None) -> str | None:
+    """The file a read names, resolved against the directory the event states.
+
+    ⛔ Against the **event's** directory and not this process's: every other arm
+    of this file reads the one the payload carries, and resolving a relative path
+    against wherever the hook happens to stand keyed two trees' files to one
+    entry — so a read of a file this session had never opened was refused, and
+    the signature compared belonged to a third file. Found by review on this
+    change.
+    """
     path = tool_input.get(PATH_FIELD)
     if not isinstance(path, str) or not path.strip():
         return None
-    where = os.path.abspath(os.path.expanduser(path.strip()))
+    named = os.path.expanduser(path.strip())
+    if not os.path.isabs(named) and isinstance(cwd, str) and cwd.strip():
+        named = os.path.join(cwd.strip(), named)
+    return os.path.abspath(named)
+
+
+def read_key(tool_input: dict, cwd: str | None = None) -> str | None:
+    """How a read is keyed in the ledger, or None where it names no path."""
+    where = _where(tool_input, cwd)
+    if where is None:
+        return None
     stated = ":".join(str(tool_input.get(field, "")) for field in RANGE_FIELDS)
     return f"{where}@{stated}"
 
 
-def signature(tool_input: dict) -> str | None:
+def signature(tool_input: dict, cwd: str | None = None) -> str | None:
     """The file's own size and modification time, or None where neither could be read.
 
     ⛔ Read from the file and never from the window (§ 22 → A read this session
@@ -429,11 +524,11 @@ def signature(tool_input: dict) -> str | None:
     recorded read is new content, whoever changed it, which is what keeps an
     edited file readable.
     """
-    path = tool_input.get(PATH_FIELD)
-    if not isinstance(path, str) or not path.strip():
+    where = _where(tool_input, cwd)
+    if where is None:
         return None
     try:
-        stated = os.stat(os.path.expanduser(path.strip()))
+        stated = os.stat(where)
     except OSError:
         # ⛔ One answer for every failure to read, deliberately: a file that is
         # not there, a directory where a file was named and a file this user may
@@ -459,54 +554,73 @@ def ledger_root() -> Path:
     return Path(tempfile.gettempdir()) / f"mjolnir-reads-{os.getuid()}"
 
 
-def ledger_file(session: str) -> Path | None:
-    """One session's ledger, or None where the event named no session."""
+def ledger_dir(session: str) -> Path | None:
+    """One session's ledger, or None where the event named no session.
+
+    ⛔ **A directory with one file per read, rather than one file holding them
+    all.** One hook process runs per call and a batch of reads runs in parallel,
+    so a whole-file read-modify-write loses most of a batch: measured at two
+    entries recorded of eight, with a concurrent reader able to see the truncated
+    file and read the session as having read nothing. ⚠️ **This is the shape the
+    lease carrier already uses in this plugin** for the same reason, and it is
+    why nothing here holds a lock: a file per key needs none. Found by review on
+    this change.
+    """
     if not session.strip():
         return None
     digest = hashlib.sha256(session.strip().encode("utf-8")).hexdigest()[:24]
-    return ledger_root() / f"{digest}.json"
+    return ledger_root() / digest
 
 
-def ledger(session: str) -> dict:
-    path = ledger_file(session)
+def _read_file(session: str, key: str) -> Path | None:
+    where = ledger_dir(session)
+    if where is None:
+        return None
+    return where / f"{hashlib.sha256(key.encode('utf-8')).hexdigest()[:24]}.read"
+
+
+def remembered(session: str, key: str) -> str | None:
+    """The signature this session recorded for that read, or None."""
+    path = _read_file(session, key)
     if path is None:
-        return {}
+        return None
     try:
         with open(path, encoding="utf-8") as handle:
-            loaded = json.load(handle)
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return loaded if isinstance(loaded, dict) else {}
+            return handle.read().strip()
+    except OSError:
+        return None
 
 
 def remember(session: str, key: str, sign: str) -> None:
-    """Write one read into this session's ledger, oldest first out."""
-    path = ledger_file(session)
+    """Write one read into this session's ledger, the oldest out past the cap."""
+    path = _read_file(session, key)
     if path is None:
         return
-    held = ledger(session)
-    held.pop(key, None)
-    held[key] = sign
-    while len(held) > LEDGER_ENTRIES:
-        held.pop(next(iter(held)))
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w", encoding="utf-8") as handle:
-            json.dump(held, handle)
+            handle.write(sign)
+        # ⚠️ Pruned by what the filesystem already knows, so nothing here reads a
+        # clock: the oldest files go first, and a read pruned out is one this arm
+        # then lets through — the proceeding direction, which is this facet's
+        # everywhere else.
+        held = sorted(path.parent.glob("*.read"), key=lambda each: each.stat().st_mtime_ns)
+        for spare in held[:max(0, len(held) - LEDGER_ENTRIES)]:
+            spare.unlink(missing_ok=True)
     except OSError:
         # Nothing is recorded, so the next read of the same file proceeds. The
         # proceeding direction again, and the one a ledger can fail in.
         return
 
 
-def reread_guard(config, tool_input: dict, session: str) -> dict:
+def reread_guard(config, tool_input: dict, session: str, cwd: str | None = None) -> dict:
     """Refuse a read this session has already made, or answer nothing."""
-    if str(config.get(REREAD) or "") != REFUSE:
+    if str(config.get(REREAD) or "") == ALLOW:
         return {}
-    key, sign = read_key(tool_input), signature(tool_input)
+    key, sign = read_key(tool_input, cwd), signature(tool_input, cwd)
     if key is None or sign is None or not session.strip():
         return {}
-    if ledger(session).get(key) != sign:
+    if remembered(session, key) != sign:
         return {}
     where = tool_input.get(PATH_FIELD)
     ranged = any(tool_input.get(field) is not None for field in RANGE_FIELDS)
@@ -533,17 +647,44 @@ def guard_answer(payload: dict, *, config=None) -> dict:
     command = str(tool_input.get("command") or "")
     if tool == COMMAND_TOOL and not command.strip():
         return {}
-    if tool == READ_TOOL and read_key(tool_input) is None:
+    if tool == READ_TOOL and read_key(tool_input, payload.get("cwd")) is None:
         return {}
     loaded, answered = _loaded(payload, config)
     if loaded is None:
         return answered
     if tool == COMMAND_TOOL:
-        return bound_guard(loaded, command)
-    return reread_guard(loaded, tool_input, str(payload.get("session_id") or ""))
+        return bound_guard(loaded, command, tool_input)
+    return reread_guard(loaded, tool_input, str(payload.get("session_id") or ""),
+                        payload.get("cwd"))
 
 
 # --- what comes back --------------------------------------------------------
+
+
+def in_the_shape_of(response, rendered: str):
+    """The replacement, carrying the shape the response arrived in.
+
+    ⛔ **Measured against the installed harness rather than read off the
+    reference**: for a tool that is not an external one, the replacement is
+    validated against that tool's own output schema, and a mismatch keeps the
+    original output *and* adds an error beside it. The command tool's schema is
+    a block of fields, so a bare string is refused there — which left the dump
+    whole and the window carrying one more message than before. Found by review
+    on this change.
+
+    ⚠️ **The shape is taken from the response rather than named here**: a list of
+    the command tool's own fields would be the harness's vocabulary going stale
+    in this file, and what the window pays for is the text whatever field it
+    arrived under. The longest string the response carries is the one replaced,
+    the rest of the block being kept as it stands.
+    """
+    if not isinstance(response, dict):
+        return rendered
+    carried = {key: value for key, value in response.items() if isinstance(value, str)}
+    if not carried:
+        return rendered
+    longest = max(carried, key=lambda key: len(carried[key]))
+    return {**response, longest: rendered}
 
 
 def text_of(response) -> str | None:
@@ -582,6 +723,14 @@ def sidecar_of(config, text: str) -> str | None:
     if not isinstance(stated, str) or not stated.strip():
         return None
     root = os.path.expanduser(os.path.expandvars(stated.strip()))
+    if not os.path.isabs(root):
+        # ⛔ § 22 puts this directory outside every working tree, and a relative
+        # path cannot be: it resolves against wherever the hook is standing,
+        # which under § 10's model is the tree the teardown is about to take. So
+        # nothing is written and the arm reports instead — which also covers a
+        # path whose variable the environment did not hold, that being the way a
+        # stated absolute path arrives relative. Found by review on this change.
+        return None
     try:
         # Named by what it holds, so one result written twice is one file: a name
         # carrying a counter or a time would leave a directory nobody can read.
@@ -592,9 +741,16 @@ def sidecar_of(config, text: str) -> str | None:
         name = f"{hashlib.sha256(text.encode('utf-8')).hexdigest()[:24]}.txt"
         where = os.path.join(root, name)
         os.makedirs(root, exist_ok=True)
-        with open(where, "w", encoding="utf-8") as handle:
+        # ⛔ Written and read back with the line endings left alone: in the
+        # default mode a carriage return is translated on the way out and again
+        # on the way in, so a result carrying one came back differing from itself
+        # and the arm reported that nothing could be written — of a file whose
+        # bytes were exactly right, leaving it behind with nothing to read it.
+        # Any output with a progress bar in it is that result. Found by review on
+        # this change.
+        with open(where, "w", encoding="utf-8", newline="") as handle:
             handle.write(text)
-        with open(where, encoding="utf-8") as handle:
+        with open(where, encoding="utf-8", newline="") as handle:
             back = handle.read()
     except (OSError, UnicodeError):
         # ⛔ The encoding half is not an `OSError` and was swallowed by the arm's
@@ -628,7 +784,17 @@ def result_curb(config, command: str, response) -> dict:
     limit = limit_of(config)
     if limit is None:
         return {}
-    if command.strip() and exempt(config, command) is not None:
+    # ⛔ Per call here, and deliberately not per position: this arm replaces one
+    # blob carrying every command's output, so truncating it would truncate the
+    # exempt command's own — which is what the exemption exists to prevent
+    # (§ 22). ⛔ **And a call this arm cannot parse is treated as exempt where
+    # the project states any exemption at all**: an unestablished command
+    # position was answered as *not exempt*, so the one role § 22 names had its
+    # measurement replaced on a fact nothing established. Found by review on this
+    # change.
+    if never_bound(config) and command.strip() and (
+        not position.readable(command) or exempt(config, command) is not None
+    ):
         return {}
     text = text_of(response)
     if text is None:
@@ -647,7 +813,7 @@ def result_curb(config, command: str, response) -> dict:
     return {
         "hookSpecificOutput": {
             "hookEventName": RESULT_EVENT,
-            "updatedToolOutput": rendered,
+            "updatedToolOutput": in_the_shape_of(response, rendered),
         }
     }
 
@@ -667,8 +833,9 @@ def result_answer(payload: dict, *, config=None) -> dict:
         # ⛔ Recorded only where the arm that compares it holds anything: a
         # project stating `allow` gets no ledger written at all, rather than a
         # store kept on disk for nothing to read.
-        if str(loaded.get(REREAD) or "") == REFUSE:
-            key, sign = read_key(tool_input), signature(tool_input)
+        if str(loaded.get(REREAD) or "") != ALLOW:
+            cwd = payload.get("cwd")
+            key, sign = read_key(tool_input, cwd), signature(tool_input, cwd)
             if key is not None and sign is not None:
                 remember(str(payload.get("session_id") or ""), key, sign)
         return {}
@@ -814,7 +981,7 @@ def check_the_carrier_still_calls_this(text: str) -> list[str]:
 # is silent on every call there is.
 
 
-def _a_config(unbounded: list[dict], spared=None, limit=None, sidecar=None, reread=REFUSE):
+def _a_config(unbounded: list[dict], spared=None, limit=None, sidecar=None, reread="refuse"):
     """A stand-in for the shared reader's answer, carrying what the arms read.
 
     ⛔ A fake and not a mock: it answers as the reader does for the five keys
@@ -996,6 +1163,9 @@ MUST_REFUSE_RATHER_THAN_REWRITE = [
     ("a comment after it", "<tool> # why this was run"),
     ("a comment after its own arguments", "<tool> --a-flag a-value # why"),
     ("a word that merely opens with the comment character", "<tool> #an-argument"),
+    # ⛔ Past this marker a word is an operand, so an appended bound is no flag.
+    ("the end-of-flags marker", "<tool> -- a-path"),
+    ("the marker after its own flags", "<tool> --a-flag -- a-path"),
 ]
 
 # The commands a project would name, with no project in any of them.
@@ -1151,6 +1321,156 @@ def self_test() -> int:  # noqa: PLR0912, PLR0915 -- one assertion per rule, rea
                                     config=routed)) == "deny")
 
         out.append("")
+        out.append("What a rewrite answers with, which the harness reads rather than merges:")
+        # ⛔ The whole input comes back with the command replaced in it: the
+        # harness assigns a hook's answer over the input wholesale, so a rewrite
+        # answering with the command alone drops everything else the call
+        # carried. ⚠️ The field names here are the command tool's own, which is
+        # what a project's call actually carries.
+        carrying = {
+            "command": UNBOUNDED_COMMAND,
+            "run_in_background": True,
+            "timeout": 120000,
+            "description": "why this call was made",
+        }
+        answered = guard_answer({"tool_name": COMMAND_TOOL, "cwd": ".", "session_id": "a-session",
+                                 "tool_input": carrying}, config=bounds)
+        replaced_input = answered.get("hookSpecificOutput", {}).get("updatedInput", {})
+        check("the command is the rewritten one",
+              replaced_input.get("command") == f"{UNBOUNDED_COMMAND} {A_BOUND}",
+              repr(replaced_input)[:160])
+        for field in ("run_in_background", "timeout", "description"):
+            check(f"and `{field}` survives the rewrite",
+                  replaced_input.get(field) == carrying[field], repr(replaced_input)[:160])
+
+        out.append("")
+        out.append("What a replaced result answers with, which the harness validates:")
+        # ⛔ The replacement takes the shape the response arrived in: a result
+        # that came back as a block of fields is answered with that block, its
+        # longest string replaced, because the harness holds the answer to the
+        # tool's own output schema and keeps the original on a mismatch.
+        curbing = _a_config([], limit=2000, sidecar=sidecar)
+        structured = {"stdout": "a-line\n" * 2000, "stderr": "", "interrupted": False}
+        answered = result_answer(_came_back("a-free-command", structured), config=curbing)
+        carried = answered.get("hookSpecificOutput", {}).get("updatedToolOutput")
+        check("a response that was a block of fields is answered with a block",
+              isinstance(carried, dict), repr(carried)[:120])
+        if isinstance(carried, dict):
+            check("its longest string is the one replaced",
+                  carried.get("stdout", "").startswith("⛔ This result was"),
+                  repr(carried.get("stdout"))[:120])
+            check("and every other field is kept as it stood",
+                  carried.get("stderr") == "" and carried.get("interrupted") is False,
+                  repr(carried)[:160])
+        flat = result_answer(_came_back("a-free-command", "a-line\n" * 2000), config=curbing)
+        check("a response that was text is answered with text",
+              isinstance(flat.get("hookSpecificOutput", {}).get("updatedToolOutput"), str),
+              repr(flat)[:120])
+
+        out.append("")
+        out.append("A result whose lines end the other way is written and read back as itself:")
+        # ⛔ The write and the read-back leave line endings alone: translated, a
+        # result carrying a carriage return came back differing from itself and
+        # the arm reported that nothing could be written — of a file whose bytes
+        # were right, left behind with nothing to read it.
+        returned = "a line of a result\r\n" * 400
+        answered = result_answer(_came_back("a-free-command", returned), config=curbing)
+        check("the result is replaced rather than reported unwritable",
+              bool(replaced(answered)), repr(answered)[:160])
+        # ⚠️ Read defensively, for the reason the other read-back is: a path
+        # naming no file is **reported** rather than raised, so a broken arm
+        # reddens an assertion instead of killing the run.
+        where = re.search(r"on disk at (.+)", replaced(answered))
+        on_disk = None
+        if where is not None:
+            try:
+                with open(where.group(1), encoding="utf-8", newline="") as handle:
+                    on_disk = handle.read()
+            except OSError as error:
+                on_disk = f"could not be read: {error}"
+        check("and the file carries the result exactly", on_disk == returned,
+              str(on_disk)[:120])
+
+        out.append("")
+        out.append("An exemption spares its own command and never the call around it:")
+        a_long_result = "a-line-of-the-measurement\n" * 2000
+        chained = _a_config(
+            [_an_entry(UNBOUNDED_COMMAND, bound=A_BOUND)],
+            spared=[{"command": EXEMPT_COMMAND}], limit=2000, sidecar=sidecar,
+        )
+        compound = f"{UNBOUNDED_COMMAND} && {EXEMPT_COMMAND}"
+        check("an exempt command beside an unbounded one does not spare it",
+              decision(guard_answer(_call(compound), config=chained)) == "deny",
+              repr(guard_answer(_call(compound), config=chained))[:160])
+        check("whichever order they are written in",
+              decision(guard_answer(_call(f"{EXEMPT_COMMAND}; {UNBOUNDED_COMMAND}"),
+                                    config=chained)) == "deny")
+        check("and inside a substitution",
+              decision(guard_answer(_call(f"{UNBOUNDED_COMMAND} $({EXEMPT_COMMAND})"),
+                                    config=chained)) == "deny")
+        # ⛔ And the other half of the same rule: the *result* arm reads the
+        # exemption per call, because one blob carries both commands' output and
+        # truncating it would truncate the exempt command's own.
+        check("while the result of a call carrying an exempt command is left whole",
+              result_answer(_came_back(compound, a_long_result), config=chained) == {},
+              repr(result_answer(_came_back(compound, a_long_result), config=chained))[:140])
+        check("and a call this arm could not parse is left whole where anything is exempt",
+              result_answer(_came_back(f"a-free-command 'an unclosed quote; {EXEMPT_COMMAND}",
+                                       a_long_result), config=chained) == {})
+
+        out.append("")
+        out.append("A bound stated in either spelling recognises a call that already carries it:")
+        attached = _a_config([_an_entry(UNBOUNDED_COMMAND, bound="--A-BOUNDING-FLAG=200")])
+        check("a bound written with its value attached matches the flag",
+              guard_answer(_call(f"{UNBOUNDED_COMMAND} --A-BOUNDING-FLAG=10"),
+                           config=attached) == {},
+              repr(guard_answer(_call(f"{UNBOUNDED_COMMAND} --A-BOUNDING-FLAG=10"),
+                                config=attached))[:140])
+        check("and the same bound matches the two-word spelling of the call",
+              guard_answer(_call(f"{UNBOUNDED_COMMAND} --A-BOUNDING-FLAG 10"),
+                           config=attached) == {})
+        check("while a call carrying neither is still rewritten",
+              rewritten(guard_answer(_call(UNBOUNDED_COMMAND), config=attached)).endswith(
+                  "--A-BOUNDING-FLAG=200"))
+
+        out.append("")
+        out.append("The form one entry names is not refused by another entry:")
+        two = _a_config([
+            _an_entry(UNBOUNDED_COMMAND, instead=f"{UNBOUNDED_COMMAND} | a-bounding-command"),
+            _an_entry("a-bounding-command", bound="-n 100"),
+        ])
+        check("the unbounded call is refused",
+              decision(guard_answer(_call(UNBOUNDED_COMMAND), config=two)) == "deny")
+        check("and the form it names is not, although the second entry names its own command",
+              guard_answer(_call(f"{UNBOUNDED_COMMAND} | a-bounding-command"), config=two) == {},
+              repr(guard_answer(_call(f"{UNBOUNDED_COMMAND} | a-bounding-command"),
+                                config=two))[:160])
+
+        out.append("")
+        out.append("A read names its file against the directory the event states:")
+        a_reading = _a_config([])
+        elsewhere = root / "another-tree"
+        elsewhere.mkdir(parents=True, exist_ok=True)
+        (elsewhere / "a-file-of-its-own").write_text("a line\n" * 10, encoding="utf-8")
+        relative = {"tool_name": READ_TOOL, "cwd": str(elsewhere), "session_id": "a-session",
+                    "tool_input": {PATH_FIELD: "a-file-of-its-own"}}
+        check("a relative path is keyed under the event's own directory",
+              str(read_key(relative["tool_input"], relative["cwd"])).startswith(str(elsewhere)),
+              str(read_key(relative["tool_input"], relative["cwd"])))
+        check("the first read of it passes", guard_answer(relative, config=a_reading) == {})
+        result_answer(relative, config=a_reading)
+        check("the same read is then refused",
+              decision(guard_answer(relative, config=a_reading)) == "deny")
+        # ⛔ The same relative name under another directory is another file, which
+        # is what the event's own directory is read for.
+        other = root / "a-third-tree"
+        other.mkdir(parents=True, exist_ok=True)
+        (other / "a-file-of-its-own").write_text("another line\n" * 3, encoding="utf-8")
+        check("and the same name under another directory is a read of its own",
+              guard_answer({**relative, "cwd": str(other)}, config=a_reading) == {},
+              repr(guard_answer({**relative, "cwd": str(other)}, config=a_reading))[:140])
+
+        out.append("")
         out.append("A narrowing pattern decides which spelling of one command is held:")
         narrowed = _a_config([
             _an_entry(UNBOUNDED_COMMAND, instead=A_FORM, args_match="(^| )--WHOLE-TREE-FLAG( |$)")
@@ -1165,7 +1485,7 @@ def self_test() -> int:  # noqa: PLR0912, PLR0915 -- one assertion per rule, rea
         out.append("A command the project names as never bounded is neither held nor replaced:")
         both = _a_config(
             [_an_entry(EXEMPT_COMMAND, instead=A_FORM), _an_entry(UNBOUNDED_COMMAND, bound=A_BOUND)],
-            spared=[EXEMPT_COMMAND], limit=2000, sidecar=sidecar,
+            spared=[{"command": EXEMPT_COMMAND}], limit=2000, sidecar=sidecar,
         )
         long_result = "a-line-of-the-measurement\n" * 2000
         check("the call itself runs untouched",
@@ -1335,7 +1655,7 @@ def self_test() -> int:  # noqa: PLR0912, PLR0915 -- one assertion per rule, rea
         check("a project stating `allow` refuses no read",
               guard_answer(permitted, config=allowed) == {})
         check("and records none either, which is what `allow` has to mean",
-              read_key(permitted["tool_input"]) not in ledger("a-session"))
+              remembered("a-session", str(read_key(permitted["tool_input"]))) is None)
 
         out.append("")
         out.append("Every fact that could not be established leaves the call alone:")
@@ -1480,23 +1800,53 @@ def self_test() -> int:  # noqa: PLR0912, PLR0915 -- one assertion per rule, rea
                 over = "a-line-of-a-result\n" * (stated // 4)
                 answered = result_answer(
                     _came_back("a-command-no-example-names", over), config=loaded)
-                check(f"{name}: a result over its own limit is replaced",
-                      bool(replaced(answered)), repr(answered)[:160])
-                named = os.path.expandvars(str(loaded.get(SIDECAR)))
-                check(f"{name}: and the path it names is under the directory it states",
-                      named in replaced(answered), replaced(answered)[:200])
-                written = re.search(r"on disk at (.+)", replaced(answered))
-                check(f"{name}: and the full text is on disk at that path",
-                      written is not None and os.path.isfile(written.group(1)),
-                      replaced(answered)[:200])
+                # ⛔ An example's `sidecar_dir` is a placeholder rather than a
+                # path, so it is not absolute — and § 22 puts that directory
+                # outside every working tree, which a relative path cannot be. So
+                # what this arm holds against shipped data is the **refusal to
+                # write there**: the result reaches the window whole and the arm
+                # reports it, rather than a file landing wherever the hook stood.
+                # ⚠️ The replacement itself is asserted above against a directory
+                # that is a real one; what is asserted here is the example's own
+                # value reaching the rule.
+                check(f"{name}: its stated limit is read", stated == loaded.get(LIMIT),
+                      f"{stated!r} against {loaded.get(LIMIT)!r}")
+                check(f"{name}: and a result over it is reported rather than written to a "
+                      "path that is not absolute",
+                      NO_SIDECAR in str(answered.get("systemMessage", ""))
+                      and not replaced(answered), repr(answered)[:200])
+                check(f"{name}: and the directory it states is not absolute, which is why",
+                      not os.path.isabs(os.path.expandvars(str(loaded.get(SIDECAR)))),
+                      str(loaded.get(SIDECAR)))
             for name, loaded in spared_by:
-                for spared in never_bound(loaded):
+                for entry in never_bound(loaded):
+                    spared = str(entry.get("command"))
+                    # ⛔ An exemption narrowed by a pattern needs a call that
+                    # pattern matches, exactly as a narrowed `unbounded` entry
+                    # does — and ⚠️ an entry whose own words do not satisfy it
+                    # reddens rather than being skipped.
+                    call = shlex.quote(spared)
+                    pattern = entry.get("args_match")
+                    if isinstance(pattern, str) and pattern.strip():
+                        derived = " ".join(re.findall(r"[\w./=-]{3,}", pattern))
+                        check(f"{name}: its exemption's pattern can be exercised from its "
+                              "own words",
+                              bool(derived) and bool(re.search(pattern, derived)),
+                              f"{pattern!r} against {derived!r}")
+                        call = f"{call} {derived}"
                     check(f"{name}: its exempt command `{spared}` is not held",
-                          guard_answer(_call(shlex.quote(spared)), config=loaded) == {},
-                          repr(guard_answer(_call(shlex.quote(spared)), config=loaded))[:140])
+                          guard_answer(_call(call), config=loaded) == {},
+                          repr(guard_answer(_call(call), config=loaded))[:140])
                     check(f"{name}: and its result is not replaced",
-                          result_answer(_came_back(shlex.quote(spared), "a-line\n" * 20000),
+                          result_answer(_came_back(call, "a-line\n" * 20000),
                                         config=loaded) == {})
+                    if isinstance(pattern, str) and pattern.strip():
+                        # ⛔ And the narrowing holds: the same command without the
+                        # arguments the pattern names is **not** exempt, which is
+                        # the whole of what `args_match` buys an exemption.
+                        check(f"{name}: and the same command outside that pattern is not",
+                              exempt(loaded, shlex.quote(spared)) is None,
+                              repr(exempt(loaded, shlex.quote(spared))))
         finally:
             os.chdir(here)
 
