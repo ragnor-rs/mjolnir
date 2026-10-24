@@ -158,6 +158,10 @@ branch_model:
   # A sibling of the shared checkout. The leaf is `<number>-<slug>` and is derived, not stated.
   tree_dir: "../<project>-trees"
   mechanics: null
+  # Nothing is installed into a tree here, so nothing in one is written again by a rebuild: every
+  # ignored file a tree holds is a file a removal would be the only copy of. The stated-empty form,
+  # which keeps a tree rather than losing one.
+  regenerable: []
   exclusive_resources: []
 
 context:

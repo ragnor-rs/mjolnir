@@ -332,6 +332,22 @@ the three that are obvious. The measurements that forced each to be independent:
      the merge as the signal — and two of the projects run it from a hook that surveys trees and
      reports rather than removing. So the facet is read by the role that finishes work as well as
      by the one that starts it, which is why `mechanics` points at setup *and* teardown.
+   - **The half that *deletes files* belonged to neither role, and it is the half that destroys
+     data.** The merge is only one of the two moments a tree stops being wanted: a change merged in
+     the host's web interface, in another session, or before any rule existed leaves a tree nothing
+     is watching, and the trees then accumulate until somebody notices — the count is in
+     [`schema.md § 10 → Pruning a tree whose branch has landed`](../plugins/mjolnir/config/schema.md#pruning-a-tree-whose-branch-has-landed),
+     which is also where both carriers are stated and is not quoted back here. What is worth
+     recording beside it is that **the measurements came from different projects and pointed at
+     different halves of one rule** — what *landed* means, what makes a tree disposable, and how
+     long a kept verdict is good for — which is why the subsection reads as four rules rather than
+     one and why no single project's experience would have produced it.
+   - **`regenerable` is the one key that half needs, and it is a key for the reason `claimed_by`
+     is.** What a rebuild writes again is a build directory in one project, a dependency cache in
+     another, a service stack's own volumes in a third — and a carrier shipping any of those names
+     would be this toolkit carrying a project's value. ⚠️ What the empty form costs, and the
+     exemption without which the rule would prune nothing at all, are stated with the key rather
+     than explained twice.
    - **A verdict has to name its tree, because the failure is silent and passes.** One project
      records that a check run against whichever service stack happens to be up is a check of
      another branch's code, and that an idle stack is not an unused one; another found a capacity

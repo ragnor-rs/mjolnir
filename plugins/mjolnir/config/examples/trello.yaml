@@ -169,6 +169,12 @@ branch_model:
   parallel_trees: true
   tree_dir: "../<project>-trees"
   mechanics: ".claude/worktrees.md"
+  # The stack writes its own volumes and logs into the tree, and bringing it up again writes them
+  # back. The material the pointer copies in is not here, for the reason the removal is destructive
+  # at all: nothing a rebuild runs would put it back.
+  regenerable:
+    - "<the stack's own volume directory>"
+    - "<the log directory>"
   exclusive_resources:
     # One stack for the whole project, and the ticket belongs to the tree: two sessions in one
     # tree share a place, two trees queue against each other.

@@ -1681,6 +1681,34 @@ def validate(data: dict, facts: dict) -> None:
             "this is readable by a person and by nothing shipped (§ 10).",
         )
 
+    # § 10. What a rebuild writes again, which is the only half of the pruning
+    # oracle a project states. ⛔ Whether the key is *written* is the surface's
+    # `# required_when` marker and not a rule here; what is held here is its
+    # shape, and the direction that matters is the permissive one -- an entry
+    # that is not a path reads as an exemption and licenses the removal of a
+    # tree holding the file it failed to name.
+    #
+    # ⚠️ Each entry is held to being a non-empty string and to nothing further.
+    # Whether a path exists is not a question about the configuration: the paths
+    # are relative to a tree that does not exist yet, and most of them name
+    # something no tree has until its build has run once.
+    regenerable = _get(data, "branch_model.regenerable")
+    if regenerable is not None:
+        if not isinstance(regenerable, list):
+            raise ConfigError(
+                "branch_model.regenerable",
+                f"is {regenerable!r}; § 10 states it as a list of ignored paths a rebuild "
+                "writes again, and `[]` where a tree of this project holds none.",
+            )
+        for index, entry in enumerate(regenerable):
+            if not isinstance(entry, str) or not entry.strip():
+                raise ConfigError(
+                    f"branch_model.regenerable[{index}]",
+                    f"is {entry!r}; each entry is a path (§ 10). ⛔ Refused rather than "
+                    "skipped: an entry that names nothing exempts nothing, and the tree it "
+                    "was written to protect is removed with the file still in it.",
+                )
+
     # § 10. Each exclusive resource, held key by key. ⛔ Every one of them is
     # stated on the surface with no default, so an entry missing one is refused
     # here rather than resolved to something the project never said -- and the
@@ -2618,6 +2646,12 @@ MARKED_REQUIRED = [
 RELATIVELY_DECLARED = ("work_item.type_branch_prefix.bug", "bugfix")
 
 MARKED_REQUIRED_WHEN = [
+    # § 10's one, meaningless under the mode that creates no tree: with nothing
+    # ever pruned there is no removal for an ignored path to be lost to. ⚠️ Its
+    # sibling `tree_dir` is **not** here, carrying the same condition in prose
+    # and a rule of its own -- that refusal names what the role was left unable
+    # to do, which a marker's message cannot say.
+    ("branch_model.regenerable", "branch_model.kind", "worktree"),
     # § 15's five, each meaningless where the facet is absent and each needed by
     # one of the two comparisons: the first three by the register-against-suite
     # one, the last two by the change-against-both one.
@@ -3588,6 +3622,16 @@ def _planted_violations():
          "branch_model.exclusive_resources[0].probe", _a_resource_of(probe="   ")),
         ("a probe that is no command at all", "branch_model.exclusive_resources[0].probe",
          _a_resource_of(probe=["a-command-that-counts-them"])),
+        # ⚠️ Both of these refuse in the permissive direction, which is why each
+        # has a plant of its own: a list written as one path exempts nothing and
+        # an entry that names nothing exempts nothing, and in either case the
+        # tree the key was written to protect is removed with the file in it.
+        ("a regenerable set that is not a list", "branch_model.regenerable",
+         at("branch_model.regenerable", "a-build-directory")),
+        ("a regenerable entry that names no path", "branch_model.regenerable[0]",
+         at("branch_model.regenerable", ["   "])),
+        ("a regenerable entry that is not a path at all", "branch_model.regenerable[0]",
+         at("branch_model.regenerable", [["a-build-directory"]])),
         ("a body-section list that is not a list", "body_sections",
          at("body_sections", "A section this project requires")),
         ("a body-section entry that is not a block", "body_sections[0]",

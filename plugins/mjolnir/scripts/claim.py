@@ -612,8 +612,17 @@ def process_in(path: str) -> bool | None:
     return False
 
 
-def standing_in(path: str) -> bool:
-    """Whether *this* process's working directory is at or below `path`.
+def standing_in(path: str, here: str | None = None) -> bool:
+    """Whether *this* process's working directory -- or `here`, where one is given -- is at or
+    below `path`.
+
+    ⛔ **`here` is for a caller acting on behalf of a session rather than for itself**, and it is a
+    parameter rather than a second function because the *at or below* comparison is the rule and a
+    copy of it elsewhere would be allowed to disagree. ⚠️ Measured on the sweep over landed trees:
+    a hook runs in a process of its own and its working directory is the harness's business, while
+    the directory that must not be removed is the **session's** -- which every hook in this plugin
+    is handed in its payload. Reading `getcwd()` there made the one stop between a live session and
+    the removal of its own tree depend on an unstated guarantee about where hooks are run.
 
     ⛔ **§ 10's *leave, then remove*, and the only half of it a carrier can enforce.** The rest of
     that rule is an ordering in a role's text; this is the refusal that catches a pass which
@@ -634,7 +643,7 @@ def standing_in(path: str) -> bool:
     caller apart from one, so a release holding only `process_in` would refuse itself forever.
     """
     try:
-        here = os.path.realpath(os.getcwd())
+        here = os.path.realpath(here if here is not None else os.getcwd())
     except OSError:
         # ⚠️ An unreadable cwd *is* the deleted-out-from-under case, already arrived. There is no
         # live directory left to protect, so the removal may proceed and clean up after it.
@@ -912,7 +921,13 @@ class Status:
     def report(self) -> str:
         if not self.taken:
             where = "on this machine" if self.local_only else "on the host"
-            return f"free: no ref named this exists {where}."
+            free = f"free: no ref named this exists {where}."
+            # ⚠️ A ref that is gone and a branch that landed are two facts, and the second is the
+            # one a reader of a *tree* needs. Said here rather than left to the caller, so the one
+            # reading is still the one statement.
+            if self.liveness is not None and self.liveness.landed:
+                return f"{free}\nlanded: {self.liveness.reason}, read from the branch on this machine."
+            return free
         lines = [f"taken: the ref exists at {self.ref_sha[:7]}, {self.holder.describe()}."]
         if self.liveness:
             if self.liveness.landed:
@@ -959,7 +974,37 @@ def status(
 
     sha = remote_ref_sha(root, remote, branch)
     if not sha:
-        return Status(False, None, Holder(), None, local_only=False)
+        # ⛔ **A ref that is gone is not a question nobody may ask.** The claim is free -- `taken`
+        # stays false, which is what every caller keys on -- but *has this landed* still has an
+        # answer, and it is read from the local branch where there is one.
+        #
+        # ⚠️ Measured on the consumer that needed it: under § 2's `delete_branch: host` the host
+        # deletes the ref on merge, so every landed branch reaches here, and a reading that
+        # returned no liveness at all made the sweep over landed trees a **no-op on exactly the
+        # projects whose refs are tidied up for them** -- the accumulation that facet exists to
+        # stop, reported as *has not landed* with nothing unestablished.
+        #
+        # ⛔ Not a second oracle: the same `read_liveness` on the same integration branch, handed
+        # the sha this machine has instead of the one the host no longer carries.
+        local = git(root, "rev-parse", "--verify", "--quiet", REFS_PREFIX + branch, check=False)
+        here = local.stdout.strip() or None
+        return Status(
+            taken=False,
+            # ⛔ **The sha the reading was taken on, which here is this machine's.** `taken` is
+            # what says whether a ref is published, and this field is what a consumer compares
+            # the tree against -- so leaving it empty here told the sweep that the commit its
+            # verdict rested on could not be established, and the project whose host deletes its
+            # refs went back to pruning nothing. Measured on this change, one fix defeating the
+            # other.
+            ref_sha=here,
+            holder=Holder(
+                unestablished=["the ref does not exist on the host, so it records no actor"]
+            ),
+            liveness=(
+                read_liveness(root, remote, branch, integration, here) if here else None
+            ),
+            local_only=False,
+        )
     # ⛔ The holder is read **before** liveness and not beside it: `since` is when this ref came
     # into existence, and the landed arm cannot tell a merge of this ref from a merge of the one
     # that last wore its name without it.
@@ -1208,6 +1253,7 @@ def release(
     *,
     force: bool = False,
     keep_ref: bool = False,
+    here: str | None = None,
 ) -> str:
     """Give the claim up: the ref first, then the tree and the local branch.
 
@@ -1250,7 +1296,10 @@ def release(
     doomed = tree or tree_for_branch(root, branch)
     # ⛔ Before the ref deletion and not beside the tree removal: a refusal has to leave the claim
     # whole. Checked where `release` is entered, so a half-released claim is never this guard's.
-    if doomed and standing_in(doomed):
+    # ⚠️ `here` is the directory to answer about, for a caller acting on behalf of a session
+    # rather than for itself; with none stated it is this process's own, which is every other
+    # caller on this route.
+    if doomed and standing_in(doomed, here):
         raise ClaimError(
             f"refused: this release would remove `{doomed}`, which this process is standing in.\n"
             "§ 10 orders the exit before the removal. Leave the tree and run this again — from "
@@ -2522,6 +2571,73 @@ def self_test() -> int:
         suite.ok(
             "and releasing it needs no override",
             "ref deleted" in release(two, "feature/91-merged", None, "origin"),
+        )
+
+        # ⛔ **The ref is now gone from the host and the branch is still landed**, which is § 2's
+        # `delete_branch: host` state reached deliberately: the release above deleted the ref, and
+        # `two` still has the local branch. ⚠️ Asserted here rather than in the consumer that
+        # needed it, because the reading is this module's -- a consumer holding it would be the
+        # second statement this whole file exists not to be.
+        # ⚠️ Read from `one`, which is the clone that holds the local branch and its tree: the
+        # release above ran in `two`, which never had either, so this is the state a project whose
+        # host deletes the ref on merge is left standing in. The integration branch is stated
+        # because `one`'s own `main` has not moved since the squash was pushed from `two`.
+        git(one, "fetch", "--quiet", "origin")
+        suite.ok(
+            "a ref the host no longer carries is free, the claim being the ref",
+            not status(one, "feature/91-merged", "origin", "origin/main").taken,
+        )
+        gone = status(one, "feature/91-merged", "origin", "origin/main")
+        suite.ok(
+            "⛔ and it still reads landed, from the branch on this machine",
+            gone.liveness is not None and gone.liveness.landed,
+            gone.report(),
+        )
+        suite.ok(
+            "and reports the commit the reading was taken on, so a tree can be compared to it",
+            gone.ref_sha is not None
+            and gone.ref_sha
+            == git(one, "rev-parse", "refs/heads/feature/91-merged").stdout.strip(),
+            str(gone.ref_sha),
+        )
+        suite.ok(
+            "and says both facts, a free claim and a landed branch being different questions",
+            "free:" in gone.report() and "landed:" in gone.report(),
+            gone.report(),
+        )
+        # ⛔ The control: a name this machine has never had reads free with no landed reading at
+        # all, so the arm above belongs to the local branch rather than to the ref's absence.
+        never = status(one, "feature/never-existed", "origin", "origin/main")
+        suite.ok(
+            "while a branch this machine does not have has no landed reading either",
+            not never.taken and never.liveness is None,
+            never.report(),
+        )
+
+    print("\nthe directory a removal is refused against is the caller's to state:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+        tree = str(Path(tmp) / "stated")
+        take(one, "feature/92-stated", tree)
+        # ⛔ A carrier acting for a session rather than for itself is handed that session's
+        # directory: a hook runs in a process of its own, and the directory that must not be
+        # removed is the session's. ⚠️ Both answers, so the parameter is not merely accepted.
+        suite.ok(
+            "the directory handed in is what the reading answers about",
+            standing_in(tree, here=tree) is True
+            and standing_in(tree, here=str(Path(tmp))) is False,
+        )
+        suite.ok(
+            "and with none handed in it is this process's own, which is the caller-is-itself case",
+            standing_in(tree) is False and standing_in(os.getcwd()) is True,
+        )
+        suite.ok(
+            "⛔ and a release refused on the stated directory names the tree and the remedy",
+            "Leave the tree" in (_message(
+                lambda: release(one, "feature/92-stated", tree, "origin", here=tree)) or ""),
+            _message(lambda: release(one, "feature/92-stated", tree, "origin", here=tree)) or "",
         )
 
     print("\nthe integration branch, derived rather than named:")

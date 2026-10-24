@@ -180,6 +180,13 @@ branch_model:
   # the steps are the pointer below.
   tree_dir: ".worktrees"
   mechanics: ".claude/worktrees.md"   # the tree's own setup and teardown steps
+  # The non-empty shape, and the one the pointer above implies: a tree that has something installed
+  # into it holds ignored files that running the install again writes back. ⚠️ The environment file
+  # the pointer copies in is deliberately absent from this list — a copied secret is written by
+  # nothing a rebuild runs, so a tree holding one is kept and the file named.
+  regenerable:
+    - "<the build output directory>"
+    - "<the dependency cache>"
   exclusive_resources:
     # Two resources in one project, with different caps — the shape a single name could not
     # state. The instance is one per project; the build daemon runs two in flight.

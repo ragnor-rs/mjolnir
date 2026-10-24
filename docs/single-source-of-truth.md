@@ -1012,9 +1012,11 @@ whatever it finds deletes somebody else's work.
   three answers and the third is *unestablished*, never *the tree is idle*. ⚠️ Check 8 holds the
   at-or-below half against a real process; what no check here holds is the **unreadable** branch,
   because a machine where the table cannot be read is not a fixture this suite can build. On such a
-  machine the arm reports rather than answers, which is the safe direction. It is
-  [#34](https://github.com/ragnor-rs/mjolnir/issues/34)'s test called rather than a second one, and
-  [#31](https://github.com/ragnor-rs/mjolnir/issues/31)'s sweep is its other consumer.
+  machine the arm reports rather than answers, which is the safe direction. ⚠️ **Its other consumer
+  is now shipped code rather than an item**: the sweep over landed trees reads this arm instead of a
+  second one, and the section below carries what that consumer does and does not hold — so the
+  unreadable branch is unheld in **two** suites and for the same reason, which is the one shape a
+  reader could otherwise take as covered twice.
 - **A claim broken with the override.** Check 6 holds that the refusal happens and that it names
   the decision as a person's; it cannot hold that the person was right. ⛔ That is the *fidelity*
   limit this document states one claim over, and the reason the override is a flag rather than a
@@ -1051,6 +1053,111 @@ whatever it finds deletes somebody else's work.
   states the item rather than having one guessed out of a slug. ⛔ Where it is neither stated nor
   recoverable the guard does not run, and the ref name is the whole of the claim again — which is
   the pre-derivation behaviour and is recorded here rather than reported as covered.
+
+## Beside the claim: the sweep that removes a tree whose branch has landed
+
+`plugins/mjolnir/scripts/prune.py --self-test` runs in the `Landed trees` workflow, with no
+credential and no network. It is recorded here for a reason none of its siblings has: ⛔ **every
+other run in the list fails by reporting something wrong, and this one can fail by deleting a
+working tree** — which is the only copy of everything in it that version control does not track.
+
+The rule is
+[schema § 10 → Pruning a tree whose branch has landed](../plugins/mjolnir/config/schema.md#pruning-a-tree-whose-branch-has-landed),
+and ⛔ this document states none of it. ⚠️ **Nor does the module carry a second reading of *has this
+landed***: it imports the claim's own, which is what the section above is about, and its suite
+asserts that the surface still states the subsection it performs and that the carrier still calls
+it on the event that opens a session.
+
+| # | Check | Scope | Kind |
+|---|---|---|---|
+| 0 | A landed tree is **removed**, and the local branch goes with it | a clone whose branch landed by content, with no host asked | computed |
+| 1 | A branch that has not landed is never removed, and the report says which reading kept it | one clone, one tree | computed |
+| 2 | A branch whose landing the host could not answer for is kept, and the missing answer is named | a liveness reading carrying an unestablished half | computed |
+| 3 | A tree holding an ignored file no rebuild writes again is kept and the file **named**; declaring that path regenerable removes the same tree | one tree, both directions | computed |
+| 4 | An ignored symlink is never precious, and what it pointed at survives the removal | a symlink to a file and a directory of symlinks, both ignored | computed |
+| 5 | A bare entry matches the path wherever it appears, a directory entry covers everything beneath it, and a name matching nothing covers nothing | the matching rule alone | computed |
+| 6 | An untracked change keeps the tree **even with everything declared regenerable** | one tree, the list set to match all | computed |
+| 7 | The main checkout is not a tree the sweep looks at | every entry of a worktree listing | computed |
+| 8 | A tree another live session occupies is kept, the occupant named; an unreadable table keeps it too | the occupancy reading in each of its three answers | computed |
+| 9 | The caller's own tree is **stopped on**, and a later session standing outside it removes the same tree | this process's own working directory, moved and moved back | computed |
+| 10 | A tree the harness cut inside the checkout is named and not removed | a real nested worktree | computed |
+| 11 | The published ref is reached under `procedure` and left standing under `host` and under `never`, the tree and local branch going either way | three configurations, one per value | computed |
+| 12 | A budget that runs out stops the sweep and **names** every tree it did not look at | a clock the suite advances | computed |
+| 13 | A kept tree is read again on the next sweep rather than recalled, and nothing is written into it | two consecutive sweeps over one tree | computed |
+| 14 | A project that states no configuration, and one that cuts no tree, are each answered with silence | two synthesised projects | forbidding |
+| 15 | A configuration that is stated and does not resolve is reported, and a sweep that cannot run reports examining nothing | a project whose file is broken | computed |
+| 16 | The budget plus one tree's reserve is shorter than the timeout the carrier registers | the carrier and this module together | computed |
+| 17 | A landed tree carrying a commit the reading never saw is kept, the commit **named**, and the person told; with nothing unpushed the same tree is removed | a branch pushed, landed by content, then committed to without pushing | computed |
+| 18 | A ref the host deleted on merge still answers *landed*, read from the branch on this machine, and the sweep prunes under `delete_branch: host` | the same fixture with its published ref deleted | computed |
+| 19 | A tree **outside** the stated tree directory is named and not removed, whether a harness cut it inside the checkout or a person cut it beside one; a tree **under** a tree directory that is itself inside the checkout is pruned | three real worktrees across two repositories | computed |
+| 20 | A reading that raises for one tree leaves the other's verdict standing, the removal that happened still reported; only a failure to list the trees at all is the run's | one tree's reading raised deliberately | computed |
+| 21 | A removal that reported success while the tree is still there is not a removal, and the person is told | a remover that returns success and removes nothing | computed |
+| 22 | An ignored path whose own name carries the rename separator is read whole, and one outside ASCII arrives unquoted | two such paths in a real tree | computed |
+| 23 | A registration whose directory is gone is read as prunable and cleared, rather than reported at every session open | a tree removed from under its registration | computed |
+| 24 | The stop reads the directory it is **handed** — the session's — so a session standing in its own tree holds it whatever this process's cwd is | both answers of the shipped reading | computed |
+| 25 | The event hands the sweep the configured list, `delete_branch`, the tree directory resolved against the code root, and the session's directory | the arguments captured at the boundary | computed |
+| 26 | An entry naming nothing exempts nothing; an entry anchored at the root matches there and nowhere else | the matching rule alone | computed |
+| 27 | A tree whose contents could not be read is unestablished, never empty; an unreadable directory is not all-symlinks | a directory with its mode taken away | computed |
+
+⚠️ **Check 16 is the one that looks like bookkeeping and is not**, for the reason § 10 gives about
+a carrier the harness kills: what the check holds is that the timeout covers the budget **plus**
+what one tree is allowed to cost, an inequality of one second being satisfiable and useless.
+
+### What this check deliberately does not hold
+
+- **The host's own record of a merge, and with it the whole merge-commit shape.** The landed
+  reading's second test needs a credential and the suite's remote is a bare repository on disk, so
+  what carries every verdict here is the **content** arm. ⛔ That matters more for this consumer
+  than for the claim: a branch that landed as a **merge commit** is an ancestor of the integration
+  branch and carries no commits of its own, so the content arm does not fire and the host's record
+  is the only test that recognises it. ⚠️ **Which is not a reading this suite could add.** Ancestry
+  is what would separate the two shapes and § 10 forbids it by name — a claim taken a minute ago is
+  an ancestor too, and a sweep keyed on ancestry would delete the tree of an item somebody had just
+  started. Without a credential a merge-commit landing therefore reads as an orphaned candidate and
+  the tree is **kept**, which is the safe direction and is why the accumulation § 10 measures is a
+  disk cost rather than a data one.
+- **The occupancy reading itself.** Every sweep arm in this suite injects it, because a machine
+  where the open-file table cannot be read is not a fixture that can be built either way. What is
+  held here is that each of its three answers reaches the right verdict; what holds the reading is
+  the claim's suite, against a real process.
+- **A session a harness genuinely refuses to let out of its tree.** Check 9 moves this process's
+  own working directory, which is the whole of what the reading asks — but the *unavailability* of
+  an exit is a property of the harness, so a launch-pinned session is reasoned about rather than
+  built. ⚠️ The two cases are indistinguishable from inside the sweep anyway: both are a tree the
+  caller is standing in, and both are kept.
+- **Whether a `regenerable` entry names something a rebuild really writes again.** That is a
+  project's claim about its own build and no check can verify it. ⛔ The failure direction is a
+  tree removed with a file in it, which is why the surface states the empty list as the safe form
+  and why the entry's shape is refused by the reader rather than tolerated.
+- **That a removal was what somebody wanted.** A merged branch is removed without asking per
+  occasion, deliberately — asking per occasion is what produced the accumulation § 10 measures.
+  What stands in for it is that nothing uncertain is ever removed, which is checks 1, 2, 3, 6 and 8
+  together.
+- **The trees a harness cut for its own helpers.** Checks 10 and 19 hold that they are named and
+  left alone; reaping them is a different question with a different owner, and a sweep that removed
+  them would be removing trees whose branches it never read.
+- **Ignored files inside a submodule.** The superproject's status says nothing about them — a
+  submodule holding only ignored content is clean — while the removal takes the submodule with the
+  tree. ⛔ So the measured incident the oracle exists for is reachable again one directory deeper,
+  and no check here holds it: the fixture would need a submodule, and the shape is not one this
+  project has. Recorded rather than guarded.
+- **A long-lived process of the person's own, in the same login session.** The occupancy reading is
+  the POSIX session, which is what tells a run's own helper from another session — and the cost of
+  that choice is the inverse case: a server started from the same terminal the session was launched
+  from shares its session and reads as *not another session*. ⚠️ Narrowing it would reintroduce the
+  measured failure it was built for, where a keep-awake helper held every tree forever, so the
+  trade is recorded rather than split.
+- **What one tree's own calls cost.** The reserve keeps a tree from *starting* without headroom; it
+  cannot bound a call already running, none of which carries a timeout of its own. A tree whose
+  host lookup hangs still outruns the event's limit, and a killed carrier emits nothing — which is
+  the one shape in this whole section that no assertion can reach from outside those calls.
+- **A worktree path containing a newline.** `-z` is what makes the parse correct for one, and the
+  fixture is a tree whose path carries **spaces** rather than a newline: the latter is permitted by
+  the filesystem and is not a directory this suite will create. What is held is the parse's shape;
+  what is reasoned is that the record boundary is now the separator git documents.
+- **That anybody reads the report.** It is addressed to the person on the event that opens a
+  session, and no gate holds a person to having read it — the same limit every report on this
+  route has.
 
 ## The rules loaded rather than checked
 
@@ -2637,8 +2744,10 @@ it, which is the correction it was extracted carrying. The live check plants the
 one guard over and a third beside them: a machine the project named as not live, which must pass
 silently, and which is the green side its own inversion rests on. The install step plants a project
 that asks for no artifact at all, which must write nothing and report nothing, and a value stated
-empty, which must satisfy an artifact's needs rather than wait forever on it. ⛔ A red-only suite
-says
+empty, which must satisfy an artifact's needs rather than wait forever on it. The sweep over landed
+trees plants both directions of **every** arm it has rather than of the holes alone — a must-remove
+beside each must-keep — because a sweep that removes nothing passes a red-side-only suite whole,
+and the half that would then be untested is the half that deletes files. ⛔ A red-only suite says
 nothing about any of them.
 **A green plant naming an exclusion is verified by switching that exclusion off** and watching it
 redden — one that cannot fail is one nobody checked — while a plant naming an omission has nothing

@@ -127,6 +127,9 @@ branch_model:
   # Not read under in_place either: no tree is ever created, so there is nowhere to create it.
   tree_dir: null
   mechanics: null
+  # Not read under in_place either: no tree is ever pruned, so there is no removal for an ignored
+  # path to be lost to.
+  regenerable: null
   exclusive_resources: []
 context:
   artifacts:
