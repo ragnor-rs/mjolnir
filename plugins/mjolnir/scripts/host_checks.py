@@ -34,6 +34,11 @@ Three things it deliberately does not do:
     *facet* holds -- is there a run that answers for this command, and does it
     reach this change -- and ⛔ `reached` is therefore never *green*: it names
     the run whose conclusion is worth reading, and reading it is the caller's.
+    ⚠️ **`conclusion` below is not an exception to this.** It takes the three
+    facts the caller read off the host and turns them into § 2's reading; it
+    asks the host nothing, and ⛔ **it carries no conclusion name of the
+    host's** -- the vocabulary is the host's by the same rule that keeps the
+    event names out of this file.
   * **It does not decide what a role then does.** It reports one of § 2's four
     answers and exits zero on every one of them, the way `config.py` reports
     what a configuration cannot support without acting on it. ⛔ A verdict in an
@@ -55,6 +60,13 @@ Usage:
     host_checks.py covers --command CMD --event EVENT --ref REF
                           [--type TYPE] [--path PATH ...] [--skills-root DIR]
                                    which of § 2's four answers this change gets
+    host_checks.py conclusion --steps N --passed yes|no
+                              [--superseded-by RUN]
+                                   which of § 2's four readings a run that was
+                                   reached concluded in
+    host_checks.py runner [--skills-root DIR]
+                                   where this project's jobs run, or that the
+                                   host kind's own default answers
     host_checks.py --self-test     hold the grammar to the surface and every
                                    answer to a planted configuration
 """
@@ -106,6 +118,28 @@ REACHED, OUT_OF_SCOPE, NO_ANSWER, UNREADABLE = (
     "reached", "out of scope", "no answer", "unreadable",
 )
 ANSWERS = (REACHED, UNREADABLE, NO_ANSWER, OUT_OF_SCOPE)
+
+# § 2's other four, and ⛔ **a different axis from the tuple above**: those say
+# which run answers for a command and a change, these say what the run they
+# named concluded. The two were deliberately not given one vocabulary -- a word
+# meaning two findings is what `mirrors` above declines to borrow `reached` for.
+#
+# ⚠️ Held to the surface member by member, the way `ANSWERS` is — and ⛔ **a set
+# rather than a sequence, because no order here would carry anything.** Unlike
+# `ANSWERS`, which `_ranked` reads, nothing resolves through this: the one
+# precedence § 2 states for this reading — that a superseded run has a successor
+# to read whatever else was true of it — lives in `conclusion`'s own branch
+# order, and is held by the three plants asserting it against each of the other
+# readings. ⛔ Written as a sequence it would be a second statement of that
+# precedence, and nothing would hold the two together: measured, a reordering
+# left the whole suite green.
+GREEN, FAILED, NEVER_STARTED, SUPERSEDED = (
+    "green",
+    "failed",
+    "no answer, never started",
+    "no answer, superseded — read the newer run",
+)
+READINGS = frozenset((GREEN, FAILED, NEVER_STARTED, SUPERSEDED))
 
 # What a glob may be written with, and what makes one unreadable. § 2 states a
 # path filter as a list of globs and nothing further, so the characters this
@@ -447,12 +481,149 @@ def covers(
     }
 
 
+def conclusion(steps: int, passed: bool, superseded_by: str | None = None) -> dict:
+    """Which of § 2's four readings a run that was `reached` concluded in.
+
+    The three facts a caller reads off the host, and ⛔ **no fourth one read
+    here**: how many steps the run's jobs executed, whether the host calls it a
+    pass, and the id of the run that retired it where one did. ⚠️ **The host's
+    own conclusion string is deliberately not an input.** A `cancelled` arrives
+    on two of these readings and a project's own runner account decides which,
+    so a map keyed on that word would answer one of the two for both -- and it
+    would put the host's vocabulary in this file, which the module's first rule
+    forbids for the same reason.
+
+    ⛔ **Superseded outranks every other reading**, which is § 2's one stated
+    precedence here: a successor exists, so there is a run to read, and what the
+    retired one did or did not do stops mattering the moment there is a newer
+    one for the same group.
+
+    ⛔ **Zero steps is *never started* and never a failing check.** That is the
+    reading this whole function exists for: on an account whose runners take one
+    job at a time a job's budget is spent queued, so a short check at the back of
+    the line concludes having run nothing -- an outcome of the queue wearing the
+    conclusion of an outcome of the change.
+
+    ⚠️ **A step count the caller could not establish is not an input either**,
+    and this function has no value for it: § 2 reports an unanswerable
+    precondition as the precondition it was, so a caller in that position says
+    *precondition 3 is unanswered* rather than asking here and being told the run
+    never started. The command line makes both facts required for that reason.
+
+    ⛔ **Two inputs are refused rather than read as the absence they resemble**,
+    which is § 2's own rule for every key here whose absence means something: a
+    step count below zero is no count the host produces, and it would fall past
+    the zero-step arm into a reading about the change; and a successor id given
+    blank is the same text as one the caller meant to fill in, which would read
+    as *no successor* and send a reader to a verdict instead of to a run.
+    ⚠️ Raised rather than returned, the four readings being the whole of what
+    this function may answer -- a fifth value for *you asked wrongly* is a value
+    callers would have to handle alongside the four the surface states.
+    """
+    if isinstance(steps, bool) or not isinstance(steps, int) or steps < 0:
+        raise ValueError(
+            f"steps is {steps!r}; it is how many steps the run's jobs executed, a "
+            "whole number of at least zero. A count below zero is no count the host "
+            "produces and would read past the never-started arm as a reading about "
+            "the change (§ 2)."
+        )
+    if superseded_by is not None and not str(superseded_by).strip():
+        raise ValueError(
+            "superseded_by is blank; § 2 makes a successor's absence the id not being "
+            "given at all, and a blank one is the same text as an id somebody meant to "
+            "write. Read as the absence it sends a consumer to a verdict rather than "
+            "to the run that answers."
+        )
+    if superseded_by:
+        return {
+            "reading": SUPERSEDED,
+            "because": f"the `{superseded_by}` run retired this one, which a "
+                       "`host.runner` supersession group arranges deliberately, so "
+                       "this run is about an earlier state of the change and the "
+                       "successor is what answers about this one (§ 2)",
+            "coverage": False,
+            "about_the_change": False,
+            "read_instead": superseded_by,
+        }
+    if steps == 0:
+        return {
+            "reading": NEVER_STARTED,
+            "because": "the run concluded having executed no step, so nothing about "
+                       "the change was ever examined -- a queue a job never reached "
+                       "the front of, a suspended account, or a label with no runner "
+                       "behind it. § 2's precondition 3, reported as the step it was",
+            "coverage": False,
+            "about_the_change": False,
+            "read_instead": None,
+        }
+    if passed:
+        return {
+            "reading": GREEN,
+            "because": "the run executed steps and the host calls it a pass, which is "
+                       "§ 2's preconditions 3 and 4 both met -- for this commit, which "
+                       "is precondition 2 and the caller's to have established",
+            "coverage": True,
+            "about_the_change": True,
+            "read_instead": None,
+        }
+    return {
+        "reading": FAILED,
+        "because": "the run executed steps and did not pass, which is the one of the "
+                   "four readings that is about the change (§ 2). ⚠️ An environment "
+                   "failure is not a finding and consumes no fix cycle, and which of "
+                   "the two this is the log says rather than the conclusion",
+        "coverage": False,
+        "about_the_change": True,
+        "read_instead": None,
+    }
+
+
+def runner(configuration: config.Config) -> dict:
+    """Where this project's jobs run, or that the host kind's own default answers.
+
+    The one place an installer reads the label, the budget and the supersession
+    group it writes into a generated workflow -- ⛔ **and it writes no literal of
+    its own**, which is § 2's rule and the reason this answer exists rather than
+    each writer reading the key.
+
+    ⛔ `stated: false` is the project's decision and not a gap, so nothing here
+    names a default: § 2 keeps the per-kind label off the surface, and a value
+    invented at this point would be the fact the facet exists to have stated.
+    """
+    stated = configuration.runner()
+    if stated is None:
+        return {
+            "stated": False,
+            "runner": None,
+            "because": "`host.runner` is absent, which § 2 states as the host kind's "
+                       "own default runner being the answer. What that default is "
+                       "lives with the per-kind template and nowhere on the surface, "
+                       "so nothing here names one.",
+        }
+    return {
+        "stated": True,
+        "runner": stated,
+        "because": (
+            "the project states where its jobs run. Its runners take "
+            f"{stated['concurrent_jobs']} job(s) at once, so `budget_minutes` is "
+            + ("a queue budget rather than a run budget (§ 2): a job can be "
+               "cancelled having never started."
+               if stated["budget_is_a_queue_budget"]
+               else "a budget on a job that does not wait alone in line.")
+        ),
+    }
+
+
 def facet(configuration: config.Config) -> dict:
     """The facet as a consumer reads it, with what an empty one means."""
     records = configuration.mirrors()
     return {
         "checks": records,
         "empty": not configuration.get("host.checks"),
+        # ⚠️ Carried here as well as behind its own subcommand, because a reader
+        # printing the facet is a reader about to write or wait for a run, and
+        # where those run is the same statement one key over.
+        "runner": runner(configuration),
         "report": (
             ["`host.checks` is empty: § 2 states that as every verdict being "
              "local, so every question about a host run here comes back no "
@@ -599,6 +770,150 @@ def self_test() -> int:
             f"**{answer}**" in surface,
             "this module's answer is not one the surface names",
         )
+    for reading in sorted(READINGS):
+        check(
+            f"§ 2 names the `{reading}` reading",
+            f"**{reading}**" in surface,
+            "this module's reading of how a run concluded is not one the surface "
+            "names, so the four values a consumer reports are held to nothing",
+        )
+    check(
+        "§ 2 states that a superseded run sends the reader to its successor",
+        "says *read the successor*" in surface,
+        "the one precedence this module applies to the four readings is not on "
+        "the surface, so the order it resolves them in is held to nothing",
+    )
+    check(
+        "§ 2 states that a run that executed no step is no answer",
+        "without executing a step is no answer" in surface,
+        "the rule the zero-step arm performs is not stated, so the arm is a "
+        "judgement of this module's rather than the surface's",
+    )
+
+    print("\nhow a run concluded, which is not which run answers")
+    for label, args, expected in (
+        ("a run that executed steps and passed", (4, True, None), GREEN),
+        ("a run that executed steps and did not", (4, False, None), FAILED),
+        # ⛔ The reading this subcommand exists for. Before it, a consumer read
+        # the conclusion and reported a failing check for a job that was never
+        # given a runner -- a fact about the queue wearing a fact about the code.
+        ("a run cancelled having executed no step", (0, False, None), NEVER_STARTED),
+        ("a run retired by a newer one", (4, False, "a-newer-run"), SUPERSEDED),
+        # ⛔ Superseded outranks each of the other three, asserted on all three
+        # rather than on the one that is easy to reach: a successor exists, so
+        # there is something to read whatever the retired run did.
+        ("a superseded run that had also executed no step", (0, False, "a-newer-run"),
+         SUPERSEDED),
+        ("a superseded run that had passed", (4, True, "a-newer-run"), SUPERSEDED),
+    ):
+        got = conclusion(*args)
+        check(f"{label} is `{expected}`", got["reading"] == expected,
+              f"read {got['reading']!r} -- {got['because']}")
+    check(
+        "only the green reading is coverage",
+        [r for r in (conclusion(4, True), conclusion(4, False), conclusion(0, False),
+                     conclusion(4, False, "a-newer-run"))
+         if r["coverage"]] == [conclusion(4, True)],
+        "a reading that is not green was reported as coverage, which is the "
+        "direction § 2's absence rule has to err against",
+    )
+    check(
+        "and only the two that examined the change are about it",
+        [r["reading"] for r in (conclusion(4, True), conclusion(4, False),
+                                conclusion(0, False), conclusion(4, False, "a-run"))
+         if r["about_the_change"]] == [GREEN, FAILED],
+        "a no-answer reading was reported as a fact about the change, which is "
+        "what sends a reader to fix a diff over a queue",
+    )
+    check(
+        "a superseded reading names the run to read instead",
+        conclusion(0, False, "a-newer-run")["read_instead"] == "a-newer-run"
+        and conclusion(0, False)["read_instead"] is None,
+        "the successor was not named, so the consumer is told a run is no answer "
+        "and not where the answer is",
+    )
+    # ⛔ The two inputs that resemble an absence, each asserted to be refused
+    # rather than read as one. Both fail in the permissive direction: a negative
+    # count falls past the never-started arm into a reading about the change, and
+    # a blank successor reads as *no successor* and sends a reader to a verdict.
+    for label, args in (
+        ("a step count below zero", (-1, False, None)),
+        ("a step count that is not a count", ("4", False, None)),
+        ("a step count written as a flag", (True, False, None)),
+        ("a successor id given blank", (4, False, "   ")),
+        ("a successor id given empty", (4, False, "")),
+    ):
+        try:
+            conclusion(*args)
+            refused = False
+        except ValueError:
+            refused = True
+        check(f"{label} is refused rather than read as the absence", refused,
+              "the input was read as though it had not been given, which is the "
+              "permissive direction on both of them")
+    # ⛔ Read off this module's own source, and ⚠️ **off the half of it above
+    # this suite**: the assertion has to name the words it forbids, so a scan of
+    # the whole file would be a check that can never pass. The split is at the
+    # banner the suite opens with, and what is scanned is every line a run of
+    # `conclusion` can reach.
+    #
+    # § 2 states that the host's vocabulary is the host's, and the measured
+    # hazard is specific: one `cancelled` arrives on two of these readings, so a
+    # map keyed on that word answers one of the two for both -- and does it
+    # while looking like a careful reading.
+    answering_half = own_source.split("# --- the self-test")[0]
+    check(
+        "the split that scan reads is the banner this suite opens with",
+        answering_half != own_source,
+        "the self-test banner moved or was renamed, so the scan below is over "
+        "the whole file and can never pass",
+    )
+    for word in ("cancelled", "success", "failure", "timed_out", "skipped",
+                 "neutral", "stale", "action_required"):
+        check(
+            f"this module holds no conclusion named `{word}`",
+            f'"{word}"' not in answering_half and f"'{word}'" not in answering_half,
+            "a host conclusion name is carried here, which § 2 forbids and which "
+            "collapses two readings that share one word",
+        )
+
+    print("\nwhere this project's jobs run")
+    stated = _a_configuration(ONE_ENTRY)
+    stated.data.setdefault("host", {})["runner"] = {
+        "label": "a-runner-label",
+        "concurrent_jobs": 1,
+        "budget_minutes": 30,
+        "supersedes": "a-supersession-group",
+    }
+    answered = runner(stated)
+    check(
+        "a stated runner is reported with its label",
+        answered["stated"] and answered["runner"]["label"] == "a-runner-label",
+        f"answered {answered!r}",
+    )
+    check(
+        "and a single-runner account makes the budget a queue budget",
+        answered["runner"]["budget_is_a_queue_budget"]
+        and "queue budget" in answered["because"],
+        "the pair § 2 says gives the budget its meaning was not read as one",
+    )
+    absent = runner(_a_configuration(ONE_ENTRY))
+    check(
+        "an absent runner is the project's stated absence",
+        absent["stated"] is False and absent["runner"] is None,
+        f"answered {absent!r}",
+    )
+    # ⛔ The direction that matters: § 2 keeps the per-kind default off the
+    # surface, so a report that named one would be this module inventing the
+    # fact the facet exists to have stated -- and every workflow file would then
+    # be held to a label nobody chose.
+    check(
+        "and names no default of its own",
+        "ubuntu" not in json.dumps(absent).lower()
+        and "latest" not in json.dumps(absent).lower(),
+        "the absent answer named a runner label, which is a default this surface "
+        "does not carry",
+    )
 
     print("\nthe facet's own absence")
     empty = _a_configuration([])
@@ -890,9 +1205,54 @@ def main(argv: list[str] | None = None) -> int:
                        help="a path this change touches; repeatable")
     reach.add_argument("--skills-root", default=".")
 
+    # ⛔ Both facts are required, and that is § 2's rule rather than this
+    # parser's convenience: a precondition the caller could not answer is
+    # reported as unanswered, never handed here to come back as a reading.
+    concluded = sub.add_parser(
+        "conclusion", help="which of § 2's four readings a reached run concluded in"
+    )
+    concluded.add_argument(
+        "--steps", required=True, type=int,
+        help="how many steps the run's jobs executed. Zero is a run that never "
+             "started, which § 2 reads as no answer rather than as a failing check",
+    )
+    # ⛔ Two values and not the host's own conclusion word: § 2 keeps the host's
+    # vocabulary out of this module, and the same `cancelled` arrives on two of
+    # the four readings anyway.
+    concluded.add_argument(
+        "--passed", required=True, choices=("yes", "no"),
+        help="whether the host calls this run a pass, read from the host and "
+             "never from its conclusion string here",
+    )
+    concluded.add_argument(
+        "--superseded-by", dest="superseded_by",
+        help="the id of the run that retired this one, where a newer run for the "
+             "same group did. Given, it outranks every other reading",
+    )
+
+    where = sub.add_parser("runner", help="where this project's jobs run")
+    where.add_argument("--skills-root", default=".")
+
     args = parser.parse_args(argv)
     if args.self_test:
         return self_test()
+    # ⛔ Answered before the configuration is read, the three facts being the
+    # caller's and no project's: a reading that needed a loadable configuration
+    # would be unavailable in the one place it is most needed, which is a role
+    # standing in a tree whose configuration is what the change is editing.
+    if args.what == "conclusion":
+        # ⛔ Named on stderr and exited non-zero, never printed as a reading: an
+        # input this function refuses is the caller's question being malformed,
+        # and a fifth value on the way out would be a reading § 2 does not have.
+        try:
+            answered = conclusion(
+                args.steps, args.passed == "yes", args.superseded_by
+            )
+        except ValueError as exc:
+            print(exc, file=sys.stderr)
+            return 2
+        print(json.dumps(answered, indent=2, ensure_ascii=False))
+        return 0
     try:
         configuration = config.load(args.skills_root)
     except (ConfigError, OSError) as exc:
@@ -905,6 +1265,8 @@ def main(argv: list[str] | None = None) -> int:
             configuration, args.command, args.event, args.ref, args.kind,
             args.path,
         )
+    elif args.what == "runner":
+        answer = runner(configuration)
     else:
         answer = facet(configuration)
     # ⚠️ Not escaped: every `because` cites a section by its sign, and a report
