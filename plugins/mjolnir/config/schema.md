@@ -1793,33 +1793,41 @@ a project that states none, which is a reading those two states are permitted to
 could.** [§ Invocation](#invocation) says a carrier of `hook` has no invocation name at all; this
 is the other half of that statement — what the event carries once the hook is running.
 ⚠️ **Measured per event rather than derived from the addressing**, because the events differ from
-one another: one of them names a role and the rest name none.
+one another: two of them can carry a role's name, the rest carry none, and neither of the two says a
+role is *running*.
 
 | the event | what it carries about a role |
 |---|---|
 | `SessionStart` | nothing, and no turn either — so not even the narrower question below can be asked here |
 | `UserPromptSubmit` | the prompt as typed, which carries the invocation where the person used it. ⚠️ **The person's own text, not the harness stating that a role began** — the same event fires for text no role invoked, a notification from a background task included |
-| `PreToolUse` and `PostToolUse` on the `Skill` call | the role, namespaced, in `tool_input.skill`. ⛔ **The one event that names one**, and it names the role being *entered* rather than one running |
+| `PreToolUse` and `PostToolUse` on the `Skill` call | the role, namespaced, in `tool_input.skill`. ⛔ **The only place the harness itself names a role**, rather than passing on what a person typed — and it names the role being *entered* rather than one running |
 | `PreToolUse` and `PostToolUse` on every other call | the call and its input, and nothing about the role it is made under |
 | `Stop` | the reply, the turn, the session and the directory; nothing about a role |
 | `SubagentStop` | the subagent's own type and transcript. ⚠️ A name-shaped field naming the wrong thing: it is what the parent launched, never what the parent is running |
 | `SessionEnd` | the reason it ended; nothing about a role |
 
-⚠️ **And the one event that names a role names it only on one of two entry paths.** A role entered
-by its invocation reaches the session without any call at all, so the `Skill` row above is the path
-where the session entered the role itself — which is not the project's to choose. The record both
-paths leave is the injected preamble, which is [§ Invocation](#invocation)'s warning measured: the
-two carriers leave two different records, and a matcher keyed on either asserts both directions.
+⚠️ **And the one event that names a role names it only on one of two entry paths, and only for one
+of the two carriers that have an invocation.** A role entered by its invocation reaches the session
+without any call at all, so the `Skill` row above is the path where the session entered the role
+itself — which is not the project's to choose. ⛔ **A command carrier has only the invocation path**,
+so it is named on no tool event at all. What the paths leave behind is the injected preamble and the
+expanded title, which is the pair [§ Invocation](#invocation) already warns a matcher about — ⚠️
+**now measured, and the warning is the stronger half of this**: no single record form covers every
+carrier.
 
 ⛔ **So the question a hook can answer is narrower, and it is per turn: whether a role was entered
-in this turn, and which one.** Every event but the session's own opening carries the turn, and the
-transcript's records carry the same turn, so the two join and the records of one turn either carry a
-role's entry or they do not.
+in this turn, and which one.** Every event measured above but the session's own opening carries the
+turn, and the transcript's records carry the same turn, so the two join and the records of one turn
+either carry a role's entry or they do not. ⚠️ **Two further events were registered for that
+measurement and never fired** — the one that notifies a person, and the one that fires before a
+window is compacted — so what they carry is **unestablished** rather than empty, and a rule reaching
+either is written against a measurement nobody has taken.
 
-⛔ **And that is not the question a rule scoped to the loop needs.** A role spans turns, no event
-fires when one ends and no record marks it, so a session five turns into a role is indistinguishable
-from a session in no role at all. Measured: a call made inside a role, and the same call made in a
-later turn of the same session, differed in the command they named and in nothing else.
+⛔ **And that is not the question a rule scoped to the loop needs.** A role spans turns — a role
+that asks a question is answered in a later one — and no event fires when a role ends and no record
+marks it, so the turns after the first are indistinguishable from a session in no role at all.
+Measured: a call made inside a role, and the same call made in a later turn of the same session,
+differed in the command they named and in nothing else.
 
 ⛔ **The three readings that look like the answer each answer a different question**, which is why
 no hook here takes one:
@@ -1844,9 +1852,12 @@ when the hook is written and never at run time:
 | Is the rule's subject the **leg of the loop**, so that deciding it needs the role? | a hook holds it on every call the event carries, and whether that is permitted is the ask below |
 | Does holding it that widely fail in the safe direction — more held and never fewer, nothing refused that the rule would have allowed? | the hook holds it widely and its reach is recorded. Otherwise the rule is not a hook's at all: it belongs where [§ 8](#the-reply-to-the-person-running-a-role) puts the register, read rather than enforced |
 
-⛔ **No key configures any of this, and none will be declared.** The carrier is this section's own
-axis and the question here is what a hook can read; a key per hook would be a project declaring an
-answer the harness does not hand it, which every later pass would then trust.
+⛔ **No key configures any of this.** The carrier is this section's own axis and the question here is
+what a hook can read, which is the harness's answer rather than a project's: a key per hook would be
+a project stating a role the events do not carry, and every later pass would then trust it.
+⚠️ **Nothing refuses such a key** — unlike the one [§ What a hook
+refuses](#what-a-hook-refuses-and-the-record-it-reads) names, this is a statement held by being read
+and not by a reader rejecting a configuration.
 
 ### What a hook refuses, and the record it reads
 

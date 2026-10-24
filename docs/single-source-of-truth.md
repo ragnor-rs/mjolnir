@@ -1360,14 +1360,13 @@ further reply, so **injecting context costs a reply whether or not the answer bl
 - ⚠️ **Which role is running** — the reach this check has rather than a gap in it, and the ruling
   behind it is
   [schema § 7 → What a hook can establish about the role it is running under](../plugins/mjolnir/config/schema.md#what-a-hook-can-establish-about-the-role-it-is-running-under).
-  A `Stop` payload names the reply, the turn, the session and the directory — and no role, so this
-  holds every reply in a project that states a configuration rather than a role's. ⚠️ **The
-  narrowing the ruling leaves available is the unsafe direction here**, which is why the scope
-  stays: a hook can join its turn to the transcript and ask whether a role was *entered in this
-  turn*, and a role entered in one turn is still being run in the next five — all of whose replies
-  would then be held to nothing. Held widely, what the over-reach costs is a reply no role produced
-  being asked not to park work; narrowed, what it costs is the parkings of every turn of a role
-  after its first. The second is the error this check exists to stop.
+  What a `Stop` payload carries is stated there and not repeated here; what it does not carry is a
+  role, so this holds every reply in a project that states a configuration rather than a role's.
+  ⚠️ **The narrowing that ruling leaves available is the unsafe direction for this rule**, which is
+  why the scope stays: the per-turn question a hook *can* answer would hold the first turn of a role
+  and none of the turns after it. Held widely, the over-reach costs a reply no role produced being
+  asked not to park work; narrowed, it costs every parking after a role's first turn. The second is
+  the error this check exists to stop.
 - ⚠️ **Whether the work actually got done.** The hand-back asks for it and the turn continues;
   nothing here reads the tree afterwards to see that it did. What reads that is the gate on the
   change, one artifact over.

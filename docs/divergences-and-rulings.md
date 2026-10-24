@@ -75,13 +75,10 @@ Present in one or two copies each, and true for every project:
 
 - A sleep of two seconds or more is blocked at the start of a command.
 - A skill's injected preamble differs from a command's injected title, so a rename silently breaks
-  any matcher keyed on either.
-- There is a third entry path, and it names the role differently again: a session that enters a
-  skill itself leaves a `Skill` call whose input carries the namespaced name, where an invocation
-  typed by the person leaves no call at all. Measured 2026-10-24 across both paths and both
-  carriers; what reads it is
-  [schema § 7 → What a hook can establish about the role it is running under](../plugins/mjolnir/config/schema.md#what-a-hook-can-establish-about-the-role-it-is-running-under),
-  which also carries what each hook event does and does not say about a role.
+  any matcher keyed on either. There is a third entry path and it is named differently again; what
+  each path and each hook event carries about a role was measured across both carriers and is
+  stated at
+  [schema § 7 → What a hook can establish about the role it is running under](../plugins/mjolnir/config/schema.md#what-a-hook-can-establish-about-the-role-it-is-running-under).
 - Entering a worktree accepts an arbitrary path only on a session's first entry.
 - The working directory resets between calls, so an absolute root on every git invocation is
   mandatory.
