@@ -50,6 +50,13 @@ own `host.checks` entry, and it is recorded in
 where the half no check reaches, which is whether a place was actually given back on a machine
 nobody is watching, is stated with it.
 
+`plugins/mjolnir/scripts/spend.py` is the same shape one guard over: it reads where a command *is*
+in a call and holds the ones a project's own list says cost money, and it reports the one price the
+harness states before a turn runs. Its assertion suite runs in a `Spend guard` workflow with its own
+`host.checks` entry, and is recorded in
+[its own section](#the-spend-half-a-call-put-to-somebody-and-the-one-price-stated-beforehand) below —
+with the spends no parse of a command string can see.
+
 `plugins/mjolnir/scripts/host_checks.py` is not a check on this tree at all: it is the one consumer
 of `host.checks`, and what runs on the gate is its own assertion suite, in a `Host checks consumer`
 workflow with its own `host.checks` entry. It is recorded in
@@ -1874,10 +1881,10 @@ denied by a sibling is a place nothing releases. Written as an arm it is ordered
 taken, and the suite asserts it the way the merge guard's ordering is asserted, on a call that is at
 once a guarded command and a `claimed_by` match.
 
-⚠️ **What it still cannot order is a sibling guard in another script.** The guards #26 and #37 ask
-for are separate carriers on the same event, and a place taken here can still be left behind by one
-of those denying the call. That is what the lease's `ttl` bounds, and it is why a short lifetime is
-the safe direction rather than a tidy-up interval.
+⚠️ **What it still cannot order is a sibling guard in another script.** The spend guard recorded
+below is one, as the guard #37 asks for will be, and a place taken here can still be left behind by
+one of those denying the call. That is what the lease's `ttl` bounds, and it is why a short lifetime
+is the safe direction rather than a tidy-up interval.
 
 ⚠️ **The already-run arm is the one arm here that reads the network, and what bounds it is stated
 rather than hoped for.** Its rule is
@@ -2152,6 +2159,130 @@ What it deliberately does not check:
   and a path filter under a carrier root — recorded in
   [§ The second sweep](#the-second-sweep-naming-no-other-project), with those three plants.
 
+## The spend half: a call put to somebody, and the one price stated beforehand
+
+`plugins/mjolnir/scripts/spend.py --self-test` runs in the `Spend guard` workflow, with no
+credential and no network. ⛔ The rules are
+[schema § 19](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without),
+[schema § 19 → The command position](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)
+and
+[schema § 19 → What an approval is per](../plugins/mjolnir/config/schema.md#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs),
+and this document states none of them: what is recorded here is the reach of each arm and what it
+cannot see, which is narrower than the rules in directions the rules do not mention.
+
+**Why it is extracted rather than written from the idea.** The guard it comes from carries a
+correction in its own header, which
+[schema § 19 → The command position](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)
+states and this document does not: it is a hundred lines of lesson about where a command *is* in a
+call, and a rewrite from the idea reproduces the defect. That is why the suite's two halves are the
+shapes that must be refused and the shapes that must not, planted beside each other rather than in
+separate runs.
+
+| arm | what it reads | kind | what it does |
+|---|---|---|---|
+| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command's own command positions, and the list the project wrote | **forbidding** | puts the call to the person, or refuses it |
+| `price` (`SessionStart`) | the figure the harness states for rewriting a resumed session's prompt cache, and the project's bar | **computed** | reports a price above the bar, or reports that there was no figure |
+
+⛔ **Both arms answer nothing at all in a project that states no configuration**, by
+[schema § 7](../plugins/mjolnir/config/schema.md#a-hook-in-a-project-that-states-no-configuration),
+and a project whose configuration does not *resolve* gets the other answer: the call proceeds and
+the guard says it held nothing. ⚠️ **That is the one case the fail-direction table does not settle
+by itself**, and
+[schema § 19 → The command position](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)
+is where the argument lives rather than here. ⚠️ **Both silences are reachable by another route** —
+a project that states nothing also fails to load — so the suite asserts the predicate itself beside
+them, or an arm with its configuration gate gone would pass.
+
+⚠️ **The call shapes are enumerated by hand, which is the only way this arm could have been
+believed.** A guard asserted against the shape its author imagined holds that shape: so the suite
+runs the denied command through each shape it arrives in, in four families — the way it is spelled,
+what stands in front of it, what it is nested inside, and what follows it — and the complement is
+what the guard was extracted carrying, the same path standing where it is **not** a call: in another
+command's prose, as an argument, as a redirection's target, inside a here-document's body, inside
+single quotes, and as a longer name merely ending in it
+([schema § 19 → The command position](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)).
+⛔ **No count of either family is written here**, by the rule this document opens with; the run
+prints both.
+
+⚠️ **The runner table is a second statement on purpose.** Each runner has a call shape of its own in
+the suite, written out rather than generated from the table — a plant derived from it would assert
+whatever the table said, so a runner missing from the table would be missing from its own plant and
+the suite would certify itself. ⚠️ **And the shapes carry each runner's own arguments**, because a
+runner that takes a duration or a lock file before the command is one a bare `<runner> <command>`
+plant passes without ever reaching. Both are how the runners this guard was extracted without were
+found ([schema § 19 → The command position](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)).
+
+⚠️ **The tables themselves are asserted row by row**, which no plant on the mechanism can do: a
+mistyped runner, a flag written without its dash, or two shapes joined by a missing comma matches
+nothing the parse ever produces, and every other assertion stays green because the other rows are
+intact.
+
+⚠️ **Every green plant was verified by breaking the mechanism it names**, and that is how the
+suite's own holes were found rather than argued: a redirection's target stands in no command
+position,
+so the allow-side shapes passed with that arm dead, and what the arm decides — whether `> <path>` is
+read as an *argument* — needed a plant of its own. The same pass found the price arm's event gate,
+the quoting plants, the cache-state clause and the two comparison arms of the surface check each
+asserted by nothing.
+
+⚠️ **The decision vocabulary is read out of the surface rather than carried**, so a value the
+surface states and this carrier decides nothing for reddens the run, and so does one it decides for
+that the surface stopped stating
+([schema § 19 → What an approval is per](../plugins/mjolnir/config/schema.md#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs)).
+A project writing the surface's own spelling and getting no decision would be a guard that reports
+installed and holds nothing.
+
+⚠️ **What the price arm can be wrong about costs a report rather than a price.** The harness states
+the figure for some sources and not others; a payload carrying one is priced whatever its source
+says, and the set of sources is read only to decide whether a *missing* figure is reported as
+missing. So a source the harness starts pricing is handled with no edit here, and the suite asserts
+that direction directly.
+
+### What this check deliberately does not hold
+
+- **A spend reached through an interpreter, or through any flag whose value is a whole command
+  string.** A paid script handed to an interpreter stands in no command position of its own; the
+  interpreter does. The same is true of `-c`-style flags whose value is a multi-word string the
+  shell splits later: only its first word stands in a position here. A project invoking one that way
+  states that spelling itself, and
+  [schema § 19 → The command position](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)
+  says why no list of interpreters may live here.
+- **A spend that runs on another machine.** A call that reaches a remote shell is a command whose
+  payload is an argument here, so the guard sees the remote client and not what it was asked to run.
+  A project that spends that way states the client and the pattern its arguments carry, which is
+  what `args_match` is for.
+- **A path spelled another way.** The command comparison is lexical, so the same executable reached
+  through a symlinked directory, or spelled in another case on a filesystem that ignores case, is
+  not the configured command. ⛔ Deliberately not resolved: a hook that stats the filesystem for
+  every entry on every call of every session is the costlier answer, and the mismatch needs somebody
+  to spell a path a way nobody writes it.
+- **An `args_match` whose anchor is narrower than the calls it meant to catch.** A pattern anchored
+  with `^` holds only the call whose paid argument comes first, which
+  [schema § 19](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
+  states at the key — the suite plants both sides of it, and nothing here can tell a narrowing
+  somebody wanted from one they did not.
+- **A spend that is not a shell command.** The guard reads a `Bash` call. A paid request made by a
+  tool of its own, by an editor action, or by something a workflow starts on the host reaches no
+  event here — the same reach every other hook in this plugin has.
+- **Whether an `args_match` matches the right calls.** The reader refuses a pattern that does not
+  compile, since one matching nothing is a paid command that reads as denied and is never refused;
+  a pattern that compiles and matches the wrong invocations is a project's own statement about its
+  own commands, and nothing here can tell a narrow one from a mistaken one.
+- **What a denied command actually costs.** `reason` is prose a project wrote. A figure that is
+  stale, wrong, or in units nobody states answers this check exactly as a correct one does, and
+  [schema § 19](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
+  keeps every cost and every budget in the project for that reason.
+- **Whether anybody was in fact watching.** What the ask buys is that the call does not run until it
+  is answered. Who answers it, and whether they read the cost before saying yes, is not a property
+  a machine here can establish — the same decidable end
+  [schema § 7](../plugins/mjolnir/config/schema.md#what-a-hook-refuses-and-the-record-it-reads)
+  takes for the review question.
+- **An approval remembered across calls.** Nothing is stored, so two identical paid calls are two
+  asks. ⚠️ That is the rule rather than a limit, and it is the one place this carrier deliberately
+  costs a person something on every invocation.
+- **What the figure says about any command.** The price arm reads one event's own cost. It is not a
+  meter: nothing here knows what a session has spent, and no key states a budget it could be
+  measured against.
 ## The install half: what the toolkit writes into a project
 
 `plugins/mjolnir/scripts/install.py --self-test` runs in the `Installer` workflow, with no
@@ -2347,10 +2478,12 @@ every judged tree, and asserts its fixture's premises first for the same reason.
 check plants an unset floor and a tree declaring no case — the two guards in its rule — beside two
 cases nothing was written to let through. The enforcement check plants the whole of the common
 case — a project where nothing is exclusive, which must answer nothing for any call — beside the
-reads that share a path with a merge and must not be refused for it. The install step plants a
-project that asks for no artifact at all, which must write nothing and report nothing, and a value
-stated empty, which must satisfy an artifact's needs rather than wait forever on it. ⛔ A red-only
-suite says nothing about any of them.
+reads that share a path with a merge and must not be refused for it. The spend check plants both of
+its halves by hand — every shape a denied command arrives in against every shape that merely names
+it, which is the correction it was extracted carrying. The install step plants a project that asks
+for no artifact at all, which must write nothing and report nothing, and a value stated empty,
+which must satisfy an artifact's needs rather than wait forever on it. ⛔ A red-only suite says
+nothing about any of them.
 **A green plant naming an exclusion is verified by switching that exclusion off** and watching it
 redden — one that cannot fail is one nobody checked — while a plant naming an omission has nothing
 to switch off, and what it asserts is that a grammar stayed narrow. ⚠️ A suite that keeps the two

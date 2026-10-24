@@ -1,0 +1,50 @@
+name: Spend guard
+
+# The guard that refuses a command this project's own configuration says spends, and the arm that
+# reads the one price the harness states before a turn runs. What a gate can hold is the matcher
+# and its wiring: that every call shape a denied command arrives in is still refused — behind an
+# assignment, behind a wrapper, behind a wrapper's valued flag, in a later segment of a compound,
+# inside a substitution — that every shape which merely *names* the command is still allowed,
+# which is the defect this guard was extracted carrying, and that `hooks.json` still calls this
+# script on both events an arm answers. A guard that stopped being called reports green on every
+# paid call it was supposed to hold, and nothing in a session ever says so.
+#
+# ⚠️ What this cannot hold is the spend it never sees: a paid command reached through an
+# interpreter stands in no command position of its own, and the residue is stated in
+# docs/single-source-of-truth.md rather than left for a reader to assume away.
+#
+# ⛔ Nothing here is a verdict about this repository's own spending. This project denies no command
+# — every command it runs is a gate over its own tree — so the tree this runs in is the green side
+# of the facet, and the denials the suite judges are the ones it plants for itself.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the project
+# controls its workflows, because a `host.checks` entry states one mirrored command.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind, and no network: every assertion here is over a call string, a
+# configuration the suite writes for itself and two documents in this tree. A run holding a guard
+# that refuses what spends has no business holding anything that could spend.
+permissions: {}
+
+jobs:
+  spend-guard:
+    name: Spend guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command: the call shapes that must be refused and the ones that must not,
+      # each planted beside the other, and then the surface and the carrier held to still stating
+      # and still calling what this file performs. ⚠️ That command is also the string `host.checks`
+      # states this run mirrors — held together by eye, and § 2 rules that it must be: the mapping
+      # from a run to the command it mirrors is configured and never inferred. The workflow *name*
+      # above is held mechanically, by the `Host checks drift` run.
+      - name: Assert what spends is refused, what merely names it is not, and the carrier calls this
+        run: python3 plugins/mjolnir/scripts/spend.py --self-test

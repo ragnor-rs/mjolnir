@@ -371,7 +371,9 @@ with the other facts a project's own command reads, and no key is owed for it.
 counted.** Three parts of the surface separately know which tools a project builds and tests with —
 the capacity probe at
 [`schema § 10 → Exclusive resources`](../plugins/mjolnir/config/schema.md#exclusive-resources), the
-spend guard's argument shape (#26) and the deploy script (#13) — which reads like three copies of
+spend guard's argument shape at
+[`schema § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
+and the deploy script (#13) — which reads like three copies of
 one fact and therefore like a reason to declare the toolchain once. ⛔ **None of the three is
 derivable from a toolchain name**, measured on one project:
 

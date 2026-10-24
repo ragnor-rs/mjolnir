@@ -226,3 +226,15 @@ executed:
   revisit_when: >-
     A suite lands that creates something for itself before it can run — a store, a service or a
     daemon — which is the same trigger the facet above carries.
+
+spend_guard:
+  # The simplest shape the facet has: one command that spends, named, with no pattern beside it.
+  # ⚠️ The command alone decides here because the script does nothing else — which is exactly the
+  # case the sibling example next door does not have, and the reason `args_match` is a key rather
+  # than part of the command.
+  deny:
+    - command: "<the script whose every invocation spends>"
+      reason: "<what one invocation costs, in this project's own terms>"
+  # Left at the default, written out: the person who drives the tier by hand is the same person
+  # this ask reaches, and they run it deliberately rather than rarely.
+  approval: per_invocation

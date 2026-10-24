@@ -801,6 +801,18 @@ class Config:
                 "A configuration rather than a partial install: there is no "
                 "mirrored command for a local run to duplicate."
             )
+        # § 19, and the stated absence of a list rather than of a carrier: the
+        # guard is installed in every project the install reaches, so what `[]`
+        # buys is the difference between a project that decided no command of its
+        # own spends and one that never asked. ⛔ The complement is not reported —
+        # a project carrying entries has a guard that acts, which is behaviour
+        # rather than an absence.
+        if not self.get("spend_guard.deny"):
+            out.append(
+                "No command is denied as a spend (`spend_guard.deny: []`), so the "
+                "spend guard is installed and refuses nothing here. ⛔ Not an "
+                "absence of signal: the project states it (§ 19)."
+            )
         # A role's own unset key. `day_log.script` is the first absence in this
         # toolkit that is load-bearing rather than theoretical: the day-log role
         # cannot run without it, and reporting that -- naming the key -- is what
@@ -2198,6 +2210,89 @@ def validate(data: dict, facts: dict) -> None:
             "where the project does not hard-wrap its files (§ 8).",
         )
 
+    # § 19. Each denied call, held key by key. ⛔ Every refusal here is in the
+    # permissive direction, which is the one that matters for this facet: an entry
+    # a guard cannot act on is a paid command nothing ever refuses, while every
+    # reader goes on reporting the guard as configured. The shape rules are here
+    # for the reason § 16's and § 17's are -- requiredness is marked on the
+    # surface and answers whether a key is written, and a member of a list sits at
+    # no path a marker can reach.
+    denied = _get(data, "spend_guard.deny")
+    if not isinstance(denied, list):
+        raise ConfigError(
+            "spend_guard.deny",
+            f"is {denied!r}; § 19 states it as the calls that spend -- a list of "
+            "entries, or `[]` where no command here spends. A shape this reader "
+            "cannot walk is a guard with nothing to match, installed and silent.",
+        )
+    for index, entry in enumerate(denied):
+        where = f"spend_guard.deny[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}, and has to be a mapping stating at least the "
+                "`command` whose invocation spends and the `reason` naming what it "
+                "costs (§ 19).",
+            )
+        command = entry.get("command")
+        if not isinstance(command, str) or not command.strip():
+            raise ConfigError(
+                f"{where}.command",
+                f"is {command!r}; § 19 states one command per entry, matched "
+                "against the command position of each segment of a call. A value "
+                "of another shape stands in no command position, so the entry "
+                "refuses nothing while reading as a denial somebody configured.",
+            )
+        reason = entry.get("reason")
+        if not isinstance(reason, str) or not reason.strip():
+            raise ConfigError(
+                f"{where}.reason",
+                f"is {reason!r}; § 18 states it as what the call costs, in the "
+                "project's own terms, and it is what a refusal names.",
+            )
+        if "args_match" in entry:
+            pattern = entry["args_match"]
+            if not isinstance(pattern, str) or not pattern.strip():
+                raise ConfigError(
+                    f"{where}.args_match",
+                    f"is {pattern!r}; § 18 states it as the pattern the arguments "
+                    "carry, and absent where the command alone decides. Written "
+                    "blank it matches every call of that command, which is the "
+                    "opposite of the narrowing it was written for.",
+                )
+            try:
+                re.compile(pattern)
+            except re.error as error:
+                raise ConfigError(
+                    f"{where}.args_match",
+                    f"does not compile as a pattern -- {error}. ⛔ Refused rather "
+                    "than left to the guard: a pattern that cannot be compiled "
+                    "matches no call, so the paid command reads as denied and is "
+                    "never refused (§ 19).",
+                ) from None
+
+    # § 19's other key. The bar is compared against a figure the harness states in
+    # its own units, so what is refused here is a value that cannot be compared to
+    # one. ⚠️ The boolean arm runs first, for the reason § 16's floor states: a
+    # boolean compares equal to `1` in this language, so `true` would otherwise be
+    # read as a bar of one unit.
+    bar = _get(data, "spend_guard.resume_bar_usd")
+    if isinstance(bar, bool):
+        raise ConfigError(
+            "spend_guard.resume_bar_usd",
+            "is a boolean; § 19 states it as the price a resume is reported above, "
+            "which is a number. A boolean compares equal to `1`, so `true` would "
+            "be read as that price.",
+        )
+    if bar is not None and (not isinstance(bar, (int, float)) or bar < 0):
+        raise ConfigError(
+            "spend_guard.resume_bar_usd",
+            f"is {bar!r}; § 19 states it as the price a resume is reported above, "
+            "in the figure's own units, and absent where no resume is priced. A "
+            "value nothing can compare to a price prices no resume while reading "
+            "as a bar somebody set.",
+        )
+
 
 def configured(skills_root: str = ".") -> bool:
     """Whether this project states a configuration at all.
@@ -2328,6 +2423,7 @@ MARKED_REQUIRED = [
     "ordering.carrier",
     "readiness",
     "roots.code",
+    "spend_guard.deny",
     "statuses",
     "tracker.kind",
     "work_item.due_date.carrier",
@@ -3108,6 +3204,24 @@ def self_test() -> int:
                     any(named in line for line in reported),
                     f"reported {reported!r}",
                 )
+            # ⛔ The absences that are a stated *empty list* rather than a
+            # carrier, each held the same way and for the same reason: this
+            # repository writes every one of them, so each branch runs in this
+            # suite and nothing read its output. Found by review on the § 19
+            # change, where that facet's report line could be deleted whole with
+            # every assertion here still green.
+            for path, stated in (
+                ("host.checks", "the host runs no checks"),
+                ("checks_local", "no local check is stated"),
+                ("spend_guard.deny", "no command is denied as a spend"),
+            ):
+                if config.get(path):
+                    continue
+                check(
+                    f"and names `{path}` among them, the project stating it empty",
+                    any(path in line for line in reported),
+                    f"reported {reported!r}",
+                )
             # The resolved identity, which is the only guard § 1 has against a
             # role run from a sibling project: the reader says which root it
             # resolved and which file it read, both absolute, for the role to
@@ -3476,6 +3590,40 @@ def _planted_violations():
         ("a template keyed to a type the project cannot assign",
          "work_item.template.by_type.epic",
          at("work_item.template.by_type.epic", "epic.md")),
+        # § 19's entries. ⚠️ Every one of these refusals is in the permissive
+        # direction: each leaves a reader reporting the guard as configured while
+        # the entry refuses no call at all.
+        ("a deny list that is not a list", "spend_guard.deny",
+         at("spend_guard.deny", "a-command-that-spends")),
+        ("a deny entry that is not a block", "spend_guard.deny[0]",
+         at("spend_guard.deny", ["a-command-that-spends"])),
+        ("a deny entry naming no command", "spend_guard.deny[0].command",
+         _a_denial_of(command=None)),
+        ("a deny entry whose command is blank", "spend_guard.deny[0].command",
+         _a_denial_of(command="   ")),
+        ("several commands in one deny entry rather than several entries",
+         "spend_guard.deny[0].command",
+         _a_denial_of(command=["a-command-that-spends"])),
+        ("a deny entry saying nothing about what the call costs",
+         "spend_guard.deny[0].reason", _a_denial_of(reason=None)),
+        ("a cost written blank, which a refusal would name as nothing",
+         "spend_guard.deny[0].reason", _a_denial_of(reason="   ")),
+        ("an argument pattern written blank, which matches every call of it",
+         "spend_guard.deny[0].args_match", _a_denial_of(args_match="   ")),
+        ("an argument pattern written with nothing after it",
+         "spend_guard.deny[0].args_match", _a_denial_of(args_match=None)),
+        ("an argument pattern that is no pattern at all",
+         "spend_guard.deny[0].args_match",
+         _a_denial_of(args_match=["--the-paid-tier"])),
+        ("an argument pattern that does not compile, so no call ever matches it",
+         "spend_guard.deny[0].args_match",
+         _a_denial_of(args_match="--the-paid-tier(")),
+        ("a resume bar written as a flag, which reads as a price",
+         "spend_guard.resume_bar_usd", at("spend_guard.resume_bar_usd", True)),
+        ("a resume bar that is no price at all", "spend_guard.resume_bar_usd",
+         at("spend_guard.resume_bar_usd", "expensive")),
+        ("a resume bar below nothing", "spend_guard.resume_bar_usd",
+         at("spend_guard.resume_bar_usd", -1)),
     ]
 
 
@@ -3661,6 +3809,31 @@ def _a_local_check_of(**overrides):
         }
         entry.update(overrides)
         data["checks_local"] = [entry]
+        return data
+
+    return mutate
+
+
+def _a_denial_of(**overrides):
+    """§ 18's facet carried as one entry, with the stated keys replaced.
+
+    Written out rather than borrowed from whichever example denies a command, for
+    the reason `_a_resource_of` below is: an example states a project's own paid
+    calls, and a plant that broke one key of a borrowed entry would redden on
+    whichever other entry that project also wrote.
+
+    ⛔ A key whose override is `None` is **written** with nothing after it rather
+    than removed, the two being one value once a mapping is parsed -- and the
+    blank form is the one a reader asking for truthiness lets through.
+    """
+
+    def mutate(data: dict) -> dict:
+        entry = {
+            "command": "a-command-that-spends",
+            "reason": "what one call of it costs",
+        }
+        entry.update(overrides)
+        data.setdefault("spend_guard", {})["deny"] = [entry]
         return data
 
     return mutate

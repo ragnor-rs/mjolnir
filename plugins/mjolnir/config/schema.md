@@ -2442,7 +2442,9 @@ branch_model:
 
 ⛔ **The probe is the third place a project's build tooling is encoded, and that triple is not an
 argument for declaring the toolchain on this surface.** The capacity rule, the spend guard's
-argument shape (#26) and the deploy script (#13) each know which tools a project builds with, which
+argument shape
+([§ 19](#19-a-command-that-spends-and-the-supervision-it-is-refused-without))
+and the deploy script (#13) each know which tools a project builds with, which
 reads like three copies of one fact — and none of the three is derivable from a toolchain name, so a
 declared toolchain would be a fourth statement beside three irreducible ones
 ([the measurement](../../../docs/build-surface.md#the-toolchain-version-is-a-non-goal-and-the-boundary-is-where-that-is-stated)).
@@ -2657,7 +2659,9 @@ rule differently enough that neither could be configured as the other — which 
 with an answerer per check rather than a flag
 ([the measurement](../../../docs/configuration-surface.md#a-green-gate-is-not-a-definition-of-done)).
 ⚠️ A procedure that demanded a person everywhere would be the check somebody turns off, which is
-the reasoning #26's spend guard already rests on.
+the reasoning
+[§ 19](#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs)'s spend guard rests on
+one facet over.
 
 The two vocabularies an entry draws on, stated once — and written under the key they belong to
 rather than bare, because § 5's `check` is a different library and one name cannot state both:
@@ -3315,6 +3319,143 @@ nothing**, § 2's absence meaning there is no mirrored command to match — whic
 rather than a misconfiguration, and the same reading § 7 gives a project that states no exclusive
 resource.
 
+## 19. A command that spends, and the supervision it is refused without
+
+```yaml
+spend_guard:
+  deny:                      # the calls that spend; required
+    - command: "<the script or binary whose invocation spends>"
+      args_match: "<the pattern the arguments carry, where the command alone does not decide>"
+      reason: "<what the call costs, in the project's own terms>"
+  approval: per_invocation | denied   # default: per_invocation
+  resume_bar_usd: 0.25       # the price a resume is reported above; absent prices none
+```
+
+**What spends is a project's fact and what refuses it is procedure.** ⛔ **The denied commands,
+their costs and every budget stay in the project**, and what the toolkit carries is the command
+position, the match, the decision and the report. A spend reached from an ordinary shell command
+reaches no role at all, so nothing a skill states can hold it: this is the rail half of the division
+[§ 7](#what-a-hook-refuses-and-the-record-it-reads) already draws between procedure a session can
+argue its way around and a guard that denies the call.
+
+⛔ **`deny: []` is the stated absence and means no command here spends**, by the rule this surface
+opens with — a project that has decided none of its commands costs money and a project that has not
+thought about it read identically otherwise. ⚠️ **A reader reports it as unavailable**, which is
+what an install owes a project with nothing to guard; and the guard is then installed and silent,
+which [§ 7](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it) states of a
+project with no exclusive resource and is the same reading here.
+
+**The keys of an entry, and what each is for.** ⛔ **`command` and `reason` are written on every
+entry and `args_match` is legitimately absent** — stated here in prose rather than by the
+`# required` marker, for the reason
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts) states an entry's `command`
+that way: a marker names a key at a path, and a member of a list sits at no path a marker or a
+condition can reach.
+
+- ⛔ **`command` is what stands in the command position**, which the subsection below resolves and
+  which is never searched for in the text of the call. ⚠️ **It is compared as a path rather than as
+  a word**: one command is spelled absolutely, relatively and bare for the shell to resolve, so what
+  matches is equality or a suffix at a path separator in either direction. A name that merely ends
+  in the configured one is a different command, and the separator is what tells those two apart.
+- ⛔ **`args_match` is the pattern the arguments carry, and it is what makes this facet usable
+  rather than a convenience on it.** The measured case is one runner that runs a project's cheap
+  suites and its paid tier alike, so the binary decides nothing and the arguments decide everything.
+  ⚠️ **It is searched against the arguments joined by single spaces** — the one shape that can state
+  a flag together with its value — and the arguments are the shell's own parse, so a quoted one is
+  matched without its quotes. Absent, the command alone decides. ⛔ **The join starts at the first
+  argument, so a pattern anchored with `^` matches only the call whose paid argument comes first**:
+  a global flag written before it is part of the same string and moves it off the anchor. ⚠️ **And a
+  pattern with no word boundary in it matches across the join**, one argument's end running into the
+  next one's start — so a narrowing that has to hold is written with `\b` or `(^| )` rather than
+  with a bare phrase.
+- ⛔ **`reason` is what the call costs, in the project's own terms, and it is stated rather than
+  derived.** It is what a refusal names, and a refusal that cannot say what the call would have cost
+  is one whoever meets it has to guess at — the argument
+  [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts) makes for `proves` one
+  facet over, where a verdict with no claim beside it is read as proving whatever its reader needed.
+
+⛔ **A guard here reads the call and the list the project wrote, and nothing else.** That is
+[§ 7](#what-a-hook-refuses-and-the-record-it-reads)'s rule rather than an exception to it: what a
+guard may not do is read the *work*, and a command a session is about to run is not the work — it is
+the act being guarded, which every guard has to read to know whether it is the act at all.
+
+### The command position, and why the whole call is not one
+
+⛔ **A call is split on the shell's own separators, each segment's command position is resolved, and
+the match is against that position's token — never against the text of the call.** The defect this
+closes was paid for once: an earlier version searched the raw command and refused a text edit whose
+prose happened to contain a denied script's path, and ⛔ **a guard that blocks honest work is a
+guard somebody turns off**, after which nothing is guarded at all.
+
+⛔ **Leading environment assignments and a wrapper are stripped, and every command position a call
+has is matched rather than the outermost one.** A wrapper that elevates, times, detaches or sets the
+environment for a command leaves the command one token further right, and the flags of the wrapper
+itself leave it further right again — ⚠️ **so a flag's own value is never read as the command**,
+which is the measurement this toolkit's own guards already carry: dropping every word that opens
+with a dash and reading the next one puts a flag's value where the command stands, and the guard is
+then installed and holding nothing. ⚠️ **Matching every position rather than the innermost one also
+settles the case where a project's own paid command is spelled like a wrapper**, which a
+strip-then-match would have left unguardable.
+
+⛔ **A compound call is refused on the segment that matched, and the refusal names it.** The act the
+harness offers is the whole call, so what the segment buys is not a narrower refusal but a legible
+one: a person reading *this call spends* against four semicolons has no way to tell which of them
+was meant, and a report that names the wrong one is worse than none.
+
+⚠️ **What it does not reach is stated here rather than discovered.** A paid command invoked through
+an interpreter stands in no command position of its own — the interpreter does, and the paid script
+is its argument — so a project that invokes one that way states that spelling as an entry of its
+own. ⛔ **The toolkit names no interpreter**, by
+[§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls): a list
+of them here would be the stack entering the toolkit one token at a time, and the first project
+writing one in another language would be the one it was wrong about.
+
+⛔ **A configuration that is there and does not resolve leaves the call held to nothing, and the
+answer says so.** This is the one case [§ 7](#which-direction-a-guard-fails-in)'s table does not
+settle by itself: the act here is not known to be irreversible, because what a broken configuration
+cannot say is whether this call is a spend at all — and the refusing arm would refuse *every* call
+in the project, the edit that repairs the configuration included. ⚠️ **A configuration that is
+absent is silent instead**, by [§ 7](#a-hook-in-a-project-that-states-no-configuration), which keeps
+the two answers apart for the reason that section states.
+
+### What an approval is per, and the one price stated before a turn runs
+
+⛔ **`per_invocation` puts the call to the person every time, and nothing is remembered between
+calls.** The legitimate uses of a paid command are frequent — the measured project runs the same
+command, differently scoped, several times a week — so an approval that outlived the call it was
+given for would be a go for calls nobody saw. ⚠️ **What an unanswered ask becomes is the harness's
+and not this facet's**: a session nobody is watching gets no answer and the call does not run, which
+is where *unsupervised* is decided — and it is
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)'s rule about an ask nothing
+answered arriving at a call rather than at a leg.
+
+⛔ **`denied` refuses the call outright**, for a spend no approval inside a session should be able
+to release: the remedy a refusal names is then a person running the command themselves, outside
+every loop. ⚠️ **It is the stricter value and not the default**, a guard nobody can satisfy being
+one somebody edits.
+
+⛔ **`resume_bar_usd` is the one price the harness states before a turn runs, and a session priced
+above it is reported with the figure.** Resuming a long session after a gap pays to rewrite the
+prompt cache, and the amount is handed to the event that opens the session rather than inferred —
+the cheapest thing this facet can read, and the only cost the harness volunteers
+([the measurement](../../../docs/configuration-surface.md#why-there-is-no-threshold-on-the-surface)).
+⚠️ **The unit is the figure's own**, which is why the key names it. ⚠️ **A resume is the case the
+key is named for and not the only one the figure arrives on** — a forked session is priced too, and
+a session carrying the figure is compared against the bar whatever the harness calls it, so a source
+the harness starts pricing needs no key and no edit. ⚠️ **What the report carries beside the figure
+is whatever the same event stated about the cache** — whether it had likely expired, which is why
+the price is what it is — and nothing that was not stated.
+
+⛔ **A resume the harness gave no figure for is reported as *no figure*, and never as free.** That
+is § 2's absence-of-signal rule arriving at a price: an unstated cost and a cost of zero read
+identically, and the one a reader acts on is the one they were told. ⚠️ **An unset bar prices no
+resume at all**, and then this arm says nothing — a legitimately unset key, by
+[§ The file itself](#the-file-itself).
+
+⚠️ **It does not generalise into a spend meter, and no key here states a budget.** It prices one
+event, and a command's own cost is not a figure anything hands over — which is why the rest of this
+facet is a list a project writes rather than an amount anything measures
+([the measurement](../../../docs/configuration-surface.md#why-there-is-no-threshold-on-the-surface)).
 ## What the toolkit installs into a project, and what takes it out
 
 **Adoption costs one file a project writes, and a short list of files the toolkit writes.** The

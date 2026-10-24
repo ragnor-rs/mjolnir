@@ -243,3 +243,24 @@ executed:
   requires:
     - "a store the run creates for itself, reachable over its own protocol"
     - "the credential that store is created with, in the environment the run inherits"
+
+spend_guard:
+  # The facet at the shape it was extracted from: one runner invokes this project's cheap suites
+  # and its paid tier alike, so ⛔ the command decides nothing and the arguments decide everything.
+  # Both entries name the same binary and are two entries rather than one pattern, because the
+  # costs differ and `reason` is what a refusal names.
+  deny:
+    - command: "<the runner that runs every tier of this project>"
+      args_match: "<the pattern that selects the tier drawing the model quota>"
+      reason: "<what one run costs, and what it does to the quota the product shares>"
+    - command: "<the runner that runs every tier of this project>"
+      args_match: "<the pattern that selects the graded evaluation set>"
+      reason: "<what one grading run costs against the budget it draws on>"
+  # ⚠️ Per invocation and not per session: the legitimate uses are frequent — the same command,
+  # differently scoped, is run deliberately several times a week — so an approval that outlived
+  # the call it was given for would be a go for calls nobody saw.
+  approval: per_invocation
+  # The resume price, which is the one figure the harness states before a turn runs. The bar is
+  # this project's own, and it is written here because a resume into the tier above is the cheapest
+  # moment to be told what the session is about to cost.
+  resume_bar_usd: 0.25
