@@ -799,8 +799,9 @@ host:
 **A generated workflow has to say where its jobs run, and `checks` above does not carry it.**
 [A generated gate takes a workflow file of its own](#a-workflow-whose-jobs-mirror-more-than-one-command),
 and a file has a `runs-on` whether or not anybody decided one — so the decision is either stated
-here or made by whatever writes the file. ⛔ **An installer writes this statement and no label of
-its own.**
+here or made by whatever writes the file. ⛔ **Where the block is stated, an installer writes it and
+chooses nothing** — the label, the budget and the group come from here, and a literal of the
+installer's own beside a statement that disagrees with it is the drift this facet exists against.
 
 ⛔ **The whole block is omitted where the host kind's own default runner is the answer, and that
 absence is the ordinary case rather than a gap.** ⚠️ **What that default is, the surface does not
@@ -869,9 +870,15 @@ one is read somewhere else entirely.
 | Reading | What the host's own record says | What it is never |
 |---|---|---|
 | **green** | the run executed steps and concluded green — preconditions 3 and 4 both met | a statement about any other commit, by precondition 2 |
-| **failed** | it executed steps and concluded red: the only one of the four that is about the change | an environment failure, which is the paragraph below and consumes no fix cycle |
+| **failed** | it executed steps and did not pass: the only one of the four that reaches the change at all | ⛔ a *finding*. A run that executed a step and then lost its credential lands here too, and which of the two it is the paragraph below settles — from the log, never from the conclusion |
 | **no answer, never started** | it concluded having executed no step — cancelled in the queue, billing suspended, a runner the label never reached | a failing check. ⛔ Reported as the queue or the environment it was, naming which |
 | **no answer, superseded — read the newer run** | a newer run for the same group retired it, which a `supersedes` arranges deliberately | an outcome of the code. ⛔ The consumer is sent to the successor, never to a verdict |
+
+⛔ **The four divide on whether a step ran and whether a successor exists, never on whether the
+failure was the change's.** That second question is the paragraph below's and it cuts *across*
+**failed** rather than splitting the table — a run that executed a step and then could not reach a
+service is **failed** here and no finding there, and a reading that tried to answer both would need
+the log, which is not a fact a conclusion carries.
 
 ⛔ **This is the absence rule at the top of this section one step further in**: a run that concluded
 without executing a step is no answer, and a run a successor retired says *read the successor*.
@@ -1096,6 +1103,12 @@ file would be editing what the host executes.
   and comparing the text of it against a stated value would report drift on a project whose jobs do
   in fact land where it says. ⚠️ **The job is reported by name**, not the file alone, since the
   remedy is per job.
+- ⛔ **A supersession group the file states on a job rather than on the workflow.** The host carries
+  the key at both levels and this facet states one group for the whole workflow, so a file written
+  that way states something the facet has no form for. ⚠️ **Measured as a false drift before it was
+  an absence**: read at the workflow alone such a file comes back as stating *no* group, which
+  reports a correct project wrong and is red forever — the one edit that would clear it is moving a
+  key the project put where it meant to.
 
 ⛔ **`checks: []` is *no subject* only where the host in fact defines nothing.** Both sides empty is
 the legitimate absence this section opens with, and a comparison says so rather than reporting

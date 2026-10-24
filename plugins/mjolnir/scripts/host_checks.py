@@ -124,17 +124,21 @@ ANSWERS = (REACHED, UNREADABLE, NO_ANSWER, OUT_OF_SCOPE)
 # named concluded. The two were deliberately not given one vocabulary -- a word
 # meaning two findings is what `mirrors` above declines to borrow `reached` for.
 #
-# ⚠️ Held to the surface member by member, the way `ANSWERS` is, and ⛔ **the
-# order here is the resolution order and is held as a phrase too**: a superseded
-# run has a successor to read whatever else was true of it, which is the one
-# precedence § 2 states for this reading.
+# ⚠️ Held to the surface member by member, the way `ANSWERS` is — and ⛔ **the
+# order of this tuple carries nothing**, unlike `ANSWERS`, which `_ranked` reads.
+# Nothing resolves through it: the one precedence § 2 states for this reading,
+# that a superseded run has a successor to read whatever else was true of it,
+# lives in `conclusion`'s own branch order and is held by the three plants that
+# assert it against each of the other readings. ⛔ A comment claiming this tuple
+# carried that order was a second statement of it: reordering the tuple left the
+# suite green, measured, which is what a restated fact always does.
 GREEN, FAILED, NEVER_STARTED, SUPERSEDED = (
     "green",
     "failed",
     "no answer, never started",
     "no answer, superseded — read the newer run",
 )
-READINGS = (SUPERSEDED, NEVER_STARTED, FAILED, GREEN)
+READINGS = frozenset((GREEN, FAILED, NEVER_STARTED, SUPERSEDED))
 
 # What a glob may be written with, and what makes one unreadable. § 2 states a
 # path filter as a list of globs and nothing further, so the characters this
@@ -765,7 +769,7 @@ def self_test() -> int:
             f"**{answer}**" in surface,
             "this module's answer is not one the surface names",
         )
-    for reading in READINGS:
+    for reading in sorted(READINGS):
         check(
             f"§ 2 names the `{reading}` reading",
             f"**{reading}**" in surface,

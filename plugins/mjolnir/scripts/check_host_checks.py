@@ -250,8 +250,6 @@ def read_definition(text: str | Exception, path: str) -> Definition:
             "states no `name:`, so the name every entry is keyed on cannot be read from it"
         )
 
-    _supersession(document, found)
-
     jobs = document.get("jobs")
     if isinstance(jobs, dict):
         # ⛔ The keys of the `jobs` block and never of the document: a top-level
@@ -262,6 +260,13 @@ def read_definition(text: str | Exception, path: str) -> Definition:
             _runner_of(str(job), body, found)
     else:
         found.unstatable.append("states no `jobs:` block this reader can walk")
+
+    # ⛔ After the jobs walk and not before it: the host lets a job carry a
+    # `concurrency` of its own, and a file written that way states a group this
+    # reader is looking for one level up. Read at the document alone it comes
+    # back as *no group*, which is drift reported against a project that is
+    # correct -- red forever with no edit that clears it.
+    _supersession(document, jobs if isinstance(jobs, dict) else {}, found)
 
     if True in document:
         block = document[True]
@@ -333,14 +338,35 @@ def _runner_of(job: str, body, found: Definition) -> None:
         found.budgets[job] = budget
 
 
-def _supersession(document: dict, found: Definition) -> None:
+def _supersession(document: dict, jobs: dict, found: Definition) -> None:
     """The workflow's concurrency group, and whether it retires what is running.
 
     ⛔ Two facts and not one. A group with nothing cancelling in progress
     supersedes nothing, so a file that states the stated group and lets both
     runs finish is drift against a facet saying a newer run retires an older --
     and a comparison on the group alone would call that agreement.
+
+    ⛔ **A job carrying a `concurrency` of its own kills the dimension.** The
+    host puts the key at both levels and the facet states one group for the
+    workflow, so a file that supersedes per job states something the facet has
+    no form for. ⚠️ Measured as a false drift: read at the document alone such a
+    file comes back as stating *no group*, and the comparison then reports a
+    correct project wrong, with no edit that clears it.
     """
+    per_job = sorted(
+        str(job) for job, body in jobs.items()
+        if isinstance(body, dict) and "concurrency" in body
+    )
+    if per_job:
+        found.runner_unstatable.append((
+            "supersedes",
+            "states a `concurrency:` on the "
+            + ", ".join(f"`{job}`" for job in per_job)
+            + f" job{'s' if len(per_job) > 1 else ''}, and § 2 states one group for the "
+            f"whole workflow -- so what a newer run would retire cannot be compared "
+            f"against what the facet states",
+        ))
+        return
     block = document.get("concurrency")
     if block is None:
         found.group, found.cancels_in_progress = None, False
@@ -780,8 +806,9 @@ def check_the_supersession_group_is_the_stated_one(subject: Subject) -> list[str
             continue
         if found.group != wanted:
             problems.append(
-                f"{found.path} states the concurrency group "
-                + (f"`{found.group}`" if found.group is not None else "no concurrency group")
+                f"{found.path} "
+                + (f"states the concurrency group `{found.group}`"
+                   if found.group is not None else "states no concurrency group")
                 + f" and `host.runner.supersedes` is `{wanted}` (§ 2). A consumer told a "
                 f"cancelled run was superseded is sent to a successor that was never "
                 f"arranged."
@@ -1096,10 +1123,22 @@ A_RUNNER = {
     "concurrent_jobs": 1,
     "budget_minutes": 30,
     "supersedes": "a-supersession-group",
-    "budget_is_a_queue_budget": True,
 }
 
 A_DEFAULT_LABEL = "    runs-on: ubuntu-latest\n"
+
+
+def _a_stated_runner() -> dict:
+    """`A_RUNNER` as the reader walks it, and never as a record built here.
+
+    ⛔ Through `config.host_runner`, for the reason the `Subject` class states
+    about the other two sides: a hand-built record is one no refusal of the
+    reader's ever sees, so a plant could compare a block that does not load and
+    a derived key could drift from the derivation without anything noticing.
+    ⚠️ `budget_is_a_queue_budget` is exactly that key -- written out here it was
+    a second statement of a rule § 2 gives the reader.
+    """
+    return reader.host_runner({"host": {"runner": dict(A_RUNNER)}})
 
 
 def _states_a_runner(subject: Subject) -> Subject:
@@ -1109,7 +1148,7 @@ def _states_a_runner(subject: Subject) -> Subject:
     job's key, so a plant that rewrote one job would leave the other disagreeing
     and every violation below would redden on the wrong half.
     """
-    subject.runner = dict(A_RUNNER)
+    subject.runner = _a_stated_runner()
     group = (
         f"concurrency:\n  group: {A_RUNNER['supersedes']}\n"
         "  cancel-in-progress: true\n"
@@ -1290,6 +1329,26 @@ def _plant_a_group_the_host_evaluates(subject: Subject) -> Subject:
     )
 
 
+def _plant_a_group_stated_on_the_job(subject: Subject) -> Subject:
+    """The host puts `concurrency` at both levels and the facet states one group.
+
+    ⚠️ **A false drift before it was an absence.** Read at the document alone, a
+    file that supersedes per job comes back as stating no group at all, and the
+    comparison reported a correct project wrong — red forever, since moving the
+    key up is the one edit that clears it and the file is right as written.
+    """
+    return _edit(
+        "second.yml",
+        f"concurrency:\n  group: {A_RUNNER['supersedes']}\n  cancel-in-progress: true\n",
+        "",
+    )(
+        _edit("second.yml", "  second:\n",
+              "  second:\n    concurrency:\n"
+              f"      group: {A_RUNNER['supersedes']}\n"
+              "      cancel-in-progress: true\n")(_states_a_runner(subject))
+    )
+
+
 ABSENCES = [
     ("a host kind whose definitions are not files", _plant_a_kind_with_no_readable_definitions),
     ("a definition stating no `name:`", _plant_a_definition_with_no_name),
@@ -1304,6 +1363,7 @@ ABSENCES = [
     ("a set of labels where § 2 states one", _plant_a_set_of_labels_where_one_is_stated),
     ("a budget the host evaluates", _plant_a_budget_the_host_evaluates),
     ("a supersession group the host evaluates", _plant_a_group_the_host_evaluates),
+    ("a supersession group stated on the job", _plant_a_group_stated_on_the_job),
 ]
 
 

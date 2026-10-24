@@ -1718,7 +1718,11 @@ figures and a number in this paragraph is wrong by the next plant.
   differently from one another, an entry stating no `triggers`, a trigger the grammar does not
   parse, a job filter the host kind carries nowhere, and — on the runner dimension — a label
   chosen when the run starts, a set of labels where the facet states one, a budget the host
-  evaluates and a concurrency group it evaluates.
+  evaluates, a concurrency group it evaluates, and a concurrency group the file states on a job
+  rather than on the workflow. ⚠️ **That last one was a false drift before it was an absence**:
+  the host carries the key at both levels, and read at the workflow alone such a file comes back
+  as stating no group at all — so the comparison reported a correct project wrong, red forever,
+  the only clearing edit being to move a key the project put where it meant to.
 - **Subject readings**: nothing stated beside nothing defined, which is *no subject*; and an empty
   facet with definitions behind it, which is drift rather than a project standing down.
 - **Exemptions that must stay green**, among them a trigger list and a type clause in an order no
