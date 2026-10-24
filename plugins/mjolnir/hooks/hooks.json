@@ -33,6 +33,18 @@
             "statusMessage": "Reading the record this act is refused without"
           }
         ]
+      },
+      {
+        "matcher": "Bash|Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/context.py", "guard"],
+            "timeout": 10,
+            "statusMessage": "Bounding what this call would put in the window"
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -45,6 +57,18 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/enforce.py", "release"],
             "timeout": 10,
             "statusMessage": "Giving back the place this call held"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/context.py", "result"],
+            "timeout": 10,
+            "statusMessage": "Holding what came back to what the window can carry"
           }
         ]
       },

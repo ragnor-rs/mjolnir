@@ -283,3 +283,26 @@ live_guard:
   # Nothing is reached without leaving this machine: the environment is the host's, and the local
   # checkout runs no service of its own. ⚠️ Absent rather than empty — no name is read as local,
   # which is the stricter of the two readings.
+
+# The rewriting shape of § 22: both of this project's unbounded commands take a flag that bounds
+# them, so neither is refused — the arguments are rewritten and the call runs, and the session is
+# told the bound was added.
+context_guard:
+  unbounded:
+    - command: "<the command that prints this project's build log>"
+      bound: "--A-LINE-LIMIT-FLAG 200"
+      reason: "a full build log is longer than everything else the window holds together"
+    # ⚠️ The same command is bounded in one spelling and unbounded in another, which is what
+    # `args_match` is for here: a search scoped to a path is already small, and the same search
+    # over the whole tree is the call that fills a window.
+    - command: "<the command that searches this project's sources>"
+      args_match: "(^| )--WHOLE-TREE-FLAG( |$)"
+      bound: "--A-MATCH-LIMIT-FLAG 100"
+      reason: "every match in the tree, where what was wanted was whether there is one"
+  # ⛔ The coverage report is read whole by the role that deploys a batch, which reads it for the
+  # one line a head and a tail would cut. Named here rather than left to a reader to notice, the
+  # way the mirrored commands above are named rather than inferred.
+  never_bound: ["<the command that prints this project's coverage report>"]
+  result_limit_chars: 20000
+  sidecar_dir: "<the absolute path of a directory outside every working tree>"
+  reread: refuse

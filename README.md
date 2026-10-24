@@ -124,7 +124,8 @@ to ask you are stated too —
 | [`tools/check_nothing_deferred.py`](tools/check_nothing_deferred.py) | The gate that refuses a merge while any item raised against the change is unresolved, counted in the body and in the threads on it |
 | [`tools/check_prose_width.py`](tools/check_prose_width.py) | The sweep that holds every tracked markdown file to the line width the configuration states, excluding the lines the format forbids breaking |
 | [`tools/check_no_audit_trail.py`](tools/check_no_audit_trail.py) | The gate that reads the markdown lines a change adds and refuses a dated pass record, a figure beside a former value, or a clause whose subject is the pass before this one |
-| [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/): a `SessionStart` hook putting the rules nothing mechanical reads into the session, a `Stop` hook holding a role's reply to the register, a `PreToolUse` hook refusing a command that would carry a credential onto a surface outside the project, and the enforcement, spend and live halves below. Which they are is what the file says, so no count of them is carried here |
+| [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/): a `SessionStart` hook putting the rules nothing mechanical reads into the session, a `Stop` hook holding a role's reply to the register, a `PreToolUse` hook refusing a command that would carry a credential onto a surface outside the project, and the guard halves below. Which they are is what the file says, so no count of them is carried here |
+| [`plugins/mjolnir/scripts/context.py`](plugins/mjolnir/scripts/context.py) | The context half: a guard that bounds what a call would put into the session's window at the call rather than afterwards — refusing the command whose output your configuration says nothing bounds and naming the bounded form, rewriting the arguments where you stated a flag that bounds it and telling the session it did, replacing a result longer than the size you stated with the path its full text was written to beside a head and a tail, and refusing a read of a file this session has already read and that has not changed since; and a command you named as never bounded meets none of it |
 | [`plugins/mjolnir/scripts/enforce.py`](plugins/mjolnir/scripts/enforce.py) | The enforcement half: a guard that refuses a merge for which no answer to *is a person going to read this diff* is recorded on the change, naming what would unblock it; a lease that holds a place on whatever your configuration says contends, given back on every exit path that fires and expiring on the one that cannot; and the command that writes the record the guard reads |
 | [`plugins/mjolnir/scripts/install.py`](plugins/mjolnir/scripts/install.py) | The install half: the step that writes the artifacts only your host and your git can read, and takes them back out. What it may do, and what it refuses rather than improvise, is [the rule](plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out) — no copy of it is carried here — with what the step's own suite reaches, and what it leaves alone, in [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-install-half-what-the-toolkit-writes-into-a-project) |
 | [`plugins/mjolnir/scripts/live.py`](plugins/mjolnir/scripts/live.py) | The live half: a guard that holds a command your configuration says opens a session on another machine, naming the segment, the machine it reaches and the file a name is cleared in — putting it to you where you would answer the prompt and refusing it outright where the session would answer for itself, and passing in silence where the machine is one you named as not live |
@@ -311,6 +312,28 @@ of why the list is inverted and where it lives, and
 of what a fact it cannot establish does. A project whose commands reach no other machine gets no
 live hook at all; what no check can reach is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-live-half-a-session-put-to-somebody-and-the-names-that-clear-one).
+
+⛔ **The window the session thinks in is not spent on a dump nobody wanted.** Summarising a window
+is lossy and silent — what it dropped is gone, and nothing left says what was lost — so the lever
+is what gets in: you list the commands whose output nothing bounds and what bounds each, and the
+call is **rewritten** with your own flag added where one exists, refused with your bounded form
+named where none does, and left alone where it already carries a bound of its own. What comes back
+longer than the size you stated reaches the window as a path, a head and a tail, with the whole of
+it on disk at that path to read the part you need from. And a file this session has already read,
+unchanged since, is not read into the window twice. ⛔ **The command you may not truncate is your
+list too**: name it, and none of it applies. The
+[context rule](plugins/mjolnir/config/schema.md#22-what-enters-the-window-bounded-where-the-call-is-made)
+is the single statement of the list and its keys,
+[the three arms](plugins/mjolnir/config/schema.md#the-three-arms-and-the-one-that-rewrites-rather-than-refuses)
+of which one rewrites and what the session is told when it does,
+[a read already made](plugins/mjolnir/config/schema.md#a-read-this-session-has-already-made)
+of what is compared and what releases it,
+[the commands never bounded](plugins/mjolnir/config/schema.md#the-commands-a-project-names-as-never-bounded)
+of the exemption, and
+[why every unestablished fact proceeds](plugins/mjolnir/config/schema.md#why-every-unestablished-fact-here-proceeds)
+of the direction it fails in. A project that lists no command and states no size gets no refusal
+and no replacement; what no check can reach is in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-context-half-a-call-bounded-where-it-is-made-and-what-comes-back).
 
 ### Who this page is written for
 

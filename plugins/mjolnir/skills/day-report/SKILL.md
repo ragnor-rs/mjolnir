@@ -188,7 +188,11 @@ during it. Add `--date YYYY-MM-DD` to backfill a past day.
 of §4, so there is nothing a second call can add. **Redirect it to a file and read the file.**
 ⛔ **Never pipe it through `head`, `tail` or `sed`** — the output is longer than a terminal and a
 truncated read forces the whole measurement, every transcript and the full chat archive, to be
-recomputed for the half you cut off.
+recomputed for the half you cut off. ⚠️ **A project whose guard bounds long output names this
+command in its own exemption**, rather than this rule being argued with per call:
+[`§ 22 → The commands a project names as never bounded`](../../config/schema.md#the-commands-a-project-names-as-never-bounded)
+is where that is stated, and a refusal met here is that list being short rather than this
+instruction being wrong.
 
 The script unions the configured `day_log.streams` into active-time blocks, splitting wherever
 nothing happened for 15 minutes:

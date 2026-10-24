@@ -262,3 +262,18 @@ live_guard:
   # The names that reach nothing: a loopback name is not another machine's identity, which is the
   # test that decides which of these two lists a name belongs in.
   local_names: ["<the loopback name this project's own services are reached by>"]
+
+# § 22 where the two roots differ, and that is what sharpens one key of it: the code is a separate
+# repository nested inside this one, so a sidecar written under either checkout lands in a tree
+# somebody's branch model may take — and in the inner one it would land in a directory the outer
+# repository ignores, where nothing would ever notice it again.
+context_guard:
+  unbounded:
+    - command: "<the command that prints this project's dependency tree>"
+      bound: "--A-DEPTH-FLAG 1"
+      reason: "every transitive dependency, for a question about the direct ones"
+  never_bound: []
+  result_limit_chars: 20000
+  # ⛔ Outside both repositories, not merely outside the inner one.
+  sidecar_dir: "<the absolute path of a directory outside both checkouts>"
+  reread: refuse

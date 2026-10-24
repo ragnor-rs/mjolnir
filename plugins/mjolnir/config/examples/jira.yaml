@@ -306,3 +306,26 @@ live_guard:
   # on. ⛔ A name here is a name that denotes *this* machine; every other name belongs in the file
   # above.
   local_names: ["<the name the local stack is reached by>"]
+
+# The sharp shape of § 22: the command no flag of its own bounds, so the refusal names a form to
+# run instead rather than rewriting anything — and beside it the exemption, which is what keeps
+# this project's own measurement readable.
+context_guard:
+  unbounded:
+    - command: "<the command that prints this project's container logs>"
+      # ⛔ A form and not a rewrite: what bounds this one is a pipeline, which is not something a
+      # reading of the arguments could derive. The refusal names it, and the session runs it.
+      instead: "<the same command piped through a bounding one>"
+      reason: "every line since the container started, for a question about the last few"
+  # ⛔ The day log's own evidence script, which the role that runs it is forbidden to truncate: a
+  # cut read forces the whole measurement — every transcript and the full chat archive — to be
+  # recomputed for the half that was cut off. ⚠️ Stated here, where a project can see it, rather
+  # than carried as a special case inside the guard.
+  never_bound: ["<the evidence script `day_log.script` names>"]
+  result_limit_chars: 50000
+  sidecar_dir: "<the absolute path of a directory outside every working tree>"
+  # ⛔ The one arm this project turns off, and the reason is the file rather than the window: a
+  # mounted volume restores modification times wholesale here, so a file's own timestamps do not
+  # answer whether its content changed since this session read it — and a guard reading them would
+  # refuse a read of something new.
+  reread: allow

@@ -1,0 +1,57 @@
+name: Context guard
+
+# The guard that bounds what a call would put into the session's window, at the call rather than
+# afterwards. What a gate can hold is the reading and its wiring: that every call shape a
+# configured unbounded command arrives in is still refused — behind an assignment, behind a
+# wrapper, in a later segment of a compound, inside a substitution — that every shape which merely
+# *names* the command is still let through, that a call a flag bounds is still rewritten and the
+# session still told so, that a call no rewrite can be made on is refused instead, that an
+# oversized result still reaches the window as a path with its full text on disk beside it, that a
+# read this session already made is still refused while a read of something changed is not, that a
+# command the project named as never bounded still meets none of it, and that `hooks.json` still
+# calls this script on both the events its arms answer. A guard that stopped being called holds
+# nothing while every reader goes on reporting it installed, and nothing in a session ever says so.
+#
+# ⚠️ What this cannot hold is stated in docs/single-source-of-truth.md rather than left for a
+# reader to assume away: the bound a project states is added to the arguments and nothing here
+# reads whether the command accepted it, and what the harness does with a replaced result for a
+# tool whose response is not text is unstated in its own reference.
+#
+# ⛔ Nothing here is a verdict about this repository's own calls. No command of this project's own
+# is named as unbounded and no result limit is stated — every check is a suite over the tree it
+# runs in — so the tree this runs in is the green side of the facet, and the unbounded commands the
+# suite judges are the ones it plants for itself.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the project
+# controls its workflows, because a `host.checks` entry states one mirrored command.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind, and no network. ⛔ The suite writes only under a temporary directory
+# of its own — a replaced result's full text has to be written somewhere for the arm to be held to
+# writing it — and reads nothing of this repository but the surface and the carrier.
+permissions: {}
+
+jobs:
+  context-guard:
+    name: Context guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command: the call shapes that must be refused and the ones that must not, the
+      # shapes a rewrite is made on beside the shapes it cannot be made on, a result replaced with
+      # its full text read back off disk, a read refused and the same read allowed once the file
+      # changed, the exemption proved by a run and then by taking it away, and the surface and the
+      # carrier held to still stating and still calling what this file performs. ⚠️ That command is
+      # also the string `host.checks` states this run mirrors — held together by eye, and § 2 rules
+      # that it must be: the mapping from a run to the command it mirrors is configured and never
+      # inferred. The workflow *name* above is held mechanically, by the `Host checks drift` run.
+      - name: Assert what a call would put in the window is bounded, what merely names it is not, and the carrier calls this
+        run: python3 plugins/mjolnir/scripts/context.py --self-test
