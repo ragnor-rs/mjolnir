@@ -102,6 +102,13 @@ done:
 # verdict to state, and `[]` says that rather than leaving the key out.
 checks_local: []
 
+# § 18. The escape on its own, with nothing exempt: the one mirrored command is a verdict, and
+# what this project wanted was a way past a refusal on the day the host's evidence is wrong.
+# ⛔ A name and never a value — the person sets it to the reason, and a blank value is no reason.
+already_run:
+  never_guard: []
+  escape: "RUN_IT_ANYWAY"
+
 commit:
   staging: explicit
   trailer: read_from_history

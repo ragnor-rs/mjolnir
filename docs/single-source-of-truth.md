@@ -907,8 +907,8 @@ broken; and that a root with no remote claims locally and says so.
 | 8 | A process **below** a tree's root reads as occupying it | a real process two directories down | computed |
 | 9 | A squash-merged claim reads **landed** rather than live, and releases with no override | a real squash merge, after asserting the same ref read live before it | computed |
 | 10 | A claim that is neither landed nor held in a tree here is refused by `release`, fresh ones included | two clones | computed |
-| 11 | The branch name is **derived**, and a second interpreter derives the same one from each of the three titles two sessions divided on — planted by removing the **bound**, which answers a name a sibling actually published | the derivation, in two processes | computed |
-| 12 | The derivation's bound cuts at a word boundary and leaves no trailing separator, and punctuation, case, digits, a non-Latin script and a decomposed title each slug as stated | the derivation | computed |
+| 11 | The branch name is **derived**, and a second interpreter derives the same one from each of the three titles two sessions divided on — planted by removing the **bound**, which overruns it on every one of those titles as all six published names did | the derivation, in two processes | computed |
+| 12 | The bound is spent on **whole words**, planted both ways — a character cut at the same bound ends on half a word, and the function words kept spend the bound on them — and punctuation, case, digits, a repeated word, a word longer than the bound, a non-Latin script, a decomposed title and a title with no major word in it each slug as stated, and every entry of the word list is lowercase letters so none of them is silently dead | the derivation | computed |
 | 13 | Two sessions under **two names for one item** produce one claim, with each arm of the item guard attributed separately | two clones | computed |
 | 14 | A **landed** ref still matches the item's name and the item still reads free, and a start on it is not refused | two clones, after a real squash merge | computed |
 | 15 | A merged pull request that **predates the ref** does not land it, and either instant unreadable makes the arm decline | the comparison, with the measured timestamps | computed |
@@ -1684,6 +1684,16 @@ file defines and no member names is the ordinary case rather than drift
 The kind is **computed**: two statements of one fact, compared. Where the host's definitions are not
 files a reader can open, the comparison is undeterminable whole and the run says so.
 
+**A fifth dimension landed with the runner statement, and it is the one that is not an entry's**:
+each job's own `runs-on` and `timeout-minutes` and each workflow's concurrency group, held to
+`host.runner` ([schema § 2](../plugins/mjolnir/config/schema.md#where-the-hosts-jobs-run)). ⚠️ **On
+this repository it holds nothing, and the run says that rather than letting its green read as
+agreement**: this project states no `host.runner`, so it has declared the host kind's own default —
+which that section keeps off the surface — and there is no label, budget or group for a file to be
+held to. ⛔ **That silence is the arm with the most to get wrong**, since a check that guessed the
+default would report drift on a project that is correct, which is why the green side of it is a
+plant of its own below rather than an inference from the baseline.
+
 ⛔ **Nothing about the facet is read in this check's own file**
 ([schema § 2](../plugins/mjolnir/config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref)).
 The entries come from `config.host_runs()`, every refusal § 2 carries living in that one walk, and
@@ -1704,17 +1714,38 @@ figures and a number in this paragraph is wrong by the next plant.
 - **Violations that must redden**: a rename read from each end, an entry naming no definition, a
   definition no entry names, a trigger each side states and the other does not, a type clause and a
   ref the file does not state, a path filter on each side alone, two spellings of one filter, a job
-  no file defines, and a top-level key named as a job.
+  no file defines, and a top-level key named as a job. And on the runner dimension, each on a
+  planted statement the files were first put in agreement with: a job on another label, a job
+  naming none, a job on another budget, a job with nothing bounding it, a workflow in another
+  group, a group that cancels nothing in progress and so retires nothing, and a workflow with no
+  group at all.
 - **Absences that must be reported and must *not* arrive as drift**: a host kind whose definitions
   are not files, a definition stating no name, one that is not valid YAML, one that could not be
   opened, an event block filtered on a key no pattern can state, a workflow filtering its events
   differently from one another, an entry stating no `triggers`, a trigger the grammar does not
-  parse, and a job filter the host kind carries nowhere.
+  parse, a job filter the host kind carries nowhere, and — on the runner dimension — a label
+  chosen when the run starts, a set of labels where the facet states one, a budget the host
+  evaluates, a concurrency group it evaluates, and a concurrency group the file states on a job
+  rather than on the workflow. ⚠️ **That last one was a false drift before it was an absence**:
+  the host carries the key at both levels, and read at the workflow alone such a file comes back
+  as stating no group at all — so the comparison reported a correct project wrong, red forever,
+  the only clearing edit being to move a key the project put where it meant to.
 - **Subject readings**: nothing stated beside nothing defined, which is *no subject*; and an empty
   facet with definitions behind it, which is drift rather than a project standing down.
 - **Exemptions that must stay green**, among them a trigger list and a type clause in an order no
-  file is in, since both sides state sets; a definition's own job that no member names; and two
-  members naming one job.
+  file is in, since both sides state sets; a definition's own job that no member names; two
+  members naming one job; a runner stated with every job meeting it; and ⛔ **no runner stated
+  while the files say whatever they like**, which is the arm this repository is in and the one a
+  guessed default would redden
+  ([schema § 2](../plugins/mjolnir/config/schema.md#where-the-hosts-jobs-run)).
+
+⚠️ **That last exemption was verified by disabling it, twice.** With the label comparison's
+*no statement* arm replaced by a guessed `ubuntu-latest` the plant goes red; with the budget
+comparison's arm replaced by a guessed thirty minutes it goes red again, and that second run
+reddens the suite's **baseline** too — which is the shape a guessed default has on every project
+in this repository. ⛔ **What is not covered by disabling is the group arm on its own**, a plant
+that states no supersession group having no group divergence to be found; it is the same guard and
+the same three lines, and that residue is written here rather than left to read as asserted.
 
 ⛔ **An absence plant asserts two things, and the second is the reason it exists**: that the
 dimension is reported, and that it does *not* arrive in the problem list
@@ -1754,8 +1785,13 @@ shipped reader takes 41 ms at a thousand.
   ([schema § 2](../plugins/mjolnir/config/schema.md#2-code-host)), so comparing `mirrors` against a
   step's `run:` is the one dimension this check may not add. Every workflow file here says so in a
   comment beside the step, which is where that pair is held.
-- **Whether a workflow does what its name says.** The names, triggers, filters and job ids are
-  compared; what the steps run is not read at all.
+- **Whether a workflow does what its name says.** The names, triggers, filters, job ids, runner
+  labels, budgets and concurrency groups are compared; what the steps run is not read at all.
+- ⛔ **Where the jobs run, on a project that states no runner.** The host kind's own default label
+  is not on the configuration surface and is not in this check either
+  ([schema § 2](../plugins/mjolnir/config/schema.md#where-the-hosts-jobs-run)), so the dimension
+  has no subject rather than a guessed one — which is a limit this document states because a green
+  run cannot show it, and which is why the run prints the absence in its own line.
 - **A workflow the host runs from outside this directory.** A reusable workflow called from
   another repository, or one the host synthesises, is not a file here and is not in the subject.
 - **Whether a trigger is one the host accepts.** The event vocabulary stays the host's
@@ -1786,7 +1822,7 @@ which of the three designs was the one that worked.
 
 | arm | what it reads | kind | what it does |
 |---|---|---|---|
-| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge, and the count a project's probe prints | **computed** for the count, **forbidding** for the record's presence | denies the call, or takes a place |
+| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge, the runs the host made for this commit, and the count a project's probe prints | **computed** for the count and the runs, **forbidding** for the record's presence | denies the call, or takes a place |
 | `release` (`PostToolUse`, `Stop`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
 | `record` | nothing | — | writes the answer a guard reads onto the change |
 | `held` | the leases and the probe | **computed** | reports what is held, and what it could not establish |
@@ -1811,10 +1847,41 @@ queued and was then refused for the leases' whole lifetime. So every refusal thi
 made before any place is taken, and the suite asserts it directly — a merge call that also matches a
 `claimed_by` is refused and leaves no lease behind.
 
-⚠️ **What it cannot order is a sibling guard in another script.** The guards #26, #33 and #37 ask
+⚠️ **The same ordering is why the third refusal is an arm here and not a carrier of its own.** #33's
+guard — a local run the host's own runs have already made — was filed as a sibling script on this
+same event, and the cost of that shape is the one measured above: a place taken by this arm and then
+denied by a sibling is a place nothing releases. Written as an arm it is ordered before any place is
+taken, and the suite asserts it the way the merge guard's ordering is asserted, on a call that is at
+once a guarded command and a `claimed_by` match.
+
+⚠️ **What it still cannot order is a sibling guard in another script.** The guards #26 and #37 ask
 for are separate carriers on the same event, and a place taken here can still be left behind by one
 of those denying the call. That is what the lease's `ttl` bounds, and it is why a short lifetime is
 the safe direction rather than a tidy-up interval.
+
+⚠️ **The already-run arm is the one arm here that reads the network, and what bounds it is stated
+rather than hoped for.** Its rule is
+[schema § 18](../plugins/mjolnir/config/schema.md#18-the-guard-on-a-command-the-host-has-already-run)
+and the facet it reads is § 2's, through the same reader every consumer loads it with — ⛔ **it
+carries no workflow name, no trigger and no path filter of its own.** One read lists the commit's
+runs, one more reads a run's jobs per entry mirroring the command, and one more asks whether the
+change is conflicted where nothing has run — each bounded at five seconds inside the carrier's own
+thirty. ⚠️ **None of them is made until the call has already matched a mirrored command in command
+position**, which is a comparison over the parsed words and reaches the host on no ordinary call at
+all. ⛔ **The client's exit status is read as the answer nowhere**: the measured client exits
+non-zero while runs are pending and also when one has failed, so a guard reading it is a no-op while
+the host runs and a blocker once it has finished.
+
+⚠️ **What the arm costs was measured on this repository in both of its two cases**, since the
+ordinary one is what every call in every session pays. An ordinary `Bash` call: **about 145ms**,
+against **74ms** for the boundary hook beside it and **36ms** of interpreter startup — ⛔ **which is
+the figure this arm was added underneath rather than one it moved**, the facet already being walked
+by the configuration read and the match being a comparison over words. A call that does match a
+mirrored command: **0.8 to 1.0 seconds**, nearly all of it the host round trip and ⚠️ **stated as a
+range because it is somebody else's network**, which a single figure would read as precision this
+measurement does not have. ⚠️ **The second figure is paid by the calls this guard exists for and by
+no others**, and it buys the minutes of a duplicated run and the place a lease would have held
+while it ran.
 
 ⚠️ **Six exit paths were measured, and one of them cannot be tested because it never fires.** The
 project this came from registered its release on tool completion, tool failure, permission denial,
@@ -1839,13 +1906,33 @@ reverted to the maximum fails on the figure rather than on a wording.
 
 ⚠️ **It plants both sides, as the boundary and prose-width checks do.** On the red side: a cap
 reached, a merge with no record, a record that could not be read, a change nothing could resolve, a
-merge naming no repository. On the green side, each of which must stay green: a project stating
+merge naming no repository, a mirrored command run while a run of it exists for this commit — in
+command position, after a separator and after a leading assignment — a run still queued, one still
+in progress, one whose job is still in progress, one that concluded red, one cancelled after
+executing steps, either entry of a command two entries mirror, and an escape variable set to
+nothing. On the green side, each of which must stay green: a project stating
 `exclusive_resources: []`, a read of the same change, a local merge of branches, the raw host arm
-reading the merge path rather than writing it, a count that could not be established, and a second
-session in the same tree sharing one place. ⛔ **Each green plant naming an exclusion was verified by
+reading the merge path rather than writing it, a count that could not be established, a second
+session in the same tree sharing one place, a project mirroring nothing at all, a call whose prose
+merely carries a mirrored command, a dirty tree, a commit with no run, a run of another workflow,
+a run cancelled in the queue, one skipped, one concluding neutral having started nothing, one
+listing no job at all, a job the run never executed, a job that executed no step, a conflicted
+change, a `never_guard` command, an escape set to a reason, and a probe answering anything but the
+stated word. ⛔ **Each green plant naming an exclusion was verified by
 switching that exclusion off** and watching it redden — the sum, the backgrounded skip, the expiry,
 the subject, the record's marker, the refusal ordering and the unestablished-count arm were each
-broken in turn, and each break reddened the assertion written for it rather than a neighbour.
+broken in turn, and so were the already-run arm's eleven: the command-position match reduced to a
+substring, the workflow-name keying reduced to any run of the commit, the blank escape read as an
+escape, the conflict folded into the absence, the job read as its workflow, a green conclusion made
+a precondition, the arm ordered after the lease rather than before it, the run's steps left unread,
+a run still in flight read as having answered nothing, one record read where the command is
+mirrored twice, and an answer name taken off the surface. ⚠️ **Each break reddened the assertion
+written for it rather than a neighbour**, and two of them say something the rest do not: ordering
+the arm after the lease reddened only the ordering assertion while the refusal itself stayed green,
+which is what tells the ordering apart from the arm being there at all — and the in-flight break
+reddened **nothing at all** on the first attempt, every in-flight run being answered one level up
+before a job is ever read. ⛔ **That silence is what the job-level plant beside it was written
+for**, an exemption nothing can fail being an exemption nobody checked.
 
 ⚠️ **What the guard costs every call was measured rather than argued**, because a guard that makes a
 session slow is a guard somebody removes. On this repository, where nothing is exclusive, the arm
@@ -1916,6 +2003,32 @@ preconditions, answered from live state by the role that asks; the host's run op
 port of their own is #53. So ⛔ **`reached` is never *green*** — it names the run whose conclusion
 is worth reading, and a consumer that read it as a verdict would report a pass for a run nobody
 looked at.
+
+⚠️ **The boundary survived the module gaining a reading of how a run concluded.** The three facts
+that reading takes — how many steps the run's jobs executed, whether the host calls it a pass, and
+the id of any run that retired it — are the caller's to read off the host, and the module turns
+them into one of
+[§ 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)'s four
+readings without asking the host anything. ⛔ **The host's own conclusion word is deliberately not
+an input**, and the suite reads this module's own source to assert that no conclusion name is in
+it: the measured hazard is that one `cancelled` arrives on two of the four readings, so a map keyed
+on that word answers one of the two for both — while looking like a careful reading. ⛔ **And a step
+count the caller could not establish is not an input either**: the subcommand requires both facts,
+so a caller in that position reports precondition 3 unanswered rather than being told the run never
+started. ⛔ **Two inputs that resemble an absence are refused rather than read as one** — a step
+count below zero, which would fall past the never-started arm into a reading about the change, and
+a successor id given blank, which would read as *no successor* and send a reader to a verdict
+instead of to the run that answers. Each is planted, and the refusal leaves the function with the
+four readings and no fifth value. ⚠️ **Which run to read and what it concluded stay two questions
+with two vocabularies**, for the reason the facet declines to reuse `reached` one key over: a word
+meaning two findings is the defect, not the economy.
+
+**It also answers where the project's jobs run**
+([§ 2](../plugins/mjolnir/config/schema.md#where-the-hosts-jobs-run)), so that an installer writing
+a generated workflow reads the label, the budget and the supersession group from one place and
+⛔ **writes no literal of its own**. ⚠️ **Where a project states none the answer names no default**,
+and the suite asserts that too — the per-kind label is the host's and is nowhere on the surface, so
+a report that invented one would be this module supplying the fact the facet exists to have stated.
 
 What it holds: a trigger's three parts against the change's own — the event, the type of it and the
 ref — the path filters at the two levels the surface states them at, and the four answers ranked.
