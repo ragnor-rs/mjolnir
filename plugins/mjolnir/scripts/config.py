@@ -676,6 +676,18 @@ class Config:
         """
         return host_runner(self.data)
 
+    def pull_request_title(self) -> dict | None:
+        """§ 2's `host.pull_request_title`, or `None` where this project states none.
+
+        The facet's whole public face, and both of its readers come through
+        here: the finishing role writing a title and the step installing the
+        gate that refuses one. ⚠️ `None` is the project's stated absence —
+        titles here open with no reference, so there is no rule for a gate to
+        enforce and none for a role to render, which is a configuration rather
+        than a gap.
+        """
+        return host_pull_request_title(self.data)
+
     def unavailable(self) -> list[str]:
         """What this configuration cannot support, and why.
 
@@ -775,6 +787,19 @@ class Config:
                 "every job's budget is a run budget rather than a queue budget, "
                 "and nothing holds a workflow file to a label, a budget or a "
                 "supersession group (§ 2)."
+            )
+        # § 2. The title form's absence, reported for the same reason: the two
+        # readers of that facet are a role that writes a title and a step that
+        # installs the gate refusing one, and each of them would otherwise meet
+        # a key that is not there. ⛔ Reported as the absence of a *rule* and
+        # never as a permission -- a reader answering *any title is allowed*
+        # would be stating a rule the project did not write.
+        if self.get("host.pull_request_title") is None:
+            out.append(
+                "No title form is stated (`host.pull_request_title` is absent), so "
+                "a pull request title here opens with no work-item reference: the "
+                "finishing role renders none, no title gate is installed, and "
+                "nothing holds a title to anything (§ 2)."
             )
         # § 17, and the complement of the arm above: the two facets together are
         # every verdict there is, so an empty list here is reported for the
@@ -1049,6 +1074,18 @@ TRIGGER = re.compile(
     r"(?:\s*\((?P<types>[^()]*)\))?"
     r"\s*->\s*(?P<ref>\S.*?)\s*$"
 )
+
+# What a trigger states as its ref where it filters on none (§ 2), and what
+# `host.pull_request_title.into` states to be held on every pull request. ⛔ One
+# spelling for one vocabulary: the title facet states its refs in a trigger's
+# own, and a second literal would be a second vocabulary for the same fact.
+ANY_REF = "*"
+
+# Where a work item's identifier goes inside `host.pull_request_title.reference`
+# (§ 2). ⛔ The reference is a form and not a pattern, because the one statement
+# has two readers and only one of them is matching: a role *writes* a title, so
+# what it reads has to say where the identifier it already holds belongs.
+PLACEHOLDER = "<number>"
 
 
 def parse_trigger(pattern: str):
@@ -1463,6 +1500,90 @@ def host_runner(data: dict) -> dict | None:
         # gives the budget its meaning, so the one fact a consumer reads off the
         # pair is carried here rather than recomputed per reader.
         "budget_is_a_queue_budget": block["concurrent_jobs"] == 1,
+    }
+
+
+def host_pull_request_title(data: dict) -> dict | None:
+    """§ 2's `host.pull_request_title`, held to its shape, or `None` where none is stated.
+
+    The facet beside `host.runner` and the project's rather than an entry's for
+    the same reason: it states one answer for every pull request this project
+    opens. ⛔ `None` is the stated absence -- a project whose titles are prose
+    has no rule for anything to hold them to, and a reader inventing one would
+    refuse every title that project has ever written.
+
+    ⛔ **Shape only, and no derivation.** What the form composes into -- the
+    expression a gate enforces, the title a role writes -- is one derivation
+    read through its own consumer, so a second one here would be free to
+    disagree with the file that gets installed.
+    """
+    block = _get(data, "host.pull_request_title")
+    if block is None:
+        return None
+    if not isinstance(block, dict):
+        raise ConfigError(
+            "host.pull_request_title",
+            f"is {block!r}; § 2 states it as the block saying what a pull request "
+            "title opens with -- one reference, whether more than one may appear, "
+            "and the base refs a title is held on. Omitted, it means titles here "
+            "carry no reference; written as anything else it reads as a statement "
+            "and holds nothing.",
+        )
+    reference = block.get("reference")
+    if not isinstance(reference, str) or not reference.strip():
+        raise ConfigError(
+            "host.pull_request_title.reference",
+            f"is {reference!r}; § 2 states it as one work-item reference, with "
+            f"`{PLACEHOLDER}` standing where the identifier goes.",
+        )
+    # ⛔ Exactly one placeholder, and both directions refused. ⚠️ Neither is a
+    # shape a reader could repair: none leaves the finishing role with no place
+    # to put the identifier it is writing the title for -- a value that reads as
+    # a form and renders nothing -- and several leave it with no answer about
+    # which identifier is which, on a facet whose whole point is that one
+    # statement serves the role and the gate alike.
+    occurrences = reference.count(PLACEHOLDER)
+    if occurrences != 1:
+        raise ConfigError(
+            "host.pull_request_title.reference",
+            f"is {reference!r}, which states `{PLACEHOLDER}` {occurrences} times; "
+            "§ 2 states it exactly once. A reference with no place for the "
+            "identifier is one no role can render a title from, and a reference "
+            "with two says nothing about which identifier is which.",
+        )
+    # ⛔ A flag and never truthiness, which is this surface's rule for every key
+    # whose two values send a consumer opposite ways: `repeated: "no"` is a
+    # non-empty string, so a reader asking whether it is set would admit more
+    # than one reference on a project that wrote the opposite word.
+    repeated = block.get("repeated")
+    if not isinstance(repeated, bool):
+        raise ConfigError(
+            "host.pull_request_title.repeated",
+            f"is {repeated!r}; § 2 states it as a flag, written wherever the block "
+            "is written and defaulted neither way. A form admitting one reference "
+            "refuses what a role writes for a change closing two items, and a form "
+            "admitting several admits what a project meant to refuse.",
+        )
+    into = block.get("into")
+    if not isinstance(into, list) or not into:
+        raise ConfigError(
+            "host.pull_request_title.into",
+            f"is {into!r}; § 2 states it as the base refs a title is held on, in a "
+            f"trigger's own ref vocabulary, with {ANY_REF!r} for every pull "
+            "request. An empty list is a gate that never fires while reading as "
+            "one that does.",
+        )
+    for index, ref in enumerate(into):
+        if not isinstance(ref, str) or not ref.strip():
+            raise ConfigError(
+                f"host.pull_request_title.into[{index}]",
+                f"is {ref!r}; each member is one base ref pattern, and a blank one "
+                "is the same text as a pattern somebody meant to write.",
+            )
+    return {
+        "reference": reference,
+        "repeated": repeated,
+        "into": [ref.strip() for ref in into],
     }
 
 
@@ -2009,6 +2130,13 @@ def validate(data: dict, facts: dict) -> None:
     # facet validated only when a consumer happens to ask is a facet an adopter
     # writes wrong and learns about from a generated workflow that never starts.
     host_runner(data)
+
+    # § 2. What a pull request title opens with, walked here for its refusals
+    # alone and for the reason the walk above is: the facet has two readers and
+    # neither of them is reached on the run that would have caught a bad value.
+    # ⛔ An adopter writing it wrong otherwise learns about it from a generated
+    # gate refusing every title the finishing role writes.
+    host_pull_request_title(data)
 
     # § 17. The verdicts no host run produces, and the one facet on this surface
     # whose entries carry a command the procedure runs for a verdict. Requiredness
@@ -2996,6 +3124,49 @@ def self_test() -> int:
             f"reported {reported!r}",
         )
 
+    # § 2's title form, both arms held against the examples for the reason the
+    # runner's are: the plants above assert every refusal in the walk, and an arm
+    # widened until it rejected a form somebody wrote would pass all twelve of
+    # them while making the facet unusable.
+    titled = [c for c in loaded.values() if c.pull_request_title() is not None]
+    check(
+        "an example states a `host.pull_request_title`, so the block is exercised",
+        bool(titled),
+        "no example states what a title opens with, so every refusal in the walk "
+        "is asserted and nothing asserts the walk accepts a form somebody wrote",
+    )
+    if titled:
+        read = titled[0].pull_request_title()
+        check(
+            "and it reads back the reference, the repetition and the base refs",
+            PLACEHOLDER in read["reference"]
+            and isinstance(read["repeated"], bool)
+            and bool(read["into"]),
+            f"read {read!r}",
+        )
+    untitled = [c for c in loaded.values() if c.pull_request_title() is None]
+    check(
+        "an example states none, so the absent case is exercised too",
+        bool(untitled),
+        "every example states a title form, so the legitimate absence -- a title "
+        "that opens with no reference -- is asserted nowhere",
+    )
+    if untitled:
+        reported = untitled[0].unavailable()
+        check(
+            "and the absence is reported rather than passed over",
+            any("`host.pull_request_title` is absent" in line for line in reported),
+            f"reported {reported!r}",
+        )
+        # ⛔ The direction that matters: the absence of a rule is not a rule
+        # permitting anything, and a report saying otherwise would hand a role a
+        # statement the project never wrote.
+        check(
+            "and the absence is not reported as a title rule of its own",
+            not any("allowed" in line.lower() for line in reported),
+            f"reported {reported!r}",
+        )
+
     missing_root = _refuses_missing_code_root()
     check(
         "a `code` root that does not exist stops rather than proceeding",
@@ -3588,6 +3759,36 @@ def _planted_violations():
          "host.runner.supersedes", _a_runner_of(supersedes="   ")),
         ("a supersession group that is no group at all", "host.runner.supersedes",
          _a_runner_of(supersedes=7)),
+        # § 2's title form. ⚠️ The first three fail in the direction that reads as
+        # a stated form and renders or matches nothing; the `repeated` and `into`
+        # plants are the permissive ones — each leaves a reader reporting a form
+        # as configured while the gate written from it refuses titles the
+        # finishing role legitimately writes, or fires on no pull request at all.
+        ("a title form that is not a block", "host.pull_request_title",
+         at("host.pull_request_title", "a-reference-form")),
+        ("a title form stating no reference", "host.pull_request_title.reference",
+         _a_title_form_of(reference=None)),
+        ("a reference written blank", "host.pull_request_title.reference",
+         _a_title_form_of(reference="   ")),
+        ("a reference that is no reference at all", "host.pull_request_title.reference",
+         _a_title_form_of(reference=["[A-KEY-<number>]"])),
+        ("a reference with no place for the identifier",
+         "host.pull_request_title.reference", _a_title_form_of(reference="[A-KEY]")),
+        ("a reference with two places for one identifier",
+         "host.pull_request_title.reference",
+         _a_title_form_of(reference=f"[A-KEY-{PLACEHOLDER}/{PLACEHOLDER}]")),
+        ("a title form stating nothing about repetition",
+         "host.pull_request_title.repeated", _a_title_form_of(repeated=None)),
+        ("repetition written as a word, which reads as true whatever it says",
+         "host.pull_request_title.repeated", _a_title_form_of(repeated="no")),
+        ("a title form stating no base refs", "host.pull_request_title.into",
+         _a_title_form_of(into=None)),
+        ("base refs written as one string rather than a list",
+         "host.pull_request_title.into", _a_title_form_of(into=ANY_REF)),
+        ("an empty base-ref list, which fires on no pull request",
+         "host.pull_request_title.into", _a_title_form_of(into=[])),
+        ("a base ref written blank, which matches nothing",
+         "host.pull_request_title.into[0]", _a_title_form_of(into=["   "])),
         # § 10's entries. ⚠️ The `claimed_by` and `cap` plants are the two whose
         # refusal direction is the permissive one: each of them leaves a reader
         # reporting the resource as configured while no call ever claims it.
@@ -4233,6 +4434,30 @@ def _a_runner_of(**overrides):
         }
         block.update(overrides)
         data.setdefault("host", {})["runner"] = block
+        return data
+
+    return mutate
+
+
+def _a_title_form_of(**overrides):
+    """§ 2's `host.pull_request_title` written whole, with the stated keys replaced.
+
+    Written out rather than borrowed from the example that states the block, for
+    `_a_runner_of`'s reason: a plant breaking one key of a borrowed block reddens
+    on whatever else that project left out and proves nothing about its branch.
+
+    ⛔ A key whose override is `None` is **written** with nothing after it rather
+    than removed, which is the form a reader asking for truthiness lets through.
+    """
+
+    def mutate(data: dict) -> dict:
+        block = {
+            "reference": f"[A-KEY-{PLACEHOLDER}]",
+            "repeated": True,
+            "into": [ANY_REF],
+        }
+        block.update(overrides)
+        data.setdefault("host", {})["pull_request_title"] = block
         return data
 
     return mutate
