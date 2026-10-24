@@ -96,8 +96,8 @@ carriers:
   # plugin without adding it here reddens this check rather than being silently uncounted. ⛔ It
   # has happened to every carrier that landed in the plugin before being named here, and no tally
   # of the occurrences is kept: a count of them goes stale by the next one exactly as a count of
-  # the entries would, and the argument it carried is the list's own — name a carrier here in the
-  # change that ships it.
+  # the entries would. What the recurrence argues for needs no number to state it — name a
+  # carrier here in the change that ships it.
   check_reply_defers_nothing:   { class: guard }  # holds the reply to leaving no work undone
   boundary:                     { class: guard }  # refuses what may not leave the project, on
                                                   # `PreToolUse` (#90, shipped by #142)
