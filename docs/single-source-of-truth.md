@@ -687,6 +687,23 @@ on this gate's own pull request. ⛔ The honest reading is that check 2 is **pro
 holds nothing retroactively, and a reader who takes the scope as evidence the threads were already
 there has it backwards.
 
+⛔ **One carve-out in how the added lines are read, and it is exact rather than a relaxation.**
+Where the host supplies no patch for a file — a binary, a diff over its per-file size limit —
+that file is reported unread, which is
+[schema § 2](../plugins/mjolnir/config/schema.md#2-code-host)'s rule that absence of signal is not
+an answer: a marker in a file nothing read is not an absence of markers. ⚠️ **Where the host
+reports that file *added*, it is read whole from the checkout instead**: every line of an added
+file is a line the change writes, there being no earlier version for any of them to have come
+from, so the answer is the one the patch would have given.
+⛔ **A *modified* file stays unread**, and that bound is the whole of what keeps this from
+weakening the rule — reading one of those whole would hand somebody else's marker to this change,
+which is what
+[schema § *Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred)'s scope
+over the lines a change **adds** exists to prevent. ⚠️ Measured on a change adding a module of
+some sixteen hundred lines: the host supplied no patch, and the gate reported a file nothing read
+on a change that had deferred nothing. Both directions of the carve-out are asserted, with a third
+arm for an added file that is not in the tree, which stays unread rather than reading as empty.
+
 ### What this gate deliberately does not check
 
 - **The closing half of the rule.** No item closes carrying an unresolved item either, and that is
@@ -837,7 +854,10 @@ runner holding nothing reports green, which is the shape every check here is wri
 ⚠️ **A suite lives in a module beside its implementation, and the code host decided that.** A file
 carrying both reaches the host with **no patch** — measured at about a hundred kilobytes in one
 file, with every other file in the same change patched — and the gate on the change then refuses it,
-because a marker in a file nothing read is not an absence of markers. ⛔ The suite's module name
+because a marker in a file nothing read is not an absence of markers. ⚠️ **The gate reads one such
+file now** — an *added* one, from the checkout, by the carve-out recorded with it below — which
+narrows this reason to a file the host reports **modified** rather than retiring it
+altogether. ⛔ The suite's module name
 opens with `_`, which is the port's own rule for a module in `adapters/` that is not an
 implementation: discovery skips those, and the runner above reads the same rule rather than
 restating it — a suite imports the names it exercises, `KIND` among them, so without it a suite
