@@ -38,7 +38,7 @@ What it reads a body from, in order, and why there are three:
 ⛔ **A body that could not be read is not an empty body.** It exits on its own
 status and names what it could not reach: § 11's rule that a report names what
 it could not establish, arriving where the other answer -- every section
-missing -- reads as a refusal somebody has to act on.
+missing -- is a refusal naming work no author can do.
 
 Usage:
     check_body_sections.py [--body-file PATH]  hold a body to the sections
