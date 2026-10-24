@@ -276,3 +276,22 @@ spend_guard:
   # this project's own, and it is written here because a resume into the tier above is the cheapest
   # moment to be told what the session is about to cost.
   resume_bar_usd: 0.25
+
+live_guard:
+  # The sharp shape of this facet: two commands open a session here, and both are invoked with
+  # flags whose value is a separate word. ⛔ That is what `valued_flags` is for — without the
+  # flags of *this* project's own commands, the value of one of them stands where the machine
+  # should be, and the guard reads a port or a key file as the machine it is about to reach.
+  session_tools:
+    - command: "<the command that opens a session on another machine>"
+      valued_flags: ["--PORT-FLAG", "--IDENTITY-FILE-FLAG"]
+    - command: "<the command that copies a file to another machine>"
+      valued_flags: ["--PORT-FLAG"]
+  # ⚠️ Outside every working tree, and on this project's machines it is the one file a new machine
+  # has to be given before the guard stops prompting — which is the half-set-up state § 21 makes
+  # stricter rather than silent.
+  allowlist: "<the absolute path of the file naming the machines that are not live>"
+  # The container this project's own stack is reached by, which never leaves the machine it runs
+  # on. ⛔ A name here is a name that denotes *this* machine; every other name belongs in the file
+  # above.
+  local_names: ["<the name the local stack is reached by>"]

@@ -215,3 +215,10 @@ spend_guard:
   # suite and never comes back to the key — an empty list is a decision somebody can see has gone
   # stale, while a missing one is a key nobody knew to look for.
   deny: []
+
+live_guard:
+  # The first day again, on the other guard: nothing here runs anywhere but this machine, so there
+  # is no session command to name. ⚠️ Stated empty for the same reason as the list above — the day
+  # this project acquires a machine it deploys to, an empty list is a decision somebody can see has
+  # gone stale.
+  session_tools: []

@@ -179,3 +179,10 @@ spend_guard:
   # is installed and refuses nothing here, which is the same thing as absent to a project with
   # nothing to guard — and `[]` is what says that was decided rather than never asked.
   deny: []
+
+live_guard:
+  # Empty for the same reason, one guard over: the mapped role reads this machine and writes a file
+  # on it, so no command it runs opens a session anywhere else. ⛔ And no `allowlist`: the key is
+  # read only once an entry above matches, so a path here would name a file on somebody's machine
+  # for nothing to decide with.
+  session_tools: []

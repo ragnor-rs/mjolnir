@@ -263,3 +263,16 @@ spend_guard:
   # The resume price is read here too, and the bar is this project's: the window it pays to
   # rewrite is the same window the deploy above is driven from.
   resume_bar_usd: 0.5
+
+live_guard:
+  # The same environment the deploy above reaches, guarded one layer lower: the release goes
+  # through the command named there, and ⛔ a shell that opens a session on the same machine
+  # reaches it without passing any of that. The two are not alternatives — the spend guard holds
+  # the release and this one holds every other way onto the box.
+  session_tools:
+    - command: "<the command that opens a session on another machine>"
+      valued_flags: ["--JUMP-HOST-FLAG"]
+  allowlist: "<the absolute path of the file naming the machines that are not live>"
+  # Nothing is reached without leaving this machine: the environment is the host's, and the local
+  # checkout runs no service of its own. ⚠️ Absent rather than empty — no name is read as local,
+  # which is the stricter of the two readings.

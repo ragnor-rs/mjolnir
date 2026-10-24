@@ -3526,6 +3526,156 @@ event and not by a push**, so a body corrected in place is re-read with no new c
 carries the edit event, which is also why the check is a run of its own rather than a job inside a
 suite whose triggers do not.
 
+## 21. A command that could open a session on a live machine
+
+```yaml
+live_guard:
+  session_tools:             # required
+    - command: "<the command that opens a session on another machine>"
+      valued_flags: ["<a flag of that command whose value is a separate word>"]
+  allowlist: "<the file naming the machines that are not live, outside every working tree>"
+  local_names: ["<a name that is reached without leaving this machine>"]
+```
+
+**The act is a shell command that could open a session on a machine outside this one, and the guard
+puts it to a person or refuses it.** ⛔ **What the toolkit carries is the command position, the
+machine the call names, the decision and the report; what the project carries is which of its
+commands open such a session, which machines are not live, and which names are this machine.** A
+connection reached from an ordinary shell command reaches no role at all, so nothing a skill states
+can hold it: this is the rail half of the division
+[§ 7](#what-a-hook-refuses-and-the-record-it-reads) draws between procedure a session can argue its
+way around and a guard that denies the call. ⚠️ **It is the enforcement counterpart of the ruling on
+the read side** — both are needed, and only the rail holds where the connection is reached by a
+command rather than through a role that was told the rule.
+
+⛔ **`session_tools: []` is the stated absence and means no command here opens a session anywhere
+else**, by the rule this surface opens with: a project that has looked at its commands and found
+none that reach another machine and a project that has never looked read identically otherwise.
+⚠️ **A reader reports it as unavailable**, and the guard is then installed and silent — which
+[§ 7](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it) states of a project with
+no exclusive resource and is the same reading here.
+
+**The keys of an entry, and what each is for.** ⛔ **`command` is written on every entry and
+`valued_flags` is legitimately absent** — stated here in prose rather than by the `# required`
+marker, for the reason
+[§ 19](#19-a-command-that-spends-and-the-supervision-it-is-refused-without) states an entry's keys
+that way: a marker names a key at a path, and a member of a list sits at no path a marker or a
+condition can reach.
+
+- ⛔ **`command` is what stands in the command position**, resolved by
+  [§ 19 → The command position](#the-command-position-and-why-the-whole-call-is-not-one) and never
+  searched for in the text of the call. ⚠️ **The comparison itself is § 19's too**, the command
+  compared as a path rather than as a word; what this facet adds is what is read out of the
+  arguments once a position matches.
+- ⛔ **`valued_flags` names the flags of *that* command whose value is a separate word, so a flag's
+  value is never read as the machine.** It is per entry and in the project because the command is
+  the project's: the wrappers the toolkit names are POSIX's own
+  ([§ 19](#the-command-position-and-why-the-whole-call-is-not-one)), and a table of any project's
+  tooling here would be
+  [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls)
+  broken one token at a time. ⚠️ **A flag written with its value attached needs no entry** — one
+  word carries both — so what this list is for is the form that takes two.
+- ⛔ **`allowlist` is the file the machines that are not live are named in, and it is written
+  wherever an entry is.** Where it names no file on the machine in hand the guard is **stricter and
+  never silent**, which is what lets a half-set-up machine be safe. ⚠️ **The file is one name per
+  line**, a blank line and a `#` comment naming nothing — the smallest shape a person maintains by
+  hand on a machine, and the reason it is a file rather than a key.
+- ⚠️ **`local_names` is the one list of names this surface carries, and every member of it denotes
+  *this* machine** — a loopback name, a name a container is reached by without leaving it. A name
+  that denotes another machine belongs in the file above, for the reason the subsection below
+  states. Absent, no name is read as local. ⛔ **And it is read independently of that file**: what a
+  loopback name reaches does not change with a list somebody has or has not written, so a name
+  stated here passes on a machine carrying no allowlist at all — which is the one thing the
+  stricter-when-absent rule above does not reach.
+
+⛔ **The machine a call reaches is the first plain word of it, after the command and after the
+flags, with a leading `<user>@` and a trailing `:<path>` taken off.** ⚠️ **A call whose machine is
+some other word of it reads as reaching the word that is there** — which is in no allowlist, so the
+call is put to a person. That is the direction this reading is wrong in, stated rather than
+discovered, and it is the safe one.
+
+⚠️ **What is out of scope is stated here rather than left to a reader.** A plain read of a public
+site over a request protocol opens no session on a machine, and a project that makes those routinely
+would meet this guard on every one while it guarded nothing — so the facet is a list of **session**
+commands a project writes, and a request client is not on it unless that project put it there.
+
+⛔ **This is not [§ 14](#nothing-credential-shaped-leaves-for-a-surface-outside-the-project)'s guard
+and the two are not alternatives.** That one holds a call carrying something credential-shaped
+*outward*, whoever it reaches; this one holds a call opening a *session*, whatever it carries — so a
+call can be both, and each answers for its own reason. ⚠️ **Which is also why the commands are a
+project's list here and the toolkit's there**: what reaches a surface outside a project is the same
+handful of clients everywhere, while what reaches *your* live machine is as likely to be a wrapper
+somebody in that project wrote.
+
+### Which verdict, and who would answer the prompt
+
+⛔ **The verdict is never `allow`, and which of the two it is depends on who would answer the
+prompt.** A mode a person answers gets `ask`; a mode that answers its own prompts gets `deny`,
+because **a prompt the session can clear on its own behalf is not approval**. ⛔ **A mode this
+surface's reader does not recognise counts as the second kind**, that being the direction a reader
+of a state it cannot understand has to err in.
+
+⚠️ **This is the load-bearing line of the facet.** A guard that always asks enforces nothing in an
+unattended run, where there is nobody the ask reaches; a guard that always denies is a guard
+somebody turns off, after which nothing is held at all
+([§ 19](#the-command-position-and-why-the-whole-call-is-not-one) records the same correction one
+facet over, in the shape of a false refusal).
+
+⛔ **Neither verdict is the approval.** The guard catches a connection nobody asked for, and
+clearing it is not the same as having been asked: a `deny` means the approval has to be asked for in
+the conversation, which is the only place it can come from.
+
+⛔ **The modes are the harness's own vocabulary and no key here states them.** Which mode a session
+is in is not a project's fact, and a key that let one project call an unattended mode *answered*
+would be the switch
+[§ 7](#what-a-hook-refuses-and-the-record-it-reads) refuses by name, one guard over. It is procedure
+for the reason the direction a guard fails in is.
+
+### The machines named are the ones that are not live
+
+⛔ **The list is inverted on purpose: what is named is every machine that is *not* live.** The live
+machine is reached by a name that appears in no list, so the default is to put the call to a person;
+a machine that is not live — a borrowed egress box, a container on this one — is named and passes
+silently. ⚠️ **A guard listing what is forbidden goes quiet the day somebody adds a second name for
+the same machine**, which is the failure that cannot be noticed from inside a session.
+
+⛔ **No host, alias, user, jump path or fingerprint enters the toolkit, and the allowlist is where
+that rule is kept: it lives outside every working tree.** The repository carries the mechanism and
+the machine carries the names, so a tree cloned anywhere carries no statement about anybody's
+infrastructure — which is
+[§ 14](#nothing-credential-shaped-leaves-for-a-surface-outside-the-project)'s rule arriving at a
+name rather than at a secret. ⚠️ **`local_names` is on the surface and does not break that**: a
+loopback name is not an identity of another machine, and the two are kept apart by that test rather
+than by where each is easiest to write.
+
+### The four ways it fails closed
+
+⛔ **Four things cannot be established, and each puts the call to a person rather than letting it
+through.** Each is a fact about a call this project has already said opens a session — matched at a
+command position, or, where the call cannot be parsed at all, by the command being named in it:
+
+| what could not be established | why it is not a pass |
+|---|---|
+| the allowlist names no file on this machine | a machine with no list of its own is one where every name that list would have cleared is live, and the half-set-up state is the one this direction exists for. ⚠️ `local_names` is not among them, by the rule at that key |
+| the call cannot be parsed | a call the lexer cannot read has no reliable positions in it, so *no session tool here* is a reading of a parse that did not happen |
+| the machine the call names cannot be read | a name the shell would resolve and this guard cannot — an expansion, a substitution's output — is a machine that could be any machine |
+| the call names no machine at all | a session command invoked in a shape this reading does not reach is still a session command, and its target is then unknown rather than absent |
+
+⛔ **Which direction that is, is not this section's to choose.** What a session on a live machine
+does there is not undone, so [§ 7](#which-direction-a-guard-fails-in)'s table puts every
+unestablished fact on the refusing side — the asymmetry against
+[§ 18](#18-the-guard-on-a-command-the-host-has-already-run), where an unestablished record lets a
+local run proceed, being the point rather than an inconsistency.
+
+⚠️ **A configuration that is there and does not resolve is the one case these four do not cover**,
+and it is settled where it already is: the call is held to nothing and the answer says so
+([§ 19](#the-command-position-and-why-the-whole-call-is-not-one)), because what a broken
+configuration cannot say is whether this call reaches anything at all — and the refusing arm would
+refuse every call in the project, the edit that repairs the configuration included. ⚠️ **A
+configuration that is absent is silent instead**, by
+[§ 7](#a-hook-in-a-project-that-states-no-configuration).
+
+
 ## What the toolkit installs into a project, and what takes it out
 
 **Adoption costs one file a project writes, and a short list of files the toolkit writes.** The

@@ -736,6 +736,50 @@ states it as procedure, and the correction it carries is the reason it is extrac
 rewritten: the guard's own header records an earlier version that grepped the raw command and
 refused a text edit whose prose contained a script path.
 
+## The live half: one guard, and the two lists that are not interchangeable
+
+One project carries a deny guard in front of a shell command that could open a session on the
+machine it runs on. It began as one of two inline guards — "deny guards on a production path and
+on a route", which is how #16 recorded them with no acceptance item and no key on the surface for
+either — and by the time it was extracted it was a hook of its own with a test matrix beside it.
+⚠️ **That matrix is why it is extracted rather than written from the idea**: the verdict rule, the
+inversion and the four closed directions are each a line somebody was taught by a failure, and a
+rewrite from the idea reproduces none of them.
+
+**What the verdict depends on is not the command.** ⛔ **It is who would answer the prompt**, and
+that is the load-bearing line
+([`schema § 21 → Which verdict`](../plugins/mjolnir/config/schema.md#which-verdict-and-who-would-answer-the-prompt)):
+a mode a person answers gets an ask, a mode that answers its own prompts gets a refusal, and an
+unrecognised mode is read as the second. Both failures of that rule are cheap to picture and were
+expensive to find — a guard that always asks enforces nothing in a run nobody is watching, and a
+guard that always denies is one somebody turns off.
+
+| the part | does a role or a guard read it to decide what to do next | where it lands |
+|---|---|---|
+| which commands open a session elsewhere | yes | `session_tools`, a key. Two projects' session commands have nothing in common but being commands |
+| which flags of such a command take a separate word | yes: without them the flag's value stands where the machine should | `valued_flags`, per entry, because the command is the project's |
+| which machines are not live | yes | the file `allowlist` names, **outside every working tree** |
+| which names reach nothing | yes | `local_names`, a key, a loopback name being nobody's identity |
+| which machine is live | no: it is every machine no list names | nowhere, which is the inversion |
+| who would answer the prompt | no: it is the harness's own state | procedure, and the line this guard exists for |
+| where the command is in a call | no: it is the same parse everywhere | procedure, and `schema § 19`'s already |
+
+**Why the two lists are not one key.** The allowlist is a file on a machine and `local_names` is a
+line in a repository, and the test that decides which a name belongs in is whether the name
+identifies *another* machine: a loopback name does not, and everything else does
+([`schema § 21 → The machines named`](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)).
+⛔ **Collapsing them into one configured list would put somebody's infrastructure into a repository
+anybody can clone**, which is the one thing this facet is organised to prevent; collapsing them
+the other way — a file for both — would make a loopback name a per-machine fact that every new
+checkout has to be told.
+
+**Why the absence of the file makes the guard stricter rather than quieter.** A machine where
+nobody has written the list yet is one where every name that list would have cleared reads as live,
+so a half-set-up machine is safe by default and the remedy is visible in the refusal
+([`schema § 21 → The four ways it fails closed`](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed)).
+⚠️ **That is the opposite of how a missing configuration file usually reads**, and it is the
+direction this facet cannot afford to have backwards.
+
 ## One rule that is procedure everywhere
 
 The estimate/measurement separation in
