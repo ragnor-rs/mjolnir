@@ -62,16 +62,16 @@ UNESTABLISHED = "could not be established"
 
 # How long a slug may be. A bound is needed for the cut to be part of the derivation rather than
 # a thing the filesystem does later at a length that varies by machine; the value is a readability
-# choice and nothing reads it but the derivation below. ⚠️ It bounds the **slug**, and the tree's
-# leaf and the branch's last segment carry `<identifier>-` in front of it, so a leaf runs a few
+# choice and nothing reads it but the derivation below. ⚠️ It bounds the **slug**: the tree's leaf
+# and the branch's last segment carry `<identifier>-` in front of it, so a leaf runs a few
 # characters longer than this.
 SLUG_MAX = 18
 
 # The words the derivation drops before it starts counting, so that what survives the bound is
 # the title's own nouns and verbs rather than its first four articles and prepositions. That this
-# is one language's list, that a repository writing its items in another is held by the bound
-# alone, and why neither the list nor the bound is on the configuration surface, are the rule's
-# and are stated with it -- `config/schema.md` § 10 -> *The branch name a claim is taken on*.
+# is one language's list, what a repository writing its items in another is left holding, and why
+# neither the list nor the bound is on the configuration surface, are the rule's and are stated
+# with it -- `config/schema.md` § 10 -> *The branch name a claim is taken on*.
 #
 # ⛔ Negations are not here, which is the one thing about the list's *contents* that is a decision
 # rather than a reading of the language: `no`, `not`, `nothing` and `never` carry the whole
@@ -1631,8 +1631,12 @@ def self_test() -> int:
     # bound admits none -- and the assertion below is reached rather than vacuous because the
     # unbounded form of each title overruns it.
     unbounded = {item: slug_for(title, limit=None) for item, title, _ in MEASURED}
+    # ⚠️ The **last** segment and the item's own prefix off it, not a split on the first slash:
+    # a project may nest its prefixes, which is the reading `ref_is_for_item` is written to.
     published = [
-        name.split("/", 1)[1][len(str(item)) + 1 :] for item, _, names in MEASURED for name in names
+        name.rsplit("/", 1)[-1][len(str(item)) + 1 :]
+        for item, _, names in MEASURED
+        for name in names
     ]
     suite.ok(
         "every slug two sessions actually published is longer than the bound, so a rule with no "
@@ -1732,6 +1736,16 @@ def self_test() -> int:
         slug_for("Incomprehensibility"),
     )
 
+    # ⛔ The list's own hygiene, because a mistyped entry is **silent**: the list is one string
+    # split on whitespace, so `the,` or `The` matches no word the mapping ever produces and the
+    # bound goes on being spent on that word with nothing to show it. Nothing else here would
+    # redden, which is what makes this an assertion rather than a convention.
+    suite.ok(
+        "every word in the list is lowercase and letters only, so no entry is silently dead",
+        bool(MINOR_WORDS) and all(w.isalpha() and w == w.lower() for w in MINOR_WORDS),
+        ", ".join(sorted(w for w in MINOR_WORDS if not (w.isalpha() and w == w.lower()))),
+    )
+
     # Plant: **the function words kept**, which is the same bound spent on a title's articles and
     # prepositions instead of its nouns and verbs.
     unselected = [slug_for(title, minor=frozenset()) for _, title, _ in MEASURED]
@@ -1760,7 +1774,7 @@ def self_test() -> int:
         ("and so does a title that is all function words", "Of the and", SLUG_MAX, "of-the-and"),
         ("while a repeat is dropped on that path too, as on the common one",
          "A a, and an a", SLUG_MAX, "a-and-an"),
-        ("a second script carries no function word this list knows, so the bound alone applies",
+        ("a second script carries no function word this list knows, so the bound shortens it",
          "Две сессии делят один бэклог", SLUG_MAX, "две-сессии-делят"),
         ("a script of its own survives rather than becoming hyphens",
          "Две сессии", SLUG_MAX, "две-сессии"),

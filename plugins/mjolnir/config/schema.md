@@ -2243,8 +2243,9 @@ answers **one** leaf rather than two — which is the direction that helps a dir
 answering whose it is, the question being asked on the identifier either way.
 
 ⚠️ **The function words are one language's and the bound is the rule's.** A repository writing its
-items in another language matches none of them, drops nothing, and is held by the bound alone:
-a weaker derivation there and not a broken one, the result still being a function of the string.
+items in another language matches none of them, so only the single-character rule and the bound
+apply there: a weaker derivation and not a broken one, the result still being a function of the
+string.
 ⛔ **Neither the list nor the bound is on this surface.** A per-project list is a cosmetic choice
 that would give two sessions reading two configurations two spellings of one item's branch, which
 is what this subsection exists to close.
