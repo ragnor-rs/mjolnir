@@ -110,6 +110,13 @@ host:
     - workflow: "Installer"
       mirrors: "python3 plugins/mjolnir/scripts/install.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The destructive carrier, and the reason its entry is worth a sentence: every other run in
+    # this list fails by reporting something wrong, while this one can fail by deleting a working
+    # tree. What the suite behind it holds is therefore both directions per arm — a must-keep and a
+    # must-remove — since a sweep that removes nothing passes a red-side-only check.
+    - workflow: "Landed trees"
+      mirrors: "python3 plugins/mjolnir/scripts/prune.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Names no other project"
       mirrors: "python3 tools/check_no_project_names.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -335,6 +342,14 @@ branch_model:
   # copy, no port, no container, and nothing to tear down. The cheapest proof that a project
   # whose trees are free to create still has to state the model.
   mechanics: null
+  # The two ignored paths a tree here acquires by being worked in, both written again by the next
+  # run that needs them: the interpreter's byte-code cache, and the file the desktop drops into
+  # any directory somebody opens. ⚠️ `.claude/worktrees/` is deliberately absent even though
+  # `.gitignore` names it: a tree a harness cut for a helper is not written back by anything, so a
+  # tree still holding one is kept and the path reported rather than removed with it inside.
+  regenerable:
+    - "__pycache__"
+    - ".DS_Store"
   # Nothing contends. The only check this project runs is a python script with no daemon, no
   # service and no machine-wide lock, so no lease is taken and none is synthesised.
   exclusive_resources: []

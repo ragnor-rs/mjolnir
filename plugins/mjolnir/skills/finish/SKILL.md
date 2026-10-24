@@ -556,6 +556,15 @@ say what is left to remove and where, rather than reporting a release that did n
 say *why* it was left, since a tree reported this way by a session that could have exited is this
 step skipped and not this case.
 
+⚠️ **What then removes it is the other carrier of the same rule**, and it is **named here rather
+than performed**: under
+[`§ 10 → Pruning a tree whose branch has landed`](../../config/schema.md#pruning-a-tree-whose-branch-has-landed)
+a tree whose branch has landed is reaped on the event that opens a session as well as on the merge,
+so a tree this step could not reach is a later session's and not a person's to remember. ⛔ **That
+is not a licence to skip this step**: the sweep exists for the landings this role never saw — a
+change merged in the host's web interface, or in another session — and every item it is left
+holding is one somebody waits a session to see cleaned up.
+
 ## 11. The reply
 
 Register, and the language, are

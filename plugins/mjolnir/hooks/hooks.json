@@ -85,6 +85,13 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/spend.py", "price"],
             "timeout": 10,
             "statusMessage": "Reading the one price stated before a turn runs"
+          },
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/prune.py", "hook"],
+            "timeout": 60,
+            "statusMessage": "Reaping the trees whose branches have landed"
           }
         ]
       }

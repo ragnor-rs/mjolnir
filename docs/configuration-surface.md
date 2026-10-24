@@ -332,6 +332,28 @@ the three that are obvious. The measurements that forced each to be independent:
      the merge as the signal — and two of the projects run it from a hook that surveys trees and
      reports rather than removing. So the facet is read by the role that finishes work as well as
      by the one that starts it, which is why `mechanics` points at setup *and* teardown.
+   - **The half that *deletes files* belonged to neither role, and it is the half that destroys
+     data.** The merge is only one of the two moments a tree stops being wanted: a change merged in
+     the host's web interface, in another session, or before any rule existed leaves a tree nothing
+     is watching, and one project counted **seventeen** of them by the time anybody looked. So
+     there is a second carrier on the event that opens a session, and
+     [`schema.md § 10 → Pruning a tree whose branch has landed`](../plugins/mjolnir/config/schema.md#pruning-a-tree-whose-branch-has-landed)
+     is where both are stated. Three measurements shaped it rather than one: four local tests of
+     *has this landed* were each tried against a branch whose pull request had merged and **all
+     four misread it**, which is why the reading is the claim's own and not a second one; a tree
+     that reported **clean** was removed with a hand-minted session credential and a pulled-back
+     output directory in it, which is why a porcelain status is not the oracle; and a keep-awake
+     helper held a tree's working directory for five minutes, which is why a kept tree is
+     re-examined rather than remembered.
+   - **`regenerable` is the one key that half needs, and it is a key for the reason `claimed_by`
+     is.** What a rebuild writes again is a build directory in one project, a dependency cache in
+     another, a service stack's own volumes in a third — and a carrier shipping any of those names
+     would be this toolkit carrying a project's value. ⚠️ The stated-empty form is the safe one and
+     costs disk rather than data: a project writing `[]` keeps every tree holding any ignored file
+     at all. The exemption that makes the rule usable at all is **symlinks**, which a tree
+     preparation step plants into every tree it prepares — under a literal reading of the oracle
+     every correctly prepared tree would be permanently precious and nothing would ever be pruned,
+     while removing the tree unlinks them and loses not a byte.
    - **A verdict has to name its tree, because the failure is silent and passes.** One project
      records that a check run against whichever service stack happens to be up is a check of
      another branch's code, and that an idle stack is not an unused one; another found a capacity

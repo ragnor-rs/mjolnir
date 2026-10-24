@@ -178,6 +178,7 @@ branch_model:
   # carrying its own hyphens is the leading half of the leaf rather than a thing to parse back out.
   tree_dir: "../<project>-trees"
   mechanics: null                      # a tree here needs nothing installed or copied
+  regenerable: []                      # and so holds nothing a rebuild would write again
   exclusive_resources: []              # nothing local is held; the checks run on the host
 context:
   artifacts:

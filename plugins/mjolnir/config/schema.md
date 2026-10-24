@@ -1979,6 +1979,7 @@ branch_model:
   parallel_trees: true                       # required
   tree_dir: "<the directory a tree is cut under>"   # required under worktree; null under in_place
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
+  regenerable: ["<an ignored path a rebuild writes again>"]   # required_when: branch_model.kind = worktree
   exclusive_resources:           # [] where nothing in this project is exclusive; required
     - { name: "…", cap: 1, subject: tree, claimed_by: "…", probe: "…",  ttl: 1800 }
     - { name: "…", cap: 2, subject: call, claimed_by: "…", probe: null, ttl: 120 }
@@ -2464,6 +2465,137 @@ is not configuration here:
 is where it is stated, along with how the count is read and what releases a place. This facet
 states what is exclusive, how many of it there are, what holds a place, which calls put it at
 stake, what can be asked how many are held, and how long a lease counts.
+
+### Pruning a tree whose branch has landed
+
+⛔ **A tree whose branch has landed is removed, and there are two carriers: the merge, and the
+event that opens a session.** The first drops the tree in the pass that merged; the second
+**sweeps** every case the first cannot reach — a change merged in the host's web interface, in
+another session, or before this rule existed. ⚠️ **The sweep is not a tidy-up and its absence is
+not cosmetic**: one project counted **seventeen** landed trees by the time anybody looked, each
+holding a checkout of the repository. ⛔ **Procedure with no key**, the placement § 7's invocation
+rule and the claim above both have: a project that could switch the second carrier off would
+accumulate trees exactly as the project with no rule at all did.
+
+⛔ **The landed reading is [the claim's](#the-claim-on-a-work-item), and nothing here carries a
+second one.** Two oracles for *has this landed* are allowed to disagree, and the reading that ships
+is content first and then the host's own record of a merged pull request. ⚠️ **So this gets no
+cheaper for [§ 2's stated method](#how-a-pull-request-lands) either**, for that key's own reason: the
+method says which shape is ordinary and guarantees nothing about a given ref.
+
+⚠️ **Which puts the two landing shapes on different arms, and that is worth knowing before a
+project counts its trees.** A squashed branch carries commits of its own and is answered locally; a
+branch that landed as a **merge commit** is an ancestor of the integration branch and carries none,
+so only the host's record recognises it. ⛔ **Ancestry is not the gap-filler**, by the claim's own
+rule: a claim taken a minute ago is an ancestor too, so a sweep keyed on it would remove the tree of
+an item somebody had just started. ⚠️ **Where the host cannot be asked, such a tree therefore reads
+as an orphaned candidate and is kept** — the accumulation becomes a disk cost rather than a data
+one, and the person is asked rather than left to find it.
+
+⚠️ **Four local tests were measured against a branch whose pull request had merged and all four
+misread it** — the commits ahead of the integration branch, `--merged`, the patch-ids, and a
+comparison of the two trees. ⛔ **The last is the one worth naming rather than listing**: comparing
+trees *is* decisive, and only in the window before the integration branch advances; after that it
+reports the opposite of what it is read as, and it is the test a reader is most likely to trust.
+
+⛔ **Clean is not disposability, and the gap destroys data.** A porcelain status does not report
+ignored files and a removal deletes them anyway — measured in one project, where a tree holding a
+session credential for an external service and a pulled-back output directory reported clean and
+lost both, and that credential could only be re-minted by an interactive login. ⛔ **So the oracle
+is tracked-or-untracked changes *plus* any ignored path a rebuild does not write again**, and which
+ignored paths a rebuild writes again is `regenerable` below.
+
+⛔ **A symlink is never precious, however it is ignored.** A tree preparation step that plants
+ignored symlinks into every tree it prepares leaves every correctly prepared tree permanently
+precious under a literal reading of the oracle, so nothing is ever pruned — while removing the tree
+unlinks them and loses not a byte. ⚠️ **Without this exemption the rule above disables the sweep
+outright**, which is why it is stated as part of the oracle rather than as a tolerance.
+
+⛔ **A tree that is kept is named, and so is what kept it.** A reader cannot rescue a file a report
+does not name, and a sweep stating no reason is indistinguishable from one that has stopped working.
+⛔ **Every path, with no bound on how many are listed** — a report naming the first few reads as the
+whole of what a tree holds, and the one file somebody needed is as likely to be past the cut as
+before it.
+
+⚠️ **One of the readings owes a person nothing, and it is the only one.** A branch that reads
+**live** is a tree somebody is working in, which is the ordinary state and is not said on an event
+that fires as every session opens; a tree kept for any other reason is. ⛔ **An orphaned candidate
+is said**, the claim above making it a person's call rather than a carrier's, and so is a landed
+tree whose removal was **refused** — which is the one kept state that is neither ordinary nor
+self-clearing, and a sweep that swallowed it would go on refusing in silence every session.
+
+⛔ **A kept tree is re-examined on the next sweep and never remembered.** A verdict recorded once
+turns a refusal with a five-minute lifetime into a tree kept forever — measured on a keep-awake
+helper holding a tree's working directory for `300` seconds, after which the identical call
+succeeded with nothing overridden. ⚠️ **The targeted carrier has a remedy the sweep does not**: a
+person is present for a release and can wait, while nobody reads a sweep's refusal.
+
+⛔ **The sweep is bounded and reports what it did not reach.** Its own cost is a host lookup per
+tree, which outruns the time the event that opens a session allows — and a carrier killed on that
+timeout emits nothing, so a half-finished job reads as a finished one. ⚠️ **A count of trees not
+looked at is therefore part of the answer and not a diagnostic**, by
+[§ 11](#a-report-names-what-it-could-not-establish): a sweep that looked at two of nine and said
+nothing has reported that nine trees are in order.
+
+⛔ **Four trees are never touched, and one of the four is a refusal rather than a skip:**
+
+| the tree | why, and what clears it |
+|---|---|
+| the main checkout | it is not a tree a claim was cut into, under either `kind` |
+| one another live session occupies | [the claim's own occupancy reading](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it) — another **session**, never another process |
+| one the oracle above objects to | nothing clears it automatically; the report names the paths so a person can |
+| the caller's own, while the caller stands in it | a **stop**, cleared by leaving and by nothing else — and where no exit is available the skip is correct and the tree is a later sweep's |
+
+⚠️ **A registered worktree the harness cut for a *helper* is absent from that table because it is
+not a work tree at all** — [the claim's own structural test](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it),
+applied one layer earlier than any of these four rows. ⛔ **It is still named in the report**: a
+tree dropped silently at that layer is a tree nothing ever mentions, which is how three of them
+outlived a merge with nothing reaping them.
+
+⛔ **A session still pinned to its tree is the case the last row is for, and it is distinct from a
+sibling's tree.** The directory is gone from that session's point of view only *after* the removal,
+and until then that session is the one thing still naming it — so a sweep firing as a pinned session
+opens leaves its tree alone and takes it on a later run.
+
+⛔ **The branch is the other half, and the tree alone is not the release.** A removal that drops the
+tree and leaves the local branch leaves the next session reading the item as taken with nothing on
+disk to explain why. ⚠️ **The two halves have the same oracle and opposite defaults**: a tree is
+kept wherever anything about it is uncertain, and a branch is deleted only where the item is
+certainly landed — so an unmerged branch is a live claim and is never deleted by a sweep, including
+where the host could not be asked.
+
+⛔ **The published ref is [§ 2's `delete_branch`](#how-a-pull-request-lands) and is not reached on
+any other value.** Under `host` the ref is already gone and a ref that is missing is not a failure;
+under `never` neither side deletes and the sweep leaves it standing; only under `procedure` is the
+deletion this carrier's. ⚠️ **A kept ref costs the loop nothing** — the claim above reads a landed
+claim as spent whether or not its ref still stands — ⛔ **but the predicate keyed on the ref's
+*name* goes on answering `taken`**, which is the true answer about a ref that exists and is why
+the item read is the one the loop asks.
+
+```yaml
+branch_model:
+  regenerable:
+    - "<an ignored path a rebuild writes again>"
+```
+
+- **`regenerable`** — the ignored paths a rebuild writes again, and therefore the only ignored
+  paths whose loss a removal does not have to ask about. ⛔ **A project fact and not a shape the
+  procedure knows**: a build directory, a dependency cache, an editor's directory and a log are
+  four unrelated names, and a carrier shipping any of them would be this toolkit carrying a
+  project's value — which
+  [the check that holds this toolkit to naming none](../../../docs/single-source-of-truth.md#the-second-sweep)
+  refuses. ⚠️ **`[]` is a stated absence and the safe one**: a project stating it keeps every tree
+  holding any ignored file at all, which costs disk rather than data.
+- **Each entry is a path matched with the shell's own glob rules, anchored at the *end* of the
+  path and applied to each directory above it too** — so a bare name matches wherever in the tree
+  it appears, and an entry naming a directory covers everything beneath it. ⛔ **Stated, because
+  the alternative is each carrier choosing**: a project writing one name would otherwise have to
+  know whether the match is on the whole relative path, on its leading segments, or on a name
+  anywhere in it, and the three differ on every tree that has ever been built in. ⚠️ **It is the
+  end rather than the start because of what the carrier is handed**: an ignored path arrives
+  relative to the tree's own root, so a cache four directories down is `a/b/c/cache` and a rule
+  anchored at the start would need every project to spell the prefix it cannot know.
+- ⚠️ **It is read only under `kind: worktree`**, there being no tree to prune under `in_place`.
 
 ## 11. Session context
 
