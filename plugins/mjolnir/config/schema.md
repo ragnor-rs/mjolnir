@@ -4182,6 +4182,14 @@ anything about the role the call was made under
 | the result | after a shell command | replaces a result longer than `result_limit_chars` with the path its full text was written to, a head and a tail |
 | the read | before and after a file is read | refuses a read this session has already made, and records each one it did not |
 
+⛔ **A read's own result is never replaced, however long it is.** The two arms divide by what they
+read rather than by severity: a file a session asked for by path is a read it chose the extent of,
+while a command's output is the thing nothing bounded — and a role told to redirect a measurement to
+a file and read the file would otherwise meet a head and a tail in place of the one thing it was
+told not to truncate (`never_bound`, below). ⚠️ **So a file read *through a shell command* is not
+the read arm's at all**: that is a command whose output nothing bounds, which the first arm already
+states, and the two never answer about one call.
+
 ⛔ **The rewriting arm replaces the arguments and tells the session it did.** A bound the session is
 not told about is a bounded result read as complete, which is the one way this facet could leave a
 window worse than it found it — and the channel is the one that reaches the session's own next

@@ -2585,6 +2585,12 @@ could be misread are asserted the same way for the same reason.
   releases a refusal from inside the session, by
   [schema § 22 → A read this session has already made](../plugins/mjolnir/config/schema.md#a-read-this-session-has-already-made),
   so narrowing it would close the only route past the arm a session has.
+- **Which window a session's reads were read into.** The ledger is keyed by the session the event
+  names, and whether a subagent's calls arrive under their own session or under the one that
+  launched them is **unestablished** — no run in this repository can read it, the plugin's hooks
+  being served from the installed checkout rather than from a tree under work. ⚠️ If they arrive
+  under the parent's, a subagent can be refused a read whose content its own window does not hold,
+  and what releases it is the same route a summarised window takes: a different range.
 - **Whether what a session read is still in its window.** The ledger records that a read happened,
   and a window is summarised without being asked. A refusal after that names the file that is no
   longer there to read — which is the direction this arm is wrong in, and the reason the escape
