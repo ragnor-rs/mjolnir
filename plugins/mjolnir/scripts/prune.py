@@ -1196,7 +1196,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             report.report(),
         )
 
-    print("\nthe four trees that are never touched:")
+    print("\nthe trees that are never touched:")
 
     with tempfile.TemporaryDirectory() as tmp:
         work, _branch, tree = _landed_world(tmp)
