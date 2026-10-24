@@ -1213,18 +1213,16 @@ row's third cell as running into the paragraph after it and quoted the splice ba
 
 ⛔ **The tree rule — [schema § 10 → What a session standing in a tree can
 run](../plugins/mjolnir/config/schema.md#what-a-session-standing-in-a-tree-can-run) — is handed over
-again when the session enters a tree, and the claim that it could not be was never measured.** *A
-session that enters a tree fires nothing a hook can answer* is what
-this carrier said for itself until 2026-10-24, and it is false: entering is a **tool call**, so
-`PostToolUse` matched on it fires then, and the payload carries the tree in `cwd` and in
-`tool_response.worktreePath`. ⚠️ **What the claim cost, read out of this project's own session
-store**: twenty-five sessions had been handed the tree rule and **not one was standing in a tree
-when it arrived**; nineteen of the twenty-four that were not the probe session the table was
-measured in still had a call refused as unverifiable in their tree, 52 refusals in all, each
-session's first one 134 to 1,030 transcript entries after the rule and always after the session had
-entered a tree. ⛔ **A rule handed over at the one moment it is inert, under a sentence saying so,
-is a rule the session has been told to put down** — which is what the coda used to say, and why the
-wording is now a function of where the session is standing rather than a constant.
+again at the moment the session enters a tree, and *a session that enters a tree fires nothing a
+hook can answer* is false.** Entering is a **tool call**, so `PostToolUse` matched on it fires then,
+and the payload carries the tree in `cwd` and in `tool_response.worktreePath`. ⚠️ **What the
+opening event alone is worth here, measured 2026-10-24 over this project's own session store**:
+across 25 sessions handed the tree rule by it, **not one was standing in a tree when it arrived**;
+19 of the 24 that were not the probe session the table was measured in had a call refused as
+unverifiable in their tree, 52 refusals in all, each session's first one 134 to 1,030 transcript
+entries after the rule and after the session had entered a tree. ⛔ **A rule handed over at the one
+moment it is inert, under a sentence saying so, is a rule the session has been told to put down** —
+so the closing sentence is a function of where the session is standing rather than a constant.
 
 ⚠️ **`WorktreeCreate` is not the carrier, measured the same day.** That event fires on the same
 operation, but `additionalContext` is not a valid shape in its output — and the invalid answer
