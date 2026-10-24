@@ -1609,6 +1609,24 @@ def _registered(name: str) -> Artifact:
     )
 
 
+def _answers_of(report: dict) -> dict:
+    """A report's artifact states, keyed by the name each was registered under."""
+    return {state["artifact"]: state for state in report["artifacts"]}
+
+
+def _answer_of(answers: dict, name: str):
+    """One artifact's answer out of those, by name and tolerantly.
+
+    ⛔ Tolerant because an arm reading a name nothing registered has to
+    **report** rather than raise. ⚠️ Measured: a mistyped member of the carrier
+    list below came back as a `KeyError` out of the first arm that indexed it —
+    a traceback, which is the one answer a check may not give, and which leaves
+    every arm after it unrun. What names the mistake is the precondition beside
+    the arms; what keeps it a verdict is this.
+    """
+    return answers.get(name, {}).get("answer")
+
+
 def _a_repository(root: str) -> bool:
     """Make the fixture tree a git repository, since a hook needs one to live in.
 
@@ -2883,9 +2901,9 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         # sections as well as a title form, so the report carries the body pair
         # beside this one -- and an arm reading the first member would be
         # answering about whichever artifact the registry happens to list first.
-        silent_answers = {s["artifact"]: s for s in answered["artifacts"]}
+        silent_answers = _answers_of(answered)
         check("and the gate's answer is a stated absence",
-              silent_answers["pull-request-title"]["answer"] == NOT_WANTED,
+              _answer_of(silent_answers, "pull-request-title") == NOT_WANTED,
               str(answered))
         check("nothing was written where it would have gone",
               not os.path.exists(place(silent, _registered("pull-request-title"))))
@@ -2926,10 +2944,21 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
               bool(asking.get("body_sections")),
               "the example this fixture is built from states none, so the arms "
               "below would hold nothing")
+        # ⛔ The pair held to the registry before anything reads it. ⚠️ Asserted
+        # here and not with the registry's other preconditions, which run after
+        # these arms: a mistyped member would be named only once every arm
+        # reading it had already reported about an artifact that is not there.
+        registered = {artifact.name for artifact in ARTIFACTS}
+        check(
+            "and both members of the pair name artifacts the registry holds",
+            set(BODY_GATE_ARTIFACTS) <= registered,
+            f"{sorted(set(BODY_GATE_ARTIFACTS) - registered)} is named by the pair "
+            f"and registered by nothing; the registry states {sorted(registered)}",
+        )
         done = run(asking, write=True)
-        answers = {s["artifact"]: s for s in done["artifacts"]}
+        answers = _answers_of(done)
         check("both artifacts are written",
-              all(answers[name]["answer"] == WRITTEN
+              all(_answer_of(answers, name) == WRITTEN
                   for name in BODY_GATE_ARTIFACTS),
               str(done["artifacts"]))
         check("and the install reports nothing incomplete", done["report"] == [],
@@ -2961,12 +2990,11 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
               answers["body-sections-gate"].get("registered", {}).get("mirrors")
               == BODY_GATE_COMMAND and BODY_GATE_COMMAND in _read(flow),
               str(answers["body-sections-gate"].get("registered")))
-        again = {s["artifact"]: s
-                 for s in run(config.load(tmp), write=True)["artifacts"]}
+        again = _answers_of(run(config.load(tmp), write=True))
         check("a second run changes nothing",
-              all(again[name]["answer"] == UNCHANGED
+              all(_answer_of(again, name) == UNCHANGED
                   for name in BODY_GATE_ARTIFACTS),
-              str([again[name] for name in BODY_GATE_ARTIFACTS]))
+              str([again.get(name) for name in BODY_GATE_ARTIFACTS]))
         # ⛔ The facet held to the file it describes, by the check that holds
         # it everywhere else. ⚠️ This is the arm that would have caught a
         # trigger written one way in the entry and another in the template --
@@ -3036,11 +3064,11 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             answered_off = run(turned_off, write=True)
         finally:
             os.remove = real
-        off = {s["artifact"]: s for s in answered_off["artifacts"]}
+        off = _answers_of(answered_off)
         check("turning the gate off takes both artifacts out",
-              [off[name]["answer"] for name in BODY_GATE_ARTIFACTS]
+              [_answer_of(off, name) for name in BODY_GATE_ARTIFACTS]
               == [REMOVED, REMOVED],
-              str([off[name] for name in BODY_GATE_ARTIFACTS]))
+              str([off.get(name) for name in BODY_GATE_ARTIFACTS]))
         check("in the same reverse order",
               order.index(BODY_GATE_LEAF) < order.index(BODY_GATE_SCRIPT_LEAF),
               str(order))
@@ -3058,11 +3086,11 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         quiet = _a_project(tmp)
         quiet.data["body_sections"] = []
         answered = run(quiet, write=True)
-        none_wanted = {s["artifact"]: s for s in answered["artifacts"]}
+        none_wanted = _answers_of(answered)
         check("both artifacts are reported as not wanted",
-              [none_wanted[name]["answer"] for name in BODY_GATE_ARTIFACTS]
+              [_answer_of(none_wanted, name) for name in BODY_GATE_ARTIFACTS]
               == [NOT_WANTED, NOT_WANTED],
-              str([none_wanted[name] for name in BODY_GATE_ARTIFACTS]))
+              str([none_wanted.get(name) for name in BODY_GATE_ARTIFACTS]))
         check("nothing is reported incomplete", answered["report"] == [],
               str(answered["report"]))
         check("and no toolkit directory was created",
