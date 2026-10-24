@@ -1418,12 +1418,18 @@ def self_test() -> int:  # noqa: PLR0912, PLR0915 -- one assertion per rule, rea
                       repr(guard_answer(_call(instead), config=loaded))[:140])
         check(f"{name}: a command it says nothing about is not held",
               guard_answer(_call("a-command-no-example-names"), config=loaded) == {})
-    # ⛔ Run with the working directory moved out of this tree, because an
-    # example's `sidecar_dir` is a **placeholder** rather than a path: it is
-    # relative, so the write it earns lands under whatever directory this suite
-    # is standing in. Found by reading `git status` after a green run, which
-    # carried two directories named after the placeholders, inside the repository
-    # the examples are shipped from.
+    # ⛔ Every arm that may write runs with the working directory moved out of this
+    # tree, because an example's `sidecar_dir` is a **placeholder** rather than a
+    # path: it is relative, so the write it earns lands under whatever directory
+    # this suite is standing in. Found by reading `git status` after a green run,
+    # which carried two directories named after the placeholders, inside the
+    # repository the examples are shipped from.
+    #
+    # ⛔ **The exemption loop is inside it as well, although a passing run writes
+    # nothing there**: what it asserts is that an exempt result is *not* replaced,
+    # so the one run that would write is the run where that assertion fails — and
+    # a suite that dirties the repository exactly when somebody is debugging it is
+    # the worse half of the same defect. Found the same way, on a mutated run.
     here = os.getcwd()
     with tempfile.TemporaryDirectory() as elsewhere:
         try:
@@ -1442,16 +1448,16 @@ def self_test() -> int:  # noqa: PLR0912, PLR0915 -- one assertion per rule, rea
                 check(f"{name}: and the full text is on disk at that path",
                       written is not None and os.path.isfile(written.group(1)),
                       replaced(answered)[:200])
+            for name, loaded in spared_by:
+                for spared in never_bound(loaded):
+                    check(f"{name}: its exempt command `{spared}` is not held",
+                          guard_answer(_call(shlex.quote(spared)), config=loaded) == {},
+                          repr(guard_answer(_call(shlex.quote(spared)), config=loaded))[:140])
+                    check(f"{name}: and its result is not replaced",
+                          result_answer(_came_back(shlex.quote(spared), "a-line\n" * 20000),
+                                        config=loaded) == {})
         finally:
             os.chdir(here)
-    for name, loaded in spared_by:
-        for spared in never_bound(loaded):
-            check(f"{name}: its exempt command `{spared}` is not held",
-                  guard_answer(_call(shlex.quote(spared)), config=loaded) == {},
-                  repr(guard_answer(_call(shlex.quote(spared)), config=loaded))[:140])
-            check(f"{name}: and its result is not replaced",
-                  result_answer(_came_back(shlex.quote(spared), "a-line\n" * 20000),
-                                config=loaded) == {})
 
     out.append("")
     out.append("The surface still states every rule this carrier performs:")
