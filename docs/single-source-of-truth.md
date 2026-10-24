@@ -1084,12 +1084,22 @@ it on the event that opens a session.
 | 13 | A kept tree is read again on the next sweep rather than recalled, and nothing is written into it | two consecutive sweeps over one tree | computed |
 | 14 | A project that states no configuration, and one that cuts no tree, are each answered with silence | two synthesised projects | forbidding |
 | 15 | A configuration that is stated and does not resolve is reported, and a sweep that cannot run reports examining nothing | a project whose file is broken | computed |
-| 16 | The budget is shorter than the timeout the carrier registers for this script | the carrier and this module together | computed |
+| 16 | The budget plus one tree's reserve is shorter than the timeout the carrier registers | the carrier and this module together | computed |
+| 17 | A landed tree carrying a commit the reading never saw is kept, the commit **named**, and the person told; with nothing unpushed the same tree is removed | a branch pushed, landed by content, then committed to without pushing | computed |
+| 18 | A ref the host deleted on merge still answers *landed*, read from the branch on this machine, and the sweep prunes under `delete_branch: host` | the same fixture with its published ref deleted | computed |
+| 19 | A tree **outside** the stated tree directory is named and not removed, whether a harness cut it inside the checkout or a person cut it beside one; a tree **under** a tree directory that is itself inside the checkout is pruned | three real worktrees across two repositories | computed |
+| 20 | A reading that raises for one tree leaves the other's verdict standing, the removal that happened still reported; only a failure to list the trees at all is the run's | one tree's reading raised deliberately | computed |
+| 21 | A removal that reported success while the tree is still there is not a removal, and the person is told | a remover that returns success and removes nothing | computed |
+| 22 | An ignored path whose own name carries the rename separator is read whole, and one outside ASCII arrives unquoted | two such paths in a real tree | computed |
+| 23 | A registration whose directory is gone is read as prunable and cleared, rather than reported at every session open | a tree removed from under its registration | computed |
+| 24 | The stop reads the directory it is **handed** — the session's — so a session standing in its own tree holds it whatever this process's cwd is | both answers of the shipped reading | computed |
+| 25 | The event hands the sweep the configured list, `delete_branch`, the tree directory resolved against the code root, and the session's directory | the arguments captured at the boundary | computed |
+| 26 | An entry naming nothing exempts nothing; an entry anchored at the root matches there and nowhere else | the matching rule alone | computed |
+| 27 | A tree whose contents could not be read is unestablished, never empty; an unreadable directory is not all-symlinks | a directory with its mode taken away | computed |
 
-⚠️ **Check 16 is the one that looks like bookkeeping and is not.** A carrier killed on the
-harness's timeout emits nothing at all, so a half-finished sweep reads as a finished one; stopping
-early and saying so is the only form of that a carrier can hold, and it only works while the budget
-is the shorter of the two.
+⚠️ **Check 16 is the one that looks like bookkeeping and is not**, for the reason § 10 gives about
+a carrier the harness kills: what the check holds is that the timeout covers the budget **plus**
+what one tree is allowed to cost, an inequality of one second being satisfiable and useless.
 
 ### What this check deliberately does not hold
 
@@ -1121,9 +1131,28 @@ is the shorter of the two.
   occasion, deliberately — asking per occasion is what produced the accumulation § 10 measures.
   What stands in for it is that nothing uncertain is ever removed, which is checks 1, 2, 3, 6 and 8
   together.
-- **The trees a harness cut for its own helpers.** Check 10 holds that they are named and left
-  alone; reaping them is a different question with a different owner, and a sweep that removed
+- **The trees a harness cut for its own helpers.** Checks 10 and 19 hold that they are named and
+  left alone; reaping them is a different question with a different owner, and a sweep that removed
   them would be removing trees whose branches it never read.
+- **Ignored files inside a submodule.** The superproject's status says nothing about them — a
+  submodule holding only ignored content is clean — while the removal takes the submodule with the
+  tree. ⛔ So the measured incident the oracle exists for is reachable again one directory deeper,
+  and no check here holds it: the fixture would need a submodule, and the shape is not one this
+  project has. Recorded rather than guarded.
+- **A long-lived process of the person's own, in the same login session.** The occupancy reading is
+  the POSIX session, which is what tells a run's own helper from another session — and the cost of
+  that choice is the inverse case: a server started from the same terminal the session was launched
+  from shares its session and reads as *not another session*. ⚠️ Narrowing it would reintroduce the
+  measured failure it was built for, where a keep-awake helper held every tree forever, so the
+  trade is recorded rather than split.
+- **What one tree's own calls cost.** The reserve keeps a tree from *starting* without headroom; it
+  cannot bound a call already running, none of which carries a timeout of its own. A tree whose
+  host lookup hangs still outruns the event's limit, and a killed carrier emits nothing — which is
+  the one shape in this whole section that no assertion can reach from outside those calls.
+- **A worktree path containing a newline.** `-z` is what makes the parse correct for one, and the
+  fixture is a tree whose path carries **spaces** rather than a newline: the latter is permitted by
+  the filesystem and is not a directory this suite will create. What is held is the parse's shape;
+  what is reasoned is that the record boundary is now the separator git documents.
 - **That anybody reads the report.** It is addressed to the person on the event that opens a
   session, and no gate holds a person to having read it — the same limit every report on this
   route has.

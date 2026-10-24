@@ -2298,9 +2298,23 @@ other end. ⚠️ The residue is a claim squash-merged **and** then built on top
 of, which matches no row above except the weakest and so reads as live without the host's record to
 settle it. That errs towards refusing a start rather than towards taking a held claim.
 
+⛔ **A ref the host no longer carries is a free claim and still has a landed reading.** The two are
+different questions: *is this item claimed* is answered by the ref existing, and *has this work
+landed* is answered from the branch on this machine where the published ref is gone. ⚠️ **Measured
+on the first consumer that needed it**: under [§ 2's `delete_branch: host`](#how-a-pull-request-lands)
+the host deletes the ref on merge, so every landed branch reaches that state — and a reading that
+answered *nothing could be established* made the sweep over landed trees a no-op on exactly the
+projects whose refs are tidied up for them. ⛔ **Not a second oracle**: the same test on the same
+integration branch, handed the commit this machine has instead of the one the host no longer
+carries, and the commit the reading was taken on is reported so a consumer can compare a tree
+against it.
+
 ⛔ **At or below the tree, never equal to it.** A session's working directory is routinely a
 subdirectory of its tree, so a test matching the tree's own path alone answers *nobody there* for
-a claim somebody is actively working. ⚠️ And the arm has **three** answers rather than two: where
+a claim somebody is actively working. ⚠️ **And the directory compared is the caller's to state**: a
+carrier acting for a session rather than for itself is handed that session's directory, because a
+hook runs in a process of its own and the directory that must not be removed is the session's.
+⚠️ And the arm has **three** answers rather than two: where
 the machine's open-file table cannot be read at all, the reading is *unestablished* and not
 *idle* — the two are the same answer otherwise, and the wrong one of them is what lets a claim be
 taken.
@@ -2505,6 +2519,23 @@ lost both, and that credential could only be re-minted by an interactive login. 
 is tracked-or-untracked changes *plus* any ignored path a rebuild does not write again**, and which
 ignored paths a rebuild writes again is `regenerable` below.
 
+⛔ **And a commit is not a file, which is the half a status cannot see at all.** The landed reading
+is taken on the ref as the **host** carries it, so a branch pushed, landed, and then committed to
+once more without pushing reads *landed* with a status that is **empty** — the work being
+committed. ⚠️ **Measured on this rule's own carrier before it shipped**: the tree was removed and
+the local branch force-deleted, and the follow-up fix survived only as an unreachable object.
+⛔ **So the oracle's third half is the tree's own commits against the commit the reading was taken
+on**, and divergence in either direction keeps the tree: ahead is work the reading never saw, and
+behind is a tree the reading did not answer about. ⚠️ **It is the cheapest half to state and the
+one no file oracle can reach**, which is why it is stated rather than left to follow from the two
+above.
+
+⛔ **The removal is read back, and a removal that reported success while the tree is still there is
+not one.** Measured in the carrier this rule calls: a tree git refuses to remove — a locked one
+needs the override twice — is not raised and the success sentence is appended anyway, so the sweep
+said *removed* for a tree still on disk whose published ref had already gone. ⚠️ **A destructive
+act misreported as done is worse than a refusal**, because nothing ever comes back to it.
+
 ⛔ **A symlink is never precious, however it is ignored.** A tree preparation step that plants
 ignored symlinks into every tree it prepares leaves every correctly prepared tree permanently
 precious under a literal reading of the oracle, so nothing is ever pruned — while removing the tree
@@ -2517,12 +2548,25 @@ does not name, and a sweep stating no reason is indistinguishable from one that 
 whole of what a tree holds, and the one file somebody needed is as likely to be past the cut as
 before it.
 
-⚠️ **One of the readings owes a person nothing, and it is the only one.** A branch that reads
-**live** is a tree somebody is working in, which is the ordinary state and is not said on an event
-that fires as every session opens; a tree kept for any other reason is. ⛔ **An orphaned candidate
-is said**, the claim above making it a person's call rather than a carrier's, and so is a landed
-tree whose removal was **refused** — which is the one kept state that is neither ordinary nor
-self-clearing, and a sweep that swallowed it would go on refusing in silence every session.
+⛔ **What reaches a person on the event is what somebody could act on, and the full report is
+everything.** The two are different artifacts with different audiences, and the division is by
+whether a person has anything to do rather than by how interesting the state is:
+
+| reaching the person as a session opens | named in the full report only |
+|---|---|
+| a landed tree **kept by the oracle**, with the paths to rescue | a branch that reads **live** — a tree somebody is working in |
+| an **orphaned candidate**, with both readings and the ask the claim above requires | a tree **another session** occupies, which clears itself when that session ends |
+| a reading that **failed**, naming what could not be established | the **caller's own** tree, which every session standing in one would be told about on every open |
+| a removal that was **refused** | a tree the harness cut for a **helper**, which is nobody's to act on |
+| trees the budget did not reach | the main checkout, which was never a candidate |
+
+⛔ **An orphaned candidate carries both readings and asks**, which is the claim's own rule and not a
+softer version of it: a session that died holds the same ref as one about to commit, so a sweep
+that reported only the first reading would be recommending a removal it is forbidden to make.
+⛔ **And a refused removal is said every time it is refused** — the one kept state that is neither
+ordinary nor self-clearing, where a sweep that swallowed it would go on refusing in silence.
+⚠️ **The right-hand column is not a quiet form of § 11's rule**: what those states could not
+establish is in the report, and what is suppressed is the *prompting*, not the fact.
 
 ⛔ **A kept tree is re-examined on the next sweep and never remembered.** A verdict recorded once
 turns a refusal with a five-minute lifetime into a tree kept forever — measured on a keep-awake
@@ -2537,20 +2581,60 @@ looked at is therefore part of the answer and not a diagnostic**, by
 [§ 11](#a-report-names-what-it-could-not-establish): a sweep that looked at two of nine and said
 nothing has reported that nine trees are in order.
 
-⛔ **Four trees are never touched, and one of the four is a refusal rather than a skip:**
+⛔ **The bound reserves what one tree costs rather than being checked between trees alone.** A bound
+tested only on entry lets a tree start with a second to spare and then spend a host lookup, a fetch
+and a read of the machine — so the run is killed mid-tree and emits nothing, which is the exact
+outcome the bound exists to convert into a sentence. ⚠️ **What is left over is stated rather than
+claimed shut**: the calls a single tree makes carry no timeout of their own, so a tree whose own
+lookups exceed the reserve still outruns the event's limit. The reserve makes that the rare case
+instead of the ordinary one, and nothing here can close it from outside those calls.
+
+⛔ **What the sweep may look at at all is `tree_dir`, and that is the scope rather than a
+shortcut.** A registered worktree under the directory this facet already states is this project's;
+one outside it is not, however it was made. ⚠️ **Measured from both directions in one review, and
+each direction is a defect the other test does not have.** Reading *nesting below the checkout*
+instead — which is the right question for a release pointed at one tree — makes a project whose
+`tree_dir` is **inside** its checkout read every one of its own trees as a helper's and prune
+nothing, while a worktree somebody cut by hand beside the checkout reads as a candidate and has its
+branch and its published ref deleted on a landed verdict. ⛔ **Neither is a tree this procedure
+cut**, and the configured directory is the only thing that knows which were.
+
+⛔ **And a relative `tree_dir` is anchored on the main checkout, not on the tree the sweep runs
+in.** The role that cuts trees runs in that checkout, so the value is written relative to it — and
+this carrier runs on the event that opens a session, which is routinely standing *inside* one of
+the trees. ⚠️ **Measured by running the shipped carrier on this repository**: joined to the tree
+instead, `../<trees>` resolved one level too deep to a directory that does not exist, every real
+tree read as outside the scope, and the sweep became the no-op it exists to end — green, and
+saying nothing.
+
+⛔ **The trees that are never touched, and one of them is a refusal rather than a skip:**
 
 | the tree | why, and what clears it |
 |---|---|
+| anything outside `tree_dir` | not a tree this procedure cut; named in the report and nobody's to act on |
 | the main checkout | it is not a tree a claim was cut into, under either `kind` |
 | one another live session occupies | [the claim's own occupancy reading](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it) — another **session**, never another process |
 | one the oracle above objects to | nothing clears it automatically; the report names the paths so a person can |
 | the caller's own, while the caller stands in it | a **stop**, cleared by leaving and by nothing else — and where no exit is available the skip is correct and the tree is a later sweep's |
 
-⚠️ **A registered worktree the harness cut for a *helper* is absent from that table because it is
-not a work tree at all** — [the claim's own structural test](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it),
-applied one layer earlier than any of these four rows. ⛔ **It is still named in the report**: a
-tree dropped silently at that layer is a tree nothing ever mentions, which is how three of them
-outlived a merge with nothing reaping them.
+⚠️ **A registered worktree the harness cut for a *helper* falls under the first row rather than
+needing one of its own** — such a tree is cut wherever that harness puts them and not under this
+project's tree directory, so the scope above answers it without a second rule. ⛔ **It is still
+named in the report**: a tree dropped silently is a tree nothing ever mentions, which is how three
+of them outlived a merge with nothing reaping them.
+
+⚠️ **A registration whose directory is already gone is cleared rather than reported forever.**
+Nothing is at stake in one — the tree it names does not exist — and a sweep that left it standing
+would say the same sentence about the same absence at every session open, which is how a channel
+stops being read.
+
+⛔ **One tree's failure is not the sweep's.** A reading that cannot be taken — an unreachable
+remote, which is the ordinary state of this carrier on a dead network — is that tree's verdict and
+not the run's. ⚠️ **Measured on the first draft**: the failure unwound past the report and
+discarded every verdict already produced, **including removals that had already happened**, after
+which the session was told nothing was examined and nothing removed. ⛔ **A destructive act whose
+record is destroyed with the exception is worse than the exception**, so each tree is answered on
+its own and only a failure to list the trees at all is the whole run's.
 
 ⛔ **A session still pinned to its tree is the case the last row is for, and it is distinct from a
 sibling's tree.** The directory is gone from that session's point of view only *after* the removal,
