@@ -111,7 +111,8 @@ carriers:
                                                   # events (#16, shipped by #184)
   spend:                        { class: guard }  # puts a call that spends to the person or
                                                   # refuses it, and reports the one price a
-                                                  # resume states — one script on two events
+                                                  # resume states to the person rather than to
+                                                  # the session — one script on two events
                                                   # (#26, shipped by #193)
   live:                         { class: guard }  # puts a call that could open a session on a
                                                   # machine outside this one to the person, or
