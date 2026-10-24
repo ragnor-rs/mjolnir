@@ -87,6 +87,10 @@ commit:
   staging: explicit
   trailer: read_from_history
 
+# § 20's stated absence, and on this project it is the ordinary one: no role here reads a section
+# out of a change, so a body is held to § 6 and nothing further.
+body_sections: []
+
 carriers:
   day_log: skill
 

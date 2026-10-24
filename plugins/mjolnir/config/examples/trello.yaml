@@ -113,6 +113,11 @@ commit:
   staging: explicit
   trailer: read_from_history
 
+# § 20's stated absence. This project deploys from a branch and nothing collects a section out of
+# a change, so there is no section to require and no gate to install. `[]` rather than an unset
+# key, for the reason `checks_local` above is written that way.
+body_sections: []
+
 carriers:
   day_log: skill
   file: skill

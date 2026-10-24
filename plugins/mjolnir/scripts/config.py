@@ -813,6 +813,18 @@ class Config:
                 "spend guard is installed and refuses nothing here. ⛔ Not an "
                 "absence of signal: the project states it (§ 19)."
             )
+        # § 20, and the stated absence of a list rather than of a carrier: the
+        # body is held to § 6 whatever this says, so what `[]` buys is the
+        # difference between a project that decided no other role reads a
+        # section of its bodies and one that never asked. ⛔ Reported as the
+        # gate not being installed and never as a body that passed -- a run
+        # asserting nothing is the shape the facet exists against.
+        if not self.get("body_sections"):
+            out.append(
+                "No body section is required beyond § 6's (`body_sections: []`), "
+                "so no body gate is installed and a body is held to the summary, "
+                "the test plan and the closing reference alone (§ 20)."
+            )
         # A role's own unset key. `day_log.script` is the first absence in this
         # toolkit that is load-bearing rather than theoretical: the day-log role
         # cannot run without it, and reporting that -- naming the key -- is what
@@ -2070,6 +2082,60 @@ def validate(data: dict, facts: dict) -> None:
                 "it.",
             )
 
+    # § 20. The sections a body must carry beyond § 6's. Requiredness is the
+    # surface's marker and answers whether the key is written; what each entry
+    # has to *be* is here, as § 17's is -- and for the same stated reason: a
+    # member of a list sits at no path a marker can reach, so all three of its
+    # keys are held in prose there and in code here.
+    body_sections = _get(data, "body_sections")
+    if not isinstance(body_sections, list):
+        raise ConfigError(
+            "body_sections",
+            f"is {type(body_sections).__name__}, and § 20 states it as the sections a "
+            "body carries beyond § 6's -- a list of entries, or `[]` where a project "
+            "requires none. A shape this reader cannot walk is a gate installed over "
+            "sections nobody can read.",
+        )
+    seen_headings: dict[str, int] = {}
+    for index, entry in enumerate(body_sections):
+        where = f"body_sections[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}, and has to be a mapping stating the `heading` a body "
+                "spells, what `read_by` collects it, and the `nothing_needed` answer "
+                "that closes it (§ 20).",
+            )
+        for key, what in (
+            ("heading", "the heading text a body spells, in the repository's language"),
+            ("read_by", "what collects this section out of the change"),
+            ("nothing_needed", "the answer the section carries where nothing is needed"),
+        ):
+            value = entry.get(key)
+            if not isinstance(value, str) or not value.strip():
+                raise ConfigError(
+                    f"{where}.{key}",
+                    f"is {value!r}; § 20 states it as {what}, written on every entry. "
+                    "Written blank it reads as a key somebody set while stating "
+                    "nothing, and the gate then holds a body to a heading that is "
+                    "not there.",
+                )
+        # ⛔ The collision § 20 refuses, and it is keyed the way the gate reads a
+        # heading: the text alone, cased however a body cases it. Two entries
+        # under one heading leave every reader of the facet choosing between two
+        # statements of what one section is for -- § 2's own argument for keying
+        # `checks` on the workflow name, arriving at the other end of the body.
+        folded = entry["heading"].strip().casefold()
+        if folded in seen_headings:
+            raise ConfigError(
+                f"{where}.heading",
+                f"is {entry['heading']!r}, which body_sections[{seen_headings[folded]}] "
+                "already states (§ 20). The section is collected by that text, so a "
+                "second entry under it is two statements of what one section is for, "
+                "and a gate reading either would be right.",
+            )
+        seen_headings[folded] = index
+
     # § 18. The guard on a command the host has already run. Requiredness is the
     # surface's marker and answers whether `never_guard` is written; what these
     # three values have to *be* is here, as § 17's are.
@@ -2401,6 +2467,7 @@ def _examples() -> list[str]:
 # below, and a marker added fails it until somebody writes the key down here.
 MARKED_REQUIRED = [
     "already_run.never_guard",
+    "body_sections",
     "branch_model.exclusive_resources",
     "branch_model.kind",
     "branch_model.parallel_trees",
@@ -3418,6 +3485,26 @@ def _planted_violations():
          "branch_model.exclusive_resources[0].probe", _a_resource_of(probe="   ")),
         ("a probe that is no command at all", "branch_model.exclusive_resources[0].probe",
          _a_resource_of(probe=["a-command-that-counts-them"])),
+        ("a body-section list that is not a list", "body_sections",
+         at("body_sections", "A section this project requires")),
+        ("a body-section entry that is not a block", "body_sections[0]",
+         at("body_sections", ["A section this project requires"])),
+        ("a body section stating no heading", "body_sections[0].heading",
+         _a_body_section_of(heading=None)),
+        ("a body-section heading written blank", "body_sections[0].heading",
+         _a_body_section_of(heading="   ")),
+        ("a body-section heading that is no text at all", "body_sections[0].heading",
+         _a_body_section_of(heading=["A section this project requires"])),
+        ("a body section naming nothing that reads it", "body_sections[0].read_by",
+         _a_body_section_of(read_by=None)),
+        ("a body section whose reader is written blank", "body_sections[0].read_by",
+         _a_body_section_of(read_by="  ")),
+        ("a body section stating no answer for a change needing nothing",
+         "body_sections[0].nothing_needed", _a_body_section_of(nothing_needed=None)),
+        ("a nothing answer written blank, which no body can state",
+         "body_sections[0].nothing_needed", _a_body_section_of(nothing_needed="  ")),
+        ("two body-section entries under one heading", "body_sections[1].heading",
+         _two_entries_under_one_heading),
         ("a local check list that is not a list", "checks_local",
          at("checks_local", "a-local-command")),
         ("a local check entry that is not a block", "checks_local[0]",
@@ -3785,6 +3872,44 @@ def _collides_with_a_jobs_command(data: dict) -> dict:
     """
     data.setdefault("host", {})["checks"] = [_four_jobs_behind_one_workflow()]
     return _a_local_check_of(command="the-third-command")(data)
+
+
+def _a_body_section_of(**overrides):
+    """§ 20's facet carried as one entry, with the stated keys replaced.
+
+    Written out rather than borrowed from whichever example states the facet,
+    for the reason `_a_local_check_of` below is. ⚠️ The base states all three
+    keys, every one of them being required on every entry, so each plant here
+    is about one key being absent, blank or of another shape.
+    """
+
+    def mutate(data: dict) -> dict:
+        entry = {
+            "heading": "A section this project requires",
+            "read_by": "whatever collects it out of the change",
+            "nothing_needed": "Nothing.",
+        }
+        entry.update(overrides)
+        data["body_sections"] = [entry]
+        return data
+
+    return mutate
+
+
+def _two_entries_under_one_heading(data: dict) -> dict:
+    """§ 20's collision: one heading, two statements of what the section is for.
+
+    ⛔ The two entries differ in `read_by`, so the refusal is about the heading
+    rather than about a duplicated entry — a reader deduplicating whole entries
+    would let this through, and the gate reading either one would be right.
+    """
+    data["body_sections"] = [
+        {"heading": "A section this project requires",
+         "read_by": "one reader", "nothing_needed": "Nothing."},
+        {"heading": "a SECTION this project REQUIRES",
+         "read_by": "another reader", "nothing_needed": "None."},
+    ]
+    return data
 
 
 def _a_local_check_of(**overrides):
