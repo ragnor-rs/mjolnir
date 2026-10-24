@@ -1,14 +1,13 @@
 name: Installer
 
 # The step that writes the toolkit's own artifacts into a repository, held to the section of
-# plugins/mjolnir/config/schema.md that states what an install may do: every artifact marked at its
-# head, removable, byte-identical on a second run, and refusing with the thing named rather than
-# improvising. Where a generated gate goes is § 2's ruling, which the module reads rather than
-# restates, and the suite asserts it carries no directory of its own.
+# plugins/mjolnir/config/schema.md that states what an install may do. No copy of that section is
+# carried here, and none of § 2's ruling on where a generated gate goes either — the module reads
+# both, and its suite asserts it carries no directory of its own.
 #
-# A workflow of its own rather than a second job of a sibling, per § 2: a `host.checks` entry
-# states one mirrored command, so two commands behind one workflow name could not be stated on
-# the surface at all.
+# A workflow of its own rather than a second job of a sibling, per § 2: where a project controls
+# its own workflows, each mirrored command takes a workflow of its own, the cost being a checkout
+# per command and what it buys being `checks` remaining the single statement of what the host runs.
 
 on:
   pull_request:

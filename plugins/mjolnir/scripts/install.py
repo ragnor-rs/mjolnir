@@ -167,6 +167,15 @@ def rendered(artifact: "Artifact", body: str) -> str:
 
 WORKFLOW, HOOK = "workflow", "hook"
 
+# The mode each kind's file has to carry. ⛔ A hook is **executable or git does
+# not call it at all** -- newer git says so in as many words and treats the file
+# as absent, so a rail installed 0644 is a rail that is not installed while the
+# step reports it written. ⚠️ Measured on this module's own hook fixture: 0644,
+# `os.access(..., X_OK)` false, answer `written`. A workflow file is data the
+# host reads and carries no mode of its own, which is `None` here rather than a
+# number nobody needs.
+MODES = {HOOK: 0o755, WORKFLOW: None}
+
 # The answers this step gives per artifact. ⛔ Every one of them is an answer:
 # none of them is a skip, and `waiting` in particular is not a pass -- an
 # artifact whose value is absent is a gate the project does not have.
@@ -178,13 +187,27 @@ WAITING = "waiting on a value"
 OCCUPIED = "occupied"
 UNSTATABLE = "unstatable entry"
 NO_PLACE = "no place to write it"
+# ⛔ Distinct from both of the two it used to be collapsed into. Where the place
+# cannot be resolved and the project does not want the artifact, this step can
+# say neither *nothing is there* nor *it was removed*: it cannot look. ⚠️
+# Measured as `not wanted`, which is not in `INCOMPLETE`, so `remove` exited
+# green with a marked artifact still installed — § 11's rule that a report names
+# what it could not establish, arriving at the one answer that had no form.
+UNDETERMINED = "could not establish whether one is installed"
 
 # Which answers leave the install incomplete. ⛔ `waiting` is among them: the
 # configuration asks for the artifact and the artifact cannot be rendered, so a
 # run reporting zero is reporting a gate that is not there.
-INCOMPLETE = (WAITING, OCCUPIED, UNSTATABLE, NO_PLACE)
+INCOMPLETE = (WAITING, OCCUPIED, UNSTATABLE, NO_PLACE, UNDETERMINED)
 
 _ABSENT = object()
+
+# What an artifact's `mode` says when it states none: take the kind's. ⛔ A
+# sentinel rather than `None`, because `None` is itself a mode answer -- *leave
+# whatever the file system gave it* -- and collapsing the two would make a
+# workflow's deliberate absence of a mode indistinguishable from an artifact
+# that never said.
+_BY_KIND = object()
 
 
 class Artifact:
@@ -206,10 +229,27 @@ class Artifact:
         body=None,
         entry=None,
         comment: str = HASH,
+        mode: int | None = _BY_KIND,
     ):
+        # ⛔ Refused at construction and not reported per run. `leaf` is the one
+        # field that decides *where* a file lands, the registry is code in this
+        # repository, and `place()` joins it onto a directory it read from the
+        # host's own fact — so a leaf carrying a separator or a parent reference
+        # writes outside that directory entirely. Raised here because an invalid
+        # registry is a defect in this toolkit rather than a state an adopting
+        # project can be in, and raising reddens every run including the gate.
+        # ⚠️ Both separators, not the platform's: a registry authored on one
+        # platform is installed on the other.
+        if (not leaf or leaf in (os.curdir, os.pardir)
+                or leaf != os.path.basename(leaf) or "/" in leaf or "\\" in leaf):
+            raise ValueError(
+                f"an artifact's leaf must be a bare file name; {leaf!r} is not one, "
+                "and joining it would write outside the directory this step resolved."
+            )
         self.name = name
         self.kind = kind
         self.leaf = leaf
+        self.mode = MODES.get(kind) if mode is _BY_KIND else mode
         self.needs = needs
         # Absent, an artifact is wanted wherever its values are stated, which
         # `needs` already answers. A gate whose presence turns on a facet of
@@ -272,20 +312,44 @@ def workflow_directory(configuration: config.Config) -> str | None:
 
 
 def hook_directory(code_root: str) -> str | None:
-    """Where git calls this repository's hooks from, or None where it will not say.
+    """Where git calls *this repository's* hooks from, or None where it will not say.
 
-    `core.hooksPath` where the repository states one -- a repository that has
+    `core.hooksPath` where the **repository** states one -- a repository that has
     chosen the tracked-directory route has said so there -- and git's own answer
-    otherwise, which is what makes this correct inside a worktree, where the
-    git directory is not `.git` at all.
+    otherwise, which is what makes this correct inside a worktree, where the git
+    directory is not `.git` at all.
 
     ⛔ It decides nothing between those two routes. Which one a project ought to
     take is the hook's own work item, and a step that picked would be answering
     it in passing.
+
+    ⛔ **`--local`, and never `--get` alone.** ⚠️ Measured: `git config --get`
+    answers from the repository, the per-user scope **and** the system scope
+    alike, so a developer with a machine-wide `core.hooksPath` -- an ordinary
+    setup -- had this step resolve a directory shared by every repository on the
+    machine, write a marked artifact into it, and later delete a file there.
+    Reading the repository's own scope is the question the docstring above
+    always claimed to be asking.
+
+    ⛔ **`--type=path`, so git expands what git wrote.** ⚠️ Measured:
+    `core.hooksPath` is a path-typed variable that git tilde-expands itself
+    while the untyped read hands back the raw string, so a tilde-prefixed value
+    was joined under the code root -- a directory named for the tilde itself
+    created inside the project, and the rail written where git will never look.
+
+    ⚠️ **A machine-wide path with no repository one is a stop and not a
+    fallback.** git calls hooks from that directory, so a hook written into this
+    repository's own would never run; and the directory is outside the project,
+    which is not somewhere this step may write. `None` here is `place()`'s
+    *nowhere*, and the answer names it.
     """
-    stated = _git(code_root, "config", "--get", "core.hooksPath")
+    stated = _git(code_root, "config", "--local", "--get", "--type=path",
+                  "core.hooksPath")
     if stated:
-        return os.path.join(code_root, stated) if not os.path.isabs(stated) else stated
+        return stated if os.path.isabs(stated) else os.path.join(code_root, stated)
+    elsewhere = _git(code_root, "config", "--get", "--type=path", "core.hooksPath")
+    if elsewhere:
+        return None
     answered = _git(code_root, "rev-parse", "--git-path", "hooks")
     if not answered:
         return None
@@ -337,10 +401,20 @@ def refuses_entry(configuration: config.Config, entry: dict) -> str | None:
     data = copy.deepcopy(configuration.data)
     data.setdefault("host", {})
     data["host"]["checks"] = list(data["host"].get("checks") or []) + [entry]
+    # ⛔ Every failure is an answer with the entry named, which is what this step
+    # promises. ⚠️ Caught as `ConfigError` alone, an entry the reader cannot even
+    # be *shown* — one carrying a value no safe dump represents — left this
+    # function raising, so the module delivered a stack trace where it had
+    # stated a refusal. Nothing is left behind either way, the pre-check running
+    # before any write, but a traceback is not the named answer.
     try:
         config.load_text(yaml.safe_dump(data, allow_unicode=True), ".", check_paths=False)
     except ConfigError as exc:
         return str(exc)
+    except Exception as exc:                     # noqa: BLE001 - naming it is the point
+        return (
+            f"this entry cannot be put to the reader at all: {type(exc).__name__}: {exc}"
+        )
     return None
 
 
@@ -351,58 +425,89 @@ def already_registered(configuration: config.Config, entry: dict) -> bool:
 
 
 CHECKS = re.compile(r"^(?P<indent>\s+)checks:(?P<rest>.*)$")
+HOST = re.compile(r"^host:(?P<rest>.*)$")
 MEMBER = re.compile(r"^(?P<indent>\s*)-\s")
+
+# A comment opening at the end of a line's value. ⛔ Space-hash and not a bare
+# hash, which is YAML's own rule and the reason a `#` inside a value is not a
+# comment. ⚠️ Measured against the surface's own § 2 example block, which writes
+# `checks:` with a trailing comment on it: read as part of the value, that line
+# is refused as a shape this step cannot insert into — a refusal naming a
+# comment as the facet's value, on the shape an adopter copies.
+TRAILING = re.compile(r"(?:^|\s)#.*$")
+
+
+def _value(rest: str) -> str:
+    """What a key's line states, with any trailing comment taken off."""
+    return TRAILING.sub("", rest).strip()
 
 
 def _depth(line: str) -> int:
     return len(line) - len(line.lstrip())
 
 
-def _insertion(lines: list[str]) -> tuple[int, str, bool] | str:
-    """(the line to insert after, the member indent, whether `[]` is to be replaced).
+def _blank(line: str) -> bool:
+    """Whether this line carries nothing the walk below should read.
 
-    Or a sentence naming why this file cannot be written into. ⛔ Textual and
-    not a round trip: re-dumping the file would take out every comment a project
-    wrote about its own facts, which is a loss no run reports and nobody asked
-    for. So the two shapes that can be inserted into are the two that are read,
-    and every other shape is refused by name rather than reformatted.
+    ⛔ A comment counts, **at any indentation**. YAML puts no indentation rule
+    on one, so a comment flush with the left margin sits legally inside an
+    indented block — and a walk that stopped at the first unindented line
+    answered *`host:` states no `checks` key* about a file that states one.
+    """
+    return not line.strip() or line.lstrip().startswith("#")
+
+
+def _members(lines: list[str]) -> tuple[int, str, list[tuple[int, int]]] | str:
+    """(the `checks:` line, the member indent, one span per member) or a refusal.
+
+    One walk behind both the insertion and the removal, so the two cannot
+    disagree about where a member begins and ends. ⛔ Textual and not a round
+    trip: re-dumping the file would take out every comment a project wrote about
+    its own facts, and the terminator its lines are written with, which is a loss
+    no run reports and nobody asked for.
 
     ⚠️ **The member indent is read off the list and never derived from the
     key's.** A block sequence may sit at its key's own column or one in from
-    it — both are the same document, and the two shapes occur in this tree —
-    so an indent computed as *the key plus two* writes a member the file cannot
-    parse against a list written the other way. Measured by inserting into a
-    dumped configuration, where the members sit at the key's column.
+    it — both are the same document, and the two shapes occur in this tree — so
+    an indent computed as *the key plus two* writes a member the file cannot
+    parse against a list written the other way.
     """
-    host = next((i for i, line in enumerate(lines) if line.rstrip() == "host:"), None)
+    host = next(
+        (i for i, line in enumerate(lines) if HOST.match(line)
+         and _value(HOST.match(line).group("rest")) == ""),
+        None,
+    )
     if host is None:
         return "no `host:` block opens a line, so there is nowhere to register an entry."
     for index in range(host + 1, len(lines)):
         line = lines[index]
-        if line.strip() and not line[:1].isspace():
+        if _blank(line):
+            continue
+        if not line[:1].isspace():
             break
         found = CHECKS.match(line)
         if not found:
             continue
-        indent, rest = found.group("indent"), found.group("rest").strip()
+        indent, rest = found.group("indent"), _value(found.group("rest"))
         if rest == "[]":
-            return index, indent + "  ", True
+            return index, indent + "  ", []
         if rest != "":
             return (
                 f"`host.checks` is written as {rest!r}, which this step cannot insert "
                 "into. A block list, or an empty list written `[]`, are the two shapes "
                 "it reads."
             )
-        member, last = None, index
+        member, spans = None, []
         for after in range(index + 1, len(lines)):
             following = lines[after]
-            if not following.strip() or following.lstrip().startswith("#"):
+            if _blank(following):
                 continue
             opens = MEMBER.match(following)
             depth = _depth(following)
             if member is None:
                 if opens and depth >= len(indent):
-                    member, last = opens.group("indent"), after
+                    member = opens.group("indent")
+                    spans.append((after, after))
                     continue
                 if depth > len(indent):
                     return (
@@ -421,14 +526,28 @@ def _insertion(lines: list[str]) -> tuple[int, str, bool] | str:
             # entry then lands between that key and its own members, and the
             # key reads as stating nothing.
             if opens and depth == len(member):
-                last = after
+                spans.append((after, after))
                 continue
             if depth > len(member):
-                last = after
+                spans[-1] = (spans[-1][0], after)
                 continue
             break
-        return last, member if member is not None else indent + "  ", False
+        return index, member if member is not None else indent + "  ", spans
     return "`host:` states no `checks` key, so there is nowhere to register an entry."
+
+
+def _insertion(lines: list[str]) -> tuple[int, str, bool] | str:
+    """(the line to insert after, the member indent, whether `[]` is to be replaced)."""
+    found = _members(lines)
+    if isinstance(found, str):
+        return found
+    index, member, spans = found
+    if not spans:
+        # ⚠️ Either `checks: []`, which is replaced, or a key with nothing under
+        # it — which the reader refuses as a facet, so the only file in that
+        # shape is one this step is about to make loadable.
+        return index, member, _value(CHECKS.match(lines[index]).group("rest")) == "[]"
+    return spans[-1][1], member, False
 
 
 def rendered_entry(entry: dict, indent: str) -> list[str]:
@@ -450,8 +569,16 @@ def register(configuration: config.Config, entry: dict) -> str | None:
     path = configuration.config_path
     if path is None:
         return "this configuration came from text rather than a file, so there is nothing to write."
-    with open(path, encoding="utf-8") as handle:
+    # ⛔ Read and written with newline translation off, and rejoined with the
+    # terminator the file already used. ⚠️ Measured: translation on,
+    # `splitlines()` drops every `\r` and the rejoin writes `\n`, so a project
+    # whose file is written with the other terminator has **every line** of it
+    # changed by a step whose stated property is that it edits rather than
+    # re-renders. The trailing newline is preserved for the same reason: a file
+    # that ended without one is a byte different for a reason nothing asked for.
+    with open(path, encoding="utf-8", newline="") as handle:
         before = handle.read()
+    terminator = "\r\n" if "\r\n" in before else "\n"
     lines = before.splitlines()
     found = _insertion(lines)
     if isinstance(found, str):
@@ -461,14 +588,116 @@ def register(configuration: config.Config, entry: dict) -> str | None:
     if replace:
         written[after] = written[after].split("checks:")[0] + "checks:"
     written[after + 1:after + 1] = rendered_entry(entry, indent)
-    with open(path, "w", encoding="utf-8") as handle:
-        handle.write("\n".join(written) + "\n")
+    text = terminator.join(written)
+    if before.endswith(("\n", "\r")):
+        text += terminator
+    return _written_back(configuration, path, before, text, entry, present=True)
+
+
+def unregister(configuration: config.Config, entry: dict) -> str | None:
+    """Take one entry back out of this project's own configuration file.
+
+    ⛔ The inverse half of `register`, and it exists because without it removal
+    took out one of the two things installing wrote. ⚠️ Measured: a gate turned
+    off, or the plugin retired, left a `host.checks` entry naming a workflow the
+    repository no longer contains — which reddens the drift gate and leaves
+    every consumer of the facet waiting on a run the host will never make.
+
+    ⚠️ **An emptied list is written `[]` and never left bare.** A key with
+    nothing under it reads as `null`, which the reader refuses, so taking out
+    the last member without that would hand the project a file none of its roles
+    can load.
+    """
+    path = configuration.config_path
+    if path is None:
+        return "this configuration came from text rather than a file, so there is nothing to write."
+    with open(path, encoding="utf-8", newline="") as handle:
+        before = handle.read()
+    terminator = "\r\n" if "\r\n" in before else "\n"
+    lines = before.splitlines()
+    found = _members(lines)
+    if isinstance(found, str):
+        return found
+    index, _member, spans = found
+    for start, end in spans:
+        block = "\n".join(line[len(_member):] for line in lines[start:end + 1])
+        try:
+            read = yaml.safe_load("- " + block.lstrip("- ").lstrip())
+        except yaml.YAMLError:
+            continue
+        if not (isinstance(read, list) and read and read[0] == entry):
+            continue
+        written = lines[:start] + lines[end + 1:]
+        if len(spans) == 1:
+            written[index] = written[index].split("checks:")[0] + "checks: []"
+        text = terminator.join(written)
+        if before.endswith(("\n", "\r")):
+            text += terminator
+        return _written_back(configuration, path, before, text, entry, present=False)
+    return (
+        f"`host.checks` states no entry matching the one this artifact registered, so "
+        f"there is nothing to take out: {entry}"
+    )
+
+
+def _written_back(
+    configuration: config.Config,
+    path: str,
+    before: str,
+    text: str,
+    entry: dict,
+    *,
+    present: bool,
+) -> str | None:
+    """Write the file, read it back, and restore it where the read disagrees.
+
+    ⛔ Restored on two conditions and not one. A file that stops loading is the
+    obvious half; the other is a file that loads and **does not carry the
+    change** — ⚠️ measured on a configuration stating `host:` twice, where the
+    textual walk takes the first block and the parser keeps the last, so the
+    entry was inserted into a block the reader discards. `register` then
+    reported success, `already_registered` stayed false for ever, and every
+    later run appended another copy of the entry to a project's own file while
+    reporting a clean install.
+    """
+    with open(path, "w", encoding="utf-8", newline="") as handle:
+        handle.write(text)
     try:
-        config.load(configuration.skills_root)
+        reloaded = config.load(configuration.skills_root)
     except (ConfigError, OSError) as exc:
-        with open(path, "w", encoding="utf-8") as handle:
+        with open(path, "w", encoding="utf-8", newline="") as handle:
             handle.write(before)
         return f"the entry was written and the file then would not load, so it was put back: {exc}"
+    if already_registered(reloaded, entry) is not present:
+        with open(path, "w", encoding="utf-8", newline="") as handle:
+            handle.write(before)
+        return (
+            "the file was edited, still loads, and does not carry the change — the "
+            "block this step wrote into is not the one the parser reads, so it was "
+            "put back. A configuration stating `host:` or `checks:` twice is the "
+            "measured shape."
+        )
+    return None
+
+
+def collides(configuration: config.Config, entry: dict) -> str | None:
+    """A `host.checks` entry already keyed on this one's workflow name, or None.
+
+    ⛔ The installer's own guard, and it is here because the reader does not
+    supply it. § 2 keys the facet on the workflow name, so two entries under one
+    name leave every consumer of it choosing between them — ⚠️ and the shared
+    reader **loads** that shape, measured by handing it two entries differing
+    only in `mirrors`. So refusing to *create* one is this step's, whatever the
+    surface does about a project that wrote one by hand.
+    """
+    for existing in (configuration.get("host.checks") or []):
+        if existing.get("workflow") == entry.get("workflow") and existing != entry:
+            return (
+                f"`host.checks` already states an entry keyed on the workflow name "
+                f"{entry.get('workflow')!r}, with different content. § 2 keys the facet "
+                "on that name, so a second entry under it leaves every consumer "
+                "choosing between the two."
+            )
     return None
 
 
@@ -489,15 +718,29 @@ def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dic
     inserted, and a failed insertion takes the file back out again. Reversed,
     either half can leave the other's output orphaned in a repository that did
     not ask for it.
+
+    ⛔ **And `wanted` is asked before the place is resolved.** ⚠️ Measured the
+    other way round: an artifact a project explicitly does **not** want, on a
+    host kind whose definitions are not files, reported *no place to write it* —
+    an incompleteness, and a non-zero exit — about a gate nobody asked for.
     """
+    asked = artifact.wanted(configuration)
     path = place(configuration, artifact)
     if path is None:
+        if not asked:
+            return _state(
+                artifact, UNDETERMINED, None,
+                because="the project does not ask for this artifact and this step "
+                        "cannot resolve where one would be, so it can say neither "
+                        "that none is installed nor that one was taken out",
+            )
         return _state(
             artifact, NO_PLACE, None,
             because="this host kind keeps its definitions somewhere this step cannot "
                     "write, which § 2 states as an answer rather than a gap"
             if artifact.kind == WORKFLOW else
-            "git did not say where this repository's hooks are called from",
+            "git did not say where this repository's own hooks are called from, or "
+            "says they are called from outside this repository",
         )
 
     here = None
@@ -505,7 +748,7 @@ def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dic
         with open(path, encoding="utf-8") as handle:
             here = handle.read()
 
-    if not artifact.wanted(configuration):
+    if not asked:
         if here is None:
             return _state(artifact, NOT_WANTED, path)
         if not _marked(here):
@@ -514,6 +757,14 @@ def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dic
                                   "project's own and is neither removed nor written over")
         if write:
             os.remove(path)
+            standing = artifact.entry(configuration)
+            if standing is not None and already_registered(configuration, standing):
+                refusal = unregister(configuration, standing)
+                if refusal is not None:
+                    return _state(artifact, REMOVED, path, entry=standing,
+                                  because=f"the artifact was removed and its entry was "
+                                          f"not: {refusal}")
+                return _state(artifact, REMOVED, path, unregistered=standing)
         return _state(artifact, REMOVED, path)
 
     absent = artifact.absent_values(configuration)
@@ -525,7 +776,7 @@ def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dic
 
     entry = artifact.entry(configuration)
     if entry is not None:
-        refusal = refuses_entry(configuration, entry)
+        refusal = refuses_entry(configuration, entry) or collides(configuration, entry)
         if refusal is not None:
             return _state(artifact, UNSTATABLE, path, entry=entry, because=refusal)
 
@@ -537,31 +788,84 @@ def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dic
 
     wanted_text = rendered(artifact, artifact.body(configuration))
     needs_entry = entry is not None and not already_registered(configuration, entry)
-    if here == wanted_text and not needs_entry:
+    if here == wanted_text and not needs_entry and _mode_holds(path, artifact):
         return _state(artifact, UNCHANGED, path)
 
     if not write:
         return _state(artifact, WRITTEN, path, dry_run=True,
                       registers=entry if needs_entry else None)
 
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as handle:
-        handle.write(wanted_text)
+    made = _place_it(path, wanted_text, artifact)
 
     if needs_entry:
         refusal = register(configuration, entry)
         if refusal is not None:
-            if here is None:
-                os.remove(path)
-            else:
-                with open(path, "w", encoding="utf-8") as handle:
-                    handle.write(here)
+            _put_back(path, here, made)
             return _state(artifact, UNSTATABLE, path, entry=entry,
                           because=f"the artifact was taken back out because its entry "
                                   f"could not be registered: {refusal}")
-        return _state(artifact, WRITTEN, path, registered=entry)
+        return _state(artifact, WRITTEN, path, registered=entry, mode=artifact.mode)
 
-    return _state(artifact, WRITTEN, path)
+    return _state(artifact, WRITTEN, path, mode=artifact.mode)
+
+
+def _mode_holds(path: str, artifact: Artifact) -> bool:
+    """Whether the file already carries the mode this artifact states.
+
+    ⛔ Part of what *unchanged* means, not a step after it. A file whose bytes
+    match and whose mode does not is a hook git will not call, and reporting it
+    unchanged would leave it that way for ever.
+    """
+    if artifact.mode is None:
+        return True
+    try:
+        import stat
+        return stat.S_IMODE(os.stat(path).st_mode) == artifact.mode
+    except OSError:
+        return False
+
+
+def _place_it(path: str, text: str, artifact: Artifact) -> str | None:
+    """Write the artifact where it goes, atomically. Returns any directory made.
+
+    ⛔ Through a temporary sibling and `os.replace`, which is atomic on one file
+    system. ⚠️ Measured as a truncating open: an interruption between the
+    truncate and the write leaves an **unmarked** file — `_marked("")` is false
+    — so from then on every run answers *a file is already there carrying no
+    marker, it is the project's own* about this step's own debris, and no run
+    will ever write or remove it.
+    """
+    directory = os.path.dirname(path)
+    made = None if os.path.isdir(directory) else directory
+    os.makedirs(directory, exist_ok=True)
+    handle, temporary = tempfile.mkstemp(dir=directory, prefix=".mjolnir-", suffix=".tmp")
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8", newline="") as opened:
+            opened.write(text)
+        if artifact.mode is not None:
+            os.chmod(temporary, artifact.mode)
+        os.replace(temporary, path)
+    except BaseException:
+        if os.path.exists(temporary):
+            os.remove(temporary)
+        raise
+    return made
+
+
+def _put_back(path: str, here: str | None, made: str | None) -> None:
+    """Undo `_place_it`, including the directory it created where it created one.
+
+    ⚠️ The directory half is small and is the difference between *nothing left
+    behind* being true and being nearly true: an install refused after creating
+    the host's own directory leaves an empty one in a project that said no.
+    """
+    if here is None:
+        os.remove(path)
+    else:
+        with open(path, "w", encoding="utf-8", newline="") as handle:
+            handle.write(here)
+    if made and os.path.isdir(made) and not os.listdir(made):
+        os.rmdir(made)
 
 
 def run(
@@ -570,9 +874,27 @@ def run(
     *,
     write: bool,
 ) -> dict:
-    """Every artifact brought to the state this configuration asks for."""
+    """Every artifact brought to the state this configuration asks for.
+
+    ⛔ The configuration is **re-read after any artifact that registered**, and
+    not carried forward. ⚠️ Measured: carried forward, the second artifact of a
+    run validates against a configuration missing the first's entry, so two
+    artifacts registering one workflow name were both written and the file then
+    carried the collision § 2 keys the facet to prevent.
+    """
     members = ARTIFACTS if artifacts is None else artifacts
-    states = [one(configuration, artifact, write=write) for artifact in members]
+    states = []
+    for artifact in members:
+        state = one(configuration, artifact, write=write)
+        states.append(state)
+        if write and state.get("registered") is not None:
+            try:
+                configuration = config.load(configuration.skills_root)
+            except (ConfigError, OSError):
+                # The write was already verified by a load inside `register`, so
+                # a failure here is the file having moved under the run. Leave
+                # the configuration as it stands rather than guessing.
+                pass
     report = []
     if not members:
         report.append(
@@ -593,12 +915,31 @@ def removal(
     *,
     write: bool,
 ) -> dict:
-    """Take out every artifact carrying the marker, and nothing else."""
+    """Take out every artifact carrying the marker, and its entry, and nothing else.
+
+    ⛔ **Two things installing wrote, so two things removal takes out.** ⚠️
+    Measured with only the file: a retired plugin left a `host.checks` entry
+    naming a workflow the repository no longer contains, which reddens the drift
+    gate and leaves every consumer of the facet waiting on a run the host will
+    never make.
+
+    ⛔ **And a place that cannot be resolved is not *nothing is there*.** ⚠️
+    Measured as `not wanted`, which is no incompleteness, so this step exited
+    green with a marked artifact still installed in a tree it could not look at.
+    """
     members = ARTIFACTS if artifacts is None else artifacts
     states = []
     for artifact in members:
         path = place(configuration, artifact)
-        if path is None or not os.path.exists(path):
+        if path is None:
+            states.append(_state(
+                artifact, UNDETERMINED, None,
+                because="this step cannot resolve where this artifact would be, so it "
+                        "can say neither that none is installed nor that one was taken "
+                        "out",
+            ))
+            continue
+        if not os.path.exists(path):
             states.append(_state(artifact, NOT_WANTED, path))
             continue
         with open(path, encoding="utf-8") as handle:
@@ -610,8 +951,23 @@ def removal(
                         "and this step does not remove it",
             ))
             continue
-        if write:
-            os.remove(path)
+        standing = artifact.entry(configuration)
+        if not write:
+            states.append(_state(artifact, REMOVED, path, dry_run=True,
+                                 unregisters=standing))
+            continue
+        os.remove(path)
+        if standing is not None and already_registered(configuration, standing):
+            refusal = unregister(configuration, standing)
+            if refusal is not None:
+                states.append(_state(
+                    artifact, REMOVED, path, entry=standing,
+                    because=f"the artifact was removed and its entry was not: {refusal}",
+                ))
+                continue
+            configuration = config.load(configuration.skills_root)
+            states.append(_state(artifact, REMOVED, path, unregistered=standing))
+            continue
         states.append(_state(artifact, REMOVED, path))
     report = [
         f"{state['artifact']}: {state['answer']} — {state.get('because', '')}".strip()
@@ -714,6 +1070,12 @@ A_REFUSED_ENTRY = {
 }
 
 
+# The surface, read by one arm below for the shape its own § 2 example block is
+# written in. ⛔ Read from the reader's constant rather than joined here, so a
+# move of the file is one statement and not two.
+SURFACE_BLOCK = config.SURFACE
+
+
 def _read(path: str) -> str:
     with open(path, encoding="utf-8") as handle:
         return handle.read()
@@ -728,7 +1090,14 @@ A_STREAM = ("stdin",)
 
 
 def _asks(source: str) -> list[str]:
-    """Every place this source reads from whoever ran it, by name."""
+    """Every place this source reads from whoever ran it, by name.
+
+    ⚠️ **What it does not reach, stated rather than left to read as covered**: a
+    question *delegated* to another module. It reads this module's own source and
+    matches a bare call or an attribute by name, so `somewhere.ask(...)` or a
+    read of file descriptor zero through `os.read` is invisible to it. The
+    direct forms are held; the indirect ones are a reader's.
+    """
     import ast
 
     found = []
@@ -738,6 +1107,48 @@ def _asks(source: str) -> list[str]:
             found.append(node.func.id)
         if isinstance(node, ast.Attribute) and node.attr in A_STREAM + ASKING:
             found.append(node.attr)
+    return sorted(set(found))
+
+
+def _reads_definitions(source: str) -> bool:
+    """Whether this source actually reads the sibling module's host fact.
+
+    ⛔ Read as a tree. ⚠️ Measured as `"check_host_checks.DEFINITIONS" in own`:
+    the assertion has to write the name down in order to look for it, so the
+    conjunct was true however the module behaved — the same self-match the
+    directory half of the arm had already been corrected for, left standing in
+    the clause beside it.
+    """
+    import ast
+
+    for node in ast.walk(ast.parse(source)):
+        if (isinstance(node, ast.Attribute) and node.attr == "DEFINITIONS"
+                and isinstance(node.value, ast.Name)
+                and node.value.id == check_host_checks.__name__.rsplit(".", 1)[-1]):
+            return True
+    return False
+
+
+def _spells(source: str, directories) -> list[str]:
+    """Any host directory this source writes down itself, whole or in parts.
+
+    ⛔ By **component** and not by the whole path. ⚠️ Measured: an arm matching
+    the joined spelling inside a quoted literal was defeated by the idiom this
+    codebase actually uses — `os.path.join(".github", "workflows")`, which is
+    how the sibling module itself writes it — so the literal never appears and
+    the arm reported nothing while the module carried the fact.
+    """
+    import ast
+
+    literals = {
+        node.value for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    found = []
+    for directory in directories:
+        parts = [part for part in directory.replace("\\", "/").split("/") if part]
+        if directory in literals or any(part in literals for part in parts):
+            found.append(directory)
     return sorted(set(found))
 
 
@@ -761,23 +1172,24 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         os.path.dirname(os.path.abspath(config.__file__)) == HERE,
         f"imported {config.__file__}, which is not in this tree",
     )
-    # ⛔ Computed from the fact rather than written as a pattern over it. The
-    # first form of this arm spelled the directory inside its own regex, so the
-    # assertion matched itself and reported the violation it exists to forbid —
-    # the failure mode a forbidding check has whenever the thing forbidden has
-    # to be named to forbid it. Read out of `DEFINITIONS`, this file names none
-    # of them and the arm grows with the kinds that module reads.
-    spelled = [
-        where.directory
-        for where in check_host_checks.DEFINITIONS.values()
-        if re.search(r"""["'][^"'\n]*""" + re.escape(where.directory)
-                     + r"""[^"'\n]*["']""", own)
-    ]
+    # ⛔ Both halves computed from the fact rather than matched as text, and
+    # both for the same reason: a forbidding arm has to write down what it
+    # forbids and then finds its own list. ⚠️ Each was measured defeated. The
+    # read half was `"check_host_checks.DEFINITIONS" in own`, true however the
+    # module behaved. The spelling half matched the joined literal only, and the
+    # idiom this codebase uses is `os.path.join(".github", "workflows")` — the
+    # sibling module's own spelling — so nothing was ever found.
+    spelled = _spells(own, [w.directory for w in check_host_checks.DEFINITIONS.values()])
     check(
-        "where a host kind keeps its definitions is read, not written here",
-        "check_host_checks.DEFINITIONS" in own and not spelled,
-        f"this module spells {spelled} itself, which is free to disagree with "
-        "the check that holds the facet to those files",
+        "the sibling module's host fact is what this module reads",
+        _reads_definitions(own),
+        "nothing here reads that fact, so the directory below is this module's own",
+    )
+    check(
+        "where a host kind keeps its definitions is not written here",
+        not spelled,
+        f"this module spells {spelled} itself, whole or in parts, which is free "
+        "to disagree with the check that holds the facet to those files",
     )
     check(
         "the entry refusal is the reader's walk and not a judgement here",
@@ -818,10 +1230,23 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         )
         text = _read(path)
         check("its head carries the marker", _marked(text), repr(text[:120]))
+        # ⛔ Against the two things the marker has to say, not against the
+        # function that produced it. ⚠️ Measured as `== marker_lines(gate)`:
+        # both sides move together, so the arm held the head's position and
+        # line count and nothing about its content — a build identifier added to
+        # the head line, and `REMOVAL` emptied to one character, each left the
+        # suite green.
+        head = text.splitlines()[:2]
+        check("the marker names the artifact", any(gate.name in line for line in head),
+              repr(head))
+        check("and says what takes it out",
+              any("install.py" in line and "remove" in line for line in head),
+              repr(head))
         check(
-            "the marker names the artifact and how it comes out",
-            text.splitlines()[:2] == marker_lines(gate),
-            repr(text.splitlines()[:2]),
+            "and carries nothing that moves between runs",
+            not re.search(r"\d{4}-\d{2}-\d{2}|\b[0-9a-f]{7,40}\b|\bv?\d+\.\d+", text),
+            "a date, a commit or a version in the head line is the record of a "
+            "pass an artifact may not carry, and would make every run a change",
         )
         check(
             "the body below the marker is exactly what the artifact stated",
@@ -876,6 +1301,147 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             hook_directory(project.code_root) == stated,
             str(hook_directory(project.code_root)),
         )
+
+    print()
+    print("a hook is executable, or git does not call it at all")
+    with tempfile.TemporaryDirectory() as tmp:
+        import stat
+        project = _a_project(tmp)
+        _a_repository(project.code_root)
+        rail = _a_rail()
+        state = one(project, rail, write=True)
+        mode = stat.S_IMODE(os.stat(state["path"]).st_mode)
+        check("the file carries the mode its kind states", mode == MODES[HOOK], oct(mode))
+        check("and is executable, which is what git tests",
+              os.access(state["path"], os.X_OK),
+              "git treats a non-executable hook as absent, so a rail installed "
+              "without the bit is a rail that is not installed")
+        os.chmod(state["path"], 0o644)
+        again = one(project, rail, write=True)
+        check("a file whose bytes match and whose mode does not is not unchanged",
+              again["answer"] == WRITTEN, str(again))
+        check("and the mode is put back",
+              os.access(state["path"], os.X_OK))
+        gate = one(project, _a_gate(), write=True)
+        check("a workflow file is left whatever mode the file system gave it",
+              _a_gate().mode is None and gate["answer"] == WRITTEN)
+
+    print()
+    print("the artifact is placed atomically, so a half-written file is never its own")
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp)
+        gate = _a_gate()
+        state = one(project, gate, write=True)
+        directory = os.path.dirname(state["path"])
+        check("no temporary sibling is left behind",
+              [n for n in os.listdir(directory)] == [gate.leaf],
+              str(os.listdir(directory)))
+        check("an empty file would not read as this step's own, which is why it is atomic",
+              not _marked("") and not _marked("\n"))
+        # ⛔ The directory half of *nothing left behind*, and it has to be
+        # asserted on the route that **writes**. ⚠️ Measured against a pre-check
+        # refusal: nothing is written, so no directory is ever created and the
+        # arm passed with the clean-up switched off. The route that creates one
+        # is the post-write rollback — a `host.checks` the reader accepts and
+        # the textual walk refuses.
+        with tempfile.TemporaryDirectory() as second:
+            other = _a_project(second)
+            path = other.config_path
+            with open(path, encoding="utf-8") as handle:
+                flow = handle.read().replace(
+                    "checks: []",
+                    "checks: [{workflow: A run, mirrors: one, "
+                    "triggers: 'pull_request -> *'}]",
+                )
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(flow)
+            other = config.load(second)
+            refused = one(other, _a_gate(entry=lambda _c: AN_ENTRY), write=True)
+            check("the post-write route is the one taken", refused["answer"] == UNSTATABLE,
+                  str(refused))
+            check("a refused install leaves no artifact", not os.path.exists(refused["path"]))
+            check("and no directory it created",
+                  not os.path.isdir(os.path.dirname(refused["path"])),
+                  str(os.path.dirname(refused["path"])))
+
+    print()
+    print("git's own answer, and the two ways of reading it wrongly")
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp)
+        _a_repository(project.code_root)
+        # ⚠️ A worktree, which is the shape the arm beside this one used to
+        # claim and never exercised: its git directory is not `.git`, so a
+        # module that spelled that path answered about the wrong place.
+        subprocess.run(["git", "-C", project.code_root, "commit", "--allow-empty",
+                        "-m", "a fixture commit", "--no-gpg-sign"],
+                       capture_output=True, check=False,
+                       env=dict(os.environ, GIT_AUTHOR_NAME="a", GIT_AUTHOR_EMAIL="a@a",
+                                GIT_COMMITTER_NAME="a", GIT_COMMITTER_EMAIL="a@a"))
+        tree = os.path.join(tmp, "a-worktree")
+        made = subprocess.run(
+            ["git", "-C", project.code_root, "worktree", "add", "--detach", tree],
+            capture_output=True, text=True, check=False)
+        check("the fixture worktree was created", made.returncode == 0,
+              made.stderr.strip()[:200])
+        answered = hook_directory(tree)
+        check("a worktree resolves to the repository's own hooks directory, not its own",
+              answered is not None and os.path.isdir(answered)
+              and not answered.startswith(os.path.join(tree, ".git")),
+              str(answered))
+        check("and it is not a path this module spelled",
+              answered == _git(tree, "rev-parse", "--git-path", "hooks"),
+              str(answered))
+        # ⚠️ Assembled rather than written as a literal: a tilde-prefixed path
+        # spelled out here is a path under somebody's home directory to the
+        # sweep that forbids one, which has no absent case and no exception for
+        # a fixture.
+        tilde = "~" + os.sep + "a-fixture-hooks-dir"
+        subprocess.run(["git", "-C", project.code_root, "config",
+                        "core.hooksPath", tilde], capture_output=True)
+        check(
+            "a tilde is expanded by git rather than joined under the project",
+            hook_directory(project.code_root) == os.path.expanduser(tilde),
+            f"{hook_directory(project.code_root)} — read untyped, git hands back the "
+            "raw string and the join makes a directory named for the tilde itself",
+        )
+        subprocess.run(["git", "-C", project.code_root, "config", "--unset",
+                        "core.hooksPath"], capture_output=True)
+        # ⛔ A scope outside the repository is **planted** rather than looked
+        # for. ⚠️ Measured as *either nothing states one or this answers None*,
+        # which passes vacuously on a machine where nothing does — so the arm
+        # held nothing, and reading every scope again left it green.
+        machine_wide = os.path.join(tmp, "a-machine-wide-gitconfig")
+        with open(machine_wide, "w", encoding="utf-8") as handle:
+            handle.write("[core]\n\thooksPath = " + os.path.join(tmp, "elsewhere") + "\n")
+        was = os.environ.get("GIT_CONFIG_GLOBAL")
+        try:
+            os.environ["GIT_CONFIG_GLOBAL"] = machine_wide
+            elsewhere = _git(project.code_root, "config", "--get", "core.hooksPath")
+            check("the fixture's machine-wide scope is visible to git",
+                  elsewhere is not None, "the plant did not take, so the arm below "
+                                         "would hold nothing")
+            check(
+                "a machine-wide hooks path is a stop rather than a place to write",
+                hook_directory(project.code_root) is None,
+                f"a scope outside the repository states {elsewhere!r} and this step "
+                f"resolved {hook_directory(project.code_root)!r} — git calls hooks from "
+                "there, so a hook written into this repository would never run, and "
+                "that directory is outside the project",
+            )
+            subprocess.run(["git", "-C", project.code_root, "config",
+                            "core.hooksPath", "a-repository-hooks-dir"],
+                           capture_output=True)
+            check(
+                "and the repository's own scope still wins over it",
+                hook_directory(project.code_root)
+                == os.path.join(project.code_root, "a-repository-hooks-dir"),
+                str(hook_directory(project.code_root)),
+            )
+        finally:
+            if was is None:
+                os.environ.pop("GIT_CONFIG_GLOBAL", None)
+            else:
+                os.environ["GIT_CONFIG_GLOBAL"] = was
 
     print()
     print("an artifact the configuration no longer asks for is removed")
@@ -944,7 +1510,7 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("its file is still there", os.path.exists(again["path"]))
 
     print()
-    print("a stated absence is not a missing value")
+    print("a stated absence is not a missing value, and both shapes of one are held")
     with tempfile.TemporaryDirectory() as tmp:
         project = _a_project(tmp)
         gate = _a_gate(needs=("host.checks",))
@@ -953,6 +1519,21 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             "an empty list satisfies `needs` and the artifact is written",
             state["answer"] == WRITTEN,
             "read as a missing value, every legitimate absence would wait forever",
+        )
+        # ⛔ The other half of the rule's own sentence — «an empty list **and an
+        # explicit absence**» — asserted at the function rather than through a
+        # fixture, because the reader refuses a bare `null` at every key that
+        # has an absent case, so no loadable configuration reaches this clause.
+        # ⚠️ Stated rather than left to read as covered: the clause is a guard
+        # against a shape the reader does not currently permit.
+        absent = Artifact("a-fixture", WORKFLOW, "a-fixture.yml",
+                          needs=("host.a_value_stated_null",))
+        stated = _a_project(tmp)
+        stated.data.setdefault("host", {})["a_value_stated_null"] = None
+        check(
+            "a value stated as an explicit absence is a missing one to `needs`",
+            absent.absent_values(stated) == ["host.a_value_stated_null"],
+            str(absent.absent_values(stated)),
         )
 
     print()
@@ -1076,6 +1657,296 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("and the configuration is untouched", _read(project.config_path) == before)
 
     print()
+    print("the terminator and the trailing newline a project's file already used")
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp)
+        path = project.config_path
+        body = _read(path)
+        with open(path, "w", encoding="utf-8", newline="") as handle:
+            handle.write(body.replace("\n", "\r\n"))
+        was = open(path, "rb").read().count(b"\r")
+        project = config.load(tmp)
+        check("the insertion succeeds on the other terminator",
+              register(project, AN_ENTRY) is None)
+        now = open(path, "rb").read().count(b"\r")
+        check(
+            "and every line still carries it",
+            now >= was,
+            f"{was} carriage returns before, {now} after — a step whose stated "
+            "property is that it edits rather than re-renders changed every line",
+        )
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp)
+        path = project.config_path
+        # ⛔ Read before the open that truncates. The first form of this read
+        # the file inside the write call's own argument list, so it read the
+        # file the `w` mode had already emptied and planted nothing at all.
+        unterminated = _read(path).rstrip("\n")
+        with open(path, "w", encoding="utf-8", newline="") as handle:
+            handle.write(unterminated)
+        project = config.load(tmp)
+        register(project, AN_ENTRY)
+        check("a file that ended without a newline still does",
+              not _read(path).endswith("\n"))
+
+    print()
+    print("a leaf that is not a bare file name is refused at construction")
+    for planted in ("../escaped.yml", "a/escaped.yml", "a\\escaped.yml", "", ".", ".."):
+        try:
+            _a_gate(leaf=planted)
+            refused = False
+        except ValueError:
+            refused = True
+        check(f"a leaf of {planted!r} is refused", refused,
+              "place() would join it onto the directory the host's fact stated "
+              "and write outside it")
+    check(
+        "and every registered artifact's leaf is a bare file name",
+        all(artifact.leaf == os.path.basename(artifact.leaf) for artifact in ARTIFACTS),
+    )
+
+    print()
+    print("two artifacts cannot register one workflow name between them")
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp)
+        second = dict(AN_ENTRY, mirrors="a-second-fixture-command")
+        states = run(project, (
+            _a_gate(entry=lambda _c: AN_ENTRY),
+            _a_gate(name="a-second-gate", leaf="a-second-gate.yml",
+                    entry=lambda _c: second),
+        ), write=True)["artifacts"]
+        check("the first is written", states[0]["answer"] == WRITTEN, str(states[0]))
+        check("the second is refused", states[1]["answer"] == UNSTATABLE, str(states[1]))
+        check("the collision is named", "keyed on the workflow name" in states[1]["because"],
+              states[1].get("because", ""))
+        names = [e["workflow"] for e in config.load(tmp).get("host.checks")]
+        check("and the file carries the name once", len(names) == len(set(names)), str(names))
+        check("the second artifact was not written", not os.path.exists(states[1]["path"]))
+    # ⚠️ Stated with the arm rather than left to read as the reader's job: the
+    # shared reader **loads** two entries keyed on one name, so this guard is
+    # the installer's own and nothing upstream supplies it.
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp, checks=[
+            {"workflow": "A run", "mirrors": "one", "triggers": "pull_request -> *"},
+            {"workflow": "A run", "mirrors": "two", "triggers": "pull_request -> *"},
+        ])
+        check("the reader itself does not refuse that shape, which is why this guard exists",
+              len(project.get("host.checks")) == 2)
+
+    print()
+    print("removal takes out both things installing wrote")
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp)
+        gate = _a_gate(entry=lambda _c: AN_ENTRY)
+        one(project, gate, write=True)
+        check("the entry is there after the install",
+              AN_ENTRY in config.load(tmp).get("host.checks"))
+        taken = removal(config.load(tmp), (gate,), write=True)
+        check("the removal reports the entry it took out",
+              taken["artifacts"][0].get("unregistered") == AN_ENTRY,
+              str(taken["artifacts"][0]))
+        left = config.load(tmp).get("host.checks")
+        check("and the entry is gone", AN_ENTRY not in left, str(left))
+        check("the emptied list is written `[]` rather than left bare",
+              left == [] and "checks: []" in _read(project.config_path),
+              repr(left))
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp)
+        unwanted_entry = _a_gate(entry=lambda _c: AN_ENTRY)
+        one(project, unwanted_entry, write=True)
+        off = one(config.load(tmp), _a_gate(wanted=lambda _c: False,
+                                            entry=lambda _c: AN_ENTRY), write=True)
+        check("turning a gate off takes its entry out too",
+              off.get("unregistered") == AN_ENTRY, str(off))
+        check("and the facet no longer states it",
+              AN_ENTRY not in config.load(tmp).get("host.checks"))
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp, checks=[{
+            "workflow": "The project's own run",
+            "mirrors": "the-project-s-own-command",
+            "triggers": "push -> main",
+        }])
+        gate = _a_gate(entry=lambda _c: AN_ENTRY)
+        one(project, gate, write=True)
+        removal(config.load(tmp), (gate,), write=True)
+        kept = config.load(tmp).get("host.checks")
+        check("a project's own entry beside it is untouched",
+              [e["workflow"] for e in kept] == ["The project's own run"], str(kept))
+
+    print()
+    print("a place that cannot be resolved is not nothing being there")
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp)
+        kinds = dict(check_host_checks.DEFINITIONS)
+        try:
+            check_host_checks.DEFINITIONS.clear()
+            taken = removal(project, (_a_gate(),), write=True)
+            check("the removal says it could not establish it",
+                  taken["artifacts"][0]["answer"] == UNDETERMINED,
+                  str(taken["artifacts"][0]))
+            check("and that is an incompleteness rather than a clean run",
+                  UNDETERMINED in INCOMPLETE and bool(taken["report"]))
+            # ⛔ The other side of the same ordering: an artifact the project
+            # does not want must not be an incompleteness merely because this
+            # step cannot locate it — it reports what it could not establish,
+            # and `wanted` is asked before the place is resolved.
+            unwanted = run(project, (_a_gate(wanted=lambda _c: False),), write=True)
+            check("an unwanted artifact is not reported as having nowhere to go",
+                  unwanted["artifacts"][0]["answer"] != NO_PLACE,
+                  str(unwanted["artifacts"][0]))
+        finally:
+            check_host_checks.DEFINITIONS.update(kinds)
+
+    print()
+    print("the two routes that put the artifact and the file back")
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⛔ The **post-write** rollback, which no arm reached: the three
+        # unstatable arms above all use an entry the reader refuses before any
+        # write, so they pass because nothing was written rather than because
+        # anything was taken back out. This route is a `host.checks` the reader
+        # accepts and the textual walk refuses — a non-empty flow sequence.
+        project = _a_project(tmp)
+        path = project.config_path
+        flow = _read(path).replace(
+            "checks: []",
+            "checks: [{workflow: A run, mirrors: one, triggers: 'pull_request -> *'}]",
+        )
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(flow)
+        project = config.load(tmp)
+        check("the configuration loads in that shape",
+              len(project.get("host.checks")) == 1)
+        gate = _a_gate(entry=lambda _c: AN_ENTRY)
+        check("the reader does not refuse the entry, so the pre-check passes it",
+              refuses_entry(project, AN_ENTRY) is None)
+        state = one(project, gate, write=True)
+        check("the install is refused after the write", state["answer"] == UNSTATABLE,
+              str(state))
+        check("and the artifact was taken back out",
+              not os.path.exists(state["path"]),
+              "every artifact whose entry cannot be inserted would otherwise be "
+              "orphaned in the adopter's tree")
+        check("and the configuration is untouched", _read(path) == flow)
+
+    print()
+    print("a file that loads and does not carry the change is put back")
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⚠️ `host:` twice: the textual walk takes the first block and the
+        # parser keeps the last, so the entry lands in a block the reader
+        # discards. Measured without the read-back: `register` reported success,
+        # `already_registered` stayed false for ever, and every later run
+        # appended another copy to the project's own file.
+        project = _a_project(tmp)
+        path = project.config_path
+        doubled = _read(path).replace(
+            "host:", "host:\n  checks: []\nhost:", 1)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(doubled)
+        try:
+            project = config.load(tmp)
+            loads = True
+        except ConfigError:
+            loads = False
+        check("the doubled-key fixture loads", loads)
+        if loads:
+            refusal = register(project, AN_ENTRY)
+            check("the insertion is refused rather than reported as a success",
+                  refusal is not None, str(refusal))
+            check("and the file is byte-identical", _read(path) == doubled)
+
+    print()
+    print("an entry the reader cannot be shown is named, not raised")
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp)
+
+        class Unrepresentable:
+            pass
+
+        try:
+            answered = refuses_entry(
+                project, {"workflow": "A run", "mirrors": Unrepresentable()})
+            raised = None
+        except Exception as error:               # noqa: BLE001 - that is the finding
+            answered, raised = None, error
+        check("a refusal comes back rather than an exception", raised is None,
+              f"{type(raised).__name__}: {raised}" if raised else "")
+        check("and it names what could not be put to the reader",
+              isinstance(answered, str) and "cannot be put to the reader" in answered,
+              str(answered))
+
+    print()
+    print("register's own read-back puts a file that stops loading back")
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⛔ The route reaches the read-back and not the pre-check, and the
+        # difference is which copy each one reads. The pre-check validates a
+        # dump of the configuration **in hand**; the read-back loads the **file**.
+        # So the branch is reached wherever the file has moved under the step —
+        # here a `checks_local` entry added to the file after it was loaded,
+        # which § 17 refuses beside a `host.checks` entry mirroring the same
+        # command. ⚠️ The first form of this arm assumed § 2 refuses two entries
+        # mirroring one command; measured, it does not, so that route passed the
+        # pre-check *and* the read-back and reached neither.
+        project = _a_project(tmp)
+        path = project.config_path
+        colliding = "a-colliding-command"
+        with open(path, encoding="utf-8") as handle:
+            on_disk = handle.read()
+        moved = on_disk.replace(
+            "checks_local: []",
+            "checks_local:\n- command: " + colliding
+            + "\n  proves: a fixture verdict\n",
+        )
+        check("the fixture's own file states a local check", moved != on_disk)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(moved)
+        entry = {"workflow": "A run", "mirrors": colliding,
+                 "triggers": "pull_request -> *"}
+        check("the pre-check passes it, the configuration in hand stating no local check",
+              refuses_entry(project, entry) is None,
+              str(refuses_entry(project, entry)))
+        refusal = register(project, entry)
+        check("the read-back refuses it", refusal is not None, str(refusal))
+        check("and names that the file was put back",
+              isinstance(refusal, str) and "put back" in refusal, str(refusal))
+        check("and the file is byte-identical", _read(path) == moved,
+              "a configuration half-edited by an installer is a project whose "
+              "every role then refuses, for a reason none of them can name")
+
+    print()
+    print("a comment on the key's own line is a comment, not the facet's value")
+    # ⛔ The shape the surface's own § 2 example block is written in. ⚠️
+    # Measured reading the whole of the line after the key: the step answered
+    # «`host.checks` is written as '# the host's own runs…', which this step
+    # cannot insert into» — a refusal naming a comment as the facet's value, on
+    # the shape an adopter copies out of the schema.
+    with open(SURFACE_BLOCK, encoding="utf-8") as handle:
+        example = next(
+            (line for line in handle
+             if line.lstrip().startswith("checks:") and "#" in line),
+            None,
+        )
+    check("the surface's own example block writes `checks:` with a trailing comment",
+          example is not None, "the shape this arm is written for is not there any more")
+    lines = [
+        "host:  # the code host",
+        "  kind: github",
+        example.rstrip("\n") if example else "  checks:  # a trailing comment",
+        "    - workflow: \"CI\"",
+        "      mirrors: \"a-command\"",
+    ]
+    found = _insertion(lines)
+    check("a trailing comment on both keys still finds the list",
+          not isinstance(found, str), str(found))
+    check("and the member indent is the list's own",
+          not isinstance(found, str) and found[1] == "    ", str(found))
+    # ⚠️ And a comment flush with the left margin inside the block, which YAML
+    # permits and the walk used to stop at.
+    flush = ["host:", "  kind: github", "# a comment the project wrote",
+             "  checks:", "    - workflow: \"CI\"", "      mirrors: \"a-command\""]
+    check("a comment at column zero inside the block does not end it",
+          not isinstance(_insertion(flush), str), str(_insertion(flush)))
+
+    print()
     print("a shape this step cannot insert into is refused by name")
     with tempfile.TemporaryDirectory() as tmp:
         project = _a_project(tmp)
@@ -1085,13 +1956,27 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             handle.write(flow)
         refusal = _insertion(_read(path).splitlines())
         check("a flow sequence is named rather than rewritten",
-              isinstance(refusal, str) and "cannot insert into" in refusal, str(refusal))
+              isinstance(refusal, str) and "which this step cannot insert into" in refusal,
+              str(refusal))
         without = _read(path).replace("checks: [{workflow: A run}]\n", "")
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(without)
+        # ⛔ Against the sentence and not against a word every sentence shares.
+        # ⚠️ Measured as `"no" in refusal.lower()`, which all four of this
+        # walk's refusals satisfy — two of them through *cannot* — so the arm
+        # asserted only that some string came back, and returning the wrong
+        # reason left it green.
         refusal = _insertion(_read(path).splitlines())
-        check("an absent `checks` key is named too",
-              isinstance(refusal, str) and "no" in refusal.lower(), str(refusal))
+        check("an absent `checks` key is named as that and not as something else",
+              isinstance(refusal, str) and "states no `checks` key" in refusal,
+              str(refusal))
+        refusal = _insertion(["kind: github"])
+        check("an absent `host:` block is named as that",
+              isinstance(refusal, str) and "no `host:` block" in refusal, str(refusal))
+        refusal = _insertion(["host:", "  checks:", "    workflow: A run"])
+        check("a block of keys under `checks:` is named as that",
+              isinstance(refusal, str) and "opens a block of keys" in refusal,
+              str(refusal))
 
     print()
     print("a host kind whose definitions are not files has nowhere to write")
@@ -1103,7 +1988,19 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             state = one(project, _a_gate(), write=True)
             check("it answers no place rather than guessing one",
                   state["answer"] == NO_PLACE, str(state))
-            check("and nothing is written", state["path"] is None)
+            # ⛔ Read off the file system and not off the answer. ⚠️ Measured as
+            # `state["path"] is None`, which restates the literal the `NO_PLACE`
+            # branch passes to its own constructor — a statement about the
+            # answer wearing the label of a statement about the tree.
+            check(
+                "and nothing was written anywhere under the project",
+                not any(
+                    name for root, _dirs, files in os.walk(project.code_root)
+                    for name in files if name.endswith((".yml", ".yaml"))
+                    and os.path.join(root, name) != project.config_path
+                ),
+                "a file was written despite there being nowhere stated to write it",
+            )
         finally:
             check_host_checks.DEFINITIONS.update(kinds)
 
@@ -1114,12 +2011,22 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
               not config.configured(tmp))
         answered = main(["install", "--skills-root", tmp])
         check("the step exits zero rather than refusing", answered == 0, str(answered))
+        # ⛔ Asked with a registry that would otherwise write, so the arm turns
+        # on the invitation and not on the registry being empty. ⚠️ Measured
+        # with the live registry: switching the unconfigured branch off left
+        # this arm green, because there was nothing to write either way.
         check(
-            "and wrote nowhere a workflow would go",
+            "and nothing was written where a workflow would go",
             not os.path.isdir(os.path.join(
                 tmp, check_host_checks.DEFINITIONS["github"].directory,
             )),
         )
+        try:
+            config.load(tmp)
+            resolved = True
+        except (ConfigError, OSError):
+            resolved = False
+        check("because the step never reached a configuration to read", not resolved)
 
     print()
     print("the green side: a project asking for nothing is green and silent")
@@ -1146,6 +2053,18 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         "a step that holds nothing and prints success is the shape every check "
         "in this tree is written against",
     )
+    # ⛔ And the status is the complement of that sentence rather than its
+    # restatement. ⚠️ Measured: read off the report's length, the step exited
+    # non-zero on this repository — the report saying the registry is merely
+    # empty while the status said the run had failed.
+    with tempfile.TemporaryDirectory() as tmp:
+        _a_project(tmp)
+        check(
+            "a registry with nothing incomplete in it exits zero",
+            main(["install", "--skills-root", tmp, "--dry-run"]) == 0,
+            "a statement in the report is not an incompleteness, and the status "
+            "may not read one as the other",
+        )
     check(
         "every registered artifact has somewhere to go in this repository",
         all(place(live, artifact) is not None for artifact in ARTIFACTS),
@@ -1239,7 +2158,15 @@ def main(argv: list[str] | None = None) -> int:
     else:
         answer = facet(configuration)
     print(json.dumps(answer, indent=2, ensure_ascii=False))
-    return 1 if answer["report"] and args.what else 0
+    # ⛔ The status reads the artifacts' own answers and never the report's
+    # length. ⚠️ Measured on this repository: the empty-registry line is a
+    # statement rather than an incompleteness, and read as one the step exited
+    # non-zero on a project where nothing was wrong — the report saying the
+    # registry is merely empty while the status said the run had failed.
+    incomplete = [
+        state for state in answer["artifacts"] if state["answer"] in INCOMPLETE
+    ]
+    return 1 if incomplete and args.what else 0
 
 
 if __name__ == "__main__":
