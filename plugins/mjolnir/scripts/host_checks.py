@@ -124,14 +124,15 @@ ANSWERS = (REACHED, UNREADABLE, NO_ANSWER, OUT_OF_SCOPE)
 # named concluded. The two were deliberately not given one vocabulary -- a word
 # meaning two findings is what `mirrors` above declines to borrow `reached` for.
 #
-# ⚠️ Held to the surface member by member, the way `ANSWERS` is — and ⛔ **the
-# order of this tuple carries nothing**, unlike `ANSWERS`, which `_ranked` reads.
-# Nothing resolves through it: the one precedence § 2 states for this reading,
-# that a superseded run has a successor to read whatever else was true of it,
-# lives in `conclusion`'s own branch order and is held by the three plants that
-# assert it against each of the other readings. ⛔ A comment claiming this tuple
-# carried that order was a second statement of it: reordering the tuple left the
-# suite green, measured, which is what a restated fact always does.
+# ⚠️ Held to the surface member by member, the way `ANSWERS` is — and ⛔ **a set
+# rather than a sequence, because no order here would carry anything.** Unlike
+# `ANSWERS`, which `_ranked` reads, nothing resolves through this: the one
+# precedence § 2 states for this reading — that a superseded run has a successor
+# to read whatever else was true of it — lives in `conclusion`'s own branch
+# order, and is held by the three plants asserting it against each of the other
+# readings. ⛔ Written as a sequence it would be a second statement of that
+# precedence, and nothing would hold the two together: measured, a reordering
+# left the whole suite green.
 GREEN, FAILED, NEVER_STARTED, SUPERSEDED = (
     "green",
     "failed",
