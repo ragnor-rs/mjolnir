@@ -2525,6 +2525,124 @@ than a silent pass.
   where the alternative is reading positions out of a parse that did not happen — and the report
   names the whole call rather than a segment of it, there being no segments to count.
 
+## The context half: a call bounded where it is made, and what comes back
+
+`plugins/mjolnir/scripts/context.py --self-test` runs in the `Context guard` workflow, with no
+credential and no network. ⛔ The rules are
+[schema § 22](../plugins/mjolnir/config/schema.md#22-what-enters-the-window-bounded-where-the-call-is-made),
+[schema § 22 → The three arms](../plugins/mjolnir/config/schema.md#the-three-arms-and-the-one-that-rewrites-rather-than-refuses),
+[schema § 22 → A read this session has already made](../plugins/mjolnir/config/schema.md#a-read-this-session-has-already-made),
+[schema § 22 → The commands a project names as never bounded](../plugins/mjolnir/config/schema.md#the-commands-a-project-names-as-never-bounded)
+and
+[schema § 22 → Why every unestablished fact here proceeds](../plugins/mjolnir/config/schema.md#why-every-unestablished-fact-here-proceeds),
+and this document states none of them: what is recorded here is the reach of the arms and what they
+cannot see, which is narrower than the rules in directions the rules do not mention.
+
+| arm | what it reads | kind | what it does |
+|---|---|---|---|
+| `guard` (`PreToolUse`) | whether the project states a configuration at all; then, for a command, its own command positions and the entries the project wrote; for a read, the path and range the call states and the file's own size and modification time | **forbidding** | refuses the call, rewrites its arguments, or says nothing |
+| `result` (`PostToolUse`) | the command the result came from, the result's own text, the stated limit and the directory a full text goes to — and, for a read, the path and range it was made over | **computed**, then forbidding | replaces a result with a path, a head and a tail; or records the read the arm above compares against |
+
+⛔ **The command position is the spend guard's and is imported rather than copied**
+([schema § 19 → The command position](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)).
+One parse, one set of lexer settings, one answer about which token is the command — and the suite's
+own position shapes are asserted here as well, because what this carrier would get wrong is not the
+parse but the use of it. ⚠️ **The verification is recorded rather than claimed**: with the entries
+matched against the raw text of the call instead of its positions, twenty-five assertions redden,
+and the ones that redden are the shapes where the command is named and not called.
+
+⚠️ **Every green was verified by breaking the mechanism it names, and the figure is what reddened.**
+With the exemption never read, four; with a call that already carries its own bound no longer
+recognised, seven; with the bounded form a refusal names no longer recognised as a route, three;
+with every call treated as one command so that every rewrite is attempted, seventeen; with none
+treated as one so that nothing is rewritten, twenty; with a file's signature frozen, the one
+assertion that a changed file is readable again; with the ledger forgetting, eight; with the session
+not told of a rewrite, five; with a replacement made whether or not it is shorter, eighteen; with
+the sidecar reported written without being read back, eight; with a command compared as a word
+rather than as a path, two; with no text read out of a structured response, two.
+
+⚠️ **Twice, breaking a mechanism killed the suite instead of reddening an assertion** — a read-back
+of a path naming no file — so both reads are defensive now and report what they could not read. A
+suite that dies is a red run either way; what it loses is which assertion stopped holding, which is
+the whole of what a plant buys.
+
+⚠️ **Nine defects of this carrier were found by probing or reviewing the arms rather than by reading
+them**, and the ones worth recording here are the ones a reading would not have caught. The arm that
+replaces a result answered with a bare string, which the harness validates against the tool's own
+output schema: for the command tool that schema is a block of fields, so the replacement was
+discarded, the original kept and an error added beside it — the arm made the window *worse* while
+every assertion passed. The replacement now takes the shape the response arrived in. A rewrite
+answered with the command alone, and the harness assigns a hook's answer over the input wholesale
+rather than merging, so a backgrounded call came back to the foreground and a stated timeout
+vanished. The exemption was read per call on the refusing arm, so appending a chained exempt command
+spared everything in front of it — a way past that arm altogether. The sidecar's write and read-back
+translated line endings, so any result carrying a carriage return was reported unwritable with its
+bytes correct on disk. A bound stated as `--flag=N` matched no call, so the project's bound was
+appended over one the session had already chosen. A rewrite appended past a comment and past the
+end-of-flags marker, where the shell reads no flag at all — the dump then ran unbounded while the
+session was told it was bounded, which is worse than either alone. And the ledger was a whole-file
+read-modify-write, which lost six of eight entries of a parallel read batch; it is a file per read
+now, which is the shape the lease carrier in this plugin already uses.
+
+⚠️ **The one arm that acts on a call rather than refusing it is asserted on what it produced and
+not on a verdict.** A rewrite answers with no decision at all, so *nothing* is what a passing call
+and a dead rewrite arm both look like: each shape is asserted on the rewritten command carrying the
+project's own bound, and the two shapes where a longer flag or a named-but-not-called exemption
+could be misread are asserted the same way for the same reason.
+
+### What this check deliberately does not hold
+
+- **Whether the command accepted the bound.** The flag is the project's statement about its own
+  command, added to the arguments as text; nothing here runs the command to find out whether it
+  takes that flag, or whether the value means what the project thought.
+  ⛔ Deliberately not resolved: a guard that validated flags would carry a table of every project's
+  tooling, which
+  [schema § 22](../plugins/mjolnir/config/schema.md#22-what-enters-the-window-bounded-where-the-call-is-made)
+  keeps out by naming none. A wrong bound is a call that fails loudly on its own next run.
+- **Whether a replacement the harness accepted is the one a model read.** What the harness *does*
+  with the field is no longer unestablished: it validates a non-external tool's replacement against
+  that tool's own output schema, keeps the original on a mismatch and adds an error beside it — read
+  out of the installed client rather than off the reference, which states none of it. ⛔ **So the
+  arm answers in the shape the response arrived in**, and what this check cannot hold is the other
+  half: no run here can confirm that the accepted replacement is what reached a window, the plugin's
+  hooks being served from the installed checkout rather than from a tree under work
+  ([what a session serves](working-on-the-toolkit.md#what-a-session-actually-serves)).
+- **A narrower re-read of a file already read whole.** The key is the path and the range as the call
+  states them, so a read of part of a file this session read in full passes. ⚠️ That is also what
+  releases a refusal from inside the session, by
+  [schema § 22 → A read this session has already made](../plugins/mjolnir/config/schema.md#a-read-this-session-has-already-made),
+  so narrowing it would close the only route past the arm a session has.
+- **Which window a session's reads were read into.** The ledger is keyed by the session the event
+  names, and whether a subagent's calls arrive under their own session or under the one that
+  launched them is **unestablished** — no run in this repository can read it, the plugin's hooks
+  being served from the installed checkout rather than from a tree under work. ⚠️ If they arrive
+  under the parent's, a subagent can be refused a read whose content its own window does not hold,
+  and what releases it is the same route a summarised window takes: a different range.
+- **Whether what a read put in the window is what the ledger recorded.** The signature is taken when
+  the read has already happened, so a file written by something outside the session between the read
+  and the event is recorded as the content read. ⚠️ The refusal that follows names a file whose
+  current content the window does not hold — a false refusal with a stated route out, and the
+  direction a cross-event record would have to be carried to close.
+- **Whether what a session read is still in its window.** The ledger records that a read happened,
+  and a window is summarised without being asked. A refusal after that names the file that is no
+  longer there to read — which is the direction this arm is wrong in, and the reason the escape
+  above exists rather than a reading nothing can take.
+- **A read that is not the read tool's, or a command that is not the command tool's.** Both arms
+  read the two tools the matcher names. A file pulled into the window by something else — another
+  tool, an editor action, a subagent's own transcript — reaches no event here, which is the same
+  reach every other hook in this plugin has.
+- **How much of a window anything has left.** No reading of that is available while a window fills
+  ([the measurement](configuration-surface.md#why-there-is-no-threshold-on-the-surface)), so every
+  reading here is of the call: a command's arguments, a result's length, a file's own timestamps.
+  ⛔ A result inside the limit and a window at its last thousand tokens are the same answer here.
+- **A result already on its way.** The replacement happens after the command ran, so the time and
+  the output were spent whichever way this arm answers; what it buys is the window and not the run.
+  ⚠️ The arm that saves the run is the refusing one, and it is the one a project configures
+  command by command.
+- **Whether a project's exemption is still true.** `never_bound` is a statement somebody wrote. A
+  command left in it after the role that forbade truncating its output stopped existing answers this
+  check exactly as a correct one does.
+
 ## The install half: what the toolkit writes into a project
 
 `plugins/mjolnir/scripts/install.py --self-test` runs in the `Installer` workflow, with no
@@ -2898,7 +3016,11 @@ reads that share a path with a merge and must not be refused for it. The spend c
 its halves by hand — every shape a denied command arrives in against every shape that merely names
 it, which is the correction it was extracted carrying. The live check plants the same two halves
 one guard over and a third beside them: a machine the project named as not live, which must pass
-silently, and which is the green side its own inversion rests on. The install step plants a project
+silently, and which is the green side its own inversion rests on. The context check plants the
+exemption that is its own hole — a command a role is forbidden to truncate, which must pass the
+refusing arm and the replacing one alike — verified by taking the exemption away and watching both
+act, and beside it a read of a file that changed, which must not be refused. The install step
+plants a project
 that asks for no artifact at all, which must write nothing and report nothing, and a value stated
 empty, which must satisfy an artifact's needs rather than wait forever on it — and, since the
 registry holds one, a project stating no title form, which must get no gate and no entry while the

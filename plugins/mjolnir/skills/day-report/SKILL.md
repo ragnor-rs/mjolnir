@@ -188,7 +188,15 @@ during it. Add `--date YYYY-MM-DD` to backfill a past day.
 of §4, so there is nothing a second call can add. **Redirect it to a file and read the file.**
 ⛔ **Never pipe it through `head`, `tail` or `sed`** — the output is longer than a terminal and a
 truncated read forces the whole measurement, every transcript and the full chat archive, to be
-recomputed for the half you cut off.
+recomputed for the half you cut off. ⚠️ **A project whose guard bounds long output names this
+command in its own exemption**, rather than this rule being argued with per call:
+[`§ 22 → The commands a project names as never bounded`](../../config/schema.md#the-commands-a-project-names-as-never-bounded)
+is where that is stated, and a refusal of the **command** met here is that list being short rather
+than this instruction being wrong. ⛔ **A refusal of the second *read* of the file is a different
+rule and that list does not reach it** — it is
+[`§ 22 → A read this session has already made`](../../config/schema.md#a-read-this-session-has-already-made),
+which names its own routes: read a different part of the file, the first read having been the one
+this step asked for.
 
 The script unions the configured `day_log.streams` into active-time blocks, splitting wherever
 nothing happened for 15 minutes:

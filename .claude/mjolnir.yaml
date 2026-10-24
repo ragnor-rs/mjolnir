@@ -70,6 +70,14 @@ host:
     - workflow: "Config reader"
       mirrors: "python3 plugins/mjolnir/scripts/config.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ Like the two guards below it, what this run holds is the carrier's own suite: no command
+    # of this project is named as unbounded and no result limit is stated, so pointed at this tree
+    # no *shell call* of this project's reaches a decision and the ones the suite judges are the
+    # ones it plants. ⛔ The read arm is the exception and is live here, `reread` below stating
+    # `refuse`: a read this session already made is refused in this repository like any other.
+    - workflow: "Context guard"
+      mirrors: "python3 plugins/mjolnir/scripts/context.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ What this run holds is the carrier's own suite and not a verdict about this tree:
     # `e2e_register` below is `none`, so pointed at this project the check says it has no
     # subject and exits without one. The entry is here because the carrier ships from this
@@ -494,3 +502,31 @@ live_guard:
   # no entry there is nothing for either to decide. ⛔ A path stated here would name a file on
   # whatever machine this is checked out on, which is the one thing § 21 keeps outside every
   # working tree.
+
+context_guard:
+  # ⛔ No command of this repository's own is named, and that is a measurement rather than a key
+  # left at its emptiest: every command a role runs here is a gate over the tree it runs in, and
+  # each one prints a verdict whose length is its own suite's business. What is unbounded in a
+  # session here belongs to the tools the harness ships rather than to this project, and § 22
+  # states a project's own commands.
+  #
+  # ⚠️ The empty list is also what makes this repository the green side of its own check: the
+  # carrier's suite plants the calls it has to refuse and rewrite, and the tree it actually runs
+  # in is the project whose shell calls must reach no decision at all.
+  unbounded: []
+  # ⛔ Nothing is exempt, which is the ordinary configuration with nothing above to be exempt
+  # from. The role this facet's exemption exists for is this toolkit's own day log, and ⚠️ it
+  # cannot run here at all — `day_log.script` is unset, which the reader already reports — so the
+  # command there would be an exemption for a call this project never makes.
+  never_bound: []
+  # No `result_limit_chars`, so no result is replaced here and none of the roles that read a long
+  # evidence file meets a head and a tail in place of it. ⛔ Stated as an absence rather than as a
+  # large number: a limit nothing reaches is a limit somebody raises, and the measurement this
+  # project has is that its own long results are the ones a role was told to read whole.
+  #
+  # And no `sidecar_dir`, which § 22 reads only once a limit is stated.
+  #
+  # ⚠️ Written although it is the surface's default: the arm reads nothing this project knows, so
+  # what the key says here is that the default was looked at rather than left to be read in later
+  # by somebody who finds it missing.
+  reread: refuse

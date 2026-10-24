@@ -1171,6 +1171,75 @@ What the empty list means is a real configuration rather than an absent facet, w
 carries no `carrier` and no `absent_reason`: a project whose roles need nothing beyond the shell's
 own variables has *stated* what it hands a role, and there is nothing for a reason to explain.
 
+## Bounding the window at the call, and what the harness gives a hook to do it with
+
+[`schema.md § 22`](../plugins/mjolnir/config/schema.md#22-what-enters-the-window-bounded-where-the-call-is-made)
+is the enforcing half of the section above, and what forced it into a facet of its own is worth
+recording beside the measurements that forced that one.
+
+The [findings recorded above](#what-the-published-measurements-establish) rank what hurts a window
+and name summarising it as the lossy way to spend one; § 11 took the conclusion for the artifact,
+making the handoff a file somebody wrote rather than what a summary left behind. What it did not
+reach is the other end of the same finding: the window is spent one call at a time, and every one
+of those calls was a decision nothing was holding. A guard that acted after the summary would be
+acting on what survived it; a guard at the call is acting on the thing itself.
+
+So the facet is about **three places the harness publishes, and a fourth it does not**. A hook
+answering before a call may refuse it or replace its arguments outright; a hook answering after one
+may replace what the call returned. ⚠️ **The fourth place is the event that fires before a window is
+summarised, and it is the one this facet does not use** — it was registered in every arm of the
+measurement recorded in the project store for this repository and **never fired**, so what it
+carries is unestablished rather than empty, and
+[`schema.md § 7`](../plugins/mjolnir/config/schema.md#what-a-hook-can-establish-about-the-role-it-is-running-under)
+already states that a rule reaching it would be written against a measurement nobody has taken.
+⛔ That is why nothing here refuses a compaction, and why the arms that ship are the three that
+answer on a call.
+
+**Why a result limit is a key while a window budget is not.** A result's own length is the opposite
+case to the one
+[refused above](#why-there-is-no-threshold-on-the-surface): the event that fires after a call
+carries the result, so its size is readable exactly when there is something to decide about it.
+⚠️ **It is the same test, passed rather than failed** — that subsection states what the test is, and
+this is why the same document can refuse one threshold and carry another without contradicting
+itself.
+
+**Why the exemption is a project's list rather than a case inside the guard.** This toolkit ships a
+role that **forbids** truncating its own evidence output, and states why: the measurement is
+recomputed whole for the half that was cut off. A blanket bound would therefore contradict a shipped
+role — and the first shape that suggests itself, a name in the guard's own code, is the defect this
+repository exists to delete, since no project could see it and no project could add its own. The
+list is a project's for the same reason the mirrored commands are: what a project may not truncate
+is its own fact.
+
+### What a hook may tell the session rather than the person
+
+The rewriting arm is the first thing in this toolkit that changes a call and lets it run, and that
+makes the channel it reports through load-bearing rather than cosmetic. A bound added silently is a
+bounded result read as complete — the window would then hold a *wrong* premise instead of a noisy
+one, which is the worst of the three ranks quoted above.
+
+⚠️ **The two channels are not interchangeable, and which one reaches the session was measured rather
+than read off the names** — the measurements are
+[recorded per event](single-source-of-truth.md#the-rules-loaded-rather-than-checked) and are not
+restated here. ⛔ **What is new for this facet is the event**: the field that adds context is
+documented for the event before a call, and the client that is installed states its support for it
+outright, which is what the rewriting arm rests on. ⚠️ **It is still a field whose validity is per
+event rather than universal** — the same document records one event rejecting it and failing the
+operation outright — so this is a reading of a reference and a client rather than of a run in this
+repository.
+
+So the reports divide by audience rather than by severity: a call that was rewritten tells the
+**session**, because the session is about to read a result it would otherwise misread; a
+configuration that could not be read tells the **person**, because nothing the session does next
+depends on it and the remedy is an edit to a file.
+
+⚠️ **What the client does with a *replaced result* was read out of it rather than from the
+reference**, which states only that the field replaces a result: a tool that is not an external one
+has its replacement validated against that tool's own output schema, and a mismatch keeps the
+original and adds an error. ⛔ **So the shape of a replacement is not a choice the facet had** — it
+is the shape the response arrived in, and a first version answering with text alone would have left
+every oversized result whole with one more message beside it.
+
 ## The revision key never moved, and the markers took its job
 
 What the surface now states is at

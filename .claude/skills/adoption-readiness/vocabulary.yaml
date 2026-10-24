@@ -117,6 +117,12 @@ carriers:
   live:                         { class: guard }  # puts a call that could open a session on a
                                                   # machine outside this one to the person, or
                                                   # refuses it (#37, shipped by #199)
+  context:                      { class: guard }  # refuses the call whose output nothing bounds,
+                                                  # rewrites the arguments where a flag bounds it,
+                                                  # replaces an oversized result with the path its
+                                                  # full text went to, and refuses a read this
+                                                  # session already made — one script on two
+                                                  # events (#89)
   prune:                        { class: guard }  # removes a tree whose branch has landed, on
                                                   # the event that opens a session — the shipped
                                                   # counterpart of `prune-merged-worktrees`

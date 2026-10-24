@@ -906,6 +906,27 @@ class Config:
                 "and holds nothing here. ⛔ Not an absence of signal: the project "
                 "states it (§ 21)."
             )
+        # § 22, and two absences rather than one: the guard is installed in every
+        # project the install reaches, so what each states is the difference
+        # between a project that looked and one that never asked. ⛔ The
+        # complement is not reported -- a project carrying entries or a limit has
+        # a guard that acts, which is behaviour rather than an absence. ⛔ And
+        # `never_bound: []` is not reported either, an exemption list with nothing
+        # in it being the ordinary configuration rather than something a role
+        # cannot do.
+        if not self.get("context_guard.unbounded"):
+            out.append(
+                "No command produces output nothing bounds "
+                "(`context_guard.unbounded: []`), so the context guard refuses and "
+                "rewrites nothing here. ⛔ Not an absence of signal: the project "
+                "states it (§ 22)."
+            )
+        if self.get("context_guard.result_limit_chars") is None:
+            out.append(
+                "No result is replaced by a path, a head and a tail "
+                "(`context_guard.result_limit_chars` is absent), so every result "
+                "reaches the window whole however long it is (§ 22)."
+            )
         # A role's own unset key. `day_log.script` is the first absence in this
         # toolkit that is load-bearing rather than theoretical: the day-log role
         # cannot run without it, and reporting that -- naming the key -- is what
@@ -2660,6 +2681,178 @@ def validate(data: dict, facts: dict) -> None:
             "A blank member matches nothing and reads as a name somebody listed.",
         )
 
+    # § 22. The calls whose output nothing bounds, held key by key -- and every
+    # refusal here is in the permissive direction, which is the one that matters:
+    # an entry a guard cannot act on is a window spent on a dump nothing bounded,
+    # while every reader goes on reporting the guard as configured. The shape
+    # rules are here for the reason §§ 19 and 21's are: requiredness is marked on
+    # the surface and answers whether a key is written, and a member of a list
+    # sits at no path a marker can reach.
+    unbounded = _absent_as(_get(data, "context_guard.unbounded"), [])
+    if not isinstance(unbounded, list):
+        raise ConfigError(
+            "context_guard.unbounded",
+            f"is {unbounded!r}; § 22 states it as the commands whose output "
+            "nothing bounds -- a list of entries, or `[]` where no command here "
+            "produces one. A shape this reader cannot walk is a guard with "
+            "nothing to match, installed and silent.",
+        )
+    for index, entry in enumerate(unbounded):
+        where = f"context_guard.unbounded[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}, and has to be a mapping stating at least the "
+                "`command` whose output nothing bounds, the `reason` naming what "
+                "it would put in the window, and one of `bound` or `instead` "
+                "(§ 22).",
+            )
+        command = entry.get("command")
+        if not isinstance(command, str) or not command.strip():
+            raise ConfigError(
+                f"{where}.command",
+                f"is {command!r}; § 22 states one command per entry, matched "
+                "against the command position of each segment of a call. A value "
+                "of another shape stands in no command position, so the entry "
+                "bounds nothing while reading as a guard somebody configured.",
+            )
+        reason = entry.get("reason")
+        if not isinstance(reason, str) or not reason.strip():
+            raise ConfigError(
+                f"{where}.reason",
+                f"is {reason!r}; § 22 states it as what the unbounded call would "
+                "put in the window, in the project's own terms, and it is what a "
+                "refusal names.",
+            )
+        # ⛔ Exactly one, by § 22's own rule at those keys: with neither, the
+        # entry names a call to hold and no route past it, and the refusal it
+        # produces is the one § 7 says somebody edits the guard to get past;
+        # with both, a rewrite and a replacement both apply and the guard would
+        # have to choose which of the project's two statements to honour.
+        # ⚠️ Written with a value, rather than merely present: a key written with
+        # nothing after it is one a mapping carries as null, and counting it left
+        # the refusal naming two keys at a project that wrote one. Found by
+        # review on this change.
+        stated = [key for key in ("bound", "instead") if entry.get(key) is not None]
+        if len(stated) != 1:
+            raise ConfigError(
+                f"{where}.bound",
+                "and `instead`: § 22 states exactly one of the two per entry, and "
+                f"this one states {stated or 'neither'}. A `bound` is a flag added "
+                "to the arguments and an `instead` is a form the refusal names, so "
+                "an entry with neither refuses a call and offers no route past it, "
+                "and an entry with both states two answers to one call.",
+            )
+        for key in stated:
+            value = entry[key]
+            if not isinstance(value, str) or not value.strip():
+                raise ConfigError(
+                    f"{where}.{key}",
+                    f"is {value!r}; § 22 states `bound` as the flag and value that "
+                    "bounds this command's output and `instead` as the bounded "
+                    "form to run, each written out. A blank value is a rewrite "
+                    "that adds nothing, or a refusal that names nothing to run.",
+                )
+        if "args_match" in entry:
+            pattern = entry["args_match"]
+            if not isinstance(pattern, str) or not pattern.strip():
+                raise ConfigError(
+                    f"{where}.args_match",
+                    f"is {pattern!r}; § 22 states it as the pattern the arguments "
+                    "carry, and absent where the command alone decides. Written "
+                    "blank it matches every call of that command, which is the "
+                    "opposite of the narrowing it was written for.",
+                )
+            try:
+                re.compile(pattern)
+            except re.error as error:
+                raise ConfigError(
+                    f"{where}.args_match",
+                    f"does not compile as a pattern -- {error}. ⛔ Refused rather "
+                    "than left to the guard: a pattern that cannot be compiled "
+                    "matches no call, so the command reads as bounded and is "
+                    "never held (§ 22).",
+                ) from None
+    exempt = _absent_as(_get(data, "context_guard.never_bound"), [])
+    if not isinstance(exempt, list):
+        raise ConfigError(
+            "context_guard.never_bound",
+            f"is {exempt!r}; § 22 states it as the commands this guard neither "
+            "bounds nor replaces a result of -- a list of entries, or `[]` where "
+            "none is exempt. A shape this reader cannot walk is an exemption "
+            "nothing matches, which is the direction that costs a role the "
+            "measurement it forbids truncating.",
+        )
+    for index, entry in enumerate(exempt):
+        where = f"context_guard.never_bound[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}; § 22 states each exemption as a mapping stating "
+                "the `command` it exempts, with `args_match` where the command "
+                "alone does not decide -- the same two keys an `unbounded` entry "
+                "carries, matched the same way.",
+            )
+        command = entry.get("command")
+        if not isinstance(command, str) or not command.strip():
+            raise ConfigError(
+                f"{where}.command",
+                f"is {command!r}; § 22 states one command per exemption, matched "
+                "against the command position of each segment of a call. A value "
+                "of another shape stands in no command position, so the exemption "
+                "matches nothing while reading as one somebody stated.",
+            )
+        if "args_match" in entry:
+            pattern = entry["args_match"]
+            if not isinstance(pattern, str) or not pattern.strip():
+                raise ConfigError(
+                    f"{where}.args_match",
+                    f"is {pattern!r}; § 22 states it as the pattern the arguments "
+                    "carry, and absent where the command alone decides. Written "
+                    "blank it exempts every call of that command, which for an "
+                    "interpreter is a project exempting a language.",
+                )
+            try:
+                re.compile(pattern)
+            except re.error as error:
+                raise ConfigError(
+                    f"{where}.args_match",
+                    f"does not compile as a pattern -- {error}. ⛔ Refused rather "
+                    "than left to the guard: a pattern that cannot be compiled "
+                    "matches no call, so the exemption reads as stated and the "
+                    "role it was written for meets the guard anyway (§ 22).",
+                ) from None
+    limit = _get(data, "context_guard.result_limit_chars")
+    if isinstance(limit, bool) or (
+        limit is not None and (not isinstance(limit, int) or limit <= 0)
+    ):
+        # ⛔ A boolean is refused by name for the reason § 19's price key refuses
+        # one: `true` compares equal to `1`, so it would be read as a limit of one
+        # character and every result replaced.
+        raise ConfigError(
+            "context_guard.result_limit_chars",
+            f"is {limit!r}; § 22 states it as the size a result is replaced above, "
+            "in characters, and absent where no result is replaced. A value nothing "
+            "can compare to a length replaces nothing while reading as a limit "
+            "somebody set.",
+        )
+    sidecar = _get(data, "context_guard.sidecar_dir")
+    if limit is not None and (not isinstance(sidecar, str) or not sidecar.strip()):
+        # ⛔ Required where the limit is, and in prose on the surface rather than by
+        # the conditional marker: that marker compares a key against a stated
+        # value, and what makes this key needed is *a number being stated at all*.
+        # ⚠️ The refusal is about the key and not the directory: a path that cannot
+        # be written is the guard's to answer, and § 22 has it leave the result
+        # whole, while a project with no key at all has nowhere for the full text
+        # to go and would lose every result the arm replaced.
+        raise ConfigError(
+            "context_guard.sidecar_dir",
+            f"is {sidecar!r}; § 22 states it wherever `result_limit_chars` is -- "
+            "the directory a replaced result's full text is written to, outside "
+            "every working tree. With nowhere to write it, a replacement is a "
+            "result the window has lost and nothing can recover.",
+        )
+
 
 def surface_for(skills_root: str = ".") -> str:
     """The surface a project's configuration is held to (§ 1).
@@ -2816,6 +3009,8 @@ MARKED_REQUIRED = [
     "commit.staging",
     "commit.trailer",
     "context.artifacts.carrier",
+    "context_guard.never_bound",
+    "context_guard.unbounded",
     "done",
     "e2e_register.carrier",
     "environment.inherits",
@@ -3775,6 +3970,8 @@ def self_test() -> int:
                 ("checks_local", "no local check is stated"),
                 ("spend_guard.deny", "no command is denied as a spend"),
                 ("live_guard.session_tools", "no command opens a session elsewhere"),
+                ("context_guard.unbounded", "no command's output is unbounded"),
+                ("context_guard.result_limit_chars", "no result is replaced"),
             ):
                 if config.get(path):
                     continue
@@ -4302,6 +4499,61 @@ def _planted_violations():
          at("live_guard.local_names", "a-local-name")),
         ("a local name written blank, which matches nothing",
          "live_guard.local_names", at("live_guard.local_names", ["   "])),
+        # § 22's entries, permissive in the same direction: each leaves a reader
+        # reporting the guard as configured while the entry bounds no call, or
+        # leaves a replaced result with nowhere for its full text to go.
+        ("an unbounded-call list that is not a list", "context_guard.unbounded",
+         at("context_guard.unbounded", "a-command-whose-output-nothing-bounds")),
+        ("an unbounded-call entry that is not a block", "context_guard.unbounded[0]",
+         at("context_guard.unbounded", ["a-command-whose-output-nothing-bounds"])),
+        ("an unbounded-call entry naming no command",
+         "context_guard.unbounded[0].command", _an_unbounded_call_of(command=None)),
+        ("an unbounded-call entry whose command is blank",
+         "context_guard.unbounded[0].command", _an_unbounded_call_of(command="   ")),
+        ("several commands in one unbounded-call entry rather than several entries",
+         "context_guard.unbounded[0].command",
+         _an_unbounded_call_of(command=["a-command-whose-output-nothing-bounds"])),
+        ("an unbounded call stating no reason a refusal could name",
+         "context_guard.unbounded[0].reason", _an_unbounded_call_of(reason=None)),
+        ("an unbounded call whose reason is blank",
+         "context_guard.unbounded[0].reason", _an_unbounded_call_of(reason="   ")),
+        ("an unbounded call offering no route past the refusal",
+         "context_guard.unbounded[0].bound", _an_unbounded_call_stating()),
+        ("an unbounded call stating two answers to one call",
+         "context_guard.unbounded[0].bound", _an_unbounded_call_stating("bound", "instead")),
+        ("a bound that adds nothing to the arguments",
+         "context_guard.unbounded[0].bound", _an_unbounded_call_of(bound="   ")),
+        ("a bounded form that names nothing to run",
+         "context_guard.unbounded[0].instead", _a_bounded_form_that_is_blank),
+        ("an unbounded call whose narrowing pattern is blank",
+         "context_guard.unbounded[0].args_match", _an_unbounded_call_of(args_match="   ")),
+        ("an unbounded call whose narrowing pattern does not compile",
+         "context_guard.unbounded[0].args_match",
+         _an_unbounded_call_of(args_match="--a-whole-log(")),
+        ("a never-bound list that is not a list", "context_guard.never_bound",
+         at("context_guard.never_bound", "a-command-this-guard-never-bounds")),
+        ("a never-bound entry that is not a block", "context_guard.never_bound[0]",
+         at("context_guard.never_bound", ["a-command-this-guard-never-bounds"])),
+        ("a never-bound entry naming no command", "context_guard.never_bound[0].command",
+         at("context_guard.never_bound", [{"args_match": "a-pattern"}])),
+        ("a never-bound command written blank, which matches no call",
+         "context_guard.never_bound[0].command",
+         at("context_guard.never_bound", [{"command": "   "}])),
+        ("a never-bound entry whose narrowing pattern is blank, which exempts every call "
+         "of that command", "context_guard.never_bound[0].args_match",
+         at("context_guard.never_bound", [{"command": "an-interpreter", "args_match": "  "}])),
+        ("a never-bound entry whose narrowing pattern does not compile",
+         "context_guard.never_bound[0].args_match",
+         at("context_guard.never_bound",
+            [{"command": "an-interpreter", "args_match": "a-script("}])),
+        ("a result limit written as a flag, which reads as one character",
+         "context_guard.result_limit_chars", at("context_guard.result_limit_chars", True)),
+        ("a result limit that is no length at all", "context_guard.result_limit_chars",
+         at("context_guard.result_limit_chars", "long")),
+        ("a result limit of nothing, which would replace every result",
+         "context_guard.result_limit_chars", at("context_guard.result_limit_chars", 0)),
+        ("a replaced result with nowhere for its full text to go",
+         "context_guard.sidecar_dir", _a_replaced_result_with_no_sidecar),
     ]
 
 
@@ -4590,6 +4842,84 @@ def _a_session_tool_with_no_allowlist(data: dict) -> dict:
     node = data.setdefault("live_guard", {})
     node["session_tools"] = [{"command": "a-command-that-opens-a-session"}]
     node.pop("allowlist", None)
+    return data
+
+
+def _an_unbounded_call_of(**overrides):
+    """§ 22's facet carried as one entry, with the stated keys replaced.
+
+    Written out rather than borrowed from whichever example names an unbounded
+    command, for the reason `_a_session_tool_of` above is: an example states a
+    project's own commands, and a plant that broke one key of a borrowed entry
+    would redden on whichever other entry that project also wrote.
+
+    ⚠️ The entry carries `bound` by default, so a plant that drops `command`,
+    `reason` or `args_match` reddens on the key it was written for rather than on
+    § 22's one-of-two rule -- and the plants for that rule state the pair
+    themselves.
+    """
+
+    def mutate(data: dict) -> dict:
+        entry = {
+            "command": "a-command-whose-output-nothing-bounds",
+            "bound": "--A-BOUNDING-FLAG 200",
+            "reason": "what one call of it would put in the window",
+        }
+        entry.update(overrides)
+        data.setdefault("context_guard", {})["unbounded"] = [entry]
+        return data
+
+    return mutate
+
+
+def _an_unbounded_call_stating(*stated: str):
+    """§ 22's facet carrying an entry that states neither route past it, or both.
+
+    ⛔ The one rule the helper above cannot plant, since that one supplies
+    `bound` deliberately: what this breaks is the exclusive pair, which has no
+    single key line to mutate.
+    """
+
+    def mutate(data: dict) -> dict:
+        entry = {
+            "command": "a-command-whose-output-nothing-bounds",
+            "reason": "what one call of it would put in the window",
+        }
+        for key in stated:
+            entry[key] = (
+                "--A-BOUNDING-FLAG 200" if key == "bound" else "a-bounded-form-to-run"
+            )
+        data.setdefault("context_guard", {})["unbounded"] = [entry]
+        return data
+
+    return mutate
+
+
+def _a_bounded_form_that_is_blank(data: dict) -> dict:
+    """§ 22's entry taking the `instead` route, with nothing written in it.
+
+    ⛔ Written out rather than taken from `_an_unbounded_call_of`, which supplies
+    `bound`: overriding that key to nothing leaves both stated, so the plant
+    would redden on the exclusive pair and assert nothing about this key.
+    """
+    data.setdefault("context_guard", {})["unbounded"] = [{
+        "command": "a-command-whose-output-nothing-bounds",
+        "instead": "   ",
+        "reason": "what one call of it would put in the window",
+    }]
+    return data
+
+
+def _a_replaced_result_with_no_sidecar(data: dict) -> dict:
+    """§ 22's limit stated with nowhere to write what a replacement replaces.
+
+    ⛔ The requirement itself rather than a key's shape, which is why it is a
+    mutation of its own: there is no `sidecar_dir` line to break where the whole
+    defect is that none was written.
+    """
+    node = data.setdefault("context_guard", {})
+    node["result_limit_chars"] = 20000
+    node.pop("sidecar_dir", None)
     return data
 
 

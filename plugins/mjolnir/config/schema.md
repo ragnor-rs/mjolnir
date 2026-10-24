@@ -4076,6 +4076,245 @@ configuration that is absent is silent instead**, by
 [§ 7](#a-hook-in-a-project-that-states-no-configuration).
 
 
+## 22. What enters the window, bounded where the call is made
+
+```yaml
+context_guard:
+  unbounded:                 # required
+    - command: "<the command whose output nothing bounds>"
+      args_match: "<the pattern the arguments carry, where the command alone does not decide>"
+      bound: "<the flag and value that bounds it, added to the arguments>"
+      instead: "<the bounded form to run, where no flag bounds this one>"
+      reason: "<what the unbounded call would put in the window, in the project's own terms>"
+  never_bound:               # required
+    - command: "<a command this guard neither bounds nor replaces a result of>"
+      args_match: "<the pattern the arguments carry, where the command alone does not decide>"
+  result_limit_chars: 20000  # the size a result is replaced above; absent replaces none
+  sidecar_dir: "<the directory a replaced result's full text is written to>"
+  reread: refuse | allow     # default: refuse
+```
+
+**The act is a call whose result enters the window, and it is bounded where the call is made rather
+than summarised afterwards.** ⛔ **What the toolkit carries is the command position, the size of a
+result, the replacement and where its full text goes, the ledger of what this session has read, the
+decision and the report; what the project carries is which of its commands produce output nothing
+bounds, what bounds each, which commands are never bounded, and the size above which a result is
+replaced.** Preventive rather than reactive is the whole of why it is a guard: what a summary of a
+window costs is
+[§ 11](#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it)'s to state and is
+not restated here, and ⛔ **what follows from it is this facet's** — a mechanism acting after a
+summary acts on what survived it, so the only lever that is not lossy is what enters.
+
+⚠️ **It holds none of § 11's rules and shares that section's measurement.** That facet says where a
+role's durable state lives and that the artifact is the handoff across a boundary; this one holds
+the calls a window is spent on before any boundary is reached. ⛔ **And it is not a threshold on the
+window**, which [§ 11](#11-session-context) refuses for a reason that holds here too: every reading
+below is of the **call** — a command's own arguments, a result's own length, a file's own
+modification time — taken at the moment there is something to compare
+([the measurement](../../../docs/configuration-surface.md#why-there-is-no-threshold-on-the-surface)).
+
+⛔ **`unbounded: []` is the stated absence and means no command here produces output nothing
+bounds**, by the rule this surface opens with: a project that has looked at its commands and a
+project that has never looked read identically otherwise. ⚠️ **A reader reports it as unavailable**,
+and the guard is then installed and silent on that arm — which
+[§ 7](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it) states of a project with
+no exclusive resource and is the same reading here. ⚠️ **`never_bound: []` is reported by nothing**,
+being the ordinary configuration with nothing above it to be exempt from rather than something a
+role cannot do — which is the reading
+[§ 18](#what-may-be-guarded-and-the-two-ways-a-refusal-stands-down) gives its own exemption list.
+
+**The keys of an entry, and what each is for.** ⛔ **`command` and `reason` are written on every
+entry, exactly one of `bound` and `instead` is, and `args_match` is legitimately absent** — stated
+here in prose rather than by the `# required` marker, for the reason
+[§ 19](#19-a-command-that-spends-and-the-supervision-it-is-refused-without) states an entry's keys
+that way: a marker names a key at a path, and a member of a list sits at no path a marker or a
+condition can reach.
+
+- ⛔ **`command` is what stands in the command position**, resolved by
+  [§ 19 → The command position](#the-command-position-and-why-the-whole-call-is-not-one) and never
+  searched for in the text of the call. ⚠️ **The comparison is § 19's too**, the command compared as
+  a path rather than as a word.
+- ⛔ **`args_match` is § 19's key at its own facet**, and what it is for here is the command that is
+  unbounded in one spelling and bounded in another — a log read whole against the same log read for
+  one commit. ⚠️ **What it is matched against, and the two hazards of matching it that way, are
+  [§ 19's](#19-a-command-that-spends-and-the-supervision-it-is-refused-without) and are not restated
+  here**: a second copy of them is a copy allowed to drift from the one its reader resolves.
+- ⛔ **`bound` is the flag and value that bounds *this* command's output, and an entry stating one is
+  rewritten rather than refused.** It is per entry and in the project because the flag is the
+  command's: the toolkit names no command's flags, by
+  [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls), and a
+  table of any project's tooling here would be that boundary broken one token at a time.
+  ⚠️ **A call already carrying the flag is already bounded and passes untouched** — ⛔ **whatever
+  value it carries**, since how large a bound a session chose for its own call is a judgement, and a
+  guard that second-guessed it would be refusing a call that had already met the rule.
+- ⛔ **`instead` is the bounded form to run, for the command no flag of its own bounds**, and it is
+  what the refusal names. A guard whose refusal states only that it refused leaves the person
+  running the role one route past it, which is editing the guard
+  ([§ 7](#what-a-hook-refuses-and-the-record-it-reads)). ⚠️ **It is a form and not a rewrite**: what
+  it replaces the call with is a pipeline or a different command, which is not something a reader of
+  the arguments can derive. ⛔ **And a call that *is* that form passes**, compared as the whole call
+  with its runs of whitespace normalised: the common form of a bounded one carries the very command
+  it is the remedy for, so without this an entry would refuse every route it offers. ⚠️ **Equality
+  and not containment** — a call carrying the form *and other things* is refused — which keeps this
+  from becoming the match on the text of a call that
+  [§ 19 → The command position](#the-command-position-and-why-the-whole-call-is-not-one) exists to
+  replace: it compares a call against a form a project wrote, rather than searching a call for a
+  command.
+- ⛔ **`reason` is what the call would put in the window, in the project's own terms**, and it is
+  stated rather than derived — the same argument
+  [§ 19](#19-a-command-that-spends-and-the-supervision-it-is-refused-without) makes at its own
+  `reason`: a refusal that cannot say what the call would have cost is one whoever meets it has to
+  guess at.
+
+⛔ **`result_limit_chars` is a length and the key names its unit**, for the reason
+[§ 19](#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs)'s price key names
+its own: a bare number is read in whatever unit its reader assumed. ⚠️ **Absent, no result is
+replaced**, which is a legitimately unset key ([§ The file itself](#the-file-itself)) and is
+reported as unavailable rather than read as a project with nothing to replace.
+
+⛔ **`sidecar_dir` is written wherever `result_limit_chars` is, and a guard expands the variables in
+it rather than leaving them to a command that never runs.**
+[§ 11](#the-store-and-when-an-in-tree-store-is-safe) has the reader store a path as written because
+a role's own command expands it; **no command stands between this event and this write**, and a path
+left unexpanded is a directory named `$TMPDIR` created inside whatever tree the session is standing
+in — which under
+[§ 10](#10-branch-model)'s worktree model is inside the thing being torn down. ⚠️ **It is outside
+every working tree for the same reason**, and a store under a system temp directory does not
+survive a reboot, which § 11 already states of its own.
+
+### The three arms, and the one that rewrites rather than refuses
+
+⛔ **Three arms, on two events, and each one's reach is what its matcher fires on** rather than
+anything about the role the call was made under
+([§ 7](#what-a-hook-can-establish-about-the-role-it-is-running-under)):
+
+| arm | the event | what it does |
+|---|---|---|
+| the bound | before a shell command | refuses the unbounded call naming `instead`, or **rewrites the arguments** where `bound` states a flag |
+| the result | after a shell command | replaces a result longer than `result_limit_chars` with the path its full text was written to, a head and a tail |
+| the read | before and after a file is read | refuses a read this session has already made, and records each one it did not |
+
+⛔ **A read's own result is never replaced, however long it is.** The two arms divide by what they
+read rather than by severity: a file a session asked for by path is a read it chose the extent of,
+while a command's output is the thing nothing bounded — and a role told to redirect a measurement to
+a file and read the file would otherwise meet a head and a tail in place of the one thing it was
+told not to truncate (`never_bound`, below). ⚠️ **So a file read *through a shell command* is not
+the read arm's at all**: that is a command whose output nothing bounds, which the first arm already
+states, and the two never answer about one call.
+
+⛔ **The rewriting arm replaces the arguments and tells the session it did.** A bound the session is
+not told about is a bounded result read as complete, which is the one way this facet could leave a
+window worse than it found it — and the channel is the one that reaches the session's own next
+request rather than the one that reaches a person
+([the measurement](../../../docs/configuration-surface.md#what-a-hook-may-tell-the-session-rather-than-the-person)).
+
+⛔ **A rewrite is made on a call that is one command and on no other.** A compound call's arguments
+cannot be rewritten without re-rendering a parse of it, and a re-rendered call is not the call the
+person wrote — its quoting is this toolkit's rather than theirs. ⚠️ **So a compound call carrying an
+unbounded command is refused instead**, naming the bound to add: more refused and never fewer, which
+is [§ 7](#which-direction-a-guard-fails-in)'s safe direction for the one judgement this facet makes
+about a call it could act on two ways.
+
+⛔ **And a call carrying a comment is refused rather than rewritten**, because a bound appended
+behind one is a bound the shell never reads: the call then runs unbounded *and* the session is told
+its result was bounded, which is the one outcome worse than either. ⚠️ **A quoted word that merely
+opens with the comment character is refused with it** — the parse strips the quotes, so the two
+cannot be told apart, and this is the direction that costs a refusal rather than a window.
+
+⛔ **A result is replaced only once its full text is on disk, read back from the path the
+replacement names.** A replacement whose sidecar was not written is a result the window has lost and
+nothing can recover, so a write that failed leaves the result whole and says so. ⚠️ **And a
+replacement that would not be shorter than what it replaces is not made** — the arm's own promise is
+that less enters the window, and a limit set low enough for the path and the head and the tail to
+outweigh the result is the one case where rendering it would break that promise rather than keep it.
+
+### A read this session has already made
+
+⛔ **A read is refused where this session has already read that path, over that range, with the
+file unchanged since** — and every one of those three is a fact about the call and the file rather
+than a reading of the work ([§ 7](#what-a-hook-refuses-and-the-record-it-reads)). The day-log role
+counts re-reading what an earlier block already read as overhead and cuts the hours for it after the
+fact ([§ 9](#9-day-log)); this is the same judgement made before the tokens are spent.
+
+⛔ **The ledger is per session, derived, and configured by nothing.** It is not an artifact a role
+hands the next one — [§ 11](#11-session-context)'s store is for that — and a project that could
+state where it lives would be stating a path for a record only one session ever reads.
+
+⛔ **Changed is read from the file and not from the window**: a path whose size or modification time
+differs from the recorded read is new content, whoever changed it, which is what keeps an edited
+file readable. ⚠️ **A range is compared as the call states it**, so a read of a different part of
+the same file is a different read and passes — ⛔ **which is also what releases a refusal from
+inside the session**, the case being a window that was summarised after the read and no longer holds
+it. A refusal names that route, and no variable stands this arm down: a file read carries no
+environment for a session to set one in, unlike the escape
+[§ 18](#what-may-be-guarded-and-the-two-ways-a-refusal-stands-down) states for a command.
+
+⛔ **`reread: allow` is a project's statement that this arm holds nothing there**, for a project
+whose files are written under it by something outside the session often enough that the file's own
+timestamps are not the question. ⚠️ **It is the arm that reads nothing a project knows**, which is
+why it is defaulted rather than required: a project that has stated a configuration at all has
+adopted this loop, and the overhead is the same one everywhere.
+
+### The commands a project names as never bounded
+
+⛔ **`never_bound` is read by the bound arm and the result arm, and a command named there is neither
+refused, nor rewritten, nor replaced on the way back.** ⚠️ **It does not reach the read arm**, which
+is keyed on a path and a range rather than on a command and whose own route past a refusal is stated
+above — so a project meeting that arm is not one whose exemption list is short.
+
+**The measured case is a role of this toolkit's own**, and it is the reason this list exists rather
+than an illustration of it: the day-log role forbids truncating its evidence output, and
+[§ 9](#9-day-log) carries both the rule and why. ⚠️ **What that role's own shape already does for
+it is stated here rather than left to be assumed**: it redirects the measurement to a file and
+reads the file, so the result of its command carries nothing to replace and the read arm replaces no
+read. ⛔ **The exemption is what covers the project whose evidence comes back in a result instead**,
+and it is **configured and stated** the way [§ 2](#2-code-host) states a mirrored command rather
+than carried as a special case inside a hook where no project could see it.
+
+⛔ **An entry's keys are `unbounded`'s two, and they are matched the same way** — the command at a
+command position, the pattern against the arguments joined by single spaces — so this list is not a
+second grammar to learn. ⛔ **And `args_match` is what makes the measured case configurable at all**:
+a script invoked through an interpreter stands in no command position of its own
+([§ 19 → The command position](#the-command-position-and-why-the-whole-call-is-not-one)), so the only
+command an exemption could name is the interpreter — ⚠️ **which would exempt every call of it**, and
+is the measured shape of the role above. The pattern is what narrows the interpreter back down to
+the one script, and an entry stating a bare interpreter is a project exempting a language.
+
+⛔ **It names commands and never paths.** What a role does with a file afterwards is that role's, and
+a guard that exempted paths would be deciding which of a project's files are allowed to be large.
+
+⛔ **The two arms read it at different widths, and the difference is the shape of what each one
+acts on.** The refusing arm reads it **per command position**: what spares an unbounded command is
+that command being exempt, never another command standing beside it in the same call — ⚠️ **read per
+call it was a way past the arm altogether**, since appending a chained exempt command spared
+everything in front of it. The replacing arm reads it **per call**, because what it would replace is
+one result carrying every command's output, so truncating it truncates the exempt command's own.
+⛔ **And a call the replacing arm cannot parse is treated as exempt wherever a project states any
+exemption at all** — an unestablished command position is [§ 7](#which-direction-a-guard-fails-in)'s
+proceeding side here, as every other unestablished fact in this facet is.
+
+### Why every unestablished fact here proceeds
+
+⛔ **Every fact this guard cannot establish leaves the call alone, and the answer says the call was
+held to nothing.** That is [§ 7](#which-direction-a-guard-fails-in)'s table applied rather than
+re-derived: each act here is a read that can be made again, so none of them is on the refusing side
+— ⚠️ **the inversion against [§ 21](#the-four-ways-it-fails-closed) being the point rather than an
+inconsistency**, a session opened on a live machine not being undone while a needless read costs a
+window that the next call can spend differently.
+
+| what could not be established | what happens |
+|---|---|
+| the call cannot be parsed | it proceeds: a call the lexer cannot read has no reliable command position in it, and reading one out of a parse that did not happen is how a text search gets refused for naming a command |
+| the configuration is there and does not resolve | it proceeds, reported, by [§ 19](#the-command-position-and-why-the-whole-call-is-not-one)'s settled case: what a broken configuration cannot say is whether this call is bounded at all, and the refusing arm would refuse the edit that repairs it |
+| the result's own text could not be read | it passes whole: a result replaced on a reading that failed is content lost to a guess |
+| the sidecar could not be written | it passes whole, reported, by the rule at that arm |
+| the file a read names could not be read | it proceeds: a read whose target cannot be stated is one the ledger has nothing to compare, and the read itself is about to answer better than this guard could |
+
+⚠️ **A configuration that is absent is silent rather than reported**, by
+[§ 7](#a-hook-in-a-project-that-states-no-configuration), which keeps the two apart for the reason
+that section states.
+
+
 ## What the toolkit installs into a project, and what takes it out
 
 **Adoption costs one file a project writes, and a short list of files the toolkit writes.** The

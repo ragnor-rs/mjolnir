@@ -189,3 +189,17 @@ live_guard:
   # read only once an entry above matches, so a path here would name a file on somebody's machine
   # for nothing to decide with.
   session_tools: []
+
+# Empty again, and the absent case of every key that has one: the single mapped role reads this
+# machine and writes a file, so there is no catalogued command for the guard to bound and nothing
+# exempt from a rule nothing states. ⛔ And no `result_limit_chars`, so no result is replaced — with
+# no limit there is nowhere for a full text to go either, which is why `sidecar_dir` is absent
+# rather than written for nothing to read.
+#
+# ⚠️ What a project in this state still gets is the one arm that reads nothing it knows: a read
+# this session already made is refused by the surface's own default, stated here so the reading is
+# not left to be inferred.
+context_guard:
+  unbounded: []
+  never_bound: []
+  reread: refuse
