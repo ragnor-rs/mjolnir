@@ -2307,6 +2307,17 @@ and never as a complete install. ⚠️ **The arm is an equivalence rather than 
 non-empty***, so it holds in whichever direction the registry stands, and no count of what is in it
 is written here.
 
+⚠️ **The first registered artifact found a gap no fixture could.** An entry is composed from the
+project's own facts, and the title gate's is composed from the very facet that decides whether the
+gate is wanted — so a project that stops stating that facet leaves nothing to compose the entry
+from, and a removal that *reconstructs* it took out the file and left the entry behind. ⛔ **An
+artifact now declares the workflow name it registers under**, and the removal finds its entry by
+that name — the one key [§ 2](../plugins/mjolnir/config/schema.md#2-code-host) keys the facet on.
+⚠️ **An artifact declaring no such name claims none**, which keeps a genuine collision between two
+artifacts from being read as one replacing the other, and ⛔ **an artifact's own earlier entry under
+its own key is replaced rather than refused as a collision** — read as one, a project that edits the
+facet refuses for ever over the step's own output, naming a remedy nobody can perform.
+
 What it holds, per artifact: the marker at the head and the body below it unchanged; a shebang
 keeping the first line; the mode the artifact's kind states, which a hook has to carry or git does
 not call it; a second run leaving the file and its mode alone; a file carrying no marker neither
@@ -2409,9 +2420,23 @@ applied to a suite's own fixture.
   own work item's, asserted there; this suite holds that whatever an artifact states is written
   byte for byte below the marker and nothing else. A gate that enforces the wrong rule correctly
   installed is green here.
-- **The artifacts the split was made for.** Every property above is held against fixtures of each
-  kind rather than against a registered artifact. ⚠️ **Stated rather than left to be inferred from
-  a green run**: the suite proves the step, and each artifact's own item proves the artifact.
+- **A generated file under the sweep that names no other project.** That sweep reads this
+  repository's own tracked files, and a generated artifact is written into somebody else's — so
+  what stands in for it is an arm asserting the **step** carries no literal the configuration
+  states, read off its parse tree. ⛔ **Which is the narrower claim and is stated as one**: every
+  project-specific value in a generated file comes from the adopter's own configuration, and
+  nothing here opens that file where it lands.
+- **Whether the guard on an already-run command would in fact let a local run through.** The title
+  gate's entry mirrors no command, which this suite asserts through the shared reader — no mirrored
+  record names it. ⚠️ **The guard itself is not run here**: it needs a host to answer about a
+  change, and what it does with the records it is given is its own suite's.
+- **The artifacts the split was made for, beyond the one that is registered.** Every property above
+  is held against fixtures of each kind; the title gate is additionally held as itself — written,
+  parsed as the host has to parse it, its expression equal to the one derivation beside the step,
+  its entry mirroring no local command, its own script **run** against titles that must pass and
+  titles that must be refused, and both halves of it taken back out when the facet is withdrawn.
+  ⚠️ **Stated rather than left to be inferred from a green run**: for every artifact the registry
+  does not yet hold, the suite proves the step and that artifact's own item proves the artifact.
 - **A question the step *delegates*.** The arm asserting it asks nothing reads this module's own
   parse tree for a call or an attribute by name, so a question put through another module, or a
   read of the standard input by a route that does not name it, is invisible to it. The direct forms
@@ -2435,6 +2460,75 @@ applied to a suite's own fixture.
 - **Whatever is not committed**, and **issues and pull requests**, for the reasons the document
   checks above give: this suite reads trees it creates and the configuration in the checkout, and
   the workflow holds no credential.
+
+## What a pull request title opens with, derived once
+
+`plugins/mjolnir/scripts/title_form.py --self-test` runs in the `Title form` workflow, with no
+credential and no network. ⛔ The rule is
+[schema § 2 → What a pull request title opens with](../plugins/mjolnir/config/schema.md#what-a-pull-request-title-opens-with)
+and this document states none of it. What is recorded here is why there is a module at all, what
+its suite holds, and what it leaves alone.
+
+**One fact, two readers, and that is the whole argument for a module.** The finishing role
+**writes** a title and a generated host gate **refuses** one. Before the facet existed, the form
+lived in a few lines of a workflow file in one project and in whatever the role remembered — two
+statements of one rule, free to drift in both directions, and the direction nothing reports is the
+gate passing what it should refuse. ⛔ **So the composition is performed once**: the role renders a
+title through this module and the install step writes the gate's expression from the same call.
+
+**What is procedure here and what is a project's.** Only the reference is configuration. The
+arrangement — references in sequence with nothing between them, then one space, then at least one
+further character — is derived from the one project measured, because a separator key with one
+observation behind it is a facet invented rather than found. ⚠️ **The two halves of that
+arrangement are held together by an assertion rather than by a branch**: the expression states
+repetition as a quantifier, which is correct only while the separator is empty, and the suite
+asserts that it is.
+
+What it holds: an expression anchored at both ends; the reference's own characters matched as
+literals, in whichever dialect; the identifier matched as a run of digits and never as a wildcard;
+repetition admitting two references where the project states it and refusing them where it does
+not; a reference that is the identifier alone deriving a form too; a rendered title accepted by the
+form it was rendered from; a render refused for no identifier, for a title that is references
+alone, for an identifier that is not digits, and for two identifiers on a form admitting one; and
+the four exit statuses the command line answers with. The kinds this document draws are
+**computed** throughout, with one **forbidding** arm — that the placeholder is read from the reader
+and spelled in no literal of the module's own, asserted on the parse tree with the documentation
+excluded, since an arm that writes down what it forbids finds its own prose.
+
+⚠️ **One arm compares two engines, and it is the reason the expression is composed in a named
+dialect rather than in "a regular expression".** The gate runs it through `grep -E` and a role
+reading a title back runs it through this language's own engine; a title the two read differently
+is a role reporting one thing and the gate another about one change. ⛔ **`grep` on `PATH` is this
+suite's one unchecked precondition**, so the arm asserts that `grep` *answered* before it compares
+anything — read as a skip, a missing `grep` turns the agreement green while holding nothing.
+
+**The green side is a project that states no form**, and it is the ordinary case rather than a
+carve-out: a title there opens with no reference, so there is no rule to fail. ⛔ **That answer is
+neither verdict and the suite asserts both halves of that** — read as a pass, a title nobody
+checked reports green; read as a refusal, every title such a project ever wrote is wrong. The
+command line carries a status of its own for it for the same reason.
+
+### What this check deliberately does not hold
+
+- **Whether the form a project stated is the form it wanted.** This suite holds that whatever form
+  is stated composes into an expression that enforces it. A project whose reference is wrong gets a
+  gate that enforces the wrong thing correctly, and that is green here.
+- **A tracker whose identifier varies in more than its digits.** The placeholder is a run of
+  digits, and whatever else an identifier carries is constant for a project and written into the
+  reference literally — which is what makes one template serve a bare number and a project-keyed
+  one alike. ⛔ **An identifier that varies otherwise is reported rather than approximated**: a form
+  that nearly matches is a gate refusing titles that are correct.
+- **A project needing another arrangement.** The separator and the single space are procedure, so a
+  project whose titles put something between two references cannot state that, and nothing here
+  reports it as a limit at install time. What it gets is a gate refusing its own titles, and the
+  remedy is the facet growing a key rather than a configuration nobody can write.
+- **Whether the host then runs the gate that was installed.** That is the facet against the host's
+  own definitions, read by the drift gate one claim over, and only for a file already in the tree.
+- **A title on a live pull request.** This suite reads planted configurations and this
+  repository's own; what the host holds for a given change is read by the role that wrote it and by
+  the gate, neither of which is this run.
+- **Whatever is not committed**, and **issues and pull requests**, for the reasons the checks above
+  give: the workflow holds no credential.
 
 ## Each check has a violation it is asserted to redden on
 
@@ -2482,7 +2576,10 @@ reads that share a path with a merge and must not be refused for it. The spend c
 its halves by hand — every shape a denied command arrives in against every shape that merely names
 it, which is the correction it was extracted carrying. The install step plants a project that asks
 for no artifact at all, which must write nothing and report nothing, and a value stated empty,
-which must satisfy an artifact's needs rather than wait forever on it. ⛔ A red-only suite says
+which must satisfy an artifact's needs rather than wait forever on it — and, since the registry
+holds one, a project stating no title form, which must get no gate and no entry while the same
+fixture stating one gets both. The title form's own suite plants a project stating no form, whose
+every title must get *no answer* rather than either verdict. ⛔ A red-only suite says
 nothing about any of them.
 **A green plant naming an exclusion is verified by switching that exclusion off** and watching it
 redden — one that cannot fail is one nobody checked — while a plant naming an omission has nothing

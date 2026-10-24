@@ -146,6 +146,14 @@ host:
     - workflow: "Spend guard"
       mirrors: "python3 plugins/mjolnir/scripts/spend.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The same reading as the entries above whose facet this project does not state:
+    # `host.pull_request_title` is absent below, so pointed at this tree the module answers that
+    # there is no form and the installer writes no gate. This run holds the derivation against
+    # planted forms, which is the only place it can be held — the project the facet was measured
+    # on is not this one.
+    - workflow: "Title form"
+      mirrors: "python3 plugins/mjolnir/scripts/title_form.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
   # ⛔ No `runner` here, and that absence is the statement § 2 makes it: every workflow above runs
   # on this host kind's own default, which the surface deliberately does not name, so there is
   # nothing to write down. ⚠️ What it costs is stated rather than discovered — the drift run two
@@ -154,6 +162,13 @@ host:
   # the green read as agreement. A project whose account carries its own runners writes the block
   # and gets all three held; this one has one job per workflow on a shared pool and no queue of
   # its own, so every budget here is a run budget and no run of this project's supersedes another.
+  # ⛔ No `pull_request_title` here either, and that absence is the statement § 2 makes it: a title
+  # in this repository is a sentence and opens with no work-item reference, so the finishing role
+  # renders none and the install writes no title gate. ⚠️ The `(#N)` every subject on `main`
+  # carries is NOT one: the host appends it to a squashed subject and it is the pull request's
+  # number rather than the item's, which is the confusion a key written here on its strength would
+  # have made permanent. What the absence costs is stated rather than discovered — nothing holds a
+  # title here to anything, and the one check that could have is the one this project does not get.
   # ⚠️ Measured on this repository rather than declared for it (#76), and the measurement is the
   # argument for the key existing at all: `main` is linear, which is equally consistent with
   # squash and with rebase, so every landing before this line picked a method by reading the

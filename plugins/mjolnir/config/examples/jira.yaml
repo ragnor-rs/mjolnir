@@ -23,6 +23,16 @@ host:
     concurrent_jobs: 1
     budget_minutes: 45
     supersedes: "<the group a newer run retires an older one in>"
+  # A title here opens with the item's own key, and with more than one where a pull request closes
+  # two items at once — which is why `repeated` is a flag and not an assumption: a form encoding
+  # exactly one would refuse what the finishing role legitimately writes. ⚠️ This is NOT the
+  # closing reference: on this tracker nothing in a title closes anything, and the item moves by
+  # the transition above. `into` names the release branches alone, so a pull request into the trunk
+  # is held to no title rule at all.
+  pull_request_title:
+    reference: "[KEY-<number>]"
+    repeated: true
+    into: ["release/*"]
   # The release-branch shape: a merge commit, so what landed on a release branch and when is
   # readable off the history itself, and the branches are kept rather than deleted by either side.
   # ⚠️ `never` is a value and not an omission — the host's switch off and the procedure not

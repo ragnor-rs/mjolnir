@@ -1014,6 +1014,80 @@ meets a squashed message the first time somebody merges by hand. So § 10's land
 **both** of its tests — content, then the host's own record — and ⚠️ **gets no cheaper for the
 method being stated**, which is the one reader this facet does not simplify at all.
 
+### What a pull request title opens with
+
+```yaml
+host:
+  pull_request_title:            # what a title opens with; omitted where it opens with no reference
+    reference: "[KEY-<number>]"  # one work-item reference, `<number>` where the identifier goes
+    repeated: true               # whether a title may open with more than one of them, in sequence
+    into: ["release/*"]          # the base refs a title is held on, `*` for every pull request
+```
+
+**One fact with two readers, which is the whole reason it is stated rather than known.** The
+finishing role **writes** a title and a host gate **refuses** one, and before this key existed
+neither read the other: the form lived in a few lines of a workflow file in one project and in
+whatever the role remembered. ⛔ **Two statements of one rule drift in both directions** — the gate
+refusing what the role legitimately writes, or passing what it should refuse — and the second is
+the direction nothing reports.
+
+⛔ **The block is omitted where a title opens with no reference, and that absence is a
+configuration rather than a gap.** A project whose titles are prose gets **no gate**, and nothing
+holds its titles to anything. ⚠️ **So the absence is not the gate standing down** — there is no
+rule to stand down from, and a reader asked what a title must open with answers *nothing is
+stated* rather than *anything is allowed*.
+
+⛔ **This is not [§ 3](#the-operations-and-what-an-absent-capability-does)'s closing reference, and
+the two are not one fact stated twice.** `link_for_close` is what closes the item when the branch
+lands, and § 6 already states that the title carries it on one tracker. ⚠️ **Measured on the
+project carrying this gate: the closing form rides in the body there, while the title's reference
+closes nothing** — so a project may state either, both, or neither, and a reader collapsing them
+refuses a title that is correct under both rules.
+
+**What each key states, and what is refused:**
+
+| Key | What it states | What is refused |
+|---|---|---|
+| `reference` | one reference, with `<number>` standing where the work item's identifier goes | a value stating no `<number>`, which no role could render a title from, and one stating it more than once, which says nothing about which identifier is which |
+| `repeated` | whether a title may open with more than one reference, in sequence | the key's absence, and any value that is not a flag — a string reads as true whatever it says |
+| `into` | the base refs a title is held on, in the ref vocabulary [a trigger](#what-a-trigger-states-the-event-the-types-of-it-and-the-ref) already states, `*` for every pull request | an empty list, which is a gate that never fires while reading as one that does |
+
+⛔ **Stated, the block states all three, and none is defaulted** — § 2's rule at
+[`runner`](#where-the-hosts-jobs-run) one subsection up, for the same reason: each is a fact about
+a project rather than a preference about it. ⚠️ **`repeated` is the one whose default would have
+been wrong in the measured direction.** The project carrying this gate closes **two items at
+once** on one pull request, so its titles open with two references in sequence; a form encoding
+exactly one refuses what the finishing role there legitimately writes. ⚠️ **And `into` is required
+for the reason a trigger's ref is**: that project holds titles on its release branches only, so a
+pull request into the trunk gets no title gate at all, and a key nobody wrote would have turned
+that into coverage nobody asked for.
+
+**The arrangement is procedure, and only the reference is configuration.** References come in
+sequence with nothing between them, then one space, then at least one further character. ⚠️
+**Derived from the one project measured rather than configured** — a separator key with one
+observation behind it is a facet invented rather than found, and what makes the omission safe is
+that a project needing another arrangement states a `reference` the arrangement still composes.
+
+⛔ **`<number>` is a run of digits, and that is a stated limit rather than an assumption about
+trackers.** Whatever else an identifier carries is constant for a project — a tracker's own project
+key is the measured case — and is written into the `reference` literally, which is what makes one
+value serve `[<number>]` and `[KEY-<number>]` alike. ⚠️ **A tracker whose identifier varies in more
+than its digits cannot be stated here and is reported rather than approximated**: a form that
+nearly matches is a gate refusing titles that are correct, which is the one outcome this facet is
+least able to leave to a reader to notice.
+
+**Which events the gate listens for is procedure too**, and not a list a project writes: a title
+changes under `edited`, the commit a run answers about changes under `synchronize`, and `opened`,
+`reopened` and `ready_for_review` are the three ways a pull request becomes one the host has no
+run for. ⛔ **Without `edited` a title fixed in place never re-runs**, so the refusal stands on a
+title that no longer exists — measured on the project carrying the gate, which states it.
+
+⛔ **The gate mirrors no local command, and its `checks` entry states no `mirrors`.** There is no
+local counterpart to duplicate: the title is the host's own field and a tree does not carry one.
+⚠️ **So [§ 18](#18-the-guard-on-a-command-the-host-has-already-run)'s guard never refuses a local
+run on this gate's account** — an entry mirroring nothing matches no command, which is that
+section's reading rather than an exemption written here.
+
 ### The facet against the host's own definitions
 
 Procedure rather than configuration, and stated here for the reason the run-reading subsection
@@ -1592,10 +1666,15 @@ signature.
 ### The pull request title and body
 
 Like authorship, this is procedure rather than configuration — the per-project facts it reads are
-already stated elsewhere: the repository (§1, §2), the closing capability (§3), the language and
-register (§8).
+already stated elsewhere: the repository (§1, §2), the closing capability (§3), the title's own
+reference form ([§ 2](#what-a-pull-request-title-opens-with)), the language and register (§8).
 
 - **The body is a summary and a test plan, and the plan is driven rather than published.**
+- **What the title opens with is
+  [§ 2 → What a pull request title opens with](#what-a-pull-request-title-opens-with)** — one
+  statement read by this role and by the gate that refuses a title, so that the two cannot
+  disagree. ⛔ **It is a third fact and not either of the two beside it**: a project may carry a
+  title reference and no closing form, a closing form and no title reference, or both.
 - **The closing reference is whatever `link_for_close` (§3) says** — a keyword in the body on one
   tracker, a bracketed number in the title and never a hash on another, and legitimately absent on
   a third, where the item moves separately and neither title nor body carries a closing form.

@@ -1,0 +1,45 @@
+name: Title form
+
+# What a pull request title opens with, derived once for both of its readers — the finishing role
+# that writes a title and the host gate that refuses one. Held to the section of
+# plugins/mjolnir/config/schema.md that states the facet; no copy of it is carried here.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2: where a project controls
+# its own workflows, each mirrored command takes a workflow of its own, the cost being a checkout
+# per command and what it buys being `checks` remaining the single statement of what the host runs.
+#
+# ⚠️ This repository states no `host.pull_request_title`, so pointed at this tree the module
+# answers that there is no form and no gate is installed. What this run holds is the derivation
+# itself, against planted forms — which is the only place it can be held, since the project the
+# facet was measured on is not this one.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The module reads a configuration and composes an expression; it
+# reaches no host and no tracker.
+permissions: {}
+
+jobs:
+  title-form:
+    name: Title form
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Pinned rather than relying on whatever the runner image ships, for the reason the sibling
+      # workflows pin it: the module runs on the shared reader, which needs the parser, and a
+      # check that silently stops running is the failure this job exists to catch.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` states this run mirrors.
+      # ⚠️ The suite's one unchecked precondition is grep on PATH: the expression this module
+      # derives is run by `grep -E` inside a generated gate and by Python's own engine when a role
+      # reads a title back, so one arm compares the two and asserts grep answered before it does.
+      - name: Hold the title form's derivation to the surface
+        run: python3 plugins/mjolnir/scripts/title_form.py --self-test
