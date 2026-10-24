@@ -47,6 +47,18 @@
             "statusMessage": "Giving back the place this call held"
           }
         ]
+      },
+      {
+        "matcher": "EnterWorktree",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/load_the_rules.py"],
+            "timeout": 10,
+            "statusMessage": "Putting the rule this tree holds into the session"
+          }
+        ]
       }
     ],
     "SessionEnd": [
