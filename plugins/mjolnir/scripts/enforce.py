@@ -1366,11 +1366,22 @@ def questions(surface_text: str | None = None) -> list[str]:
     the alternation one statement rather than two. An empty list where the
     alternation cannot be read at all, which the caller reports rather than
     treating as *every question is fine*.
+
+    ⚠️ **Which copy of the surface** is § 1's question and not this arm's, so it
+    is asked through the reader rather than answered here: the working directory
+    is the skills root this arm is invoked from, and a tree that ships the surface
+    is read against its own copy. Without that, a question a branch adds to the
+    vocabulary is refused by the installed branch's list while the configuration
+    beside it loads -- the same skew one facet over.
     """
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     try:
         import config as reader  # noqa: PLC0415 -- the path is set one line up
-        text = surface_text if surface_text is not None else SURFACE.read_text(encoding="utf-8")
+        text = (
+            surface_text
+            if surface_text is not None
+            else Path(reader.surface_for()).read_text(encoding="utf-8")
+        )
         return list(reader.surface_facts(text)["enums"].get(QUESTION_VOCABULARY) or [])
     except Exception:  # noqa: BLE001 -- any failure is a named absence to the caller
         return []

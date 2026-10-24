@@ -1424,3 +1424,74 @@ installed nowhere in this tree — which is the facet's own stated absence rathe
 standing down. What exercises the rule is the checker's planted bodies, and what exercises the
 install is a fixture built from the example that states a section, with the generated workflow and
 its registered entry then handed to the drift check that holds every other entry here.
+
+## The surface a tree is held to, and the guards that went quiet in a configured project
+
+The facet above is also what measured this one. Within a day of the body-sections key landing on
+the integration branch, a session working a different item in its own tree could run no guarded
+command at all: every call it made came back with three of the four guards reporting that the
+project's configuration could not be read and the command held to nothing, and any role that read
+the configuration exited naming `body_sections` as a required key. The project that produced those
+messages had written the key — on the integration branch, in the file every adopter writes.
+
+**Two copies of this surface can answer the question, and nothing had decided which one does.**
+Measured 2026-10-24:
+
+| | Where it came from | Which commit |
+|---|---|---|
+| The reader and this surface | the installed plugin's path, which a user-scope install points at the primary checkout | the integration branch |
+| The configuration it resolved | the skills root, which § 1 rules is the directory the role ran in | the tree's own branch |
+
+So the newer surface was holding an older configuration to a key the older branch had never heard
+of. The skew is one-directional through the reader and that is worth stating, because it bounds what
+had to change: a key a branch *adds* loads against the installed surface — tested, with an invented
+top-level key accepted by the reader and reddened only by the single-source gate on the host — while
+a key the installed surface newly *requires* refuses every tree cut before the marker.
+
+**Why the tree's surface wins rather than the primary checkout's configuration.** Three rules would
+each have cleared the measured failure, and they are not equivalent:
+
+The third is what the surface now states —
+[`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration).
+
+| Candidate | What it does to the measurement | Why not |
+|---|---|---|
+| Fall back to the primary checkout's configuration where the skills root has none | nothing — the configuration is tracked, so every tree has a copy and the fallback never fires | It also answers a question already ruled: a carrier searching outward acts on another project's facts in a directory that states none |
+| Resolve the configuration from the primary checkout always | clears it, the integration branch carrying the key | A branch changing this surface could then never be tested in its own tree, which is how every item that changed it was built. The configuration under work is the tree's |
+| Resolve the **surface** from the skills root where it ships one | clears it, and keeps the configuration where § 1 puts it | — |
+
+⚠️ **The asymmetry is the whole of the rule**: the configuration is the statement a branch is
+making, so it stays in the tree; the surface is what that statement is held to, so the half under
+work has to be the one in the tree as well. Resolving both from the primary checkout and resolving
+neither are the two symmetric answers, and each reproduces one direction of the failure.
+
+⚠️ **An adopter is unaffected, and that is a property of the test rather than a case handled.** A
+project that consumes the plugin carries no copy of this surface, so there is nothing for the
+resolution to find and the installed copy is read — the behaviour that existed before the rule. The
+two answers also coincide for the shipping project's own primary checkout, that root and the
+installed path being one directory, which is why the suite's assertion about this repository holds
+the resolution's *report* rather than a difference it cannot produce here.
+
+**What the rule found once it was enforced: ten shape rules answering a question that was not
+theirs.** With the surface resolved from the tree, the measured configuration still would not load —
+the reader's own type rule for the key refused its absence, independently of any marker. The
+division had been stated in the comment beside that rule and not performed by it:
+
+| Question | Whose | Where |
+|---|---|---|
+| Is the key written at all | the surface's `# required` marker | checked in `validate` before any shape rule runs |
+| What a stated value has to be | the shape rule | the reader, per section |
+
+A rule that refuses absence states the marker's fact a second time, and the second statement
+outlives the first in exactly one place: a tree whose surface does not mark the key. Ten of them did
+it — every list-valued and block-valued required key on this surface. The assertion that found them
+is over the marked set rather than a list in the test, so a key that grows a shape rule is covered
+the day the surface marks it.
+
+⛔ **What the silence cost is the reason this is a correctness rule and not a convenience.** A guard
+that cannot read a configuration fails closed and says so, which is right. But *held to nothing* and
+*this project configured nothing* are the same two lines to whoever is reading them, and three of
+the four guards produced the first while the project had written every one of their keys. Nothing
+reported the version skew as a skew. The rule removes the state, and naming the resolved surface
+among what a role reports is what makes the remaining case visible at the moment it happens —
+[`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration).
