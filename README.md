@@ -301,7 +301,7 @@ the safe way round. ⛔ **The
 verdict turns on who would answer the prompt**: you get the ask where you would answer it, and
 the call is refused outright where the session would answer on its own behalf,
 because a prompt a session can clear for itself is not approval. The
-[live rule](plugins/mjolnir/config/schema.md#20-a-command-that-could-open-a-session-on-a-live-machine)
+[live rule](plugins/mjolnir/config/schema.md#21-a-command-that-could-open-a-session-on-a-live-machine)
 is the single statement of the list and its keys,
 [which verdict](plugins/mjolnir/config/schema.md#which-verdict-and-who-would-answer-the-prompt)
 of the line the whole guard rests on,

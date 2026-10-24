@@ -5,7 +5,7 @@ name: Live guard
 # command arrives in is still held — behind an assignment, behind a wrapper, in a later segment of
 # a compound, inside a substitution, with a user in front of the machine or a path after it — that
 # every shape which merely *names* the command is still let through, that a machine the project
-# named as not live still passes silently, that each of the four facts whose absence § 20 fails
+# named as not live still passes silently, that each of the four facts whose absence § 21 fails
 # closed on still holds the call, and that `hooks.json` still calls this script on the event its
 # arm answers. A guard that stopped being called holds nothing while every reader goes on
 # reporting it installed, and nothing in a session ever says so.

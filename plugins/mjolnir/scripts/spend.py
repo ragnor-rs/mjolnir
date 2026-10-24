@@ -242,7 +242,7 @@ def readable(command: str) -> bool:
     this question, and the fallback is deliberately not distinguishable by its
     output. What reads it is the sibling guard whose verdict turns on it -- a call
     nothing can parse has no reliable command positions in it, which
-    `schema.md § 20 -> The four ways it fails closed` makes one of the four.
+    `schema.md § 21 -> The four ways it fails closed` makes one of the four.
 
     ⚠️ It says nothing about whether the *shell* would run the call. A quote
     nobody closed is unreadable to both; a construct this lexer reads and the

@@ -1,0 +1,40 @@
+name: Body sections
+
+# The gate on the checker that holds a pull request body to the sections a project's
+# configuration requires. One mirrored command, so one workflow, per § 2 of
+# plugins/mjolnir/config/schema.md — the rule its siblings here cite too.
+#
+# ⚠️ The workflow name and the job name are deliberately the same string, as in every sibling:
+# `host.checks` is keyed by the workflow name and never by a job name, and identical names leave
+# no key to get wrong.
+#
+# ⛔ This run holds the checker and never this repository's own bodies. `body_sections` here is
+# `[]` — nothing is deployed and no role collects a section out of a change — so the gate the
+# checker is written for is installed nowhere in this tree, and what this suite asserts is that
+# it answers correctly wherever it is. The open-items section a body here does carry is the
+# other gate's, and is procedure rather than a configured section (§ 20).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: every scope of the automatic token is dropped, and the
+# checkout is told not to leave it behind in the git config. The planted bodies and the
+# rendered copy of the checker are the whole input — nothing is asked of the host.
+permissions: {}
+
+jobs:
+  body-sections:
+    name: Body sections
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command: the planted bodies run first, then the arms that execute the
+      # rendered copy against the same bodies and assert the same answers — the two callers
+      # agreeing is the property a gate and a local run disagreeing would destroy.
+      - name: Assert the checker reddens, passes, and that its rendered copy agrees
+        run: python3 plugins/mjolnir/scripts/check_body_sections.py --self-test

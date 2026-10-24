@@ -4,7 +4,7 @@
 The surface states which commands a project has decided open such a session,
 where the machines that are *not* live are named, which verdict each permission
 mode gets and the four facts whose absence puts the call to a person -- see
-`schema.md § 20 -> A command that could open a session on a live machine` and
+`schema.md § 21 -> A command that could open a session on a live machine` and
 the three subsections beside it. This script is the carrier for each:
 
     guard   a `PreToolUse` answer: put the call to the person, or refuse it --
@@ -15,7 +15,7 @@ the three subsections beside it. This script is the carrier for each:
 path or fingerprint is written below.** The commands are the project's, the
 names that clear a call live in a file outside every working tree, and what this
 file carries is the command position, the machine a call names, the decision and
-the report (`schema.md § 20`).
+the report (`schema.md § 21`).
 
 ⛔ **The command position is not resolved here either.** It is `spend.py`'s, one
 facet over, and it is imported rather than copied: the parse carries a hundred
@@ -61,7 +61,7 @@ SURFACE = Path(__file__).resolve().parent.parent / "config" / "schema.md"
 # this file only if its anchor survives, which is the bargain every citation of
 # the surface already makes.
 ARM_ANCHORS = {
-    "facet": "20-a-command-that-could-open-a-session-on-a-live-machine",
+    "facet": "21-a-command-that-could-open-a-session-on-a-live-machine",
     "verdict": "which-verdict-and-who-would-answer-the-prompt",
     "allowlist": "the-machines-named-are-the-ones-that-are-not-live",
     "closed": "the-four-ways-it-fails-closed",
@@ -73,10 +73,10 @@ ARM_ANCHORS = {
     "direction": "which-direction-a-guard-fails-in",
 }
 
-FACET_CITATION = "schema § 20 → A command that could open a session on a live machine"
-VERDICT_CITATION = "schema § 20 → Which verdict, and who would answer the prompt"
-ALLOWLIST_CITATION = "schema § 20 → The machines named are the ones that are not live"
-CLOSED_CITATION = "schema § 20 → The four ways it fails closed"
+FACET_CITATION = "schema § 21 → A command that could open a session on a live machine"
+VERDICT_CITATION = "schema § 21 → Which verdict, and who would answer the prompt"
+ALLOWLIST_CITATION = "schema § 21 → The machines named are the ones that are not live"
+CLOSED_CITATION = "schema § 21 → The four ways it fails closed"
 
 # The carrier, and the event the one arm answers. ⛔ Held rather than assumed: an
 # arm whose event stopped being registered is dead in every session, and a dead
@@ -96,7 +96,7 @@ LOCAL = "live_guard.local_names"
 
 # --- who would answer the prompt --------------------------------------------
 #
-# ⛔ The harness's own vocabulary and not this surface's, by `schema.md § 20 ->
+# ⛔ The harness's own vocabulary and not this surface's, by `schema.md § 21 ->
 # Which verdict`: which mode a session is in is not a project's fact, so no key
 # states it and no project may call an unattended mode answered. What is read
 # here is the mode the event arrived with, and the two groups are the whole of
@@ -132,14 +132,14 @@ ANSWERED_BY_THE_SESSION = {
 
 # The field the mode arrives in, and the decision an unlisted one gets. ⛔ The
 # stricter of the two, which is the direction a reader of a state it cannot
-# understand has to err in (§ 20 → Which verdict) -- and it covers a payload
+# understand has to err in (§ 21 → Which verdict) -- and it covers a payload
 # carrying no mode at all for the same reason.
 PERMISSION_MODE = "permission_mode"
 UNRECOGNISED = "deny"
 
 # --- what could not be established ------------------------------------------
 #
-# The four of `§ 20 -> The four ways it fails closed`, each as the phrase the
+# The four of `§ 21 -> The four ways it fails closed`, each as the phrase the
 # report names it by. ⛔ Read by the suite, so a reword travels rather than
 # breaking it.
 
@@ -184,7 +184,7 @@ def local_names(config) -> set[str]:
 
     ⛔ Read from the configuration and **never from the file**, which is the one
     thing that keeps this answer independent of whether any machine has a list
-    yet: a loopback name is not another machine's identity (§ 20 → The machines
+    yet: a loopback name is not another machine's identity (§ 21 → The machines
     named), so what it reaches does not change with a file somebody has or has
     not written. ⚠️ Folding the two together was a measured defect of this
     carrier: with the allowlist unreadable, a name the project itself calls local
@@ -202,7 +202,7 @@ def named_in(path) -> set[str] | None:
     """The machines named as not live, or None where no file could be read.
 
     ⛔ None and an empty set are different answers, and the difference is the
-    first of § 20's four: a file nobody wrote on this machine is a machine where
+    first of § 21's four: a file nobody wrote on this machine is a machine where
     every name it would have cleared is live, while a file that exists and names
     nothing is a project's own statement that nothing is allowlisted yet. Both
     put a call to a person; only the first says *there is no list* when it does.
@@ -229,7 +229,7 @@ def named_in(path) -> set[str] | None:
 def machine_of(arguments: list[str], valued_flags) -> tuple[str | None, str | None]:
     """The machine a call names, or None with the reason it could not be read.
 
-    ⛔ The first plain word, after the flags: `§ 20` states that reading and the
+    ⛔ The first plain word, after the flags: `§ 21` states that reading and the
     direction it is wrong in, and this function performs it rather than deciding
     it. A flag written with its value attached is one word and carries both; a
     flag the entry names as taking a separate word consumes the word after it;
@@ -261,7 +261,7 @@ def machine_of(arguments: list[str], valued_flags) -> tuple[str | None, str | No
             return None, UNREADABLE_TARGET
         # A leading user and a trailing path are the two things a session
         # command's own syntax wraps a machine in. ⚠️ The user is dropped rather
-        # than read: § 20 keeps every user out of this toolkit, and what the
+        # than read: § 21 keeps every user out of this toolkit, and what the
         # guard decides on is the machine.
         name = word.rpartition("@")[2]
         name = name.partition(":")[0]
@@ -288,7 +288,7 @@ def holds(config, command: str) -> list[dict]:
     ⛔ **An unparseable call is held on its tokens rather than on its
     positions.** A call the lexer could not read has no reliable command
     position in it, so *no session command here* would be a reading of a parse
-    that did not happen -- the second of § 20's four. ⚠️ Which is the one place
+    that did not happen -- the second of § 21's four. ⚠️ Which is the one place
     this guard looks at a token outside a command position, and it is the
     direction the position rule exists to protect: it holds a call rather than
     letting one through.
@@ -353,7 +353,7 @@ def live_guard(config, command: str, mode: str) -> dict:
     for match in found:
         machine, why = match["machine"], match["why"]
         # ⛔ The two silent answers this guard has, and both are silence rather
-        # than an `allow`: § 20 states the verdict is never that, so a call the
+        # than an `allow`: § 21 states the verdict is never that, so a call the
         # project has already answered for is left to the permission flow the
         # session already has. ⛔ The local reading comes **first and is not
         # conditioned on the file**: what a loopback name reaches does not change
@@ -419,7 +419,7 @@ def guard_answer(payload: dict, *, config=None) -> dict:
         return {}
     loaded = config if config is not None else _config(payload.get("cwd"))
     if loaded is None:
-        # ⛔ Reported, and the call proceeds. § 20 settles this one case by
+        # ⛔ Reported, and the call proceeds. § 21 settles this one case by
         # pointing at § 19's: what a broken configuration cannot say is whether
         # this call reaches anything at all, so the refusing arm would refuse
         # every call in the project -- the edit that repairs the configuration
@@ -686,7 +686,7 @@ MUST_PASS = [
 ]
 
 # The machines a project named as not live, and the one it did not. ⛔ Placeholder
-# names with no project in them, by § 20's rule that no machine's identity enters
+# names with no project in them, by § 21's rule that no machine's identity enters
 # this toolkit.
 LIVE = "a-machine-no-list-names"
 ALLOWED = "a-borrowed-egress-box"

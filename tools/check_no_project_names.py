@@ -181,7 +181,7 @@ ADDRESS = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
 # A machine named by its address. ⛔ The one identity shape of a *machine* with a
 # form stable enough for the forbidding kind: a hostname is any word and an alias
 # is any word somebody chose, so neither is reachable by a pattern at all --
-# which is why `schema.md § 20` keeps the names a guard clears a call with in a
+# which is why `schema.md § 21` keeps the names a guard clears a call with in a
 # file outside every working tree rather than holding them with a sweep. What
 # this catches is the one spelling that cannot be anything else.
 #
@@ -915,7 +915,7 @@ def check_no_address_is_named(tree: Tree) -> list[str]:
 def check_no_machine_is_named(tree: Tree) -> list[str]:
     """No machine is named by its address, anywhere in the tree.
 
-    The convention's own words for the class are `schema.md § 20`'s: no host,
+    The convention's own words for the class are `schema.md § 21`'s: no host,
     alias, user, jump path or fingerprint enters this toolkit. ⛔ **Only the
     decidable end of that is held here** -- an address, which cannot be anything
     else -- and the rest is held by where the names live rather than by a

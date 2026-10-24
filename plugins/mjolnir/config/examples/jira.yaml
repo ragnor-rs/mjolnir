@@ -136,6 +136,18 @@ commit:
   staging: all
   trailer: read_from_history
 
+# § 20. Two sections, because two roles each read one — and two entries, never one entry naming
+# both, since the gate reports a missing section by the heading and the reader waiting on it.
+# ⚠️ The headings are in the repository's language and not the tracker's: `language.work_item`
+# below is `ru` and `language.repo` is `en`, and the body is a repository artifact.
+body_sections:
+  - heading: "Before this can be deployed"
+    read_by: "the deploy role, per environment"
+    nothing_needed: "Nothing."
+  - heading: "Data to migrate"
+    read_by: "the role that runs the migration ahead of the release"
+    nothing_needed: "None."
+
 carriers:
   day_log: skill
   file: skill
@@ -276,7 +288,7 @@ live_guard:
     - command: "<the command that copies a file to another machine>"
       valued_flags: ["--PORT-FLAG"]
   # ⚠️ Outside every working tree, and on this project's machines it is the one file a new machine
-  # has to be given before the guard stops prompting — which is the half-set-up state § 20 makes
+  # has to be given before the guard stops prompting — which is the half-set-up state § 21 makes
   # stricter rather than silent.
   allowlist: "<the absolute path of the file naming the machines that are not live>"
   # The container this project's own stack is reached by, which never leaves the machine it runs

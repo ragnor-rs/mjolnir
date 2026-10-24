@@ -748,7 +748,7 @@ rewrite from the idea reproduces none of them.
 
 **What the verdict depends on is not the command.** ⛔ **It is who would answer the prompt**, and
 that is the load-bearing line
-([`schema § 20 → Which verdict`](../plugins/mjolnir/config/schema.md#which-verdict-and-who-would-answer-the-prompt)):
+([`schema § 21 → Which verdict`](../plugins/mjolnir/config/schema.md#which-verdict-and-who-would-answer-the-prompt)):
 a mode a person answers gets an ask, a mode that answers its own prompts gets a refusal, and an
 unrecognised mode is read as the second. Both failures of that rule are cheap to picture and were
 expensive to find — a guard that always asks enforces nothing in a run nobody is watching, and a
@@ -767,7 +767,7 @@ guard that always denies is one somebody turns off.
 **Why the two lists are not one key.** The allowlist is a file on a machine and `local_names` is a
 line in a repository, and the test that decides which a name belongs in is whether the name
 identifies *another* machine: a loopback name does not, and everything else does
-([`schema § 20 → The machines named`](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)).
+([`schema § 21 → The machines named`](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)).
 ⛔ **Collapsing them into one configured list would put somebody's infrastructure into a repository
 anybody can clone**, which is the one thing this facet is organised to prevent; collapsing them
 the other way — a file for both — would make a loopback name a per-machine fact that every new
@@ -776,7 +776,7 @@ checkout has to be told.
 **Why the absence of the file makes the guard stricter rather than quieter.** A machine where
 nobody has written the list yet is one where every name that list would have cleared reads as live,
 so a half-set-up machine is safe by default and the remedy is visible in the refusal
-([`schema § 20 → The four ways it fails closed`](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed)).
+([`schema § 21 → The four ways it fails closed`](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed)).
 ⚠️ **That is the opposite of how a missing configuration file usually reads**, and it is the
 direction this facet cannot afford to have backwards.
 
@@ -1363,3 +1363,48 @@ workflow here states no `types:` key and its entry carries no clause, which is e
 the omission rule gives it; the one that does is the whole of the evidence that the clause is worth
 having, and the second event kind rests on that same entry. What exercises the rest is the reader's
 planted violations and the example that illustrates the form.
+
+## A section one role writes and another runs
+
+The facet is [`schema § 20`](../plugins/mjolnir/config/schema.md#20-the-sections-a-pull-request-body-must-carry);
+what is here is the measurement that made it one, and the three questions settled while it was
+being written.
+
+**What was found.** One project in the migration set carries a workflow of its own, separate from
+its lint suite, whose single job asserts that a pull request body states what the change needs
+done to an environment before it can be deployed. The section is not decoration there: the role
+that deploys a batch collects exactly it out of every change the batch carries and runs what it
+collected. So the body is an interface between two roles — and the heading it turns on was stated
+in a workflow file and nowhere else. Read against the surface as it then stood, § 6 ruled the body
+a summary and a test plan and deferred the closing form to § 3; environment preparation was a
+third element the configuration did not state, and a gate enforcing a fact no configuration states
+is the shape this surface exists to delete.
+
+**Why it is not the title gate one item over.** Two properties separate them, and both change what
+can be built:
+
+| | The title gate | This one |
+|---|---|---|
+| What the rule reads | a pattern over the event payload, which a workflow can state inline | a body, which needs a parser |
+| What `host.checks` records | an entry mirroring nothing, which the duplicate-run guard reads as never-guard | an entry whose `mirrors` names a command a person can run, which that guard reads as guardable |
+| What has to be installed | one file | a checker as well, because a host run executes files and the toolkit is not one of them |
+
+**Three questions, and the arguments that settled each.**
+
+| Question | Settled | The argument |
+|---|---|---|
+| What makes a heading a facet rather than a convention | **Another role reads it**, stated on the entry as `read_by` | Any heading can be made mandatory, and a gate over a heading nobody collects is a contributing guide enforced by continuous integration. Writing the reader down on the entry is what keeps the test applied rather than remembered, and it is also what a refusal names — a body handed back with nothing saying who was waiting on the section leaves the author guessing |
+| Whether a section can be required with no way to answer *nothing* | **No; `nothing_needed` is on every entry** | A required section whose only passing form is content turns every change needing nothing into a change that has to invent some, and what the body then carries is a sentence written to satisfy a gate. The answer also has to be the *whole* of the section: a body stating it and then listing work has said both things, and the collecting role would have to choose |
+| Whether the open-items section belongs in the facet | **No** | It is required of every body with no key that turns it off, and an entry here is one a project may stop stating. Carried here, the rule would become configurable — which the rule's own precedence refuses. Its heading stays with the gate that reads it, and what the two gates share is the grammar for finding a section in a body rather than the heading |
+
+⚠️ **The headings are the repository's language and not the tracker's**, which is visible in the
+example that states two: its items are written in one language and its repository in another, and
+the body is a repository artifact. A heading transliterated out of the tracker's language matches
+nothing a body carries.
+
+⚠️ **This repository requires no section and that is not a hole in the evidence.** Nothing here is
+deployed and no role collects a section out of a change, so `body_sections` is `[]` and the gate is
+installed nowhere in this tree — which is the facet's own stated absence rather than a project
+standing down. What exercises the rule is the checker's planted bodies, and what exercises the
+install is a fixture built from the example that states a section, with the generated workflow and
+its registered entry then handed to the drift check that holds every other entry here.

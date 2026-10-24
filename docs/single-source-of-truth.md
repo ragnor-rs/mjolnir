@@ -364,7 +364,7 @@ rather than from a hand-kept list of roots.
 | 6 | No tracker is named, in the slug spelling or the prose one | the strict set | forbidding |
 | 7 | No package manager, task runner, build tool, checker, manifest or lockfile; no stack's own flag; no interpreter in front of something this repository does not ship; no directory change prefixing a command, no directory flag, no absolute path | the strict set | forbidding |
 | 8 | No value any configuration supplies | the strict set | forbidding |
-| 9 | No machine named by its address, which is the one identity shape of a *machine* with a form a pattern can hold — a hostname is any word and an alias is any word somebody chose, so those are held by the names living outside every working tree ([schema § 20 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)) rather than by this sweep | same | forbidding |
+| 9 | No machine named by its address, which is the one identity shape of a *machine* with a form a pattern can hold — a hostname is any word and an alias is any word somebody chose, so those are held by the names living outside every working tree ([schema § 21 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)) rather than by this sweep | same | forbidding |
 
 Check 5 is the one that makes the shape-matched strict set safe: a carrier in a directory the
 shapes do not reach — `plugins/other/skils/`, one letter out — would otherwise be swept by nothing
@@ -2290,11 +2290,11 @@ that direction directly.
 
 `plugins/mjolnir/scripts/live.py --self-test` runs in the `Live guard` workflow, with no credential
 and no network. ⛔ The rules are
-[schema § 20](../plugins/mjolnir/config/schema.md#20-a-command-that-could-open-a-session-on-a-live-machine),
-[schema § 20 → Which verdict](../plugins/mjolnir/config/schema.md#which-verdict-and-who-would-answer-the-prompt),
-[schema § 20 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)
+[schema § 21](../plugins/mjolnir/config/schema.md#21-a-command-that-could-open-a-session-on-a-live-machine),
+[schema § 21 → Which verdict](../plugins/mjolnir/config/schema.md#which-verdict-and-who-would-answer-the-prompt),
+[schema § 21 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)
 and
-[schema § 20 → The four ways it fails closed](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed),
+[schema § 21 → The four ways it fails closed](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed),
 and this document states none of them: what is recorded here is the reach of the arm and what it
 cannot see, which is narrower than the rules in directions the rules do not mention.
 
@@ -2329,7 +2329,7 @@ than a silent pass.
 ### What this check deliberately does not hold
 
 - **A machine that is not the call's first plain word.** The reading is positional:
-  [schema § 20](../plugins/mjolnir/config/schema.md#20-a-command-that-could-open-a-session-on-a-live-machine)
+  [schema § 21](../plugins/mjolnir/config/schema.md#21-a-command-that-could-open-a-session-on-a-live-machine)
   states it and states the direction it is wrong in. A command that takes its target second — a
   copy whose source is local and whose destination is remote — has its *first* word read as the
   machine, which is in no list, so the call is put to a person. ⛔ Deliberately not resolved per
@@ -2365,7 +2365,7 @@ than a silent pass.
   pass. Nothing here can tell a list that is short from one that is right.
 - **A call that cannot be parsed and only *mentions* a session command.** The positional rule is
   suspended there, by
-  [schema § 20 → The four ways it fails closed](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed),
+  [schema § 21 → The four ways it fails closed](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed),
   so an unclosed quote around prose naming the command is held. ⚠️ A false prompt in the one state
   where the alternative is reading positions out of a parse that did not happen — and the report
   names the whole call rather than a segment of it, there being no segments to count.
@@ -2404,6 +2404,17 @@ re-rendering it, and taken back out when the artifact is; and a place that could
 reported as that rather than as nothing being there. The kinds are the two this document draws:
 **computed** throughout — a path, a mode, a byte comparison, a reader's verdict — with no
 forbidding arm among them.
+
+⛔ **The registry's order is install order, and every removing route walks the reverse of it**, by
+[§ What the toolkit installs](../plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)'s
+removable property. ⚠️ A registry may hold an artifact that only works while a sibling is there,
+and one order for both directions produces the intermediate state the order exists to avoid: the
+called file gone and the caller still installed, which is a red check on every change rather than
+something inert. ⚠️ **Two routes remove and both were measured walking forwards** — the explicit
+removal, and a configuration that stops asking — so both arms read the order off the acts rather
+than off the report, which stays in registry order. ⚠️ **And a directory the toolkit owns does not
+outlive its last artifact**, while a directory the project owns is left standing empty: the
+toolkit writes into the host's own workflow directory and does not own it.
 
 ⛔ **Where a generated gate goes is not this module's**, by
 [§ 2](../plugins/mjolnir/config/schema.md#a-workflow-whose-jobs-mirror-more-than-one-command),
@@ -2522,6 +2533,61 @@ applied to a suite's own fixture.
 - **Whatever is not committed**, and **issues and pull requests**, for the reasons the document
   checks above give: this suite reads trees it creates and the configuration in the checkout, and
   the workflow holds no credential.
+
+## The body gate: the sections a change has to answer
+
+`plugins/mjolnir/scripts/check_body_sections.py --self-test` runs in the `Body sections`
+workflow, with no credential and no network. ⛔ The rule is
+[schema § 20](../plugins/mjolnir/config/schema.md#20-the-sections-a-pull-request-body-must-carry)
+and this document states none of it. What is recorded here is what the suite holds, what the
+script deliberately does not carry, and the one property the whole design turns on.
+
+**One implementation and two callers, asserted rather than claimed.** A host run and a local run
+disagreeing about a body is the state the facet exists to remove, so it is the thing the suite
+proves: the arms render the vendored copy, execute it as a separate process against the same
+planted bodies the source is held to, and assert the same exit status and the same verdict on
+each. ⚠️ **Three bodies, not one** — answering both sections, answering one, answering neither —
+because a copy agreeing on green alone would agree with any implementation that never refuses.
+
+**What the file is split into, and why the split is load-bearing.** Everything above a sentinel
+line is the rule and is what the install step vendors; everything below is the renderer and the
+suite. ⛔ The acceptance this carries is
+[§ 20](../plugins/mjolnir/config/schema.md#20-the-sections-a-pull-request-body-must-carry)'s —
+a generated file carries no heading the configuration did not state — and it is held **on the
+parse tree**: every string literal of a rendered copy is either one the vendored half already
+carried or one the fixture configuration stated, and anything else is named. ⚠️ Measured against
+a whole-file render, which carried the suite's own fixture headings into the artifact.
+
+**What a body is read from, in order, and the one reading that is not a verdict.** An explicit
+file, then the environment variable the generated workflow sets off the event, then the host's own
+CLI for the pull request on this branch. ⛔ A body that could not be read is reported as that and
+on a status of its own, by
+[§ 11](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish): read as an
+empty body it would refuse every section at once, and the refusal would name work nobody can do.
+⚠️ **An empty `PR_BODY` is a body and not an absence** — a body edited down to nothing is exactly
+what the gate is for.
+
+What else the suite holds: a section answered at any heading level, in any case, and with the
+emphasis a body wraps a heading in; the configured *nothing* answer accepted bare, as a bullet,
+and without its trailing period; a section closed with a horizontal rule still read as answered; a
+heading quoted inside a fence read as not stated at all; a heading stated twice refused; an empty
+section refused; and the *nothing* answer with anything beside it refused, which is the arm that
+makes the whole-section rule load-bearing. ⚠️ Every refusal is reported, never the first, so a body
+missing three sections hears about three. The kinds are **computed** throughout: each arm is a
+verdict over a body this suite wrote, and the one list the script carries — the sections — is
+empty in the copy that ships.
+
+⛔ **The grammar is shared with the gate on open items and the heading is not**, by
+[§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred). How a section is
+found in a body is one implementation here, which that gate imports; the heading it looks for
+stays with it, because a section carried in this facet is one a project may stop stating and that
+one is a section no project may stop carrying.
+
+**What this repository is not a subject of.** `body_sections` here is `[]`, so no gate is
+installed in this tree and no body of this repository is held by one. The install's own suite is
+where the artifacts are exercised, against a fixture built from the example that states a section
+— and the generated workflow and its registered entry are then handed to the drift check, so the
+two statements of that run are held to each other exactly as every hand-written entry here is.
 
 ## Each check has a violation it is asserted to redden on
 

@@ -58,6 +58,9 @@ host:
     - workflow: "Adapter suites"
       mirrors: "python3 plugins/mjolnir/scripts/adapter_suites.py"
       triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Body sections"
+      mirrors: "python3 plugins/mjolnir/scripts/check_body_sections.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Boundary"
       mirrors: "python3 plugins/mjolnir/scripts/boundary.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -283,6 +286,13 @@ commit:
   # would hand back whatever history happened to carry.
   trailer: none
 
+# § 20. Nothing here is deployed and no role collects a section out of a change, so there is no
+# section to require beyond what § 6 already rules and no gate to install. ⛔ The open-items
+# section is not an entry here and must not become one: it is procedure's, required of every
+# body with no key that turns it off, and an entry of this facet is one a project may stop
+# stating.
+body_sections: []
+
 carriers:
   day_log: skill
   file: skill
@@ -443,7 +453,7 @@ live_guard:
   # ⛔ No command this repository runs opens a session anywhere else. Every check here is a suite
   # over the tree it runs in, the code host is reached by its own client and the tracker through
   # that client too — so there is no machine to be live, and the list is empty. `[]` rather than
-  # an unset key, by § 20: a project that looked at its commands and found none that leave this
+  # an unset key, by § 21: a project that looked at its commands and found none that leave this
   # machine and a project that never looked read alike otherwise.
   #
   # ⚠️ The empty list is also what makes this repository the green side of its own check: the
@@ -452,5 +462,5 @@ live_guard:
   session_tools: []
   # No `allowlist` and no `local_names`: both are read only once an entry above matches, and with
   # no entry there is nothing for either to decide. ⛔ A path stated here would name a file on
-  # whatever machine this is checked out on, which is the one thing § 20 keeps outside every
+  # whatever machine this is checked out on, which is the one thing § 21 keeps outside every
   # working tree.
