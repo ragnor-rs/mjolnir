@@ -145,11 +145,31 @@ git -C <work-root> rev-parse --abbrev-ref --symbolic-full-name @{upstream}
 
 The rules are [`§ 6 → The pull request title and
 body`](../../config/schema.md#the-pull-request-title-and-body) — the summary and the driven test
-plan, the closing reference being whatever the port's `link_for_close` says, the language and
-register, the authorship rule, and the body being held to [*Nothing is
+plan, the closing reference being whatever the port's `link_for_close` says, what the title opens
+with, the language and register, the authorship rule, and the body being held to [*Nothing is
 deferred*](../../config/schema.md#nothing-is-deferred). ⛔ **This file does not restate any of
 them.** What it carries is the **shape** those rules leave open, which is the part that lived in
 the five copies:
+
+⛔ **What the title opens with is read through the one consumer, never composed by eye.** The form
+is [`§ 2`](../../config/schema.md#what-a-pull-request-title-opens-with)'s and the gate that refuses
+a title reads the same derivation, so a title written from memory is the drift that facet exists to
+close — ⚠️ **and the refusal lands on the host**, where it is a red check on the change rather than
+a correction here.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/title_form.py" render --item <the item's number> \
+  --rest <the rest of the title>
+```
+
+- **It exits 3 where the project states no form**, which is a title that opens with no reference
+  and is the ordinary case rather than a failure: write the title as prose and say so.
+- **It exits 1 where this project's own form could not render the title asked for** — more than
+  one identifier on a form admitting one is the measured case — and names which.
+- ⚠️ **A change closing more than one item passes `--item` more than once**, in the order the
+  references are to read; the form decides whether that is allowed and the refusal says so.
+- ⛔ **The title is read back after it is set**, with `check --title`, for the reason the open-items
+  statement is read back rather than believed: what the host holds is what the gate will read.
 
 **The summary** is what changed and why it is the answer to the item — not a list of the files
 touched, which the diff already states better. One paragraph, where one will do.

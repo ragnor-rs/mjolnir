@@ -96,6 +96,12 @@ from config import ConfigError  # noqa: E402
 # facet to those files never looks.
 import check_host_checks  # noqa: E402
 
+# ⛔ Imported for one derivation and not for a rule: what a pull request title
+# opens with is stated once (§ 2) and composed once, and this step is the second
+# reader of it. A pattern composed here would be free to refuse what the
+# finishing role writes, which is the drift that facet exists to close.
+import title_form  # noqa: E402
+
 try:
     import yaml
 except ModuleNotFoundError:  # pragma: no cover - environment, not logic
@@ -228,6 +234,7 @@ class Artifact:
         wanted=None,
         body=None,
         entry=None,
+        registers_as: str | None = None,
         comment: str = HASH,
         mode: int | None = _BY_KIND,
     ):
@@ -257,6 +264,13 @@ class Artifact:
         self._wanted = wanted
         self._body = body
         self._entry = entry
+        # The workflow name this artifact's entry is keyed on, where that name is
+        # a fact about the artifact rather than about the project. ⛔ It exists
+        # because an entry cannot always be *reconstructed*: an artifact whose
+        # entry is composed from the same facet that decides whether it is wanted
+        # has none to compose once the project stops stating that facet, and the
+        # removal path then takes out the file and leaves the entry.
+        self.registers_as = registers_as
         self.comment = comment
 
     def wanted(self, configuration: config.Config) -> bool:
@@ -283,17 +297,232 @@ class Artifact:
     def entry(self, configuration: config.Config):
         return None if self._entry is None else self._entry(configuration)
 
+    def standing_entry(self, configuration: config.Config):
+        """The entry this configuration already states for this artifact, or None.
 
-# ⛔ The live registry, and it is **empty on purpose rather than unfinished**.
-# The three artifacts this step was separated out for -- two host gates and a
-# `commit-msg` rail -- are each their own work item, and each of those states
-# what its file says and which value it reads. A placeholder here would be this
-# module inventing a gate, which is the one thing the split exists to prevent.
+        ⛔ Found by the workflow name § 2 keys the facet on, and never
+        reconstructed. ⚠️ Measured as a reconstruction, on the first artifact
+        whose entry is composed from the facet deciding whether it is wanted: a
+        project that stopped stating the facet had its gate removed as a file and
+        left as an entry — which reddens the drift check and leaves every
+        consumer of the facet waiting on a run the host will never make.
+        """
+        if self.registers_as is not None:
+            return registered_as(configuration, self.registers_as)
+        # ⛔ An artifact that does not declare the name it registers under makes
+        # no claim on one, so nothing here is read as its own: the workflow name
+        # alone cannot tell two artifacts apart, and reading one's entry as the
+        # other's to replace turns a genuine collision into a silent overwrite.
+        # ⚠️ Measured on two fixture artifacts composing one workflow name — the
+        # second replaced the first's entry instead of being refused.
+        composed = self.entry(configuration)
+        if composed is None or not already_registered(configuration, composed):
+            return None
+        return composed
+
+
+# --- what a generated workflow says about where it runs --------------------
 #
-# ⚠️ So a run against this repository reports an empty registry **as** an
-# answer, named, rather than as a complete install: a step that holds nothing
-# and prints success is the shape every check in this tree is written against.
-ARTIFACTS: tuple[Artifact, ...] = ()
+# ⛔ Read from § 2's `host.runner` and chosen nowhere here, which is that
+# subsection's own rule for this step: the label, the budget and the
+# supersession group come from the project, and a literal of this module's own
+# beside a statement that disagrees with it is the drift the facet exists
+# against.
+
+# What each host kind's own default runner is. ⛔ Not on the surface, and
+# deliberately: § 2 keeps the per-kind default off it, a table of labels there
+# being a second statement of the host's own naming -- wrong the next time the
+# host changes one, and wrong silently. ⚠️ **This is the "own template" § 2
+# names** as where the fact does live, and it is read only for a project that
+# states no `host.runner` at all.
+A_KINDS_OWN_RUNNER = {"github": "ubuntu-latest"}
+
+
+def runner_of(configuration: config.Config) -> dict:
+    """The label, the budget and the supersession group a generated job carries.
+
+    ⛔ **Nothing is chosen here.** Where the project states a runner, all three
+    come from it; where it states none, the label is the host kind's own default
+    above and the other two are `None` -- which is § 2's statement that the facet
+    bounds and retires nothing on such a project, rather than a value to invent.
+
+    ⚠️ **A kind with no template raises rather than returning a guess**, and what
+    keeps that unreachable is the suite's assertion that every kind whose
+    definitions this step can write also has a label here -- not a branch, since
+    a generated workflow with no `runs-on` is a file the host refuses to load.
+    """
+    stated = configuration.runner()
+    if stated is not None:
+        return {"label": stated["label"], "budget": stated["budget_minutes"],
+                "group": stated["supersedes"]}
+    kind = configuration.get("host.kind")
+    if kind not in A_KINDS_OWN_RUNNER:
+        raise ValueError(
+            f"no default runner label is known for the `{kind}` host kind, and § 2 "
+            "keeps that default off the configuration surface -- so there is "
+            "nothing to write a generated job's `runs-on` from."
+        )
+    return {"label": A_KINDS_OWN_RUNNER[kind], "budget": None, "group": None}
+
+
+def _scalar(value) -> str:
+    """One YAML scalar, quoted by the emitter rather than by hand.
+
+    ⛔ Every value a generated workflow carries goes through this. ⚠️ The one
+    that makes it load-bearing is the expression a title gate enforces: it is
+    composed from a project's own reference, so it carries whatever that
+    reference carries -- a bracket, a brace, an apostrophe -- and a quoting rule
+    written by hand here would be a second YAML emitter in a step whose output
+    the host has to parse.
+    """
+    # ⛔ Folding off, which `width` is the only way to say. ⚠️ Measured at the
+    # emitter's default: a sentence past the eightieth column came back as two
+    # lines, and the second one landed at the emitter's own indent rather than
+    # inside the block this scalar is written into — valid to one parser, and a
+    # workflow the host may refuse to load, for a value nobody can see is long.
+    dumped = yaml.safe_dump(
+        [value], default_flow_style=True, allow_unicode=True, width=10 ** 6,
+    ).strip()
+    one_line = dumped[1:-1].strip()
+    if "\n" in one_line:
+        raise ValueError(
+            f"a generated file's scalar came back on more than one line: {one_line!r}"
+        )
+    return one_line
+
+
+# --- the title gate (#48) --------------------------------------------------
+#
+# ⛔ What the gate enforces is `title_form`'s derivation and not a pattern
+# composed here: § 2 states the form once for both of its readers, and this step
+# is the second reader. A pattern of this module's own would be the drift the
+# facet was written to close -- a gate refusing what the finishing role writes.
+
+TITLE_GATE_WORKFLOW = "Pull request title"
+TITLE_GATE_JOB = "pull-request-title"
+
+# The event types the gate listens for. ⛔ Procedure and not a project's list,
+# per § 2: a title changes under `edited`, the commit a run answers about changes
+# under `synchronize`, and the other three are the ways a pull request becomes
+# one the host has no run for.
+TITLE_GATE_TYPES = ("opened", "edited", "synchronize", "reopened", "ready_for_review")
+
+
+def _title_gate(configuration: config.Config) -> str:
+    """The workflow file that refuses a title not opening with this project's form."""
+    form = title_form.form(configuration)
+    where = runner_of(configuration)
+    lines = [
+        f"name: {_scalar(TITLE_GATE_WORKFLOW)}",
+        "",
+        "# Refuses a pull request whose title does not open with the work-item reference this",
+        "# project states. The form is read from `host.pull_request_title`, so changing that key",
+        "# changes what this file enforces and nothing here is edited by hand.",
+        "",
+        "on:",
+        "  pull_request:",
+        "    types: [" + ", ".join(TITLE_GATE_TYPES) + "]",
+    ]
+    # ⛔ Omitted whole where the project states every pull request, rather than
+    # written as a filter matching everything: § 2 reads an omitted filter as
+    # *the run covers every change*, and a `branches:` list spelling that out
+    # would be a filter the facet then has to describe.
+    if list(form["into"]) != [config.ANY_REF]:
+        lines.append("    branches:")
+        lines += [f"      - {_scalar(ref)}" for ref in form["into"]]
+    lines += [
+        "",
+        "# Nothing is read from the repository and no credential is held: the title arrives in the",
+        "# event payload, so the job needs neither a checkout nor a token.",
+        "permissions: {}",
+    ]
+    if where["group"] is not None:
+        lines += [
+            "",
+            "concurrency:",
+            f"  group: {_scalar(where['group'])}",
+            "  cancel-in-progress: true",
+        ]
+    lines += [
+        "",
+        "jobs:",
+        f"  {TITLE_GATE_JOB}:",
+        f"    name: {_scalar(TITLE_GATE_WORKFLOW)}",
+        f"    runs-on: {_scalar(where['label'])}",
+    ]
+    if where["budget"] is not None:
+        lines.append(f"    timeout-minutes: {where['budget']}")
+    lines += [
+        "    steps:",
+        "      - name: Hold the title to the form this project states",
+        # ⛔ The title reaches the shell as a variable and never as text
+        # substituted into the script. A host expression written inside `run:` is
+        # the title's own characters becoming shell, so a title carrying a
+        # substitution would run it -- on a gate whose whole job is to read that
+        # title.
+        "        env:",
+        "          TITLE: ${{ github.event.pull_request.title }}",
+        f"          FORM: {_scalar(form['expression'])}",
+        f"          SAYS: {_scalar(form['says'])}",
+        # ⛔ Named rather than left to the runner's own default, and it is not a
+        # project fact: the script below is a POSIX shell script, so which shell
+        # runs it is a property of the script. ⚠️ The default differs per runner
+        # platform, so a project whose stated label is a Windows one would
+        # otherwise have this handed to another language entirely — a gate that
+        # fails on every pull request rather than one that enforces the form.
+        "        shell: bash",
+        "        run: |",
+        '          if printf \'%s\\n\' "$TITLE" | grep -Eq -e "$FORM"; then exit 0; fi',
+        "          printf 'this title does not open with %s\\n' \"$SAYS\" >&2",
+        "          printf 'it states: %s\\n' \"$TITLE\" >&2",
+        "          exit 1",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def _title_gate_entry(configuration: config.Config) -> dict | None:
+    """The `host.checks` entry the title gate registers, or None where there is none.
+
+    ⛔ **No `mirrors`, and that is the entry's whole shape rather than a key left
+    out.** There is no local command to duplicate -- the title is the host's own
+    field and a tree does not carry one -- so § 2 reads this as a run with no
+    local counterpart, and § 18's guard refuses no local run on its account.
+
+    ⚠️ **`None` where the project states no form**, this entry's triggers being
+    composed from the same facet that decides whether the gate is wanted. What
+    finds an entry already written in that state is `registers_as` above and not
+    this function, which has nothing left to compose from.
+    """
+    form = title_form.form(configuration)
+    if form is None:
+        return None
+    types = ", ".join(TITLE_GATE_TYPES)
+    return {
+        "workflow": TITLE_GATE_WORKFLOW,
+        "triggers": [f"pull_request({types}) -> {ref}" for ref in form["into"]],
+    }
+
+
+# ⛔ The live registry. Each member is a rule somebody else's work item states,
+# handed over as data: what the file says, which configured value decides whether
+# it is wanted, and which `host.checks` entry registers it.
+#
+# ⚠️ **No `needs`, and that is #68's ruling rather than an omission.** The two
+# absences are told apart there: a project stating no `host.pull_request_title`
+# does not want this artifact at all, and a project stating the block
+# incompletely is refused by the shared reader before this step is reached. So
+# there is no value this artifact could be *waiting* on.
+ARTIFACTS: tuple[Artifact, ...] = (
+    Artifact(
+        name="pull-request-title",
+        kind=WORKFLOW,
+        leaf="mjolnir-pull-request-title.yml",
+        wanted=lambda c: c.pull_request_title() is not None,
+        body=_title_gate,
+        entry=_title_gate_entry,
+        registers_as=TITLE_GATE_WORKFLOW,
+    ),
+)
 
 
 # --- where an artifact goes ------------------------------------------------
@@ -419,9 +648,30 @@ def refuses_entry(configuration: config.Config, entry: dict) -> str | None:
 
 
 def already_registered(configuration: config.Config, entry: dict) -> bool:
+    """Whether this exact entry is already stated, content and all.
+
+    ⛔ Full equality and not the workflow name, which is the stricter of the two
+    on purpose: an entry whose content a project's own edit has changed is one
+    this step has to rewrite, and matching on the key alone would report it
+    registered while the facet described a run the file no longer makes.
+    """
     return any(
         existing == entry for existing in (configuration.get("host.checks") or [])
     )
+
+
+def registered_as(configuration: config.Config, workflow: str) -> dict | None:
+    """The entry this configuration states under `workflow`, or None.
+
+    ⛔ The complement of the test above, and keyed on the one name § 2 keys the
+    facet on. It answers the question a *removal* has — which entry did this
+    artifact write — where full equality cannot, the content being gone with the
+    facet that composed it.
+    """
+    for existing in (configuration.get("host.checks") or []):
+        if isinstance(existing, dict) and existing.get("workflow") == workflow:
+            return existing
+    return None
 
 
 CHECKS = re.compile(r"^(?P<indent>\s+)checks:(?P<rest>.*)$")
@@ -680,7 +930,7 @@ def _written_back(
     return None
 
 
-def collides(configuration: config.Config, entry: dict) -> str | None:
+def collides(configuration: config.Config, entry: dict, replacing=None) -> str | None:
     """A `host.checks` entry already keyed on this one's workflow name, or None.
 
     ⛔ The installer's own guard, and it is here because the reader does not
@@ -689,8 +939,17 @@ def collides(configuration: config.Config, entry: dict) -> str | None:
     reader **loads** that shape, measured by handing it two entries differing
     only in `mirrors`. So refusing to *create* one is this step's, whatever the
     surface does about a project that wrote one by hand.
+
+    ⛔ **`replacing` is this artifact's own earlier entry and is not a collision
+    with itself.** An artifact whose entry is composed from a facet the project
+    edits writes different content under the same name on the next run; read as a
+    collision, that project's install refuses for ever over the step's own
+    output, and the remedy named — choose between the two — is one nobody can
+    perform.
     """
     for existing in (configuration.get("host.checks") or []):
+        if replacing is not None and existing == replacing:
+            continue
         if existing.get("workflow") == entry.get("workflow") and existing != entry:
             return (
                 f"`host.checks` already states an entry keyed on the workflow name "
@@ -757,8 +1016,8 @@ def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dic
                                   "project's own and is neither removed nor written over")
         if write:
             os.remove(path)
-            standing = artifact.entry(configuration)
-            if standing is not None and already_registered(configuration, standing):
+            standing = artifact.standing_entry(configuration)
+            if standing is not None:
                 refusal = unregister(configuration, standing)
                 if refusal is not None:
                     return _state(artifact, REMOVED, path, entry=standing,
@@ -775,8 +1034,13 @@ def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dic
                               "value for what it would say, so it is not written")
 
     entry = artifact.entry(configuration)
+    # This artifact's own earlier entry, where it wrote one. ⛔ Read before the
+    # collision test and passed to it: the step's own output under its own key is
+    # what it replaces, not something to refuse over.
+    standing = artifact.standing_entry(configuration) if entry is not None else None
     if entry is not None:
-        refusal = refuses_entry(configuration, entry) or collides(configuration, entry)
+        refusal = (refuses_entry(configuration, entry)
+                   or collides(configuration, entry, replacing=standing))
         if refusal is not None:
             return _state(artifact, UNSTATABLE, path, entry=entry, because=refusal)
 
@@ -798,13 +1062,27 @@ def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dic
     made = _place_it(path, wanted_text, artifact)
 
     if needs_entry:
+        # ⛔ An earlier entry of this artifact's comes out before the new one goes
+        # in, and in that order: two entries under one workflow name are the one
+        # shape § 2's key cannot be read through, so a run that appended first
+        # would leave the project's own file carrying it between two writes.
+        if standing is not None and standing != entry:
+            refusal = unregister(configuration, standing)
+            if refusal is not None:
+                _put_back(path, here, made)
+                return _state(artifact, UNSTATABLE, path, entry=entry,
+                              because=f"the artifact was taken back out because the entry "
+                                      f"it had already registered could not be replaced: "
+                                      f"{refusal}")
+            configuration = config.load(configuration.skills_root)
         refusal = register(configuration, entry)
         if refusal is not None:
             _put_back(path, here, made)
             return _state(artifact, UNSTATABLE, path, entry=entry,
                           because=f"the artifact was taken back out because its entry "
                                   f"could not be registered: {refusal}")
-        return _state(artifact, WRITTEN, path, registered=entry, mode=artifact.mode)
+        return _state(artifact, WRITTEN, path, registered=entry, mode=artifact.mode,
+                      replaced=standing if standing != entry else None)
 
     return _state(artifact, WRITTEN, path, mode=artifact.mode)
 
@@ -951,13 +1229,13 @@ def removal(
                         "and this step does not remove it",
             ))
             continue
-        standing = artifact.entry(configuration)
+        standing = artifact.standing_entry(configuration)
         if not write:
             states.append(_state(artifact, REMOVED, path, dry_run=True,
                                  unregisters=standing))
             continue
         os.remove(path)
-        if standing is not None and already_registered(configuration, standing):
+        if standing is not None:
             refusal = unregister(configuration, standing)
             if refusal is not None:
                 states.append(_state(
@@ -987,7 +1265,25 @@ def facet(configuration: config.Config,
 # --- the self-test ---------------------------------------------------------
 
 
-def _a_project(tmp: str, checks=None) -> config.Config:
+A_TITLE_FORM = {
+    "reference": f"[A-KEY-{config.PLACEHOLDER}]",
+    "repeated": True,
+    "into": ["release/*"],
+}
+
+# The same facet with `into` stating every pull request, which is the arm where a
+# generated gate carries no `branches:` filter at all.
+EVERY_PULL_REQUEST = {**A_TITLE_FORM, "into": [config.ANY_REF]}
+
+A_RUNNER = {
+    "label": "a-runner-label",
+    "concurrent_jobs": 1,
+    "budget_minutes": 45,
+    "supersedes": "a-supersession-group",
+}
+
+
+def _a_project(tmp: str, checks=None, title=None, runner=None) -> config.Config:
     """A loadable configuration in a tree of its own.
 
     Built from an example rather than written here, for the reason the sibling
@@ -999,6 +1295,14 @@ def _a_project(tmp: str, checks=None) -> config.Config:
     data["roots"] = {"code": ".", "code_is_own_repo": False}
     data.setdefault("host", {})["kind"] = "github"
     data["host"]["checks"] = [] if checks is None else checks
+    # ⚠️ Each is popped rather than left as the example wrote it, so an arm asking
+    # for the absent case gets one whichever example this fixture is built from.
+    data["host"].pop("pull_request_title", None)
+    data["host"].pop("runner", None)
+    if title is not None:
+        data["host"]["pull_request_title"] = title
+    if runner is not None:
+        data["host"]["runner"] = runner
     # § 17 refuses a local check the host already runs, and a fixture colliding
     # with one would be refused by the reader rather than answered here.
     data["checks_local"] = []
@@ -1127,6 +1431,73 @@ def _reads_definitions(source: str) -> bool:
                 and node.value.id == check_host_checks.__name__.rsplit(".", 1)[-1]):
             return True
     return False
+
+
+def _spells_in_source(source: str, values) -> list[str]:
+    """Any of `values` this source writes into a string literal of its own.
+
+    ⛔ Read as a tree rather than matched in the text, for the reason `_spells`
+    below is: an arm that has to write down what it forbids finds its own list.
+    What it is for is the acceptance this module's one registered gate carries —
+    a generated file holding no literal the configuration does not state.
+    """
+    import ast
+
+    literals = {
+        node.value for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    return sorted({
+        value for value in values
+        if any(value in literal for literal in literals)
+    })
+
+
+def _as_the_host_would(document: dict, job: str, title: str):
+    """Run a generated job's one step as a shell, with the title in the environment.
+
+    ⛔ The step's own script and its own `env`, read out of the file rather than
+    retyped: what this asserts is the **gate**, and a reimplementation of its
+    logic here would be a second gate passing while the generated one refused.
+    ⚠️ The host's own expression is substituted the way the host substitutes it —
+    into the environment and never into the script — which is also the property
+    the arm beside this one holds.
+
+    Returns the exit status, or None where the shell did not answer, which is
+    this suite's second unchecked precondition after git.
+    """
+    step = document["jobs"][job]["steps"][0]
+    environment = {
+        key: title if "${{" in str(value) else str(value)
+        for key, value in step["env"].items()
+    }
+    try:
+        done = subprocess.run(
+            ["sh", "-c", step["run"]],
+            env={**os.environ, **environment},
+            capture_output=True, text=True, check=False,
+        )
+    except OSError:
+        return None
+    return done.returncode
+
+
+def _restate(configuration: config.Config, title) -> config.Config:
+    """This fixture's own file with its title facet changed, the rest left alone.
+
+    ⚠️ Not `_a_project` again: that writes the file from an example, which would
+    take out the entry the install just registered — and the arms below are about
+    what happens to that entry when the facet it was composed from moves.
+    """
+    with open(configuration.config_path, encoding="utf-8") as handle:
+        data = yaml.safe_load(handle)
+    if title is None:
+        data["host"].pop("pull_request_title", None)
+    else:
+        data["host"]["pull_request_title"] = title
+    with open(configuration.config_path, "w", encoding="utf-8") as handle:
+        handle.write(yaml.safe_dump(data, allow_unicode=True))
+    return config.load(configuration.skills_root)
 
 
 def _spells(source: str, directories) -> list[str]:
@@ -2027,6 +2398,236 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         except (ConfigError, OSError):
             resolved = False
         check("because the step never reached a configuration to read", not resolved)
+
+    print()
+    print("the title gate: written from the facet, and from no literal here")
+    check(
+        "every kind whose definitions this step can write has a runner template",
+        set(check_host_checks.DEFINITIONS) <= set(A_KINDS_OWN_RUNNER),
+        "a kind with somewhere to write and no default label would raise rather "
+        "than answer, since a generated job with no `runs-on` is a file the host "
+        "refuses to load",
+    )
+    check(
+        "every registered artifact declares the name it registers under",
+        all(
+            artifact.registers_as is not None or artifact._entry is None
+            for artifact in ARTIFACTS
+        ),
+        "an artifact composing an entry and declaring no key cannot have that "
+        "entry found again once the facet composing it is gone",
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp, title=A_TITLE_FORM)
+        gate = ARTIFACTS[0]
+        written = one(project, gate, write=True)
+        check("a project stating a title form gets the gate",
+              written["answer"] == WRITTEN, str(written))
+        text = _read(written["path"])
+        document = yaml.safe_load(text)
+        check("and the file the host has to parse parses", isinstance(document, dict),
+              repr(text[:200]))
+        block = document.get(True, document.get("on"))
+        check("its event block is a pull request, with the types procedure states",
+              set(block["pull_request"]["types"]) == set(TITLE_GATE_TYPES),
+              repr(block))
+        check("and `edited` is among them, or a title fixed in place never re-runs",
+              "edited" in block["pull_request"]["types"], repr(block))
+        check("its branch filter is what the project stated",
+              block["pull_request"]["branches"] == A_TITLE_FORM["into"], repr(block))
+        check("it holds no credential at all", document["permissions"] == {},
+              repr(document.get("permissions")))
+        job = document["jobs"][TITLE_GATE_JOB]
+        check("and the job runs on this host kind's own default",
+              job["runs-on"] == A_KINDS_OWN_RUNNER["github"], repr(job))
+        check("with no budget and no supersession group, the project stating none",
+              "timeout-minutes" not in job and "concurrency" not in document,
+              repr(document))
+        # ⛔ The acceptance this item was filed on, asserted on the file's own
+        # bytes: what the gate enforces is the derivation beside this module, and
+        # the expression appears in no literal here. ⚠️ Read as a string constant
+        # of this module's source rather than matched in it — an arm that writes
+        # down the expression it forbids finds its own list.
+        environment = job["steps"][0]["env"]
+        check(
+            "what it enforces is the one derivation and not a pattern composed here",
+            environment["FORM"] == title_form.form(project)["expression"],
+            repr(environment),
+        )
+        # ⛔ Round-tripped rather than eyeballed, and on every value: the emitter
+        # folds a long scalar by default, and a folded one comes back out of the
+        # host's parser as whatever that parser made of the continuation line.
+        check(
+            "and every value reads back out of the file as it went in",
+            environment["SAYS"] == title_form.form(project)["says"],
+            repr(environment),
+        )
+        # ⛔ Each on one line of the file, which is the half a round trip through
+        # this tree's own parser cannot show. ⚠️ Measured at the emitter's default
+        # width: a sentence past the eightieth column was folded, and the
+        # continuation landed at an indent one parser accepted and the host's own
+        # may not — so the arm is on the line and not on the value.
+        check(
+            "and sits whole on one line, the emitter folding nothing",
+            all(
+                any(f"{key}: {_scalar(environment[key])}" == line.strip()
+                    for line in text.splitlines())
+                for key in ("FORM", "SAYS")
+            ),
+            repr([line for line in text.splitlines() if "SAYS" in line]),
+        )
+        check(
+            "and that expression is in no literal of this module's",
+            not _spells_in_source(own, [environment["FORM"],
+                                        A_TITLE_FORM["reference"]]),
+            "a literal here is free to disagree with the form the finishing role "
+            "renders a title from",
+        )
+        check(
+            "the title reaches the shell as a variable, never as text in the script",
+            "${{" in environment["TITLE"]
+            and "${{" not in job["steps"][0]["run"],
+            repr(job["steps"][0]),
+        )
+        entry = config.load(tmp).get("host.checks")
+        check("the entry is registered", entry == [gate.entry(project)], repr(entry))
+        check(
+            "and it mirrors no local command, which is the entry's whole shape",
+            "mirrors" not in entry[0] and "jobs" not in entry[0],
+            repr(entry[0]),
+        )
+        # ⛔ The other half of that, read through the shared reader rather than by
+        # eye: § 18's guard matches a *command*, so an entry mirroring none is one
+        # it can never refuse a local run on.
+        standing = config.load(tmp)
+        check(
+            "so no mirrored command names it, and that guard matches nothing of it",
+            all(record["command"] for record in standing.mirrors())
+            and TITLE_GATE_WORKFLOW not in [r["workflow"] for r in standing.mirrors()],
+            repr(standing.mirrors()),
+        )
+        check(
+            "while the facet still states the run, which the drift check reads",
+            TITLE_GATE_WORKFLOW in [r["workflow"] for r in standing.host_runs()],
+            repr(standing.host_runs()),
+        )
+        again = one(standing, gate, write=True)
+        check("a second run reports it unchanged", again["answer"] == UNCHANGED, str(again))
+        check("and the file is byte-identical", _read(written["path"]) == text)
+
+        # ⛔ The gate itself run, rather than its text read. ⚠️ Every arm above
+        # holds the *file*, and a file whose expression is right and whose script
+        # inverts the test is a gate that refuses every correct title while every
+        # one of those arms stays green. The shell on PATH is this suite's second
+        # unchecked precondition, so what it answered is asserted first.
+        passing = _as_the_host_would(document, TITLE_GATE_JOB, "[A-KEY-48] A title")
+        check(
+            "the shell answered, which this arm's assertions rest on",
+            passing is not None,
+            "`sh` did not run the generated step, so the two arms below would "
+            "hold nothing",
+        )
+        if passing is not None:
+            check("a title opening with the form passes the generated gate",
+                  passing == 0, f"the step exited {passing}")
+            for refused in ("A title with no reference", "[A-KEY-x] A title",
+                            "[A-KEY-48]", " [A-KEY-48] A title"):
+                status = _as_the_host_would(document, TITLE_GATE_JOB, refused)
+                check(f"and {refused!r} is refused by it", status == 1,
+                      f"the step exited {status}")
+            # ⛔ The title's own characters are data to that script and never
+            # shell, and the arm is on a title the form *refuses*: one it accepts
+            # would exit zero either way, which is a green that says nothing.
+            # ⚠️ The title is the one field this gate exists to read, so a title
+            # that could end the command and start another would run on every
+            # pull request of a project that installed the gate.
+            for dangerous in ('A title"; exit 0 #', "A title $(exit 0)",
+                              "A title `exit 0`", "-v A title"):
+                status = _as_the_host_would(document, TITLE_GATE_JOB, dangerous)
+                check(f"a refused title spelled {dangerous!r} is read, not run",
+                      status == 1, f"the step exited {status}")
+
+    print()
+    print("the gate's own facts come from the project, and are chosen nowhere here")
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp, title=EVERY_PULL_REQUEST, runner=A_RUNNER)
+        state = one(project, ARTIFACTS[0], write=True)
+        document = yaml.safe_load(_read(state["path"]))
+        block = document.get(True, document.get("on"))
+        check(
+            "a project holding every pull request gets no branch filter at all",
+            "branches" not in block["pull_request"],
+            repr(block),
+        )
+        job = document["jobs"][TITLE_GATE_JOB]
+        check("a stated runner's label is what the job asks for",
+              job["runs-on"] == A_RUNNER["label"], repr(job))
+        check("its budget is what the job is given",
+              job["timeout-minutes"] == A_RUNNER["budget_minutes"], repr(job))
+        check(
+            "and its supersession group is the workflow's, cancelling what is running",
+            document["concurrency"] == {"group": A_RUNNER["supersedes"],
+                                        "cancel-in-progress": True},
+            repr(document.get("concurrency")),
+        )
+        check(
+            "the trigger registered states every pull request in the ref vocabulary",
+            config.load(tmp).get("host.checks")[0]["triggers"]
+            == [f"pull_request({', '.join(TITLE_GATE_TYPES)}) -> {config.ANY_REF}"],
+            repr(config.load(tmp).get("host.checks")),
+        )
+
+    print()
+    print("the facet edited, and the facet withdrawn")
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp, title=A_TITLE_FORM)
+        one(project, ARTIFACTS[0], write=True)
+        # ⛔ A project editing the half of the facet the entry carries gets the
+        # entry replaced. ⚠️ Measured as a collision: the step's own output under
+        # its own key read as a second entry, so the install refused for ever and
+        # named a remedy — choose between the two — nobody could perform.
+        edited = dict(A_TITLE_FORM, into=["release/*", "main"])
+        state = one(_restate(project, edited), ARTIFACTS[0], write=True)
+        check("an edited facet is written rather than refused",
+              state["answer"] == WRITTEN, str(state))
+        entries = config.load(tmp).get("host.checks")
+        check("and exactly one entry stands under the workflow name",
+              [e["workflow"] for e in entries].count(TITLE_GATE_WORKFLOW) == 1,
+              repr(entries))
+        check("which is the edited one",
+              entries[0]["triggers"][-1].endswith("main"), repr(entries))
+        # ⛔ The facet withdrawn: both things installing wrote come back out.
+        # ⚠️ This is the arm the first registered artifact was needed for — an
+        # entry composed from the facet deciding wantedness cannot be
+        # reconstructed once that facet is gone, so a reconstruction took out the
+        # file and left the entry.
+        gone = one(_restate(project, None), ARTIFACTS[0], write=True)
+        check("withdrawing the facet removes the gate", gone["answer"] == REMOVED, str(gone))
+        check("and the file is gone", not os.path.exists(gone["path"]))
+        left = config.load(tmp).get("host.checks")
+        check("and its entry with it", left == [], repr(left))
+
+    print()
+    print("the green side: a project stating no title form gets no gate")
+    with tempfile.TemporaryDirectory() as tmp:
+        silent = _a_project(tmp, title=None)
+        answered = run(silent, write=True)
+        check("nothing is reported", answered["report"] == [], str(answered["report"]))
+        check("and the gate's answer is a stated absence",
+              answered["artifacts"][0]["answer"] == NOT_WANTED, str(answered))
+        check("nothing was written where it would have gone",
+              not os.path.exists(place(silent, ARTIFACTS[0])))
+        check("and the facet states no entry for it",
+              config.load(tmp).get("host.checks") == [])
+        # ⛔ The plant verified rather than asserted: the same fixture with the
+        # facet stated has to answer the other way, or this green side is green
+        # about a step that writes nothing for anybody.
+        with tempfile.TemporaryDirectory() as other:
+            stated = _a_project(other, title=A_TITLE_FORM)
+            check(
+                "while the same fixture stating one does get it, so the green side holds",
+                one(stated, ARTIFACTS[0], write=True)["answer"] == WRITTEN,
+            )
 
     print()
     print("the green side: a project asking for nothing is green and silent")

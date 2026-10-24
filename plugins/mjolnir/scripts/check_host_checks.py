@@ -130,7 +130,11 @@ UNSTATABLE = {
 AN_EXPRESSION = "${{"
 
 # What a trigger states as its ref where the event block filters on none (§ 2).
-ANY_REF = "*"
+# ⛔ Read from the module that holds the trigger grammar rather than spelled
+# again here: a second literal for one vocabulary is this surface's own defect
+# class, and the facet beside `triggers` that states its refs in this same
+# vocabulary reads it from there too.
+ANY_REF = reader.ANY_REF
 
 
 class Unstatable(RuntimeError):
