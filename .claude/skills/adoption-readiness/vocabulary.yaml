@@ -99,7 +99,8 @@ carriers:
   boundary:                     { class: guard }  # refuses what may not leave the project, on
                                                   # `PreToolUse` (#90, shipped by #142)
   load_the_rules:               { class: rule }   # hands the session § 8's property table and
-                                                  # § 10's shell table on `SessionStart`
+                                                  # § 10's shell table when a session opens, and
+                                                  # § 10's again when one enters a tree
                                                   # (#79, shipped by #166)
   enforce:                      { class: guard }  # refuses an act with no recorded answer behind
                                                   # it, and holds and gives back a place on what

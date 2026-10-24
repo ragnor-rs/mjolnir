@@ -1161,7 +1161,8 @@ what one tree is allowed to cost, an inequality of one second being satisfiable 
 
 ## The rules loaded rather than checked
 
-`plugins/mjolnir/scripts/load_the_rules.py`, on a `SessionStart` hook. It reads a table out of the
+`plugins/mjolnir/scripts/load_the_rules.py`, on a `SessionStart` hook and on a `PostToolUse` hook
+matched on the tool that enters a tree. It reads a table out of the
 surface under each of two subsections' anchors and hands both to the session as context: the
 property table of
 [schema § 8](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role), and what a
@@ -1183,27 +1184,61 @@ other reason: loading the rules and inviting adoption are not one job.
 
 ⚠️ **One loader rather than one per rule, which is a departure from how the gates here are
 arranged.** Every check in this tree is its own script with its own mirrored command, because each
-answers a different question. These two do not: both are a table in a subsection, read at the one
-event that reaches a writer before it writes, with the same failure mode. ⛔ **What is held per rule
+answers a different question. These two do not: both are a table in a subsection, read at an event
+that reaches a writer before it writes, with the same failure mode. ⛔ **What is held per rule
 is the assertion and not the mechanism** — the self-test runs its plants once per anchor, and
 asserts that a rule it cannot read leaves the other one loaded rather than taking it down.
 
-⚠️ **Why this event, measured rather than assumed.** Two probes on 2026-10-20, each with a random
-token no session could otherwise know. A `Stop` answer's `systemMessage` was written to the
-transcript, rendered to the person, and **absent from the next request** — so a register reported
-after a reply changes no text. A `SessionStart` answer's `additionalContext` was **named back
-exactly** by the session it opened. The channel that reaches a writer before the writing is the only
-one that can carry a rule.
+⚠️ **One script on two events, and the second one carries the tree-scoped rule alone.** Re-handing
+the register on every entry would re-send a rule the session has had since it opened, once per tree.
+⛔ **The event is not the whole of that registration and the matcher is as load-bearing as it is**,
+the carrier being where a hook is registered at all
+([schema § 7](../plugins/mjolnir/config/schema.md#7-carrier)): this same script under the `Bash`
+matcher beside it would fire on every shell call in the session and would still satisfy a check that
+asked only whether the event named this script, so the suite finds the entry **by its matcher** and
+requires that one to call it.
+
+⚠️ **Why these events, measured rather than assumed.** Three probes, each with a random token no
+session could otherwise know. A `Stop` answer's `systemMessage` was written to the transcript,
+rendered to the person, and **absent from the next request** — so a register reported after a reply
+changes no text (2026-10-20). A `SessionStart` answer's `additionalContext` was **named back
+exactly** by the session it opened (2026-10-20). A `PostToolUse` answer's `additionalContext`, on
+the tool that enters a tree, was named back by the session that had just entered one, with the tree
+the harness reported in it (2026-10-24). The channel that reaches a writer before the writing is the
+only one that can carry a rule.
 
 ⚠️ **The rows are rendered as a table because the cells have to be delimited.** Measured on this
 hook's first live run: rendered as `- Property — required. Not: forbidden`, a session read the last
 row's third cell as running into the paragraph after it and quoted the splice back as the rule.
 
-⚠️ **The tree rule arrives before the tree does, and that is forced rather than chosen.** This event
-fires once, with the session standing in the shared checkout; a session that enters a tree later
-fires nothing a hook can answer. So the rule is handed to every session including the ones it is not
-live for, and what the session is told alongside it is that it is live only once the session is
-standing in a tree.
+⛔ **The tree rule — [schema § 10 → What a session standing in a tree can
+run](../plugins/mjolnir/config/schema.md#what-a-session-standing-in-a-tree-can-run) — is handed over
+again at the moment the session enters a tree, and *a session that enters a tree fires nothing a
+hook can answer* is false.** Entering is a **tool call**, so `PostToolUse` matched on it fires then,
+and the payload carries the tree in `cwd` and in `tool_response.worktreePath`. ⚠️ **What the
+opening event alone is worth here, measured 2026-10-24 over this project's own session store**:
+across 25 sessions handed the tree rule by it, **not one was standing in a tree when it arrived**;
+19 of the 24 that were not the probe session the table was measured in had a call refused as
+unverifiable in their tree, 52 refusals in all, each session's first one 134 to 1,030 transcript
+entries after the rule and after the session had entered a tree. ⛔ **A rule handed over at the one
+moment it is inert, under a sentence saying so, is a rule the session has been told to put down** —
+so the closing sentence is a function of where the session is standing rather than a constant.
+
+⚠️ **`WorktreeCreate` is not the carrier, measured the same day.** That event fires on the same
+operation, but `additionalContext` is not a valid shape in its output — and the invalid answer
+**failed the worktree creation outright**, leaving the session in the checkout. ⛔ **A hook that
+loads a rule must not be able to stop the work**, which rules that event out whatever its payload
+carried; and its payload predates the tree in any case, naming the checkout as `cwd` and the new
+tree by name alone. `CwdChanged` did not fire on entering one at all.
+
+⚠️ **Both rules still reach every session, including the ones the tree rule is not live for yet**,
+and what the standing decides is the sentence and never whether the table arrives. Where the session
+is standing is read off the repository and not off a path: a linked worktree's `.git` is a **file**
+naming a `worktrees` segment, where the main checkout's is a directory and a submodule's names
+`modules/`. ⛔ **A tree that reading cannot recognise is told what would make the rule live rather
+than being told nothing** — a project whose trees the harness delegates to a hook instead of cutting
+as git worktrees has no pointer to read, and the direction that keeps the rule in the session is the
+one taken.
 
 ### What it deliberately does not do
 
@@ -1220,6 +1255,12 @@ standing in a tree.
 - ⚠️ **It cannot tell which role is running**, so every session of a project that states a
   configuration is handed both rules, not only one running a role. In the safe direction, and the
   ruling is [#87](https://github.com/ragnor-rs/mjolnir/issues/87)'s.
+- ⚠️ **Nothing is handed over when a session *leaves* a tree.** The live sentence names the tree the
+  session was standing in, and after an exit it names a tree the session has left — so the rule
+  reads as live where it no longer is. ⛔ **In the safe direction and left there deliberately**: the
+  cost is a session writing one plain command per call where it could have written a chain, against
+  a refused call and a lost round trip in the other direction. The same event is available for it,
+  matched on the tool that leaves.
 - ⚠️ **The invitation is repeated once per session rather than once per project.** Nothing is
   recorded about having said it, so a person who is never going to adopt the toolkit in a given
   project reads one line at every session opened there. The alternative is a marker per project,
