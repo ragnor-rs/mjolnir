@@ -1779,7 +1779,7 @@ which of the three designs was the one that worked.
 
 | arm | what it reads | kind | what it does |
 |---|---|---|---|
-| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge, and the count a project's probe prints | **computed** for the count, **forbidding** for the record's presence | denies the call, or takes a place |
+| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge, the runs the host made for this commit, and the count a project's probe prints | **computed** for the count and the runs, **forbidding** for the record's presence | denies the call, or takes a place |
 | `release` (`PostToolUse`, `Stop`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
 | `record` | nothing | — | writes the answer a guard reads onto the change |
 | `held` | the leases and the probe | **computed** | reports what is held, and what it could not establish |
@@ -1804,10 +1804,41 @@ queued and was then refused for the leases' whole lifetime. So every refusal thi
 made before any place is taken, and the suite asserts it directly — a merge call that also matches a
 `claimed_by` is refused and leaves no lease behind.
 
-⚠️ **What it cannot order is a sibling guard in another script.** The guards #26, #33 and #37 ask
+⚠️ **The same ordering is why the third refusal is an arm here and not a carrier of its own.** #33's
+guard — a local run the host's own runs have already made — was filed as a sibling script on this
+same event, and the cost of that shape is the one measured above: a place taken by this arm and then
+denied by a sibling is a place nothing releases. Written as an arm it is ordered before any place is
+taken, and the suite asserts it the way the merge guard's ordering is asserted, on a call that is at
+once a guarded command and a `claimed_by` match.
+
+⚠️ **What it still cannot order is a sibling guard in another script.** The guards #26 and #37 ask
 for are separate carriers on the same event, and a place taken here can still be left behind by one
 of those denying the call. That is what the lease's `ttl` bounds, and it is why a short lifetime is
 the safe direction rather than a tidy-up interval.
+
+⚠️ **The already-run arm is the one arm here that reads the network, and what bounds it is stated
+rather than hoped for.** Its rule is
+[schema § 18](../plugins/mjolnir/config/schema.md#18-the-guard-on-a-command-the-host-has-already-run)
+and the facet it reads is § 2's, through the same reader every consumer loads it with — ⛔ **it
+carries no workflow name, no trigger and no path filter of its own.** One read lists the commit's
+runs, one more reads a run's jobs per entry mirroring the command, and one more asks whether the
+change is conflicted where nothing has run — each bounded at five seconds inside the carrier's own
+thirty. ⚠️ **None of them is made until the call has already matched a mirrored command in command
+position**, which is a comparison over the parsed words and reaches the host on no ordinary call at
+all. ⛔ **The client's exit status is read as the answer nowhere**: the measured client exits
+non-zero while runs are pending and also when one has failed, so a guard reading it is a no-op while
+the host runs and a blocker once it has finished.
+
+⚠️ **What the arm costs was measured on this repository in both of its two cases**, since the
+ordinary one is what every call in every session pays. An ordinary `Bash` call: **about 145ms**,
+against **74ms** for the boundary hook beside it and **36ms** of interpreter startup — ⛔ **which is
+the figure this arm was added underneath rather than one it moved**, the facet already being walked
+by the configuration read and the match being a comparison over words. A call that does match a
+mirrored command: **0.8 to 1.0 seconds**, nearly all of it the host round trip and ⚠️ **stated as a
+range because it is somebody else's network**, which a single figure would read as precision this
+measurement does not have. ⚠️ **The second figure is paid by the calls this guard exists for and by
+no others**, and it buys the minutes of a duplicated run and the place a lease would have held
+while it ran.
 
 ⚠️ **Six exit paths were measured, and one of them cannot be tested because it never fires.** The
 project this came from registered its release on tool completion, tool failure, permission denial,
@@ -1832,13 +1863,33 @@ reverted to the maximum fails on the figure rather than on a wording.
 
 ⚠️ **It plants both sides, as the boundary and prose-width checks do.** On the red side: a cap
 reached, a merge with no record, a record that could not be read, a change nothing could resolve, a
-merge naming no repository. On the green side, each of which must stay green: a project stating
+merge naming no repository, a mirrored command run while a run of it exists for this commit — in
+command position, after a separator and after a leading assignment — a run still queued, one still
+in progress, one whose job is still in progress, one that concluded red, one cancelled after
+executing steps, either entry of a command two entries mirror, and an escape variable set to
+nothing. On the green side, each of which must stay green: a project stating
 `exclusive_resources: []`, a read of the same change, a local merge of branches, the raw host arm
-reading the merge path rather than writing it, a count that could not be established, and a second
-session in the same tree sharing one place. ⛔ **Each green plant naming an exclusion was verified by
+reading the merge path rather than writing it, a count that could not be established, a second
+session in the same tree sharing one place, a project mirroring nothing at all, a call whose prose
+merely carries a mirrored command, a dirty tree, a commit with no run, a run of another workflow,
+a run cancelled in the queue, one skipped, one concluding neutral having started nothing, one
+listing no job at all, a job the run never executed, a job that executed no step, a conflicted
+change, a `never_guard` command, an escape set to a reason, and a probe answering anything but the
+stated word. ⛔ **Each green plant naming an exclusion was verified by
 switching that exclusion off** and watching it redden — the sum, the backgrounded skip, the expiry,
 the subject, the record's marker, the refusal ordering and the unestablished-count arm were each
-broken in turn, and each break reddened the assertion written for it rather than a neighbour.
+broken in turn, and so were the already-run arm's eleven: the command-position match reduced to a
+substring, the workflow-name keying reduced to any run of the commit, the blank escape read as an
+escape, the conflict folded into the absence, the job read as its workflow, a green conclusion made
+a precondition, the arm ordered after the lease rather than before it, the run's steps left unread,
+a run still in flight read as having answered nothing, one record read where the command is
+mirrored twice, and an answer name taken off the surface. ⚠️ **Each break reddened the assertion
+written for it rather than a neighbour**, and two of them say something the rest do not: ordering
+the arm after the lease reddened only the ordering assertion while the refusal itself stayed green,
+which is what tells the ordering apart from the arm being there at all — and the in-flight break
+reddened **nothing at all** on the first attempt, every in-flight run being answered one level up
+before a job is ever read. ⛔ **That silence is what the job-level plant beside it was written
+for**, an exemption nothing can fail being an exemption nobody checked.
 
 ⚠️ **What the guard costs every call was measured rather than argued**, because a guard that makes a
 session slow is a guard somebody removes. On this repository, where nothing is exclusive, the arm

@@ -761,6 +761,18 @@ class Config:
                 "has no source to read: a role reports it unanswered rather than "
                 "inventing a command (§ 17)."
             )
+        # § 18, and reported only where the facet above leaves it with nothing to
+        # match. ⛔ The complement is not reported: a project whose host does run
+        # checks has a guard that can refuse, which is a behaviour rather than an
+        # absence -- and `never_guard: []` is not reported either, that being the
+        # ordinary configuration rather than something a role cannot do.
+        if not self.get("host.checks"):
+            out.append(
+                "No command is guarded against a run the host has already made "
+                "(`host.checks: []`, § 18), so that guard matches nothing here. "
+                "A configuration rather than a partial install: there is no "
+                "mirrored command for a local run to duplicate."
+            )
         # A role's own unset key. `day_log.script` is the first absence in this
         # toolkit that is load-bearing rather than theoretical: the day-log role
         # cannot run without it, and reporting that -- naming the key -- is what
@@ -1925,6 +1937,49 @@ def validate(data: dict, facts: dict) -> None:
                 "it.",
             )
 
+    # § 18. The guard on a command the host has already run. Requiredness is the
+    # surface's marker and answers whether `never_guard` is written; what these
+    # three values have to *be* is here, as § 17's are.
+    exempt = _get(data, "already_run.never_guard")
+    if not isinstance(exempt, list):
+        raise ConfigError(
+            "already_run.never_guard",
+            f"is {type(exempt).__name__}, and § 18 states it as the commands this guard "
+            "never refuses -- a list, or `[]` where none is exempt. A shape this reader "
+            "cannot walk takes every exemption out of the guard in silence, and the guard "
+            "then refuses a repair rather than a duplicated verdict.",
+        )
+    for index, entry in enumerate(exempt):
+        if not isinstance(entry, str) or not entry.strip():
+            raise ConfigError(
+                f"already_run.never_guard[{index}]",
+                f"is {entry!r}, which names no command (§ 18). An entry naming nothing is "
+                "an exemption that matches nothing while reading as one somebody wrote.",
+            )
+    escape = _get(data, "already_run.escape")
+    if escape is not None and (
+        not isinstance(escape, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", escape)
+    ):
+        # ⛔ A name and never a value, which is § 14's rule at the one key on this
+        # surface that names a variable outside that section: a configuration
+        # carrying the value would be the leak that section exists to prevent,
+        # and the value here is the person's own reason rather than a secret.
+        raise ConfigError(
+            "already_run.escape",
+            f"is {escape!r}, which is not a variable name. § 18 states it as the name of "
+            "the variable a person sets to why a refusal is stood down, and absent where "
+            "there is none -- never the value, and never a phrase.",
+        )
+    probe = _get(data, "already_run.operational_when")
+    if probe is not None and (not isinstance(probe, str) or not probe.strip()):
+        raise ConfigError(
+            "already_run.operational_when",
+            f"is {probe!r}; § 18 states it as one command, stated whole, and absent where "
+            "the host's own answer is the only one there is. Written blank it reads as that "
+            "absence while looking like a probe somebody configured, and a probe that "
+            "answers nothing stands every refusal down.",
+        )
+
     # § 13. The same shape as `readiness` at the other end of the item, with one
     # thing that gate has no need of: who answers each check.
     done = _get(data, "done")
@@ -2129,6 +2184,7 @@ def _examples() -> list[str]:
 # silently green. Here, a marker dropped from the surface fails the comparison
 # below, and a marker added fails it until somebody writes the key down here.
 MARKED_REQUIRED = [
+    "already_run.never_guard",
     "branch_model.exclusive_resources",
     "branch_model.kind",
     "branch_model.parallel_trees",
@@ -3093,6 +3149,19 @@ def _planted_violations():
                                         "pull_request(edited, ) -> *"])),
         ("a local check the host already runs", "checks_local[0].command",
          _collides_with_a_mirrored_command),
+        # § 18. ⚠️ The requiredness of the first is the surface's marker and is
+        # asserted with every other marked key; what is planted here is the shape
+        # each value has to have once it is written.
+        ("an exemption list that is not a list", "already_run.never_guard",
+         at("already_run.never_guard", "a-mirrored-command")),
+        ("an exemption naming no command", "already_run.never_guard[0]",
+         at("already_run.never_guard", ["  "])),
+        ("an escape written as a value rather than a name", "already_run.escape",
+         at("already_run.escape", "a reason somebody typed")),
+        ("an escape written blank", "already_run.escape",
+         at("already_run.escape", "")),
+        ("an operational probe written blank", "already_run.operational_when",
+         at("already_run.operational_when", "   ")),
         ("several commands in one `mirrors` rather than in its jobs",
          "host.checks[0].mirrors", _several_commands_in_one_mirrors),
         ("a mirrored command this reader cannot read", "host.checks[0].mirrors",

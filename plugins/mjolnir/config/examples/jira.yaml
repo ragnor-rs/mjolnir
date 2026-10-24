@@ -113,6 +113,15 @@ checks_local:
     # an absence rather than a key left blank.
     proves: "every document this change touches still describes the tree"
 
+# § 18, and the arm this project is the reason for: it already owns a probe answering whether
+# the host can run these jobs — the account's runners are its own, and a suspended one is a
+# fact its check tooling reports outside this guard. ⛔ So the guard reads that probe for the
+# operational condition rather than growing a second answer to one question; whether a run
+# exists, mirrors this command and saw this code is still read from the host.
+already_run:
+  never_guard: []
+  operational_when: "<the probe that prints `operational` where the runners can take a job>"
+
 commit:
   staging: all
   trailer: read_from_history
