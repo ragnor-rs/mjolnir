@@ -3101,12 +3101,27 @@ run to read. ⚠️ **Two unrelated workflows named their job identically**, and
 this guard refused a build on the strength of a check that only validated a title.
 
 ⛔ **Three of § 2's four preconditions are read here and the fourth deliberately is not.** A run
-exists for this commit, it executed steps, and it is visibly operational: those three are what make
-the local run a duplicate. ⛔ **How it concluded is not among them**, which is the one place this
-guard parts company with the roles that read the same runs — a red run has spent the time and
-answered, and the code it answered about is still the code in the tree. ⚠️ **What releases the call
-after a red is the work itself**: an edit leaves the tree carrying something the host has not seen,
-which is the first precondition failing and the call proceeding.
+exists for this commit, it is **in flight or executed a step**, and it is visibly operational: those
+three are what make the local run a duplicate. ⛔ **How it concluded is not among them**, which is
+the one place this guard parts company with the roles that read the same runs — a red run has spent
+the time and answered, and the code it answered about is still the code in the tree. ⚠️ **What
+releases the call after a red is the work itself**: an edit leaves the tree carrying something the
+host has not seen, which is the first precondition failing and the call proceeding.
+
+⛔ **The second of those is two states and not one, and reading it as one was a measured defect.**
+§ 2's *executed steps* is a test for a run that is **over**; a run the host is still working on has
+executed nothing yet and is the duplicate this guard exists for, the time being spent as the call
+is made. ⚠️ **So a run that concluded without reaching a step is no answer** — cancelled in the
+queue, skipped, or concluding neutral having started nothing — ⛔ **and that is read on the
+workflow's own jobs rather than inferred from a conclusion word**, which is what keeps this rule out
+of the host's cancellation vocabulary. A run cancelled in the queue is routine rather than exotic
+where an account's runners take one job at a time, and refusing on one refuses the only check there
+was.
+
+⚠️ **A command two entries mirror is answered on whichever of them the host ran.** That is § 2's
+own ranking — `reached` outranking the rest wherever more than one entry could answer — ⛔ **applied
+here and not re-derived**, because an arm reading one record reports *nothing has run* while naming
+a workflow that is not the one the run belongs to.
 
 ⛔ **A host client's exit status is not the answer, and reading it as one throws the answer away in
 exactly the state this guard exists for.** The measured client exits non-zero while runs are

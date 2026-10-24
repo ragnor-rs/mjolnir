@@ -107,6 +107,18 @@ OPERATIONAL = "operational"
 # condition 3 stands apart from the conclusion at all.
 NOT_OPERATIONAL = {"startup_failure", "action_required", "stale"}
 
+# A run or a job the host has not finished with. ⛔ Read as *the time is being
+# spent now*, which is the duplicate this guard exists for -- and it is the one
+# state where no step having executed is not an answer about the run: § 2's third
+# precondition is a test for a run that is *over*, and applying it to one still
+# going would wave through exactly the call that duplicates live work.
+#
+# ⚠️ Open rather than closed, deliberately: a status this set does not name is
+# read as finished, and a finished run is then held to its steps. The vocabulary
+# is the host's (§ 2), so a status nobody here has seen errs towards the check
+# rather than past it.
+IN_FLIGHT = {"queued", "in_progress", "requested", "waiting", "pending"}
+
 # The words that end one command inside a call, so what follows begins another in
 # command position. ⛔ Read as tokens rather than searched for as text: a quoted
 # argument carrying one of them is an argument.
@@ -883,6 +895,11 @@ def change_is_conflicted(slug: str, root: str, run=None) -> tuple[bool, str | No
     return str((loaded or {}).get("mergeable") or "").upper() == "CONFLICTING", None
 
 
+def _in_flight(entity: dict) -> bool:
+    """Is the host still working on this run or job?"""
+    return str(entity.get("status") or "") in IN_FLIGHT
+
+
 def _how_the_run_stands(found: dict, record: dict, slug: str, root: str,
                         run=None) -> tuple[str | None, str | None]:
     """(why this run is not one to be refused on, or None — then why that is unknown).
@@ -891,6 +908,13 @@ def _how_the_run_stands(found: dict, record: dict, slug: str, root: str,
     workflow concluding anything says nothing about a command whose job was
     skipped, filtered out of the run or never started, and a per-workflow reading
     reports a run on a job that never ran.
+
+    ⛔ **§ 2's third precondition is read on a workflow-level entry too**, which is
+    the defect this review reproduced: with the jobs read only where the facet
+    names one, a run cancelled in the queue, skipped, or concluding neutral
+    refused the local check on the strength of a run that executed nothing —
+    ⚠️ **and a run cancelled in the queue is routine rather than exotic** on an
+    account whose runners take one job at a time.
     """
     if str(found.get("conclusion") or "") in NOT_OPERATIONAL:
         return (
@@ -898,7 +922,12 @@ def _how_the_run_stands(found: dict, record: dict, slug: str, root: str,
             "commit, which is a fact about where the run was made rather than about this code",
             None,
         )
-    if not record.get("job"):
+    # ⛔ A run the host is still working on answers for the command without any
+    # step having executed yet, and the jobs are not read for it: the time is
+    # being spent now, which is the duplicate. ⚠️ Only where the entry names no
+    # job — a workflow still going says nothing about whether *this command's*
+    # job has started, which is the same absence rule one level down.
+    if _in_flight(found) and not record.get("job"):
         return None, None
     runner = run if run is not None else _run_host_in
     try:
@@ -915,23 +944,40 @@ def _how_the_run_stands(found: dict, record: dict, slug: str, root: str,
     except json.JSONDecodeError:
         return None, "the host's answer about this run's jobs did not parse"
     jobs = [j for j in (loaded or {}).get("jobs") or [] if isinstance(j, dict)]
-    mine = [j for j in jobs if j.get("name") == record["job"]]
-    if not mine:
+    if record.get("job"):
+        mine = [j for j in jobs if j.get("name") == record["job"]]
+        if not mine:
+            return (
+                f"the run for this commit executed no job named `{record['job']}`, so nothing "
+                "in it answers about this command",
+                None,
+            )
+        if not _answering(mine[0]):
+            return (
+                f"the job `{record['job']}` executed no step for this commit, which is no "
+                "answer about this command rather than an answer of any kind",
+                None,
+            )
+        return None, None
+    if not any(_answering(job) for job in jobs):
         return (
-            f"the run for this commit executed no job named `{record['job']}`, so nothing in it "
-            "answers about this command",
-            None,
-        )
-    # ⛔ § 2's third precondition, and the reason it stands apart from a
-    # conclusion: a run whose billing is suspended fails in seconds having
-    # started no step, and a job that executed none has answered nothing.
-    if not mine[0].get("steps"):
-        return (
-            f"the job `{record['job']}` executed no step for this commit, which is no answer "
-            "about this command rather than an answer of any kind",
+            f"the run of {record['mirrored_by']} for this commit executed no step — it was "
+            "cancelled, skipped or never started — so it is no answer about this command "
+            "rather than an answer of any kind",
             None,
         )
     return None, None
+
+
+def _answering(entity: dict) -> bool:
+    """Is this run or job something to refuse a local run on?
+
+    ⛔ **In flight, or it executed a step.** § 2's third precondition stands apart
+    from the conclusion precisely because a run can conclude having started
+    nothing, and the two states it separates are the two this answers: work being
+    done now, and work that was done.
+    """
+    return _in_flight(entity) or bool(entity.get("steps"))
 
 
 def _operational(config, found: dict, root: str, run=None) -> tuple[bool, str]:
@@ -1005,9 +1051,13 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
         # command no entry mirrors is § 17's complement, and `checks: []` reaches
         # here with nothing to match at all.
         return {}
-    # The most specific entry, so a project mirroring both a command and a longer
-    # form of it is answered about the form the call actually ran.
-    record = max(records, key=lambda r: len(r["normalised"]))
+    # ⛔ **Every record mirroring this command, never the first or the longest.**
+    # § 2 ranks across a command two entries mirror and makes `reached` outrank
+    # the rest, for the stated reason that a run reaching this change exists —
+    # and the reproduction here was the mirror image: with one record read, a
+    # command mirrored twice reported *nothing has run* and named a workflow that
+    # was not the one the host had run.
+    records.sort(key=lambda r: -len(r["normalised"]))
     exempt = next(
         (entry for entry in stated
          if isinstance(entry, str) and in_command_position(command, entry)),
@@ -1051,57 +1101,83 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
     runs, unread = runs_for_commit(slug, head, root, run=host)
     if unread:
         return _held_nothing(unread)
-    # ⚠️ The workflow's name and never a job's, which is § 2's keying rule: two
-    # unrelated workflows named their job identically, and a job-keyed reading
-    # refused a build on a check that only validated a title. ⚠️ The first of
-    # several is the newest, the host listing them that way, and a re-run is the
-    # answer that stands -- the same reading § 11 gives every artifact.
-    mine = [r for r in runs if r.get("workflowName") == record["workflow"]]
-    if not mine:
-        # ⛔ Both of § 18's middle answers land here and they are reported apart:
-        # a change the host cannot run anything for has the opposite remedy from
-        # one it simply has not run yet.
+    answered = [
+        (record, *_record_answer(record, runs, slug, root, config, host=host, probe=probe))
+        for record in records
+    ]
+    # ⛔ § 2's ranking, applied here rather than re-derived: a run that reaches
+    # this change exists, so what a sibling entry could not say does not unmake
+    # it. The first record answering `already run` is the one refused on.
+    refusing = next((a for a in answered if a[1] == ALREADY_RUN), None)
+    if refusing is not None:
+        record, _answer, why = refusing
+        # ⛔ The remedy is named as something somebody can do rather than as a
+        # description of the refusal, by § 7: a guard whose refusal states only
+        # that it refused leaves one route past it, which is editing the guard.
+        unblocks = (
+            f"Set `{config.get('already_run.escape')}` to why this run is wanted anyway"
+            if config.get("already_run.escape")
+            else "Edit the tree, so the host's run stops answering about the code in hand"
+        )
+        return _deny(
+            f"{REPORT_PREFIX} — {ALREADY_RUN}: {why}, {head[:12]} ({ALREADY_RUN_CITATION}). "
+            f"⛔ Its conclusion is not what is read here — the run exists for this code and "
+            f"did not conclude without executing one, so running `{record['normalised']}` "
+            f"locally spends the time a second time and holds whatever place the call puts at "
+            f"stake. {unblocks}."
+        )
+    # ⛔ The conflict is asked about only once nothing has a run, which is the one
+    # state the two answers share a shape in — and asked once for the call rather
+    # than once per record.
+    if all(a[1] == NOTHING_HAS_RUN for a in answered):
         conflicted, unread = change_is_conflicted(slug, root, run=host)
         if conflicted:
             return _held_nothing(
-                f"this change is conflicted, so the host produces no run for it at all — "
-                f"{record['mirrored_by']} has nothing to report until that is resolved, and "
-                "a local run answers nothing that can land",
+                "this change is conflicted, so the host produces no run for it at all — "
+                f"{answered[0][0]['mirrored_by']} has nothing to report until that is "
+                "resolved, and a local run answers nothing that can land",
                 answer=NOTHING_CAN_RUN,
             )
         if unread:
             return _held_nothing(
-                f"no run of {record['mirrored_by']} exists for this commit, and whether that "
+                f"no run answering for this command exists for this commit, and whether that "
                 f"is because the change is conflicted could not be established: {unread}",
             )
-        return _held_nothing(
-            f"the host has made no run of {record['mirrored_by']} for this commit",
-            answer=NOTHING_HAS_RUN,
+    # ⚠️ Every record is reported and not only the one that decided it, the way
+    # the facet's own consumer reports each run it read.
+    worst = next(a for a in answered if a[1] == UNESTABLISHED) if any(
+        a[1] == UNESTABLISHED for a in answered
+    ) else answered[0]
+    return _held_nothing(
+        "; ".join(why for _record, _answer, why in answered), answer=worst[1],
+    )
+
+
+def _record_answer(record: dict, runs: list[dict], slug: str, root: str, config,
+                   host=None, probe=None) -> tuple[str, str]:
+    """§ 18's answer for one record of the facet, and what decided it.
+
+    ⚠️ **The workflow's name and never a job's**, which is § 2's keying rule: two
+    unrelated workflows named their job identically, and a job-keyed reading
+    refused a build on a check that only validated a title. ⚠️ **The first of
+    several runs is the newest**, the host listing them that way, and a re-run is
+    the answer that stands — the same reading § 11 gives every artifact.
+    """
+    mine = [r for r in runs if r.get("workflowName") == record["workflow"]]
+    if not mine:
+        return NOTHING_HAS_RUN, (
+            f"the host has made no run of {record['mirrored_by']} for this commit"
         )
     standing, unread = _how_the_run_stands(mine[0], record, slug, root, run=host)
     if unread:
-        return _held_nothing(unread)
+        return UNESTABLISHED, unread
     if standing:
-        return _held_nothing(standing, answer=NOTHING_HAS_RUN)
+        return NOTHING_HAS_RUN, standing
     operational, why = _operational(config, mine[0], root, run=probe)
     if not operational:
-        return _held_nothing(why)
+        return UNESTABLISHED, why
     state = mine[0].get("conclusion") or mine[0].get("status") or "unreported"
-    # ⛔ The remedy is named as something somebody can do rather than as a
-    # description of the refusal, by § 7: a guard whose refusal states only that
-    # it refused leaves one route past it, which is editing the guard.
-    unblocks = (
-        f"Set `{config.get('already_run.escape')}` to why this run is wanted anyway"
-        if config.get("already_run.escape")
-        else "Edit the tree, so the host's run stops answering about the code in hand"
-    )
-    return _deny(
-        f"{REPORT_PREFIX} — {ALREADY_RUN}: {record['mirrored_by']} reports {state} for this "
-        f"commit, {head[:12]} ({ALREADY_RUN_CITATION}). ⛔ Its conclusion is not what "
-        f"is read here — the run exists for this code and executed its steps, so running "
-        f"`{record['normalised']}` locally spends the time a second time and holds whatever "
-        f"place the call puts at stake. {unblocks}."
-    )
+    return ALREADY_RUN, f"{record['mirrored_by']} reports {state} for this commit"
 
 
 def capacity_guard(config, command: str, session: str, cwd: str, background: bool,
@@ -1573,6 +1649,13 @@ def _a_run(workflow: str = "A workflow", status: str = "completed",
     }
 
 
+# A run that genuinely ran: one job, finished, with a step behind it. ⛔ The
+# default rather than an empty job list, and the review that reproduced the
+# defect is why: with no jobs the fixtures asserted a refusal on a run that had
+# executed nothing, which is the state § 2's third precondition exists to catch.
+A_JOB_THAT_RAN = [{"name": "a-job", "status": "completed", "steps": [{"name": "a-step"}]}]
+
+
 def _a_host_making(runs=None, jobs=None, mergeable=None, code: int = 0):
     """A stand-in for the host, answering the three reads this guard makes."""
 
@@ -1582,7 +1665,7 @@ def _a_host_making(runs=None, jobs=None, mergeable=None, code: int = 0):
         if args[:2] == ["run", "list"]:
             return 0, json.dumps(runs if runs is not None else [])
         if args[:2] == ["run", "view"]:
-            return 0, json.dumps({"jobs": jobs if jobs is not None else []})
+            return 0, json.dumps({"jobs": jobs if jobs is not None else A_JOB_THAT_RAN})
         if args[:2] == ["pr", "view"]:
             # ⚠️ Non-zero is a branch with no change open on it, which is the
             # ordinary state and not a failure to establish anything.
@@ -2142,6 +2225,66 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             check(f"{label}: and the answer is `{answer}`", answer in said(answered),
                   said(answered)[:200])
 
+        # ⛔ § 2's third precondition, reproduced in review as a defect: with the
+        # jobs read only where the facet names one, every one of these refused
+        # the local check on the strength of a run that had executed nothing —
+        # and a run cancelled in the queue is routine on an account whose runners
+        # take one job at a time, so this was firing rather than theoretical.
+        out.append("")
+        out.append("A run that concluded without executing a step is no answer about the command:")
+        no_step = [{"name": "a-job", "status": "completed", "steps": []}]
+        for label, conclusion, status, jobs in (
+            ("cancelled in the queue", "cancelled", "completed", no_step),
+            ("skipped entirely", "skipped", "completed", no_step),
+            ("concluded neutral having run nothing", "neutral", "completed", no_step),
+            ("with no job listed at all", "cancelled", "completed", []),
+        ):
+            answered = already("a-mirrored-command",
+                               runs=[_a_run(status=status, conclusion=conclusion)], jobs=jobs)
+            check(f"a run {label}: the call proceeds", not denied(answered),
+                  repr(answered)[:160])
+            check(f"a run {label}: and the answer is `{NOTHING_HAS_RUN}`",
+                  NOTHING_HAS_RUN in said(answered), said(answered)[:200])
+        # ⛔ And the other side of the same condition, which is what keeps the
+        # check from being met by standing every refusal down: a run the host is
+        # still working on has executed no step either, and is the duplicate this
+        # guard exists for rather than an absence.
+        for label, status in (("queued", "queued"), ("in progress", "in_progress")):
+            check(f"a run still {label} is refused, the time being spent now",
+                  denied(already("a-mirrored-command",
+                                 runs=[_a_run(status=status, conclusion=None)], jobs=no_step)))
+        check("and a run that executed steps and was then cancelled is refused",
+              denied(already("a-mirrored-command",
+                             runs=[_a_run(conclusion="cancelled")], jobs=A_JOB_THAT_RAN)))
+
+        # ⛔ § 2's ranking across a command two entries mirror, reproduced in
+        # review as the mirror image of what the facet states: with one record
+        # read, a command mirrored twice reported *nothing has run* and named a
+        # workflow that was not the one the host had run.
+        out.append("")
+        out.append("A command two entries mirror is answered on whichever of them the host ran:")
+        twice = _a_project([
+            {"workflow": "A workflow", "mirrors": "a-mirrored-command",
+             "triggers": "pull_request -> *"},
+            {"workflow": "Another workflow", "mirrors": "a-mirrored-command",
+             "triggers": "pull_request -> *"},
+        ])
+        check("the facet states two records for the one command",
+              len(twice.mirrors()) == 2, f"{len(twice.mirrors())} record(s)")
+        for label, workflow in (
+            ("the entry written first", "A workflow"),
+            ("the entry written second", "Another workflow"),
+        ):
+            answered = already("a-mirrored-command", project=twice,
+                               runs=[_a_run(workflow=workflow)])
+            check(f"a run of {label} refuses the call", denied(answered),
+                  repr(answered)[:160])
+            check(f"and the refusal names {label} rather than a sibling",
+                  workflow in reason(answered), reason(answered)[:160])
+        check("and neither having run leaves the call proceeding",
+              not denied(already("a-mirrored-command", project=twice,
+                                 runs=[_a_run(workflow="A third workflow")])))
+
         # ⛔ The fourth value, and the reason it is not folded into the first: an
         # empty run list on a conflicted change has the opposite remedy, and a
         # reader told *nothing has run* is sent to run a suite that cannot land.
@@ -2172,6 +2315,16 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("and a job that executed no step proceeds, which is not its conclusion",
               not denied(already("a-mirrored-command", project=jobbed,
                                  jobs=[{"name": "a-job", "steps": []}])))
+        # ⛔ The in-flight arm read one level down, and the only plant that
+        # reaches it: a workflow still going is answered for at the workflow
+        # level before any job is read, so without a job of its own in flight
+        # that arm could be deleted with the suite staying green — measured by
+        # deleting it and watching nothing redden.
+        check("a job the host is still running is refused, no step having executed yet",
+              denied(already("a-mirrored-command", project=jobbed,
+                             runs=[_a_run(status="in_progress", conclusion=None)],
+                             jobs=[{"name": "a-job", "status": "in_progress",
+                                    "steps": []}])))
 
         # --- the two ways a refusal stands down -----------------------------
         out.append("")
@@ -2348,6 +2501,30 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     check("and reddens when the surface stops stating it",
           MERGE_QUESTION not in questions(
               surface.replace(MERGE_QUESTION, "something_else", 1)))
+
+    # ⛔ The four answer names and the word a probe is compared against are a
+    # vocabulary § 18 publishes, carried here as strings because the code needs
+    # them. What keeps that from being a second statement of the table is this
+    # loop — the discipline `host_checks.py` applies to § 2's own four, and the
+    # one this arm was missing until the review went looking for it.
+    for answer in (ALREADY_RUN, NOTHING_HAS_RUN, NOTHING_CAN_RUN, UNESTABLISHED):
+        check(
+            f"§ 18 names the `{answer}` answer",
+            f"**{answer}**" in surface,
+            "this arm reports under a name the surface does not state, so its "
+            "vocabulary is held to nothing",
+        )
+    check(
+        "and reddens when the surface stops naming one",
+        f"**{NOTHING_CAN_RUN}**" not in surface.replace(
+            f"**{NOTHING_CAN_RUN}**", "**reworded**", 1),
+    )
+    check(
+        f"§ 18 states `{OPERATIONAL}` as what a project's own probe prints",
+        f"`{OPERATIONAL}`" in surface,
+        "the one word a probe's output is compared against is not on the surface, "
+        "so the comparison is held to nothing",
+    )
 
     carrier = CARRIER.read_text(encoding="utf-8")
     problems = check_the_carrier_still_calls_this(carrier)
