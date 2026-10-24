@@ -179,26 +179,34 @@ def entries(config) -> list[dict]:
     return [entry for entry in stated if isinstance(entry, dict)]
 
 
-def named_in(path, config) -> set[str] | None:
+def local_names(config) -> set[str]:
+    """The names this project states reach nothing outside this machine.
+
+    ⛔ Read from the configuration and **never from the file**, which is the one
+    thing that keeps this answer independent of whether any machine has a list
+    yet: a loopback name is not another machine's identity (§ 20 → The machines
+    named), so what it reaches does not change with a file somebody has or has
+    not written. ⚠️ Folding the two together was a measured defect of this
+    carrier: with the allowlist unreadable, a name the project itself calls local
+    was put to a person.
+    """
+    stated = config.get(LOCAL)
+    return {
+        str(name).strip()
+        for name in (stated if isinstance(stated, list) else [])
+        if str(name).strip()
+    }
+
+
+def named_in(path) -> set[str] | None:
     """The machines named as not live, or None where no file could be read.
 
     ⛔ None and an empty set are different answers, and the difference is the
-    first of § 20's four: a file nobody has written on this machine is a machine
-    where every name is live, while a file that exists and names nothing is a
-    project's own statement that nothing is allowlisted yet. Both put a call to a
-    person; only the first says *there is no list* when it does.
-
-    ⚠️ The names a project states as this machine's are read in beside them, from
-    the configuration rather than from the file: `local_names` is the one list
-    § 20 keeps on the surface, and a loopback name is not another machine's
-    identity.
+    first of § 20's four: a file nobody wrote on this machine is a machine where
+    every name it would have cleared is live, while a file that exists and names
+    nothing is a project's own statement that nothing is allowlisted yet. Both
+    put a call to a person; only the first says *there is no list* when it does.
     """
-    local = config.get(LOCAL)
-    here = {
-        str(name).strip()
-        for name in (local if isinstance(local, list) else [])
-        if str(name).strip()
-    }
     if not isinstance(path, str) or not path.strip():
         return None
     try:
@@ -211,7 +219,7 @@ def named_in(path, config) -> set[str] | None:
         # telling them apart would be a report about somebody's filesystem
         # rather than about the call in hand.
         return None
-    return here | {
+    return {
         line.split("#")[0].strip()
         for line in lines
         if line.strip() and not A_COMMENT.match(line)
@@ -339,26 +347,30 @@ def live_guard(config, command: str, mode: str) -> dict:
     if not found:
         return {}
     stated = config.get(ALLOWLIST)
-    cleared = named_in(stated, config)
+    cleared = named_in(stated)
+    here = local_names(config)
     lines, held = [], False
     for match in found:
         machine, why = match["machine"], match["why"]
+        # ⛔ The two silent answers this guard has, and both are silence rather
+        # than an `allow`: § 20 states the verdict is never that, so a call the
+        # project has already answered for is left to the permission flow the
+        # session already has. ⛔ The local reading comes **first and is not
+        # conditioned on the file**: what a loopback name reaches does not change
+        # with a list somebody has not written.
+        if why is None and machine in here:
+            continue
         if why is None and cleared is None:
             why = NO_LIST
         if why is None and machine in cleared:
-            # ⛔ The one silent answer this guard has, and it is silence rather
-            # than an `allow`: § 20 states the verdict is never that, so a
-            # machine the project named as not live is left to the permission
-            # flow the session already has.
             continue
         held = True
-        reaching = (
-            f"reaching `{machine}`"
-            if why is None or (machine and why == NO_LIST)
-            else f"and {why}"
+        reaching = f"reaching `{machine}`" if machine else f"and {why}"
+        where_in_call = (
+            "the whole call" if why == UNPARSEABLE else f"segment {match['segment']}"
         )
         lines.append(
-            f"segment {match['segment']} — `{match['shown']}` — runs "
+            f"{where_in_call} — `{match['shown']}` — runs "
             f"{match['entry'].get('command')!r}, which this project states opens a session on "
             f"another machine, {reaching}"
         )
@@ -815,6 +827,16 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                   f"{command[:60]!r} → {answered!r}"[:140])
             check(f"{label} — and the report says which fact", phrase in reason(answered),
                   reason(answered)[:200])
+        # ⛔ And the unparseable arm names the whole call rather than a segment of
+        # it: that arm matches a token and not a position, so a segment number
+        # there is a count of segments nothing counted. Found by reading the diff,
+        # and asserted because every verdict above passes either way.
+        unparsed = guard_answer(
+            _call(f"a-free-command 'an unclosed quote; {tool} {ALLOWED}"), config=one
+        )
+        check("an unparseable call is reported as the whole call, not as a segment",
+              "the whole call" in reason(unparsed) and "segment" not in reason(unparsed),
+              reason(unparsed)[:200])
 
         out.append("")
         out.append("Which verdict it is depends on who would answer the prompt:")
@@ -897,16 +919,26 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         out.append("")
         out.append("The allowlist is read as a file of names, and nothing else:")
         check("a comment in it names no machine",
-              "# a comment, which names nothing" not in (named_in(str(listed), one) or set()))
-        check("a blank line names nothing either",
-              "" not in (named_in(str(listed), one) or set()))
-        check("the names it does carry are read",
-              ALLOWED in (named_in(str(listed), one) or set()))
+              "# a comment, which names nothing" not in (named_in(str(listed)) or set()))
+        check("a blank line names nothing either", "" not in (named_in(str(listed)) or set()))
+        check("the names it does carry are read", ALLOWED in (named_in(str(listed)) or set()))
         check("a file nobody wrote is no list rather than an empty one",
-              named_in(missing, one) is None)
-        check("and a key stating no path is no list either", named_in(None, one) is None)
-        check("the names the configuration states as local are read beside it",
-              LOCAL_NAME in (named_in(str(listed), one) or set()))
+              named_in(missing) is None)
+        check("and a key stating no path is no list either", named_in(None) is None)
+        check("the names the configuration states as local are read from the configuration",
+              local_names(one) == {LOCAL_NAME})
+        # ⛔ The two readings are independent, which is a measured defect of this
+        # carrier rather than a property worth asserting on principle: folded
+        # together, a name the project itself calls local was put to a person
+        # whenever the machine's own file could not be read.
+        check("a local name still reaches nothing where that file could not be read",
+              guard_answer(_call(f"{tool} {LOCAL_NAME}"), config=_a_config(
+                  [_a_tool(tool)], allowlist=missing, local=[LOCAL_NAME])) == {},
+              repr(guard_answer(_call(f"{tool} {LOCAL_NAME}"), config=_a_config(
+                  [_a_tool(tool)], allowlist=missing, local=[LOCAL_NAME])))[:140])
+        check("and every other name there is held, the list being absent",
+              decision(guard_answer(_call(f"{tool} {ALLOWED}"), config=_a_config(
+                  [_a_tool(tool)], allowlist=missing, local=[LOCAL_NAME]))) == "ask")
 
     # ⛔ The one thing the fake above cannot assert: that the keys this carrier
     # reads are the keys a shipped configuration actually resolves to. The fake

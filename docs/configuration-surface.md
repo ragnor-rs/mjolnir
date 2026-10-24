@@ -774,8 +774,8 @@ the other way — a file for both — would make a loopback name a per-machine f
 checkout has to be told.
 
 **Why the absence of the file makes the guard stricter rather than quieter.** A machine where
-nobody has written the list yet is a machine where every name reads as live, so a half-set-up
-machine is safe by default and the remedy is visible in the refusal
+nobody has written the list yet is one where every name that list would have cleared reads as live,
+so a half-set-up machine is safe by default and the remedy is visible in the refusal
 ([`schema § 20 → The four ways it fails closed`](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed)).
 ⚠️ **That is the opposite of how a missing configuration file usually reads**, and it is the
 direction this facet cannot afford to have backwards.

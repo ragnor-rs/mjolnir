@@ -2363,6 +2363,12 @@ than a silent pass.
 - **Whether a project's `valued_flags` is complete.** A flag nobody listed consumes nothing, so its
   value stands where the machine would and the call is held — a false prompt rather than a silent
   pass. Nothing here can tell a list that is short from one that is right.
+- **A call that cannot be parsed and only *mentions* a session command.** The positional rule is
+  suspended there, by
+  [schema § 20 → The four ways it fails closed](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed),
+  so an unclosed quote around prose naming the command is held. ⚠️ A false prompt in the one state
+  where the alternative is reading positions out of a parse that did not happen — and the report
+  names the whole call rather than a segment of it, there being no segments to count.
 
 ## The install half: what the toolkit writes into a project
 

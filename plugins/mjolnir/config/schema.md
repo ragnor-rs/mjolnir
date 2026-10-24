@@ -3514,7 +3514,10 @@ condition can reach.
 - ⚠️ **`local_names` is the one list of names this surface carries, and every member of it denotes
   *this* machine** — a loopback name, a name a container is reached by without leaving it. A name
   that denotes another machine belongs in the file above, for the reason the subsection below
-  states. Absent, no name is read as local.
+  states. Absent, no name is read as local. ⛔ **And it is read independently of that file**: what a
+  loopback name reaches does not change with a list somebody has or has not written, so a name
+  stated here passes on a machine carrying no allowlist at all — which is the one thing the
+  stricter-when-absent rule above does not reach.
 
 ⛔ **The machine a call reaches is the first plain word of it, after the command and after the
 flags, with a leading `<user>@` and a trailing `:<path>` taken off.** ⚠️ **A call whose machine is
@@ -3584,7 +3587,7 @@ command position, or, where the call cannot be parsed at all, by the command bei
 
 | what could not be established | why it is not a pass |
 |---|---|
-| the allowlist names no file on this machine | a machine with no list of its own is a machine where every name is live, and the half-set-up state is the one this direction exists for |
+| the allowlist names no file on this machine | a machine with no list of its own is one where every name that list would have cleared is live, and the half-set-up state is the one this direction exists for. ⚠️ `local_names` is not among them, by the rule at that key |
 | the call cannot be parsed | a call the lexer cannot read has no reliable positions in it, so *no session tool here* is a reading of a parse that did not happen |
 | the machine the call names cannot be read | a name the shell would resolve and this guard cannot — an expansion, a substitution's output — is a machine that could be any machine |
 | the call names no machine at all | a session command invoked in a shape this reading does not reach is still a session command, and its target is then unknown rather than absent |
