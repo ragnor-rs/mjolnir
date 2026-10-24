@@ -690,6 +690,52 @@ there is specific: that project's recorder keys the answer by repository and num
 that named the change ambiguously recorded nothing and left the merge blocked however it was
 answered.
 
+## The spend half: three instances, and the key that is not sugar
+
+Three projects have a command that costs money when it runs, and only one of them has a guard. The
+first is where the guard comes from: one tier of its suite costs real money a run against a budget
+that is finite and **has already been exhausted once**, which is the tier
+[`build-surface.md`](build-surface.md#the-tiers-what-each-needs-and-which-are-asked-for) records
+with the figure, beside the one environment another project refuses by name because its quota is
+what caps that product's throughput. The second runs an end-to-end suite that spends a paid
+quota on every run, takes about forty minutes, and is deliberately in no workflow at all — and the
+quota it draws is the one that caps that project's production throughput, so an unsupervised run
+does not merely cost money, it slows the product down for as long as it runs. The third runs
+validation harnesses that call two paid providers live on purpose, one grading the other so the
+judge is not the generator's own family, several of them matrices whose cost scales with a run count
+read from the environment.
+
+⚠️ **What makes the second and third instances the sharp ones is that neither names a script a guard
+could recognise.** The second's paid command is an ordinary invocation of the runner that also runs
+its cheap suites; the third's are invoked exactly like the free unit tests beside them — same
+command prefix, adjacent names, same runner. ⛔ **So the decision rests on the arguments, and
+`args_match` is load-bearing rather than sugar on a command name**:
+[`schema § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
+declares it beside `command` for that reason, and a facet with `command` alone would describe one of
+the three.
+
+| the part | does a role or a guard read it to decide what to do next | where it lands |
+|---|---|---|
+| which commands spend | yes | `deny`, a key. The three projects' paid commands have nothing in common but being commands |
+| what separates a paid invocation from a free one by the same binary | yes: it is the whole decision in two of the three | `args_match`, a key |
+| what the call costs | yes: a refusal names it | `reason`, a key. ⛔ **The figure itself never leaves the project** |
+| whether a go covers one call or more | yes | `approval`, a key with two values: the legitimate uses are frequent in one instance and a metered release in another |
+| how much of a budget is left | no: there is no figure the procedure can read | nowhere, by the threshold argument [below](#why-there-is-no-threshold-on-the-surface) |
+| where the command is in a call | no: it is the same parse everywhere | procedure, and the one of these that was paid for |
+| which wrappers stand between a call and its command | no | procedure |
+| what an unanswered ask becomes | no | the harness's, which is why the facet states no timeout |
+
+**Why the approval is a key and the positional rule is not.** The two look alike — both are *how
+strictly this is held* — and only one of them varies: the first project's legitimate uses are the
+same command differently scoped, run deliberately several times a week, so an approval it had to
+re-ask per session would be an approval nobody would keep; another project's spend is a release to a
+metered environment, where an answer given inside a session is a go for an act that reaches a live
+system. ⛔ **The parse varies in no project at all**, which is why
+[`schema § 19 → The command position`](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)
+states it as procedure, and the correction it carries is the reason it is extracted rather than
+rewritten: the guard's own header records an earlier version that grepped the raw command and
+refused a text edit whose prose contained a script path.
+
 ## One rule that is procedure everywhere
 
 The estimate/measurement separation in
@@ -949,9 +995,12 @@ convention written into the surface, which is the shape this repository calls a 
 a guideline. ⚠️ **The test that key failed is not "is it enforceable in principle" but "is there a
 run-time reading to enforce it against"** — § 11's own in-tree rule passes that test on three keys
 the reader already holds, and is refused there rather than stated and hoped for. The qualitative
-rules are stated instead, and the one live reading goes to the two items that already exist to
-read something like it: [#31](https://github.com/ragnor-rs/mjolnir/issues/31), the role that
-restores a session, and [#26](https://github.com/ragnor-rs/mjolnir/issues/26), the spend guard.
+rules are stated instead, and the one live reading goes where something already reads it: the spend
+guard's own bar at
+[`schema § 19 → What an approval is per`](../plugins/mjolnir/config/schema.md#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs),
+which reports a resume priced above it and reports **no figure** where the harness gave none, and
+[#31](https://github.com/ragnor-rs/mjolnir/issues/31), the role that restores a session, for the
+context half of the same payload.
 
 ### Why `committed` is a key of its own, and not implied by `dir`
 

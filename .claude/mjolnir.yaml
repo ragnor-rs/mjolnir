@@ -133,6 +133,9 @@ host:
     - workflow: "Single source of truth"
       mirrors: "python3 tools/check_single_source.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Spend guard"
+      mirrors: "python3 plugins/mjolnir/scripts/spend.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
   # ⛔ No `runner` here, and that absence is the statement § 2 makes it: every workflow above runs
   # on this host kind's own default, which the surface deliberately does not name, so there is
   # nothing to write down. ⚠️ What it costs is stated rather than discovered — the drift run two
@@ -401,3 +404,21 @@ executed:
     A check here needs something stood up before it can execute — a store, a service, or an
     install this repository performs rather than describes — which is the same trigger the
     end-to-end facet above carries.
+
+spend_guard:
+  # ⛔ Nothing here spends. Every command this repository runs is a gate over its own tree: no
+  # model provider is called, no tier is metered, and nothing is deployed — so the deny list is
+  # empty and the guard is installed and refuses nothing. `[]` rather than an unset key, because
+  # a project that decided none of its commands costs money and one that never asked read alike.
+  #
+  # ⚠️ The empty list is also what makes this repository the green side of its own check: the
+  # carrier's suite plants the denials it has to refuse, and the tree it actually runs in is the
+  # project that must get no spend hook at all.
+  deny: []
+  # ⚠️ Stated although the value above makes nothing match it: `approval` is defaulted on the
+  # surface, and writing it here says which of the two this project would be under rather than
+  # leaving the stricter one to be read in later by somebody who finds the key missing.
+  approval: per_invocation
+  # No `resume_bar_usd`: a resume here pays to rewrite a prompt cache like any other, and there is
+  # no spend beside it for the figure to be worth interrupting a person about. The key is
+  # legitimately unset, and the arm that would read it says nothing.

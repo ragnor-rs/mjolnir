@@ -168,3 +168,10 @@ executed:
     There is no suite and no tier. The one mapped role reads evidence off the machine and writes a
     document, so there is no count of executed cases to declare or to judge.
   revisit_when: A suite is mapped that creates a dependency for itself before it can run.
+
+spend_guard:
+  # The empty list, like `checks_local` and `exclusive_resources` above: the one mapped role reads
+  # evidence off the machine and writes a file, and no command it runs costs anything. ⛔ The guard
+  # is installed and refuses nothing here, which is the same thing as absent to a project with
+  # nothing to guard — and `[]` is what says that was decided rather than never asked.
+  deny: []

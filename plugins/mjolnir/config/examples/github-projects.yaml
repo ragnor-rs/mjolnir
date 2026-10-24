@@ -243,3 +243,16 @@ executed:
   min: 1
   requires:
     - "the service the host supplies beside the run, which a local run does not have"
+
+spend_guard:
+  # The stricter value, and the configuration it is for: what spends here is a metered deploy, and
+  # a go given inside a session is a go for an act that reaches a live environment. ⛔ So no answer
+  # in the session releases it — the remedy a refusal names is a person running the command
+  # themselves, which is the one route that cannot be taken by a session nobody is watching.
+  approval: denied
+  deny:
+    - command: "<the command that releases to the metered environment>"
+      reason: "<what the release costs while it runs, and what it costs to undo>"
+  # The resume price is read here too, and the bar is this project's: the window it pays to
+  # rewrite is the same window the deploy above is driven from.
+  resume_bar_usd: 0.5

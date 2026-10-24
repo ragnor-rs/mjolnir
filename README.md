@@ -119,8 +119,9 @@ to ask you are stated too —
 | [`tools/check_nothing_deferred.py`](tools/check_nothing_deferred.py) | The gate that refuses a merge while any item raised against the change is unresolved, counted in the body and in the threads on it |
 | [`tools/check_prose_width.py`](tools/check_prose_width.py) | The sweep that holds every tracked markdown file to the line width the configuration states, excluding the lines the format forbids breaking |
 | [`tools/check_no_audit_trail.py`](tools/check_no_audit_trail.py) | The gate that reads the markdown lines a change adds and refuses a dated pass record, a figure beside a former value, or a clause whose subject is the pass before this one |
-| [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/): a `SessionStart` hook putting the rules nothing mechanical reads into the session, a `Stop` hook holding a role's reply to the register, a `PreToolUse` hook refusing a command that would carry a credential onto a surface outside the project, and the enforcement half below. Which they are is what the file says, so no count of them is carried here |
+| [`plugins/mjolnir/hooks/`](plugins/mjolnir/hooks/) | The hook carriers, and what each calls under [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/): a `SessionStart` hook putting the rules nothing mechanical reads into the session, a `Stop` hook holding a role's reply to the register, a `PreToolUse` hook refusing a command that would carry a credential onto a surface outside the project, and the enforcement and spend halves below. Which they are is what the file says, so no count of them is carried here |
 | [`plugins/mjolnir/scripts/enforce.py`](plugins/mjolnir/scripts/enforce.py) | The enforcement half: a guard that refuses a merge for which no answer to *is a person going to read this diff* is recorded on the change, naming what would unblock it; a lease that holds a place on whatever your configuration says contends, given back on every exit path that fires and expiring on the one that cannot; and the command that writes the record the guard reads |
+| [`plugins/mjolnir/scripts/spend.py`](plugins/mjolnir/scripts/spend.py) | The spend half: a guard that puts a command your configuration says costs money to you on every invocation — or refuses it outright where you said so — naming the segment that spends and what you said it costs, and reading the command's own position in the call rather than the text of it, so a path mentioned in an edit is not a call of anything; and the one price the harness states before a turn runs, reported against a bar you set and reported as *no figure* where it gave none |
 
 The loop's remaining roles land here as they are reconciled. ⛔ **No count of them is written
 here** — the table above says which are shipped, and
@@ -269,6 +270,21 @@ of the two answers to a record it could not read, and
 of how a place on a contended resource is held and given back. A project that states nothing
 exclusive gets no capacity guard at all; what no check can reach is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-enforcement-half-a-guard-that-refuses-and-a-place-that-comes-back).
+
+⛔ **A command that costs money does not run because nobody was there to stop it.** You list the
+calls that spend, what each costs and whether a go covers one invocation; the guard reads where the
+command *is* in the call — behind an assignment, behind an elevation wrapper, inside a substitution,
+in a later segment of a chain — and puts it to you with your own figure attached, so the one
+thing it never does is refuse a call that merely mentions the path. A session nobody is watching
+gets no answer, and then the call does not run. The
+[spend rule](plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
+is the single statement of the list and its keys,
+[the command position](plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)
+of the parse and the defect that was paid for once, and
+[what an approval is per](plugins/mjolnir/config/schema.md#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs)
+of the go and of the one price the harness states before a turn runs. A project that denies no
+command gets no spend hook at all; what no check can reach is in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-spend-half-a-call-put-to-somebody-and-the-one-price-stated-beforehand).
 
 ### Who this page is written for
 
