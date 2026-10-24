@@ -3527,6 +3527,14 @@ site over a request protocol opens no session on a machine, and a project that m
 would meet this guard on every one while it guarded nothing — so the facet is a list of **session**
 commands a project writes, and a request client is not on it unless that project put it there.
 
+⛔ **This is not [§ 14](#nothing-credential-shaped-leaves-for-a-surface-outside-the-project)'s guard
+and the two are not alternatives.** That one holds a call carrying something credential-shaped
+*outward*, whoever it reaches; this one holds a call opening a *session*, whatever it carries — so a
+call can be both, and each answers for its own reason. ⚠️ **Which is also why the commands are a
+project's list here and the toolkit's there**: what reaches a surface outside a project is the same
+handful of clients everywhere, while what reaches *your* live machine is as likely to be a wrapper
+somebody in that project wrote.
+
 ### Which verdict, and who would answer the prompt
 
 ⛔ **The verdict is never `allow`, and which of the two it is depends on who would answer the
