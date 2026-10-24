@@ -93,8 +93,11 @@ carriers:
   # The hook carriers the plugin ships, which no count here states: a number would be wrong by
   # the next one that lands. ⚠️ A hook landing in the plugin is unclassified until it is named
   # here, and an unclassified carrier makes every role count a floor — so adding one to the
-  # plugin without adding it here reddens this check rather than being silently uncounted. It
-  # has now happened three times, with #142, with #166 and with #184.
+  # plugin without adding it here reddens this check rather than being silently uncounted. ⛔ It
+  # has happened to every carrier that landed in the plugin before being named here, and no tally
+  # of the occurrences is kept: a count of them goes stale by the next one exactly as a count of
+  # the entries would, and the argument it carried is the list's own — name a carrier here in the
+  # change that ships it.
   check_reply_defers_nothing:   { class: guard }  # holds the reply to leaving no work undone
   boundary:                     { class: guard }  # refuses what may not leave the project, on
                                                   # `PreToolUse` (#90, shipped by #142)
@@ -106,6 +109,17 @@ carriers:
                                                   # it, and holds and gives back a place on what
                                                   # contends — one script registered on five
                                                   # events (#16, shipped by #184)
+  spend:                        { class: guard }  # puts a call that spends to the person or
+                                                  # refuses it, and reports the one price a
+                                                  # resume states — one script on two events
+                                                  # (#26, shipped by #193)
+  live:                         { class: guard }  # puts a call that could open a session on a
+                                                  # machine outside this one to the person, or
+                                                  # refuses it (#37, shipped by #199)
+  prune:                        { class: guard }  # removes a tree whose branch has landed, on
+                                                  # the event that opens a session — the shipped
+                                                  # counterpart of `prune-merged-worktrees`
+                                                  # below (#34, shipped by #200)
   app-instance-capacity:        { class: guard }
   app-start-guard:              { class: guard }
   capacity-and-merge-guard:     { class: guard }
