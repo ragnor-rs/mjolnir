@@ -580,9 +580,10 @@ inference — the code root's case, where deriving it is wrong wherever the two 
 fact no configuration can state is a definition. The test is whether a project could have
 written the value down.
 
-⛔ **A role names what it resolved before it acts: the root, the file it read there, and the
-repository that file's configuration addresses.** The reader reports each of them, so this costs
-the role a sentence and no work. The list is stated here and a role reads it from here.
+⛔ **A role names what it resolved before it acts: the root, the file it read there, the surface
+that file was held to, and the repository that file's configuration addresses.** The reader reports
+each of them, so this costs the role a sentence and no work. The list is stated here and a role
+reads it from here.
 
 ⚠️ **That naming is the only guard, and it is weaker than a stop.** Run from a directory with no
 configuration, a role stops; run from a *sibling project that has one*, it resolves that project
@@ -601,6 +602,38 @@ because the file is found *at* the root that key described, the only value it co
 was the one it already held. A key nothing reads is worse than no key: a project that pointed it
 at a subdirectory was ignored in silence, which is the failure above with the project's own
 statement discarded as well.
+
+### The surface is resolved beside the configuration
+
+⛔ **A project that ships this surface is held to its own copy of it; one that only consumes it is
+held to the installed plugin's.** The reader looks for the surface under the skills root, at the
+path the plugin occupies in the tree that carries it, and reads the installed copy where the root
+carries none. ⚠️ **It is the surface that moves and never the configuration** — a project's facts
+are read where the skills root states them and nowhere else, so a tree carrying the configuration
+under work keeps it.
+
+⚠️ **The case this exists for is a work tree, and it is a correctness requirement rather than a
+convenience.** A harness serves the plugin from one installed path, which is a checkout of the
+integration branch; a role runs in a tree whose branch is somewhere else. Under § 10's worktree
+model those are two commits of one repository, and holding the tree's configuration to the
+installed branch's surface refuses it for every key the branch has not caught up to yet.
+
+⛔ **What that costs is not a message.** Measured on this repository: a key newly marked as required
+made the configuration unreadable in every tree cut before the marker landed, and the guards of
+§§ 18–21 — each of which reads a configuration to decide what to hold — held every command to
+nothing, in a project that had configured them. A guard saying it cannot read a configuration and a
+project that never wrote one are the same silence to whoever is reading.
+
+⛔ **A shape rule may not answer whether a key is written**, for the same reason. Requiredness is
+the marker's question, checked before any shape rule runs; what a stated value has to *be* is the
+rule's. A rule refusing absence as well states the marker's fact a second time, and the second
+statement outlives the first exactly where the resolved surface stops marking the key — which is
+the tree above. ⚠️ Ten rules were doing it, each refusing a configuration the surface it was held
+to did not require.
+
+⚠️ **Why the surface is one of the items a resolution names** above: two copies can answer the
+question, so which one ruled is a fact about the resolution rather than a constant a reader of the
+output could have assumed.
 
 ## 2. Code host
 

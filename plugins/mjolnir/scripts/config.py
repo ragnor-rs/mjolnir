@@ -2,11 +2,12 @@
 """The configuration reader every role runs on.
 
 A project states its facts once, in `.claude/mjolnir.yaml` relative to its
-**skills root**, and the surface beside this script -- `../config/schema.md` --
-is the single statement of what those facts are. This module is the one piece of
-code that turns that file into values a role can act on: it resolves the path,
-applies the surface's defaults, and refuses a configuration the surface does not
-allow, naming the key so the person reading the failure knows what to write.
+**skills root**, and a copy of the surface -- `config/schema.md`, beside this
+script or in the skills root that ships it, which `surface_for` decides -- is the
+single statement of what those facts are. This module is the one piece of code
+that turns that file into values a role can act on: it resolves the path, applies
+the surface's defaults, and refuses a configuration the surface does not allow,
+naming the key so the person reading the failure knows what to write.
 
 Three things it deliberately does not do:
 
@@ -105,6 +106,13 @@ EXAMPLES = os.path.join(PLUGIN_ROOT, "config", "examples")
 # installs the plugin from elsewhere simply has no file here, and the check is
 # skipped rather than failed.
 REPO_ROOT = os.path.dirname(os.path.dirname(PLUGIN_ROOT))
+
+# Where the plugin sits inside the tree that carries it, derived from where this
+# file actually is rather than stated. It is how `surface_for` below asks whether
+# a skills root carries a surface of its own, and deriving it is what keeps the
+# marketplace's own layout a single statement: the source path is declared once,
+# in the marketplace manifest, and a copy of it here would be a second.
+PLUGIN_IN_REPO = os.path.relpath(PLUGIN_ROOT, REPO_ROOT)
 
 # Where a project's own configuration sits under its skills root. Stated once
 # here because the surface states it in prose rather than as a key: a project
@@ -549,6 +557,25 @@ def _has(data, path: str) -> bool:
     return _get(data, path, _ABSENT) is not _ABSENT
 
 
+def _absent_as(value, empty):
+    """A value a key states, with the key's absence read as `empty`.
+
+    ⛔ **Whether a key is written is the surface's `# required` marker**, answered
+    in `validate` before any shape rule runs; what a stated value has to *be* is
+    the rule's. A rule refusing absence as well states the marker's fact a second
+    time -- and the second statement outlives the first wherever the resolved
+    surface stops marking the key, which is a work tree whose branch predates the
+    marker (§ 1, `surface_for`). Measured on ten of these rules: each refused a
+    configuration the surface it was held to did not require, naming the key, so
+    the project could not read its own facts in its own tree.
+
+    ⚠️ It is the shape rule that is relaxed and never the requirement. Against a
+    surface that does mark the key, `validate` refuses the absence before this is
+    reached, with the same message as before and the key named.
+    """
+    return empty if value is None else value
+
+
 def _load_yaml(text: str, where: str):
     """Parse YAML, turning a parser error into the refusal this module promises.
 
@@ -594,7 +621,8 @@ def _set_default(data: dict, path: str, value) -> None:
 class Config:
     """A project's facts, resolved. Read through the accessors, not the dict."""
 
-    def __init__(self, data: dict, skills_root: str, facts: dict, source: str | None = None):
+    def __init__(self, data: dict, skills_root: str, facts: dict, source: str | None = None,
+                 surface: str | None = None):
         self.data = data
         self.skills_root = skills_root
         self.facts = facts
@@ -603,6 +631,11 @@ class Config:
         # examples -- reporting a path that was never opened would be the
         # plausible-looking wrong answer this whole section is about.
         self.source = source
+        # The surface it was held to, which `surface_for` resolved and § 1 puts
+        # in what a role names. Two copies can answer the question -- the
+        # installed plugin's and a shipping project's own tree -- so which one
+        # ruled is a fact about the resolution rather than a constant.
+        self.surface = surface or SURFACE
 
     # -- the roots. The skills root is where the role ran (§ 1); the code root is
     # read from the file found there and is never inferred.
@@ -618,6 +651,16 @@ class Config:
         that visible at the moment it happens.
         """
         return self.source
+
+    @property
+    def surface_path(self) -> str:
+        """The surface this configuration was held to, absolute.
+
+        Reported for the reason `config_path` is: where a project ships this
+        surface as well as consuming it, the copy that ruled is a fact a role
+        states rather than one a reader of the output has to work out.
+        """
+        return os.path.abspath(self.surface)
 
     @property
     def code_root(self) -> str:
@@ -889,6 +932,7 @@ class Config:
         return {
             "skills_root": os.path.abspath(self.skills_root),
             "config_path": self.config_path,
+            "surface_path": self.surface_path,
             "code_root": os.path.abspath(self.code_root),
             "code_is_own_repo": self.code_is_own_repo,
             "config": self.data,
@@ -1257,7 +1301,7 @@ def host_runs(data: dict) -> list[dict]:
     per-command view legitimately drops and a check holding the facet to the
     host's own definitions may not.
     """
-    checks = _get(data, "host.checks")
+    checks = _absent_as(_get(data, "host.checks"), [])
     if not isinstance(checks, list):
         raise ConfigError(
             "host.checks",
@@ -2081,7 +2125,7 @@ def validate(data: dict, facts: dict) -> None:
                     "to.",
                 )
 
-    statuses = _get(data, "statuses")
+    statuses = _absent_as(_get(data, "statuses"), [])
     if not isinstance(statuses, list):
         raise ConfigError("statuses", "must be a list; `[]` where no status is mapped.")
     for index, status in enumerate(statuses):
@@ -2101,7 +2145,7 @@ def validate(data: dict, facts: dict) -> None:
         if "name" not in status:
             raise ConfigError(f"{where}.name", "required (§ 4.2).")
 
-    readiness = _get(data, "readiness")
+    readiness = _absent_as(_get(data, "readiness"), [])
     if not isinstance(readiness, list):
         raise ConfigError("readiness", "must be a list; `[]` where there is no gate.")
     for index, entry in enumerate(readiness):
@@ -2143,7 +2187,7 @@ def validate(data: dict, facts: dict) -> None:
     # is marked on the surface and answers whether the key is written; what each
     # value has to *be* is here, as § 16's is.
     mirrored = _mirrored_commands(data)
-    local_checks = _get(data, "checks_local")
+    local_checks = _absent_as(_get(data, "checks_local"), [])
     if not isinstance(local_checks, list):
         raise ConfigError(
             "checks_local",
@@ -2256,7 +2300,7 @@ def validate(data: dict, facts: dict) -> None:
     # has to *be* is here, as § 17's is -- and for the same stated reason: a
     # member of a list sits at no path a marker can reach, so all three of its
     # keys are held in prose there and in code here.
-    body_sections = _get(data, "body_sections")
+    body_sections = _absent_as(_get(data, "body_sections"), [])
     if not isinstance(body_sections, list):
         raise ConfigError(
             "body_sections",
@@ -2308,7 +2352,7 @@ def validate(data: dict, facts: dict) -> None:
     # § 18. The guard on a command the host has already run. Requiredness is the
     # surface's marker and answers whether `never_guard` is written; what these
     # three values have to *be* is here, as § 17's are.
-    exempt = _get(data, "already_run.never_guard")
+    exempt = _absent_as(_get(data, "already_run.never_guard"), [])
     if not isinstance(exempt, list):
         raise ConfigError(
             "already_run.never_guard",
@@ -2350,7 +2394,7 @@ def validate(data: dict, facts: dict) -> None:
 
     # § 13. The same shape as `readiness` at the other end of the item, with one
     # thing that gate has no need of: who answers each check.
-    done = _get(data, "done")
+    done = _absent_as(_get(data, "done"), [])
     if not isinstance(done, list):
         raise ConfigError(
             "done", "must be a list; `[]` where the merge is the whole of it."
@@ -2417,7 +2461,7 @@ def validate(data: dict, facts: dict) -> None:
                 "machine's work.",
             )
 
-    carriers = _get(data, "carriers")
+    carriers = _absent_as(_get(data, "carriers"), {})
     if not isinstance(carriers, dict):
         raise ConfigError("carriers", "must map each mapped role to its carrier.")
     # Every role's carrier comes from one set, which the surface states once, on
@@ -2452,7 +2496,7 @@ def validate(data: dict, facts: dict) -> None:
     # for the reason § 16's and § 17's are -- requiredness is marked on the
     # surface and answers whether a key is written, and a member of a list sits at
     # no path a marker can reach.
-    denied = _get(data, "spend_guard.deny")
+    denied = _absent_as(_get(data, "spend_guard.deny"), [])
     if not isinstance(denied, list):
         raise ConfigError(
             "spend_guard.deny",
@@ -2535,7 +2579,7 @@ def validate(data: dict, facts: dict) -> None:
     # The shape rules are here for the reason § 19's are: requiredness is marked
     # on the surface and answers whether a key is written, and a member of a list
     # sits at no path a marker can reach.
-    tools = _get(data, "live_guard.session_tools")
+    tools = _absent_as(_get(data, "live_guard.session_tools"), [])
     if not isinstance(tools, list):
         raise ConfigError(
             "live_guard.session_tools",
@@ -2617,6 +2661,40 @@ def validate(data: dict, facts: dict) -> None:
         )
 
 
+def surface_for(skills_root: str = ".") -> str:
+    """The surface a project's configuration is held to (§ 1).
+
+    The installed plugin's copy, except where the skills root carries a copy of
+    its own -- a project that *ships* this surface rather than only consuming it.
+    Then that one is read, because the configuration and the surface are two
+    halves of one statement and the half under work is the one in the tree.
+
+    ⛔ The case this exists for is a work tree, and it is a correctness
+    requirement rather than a convenience. A harness serves the plugin from one
+    installed path, which is a checkout of the integration branch; a role runs in
+    a tree whose branch is somewhere else. Holding that tree's configuration to
+    the installed branch's surface refuses it for every key the branch has not
+    caught up to yet -- measured, and what it costs is not a message: a key newly
+    marked `# required` made the configuration unreadable in every tree cut
+    before it, and the guards that read a configuration to decide what to hold
+    held every command to nothing, in a project that had configured them.
+
+    ⚠️ It is the *surface* that moves and never the configuration. A project's
+    facts are read where `load` finds them and nowhere else: a tree carries the
+    configuration under work, so reading some other tree's would discard the
+    statement the branch is making -- the mirror of the failure above, and the
+    reason the skills root is still the only place a configuration is looked for.
+
+    ⚠️ An adopter is unaffected, and that is a property of the test rather than a
+    case handled: a project that consumes the plugin carries no surface, so there
+    is nothing for this to find and the installed copy is read. The two answers
+    coincide for the shipping project's own primary checkout as well, that root
+    and the installed path being the same directory.
+    """
+    own = os.path.join(skills_root or ".", PLUGIN_IN_REPO, "config", "schema.md")
+    return own if os.path.isfile(own) else SURFACE
+
+
 def configured(skills_root: str = ".") -> bool:
     """Whether this project states a configuration at all.
 
@@ -2645,7 +2723,8 @@ def load(skills_root: str = ".", *, check_paths: bool = True) -> Config:
     plausible first. The examples are shapes rather than projects, so the
     self-test below turns it off for them.
     """
-    with open(SURFACE, encoding="utf-8") as handle:
+    surface = surface_for(skills_root)
+    with open(surface, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
 
     path = os.path.join(skills_root, CONFIG_PATH)
@@ -2661,17 +2740,20 @@ def load(skills_root: str = ".", *, check_paths: bool = True) -> Config:
     if not isinstance(data, dict):
         raise ConfigError(CONFIG_PATH, "is empty or is not a block of keys.")
 
-    return _resolve(data, skills_root, facts, check_paths, os.path.abspath(path))
+    return _resolve(
+        data, skills_root, facts, check_paths, os.path.abspath(path), surface
+    )
 
 
 def load_text(text: str, skills_root: str, *, check_paths: bool = False) -> Config:
     """Resolve a configuration already in hand. Used to load the examples."""
-    with open(SURFACE, encoding="utf-8") as handle:
+    surface = surface_for(skills_root)
+    with open(surface, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
     data = _load_yaml(text, CONFIG_PATH)
     if not isinstance(data, dict):
         raise ConfigError(CONFIG_PATH, "is empty or is not a block of keys.")
-    return _resolve(data, skills_root, facts, check_paths)
+    return _resolve(data, skills_root, facts, check_paths, None, surface)
 
 
 def _resolve(
@@ -2680,12 +2762,13 @@ def _resolve(
     facts: dict,
     check_paths: bool,
     source: str | None = None,
+    surface: str | None = None,
 ) -> Config:
     for path, value in facts["defaults"].items():
         _set_default(data, path, value)
     validate(data, facts)
 
-    config = Config(data, skills_root, facts, source)
+    config = Config(data, skills_root, facts, source, surface)
     if check_paths and not os.path.isdir(config.code_root):
         raise ConfigError(
             "roots.code",
@@ -3526,6 +3609,109 @@ def self_test() -> int:
         check(f"{label} is refused, with the key named", broken == key,
               f"reported {broken!r}")
 
+    # ⛔ A shape rule answers what a value has to *be* and never whether it is
+    # written. Requiredness is the surface's marker, checked in `validate` above,
+    # and a rule that refuses absence as well states one fact twice -- with the
+    # second statement outliving the first the day the resolved surface stops
+    # marking the key. ⚠️ Not a theoretical pairing: § 20's rule refused an absent
+    # `body_sections` on the strength of its type, so a tree whose surface
+    # predated the key could not read its own configuration even once
+    # `surface_for` had handed it the right surface. Found by this arm.
+    #
+    # The assertion is over the marked set rather than a list written here, so a
+    # key that grows a shape rule is covered the day the surface marks it. ⚠️ What
+    # it holds is that the refusal does not name *that* key, and not that the
+    # configuration loads: a rule reading two keys against each other may
+    # legitimately refuse on the other one, which is a different statement.
+    with open(SURFACE, encoding="utf-8") as handle:
+        marked = surface_facts(handle.read())
+    for path in sorted(marked["required"]):
+        unmarked = dict(
+            marked,
+            required={
+                key: section
+                for key, section in marked["required"].items()
+                if key != path
+            },
+        )
+        broken = _refused(_without(_a_valid_example(), path), facts=unmarked)
+        check(
+            f"no shape rule answers whether `{path}` is written",
+            broken != path,
+            f"refused on {broken!r} with the surface no longer marking it",
+        )
+
+    # § 1's surface resolution, both answers and then the one it exists for.
+    import tempfile  # noqa: PLC0415 -- the only arm that needs a directory
+
+    with tempfile.TemporaryDirectory() as root:
+        consumer = os.path.join(root, "consumer")
+        os.makedirs(os.path.join(consumer, ".claude"))
+        check(
+            "a skills root carrying no surface is held to the installed one",
+            surface_for(consumer) == SURFACE,
+            f"resolved {surface_for(consumer)!r}",
+        )
+
+        # A project that ships this surface rather than only consuming it. The
+        # layout is `PLUGIN_IN_REPO`, derived from where this file sits, so the
+        # fixture is built the way an adopter's tree would be rather than from a
+        # path spelled here.
+        shipper = os.path.join(root, "shipper")
+        shipped = os.path.join(shipper, PLUGIN_IN_REPO, "config")
+        os.makedirs(shipped)
+        os.makedirs(os.path.join(shipper, ".claude"))
+        own_surface = os.path.join(shipped, "schema.md")
+        with open(SURFACE, encoding="utf-8") as handle:
+            installed = handle.read()
+        struck, landed = _surface_without_marker(installed, "host.kind")
+        check(
+            "the planted surface really drops the marker it names",
+            landed and "host.kind" not in surface_facts(struck)["required"],
+            "the strike was a no-op, so the arm below would pass on nothing",
+        )
+        with open(own_surface, "w", encoding="utf-8") as handle:
+            handle.write(struck)
+        check(
+            "a skills root that ships a surface is held to its own copy",
+            surface_for(shipper) == own_surface,
+            f"resolved {surface_for(shipper)!r}",
+        )
+
+        # The measured failure, as an assertion: a configuration missing a key
+        # the *installed* surface marks required, in a tree whose own surface
+        # does not mark it. This is what every work tree cut before a newly
+        # marked key looked like, and it held every guard that reads a
+        # configuration to nothing in a project that had configured them.
+        stated = os.path.join(shipper, CONFIG_PATH)
+        with open(stated, "w", encoding="utf-8") as handle:
+            handle.write(_yaml().safe_dump(_without(_a_valid_example(), "host.kind")))
+        try:
+            load(shipper, check_paths=False)
+            reported = None
+        except ConfigError as error:
+            reported = error.key
+        check(
+            "a tree is held to the surface it ships, not the installed one",
+            reported is None,
+            f"refused on {reported!r}",
+        )
+
+        # And the must-stay-red side, which is what makes the arm above a
+        # measurement rather than a configuration that happens to load: the same
+        # file, with the shipped surface taken away, is refused naming the key.
+        os.remove(own_surface)
+        try:
+            load(shipper, check_paths=False)
+            reported = None
+        except ConfigError as error:
+            reported = error.key
+        check(
+            "and to the installed surface where it ships none",
+            reported == "host.kind",
+            f"refused on {reported!r}",
+        )
+
     # The two refusals that happen before there is a configuration to validate.
     for label, text in (
         ("a configuration that is not valid YAML", "host:\n  kind: github\n   repo: x\n"),
@@ -3612,6 +3798,16 @@ def self_test() -> int:
                 resolved.get("config_path") == os.path.abspath(own),
                 f"reported {resolved.get('config_path')!r}",
             )
+            # And which surface ruled, now that two copies can answer. ⚠️ This
+            # root is the primary checkout the plugin is installed from, so the
+            # two answers coincide here -- what the assertion holds is that the
+            # resolution states one at all, the arms above holding that it
+            # resolves the right one where they differ.
+            check(
+                "a resolution reports the surface it was held to, absolutely",
+                resolved.get("surface_path") == os.path.abspath(surface_for(REPO_ROOT)),
+                f"reported {resolved.get('surface_path')!r}",
+            )
         except ConfigError as error:
             failures += 1
             print(f"  FAIL  this repository's own {CONFIG_PATH}: {error}")
@@ -3645,6 +3841,24 @@ def _default_applied(path: str):
     with open(SURFACE, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
     return _resolve(data, EXAMPLES, facts, False).get(path)
+
+
+def _surface_without_marker(text: str, path: str) -> tuple[str, bool]:
+    """The surface with one key's `# required` marker struck, and whether it was.
+
+    ⛔ Both halves are returned because a plant that does not land reports green.
+    The strike is matched on the key's own declaration line -- the leaf, at the
+    head of a line, carrying the marker -- so a rename on the surface makes the
+    arm that uses this fail rather than pass on an unmodified copy.
+    """
+    leaf = path.rpartition(".")[2]
+    out, landed = [], False
+    for line in text.splitlines(keepends=True):
+        if not landed and re.match(rf"^\s*{re.escape(leaf)}:", line) and "required" in line:
+            line = line.replace("required", "stated by the project", 1)
+            landed = True
+        out.append(line)
+    return "".join(out), landed
 
 
 def _planted_violations():
