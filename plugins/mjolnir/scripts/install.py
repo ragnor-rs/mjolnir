@@ -935,6 +935,7 @@ def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dic
                                   "project's own and is neither removed nor written over")
         if write:
             os.remove(path)
+            _swept(path, artifact)
             standing = artifact.entry(configuration)
             if standing is not None and already_registered(configuration, standing):
                 refusal = unregister(configuration, standing)
@@ -1030,6 +1031,32 @@ def _place_it(path: str, text: str, artifact: Artifact) -> str | None:
     return made
 
 
+def _swept(path: str, artifact: Artifact) -> None:
+    """Take the toolkit's own directory out once its last artifact has gone.
+
+    ⛔ **Only the toolkit's own, and only when it is empty.** A workflow
+    directory and a hooks directory are the *project's* -- the toolkit writes
+    into them and does not own them -- so an empty one there is the project's
+    to keep. The directory this kind writes into exists because the toolkit
+    asked for it, and a project that stops asking for every artifact in it is
+    owed the directory back: an empty directory left standing is the orphan the
+    removable property is about, one level up from the file.
+    """
+    if artifact.kind != SCRIPT:
+        return
+    directory = os.path.dirname(path)
+    if os.path.basename(directory) != TOOLKIT_DIRECTORY:
+        return
+    try:
+        if not os.listdir(directory):
+            os.rmdir(directory)
+    except OSError:
+        # Something else is in it, or it is gone already. Neither is this
+        # step's to report: what it promised was the file, and the directory
+        # is a courtesy it takes only where it is unambiguous.
+        pass
+
+
 def _put_back(path: str, here: str | None, made: str | None) -> None:
     """Undo `_place_it`, including the directory it created where it created one.
 
@@ -1059,12 +1086,29 @@ def run(
     run validates against a configuration missing the first's entry, so two
     artifacts registering one workflow name were both written and the file then
     carried the collision § 2 keys the facet to prevent.
+
+    ⛔ **What the registry's order means is *install* order, so the artifacts a
+    configuration no longer asks for come out in the reverse of it and before
+    anything is written.** ⚠️ A registry may hold an artifact that only works
+    while a sibling is there -- a workflow calling a checker is the shipped
+    case -- and walking one order for both directions produces exactly the
+    intermediate state the order exists to avoid: the called file gone and the
+    caller still installed, which is a red check on every change rather than
+    something inert. ⚠️ **The report stays in registry order** whichever order
+    the acts were taken in, a reader of it reading a registry rather than a
+    schedule.
     """
     members = ARTIFACTS if artifacts is None else artifacts
-    states = []
-    for artifact in members:
+    wanted, unwanted = [], []
+    for index, artifact in enumerate(members):
+        (wanted if artifact.wanted(configuration) else unwanted).append((index, artifact))
+    # ⛔ Keyed by position and never by name: two members may legitimately carry
+    # one name -- a fixture list does -- and a name-keyed answer would report
+    # one artifact's state twice while losing the other's.
+    by_position = {}
+    for index, artifact in list(reversed(unwanted)) + wanted:
         state = one(configuration, artifact, write=write)
-        states.append(state)
+        by_position[index] = state
         if write and state.get("registered") is not None:
             try:
                 configuration = config.load(configuration.skills_root)
@@ -1073,6 +1117,7 @@ def run(
                 # a failure here is the file having moved under the run. Leave
                 # the configuration as it stands rather than guessing.
                 pass
+    states = [by_position[index] for index in range(len(members))]
     report = []
     if not members:
         report.append(
@@ -1104,13 +1149,22 @@ def removal(
     ⛔ **And a place that cannot be resolved is not *nothing is there*.** ⚠️
     Measured as `not wanted`, which is no incompleteness, so this step exited
     green with a marked artifact still installed in a tree it could not look at.
+
+    ⛔ **The registry is walked in the reverse of its install order**, for the
+    reason `run` above states: an artifact that only works while a sibling is
+    there comes out before that sibling, never after it. ⚠️ The report is still
+    in registry order, as it is there.
     """
     members = ARTIFACTS if artifacts is None else artifacts
-    states = []
-    for artifact in members:
+    by_position: dict[int, dict] = {}
+
+    def answered(index: int, state: dict) -> None:
+        by_position[index] = state
+
+    for index, artifact in reversed(list(enumerate(members))):
         path = place(configuration, artifact)
         if path is None:
-            states.append(_state(
+            answered(index, _state(
                 artifact, UNDETERMINED, None,
                 because="this step cannot resolve where this artifact would be, so it "
                         "can say neither that none is installed nor that one was taken "
@@ -1118,12 +1172,12 @@ def removal(
             ))
             continue
         if not os.path.exists(path):
-            states.append(_state(artifact, NOT_WANTED, path))
+            answered(index, _state(artifact, NOT_WANTED, path))
             continue
         with open(path, encoding="utf-8") as handle:
             here = handle.read()
         if not _marked(here):
-            states.append(_state(
+            answered(index, _state(
                 artifact, OCCUPIED, path,
                 because="a file is there carrying no marker, so it is the project's own "
                         "and this step does not remove it",
@@ -1131,22 +1185,24 @@ def removal(
             continue
         standing = artifact.entry(configuration)
         if not write:
-            states.append(_state(artifact, REMOVED, path, dry_run=True,
-                                 unregisters=standing))
+            answered(index, _state(artifact, REMOVED, path, dry_run=True,
+                                   unregisters=standing))
             continue
         os.remove(path)
+        _swept(path, artifact)
         if standing is not None and already_registered(configuration, standing):
             refusal = unregister(configuration, standing)
             if refusal is not None:
-                states.append(_state(
+                answered(index, _state(
                     artifact, REMOVED, path, entry=standing,
                     because=f"the artifact was removed and its entry was not: {refusal}",
                 ))
                 continue
             configuration = config.load(configuration.skills_root)
-            states.append(_state(artifact, REMOVED, path, unregistered=standing))
+            answered(index, _state(artifact, REMOVED, path, unregistered=standing))
             continue
-        states.append(_state(artifact, REMOVED, path))
+        answered(index, _state(artifact, REMOVED, path))
+    states = [by_position[index] for index in range(len(members))]
     report = [
         f"{state['artifact']}: {state['answer']} — {state.get('because', '')}".strip()
         for state in states if state["answer"] in INCOMPLETE
@@ -2274,6 +2330,80 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
               str({k: v for k, v in drift.items() if v}))
 
     print()
+    print("what a sibling depends on comes out first, and the directory with it")
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⛔ The order is read off the acts rather than off the report, which is
+        # in registry order by design. ⚠️ Measured with one order for both
+        # directions: the checker went first, so an interruption between the
+        # two left a workflow calling a file that was not there — a red check
+        # on every change, which is the state the install order exists to
+        # avoid and which walking it forwards reproduced exactly.
+        project = _a_project(tmp)
+        run(project, write=True)
+        taken: list[str] = []
+        real = os.remove
+
+        def watched(path, _real=real):
+            taken.append(os.path.basename(path))
+            _real(path)
+
+        os.remove = watched
+        try:
+            removal(config.load(tmp), write=True)
+        finally:
+            os.remove = real
+        check(
+            "the workflow is taken out before the checker it calls",
+            taken.index(BODY_GATE_LEAF) < taken.index(BODY_GATE_SCRIPT_LEAF),
+            str(taken),
+        )
+        check(
+            "and the toolkit's own directory does not outlive its last artifact",
+            not os.path.isdir(os.path.join(project.code_root, TOOLKIT_DIRECTORY)),
+            "an empty directory left standing is the orphan the removable "
+            "property is about, one level up from the file",
+        )
+        check(
+            "while the project's own workflow directory is left alone",
+            os.path.isdir(os.path.join(
+                project.code_root, check_host_checks.DEFINITIONS["github"].directory)),
+            "that directory is the project's, and an empty one there is theirs to keep",
+        )
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⛔ The same order on the other route: a configuration that stops
+        # asking removes through `run`, not through `removal`, and the two were
+        # measured walking opposite orders with only one of them corrected.
+        project = _a_project(tmp)
+        run(project, write=True)
+        turned_off = config.load(tmp)
+        turned_off.data["body_sections"] = []
+        order: list[str] = []
+        real = os.remove
+
+        def noted(path, _real=real):
+            order.append(os.path.basename(path))
+            _real(path)
+
+        os.remove = noted
+        try:
+            answered_off = run(turned_off, write=True)
+        finally:
+            os.remove = real
+        check("turning the gate off takes both artifacts out",
+              [s["answer"] for s in answered_off["artifacts"]] == [REMOVED, REMOVED],
+              str(answered_off["artifacts"]))
+        check("in the same reverse order",
+              order.index(BODY_GATE_LEAF) < order.index(BODY_GATE_SCRIPT_LEAF),
+              str(order))
+        check("and the report is still in registry order",
+              [s["artifact"] for s in answered_off["artifacts"]]
+              == [a.name for a in ARTIFACTS],
+              str([s["artifact"] for s in answered_off["artifacts"]]))
+        check("the entry the workflow registered is gone too",
+              not config.load(tmp).get("host.checks"),
+              str(config.load(tmp).get("host.checks")))
+
+    print()
     print("a project requiring no section gets no gate, and that is not an absence")
     with tempfile.TemporaryDirectory() as tmp:
         quiet = _a_project(tmp)
@@ -2347,6 +2477,19 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             "a statement in the report is not an incompleteness, and the status "
             "may not read one as the other",
         )
+    # ⛔ The two per-kind tables have to agree, and the direction that bites is
+    # this one: a kind whose definitions this toolkit can read resolves a place
+    # to write, so the generator is then reached and would fail on a template
+    # it does not hold. ⚠️ A `KeyError` there is the improvising failure wearing
+    # a stack trace — the step promises an answer with the thing named, and a
+    # crash is neither.
+    check(
+        "every host kind with readable definitions has a workflow template",
+        set(check_host_checks.DEFINITIONS) <= set(TEMPLATES),
+        f"{sorted(set(check_host_checks.DEFINITIONS) - set(TEMPLATES))} can be "
+        "written to and has no template, so a generated workflow for it raises "
+        "rather than refusing",
+    )
     check(
         "every registered artifact has somewhere to go in this repository",
         all(place(live, artifact) is not None for artifact in ARTIFACTS),

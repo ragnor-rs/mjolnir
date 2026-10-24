@@ -259,7 +259,11 @@ def main(argv: list[str] | None = None) -> int:
         "--body-file",
         help="the file the body is in; otherwise `PR_BODY`, otherwise the host",
     )
-    args, _rest = parser.parse_known_args(argv)
+    # ⛔ Strict, and an unknown argument is refused rather than ignored. ⚠️ A
+    # tolerant parse makes a mistyped `--body-file` into a silent fall-through
+    # to the environment or to the host, so the run answers about a body
+    # nobody asked it to read and reports a verdict either way.
+    args = parser.parse_args(argv)
 
     # ⛔ Answered before a body is read, and answered as a configuration rather
     # than as a pass. A project stating no section has no gate, and a copy of

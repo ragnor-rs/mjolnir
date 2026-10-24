@@ -2318,6 +2318,17 @@ reported as that rather than as nothing being there. The kinds are the two this 
 **computed** throughout — a path, a mode, a byte comparison, a reader's verdict — with no
 forbidding arm among them.
 
+⛔ **The registry's order is install order, and every removing route walks the reverse of it**, by
+[§ What the toolkit installs](../plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)'s
+removable property. ⚠️ A registry may hold an artifact that only works while a sibling is there,
+and one order for both directions produces the intermediate state the order exists to avoid: the
+called file gone and the caller still installed, which is a red check on every change rather than
+something inert. ⚠️ **Two routes remove and both were measured walking forwards** — the explicit
+removal, and a configuration that stops asking — so both arms read the order off the acts rather
+than off the report, which stays in registry order. ⚠️ **And a directory the toolkit owns does not
+outlive its last artifact**, while a directory the project owns is left standing empty: the
+toolkit writes into the host's own workflow directory and does not own it.
+
 ⛔ **Where a generated gate goes is not this module's**, by
 [§ 2](../plugins/mjolnir/config/schema.md#a-workflow-whose-jobs-mirror-more-than-one-command),
 which this document does not restate either. Which directory a host kind keeps its definitions in
