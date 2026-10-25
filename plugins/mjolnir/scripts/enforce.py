@@ -12,7 +12,9 @@ project that states no configuration. This script is the carrier for each:
               hold a place on whatever the call puts at stake -- and nothing at
               all where the project states no configuration
     release   a `PostToolUse`, `Stop`, `SessionEnd` or `SubagentStop` answer:
-              give back the places this session is holding
+              give back the places this session is holding -- and, at two of
+              those four, report whether this tree's branch has fallen behind
+              its base
     record    write the recorded answer a guard reads onto a change
     held      report what is held right now, and by what
 
@@ -22,6 +24,11 @@ where any of them is missing it says so in those words. The two directions it
 may fail in are the surface's and not this file's choice, and both are exercised
 below -- the merge refusing on what it could not establish and the local run
 proceeding on it.
+
+⚠️ **One arm here refuses nothing at all**, and that is the surface's statement
+rather than this file's restraint: a branch behind its base is a state somebody
+else's merge produced, answered at two exit events where no call is in hand to
+hold. `schema.md § 7 -> A branch that has fallen behind its base` is its rule.
 
 ⚠️ **The third refusal is an arm here rather than a carrier of its own**, which
 is what keeps the ordering in one place: a sibling script denying a call after
@@ -71,6 +78,8 @@ ARM_ANCHORS = {
     "lease": "a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it",
     "already_run": "18-the-guard-on-a-command-the-host-has-already-run",
     "guardable": "what-may-be-guarded-and-the-two-ways-a-refusal-stands-down",
+    "behind": ("a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-"
+               "reported-at"),
 }
 
 RECORD_CITATION = "schema § 7 → What a hook refuses, and the record it reads"
@@ -79,6 +88,8 @@ LEASE_CITATION = ("schema § 7 → A lease on an exclusive resource, and the exi
 ALREADY_RUN_CITATION = "schema § 18 → The guard on a command the host has already run"
 GUARDED_CITATION = ("schema § 18 → What may be guarded, and the two ways a refusal stands "
                     "down")
+BEHIND_CITATION = ("schema § 7 → A branch that has fallen behind its base, and the two points "
+                   "it is reported at")
 
 # § 18's four answers. ⛔ The last three all proceed and are still reported apart:
 # their remedies differ, which is the whole reason the third exists -- a reader
@@ -143,6 +154,37 @@ RELEASE_EVENTS = {
 # The one tool whose calls reach anything a project would guard. A place is held
 # by a command, and a command arrives through this tool.
 GUARDED_TOOL = "Bash"
+
+# § 7's two points a branch is measured against its base at, and ⛔ **two of the
+# four events above rather than all of them**: a session ending is a report
+# nobody is left to act on, and a subagent stopping is not this tree's turn
+# ending. The second entry is further narrowed to a call that merged, which is
+# read with the merge guard's own grammar rather than a second one.
+TURN_ENDED = "Stop"
+CALL_FINISHED = "PostToolUse"
+BEHIND_EVENTS = (TURN_ENDED, CALL_FINISHED)
+
+# § 7's three answers for that reading. ⛔ Only the middle one carries a figure,
+# and the figure may be absent on it: a base this tree does not hold yet is
+# behind by an amount no local read can establish, which is still not level.
+# ⚠️ `UNESTABLISHED` is § 18's own name reused rather than a second spelling of
+# it, both subsections meaning the same thing by it.
+LEVEL = "level"
+BEHIND = "behind"
+
+# What every answer of this arm is headed by, the way `REPORT_PREFIX` heads the
+# already-run arm's: a report that opens with its subject is one a reader can
+# tell from the lease sweep's in the same message.
+BEHIND_PREFIX = "This branch against its base"
+
+# ⛔ **Bounded against the carrier's own registered budget rather than picked**,
+# and the arithmetic is the whole of the reason: this arm reaches the network
+# twice at worst -- once to derive the base where the clone has no record of the
+# remote's default, once for that base's head -- so two of these have to fit
+# inside the budget the release hook is registered with, with the three local
+# reads and the interpreter's own start inside what is left over. A read that
+# hangs then costs itself rather than the hook, which is what the bound is for.
+BEHIND_TIMEOUT = 3
 
 # --- the record a guard reads ----------------------------------------------
 #
@@ -1287,15 +1329,213 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
     return {"systemMessage": answered["systemMessage"] + " " + held["systemMessage"]}
 
 
+# --- the branch against its base -------------------------------------------
+#
+# ⛔ **Nothing in this arm refuses, and that is the surface's statement rather
+# than a preference.** Both points it answers at are exit events, so there is no
+# call in hand to hold: `§ 7 -> A branch that has fallen behind its base` states
+# it, and what this produces is a report. ⚠️ Which also means the fail-direction
+# rule does not reach it -- an unestablished reading here costs a report naming
+# what it could not read, there being no act to let through or refuse.
+
+
+def _claim():
+    """The claim carrier, or None where it could not be loaded.
+
+    ⛔ Imported rather than re-implemented, for the same reason the configuration
+    is read through its own reader: which branch a project integrates into, and
+    what the remote says that branch's head is, are one derivation -- and a
+    second one here would be free to disagree with the one every start and every
+    landing already takes.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import claim as carrier  # noqa: PLC0415 -- the path is set one line up
+        return carrier
+    except Exception:  # noqa: BLE001 -- any failure is reported by the caller
+        return None
+
+
+def commits_behind(printed: str) -> int:
+    """How many commits of the base carry a patch this branch does not.
+
+    ⛔ **The marked lines and never the line count.** The carrier prints one line
+    per commit of the base this branch lacks *by ancestry*, marking it `-` where
+    an equivalent patch is in the branch anyway -- and `-` lines are exactly what
+    a rewritten base produces, so a count of lines is the plain count § 7
+    forbids, reached one character later.
+    """
+    return sum(1 for line in printed.splitlines() if line.startswith("+"))
+
+
+def _commits(figure: int) -> str:
+    return f"{figure} commit" if figure == 1 else f"{figure} commits"
+
+
+def behind_of(where: str, *, remote: str = "origin",
+              load=None) -> tuple[str | None, int | None, str]:
+    """(§ 7's answer, the figure where there is one, the answer in words).
+
+    ⛔ **`(None, None, "")` is the silent case and not an answer**: a directory
+    that is no work tree, and a code root that publishes no base at all. § 7
+    splits those from a base that could not be *reached*, which is the section's
+    own absent-against-unreadable rule and is the direction a report every turn
+    would otherwise get this arm switched off in.
+
+    ⛔ **The words name the tree the answer was taken in.** A session stands in
+    one tree per item, so an answer with no tree named is an answer whose subject
+    a reader has to guess.
+    """
+    carrier = (load if load is not None else _claim)()
+    if carrier is None:
+        return UNESTABLISHED, None, (
+            f"the claim carrier could not be loaded from {Path(__file__).resolve().parent}, so "
+            "which branch this project integrates into could not be derived"
+        )
+
+    # ⛔ **Every read this arm makes goes through one bound and one failure path.**
+    # The review of this change reproduced the alternative: with three of the
+    # reads unwrapped, a timeout on any of them escaped this function altogether,
+    # so the arm produced no answer at all rather than an unestablished one -- and
+    # took the lease sweep's own message out with it on the way, two arms of one
+    # event lost to one read.
+    #
+    # ⚠️ **A non-zero exit is not a failed read and stays each caller's to
+    # interpret.** `cat-file` exiting non-zero is the object being absent, which
+    # is this arm's *behind* answer; conflating the two would report a timeout as
+    # a branch behind its base.
+    unread: list[str] = []
+
+    def run(root, *args):
+        try:
+            return carrier.git(root, *args, check=False, timeout=BEHIND_TIMEOUT)
+        except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+            unread.append(f"{type(error).__name__} while running `{args[0]}` in {root}")
+            return None
+
+    top = run(where, "rev-parse", "--show-toplevel")
+    if top is None:
+        return UNESTABLISHED, None, (
+            f"{unread[-1]}, so which tree {where} is in could not be established"
+        )
+    if top.returncode != 0 or not top.stdout.strip():
+        # ⛔ Silent: no work tree means no branch and no base, which is nothing to
+        # have fallen behind rather than something unread.
+        return None, None, ""
+    tree = top.stdout.strip()
+    try:
+        publishes = bool(carrier.remote_url(tree, remote))
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return UNESTABLISHED, None, (
+            f"in {tree}, {type(error).__name__} while asking whether this code root publishes a "
+            "base at all"
+        )
+    if not publishes:
+        # ⛔ Silent for the same reason, by § 10's derived local-only claim: a
+        # code root with no remote publishes no base.
+        return None, None, ""
+    # ⚠️ The branch names the answer's subject and does not decide it, so a read
+    # that could not answer here leaves the tree alone as the subject rather than
+    # making the whole answer unestablished.
+    named = run(tree, "rev-parse", "--abbrev-ref", "HEAD")
+    branch = named.stdout.strip() if named is not None and named.returncode == 0 else ""
+    here = f"{tree} on `{branch}`" if branch else tree
+    try:
+        base = carrier.integration_branch(tree, remote, timeout=BEHIND_TIMEOUT)
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return UNESTABLISHED, None, f"in {here}, the base could not be named: {error}"
+    try:
+        head = carrier.remote_ref_sha(tree, remote, base, timeout=BEHIND_TIMEOUT)
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return UNESTABLISHED, None, (
+            f"in {here}, the head of `{base}` could not be read from `{remote}`: {error}"
+        )
+    if head is None:
+        return UNESTABLISHED, None, (
+            f"in {here}, `{remote}` carries no branch named `{base}`, so there is no base to "
+            "read this branch against"
+        )
+    held_here = run(tree, "cat-file", "-e", f"{head}^{{commit}}")
+    if held_here is None:
+        return UNESTABLISHED, None, (
+            f"in {here}, {unread[-1]}, so whether this tree holds `{base}` at {head[:12]} is "
+            "unknown"
+        )
+    if held_here.returncode != 0:
+        # ⛔ Behind with no figure, never level: the remote reports a head this
+        # tree does not hold, which is § 2's absence of signal one ref over.
+        return BEHIND, None, (
+            f"in {here}, `{remote}/{base}` is at {head[:12]} and this tree does not hold that "
+            f"commit, so how far behind it this branch is cannot be read here — fetch "
+            f"`{remote}` and the figure follows"
+        )
+    compared = run(tree, "cherry", "HEAD", head)
+    if compared is None or compared.returncode != 0:
+        return UNESTABLISHED, None, (
+            f"in {here}, the commits of `{base}` could not be compared against this branch by "
+            "patch" + (f": {unread[-1]}" if compared is None else "")
+        )
+    figure = commits_behind(compared.stdout)
+    if figure == 0:
+        return LEVEL, 0, (
+            f"in {here}, `{remote}/{base}` at {head[:12]} carries no commit whose patch this "
+            "branch does not"
+        )
+    return BEHIND, figure, (
+        f"in {here}, `{remote}/{base}` at {head[:12]} carries {_commits(figure)} whose patch "
+        "this branch does not — what clears it is the base brought into this branch"
+    )
+
+
+def behind_answer(payload: dict, *, event: str | None = None, load=None, read=None) -> str:
+    """§ 7's report for one exit event, or `""` where this is not one of its points.
+
+    ⛔ **Two of the four release events, and the second one narrowed further.**
+    A session ending is a report nobody is left to act on and a subagent stopping
+    is not this tree's turn ending; a finished call is one of the two points only
+    where the call *merged*, which is read with the merge guard's own grammar
+    rather than a second one written here.
+    """
+    fired = event if event is not None else str(payload.get("hook_event_name") or "")
+    # ⛔ The two points are read out of the one place that states them, never
+    # matched again here: the first form of this arm compared the event against
+    # each name inline and left the list beside it decorative — measured by
+    # widening the list to all four events and watching only the list's own
+    # assertion redden while the arm went on answering at two.
+    if fired not in BEHIND_EVENTS:
+        return ""
+    if fired == CALL_FINISHED:
+        if payload.get("tool_name") != GUARDED_TOOL:
+            return ""
+        command = str((payload.get("tool_input") or {}).get("command") or "")
+        # ⚠️ The repository is not supplied, and nothing here needs it: what is
+        # asked is whether the call was a merge, which the grammar answers off
+        # the parsed words alone. ⚠️ Nor is the call's own result read -- a merge
+        # that failed moved no base, and `level` is the true answer for it.
+        if not command.strip() or merge_target(command, None) is None:
+            return ""
+    answer, _figure, said = (read if read is not None else behind_of)(
+        str(payload.get("cwd") or "."), load=load
+    )
+    if answer is None:
+        return ""
+    return f"{BEHIND_PREFIX} — {answer}: {said} ({BEHIND_CITATION})."
+
+
 def release_answer(payload: dict, *, config=None, now: float | None = None,
-                   store: Path | None = None) -> dict:
-    """The answer for whichever event gives a place back.
+                   store: Path | None = None, load=None, read=None) -> dict:
+    """The answer for whichever event gives a place back, and reports the base.
 
     ⛔ This arm was already silent in a project that states no configuration,
     the reader refusing and the answer being empty either way. It asks the
     question anyway, so that both arms of this carrier ask it before anything
     else: reaching the same silence through a refusal costs the surface's own
     parse on every call in a project that holds nothing.
+
+    ⛔ **A configuration that is there and does not resolve still gets the base
+    reported**, which is § 7's absent-against-unreadable split applied to this
+    arm rather than inherited: the sweep below reads `exclusive_resources` and
+    can do nothing without it, while the arm beside it reads no key at all.
     """
     event = str(payload.get("hook_event_name") or "")
     scope = RELEASE_EVENTS.get(event)
@@ -1304,8 +1544,19 @@ def release_answer(payload: dict, *, config=None, now: float | None = None,
     if config is None and not _states_a_configuration(payload.get("cwd")):
         return {}
     loaded = config if config is not None else _config(payload.get("cwd"))
+    said = [
+        _places_given_back(loaded, payload, scope, now=now, store=store),
+        behind_answer(payload, event=event, load=load, read=read),
+    ]
+    spoken = [line for line in said if line]
+    return {"systemMessage": " ".join(spoken)} if spoken else {}
+
+
+def _places_given_back(loaded, payload: dict, scope: str, *, now: float | None,
+                       store: Path | None) -> str:
+    """What the sweep released, in words, or `""` where it released nothing."""
     if loaded is None or not resources(loaded):
-        return {}
+        return ""
     where = store if store is not None else store_for(loaded.skills_root)
     command = str((payload.get("tool_input") or {}).get("command") or "")
     given = release(
@@ -1316,11 +1567,11 @@ def release_answer(payload: dict, *, config=None, now: float | None = None,
         time.time() if now is None else now,
     )
     if not given:
-        return {}
-    return {"systemMessage": (
+        return ""
+    return (
         "Capacity: gave back " + ", ".join(sorted({str(g.get("resource")) for g in given}))
         + f". ({LEASE_CITATION})"
-    )}
+    )
 
 
 def _states_a_configuration(cwd: str | None) -> bool:
@@ -1723,6 +1974,114 @@ def _a_root(where: Path, states: str | None) -> str:
     return str(where)
 
 
+def _in(root, *args: str) -> str:
+    """A fixture's own git, which raises rather than returning a bad fixture quietly."""
+    proc = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise AssertionError(
+            f"the fixture's `git {' '.join(args)}` failed in {root}: "
+            f"{proc.stderr.strip() or proc.stdout.strip()}"
+        )
+    return proc.stdout.strip()
+
+
+def _a_commit(root, name: str, text: str = "a line\n") -> None:
+    (Path(root) / name).write_text(text, encoding="utf-8")
+    _in(root, "add", name)
+    _in(root, "commit", "--quiet", "-m", f"add {name}")
+
+
+def _a_published_base(where: Path, branch: str = "a-branch") -> tuple[str, str, str]:
+    """(a bare repository standing in for the host, a clone that moves the base, a tree).
+
+    ⛔ **Real repositories and no stand-in anywhere in this arm**, which is the
+    one thing the rewritten-base plant below cannot be asserted without: what is
+    in question is what git itself says about a base whose hashes changed, and a
+    fake would assert the fake's own idea of a patch.
+
+    ⚠️ The integration branch is named explicitly, for the reason the claim
+    carrier's own fixture names it: a bare repository's `HEAD` follows this
+    machine's default branch name, and a clone of one whose `HEAD` points at a
+    ref nothing created has no local integration branch at all.
+    """
+    # ⚠️ Resolved, and the suite's assertions compare against these: the answer
+    # names the tree as git reports it, and the temporary directory this is built
+    # under is reached through a symlink on one of the two platforms measured --
+    # so a path taken straight from the fixture matches nothing in the report.
+    where = where.resolve()
+    origin = where / "origin.git"
+    subprocess.run(
+        ["git", "init", "--quiet", "--bare", "--initial-branch=main", str(origin)], check=True
+    )
+    seed = where / "a-clone-that-moves-the-base"
+    # ⚠️ Captured rather than discarded: a clone of a repository with no commits
+    # warns on stderr, which `--quiet` does not cover, and a clone that genuinely
+    # fails must still be able to say why.
+    subprocess.run(["git", "clone", "--quiet", str(origin), str(seed)],
+                   capture_output=True, text=True, check=True)
+    for key, value in (("user.email", "a@seed"), ("user.name", "A Seed")):
+        _in(seed, "config", key, value)
+    _a_commit(seed, "base.txt")
+    _in(seed, "branch", "-M", "main")
+    _in(seed, "push", "--quiet", "origin", "main")
+
+    tree = where / "a-tree"
+    subprocess.run(["git", "clone", "--quiet", str(origin), str(tree)],
+                   capture_output=True, text=True, check=True)
+    for key, value in (("user.email", "a@tree"), ("user.name", "A Tree")):
+        _in(tree, "config", key, value)
+    _in(tree, "checkout", "--quiet", "-b", branch)
+    return str(origin), str(seed), str(tree)
+
+
+def _rewrite_the_base(seed: str) -> None:
+    """Rewrite every commit the base has, leaving its content identical.
+
+    ⛔ **The plant the whole reading exists for**, and it has to rewrite a commit
+    the branch *already carries* to be one: rewriting a commit the branch never
+    had is a base that genuinely advanced, which is a different answer and was
+    the first form of this plant.
+    """
+    _in(seed, "commit", "--quiet", "--amend", "--no-edit",
+        "--author", "Another Name <another@seed>")
+    _in(seed, "push", "--quiet", "--force", "origin", "main")
+
+
+def _a_carrier_that_will_not_load():
+    return None
+
+
+class _OneReadMissing:
+    """The claim carrier with one of this arm's reads unable to run at all.
+
+    ⛔ **The real carrier with one call replaced, never a stand-in for the whole
+    of it**: what is in question is this arm's own failure path, so every other
+    read has to answer exactly as it really does — a fake carrier would assert
+    the fake.
+    """
+
+    def __init__(self, real, which: str):
+        self._real, self._which = real, which
+        self.remote_url = real.remote_url
+        self.integration_branch = real.integration_branch
+        self.remote_ref_sha = real.remote_ref_sha
+
+    def git(self, root, *args, check: bool = True, timeout=None):
+        if args and args[0] == self._which:
+            raise subprocess.TimeoutExpired(cmd=["git", self._which], timeout=timeout or 0)
+        return self._real.git(root, *args, check=check, timeout=timeout)
+
+
+def _a_carrier_that_cannot_run(which: str):
+    def load():
+        real = _claim()
+        if real is None:
+            raise AssertionError("the fixture could not load the claim carrier to break")
+        return _OneReadMissing(real, which)
+
+    return load
+
+
 def _call(command: str, session: str = "a-session", cwd: str = ".",
           background: bool = False) -> dict:
     return {
@@ -1733,11 +2092,18 @@ def _call(command: str, session: str = "a-session", cwd: str = ".",
     }
 
 
-def _exit(event: str, session: str = "a-session", command: str = "") -> dict:
+def _exit(event: str, cwd: str, session: str = "a-session", command: str = "") -> dict:
+    """An exit payload. ⛔ **The directory is stated and has no default.**
+
+    One arm of the release answer measures the tree the event names against its
+    base, so a payload defaulting to `.` would point every lease assertion in
+    this suite at **this** repository and reach the network from a suite that
+    must not. The directory passed below is one that is no work tree at all.
+    """
     return {
         "hook_event_name": event,
         "session_id": session,
-        "cwd": ".",
+        "cwd": cwd,
         "tool_input": {"command": command},
     }
 
@@ -1783,6 +2149,12 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             where.mkdir(parents=True, exist_ok=True)
             return where
 
+        # ⛔ What every exit payload below names as its directory, and the reason
+        # is the base-reading arm rather than the leases: that arm answers about
+        # the tree the event names, so a payload naming `.` would point it at
+        # this repository and reach the network from a suite that must not.
+        outside = str(fresh("no-work-tree-at-all"))
+
         # --- a project with nothing exclusive -----------------------------
         out.append("A project with no capacity concept gets no capacity guard:")
         nothing = _a_config([])
@@ -1798,7 +2170,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             check(f"no answer for: {command[:48]}", answered == {}, repr(answered)[:120])
         check(
             "and no event gives anything back, there being nothing to give",
-            release_answer(_exit("Stop"), config=nothing, now=1000.0,
+            release_answer(_exit("Stop", outside), config=nothing, now=1000.0,
                            store=fresh("none")) == {},
         )
 
@@ -1839,7 +2211,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             check(f"{label}: and the cap is then full",
                   denied(guard_answer(_call("a-claiming-command", session="another"),
                                       config=config, now=1000.0, store=where)))
-            release_answer(_exit(event, command="a-claiming-command"), config=config,
+            release_answer(_exit(event, outside, command="a-claiming-command"), config=config,
                            now=1000.0, store=where)
             check(f"{label}: and the place comes back on `{event}`",
                   guard_answer(_call("a-claiming-command", session="another"),
@@ -1870,7 +2242,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               guard_answer(_call("a-claiming-command", background=True), config=config,
                            now=1000.0, store=where) == {})
         for event in sorted(RELEASE_EVENTS):
-            release_answer(_exit(event, command="a-claiming-command"), config=config,
+            release_answer(_exit(event, outside, command="a-claiming-command"), config=config,
                            now=1000.0, store=where)
         check("and no event released it, the work still running",
               denied(guard_answer(_call("a-claiming-command", session="another"),
@@ -1948,7 +2320,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("two calls in one session each hold their own",
               denied(guard_answer(_call("a-claiming-command --three"), config=config,
                                   now=1000.0, store=where)))
-        release_answer(_exit("PostToolUse", command="a-claiming-command --one"),
+        release_answer(_exit("PostToolUse", outside, command="a-claiming-command --one"),
                        config=config, now=1000.0, store=where)
         check("and releasing one does not release its sibling",
               len(live_leases(where, 1000.0)) == 1,
@@ -2435,7 +2807,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                   repr(merging)[:140])
             check(f"{label}: and no place was held", not live_leases(where, 1000.0))
             check(f"{label}: and no exit event gives anything back",
-                  release_answer(_exit("Stop", command="a-claiming-command"), now=1000.0,
+                  release_answer(_exit("Stop", outside, command="a-claiming-command"), now=1000.0,
                                  store=where) == {})
 
         # --- the two directions a guard fails in ---------------------------
@@ -2455,7 +2827,8 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("a configuration that could not be read holds the call to nothing, and says so",
               "held to nothing" in str(answered.get("systemMessage", "")), repr(answered)[:140])
         check("and gives nothing back on an exit either, there being nothing read to release",
-              release_answer(_exit("Stop"), now=1000.0, store=fresh("unreadable")) == {})
+              release_answer(_exit("Stop", outside), now=1000.0,
+                             store=fresh("unreadable")) == {})
         check("while a merge whose record could not be read is refused",
               denied(guard_answer(_call("gh pr merge 7"), config=_a_config([]), now=1000.0,
                                   store=fresh("merge"), host=_a_host(code=1))))
@@ -2491,6 +2864,245 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         printed, _ = held_report(_a_config([]), now=1000.0, store=where)
         check("a project with nothing exclusive is reported as stating so",
               "states it" in printed, " ".join(printed.split())[:160])
+
+        # --- the branch against its base ----------------------------------
+        #
+        # ⛔ Real repositories and a real remote on disk, with no stand-in
+        # anywhere: what is in question is what git itself says about a base
+        # whose hashes changed, and a fake would assert the fake's own idea of a
+        # patch. ⚠️ The remote is a bare repository beside the tree, so the suite
+        # reaches no network.
+        out.append("")
+        out.append("A branch level with its base is reported as level, naming the tree:")
+        _origin, _seed, tree = _a_published_base(fresh("level"))
+        _a_commit(tree, "mine.txt")
+        answer, figure, said = behind_of(tree)
+        check(f"the answer is `{LEVEL}`", answer == LEVEL, f"was {answer!r}: {said}")
+        check("and the figure is nought rather than absent", figure == 0, f"was {figure!r}")
+        check("and it names the tree the answer was taken in", tree in said, said[:200])
+        check("and the branch in it", "a-branch" in said, said[:200])
+
+        out.append("")
+        out.append("A base that has genuinely advanced is reported behind, with its figure:")
+        _origin, seed, tree = _a_published_base(fresh("behind"))
+        _a_commit(tree, "mine.txt")
+        _a_commit(seed, "theirs.txt")
+        _a_commit(seed, "theirs-again.txt")
+        _in(seed, "push", "--quiet", "origin", "main")
+        answer, figure, said = behind_of(tree)
+        check("a head the remote reports and this tree does not hold is behind with no figure",
+              answer == BEHIND and figure is None, f"{answer!r}, {figure!r}: {said}")
+        check("and never level", answer != LEVEL, f"was {answer!r}")
+        check("and it names the fetch that would establish the figure",
+              "fetch" in said, said[:240])
+        _in(tree, "fetch", "--quiet", "origin")
+        answer, figure, said = behind_of(tree)
+        check("once the tree holds the base the figure is the commits it gained",
+              answer == BEHIND and figure == 2, f"{answer!r}, {figure!r}: {said}")
+        check("and what clears it is named rather than described",
+              "brought into this branch" in said, said[:240])
+
+        # ⛔ The plant the whole reading exists for, and the two readings § 7
+        # forbids are computed beside it rather than argued about: both of them
+        # call this branch behind, and the base carries every patch it has.
+        out.append("")
+        out.append("A base whose history was rewritten is level, where ancestry and a count are not:")
+        _origin, seed, tree = _a_published_base(fresh("rewritten"))
+        _a_commit(tree, "mine.txt")
+        _rewrite_the_base(seed)
+        _in(tree, "fetch", "--quiet", "origin")
+        head = _in(tree, "rev-parse", "origin/main")
+        answer, figure, said = behind_of(tree)
+        check(f"the answer is `{LEVEL}`", answer == LEVEL and figure == 0,
+              f"{answer!r}, {figure!r}: {said}")
+        counted = _in(tree, "rev-list", "--count", "--right-only", f"HEAD...{head}")
+        check("a plain count of the base's commits would have said behind",
+              int(counted) > 0, f"the count was {counted}, so the plant is a no-op")
+        ancestry = subprocess.run(
+            ["git", "-C", tree, "merge-base", "--is-ancestor", head, "HEAD"],
+            capture_output=True, text=True,
+        )
+        check("and ancestry would have said behind too",
+              ancestry.returncode != 0,
+              f"ancestry exited {ancestry.returncode}, so the plant is a no-op")
+        _a_commit(seed, "theirs.txt")
+        _in(seed, "push", "--quiet", "origin", "main")
+        _in(tree, "fetch", "--quiet", "origin")
+        answer, figure, said = behind_of(tree)
+        check("while a rewritten base that also advanced is behind by what it gained",
+              answer == BEHIND and figure == 1, f"{answer!r}, {figure!r}: {said}")
+
+        # ⚠️ The surface says the figure is a floor and not a total, because a
+        # merge commit carries no patch of its own. Held by a run rather than
+        # left as a sentence: the base here gains two commits and one of them is
+        # the merge, and the figure is one.
+        out.append("")
+        out.append("A merge commit on the base carries no patch, so the figure is a floor:")
+        _origin, seed, tree = _a_published_base(fresh("a-merge-on-the-base"))
+        _a_commit(tree, "mine.txt")
+        _in(seed, "checkout", "--quiet", "-b", "a-sibling")
+        _a_commit(seed, "theirs.txt")
+        _in(seed, "checkout", "--quiet", "main")
+        _in(seed, "merge", "--quiet", "--no-ff", "-m", "merge the sibling", "a-sibling")
+        _in(seed, "push", "--quiet", "origin", "main")
+        _in(tree, "fetch", "--quiet", "origin")
+        answer, figure, said = behind_of(tree)
+        check("the base gained two commits, one of them the merge",
+              int(_in(tree, "rev-list", "--count", "--right-only",
+                      f"HEAD...{_in(tree, 'rev-parse', 'origin/main')}")) == 2,
+              "the plant put no merge commit on the base")
+        check("and the figure is the one commit that carries a patch",
+              answer == BEHIND and figure == 1, f"{answer!r}, {figure!r}: {said}")
+
+        # ⚠️ The one limit the surface states, held by a run rather than left as
+        # a sentence: a squash is a patch no commit of the branch matches.
+        out.append("")
+        out.append("A branch whose own work landed as a squash reads as behind by that one commit:")
+        _origin, seed, tree = _a_published_base(fresh("squashed"))
+        _a_commit(tree, "mine-one.txt")
+        _a_commit(tree, "mine-two.txt")
+        _in(tree, "push", "--quiet", "origin", "a-branch")
+        _in(seed, "fetch", "--quiet", "origin", "a-branch")
+        _in(seed, "merge", "--quiet", "--squash", "FETCH_HEAD")
+        _in(seed, "commit", "--quiet", "-m", "the squash of the branch")
+        _in(seed, "push", "--quiet", "origin", "main")
+        _in(tree, "fetch", "--quiet", "origin")
+        answer, figure, said = behind_of(tree)
+        check("it is behind by one, the squash matching neither of its commits",
+              answer == BEHIND and figure == 1, f"{answer!r}, {figure!r}: {said}")
+
+        out.append("")
+        out.append("A base that could not be reached or named is unestablished, never level:")
+        _origin, _seed, tree = _a_published_base(fresh("unreachable"))
+        _a_commit(tree, "mine.txt")
+        _in(tree, "remote", "set-url", "origin",
+            str(Path(directory) / "a-remote-that-is-not-there.git"))
+        answer, _figure, said = behind_of(tree)
+        check(f"a remote that does not answer is `{UNESTABLISHED}`", answer == UNESTABLISHED,
+              f"was {answer!r}: {said}")
+        check("and never level", answer != LEVEL, f"was {answer!r}")
+        check("and it names the tree and which half it could not read",
+              tree in said and "could not be read" in said, said[:240])
+        origin, _seed, tree = _a_published_base(fresh("no-such-base"))
+        _a_commit(tree, "mine.txt")
+        _in(origin, "update-ref", "-d", "refs/heads/main")
+        answer, _figure, said = behind_of(tree)
+        check("a remote carrying no such branch is unestablished too",
+              answer == UNESTABLISHED, f"was {answer!r}: {said}")
+        check("and says the base is what it could not find",
+              "no branch named" in said, said[:240])
+        answer, _figure, said = behind_of(outside, load=_a_carrier_that_will_not_load)
+        check("and a claim carrier that could not be loaded is unestablished, not silence",
+              answer == UNESTABLISHED and "claim carrier" in said, f"{answer!r}: {said}")
+
+        # ⛔ The defect the review of this change reproduced: three of this arm's
+        # reads were unwrapped, so a read that could not run escaped the arm
+        # rather than being answered — and took the sweep's own message with it,
+        # two arms of one event lost to one read.
+        out.append("")
+        out.append("A read this arm cannot make at all is unestablished, and takes nothing with it:")
+        _origin, _seed, tree = _a_published_base(fresh("unrunnable"))
+        _a_commit(tree, "mine.txt")
+        # ⚠️ Each call is caught here, and that is the plant rather than caution:
+        # the defect's own shape is an escape, so a plant that let one propagate
+        # would kill this suite instead of reddening the assertion written for
+        # it — measured by restoring the defect and watching the run die with no
+        # failure named at all.
+        def answered_for(which: str) -> tuple:
+            try:
+                return behind_of(tree, load=_a_carrier_that_cannot_run(which))
+            except Exception as error:  # noqa: BLE001 -- the defect is the escape
+                return None, None, f"escaped the arm as {type(error).__name__}"
+
+        for which in ("rev-parse", "cat-file", "cherry"):
+            answer, figure, said = answered_for(which)
+            check(f"a `{which}` that cannot run is `{UNESTABLISHED}` rather than an escape",
+                  answer == UNESTABLISHED and figure is None, f"{answer!r}, {figure!r}: {said}")
+            check(f"and the answer names `{which}` as what could not be run",
+                  which in said, said[:240])
+        check("while a `cat-file` that runs and finds nothing is behind, not unestablished",
+              behind_of(tree)[0] == LEVEL, repr(behind_of(tree))[:200])
+        where = fresh("unrunnable-store")
+        config = _a_config([_a_resource(cap=1)])
+        guard_answer(_call("a-claiming-command", cwd=tree), config=config, now=1000.0,
+                     store=where)
+        try:
+            answered = release_answer(
+                _exit(TURN_ENDED, tree, command="a-claiming-command"), config=config,
+                now=1000.0, store=where, load=_a_carrier_that_cannot_run("cherry"),
+            )
+        except Exception as error:  # noqa: BLE001 -- the defect is the escape
+            answered = {"systemMessage": f"the whole answer escaped as {type(error).__name__}"}
+        said = str(answered.get("systemMessage", ""))
+        check("the sweep's message survives a read this arm could not make",
+              "gave back" in said, said[:240])
+        check("and this arm's own answer is beside it, as unestablished",
+              UNESTABLISHED in said, said[:240])
+
+        # ⛔ The other direction of § 7's absent-against-unreadable split, and the
+        # one that keeps this arm from being switched off: a project with no base
+        # answers nothing at all rather than unestablished on every turn.
+        out.append("")
+        out.append("While a project with no base to fall behind answers nothing at all:")
+        alone = fresh("no-remote")
+        subprocess.run(
+            ["git", "init", "--quiet", "--initial-branch=main", str(alone)], check=True
+        )
+        for key, value in (("user.email", "a@alone"), ("user.name", "A Name")):
+            _in(alone, "config", key, value)
+        _a_commit(alone, "base.txt")
+        check("a code root with no remote is silent",
+              behind_of(str(alone)) == (None, None, ""), repr(behind_of(str(alone)))[:200])
+        check("and a directory that is no work tree is silent too",
+              behind_of(outside) == (None, None, ""), repr(behind_of(outside))[:200])
+
+        out.append("")
+        out.append("It answers at the turn's end and after a merge, and at no other exit:")
+
+        def _a_reading(_where, load=None):
+            return BEHIND, 3, "in a-tree on `a-branch`, three commits"
+
+        for label, payload in (
+            ("the turn ended", _exit(TURN_ENDED, outside)),
+            ("a merge finished",
+             {**_call("gh pr merge 7"), "hook_event_name": CALL_FINISHED}),
+            ("a merge through the raw arm finished",
+             {**_call("gh api --method PUT repos/an-owner/a-repository/pulls/7/merge"),
+              "hook_event_name": CALL_FINISHED}),
+        ):
+            answered = behind_answer(payload, read=_a_reading)
+            check(f"{label}: the answer is made", BEHIND_PREFIX in answered,
+                  repr(answered)[:160])
+            check(f"{label}: and it cites the rule it holds", BEHIND_CITATION in answered,
+                  repr(answered)[:200])
+        for label, payload in (
+            ("the session ended", _exit("SessionEnd", outside)),
+            ("a subagent stopped", _exit("SubagentStop", outside)),
+            ("a call that merged nothing finished",
+             {**_call("a-command-of-some-kind"), "hook_event_name": CALL_FINISHED}),
+            ("a read of the same change finished",
+             {**_call("gh pr view 7 --json state"), "hook_event_name": CALL_FINISHED}),
+            ("a call of a tool that is not the guarded one finished",
+             {"hook_event_name": CALL_FINISHED, "tool_name": "Write", "tool_input": {}}),
+            ("an event no arm here answers at all", _exit("Notification", outside)),
+        ):
+            check(f"{label}: no answer at all", behind_answer(payload, read=_a_reading) == "",
+                  repr(behind_answer(payload, read=_a_reading))[:160])
+
+        # ⛔ Two arms answering one event must not silence each other, which is
+        # the same rule the guard's two arms are held to one event over.
+        out.append("")
+        out.append("The sweep's answer and this one share one message rather than replacing it:")
+        where = fresh("two-arms")
+        config = _a_config([_a_resource(cap=1)])
+        guard_answer(_call("a-claiming-command"), config=config, now=1000.0, store=where)
+        answered = release_answer(
+            _exit(TURN_ENDED, outside, command="a-claiming-command"), config=config,
+            now=1000.0, store=where, read=_a_reading,
+        )
+        said = str(answered.get("systemMessage", ""))
+        check("the places given back are in it", "gave back" in said, said[:200])
+        check("and so is the branch against its base", BEHIND_PREFIX in said, said[:200])
 
     # --- the surface and the carrier ---------------------------------------
     out.append("")
@@ -2537,6 +3149,22 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         "so the comparison is held to nothing",
     )
 
+    # ⛔ The base-reading arm's own three answers, held the same way, and
+    # `UNESTABLISHED` is deliberately not re-asserted here: § 18's loop above
+    # already holds that spelling, and a second assertion of one name would be
+    # the duplication this discipline exists to catch.
+    for answer in (LEVEL, BEHIND):
+        check(
+            f"§ 7 names the `{answer}` answer",
+            f"**{answer}**" in surface,
+            "this arm reports under a name the surface does not state, so its "
+            "vocabulary is held to nothing",
+        )
+    check(
+        "and reddens when the surface stops naming one",
+        f"**{LEVEL}**" not in surface.replace(f"**{LEVEL}**", "**reworded**", 1),
+    )
+
     carrier = CARRIER.read_text(encoding="utf-8")
     problems = check_the_carrier_still_calls_this(carrier)
     check("the carrier still calls this file on every event an arm answers", not problems,
@@ -2552,6 +3180,17 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     check("and reddens when the guard's matcher stops selecting the guarded tool",
           bool(check_the_carrier_still_calls_this(
               carrier.replace(f'"matcher": "{GUARDED_TOOL}"', '"matcher": "Read"'))))
+
+    # ⛔ The base-reading arm rides the release registration and registers
+    # nothing of its own, so each point it answers at has to be one of those
+    # events — a point added here with no event behind it would be an arm that
+    # never fires, which reads from a green run exactly like one that does.
+    check("every point the base-reading arm answers at is a registered release event",
+          all(event in RELEASE_EVENTS for event in BEHIND_EVENTS),
+          f"{[e for e in BEHIND_EVENTS if e not in RELEASE_EVENTS]} is registered by nothing")
+    check("and it answers at fewer of them than the sweep does",
+          set(BEHIND_EVENTS) < set(RELEASE_EVENTS),
+          "it answers at every release event, so the two points are not two")
 
     print("\n".join(out))
     print()
@@ -2602,7 +3241,8 @@ def main(argv: list[str]) -> int:
     sub = parser.add_subparsers(dest="arm")
 
     sub.add_parser("guard", help=f"answer a {GUARD_EVENT} payload on stdin")
-    sub.add_parser("release", help="answer an exit payload on stdin")
+    sub.add_parser("release", help="answer an exit payload on stdin: the places this session "
+                                   "holds, and the branch against its base")
 
     writing = sub.add_parser("record", help="write a recorded answer onto a change")
     writing.add_argument("--change", required=True,

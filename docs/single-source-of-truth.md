@@ -1991,9 +1991,10 @@ shipped reader takes 41 ms at a thousand.
 `plugins/mjolnir/scripts/enforce.py --self-test` runs in the `Enforcement` workflow, with no
 credential and no network. ⛔ The rules are
 [schema § 7 → What a hook refuses, and the record it reads](../plugins/mjolnir/config/schema.md#what-a-hook-refuses-and-the-record-it-reads),
-[schema § 7 → Which direction a guard fails in](../plugins/mjolnir/config/schema.md#which-direction-a-guard-fails-in)
+[schema § 7 → Which direction a guard fails in](../plugins/mjolnir/config/schema.md#which-direction-a-guard-fails-in),
+[schema § 7 → A lease on an exclusive resource](../plugins/mjolnir/config/schema.md#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
 and
-[schema § 7 → A lease on an exclusive resource](../plugins/mjolnir/config/schema.md#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it),
+[schema § 7 → A branch that has fallen behind its base](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at),
 and this document states none of them: what is recorded here is the reach of each arm and what it
 cannot see, which is narrower than the rules in directions the rules do not mention.
 
@@ -2008,6 +2009,7 @@ which of the three designs was the one that worked.
 |---|---|---|---|
 | `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge, the runs the host made for this commit, and the count a project's probe prints | **computed** for the count and the runs, **forbidding** for the record's presence | denies the call, or takes a place |
 | `release` (`PostToolUse`, `Stop`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
+| `release` again, at two of those four (`Stop`, and a `PostToolUse` whose call merged) | the tree the event names, the head the remote reports for the base, and the base's commits against this branch by patch | **computed** | reports `level`, `behind` with its figure, or `unestablished` — and ⛔ **refuses nothing, there being no call in hand at either point** |
 | `record` | nothing | — | writes the answer a guard reads onto the change |
 | `held` | the leases and the probe | **computed** | reports what is held, and what it could not establish |
 
@@ -2066,6 +2068,84 @@ range because it is somebody else's network**, which a single figure would read 
 measurement does not have. ⚠️ **The second figure is paid by the calls this guard exists for and by
 no others**, and it buys the minutes of a duplicated run and the place a lease would have held
 while it ran.
+
+⚠️ **The base-reading arm is the second one here that reaches the network, and the only arm here
+that refuses nothing at all.** ⛔ Its rule is
+[schema § 7 → A branch that has fallen behind its base](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at),
+and **it derives nothing of its own**: which branch this project integrates into, and what the
+remote says that branch's head is, are the claim carrier's derivation, imported rather than
+repeated — a second one here would be free to disagree with the one every start and every landing
+already takes. What the arm adds is the comparison, and ⛔ **it is by patch and never by ancestry or
+by a count of commits**, both of which call a branch whose base was rewritten behind by as many
+commits as were rewritten. That is the reading `divergences-and-rulings.md` § 2 records as five
+finished trees read as carrying 9–20 unpushed commits, met here one question over.
+
+⛔ **What it costs is paid at the end of every turn, and the figure is stated because it is the
+largest of any arm in this carrier** — the arm's rule being
+[schema § 7's](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at)
+two points rather than one call in a thousand. Measured on this repository over five runs of each:
+a turn ending in a tree with a remote is **about 920ms** at the median, of which **about 645ms** is
+the one remote read, against **94ms** for a turn ending in a directory that is no work tree and
+**about 140ms** for a session ending or an ordinary call finishing in the same tree — neither of
+those being one of the two points, and **38ms** of that being interpreter startup.
+⚠️ **The dominant term is somebody else's network**, so
+the figure moves with it and is not precision. ⚠️ **The cheaper reading was rejected rather than
+missed**: this tree's own tracking ref costs nothing and reports *level* immediately after a merge
+has moved the base, which is exactly the point the second of the two exists for.
+
+⛔ **What this arm cannot see is a base that moves between the read and whatever its reader does
+next**, which nothing bounds from inside a hook — the answer is about the moment it was taken, as
+every reading in this carrier is. ⛔ **And one true answer reads as a surprise**: a branch whose own
+change has just landed as a squash is behind by that one commit, the squash matching no single
+commit of the branch. It is stated at
+[schema § 7](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at)
+and held by a run, rather than left for a reader to meet.
+
+⛔ **Its plants are real repositories with a bare remote on disk, and that is the one thing this arm
+could not have been asserted without**: what is in question is what git itself says about a base
+whose hashes changed, and a stand-in would have asserted the stand-in's own idea of a patch — which
+is
+[schema § 7's](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at)
+reading held by the thing that performs it. On the red side: a base that gained two commits, a base
+whose head this tree does not hold, a remote that does not answer, a remote carrying no branch of
+that name, a claim carrier that would not load, a squash of the branch's own work, a base that
+gained a merge commit — the last two being the surface's own two statements about what the figure
+*is*, each held by a run rather than left as a sentence — and each of the arm's three local reads
+made unable to run at all. On the green
+side, each of which must stay green: a level branch, a base whose whole history was rewritten with
+its content unchanged, a code root with no remote, a directory that is no work tree, and the lease
+sweep's own message beside an answer this arm could not establish.
+⛔ **The rewritten-base plant computes the two readings the surface forbids beside the one it
+ships**, so a plant that had stopped being one fails on a figure rather than on a wording: both of
+them call that branch behind, and
+[schema § 7](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at)
+forbids each by name.
+
+⛔ **Eleven breaks were applied and each reddened the assertions written for it** — the patch
+reading reduced to a line count, the base read from the tracking ref, a head this tree does not
+hold read as level, an unreachable remote read as level, a project with no remote reported as
+unestablished every turn, the arm widened to all four release events, a finished call no longer
+narrowed to one that merged, the sweep's answer replacing this one instead of joining it, the tree
+left out of the words, a read that cannot run left to escape the arm, and a read that could not run
+conflated with an object that is absent — which is the discipline
+[schema § 7](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at)
+and this document already apply to every arm above.
+
+⚠️ **Three of the eleven say something the rest do not, and two of those three found a defect rather
+than confirming one.** ⛔ **The list of the two points sat beside an arm that matched the events
+inline**, so widening the list reddened the list's own assertion alone while the arm went on
+answering at two — the arm reads the list now, and the widening reddens the two points it would have
+added, which is
+[schema § 7's](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at)
+own statement of them being the only one. ⛔ **Three of the arm's reads were unwrapped**, so a read
+that could not run escaped the arm rather than being answered as unestablished — and took the lease
+sweep's message out with it, two arms of one event lost to one read; every read goes through one
+bound and one failure path now, with a non-zero exit still each caller's to interpret, since
+`cat-file` exiting non-zero is the object being absent and that is this arm's *behind* answer.
+⚠️ **And the third says something about the plants rather than the arm**: the escape's own shape
+killed the suite instead of reddening the assertion written for it, so the three plants catch the
+call and report the escape as the failure — a plant whose defect takes the run down with it names
+nothing.
 
 ⚠️ **Six exit paths were measured, and one of them cannot be tested because it never fires.** The
 project this came from registered its release on tool completion, tool failure, permission denial,

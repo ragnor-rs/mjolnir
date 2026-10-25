@@ -252,11 +252,21 @@ def ref_is_for_item(branch: str, item: str) -> bool:
 # --------------------------------------------------------------------------------------------
 
 
-def git(root: str | Path, *args: str, check: bool = True) -> subprocess.CompletedProcess:
+def git(
+    root: str | Path, *args: str, check: bool = True, timeout: float | None = None
+) -> subprocess.CompletedProcess:
+    """⚠️ `timeout` is **None** for every role calling this, and that is the wanted default.
+
+    A role is a turn somebody is waiting through, so a git call that hangs is a call they can see
+    hanging and interrupt. A **hook** is not: it runs inside a budget the harness kills the whole
+    of, so a reader that reaches the network from one states its own bound and passes it here
+    rather than having one applied to every caller.
+    """
     proc = subprocess.run(
         ["git", "-C", str(root), *args],
         capture_output=True,
         text=True,
+        timeout=timeout,
     )
     if check and proc.returncode != 0:
         raise ClaimError(
@@ -275,7 +285,9 @@ def remote_url(root: str | Path, remote: str) -> str | None:
     return proc.stdout.strip() or None if proc.returncode == 0 else None
 
 
-def integration_branch(root: str | Path, remote: str, stated: str | None = None) -> str:
+def integration_branch(
+    root: str | Path, remote: str, stated: str | None = None, timeout: float | None = None
+) -> str:
     """The branch a claim is cut from, derived rather than named.
 
     ⛔ **This surface carries no key for it, and this module does not invent one.** § 10 speaks of
@@ -297,7 +309,7 @@ def integration_branch(root: str | Path, remote: str, stated: str | None = None)
         return name[len(remote) + 1 :] if name.startswith(remote + "/") else name
 
     # The clone may predate the remote having a default, so ask the remote itself.
-    proc = git(root, "ls-remote", "--symref", remote, "HEAD", check=False)
+    proc = git(root, "ls-remote", "--symref", remote, "HEAD", check=False, timeout=timeout)
     if proc.returncode == 0:
         for line in proc.stdout.splitlines():
             if line.startswith("ref:"):
@@ -334,9 +346,11 @@ def _push_created_ref(porcelain: str, branch: str) -> bool:
     return False
 
 
-def remote_ref_sha(root: str | Path, remote: str, branch: str) -> str | None:
+def remote_ref_sha(
+    root: str | Path, remote: str, branch: str, timeout: float | None = None
+) -> str | None:
     """The sha the published claim points at, or None where the ref does not exist."""
-    proc = git(root, "ls-remote", "--heads", remote, branch, check=False)
+    proc = git(root, "ls-remote", "--heads", remote, branch, check=False, timeout=timeout)
     if proc.returncode != 0:
         raise ClaimError(f"could not read `{remote}`: {proc.stderr.strip()}")
     for line in proc.stdout.splitlines():
