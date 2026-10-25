@@ -260,9 +260,12 @@ def report_tiers(issues, live_items):
     offenders, unlabelled = [], []
     for number in live_items:
         labels = [l for l in issues[number]["labels"] if l.startswith(prefix)]
-        tier = labels[0] if labels else "none"
+        # ⚠️ *unranked* and not *none*, in the count as well as in the line below: § 4.6 reads an
+        # item carrying no value as outside the axis rather than at the bottom of it, and a count
+        # labelled `none` beside a line labelled `unranked` reads as two different figures.
+        tier = labels[0] if labels else "unranked"
         tiers[tier] += 1
-        if tier == "none":
+        if tier == "unranked":
             unlabelled.append(number)
         elif tier not in acceptable:
             offenders.append((number, tier))

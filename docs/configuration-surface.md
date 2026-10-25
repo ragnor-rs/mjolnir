@@ -654,8 +654,9 @@ configured.
   fails a free-prose description however clear, because the structure is what makes it checkable.
   Hence the semantic-section map in
   [`schema.md § 4.4`](../plugins/mjolnir/config/schema.md#44-template).
-- **Priority** — three carriers in use, one project that parses a tier and writes it nowhere, and
-  two that have no convention at all. A carries a four-value prefixed label axis on its board:
+- **Priority** — three projects carry one, between them over two carriers; a fourth parses a tier
+  and writes it nowhere; two have no convention at all. A carries a four-value prefixed label axis
+  on its board:
   exactly one label per card, never absent, and it is the input to the eight-check gate named in
   the readiness-gate section above. C uses the tracker's own priority field, three of its values.
   F labels its top tier alone with a prefixed label and leaves everything below it bare. B's
@@ -667,7 +668,7 @@ configured.
   axis and no other's.
 
 **What priority needed that the other facets did not: a statement of how two items compare.** The
-other four answer a question about one item — what type it is, what it is worth, which template it
+others answer a question about one item — what type it is, what it is worth, which template it
 used. This one is read by a check that asks whether work ranking above an item is ahead of it, and
 two measured axes answer that two ways: one ranks by a four-value list whose colours happen to run
 green to red, and another by a single label whose absence covers everything else. Hence the ordered

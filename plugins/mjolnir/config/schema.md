@@ -1349,11 +1349,11 @@ drift apart, and an adapter naming an operation this table does not state is ref
 
 Where two projects on the **same** tracker genuinely differ, the difference is already a facet
 here rather than a capability: what carries the type, the estimate, the template or the priority,
-each with its own absent case (§ 4.1, § 4.3, § 4.4, § 4.6) — two projects on the same plain-issues
-tracker carry the last of those as two different label prefixes, which is the shape this sentence
-is written against; what the tracker may hold at all (`policy` below); and who
-may write a given state (§ 4.2). Three stated homes, none of them a per-project override of what
-the tracker is able to do.
+each with its own absent case (§ 4.1, § 4.3, § 4.4, § 4.6); what the tracker may hold at all
+(`policy` below); and who may write a given state (§ 4.2). Three stated homes, none of them a
+per-project override of what the tracker is able to do. ⚠️ **The measured instance of this is the
+last of those facets**: two projects on the same plain-issues tracker carry their priority as
+prefixed labels and the prefixes differ, which is a project's fact rather than the tracker's.
 
 ### The trackerless adapter, and a kind with no implementation
 
@@ -3172,9 +3172,10 @@ behind the port would oblige each adapter to answer a question its tracker does 
 
 ⛔ **An ordering is not a gate.** § 5 asks whether *this* item may start; this says which item to
 offer first, and a project may configure either without the other. ⛔ **Which is also why a gate's
-`queue_position` does not read this facet**: a check whose input may legitimately be absent would be
-a check that stops meaning anything on the project that configured it, so what that one compares is
-the priority [`§ 4.6`](#46-priority) carries, and the two are different questions rather than one
+`queue_position` does not read this facet**: `carrier: none` here is an *answer* rather than a
+refusal, so a check reading it would quietly stop meaning anything on a project that keeps no
+ordering — where § 5 refuses the same gap in [`§ 4.6`](#46-priority) outright. What that check
+compares is the priority § 4.6 carries, and the two are different questions rather than one
 statement read twice.
 
 ## 13. What counts as done — an ordered check list, and who answers each check
