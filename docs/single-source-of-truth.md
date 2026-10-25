@@ -2083,11 +2083,12 @@ finished trees read as carrying 9–20 unpushed commits, met here one question o
 ⛔ **What it costs is paid at the end of every turn, and the figure is stated because it is the
 largest of any arm in this carrier** — the arm's rule being
 [schema § 7's](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at)
-two points rather than one call in a thousand. Measured on this repository: a turn ending in a tree
-with a remote is **about 880ms**, of which **about 600ms** is the one remote read, against **93ms**
-for a turn ending in a directory that is no work tree and **about 150ms** for a session ending or
-an ordinary call finishing in the same tree — neither of those being one of the two points, and
-**39ms** of that being interpreter startup. ⚠️ **The dominant term is somebody else's network**, so
+two points rather than one call in a thousand. Measured on this repository over five runs of each:
+a turn ending in a tree with a remote is **about 920ms** at the median, of which **about 645ms** is
+the one remote read, against **94ms** for a turn ending in a directory that is no work tree and
+**about 140ms** for a session ending or an ordinary call finishing in the same tree — neither of
+those being one of the two points, and **38ms** of that being interpreter startup.
+⚠️ **The dominant term is somebody else's network**, so
 the figure moves with it and is not precision. ⚠️ **The cheaper reading was rejected rather than
 missed**: this tree's own tracking ref costs nothing and reports *level* immediately after a merge
 has moved the base, which is exactly the point the second of the two exists for.
@@ -2107,28 +2108,44 @@ is
 [schema § 7's](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at)
 reading held by the thing that performs it. On the red side: a base that gained two commits, a base
 whose head this tree does not hold, a remote that does not answer, a remote carrying no branch of
-that name, a claim carrier that would not load, a squash of the branch's own work, and a base that
+that name, a claim carrier that would not load, a squash of the branch's own work, a base that
 gained a merge commit — the last two being the surface's own two statements about what the figure
-*is*, each held by a run rather than left as a sentence. On the green
+*is*, each held by a run rather than left as a sentence — and each of the arm's three local reads
+made unable to run at all. On the green
 side, each of which must stay green: a level branch, a base whose whole history was rewritten with
-its content unchanged, a code root with no remote, and a directory that is no work tree.
+its content unchanged, a code root with no remote, a directory that is no work tree, and the lease
+sweep's own message beside an answer this arm could not establish.
 ⛔ **The rewritten-base plant computes the two readings the surface forbids beside the one it
 ships**, so a plant that had stopped being one fails on a figure rather than on a wording: both of
 them call that branch behind, and
 [schema § 7](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at)
 forbids each by name.
 
-⛔ **Nine breaks were applied and each reddened the assertions written for it** — the patch reading
-reduced to a line count, the base read from the tracking ref, a head this tree does not hold read as
-level, an unreachable remote read as level, a project with no remote reported as unestablished every
-turn, the arm widened to all four release events, a finished call no longer narrowed to one that
-merged, the sweep's answer replacing this one instead of joining it, and the tree left out of the
-words — which is the discipline
+⛔ **Eleven breaks were applied and each reddened the assertions written for it** — the patch
+reading reduced to a line count, the base read from the tracking ref, a head this tree does not
+hold read as level, an unreachable remote read as level, a project with no remote reported as
+unestablished every turn, the arm widened to all four release events, a finished call no longer
+narrowed to one that merged, the sweep's answer replacing this one instead of joining it, the tree
+left out of the words, a read that cannot run left to escape the arm, and a read that could not run
+conflated with an object that is absent — which is the discipline
 [schema § 7](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at)
-and this document already apply to every arm above. ⚠️ **One of the nine found a defect rather than
-confirming one**: the list of the two points sat beside an arm that matched the events inline, so
-widening the list reddened the list's own assertion alone while the arm went on answering at two.
-The arm reads the list now, and the widening reddens the two points it would have added.
+and this document already apply to every arm above.
+
+⚠️ **Three of the eleven say something the rest do not, and two of those three found a defect rather
+than confirming one.** ⛔ **The list of the two points sat beside an arm that matched the events
+inline**, so widening the list reddened the list's own assertion alone while the arm went on
+answering at two — the arm reads the list now, and the widening reddens the two points it would have
+added, which is
+[schema § 7's](../plugins/mjolnir/config/schema.md#a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-reported-at)
+own statement of them being the only one. ⛔ **Three of the arm's reads were unwrapped**, so a read
+that could not run escaped the arm rather than being answered as unestablished — and took the lease
+sweep's message out with it, two arms of one event lost to one read; every read goes through one
+bound and one failure path now, with a non-zero exit still each caller's to interpret, since
+`cat-file` exiting non-zero is the object being absent and that is this arm's *behind* answer.
+⚠️ **And the third says something about the plants rather than the arm**: the escape's own shape
+killed the suite instead of reddening the assertion written for it, so the three plants catch the
+call and report the escape as the failure — a plant whose defect takes the run down with it names
+nothing.
 
 ⚠️ **Six exit paths were measured, and one of them cannot be tested because it never fires.** The
 project this came from registered its release on tool completion, tool failure, permission denial,

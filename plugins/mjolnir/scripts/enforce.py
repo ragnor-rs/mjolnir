@@ -177,12 +177,13 @@ BEHIND = "behind"
 # tell from the lease sweep's in the same message.
 BEHIND_PREFIX = "This branch against its base"
 
-# ⛔ **Bounded against the carrier's own registered budget rather than picked.**
-# This arm reaches the network twice at worst -- once to derive the base where
-# the clone has no record of the remote's default, once for that base's head --
-# so the figure is the budget for the release hook divided by those two, with the
-# local reads and the interpreter's start inside what is left. A read that hangs
-# then costs itself and not the hook, which is what the whole bound is for.
+# ⛔ **Bounded against the carrier's own registered budget rather than picked**,
+# and the arithmetic is the whole of the reason: this arm reaches the network
+# twice at worst -- once to derive the base where the clone has no record of the
+# remote's default, once for that base's head -- so two of these have to fit
+# inside the budget the release hook is registered with, with the three local
+# reads and the interpreter's own start inside what is left over. A read that
+# hangs then costs itself rather than the hook, which is what the bound is for.
 BEHIND_TIMEOUT = 3
 
 # --- the record a guard reads ----------------------------------------------
@@ -1391,25 +1392,53 @@ def behind_of(where: str, *, remote: str = "origin",
             f"the claim carrier could not be loaded from {Path(__file__).resolve().parent}, so "
             "which branch this project integrates into could not be derived"
         )
-    try:
-        top = carrier.git(where, "rev-parse", "--show-toplevel", check=False,
-                          timeout=BEHIND_TIMEOUT)
-    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+
+    # ⛔ **Every read this arm makes goes through one bound and one failure path.**
+    # The review of this change reproduced the alternative: with three of the
+    # reads unwrapped, a timeout on any of them escaped this function altogether,
+    # so the arm produced no answer at all rather than an unestablished one -- and
+    # took the lease sweep's own message out with it on the way, two arms of one
+    # event lost to one read.
+    #
+    # ⚠️ **A non-zero exit is not a failed read and stays each caller's to
+    # interpret.** `cat-file` exiting non-zero is the object being absent, which
+    # is this arm's *behind* answer; conflating the two would report a timeout as
+    # a branch behind its base.
+    unread: list[str] = []
+
+    def run(root, *args):
+        try:
+            return carrier.git(root, *args, check=False, timeout=BEHIND_TIMEOUT)
+        except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+            unread.append(f"{type(error).__name__} while running `{args[0]}` in {root}")
+            return None
+
+    top = run(where, "rev-parse", "--show-toplevel")
+    if top is None:
         return UNESTABLISHED, None, (
-            f"{type(error).__name__} while resolving which tree {where} is in"
+            f"{unread[-1]}, so which tree {where} is in could not be established"
         )
     if top.returncode != 0 or not top.stdout.strip():
         # ⛔ Silent: no work tree means no branch and no base, which is nothing to
         # have fallen behind rather than something unread.
         return None, None, ""
     tree = top.stdout.strip()
-    if not carrier.remote_url(tree, remote):
+    try:
+        publishes = bool(carrier.remote_url(tree, remote))
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return UNESTABLISHED, None, (
+            f"in {tree}, {type(error).__name__} while asking whether this code root publishes a "
+            "base at all"
+        )
+    if not publishes:
         # ⛔ Silent for the same reason, by § 10's derived local-only claim: a
         # code root with no remote publishes no base.
         return None, None, ""
-    named = carrier.git(tree, "rev-parse", "--abbrev-ref", "HEAD", check=False,
-                        timeout=BEHIND_TIMEOUT)
-    branch = named.stdout.strip() if named.returncode == 0 else ""
+    # ⚠️ The branch names the answer's subject and does not decide it, so a read
+    # that could not answer here leaves the tree alone as the subject rather than
+    # making the whole answer unestablished.
+    named = run(tree, "rev-parse", "--abbrev-ref", "HEAD")
+    branch = named.stdout.strip() if named is not None and named.returncode == 0 else ""
     here = f"{tree} on `{branch}`" if branch else tree
     try:
         base = carrier.integration_branch(tree, remote, timeout=BEHIND_TIMEOUT)
@@ -1426,9 +1455,13 @@ def behind_of(where: str, *, remote: str = "origin",
             f"in {here}, `{remote}` carries no branch named `{base}`, so there is no base to "
             "read this branch against"
         )
-    held = carrier.git(tree, "cat-file", "-e", f"{head}^{{commit}}", check=False,
-                       timeout=BEHIND_TIMEOUT)
-    if held.returncode != 0:
+    held_here = run(tree, "cat-file", "-e", f"{head}^{{commit}}")
+    if held_here is None:
+        return UNESTABLISHED, None, (
+            f"in {here}, {unread[-1]}, so whether this tree holds `{base}` at {head[:12]} is "
+            "unknown"
+        )
+    if held_here.returncode != 0:
         # ⛔ Behind with no figure, never level: the remote reports a head this
         # tree does not hold, which is § 2's absence of signal one ref over.
         return BEHIND, None, (
@@ -1436,11 +1469,11 @@ def behind_of(where: str, *, remote: str = "origin",
             f"commit, so how far behind it this branch is cannot be read here — fetch "
             f"`{remote}` and the figure follows"
         )
-    compared = carrier.git(tree, "cherry", "HEAD", head, check=False, timeout=BEHIND_TIMEOUT)
-    if compared.returncode != 0:
+    compared = run(tree, "cherry", "HEAD", head)
+    if compared is None or compared.returncode != 0:
         return UNESTABLISHED, None, (
             f"in {here}, the commits of `{base}` could not be compared against this branch by "
-            "patch"
+            "patch" + (f": {unread[-1]}" if compared is None else "")
         )
     figure = commits_behind(compared.stdout)
     if figure == 0:
@@ -2016,6 +2049,37 @@ def _rewrite_the_base(seed: str) -> None:
 
 def _a_carrier_that_will_not_load():
     return None
+
+
+class _OneReadMissing:
+    """The claim carrier with one of this arm's reads unable to run at all.
+
+    ⛔ **The real carrier with one call replaced, never a stand-in for the whole
+    of it**: what is in question is this arm's own failure path, so every other
+    read has to answer exactly as it really does — a fake carrier would assert
+    the fake.
+    """
+
+    def __init__(self, real, which: str):
+        self._real, self._which = real, which
+        self.remote_url = real.remote_url
+        self.integration_branch = real.integration_branch
+        self.remote_ref_sha = real.remote_ref_sha
+
+    def git(self, root, *args, check: bool = True, timeout=None):
+        if args and args[0] == self._which:
+            raise subprocess.TimeoutExpired(cmd=["git", self._which], timeout=timeout or 0)
+        return self._real.git(root, *args, check=check, timeout=timeout)
+
+
+def _a_carrier_that_cannot_run(which: str):
+    def load():
+        real = _claim()
+        if real is None:
+            raise AssertionError("the fixture could not load the claim carrier to break")
+        return _OneReadMissing(real, which)
+
+    return load
 
 
 def _call(command: str, session: str = "a-session", cwd: str = ".",
@@ -2930,6 +2994,50 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         answer, _figure, said = behind_of(outside, load=_a_carrier_that_will_not_load)
         check("and a claim carrier that could not be loaded is unestablished, not silence",
               answer == UNESTABLISHED and "claim carrier" in said, f"{answer!r}: {said}")
+
+        # ⛔ The defect the review of this change reproduced: three of this arm's
+        # reads were unwrapped, so a read that could not run escaped the arm
+        # rather than being answered — and took the sweep's own message with it,
+        # two arms of one event lost to one read.
+        out.append("")
+        out.append("A read this arm cannot make at all is unestablished, and takes nothing with it:")
+        _origin, _seed, tree = _a_published_base(fresh("unrunnable"))
+        _a_commit(tree, "mine.txt")
+        # ⚠️ Each call is caught here, and that is the plant rather than caution:
+        # the defect's own shape is an escape, so a plant that let one propagate
+        # would kill this suite instead of reddening the assertion written for
+        # it — measured by restoring the defect and watching the run die with no
+        # failure named at all.
+        def answered_for(which: str) -> tuple:
+            try:
+                return behind_of(tree, load=_a_carrier_that_cannot_run(which))
+            except Exception as error:  # noqa: BLE001 -- the defect is the escape
+                return None, None, f"escaped the arm as {type(error).__name__}"
+
+        for which in ("rev-parse", "cat-file", "cherry"):
+            answer, figure, said = answered_for(which)
+            check(f"a `{which}` that cannot run is `{UNESTABLISHED}` rather than an escape",
+                  answer == UNESTABLISHED and figure is None, f"{answer!r}, {figure!r}: {said}")
+            check(f"and the answer names `{which}` as what could not be run",
+                  which in said, said[:240])
+        check("while a `cat-file` that runs and finds nothing is behind, not unestablished",
+              behind_of(tree)[0] == LEVEL, repr(behind_of(tree))[:200])
+        where = fresh("unrunnable-store")
+        config = _a_config([_a_resource(cap=1)])
+        guard_answer(_call("a-claiming-command", cwd=tree), config=config, now=1000.0,
+                     store=where)
+        try:
+            answered = release_answer(
+                _exit(TURN_ENDED, tree, command="a-claiming-command"), config=config,
+                now=1000.0, store=where, load=_a_carrier_that_cannot_run("cherry"),
+            )
+        except Exception as error:  # noqa: BLE001 -- the defect is the escape
+            answered = {"systemMessage": f"the whole answer escaped as {type(error).__name__}"}
+        said = str(answered.get("systemMessage", ""))
+        check("the sweep's message survives a read this arm could not make",
+              "gave back" in said, said[:240])
+        check("and this arm's own answer is beside it, as unestablished",
+              UNESTABLISHED in said, said[:240])
 
         # ⛔ The other direction of § 7's absent-against-unreadable split, and the
         # one that keeps this arm from being switched off: a project with no base
