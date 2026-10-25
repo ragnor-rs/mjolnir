@@ -2347,27 +2347,32 @@ dangerous* sends a role looking for a problem that is not there. ⛔ **Nor is it
 is the one thing the refusal itself claims**: each run alone with every word a literal, a pipeline
 ran, a `;` list ran, a conditional ran, a `for` loop ran, a glob ran, an arithmetic expansion ran, a
 redirection to a path outside the tree ran, and a three-segment chain that `cd`s out of the tree,
-redirects to a path relative to that `cd` and reads the file back ran whole. ⛔ **What refuses is
-text in the call that would still expand and that the guard cannot resolve by reading it**, which is
-the first three rows below. ⚠️ **What clears it is taking the expansion away rather than quoting as
-such**: a substitution inside single quotes ran and the same one inside double quotes did not, and a
-heredoc under a quoted delimiter ran where a body with nothing expandable in it at all was refused
-under an unquoted one. ⚠️ **The predicate is still the harness's and still unpublished**, so a role
-acts on the table and not on a grammar inferred from it.
+redirects to a path relative to that `cd` and reads the file back ran whole. ⛔ **Text in the call
+that would still expand and that the guard cannot resolve by reading it refuses**, which is the
+first three rows below. ⚠️ **What clears those three is taking the expansion away rather than
+quoting as such**: a substitution inside single quotes ran and the same one inside double quotes did
+not, and a heredoc under a quoted delimiter ran where a body with nothing expandable in it at all
+was refused under an unquoted one. ⛔ **Expansion is one cause and not the predicate**, which is the
+fourth row: `echo {"a"` is refused, and the brace in it carries neither a comma nor a range for a
+shell to expand it over — so a construct is not cleared by reasoning that the guard has nothing
+left in it to resolve. ⚠️ **The predicate is the
+harness's and unpublished**, so a role acts on the table and not on a grammar inferred from it, and
+a construct no row names is unmeasured rather than permitted.
 
 ⛔ **A green run read out of a transcript is evidence about the session it was in and not about the
 guard.** The corpus behind the count above spans sessions standing in a tree and sessions standing
 in none, and the rule is live only in the first — `diff <(echo a) <(echo b)` is refused in a tree
 and runs unchanged outside one, so a construct that reads as green across a mixed corpus may never
 have been under the guard at all. ⚠️ **What a row rests on is therefore the construct run alone in
-a tree the session is pinned to**, measured 2026-10-22, which is a measurement a corpus of
-transcripts cannot make.
+a tree the session is pinned to**, measured 2026-10-22 and the fourth row 2026-10-25, which is a
+measurement a corpus of transcripts cannot make.
 
 | In a call | What was measured | What to write instead |
 |---|---|---|
 | A word the guard cannot resolve — a loop's own variable, a variable its snapshot does not hold, a `${VAR:-default}` | The call is refused whole. ⚠️ Two plain expansions in one session, one resolved and one refused, so no list of safe variable names is derivable from a run. An arithmetic expansion resolved and a glob resolved, so neither a `$` nor an expansion of any kind is itself the test | Resolve the value in a call of its own, then write the literal it resolved to |
 | A substitution of any kind — `$(…)`, a backtick pair, `<(…)` | Refused whole, under the *too complex* wording, each measured alone. ⚠️ The same characters ran inside single quotes and were refused inside double ones, so this is a parse of what would expand rather than a match on the text | Run the inner command in a call of its own, then write the output it printed in as a literal |
-| A heredoc whose delimiter is unquoted | Refused whole, under the same wording, with a body carrying nothing expandable in it at all — so it is the delimiter and not the content. ⚠️ `<<'EOF'` ran, which is the arm that makes this the delimiter's rule rather than the heredoc's | Quote the delimiter, or write the file through the harness's own file tools and pass its path |
+| A heredoc whose delimiter is unquoted | Refused whole, under the same wording, with a body carrying nothing expandable in it at all — so it is the delimiter and not the content. ⚠️ `<<'EOF'` over a plain-text body ran, which is the arm that makes this the delimiter's rule rather than the heredoc's — and it clears the delimiter alone, since the next row is refused under a quoted one | Quote the delimiter and read the next row before concluding the call will run, or write the file through the harness's own file tools and pass its path |
+| An unquoted `{` with a quote character anywhere after it — `{"a": 1}`, `echo {a "b"`, a body with a dict literal in it | Refused whole, under the same wording, with nothing in the call that would expand. ⚠️ It is the `{` that has to be unquoted and not the quote: `echo '{"a": 1}'` and `python3 -c 'print({"a": 1})'` ran, and so did a `{` with no quote after it (`echo x{y}z`, `print({a: 1})`) and a `}` with one (`echo }"a"`). ⚠️ Neither adjacency nor a closing brace is required — `echo {a "b"` and `echo {"a"` are each refused — and a quoted heredoc delimiter is no shelter: `print({"a"})` under `<<'PY'` is refused where `print("x{y}z")` under the same delimiter runs | Single-quote the word, or the whole program — `python3 -c '…'` — or write the program to a file through the harness's own file tools and run the file |
 | A chain whose first command guards the rest — a backup before an overwrite, a fetch before a read | Refused or run whole, never in part; where it was refused the safeguard did not run either, measured as a backup that was missing when the restore came to need it | Two calls, and the first one's result read before the second is written |
 | `git -C` naming anything but this tree | Refused by name, with its own wording, the shared checkout included — which inverts § 1's *name every root* for this one tool | Read the shared checkout from the code host, or through a script that takes a root rather than through git |
 | The word `eval` anywhere in it — a search pattern or a directory name included | Refused as a string run through eval, with its own wording: a `grep` whose pattern is that word is enough, and so is the word alone inside single quotes — which is a match on the text, the opposite of the substitution row above | Name the pattern or the path another way, or read the file rather than searching it |
@@ -2384,6 +2389,14 @@ and carries neither.
 ⚠️ **The cheapest call is one plain command whose every word is a literal**, and the harness's own
 file tools are held by none of this — so a file written, read or edited through them is reached
 whatever the guard would have made of the equivalent shell command.
+
+⛔ **A program handed to an interpreter goes inside single quotes or into a file, and never into the
+call as bare text.** Python pairs a brace with a quote in every dict literal, every set and every
+f-string, so an inline script meets the fourth row whatever its heredoc delimiter is quoted as.
+`python3 -c '…'` is reached where the program carries no single quote of its own; where it does, or
+where it is long enough that a reader wants it on lines of its own, it is written through the file
+tools and run as `python3 <path>`, which carries the braces, the quotes and the roots that the same
+text inside a call cannot.
 
 ### The claim on a work item
 
