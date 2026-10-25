@@ -649,11 +649,13 @@ def _set_default(data: dict, path: str, value) -> None:
     node.setdefault(parts[-1], value)
 
 
-# The key § 1 gives the one root a project writing the single form has. A
-# reserved name and not a derivation: the slug would be the only thing to derive
-# it from, and deriving a root's name from the repository it addresses is the
-# inference § 1 forbids one step over. It is what a report names that root by.
-ONE_ROOT = "code"
+# The key § 1 gives the one root a project writing the single form has, and what
+# a report names that root by. ⛔ Taken from the last segment of the key that
+# states the path rather than written out again: the surface's prose names it,
+# and a second spelling here is a copy of that one free to disagree with it. ⚠️
+# Not derived from the repository slug either, which would be the inference § 1
+# forbids one step over.
+ONE_ROOT = "roots.code".rpartition(".")[2]
 
 
 def _merged(project: dict | None, entry: dict | None) -> dict | None:
