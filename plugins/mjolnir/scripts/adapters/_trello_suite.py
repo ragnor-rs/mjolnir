@@ -354,6 +354,29 @@ PLANTS = {
     "branch_names": "landed on feat/5-a-thing yesterday",
 }
 
+# ⛔ One class gets more than one plant, because one form of it was missed. A
+# path reaches prose three ways and the first grammar here caught two: the plant
+# above carries a file extension, so the **commonest** form a repository path
+# takes in a sentence -- segments with no extension at all -- passed the guard
+# while the class read as held. ⚠️ Each form is planted separately, and the
+# second list is what keeps a grammar narrowed to one of them from reading green.
+PATH_FORMS = (
+    ("a path ending in a file", "it is in plugins/mjolnir/scripts/adapters/trello.py"),
+    ("a path with no extension at all", "it is in plugins/mjolnir/scripts"),
+    ("a path rooted at the filesystem", "the allowlist is at /etc/hosts"),
+    ("a path rooted at the working directory", "written to ./config/local.yaml"),
+)
+
+# ⛔ And the forms that must **not** read as paths, which is what stops the
+# depth rule above from being a guard that refuses prose. ⚠️ One separator is
+# prose and two is a path, so each of these carries exactly one.
+NOT_PATHS = (
+    "the gate went red and/or amber",
+    "answer yes/no on the thread",
+    "a 50/50 call on the estimate",
+    "it was 10/25 when the run started",
+)
+
 # ⚠️ Assembled rather than written as a literal, for the reason § 14's own arm
 # assembles its plants: a file carrying a token-shaped literal is a secret
 # committed by the check that exists to stop that, and the host's own push
@@ -689,6 +712,31 @@ def self_test() -> int:
         reported is not None and "refused rather than" in reported,
         f"got {reported!r}",
     )
+    # ⛔ Every collection the board read takes, the members included. Leaving
+    # them out was this module's own first draft: they are what resolves an
+    # assignee's name, so a short answer reads as *assigned to nobody by that
+    # name* rather than as a list the host cut.
+    for what, answers in (
+        ("lists", {"lists": [
+            {"id": f"list-{n}", "name": f"list {n}", "closed": False, "pos": n}
+            for n in range(COLLECTION_CEILING)
+        ]}),
+        ("labels", {"labels": [
+            {"id": f"label-{n}", "name": f"label {n}", "color": None}
+            for n in range(COLLECTION_CEILING)
+        ]}),
+        ("members", {"members": [
+            {"id": f"member-{n}", "username": f"who{n}", "fullName": f"Who {n}"}
+            for n in range(COLLECTION_CEILING)
+        ]}),
+    ):
+        filled = host(answers)
+        reported = with_host(filled, lambda: unavailable(lambda: read_item(1)))
+        check(
+            f"and the {what} are held to the same ceiling, not only the cards",
+            reported is not None and "refused rather than" in reported,
+            f"got {reported!r}",
+        )
     below = host({"cards": [_card(n, f"card {n}") for n in range(1, COLLECTION_CEILING)]})
     answered = with_host(below, lambda: read_item(1))
     check(
@@ -844,6 +892,23 @@ def self_test() -> int:
         reported is not None and "partial" in reported,
         f"got {reported!r}",
     )
+    # ⛔ The set the card carries is compared by **id**. A label on this tracker
+    # may have no name, and a card may carry one the board does not resolve --
+    # over names both drop out, so a card carrying one plus `beta`, asked for
+    # `["beta"]`, compares **equal** and the unnamed label is silently kept. That
+    # is the opposite of *set, not add*, and the write below is what the id
+    # comparison restores.
+    unnamed = host({
+        "labels": LABELS + [{"id": "label-blank", "name": "", "color": "sky"}],
+        "cards": [_card(1, "a first card", labels=["label-blank", "label-beta"])],
+        "card": _card(1, "a first card", labels=["label-beta"]),
+    })
+    with_host(unnamed, lambda: set_labels(1, ["beta"]))
+    check(
+        "a card carrying a label with no name is still written, and that label dropped",
+        unnamed.params_for("update") and sent(unnamed, "update").get("idLabels") == "label-beta",
+        f"called {unnamed.calls} sending {unnamed.params_for('update')!r}",
+    )
     unknown = host()
     reported = with_host(unknown, lambda: refused(lambda: set_labels(1, ["no such label"])))
     check(
@@ -927,12 +992,23 @@ def self_test() -> int:
 
     # --- the checklists, which no other implementation has ------------------
     listed = with_host(host(), lambda: checklist_read(1))
+    read_items = [
+        (item["name"], item["checked"])
+        for checklist in (got(listed, "checklists") or [])
+        for item in checklist["items"]
+    ]
     check(
         "the check items come back with which of them are ticked",
-        isinstance(listed, dict)
-        and [(item["name"], item["checked"]) for item in entries(listed)]
-        == [("the first thing", False), ("the second thing", True)],
+        read_items == [("the first thing", False), ("the second thing", True)],
         f"read {listed!r}",
+    )
+    # ⛔ And **only** inside their checklists. A flattened copy beside them is
+    # one derivation in two places, and the caller flattens the one list rather
+    # than being handed a second that can go stale.
+    check(
+        "and are not carried a second time flattened",
+        "items" not in (listed if isinstance(listed, dict) else {}),
+        f"carried {sorted(listed) if isinstance(listed, dict) else listed!r}",
     )
     ticked = host()
     answered = with_host(ticked, lambda: checklist_write(1, "the first thing", checked=True))
@@ -953,6 +1029,16 @@ def self_test() -> int:
         isinstance(answered, dict) and answered.get("written") is False
         and not unchanged.writes(),
         f"got {answered!r} after {unchanged.calls}",
+    )
+    # ⛔ One shape whether it wrote or not, here as well as in `set_state`: the
+    # unwritten answer omitted the checklist the written ones carry.
+    written = with_host(host(), lambda: checklist_write(1, "the first thing", checked=True))
+    check(
+        "and in the same shape the written answer has",
+        isinstance(answered, dict) and isinstance(written, dict)
+        and sorted(answered) == sorted(written),
+        f"unwritten {sorted(answered) if isinstance(answered, dict) else answered!r} "
+        f"against written {sorted(written) if isinstance(written, dict) else written!r}",
     )
     added = host()
     with_host(added, lambda: checklist_write(1, "a new thing"))
@@ -1201,6 +1287,21 @@ def self_test() -> int:
         forbidden(STAYS_GREEN, classes, prefixes) == [],
         f"found {forbidden(STAYS_GREEN, classes, prefixes)!r}",
     )
+    # ⛔ Each form of a path separately. One plant per class let a grammar that
+    # caught two of the three read as holding the class.
+    for what, planted in PATH_FORMS:
+        found = [
+            finding
+            for finding in forbidden(planted, ["file_paths"], prefixes)
+            if finding.startswith("`file_paths`")
+        ]
+        check(f"the guard reddens on {what}", bool(found), f"found {found!r}")
+    for text in NOT_PATHS:
+        check(
+            f"and stays green on `{text.split()[-3] if len(text.split()) > 3 else text}`",
+            forbidden(text, ["file_paths"], prefixes) == [],
+            f"read {text!r} as a path",
+        )
     check(
         "a class this implementation has no form for is a finding, not a pass",
         forbidden(STAYS_GREEN, ["telepathy"], prefixes),

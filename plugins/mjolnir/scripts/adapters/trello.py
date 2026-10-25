@@ -10,13 +10,15 @@ times.
 
 What it implements, and what it deliberately does not:
 
-  * **Twelve of the fifteen operations § 3 states.** Three have nothing behind
-    them and are named once in `DELIBERATELY_ABSENT` below: there is no relation
-    between two cards, no reference that closes a card when a branch lands, and
-    therefore no automation to confirm off a merge. ⛔ Each of those is a
-    property of the tracker and not a shortcut here -- the card moves because the
-    procedure moves it, through `set_state`, which is exactly what
-    `advance_on_merge`'s stated fallback says to do.
+  * **Every operation § 3 states except three.** ⛔ No count of them is carried
+    here -- the module next door states why and this one does not restate it: the
+    list is closed and stated once, in § 3, and a number here would be wrong the
+    next time it grows. The three are named once in `DELIBERATELY_ABSENT` below:
+    there is no relation between two cards, no reference that closes a card when
+    a branch lands, and therefore no automation to confirm off a merge. ⛔ Each
+    of those is a property of the tracker and not a shortcut here -- the card
+    moves because the procedure moves it, through `set_state`, which is exactly
+    what `advance_on_merge`'s stated fallback says to do.
   * **The three checklist operations are present, and this is the first
     implementation where they are.** Both implementations beside this one leave
     them absent because an issue has no check-item object; a card has one, so the
@@ -221,13 +223,18 @@ CARD_NUMBER_IN_URL = re.compile(r"/c/[^/]+/(?P<number>\d+)(?:-|$)")
 
 FENCE = re.compile(r"^\s*(?:```|~~~)", re.MULTILINE)
 
-# A path with a separator in it and a file extension at the end, or one rooted
-# at `/` or `./`. ⚠️ A URL's path matches this where it ends in a file, which is
-# two findings for one span rather than a miss: both classes are barred and the
+# A path, in the three forms one reaches prose in: rooted at `/` or `./`, ending
+# in a file extension, or ⛔ **two or more separators deep with neither** -- which
+# is the commonest form a repository path takes in a sentence and which the first
+# draft of this grammar missed entirely, its plant having had an extension. ⚠️ The
+# depth is what keeps `and/or` and `yes/no` out: one separator is prose and two is
+# a path. ⚠️ A URL's path matches this where it ends in a file, which is two
+# findings for one span rather than a miss -- both classes are barred, and the
 # refusal names each it found.
 FILE_PATH = re.compile(
     r"(?:(?<![\w/])(?:\.{1,2}/|/)[\w.-]+(?:/[\w.-]+)*"
-    r"|(?<![\w/])[\w.-]+(?:/[\w.-]+)+\.[A-Za-z][A-Za-z0-9]{0,7})(?![\w/])"
+    r"|(?<![\w/])[\w.-]+(?:/[\w.-]+)+\.[A-Za-z][A-Za-z0-9]{0,7}"
+    r"|(?<![\w/])[\w.-]+(?:/[\w.-]+){2,})(?![\w/])"
 )
 
 # ⚠️ The third of these collides with a file-and-line citation, and that is
@@ -523,7 +530,14 @@ def _board_payload(board: str) -> dict:
         f"/boards/{board}/cards/all",
         fields="id,idShort,name,closed,idList,idLabels,idMembers,url,shortUrl,due,dueComplete",
     )
-    for what, nodes in (("lists", lists), ("labels", labels), ("cards", cards)):
+    # ⛔ All four, the members included. ⚠️ Leaving them out was a measured
+    # inconsistency in this module's own first draft: the members are what
+    # resolves an assignee's name, so a board past the cap would have answered
+    # short for exactly the list whose short answer reads as *this card is
+    # assigned to nobody by that name*.
+    for what, nodes in (
+        ("lists", lists), ("labels", labels), ("members", members), ("cards", cards)
+    ):
         if isinstance(nodes, list) and len(nodes) >= COLLECTION_CEILING:
             raise HostUnavailable(
                 f"the {what} of board `{board}` came back with {len(nodes)} node(s), "
@@ -906,14 +920,15 @@ def checklist_read(number: int) -> dict:
     modules beside this one leave it absent because an issue has no check-item
     object, so until now the stated fallback -- the role has no answer and says
     so -- was the only behaviour anything had.
+
+    ⛔ **The items are not carried a second time flattened.** A caller wanting
+    them across the checklists flattens the one list this returns; a second copy
+    beside it is a derivation written in two places, and the one that goes stale
+    is whichever the reader was not looking at. ⚠️ Measured on this module's own
+    first draft, which carried both.
     """
     card = _card_for(number)
-    checklists = _checklists(card["id"])
-    return {
-        "number": item_number(card),
-        "checklists": checklists,
-        "items": [item for checklist in checklists for item in checklist["items"]],
-    }
+    return {"number": item_number(card), "checklists": _checklists(card["id"])}
 
 
 # --- searching the board -----------------------------------------------------
@@ -1195,15 +1210,25 @@ def set_labels(number: int, labels: list[str]) -> dict:
     call each, and the answer names the calls made -- a set left partial is
     reported rather than retried silently, which is this operation's own stated
     fallback and the right behaviour for the one arm that degrades to it.
+
+    ⛔ **What the card carries is compared by **id** and never by name.** A label
+    on this tracker may have an empty name, and a card may carry one the board's
+    own list does not resolve -- so a comparison over names drops both, never
+    matches the set asked for, and writes on every call. ⚠️ Measured on this
+    module's own first draft, where the name comparison also hid the consequence
+    below.
+
+    ⚠️ **A label the board gives no usable name cannot be asked for, so any call
+    here drops it.** That is *set, not add* working rather than a defect, and it
+    is stated because it is a loss the caller could not have avoided: there is no
+    spelling of this operation's argument that keeps such a label.
     """
     wanted = {
         name: _label_named(name, key="tracker.operations.set_labels")["id"]
         for name in labels
     }
     card = _card_for(number)
-    board = _board()
-    carried = {label.get("name") for label in _labels_of(card, board) if label.get("name")}
-    if carried == set(wanted):
+    if set(card.get("idLabels") or []) == set(wanted.values()):
         # ⛔ The same answer the written path gives, read back rather than
         # shaped from the index. An operation that answered two different
         # shapes depending on whether it wrote would make a role's handling
@@ -1353,7 +1378,16 @@ def checklist_write(
     if found:
         holding, existing = found
         if checked is None or existing["checked"] == bool(checked):
-            return {"number": item_number(card), "item": existing, "written": False}
+            # ⛔ The same keys the written paths answer with, `checklist`
+            # included. An operation answering two shapes depending on whether
+            # it wrote makes a caller's handling depend on a fact it did not ask
+            # about -- measured on this module twice, here and in `set_state`.
+            return {
+                "number": item_number(card),
+                "item": existing,
+                "checklist": holding["name"],
+                "written": False,
+            }
         _call(
             "PUT",
             f"/cards/{card['id']}/checkItem/{existing['id']}",
