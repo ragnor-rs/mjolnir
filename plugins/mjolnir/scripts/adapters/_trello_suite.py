@@ -1100,6 +1100,39 @@ def self_test() -> int:
         "answer nothing",
     )
 
+    # --- what reaches a request path ----------------------------------------
+    #
+    # ⛔ Two values this module interpolates into a path, held to a shape. A
+    # separator in either addresses an endpoint other than the one the call
+    # means, and the host answers **that** endpoint rather than refusing -- so
+    # the refusal has to be here, before the call, and the assertion reads that
+    # no call was made at all.
+    for value, where in (
+        ("https://example.invalid/b/abc/a-board", "a URL pasted where a board id goes"),
+        ("some/board", "an id carrying a separator"),
+    ):
+        elsewhere = _example_configuration()
+        elsewhere.data["tracker"]["board"] = value
+        bind(elsewhere)
+        addressed = host()
+        reported = with_host(addressed, lambda: refused(lambda: read_item(1)))
+        check(
+            f"{where} is refused, naming the key, before any call",
+            reported == "tracker.board" and addressed.calls == [],
+            f"reported {reported!r} after {addressed.calls}",
+        )
+    bind(configuration)
+    for value in ("somebody/else", "../members/somebody"):
+        addressed = host()
+        reported = with_host(
+            addressed, lambda value=value: refused(lambda: assign(1, value))
+        )
+        check(
+            f"an assignee handle of `{value}` is refused, naming the operation",
+            reported == "tracker.operations.assign" and "me" not in addressed.calls,
+            f"reported {reported!r} after {addressed.calls}",
+        )
+
     # --- the credential, and the one surface a failure is read on -----------
     os.environ.pop(KEY_VARIABLE)
     bare_shell = host()

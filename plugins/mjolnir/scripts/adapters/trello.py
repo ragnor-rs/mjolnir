@@ -182,6 +182,27 @@ OWNED_ELSEWHERE = {
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 START_OF_DAY = "T00:00:00.000Z"
 
+# What a value this module puts into a request **path** may not carry. ⛔ One
+# grammar for the two of them -- the board the configuration states and the
+# member a role names -- because the failure is the same: one of these characters
+# addresses an endpoint other than the one the call means, and the host answers
+# **that** endpoint rather than refusing.
+#
+# ⛔ **A forbidden set and not an allowed one**, which is the narrower claim and
+# the only correct one. An allow-list of what an id may contain refuses the
+# `<placeholder>` forms the shipped examples carry -- measured on this
+# tracker's own example, whose board is a placeholder and which is this
+# implementation's suite fixture -- and it would be refusing for a reason it
+# could not state, since a bracket in a path segment is answered by the host
+# visibly. These four are the ones that are *not* answered visibly: three
+# delimiters that end the path segment, and the escape that can spell the first
+# of them.
+#
+# ⚠️ Every id the host itself hands back goes into a path too and is held to
+# none of this: those came out of an answer this module read, so holding them
+# would be checking the host against itself.
+REDIRECTS_THE_CALL = re.compile(r"[/?#%]")
+
 # A card's URL, and the number inside it. ⚠️ Measured on live cards: the slug is
 # percent-encoded wherever the title is not ASCII, so the number is read as the
 # digits that open the last path segment rather than by splitting on a dash --
@@ -286,7 +307,26 @@ def _board_id() -> str:
             "relative to its board, so this key is also what makes a number mean "
             "anything at all.",
         )
-    return str(board).strip()
+    board = str(board).strip()
+    # ⛔ Held to a shape, because this value is interpolated into a **path**. An
+    # id carrying a separator addresses a different endpoint than the one the
+    # call means -- `a/b` turns the board's own list read into something else
+    # entirely -- and the host would answer that other endpoint rather than
+    # refuse. ⚠️ The two forms this tracker hands out are both plain: the long
+    # id and the short link. A URL is the commonest thing to paste here and is
+    # refused by name, since it carries the separators and nothing else would
+    # say why the call went somewhere unexpected.
+    found = REDIRECTS_THE_CALL.search(board)
+    if found:
+        raise ConfigError(
+            "tracker.board",
+            f"carries `{found.group(0)}` at character {found.start()}, which would "
+            "address a different endpoint than the call means: this value is put "
+            "into a request path. Both forms this tracker hands out are plain -- "
+            "the long id and the short link out of the board's own URL -- so what "
+            "usually lands here instead is the whole URL.",
+        )
+    return board
 
 
 # --- the host, through one named seam ---------------------------------------
@@ -1201,7 +1241,21 @@ def assign(number: int, who: str = "@me") -> dict:
     ⚠️ `@me` is the code host's spelling and this tracker's is `me`, so the one
     value every role passes is translated here rather than at each call site.
     """
-    handle = "me" if who in ("@me", "me") else who.lstrip("@")
+    handle = "me" if who in ("@me", "me") else str(who).lstrip("@")
+    # ⛔ Held to the same shape the board is, and for the same reason: this goes
+    # into a request path. A handle carrying a separator reads a different
+    # endpoint, and the member it came back with would be assigned to the card as
+    # though it had been asked for.
+    found = REDIRECTS_THE_CALL.search(handle)
+    if found:
+        raise ConfigError(
+            "tracker.operations.assign",
+            f"was asked to assign `{who}`, which carries `{found.group(0)}` at "
+            f"character {found.start()} of the handle. A member is named by their "
+            "own handle and this value is put into a request path, so that would "
+            "read a different endpoint -- and whatever came back would be "
+            "assigned to the card as though it had been asked for.",
+        )
     member = _call("GET", f"/members/{handle}", fields="id,username")
     card = _card_for(number)
     if member.get("id") in (card.get("idMembers") or []):
