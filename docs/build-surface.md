@@ -53,6 +53,20 @@ thing in each, differing only in its glob. E is a second instance of the shape i
 language pair — a JVM build at the root and a Python package root whose suite the host workflow
 reaches by setting a working directory.
 
+**How many of the six carry more than one code repository: one.** Re-measured 2026-10-25, by
+walking each of the six trees five levels deep for a nested checkout with vendor directories
+excluded, which is a count the earlier pass had taken for A alone: A carries two, nested under a
+checkout that tracks no code of its own, and B, C, D, E and F carry one each. ⚠️ **The count does
+not weaken the shape it forces.** One project is enough, because it is the project where the whole
+loop has to run against two hosts, two disjoint check sets and two branch models, and the axis is
+cheap to state now and expensive to migrate onto later. What it decides is the **order**: the
+collection sits below the branch-model and `host.checks` axes rather than above them, and both of
+those have landed. ⚠️ A seventh project outside the six — not one of the migration targets, and so
+outside the survey — carries **four** nested repositories with no outer repository at all, which
+is the shape a single path cannot state even once. What answers all of it on the surface is
+[`schema § 1 → A project's code is not always one repository`](../plugins/mjolnir/config/schema.md#a-projects-code-is-not-always-one-repository),
+whose named roots carry the path, the host with its checks, and the branch model per repository.
+
 **The root A's linters run in is not a directory of any checkout.** Its lint targets and its local
 runner both reach their tools through a container exec, and the directory they pass is a path
 inside the image, named after the theme it holds; the container is identified by a name read out of

@@ -253,7 +253,7 @@ def _a_project(tmp: str, title=None) -> config.Config:
 
     with open(os.path.join(config.EXAMPLES, "github-issues.yaml"), encoding="utf-8") as handle:
         data = yaml.safe_load(handle)
-    data["roots"] = {"code": ".", "code_is_own_repo": False}
+    data["roots"] = {"code": "."}
     if title is None:
         data.get("host", {}).pop("pull_request_title", None)
     else:

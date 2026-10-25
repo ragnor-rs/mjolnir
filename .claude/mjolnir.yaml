@@ -32,8 +32,9 @@
 # What survives all three without exception: nothing under a carrier root — skills, commands or
 # hooks — carries a value, and no OTHER project is ever named.
 roots:
+  # One code repository, and the skills root is it — so the single form, which § 1 keeps as the
+  # form a project with one repository writes rather than a shape it migrates off.
   code: "."
-  code_is_own_repo: false
 
 host:
   kind: github

@@ -254,6 +254,15 @@ the three that are obvious. The measurements that forced each to be independent:
    notes and never touches the code; a host CLI call inheriting the working directory addresses
    the wrong repository. Both fail quietly, having done something plausible first.
 
+   ⚠️ **This survey read that root as one subdirectory, and the build survey counted two.** The
+   same project carries two such repositories, each with its own host, its own checks and its own
+   verdict set, which makes the grain of this axis per repository rather than per project —
+   [`build-surface.md § A verdict is a command, a root, and a condition`](build-surface.md#a-verdict-is-a-command-a-root-and-a-condition)
+   has the measurement and
+   [`schema.md § 1 → A project's code is not always one repository`](../plugins/mjolnir/config/schema.md#a-projects-code-is-not-always-one-repository)
+   is the shape it forced. Nothing above is overturned by it: the root is still configured rather
+   than inferred, and still stated in every call. What changes is how many of them there are.
+
    **The same section's other root was measured here rather than in the survey, and it is the one
    root the surface cannot carry.** The shared reader resolves `.claude/mjolnir.yaml` against the
    skills root, so that root is needed before any configuration can be read. Every in-band

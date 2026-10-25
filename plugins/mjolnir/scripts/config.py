@@ -36,6 +36,13 @@ Three things it deliberately does not do:
     directory or from `git rev-parse` -- both would do something plausible first
     and be wrong wherever the two roots differ.
 
+    ⚠️ And **it picks no root** where § 1's collection states several. One view
+    per root is resolved and validated as a configuration of one repository; a
+    project-level read of a fact some root states for itself is refused with the
+    roots named, rather than answered from the first of them. Which root a work
+    item belongs to is stated nowhere on the surface yet, so the key reaching
+    `root()` comes from a person or an invocation.
+
     ⚠️ The **skills root** is the one root no configuration can state, because it
     is where the configuration is found. The surface rules it the directory the
     role was invoked in, which is this reader's default, and `--skills-root` is
@@ -476,6 +483,29 @@ def surface_facts(surface_text: str) -> dict:
                 "set never fires, so the key would be required nowhere.",
             )
 
+    # § 1's collection: which blocks an entry of `roots.code` carries, read off
+    # the entry the surface shows rather than listed here. A block added to that
+    # fence is resolved per root without this module changing, which is the
+    # division every marker above already has -- and `path` is dropped because it
+    # is the entry's own key rather than one of the project's blocks it narrows.
+    #
+    # ⚠️ Deliberately **not** in the `missing` refusal above, unlike every marker
+    # class there. A surface that showed no entry would make this empty, and the
+    # failure that follows is closed rather than silent: `_code_roots` refuses an
+    # entry carrying a block this set does not name, so a collection is rejected
+    # with the key named instead of having its per-root facts quietly ignored. A
+    # refusal on the whole surface would instead make a work tree whose branch
+    # predates the fence unable to read its own configuration, which is the cost
+    # § 1's `surface_for` rule exists to avoid.
+    per_root = sorted(
+        {
+            parts[3]
+            for path in declared
+            if len(parts := path.split(".")) == 4 and parts[:2] == ["roots", "code"]
+        }
+        - {"path"}
+    )
+
     return {
         "defaults": defaults,
         "enums": enums,
@@ -483,6 +513,7 @@ def surface_facts(surface_text: str) -> dict:
         "required_when": required_when,
         "absent_reason": absent_reason,
         "procedure": procedure,
+        "per_root": per_root,
     }
 
 
@@ -618,14 +649,126 @@ def _set_default(data: dict, path: str, value) -> None:
     node.setdefault(parts[-1], value)
 
 
+# The key § 1 gives the one root a project writing the single form has, and what
+# a report names that root by. ⛔ Taken from the last segment of the key that
+# states the path rather than written out again: the surface's prose names it,
+# and a second spelling here is a copy of that one free to disagree with it. ⚠️
+# Not derived from the repository slug either, which would be the inference § 1
+# forbids one step over.
+ONE_ROOT = "roots.code".rpartition(".")[2]
+
+
+def _merged(project: dict | None, entry: dict | None) -> dict | None:
+    """One of § 1's blocks for one root: the entry's keys over the project's.
+
+    Key by key and one level deep, which is the grain § 1 states: what an entry
+    says is that root's, what it does not say is the project's. ⛔ Not a deep
+    merge -- `checks` is a list and a root's check set is disjoint from the
+    other's, so merging *into* a list would produce a set neither repository
+    runs.
+    """
+    if entry is None:
+        return project
+    if project is None:
+        return entry
+    return {**project, **entry}
+
+
+def _code_roots(data: dict, facts: dict) -> tuple[dict[str, dict], bool]:
+    """§ 1's roots: (key -> {path, <block>...} resolved, whether it is the collection).
+
+    The single form resolves to one entry under `ONE_ROOT`, carrying the
+    project's own blocks, so everything downstream reads one shape and the two
+    forms differ in this function alone.
+    """
+    blocks = tuple(facts.get("per_root") or ())
+    stated = _get(data, "roots.code")
+    if not isinstance(stated, dict):
+        # The single form, the absent key included: whether `roots.code` is
+        # written at all is the surface's `# required` marker, answered in
+        # `validate` against this view rather than second-guessed here.
+        return {ONE_ROOT: {"path": stated, **{b: _get(data, b) for b in blocks}}}, False
+
+    if not stated:
+        raise ConfigError(
+            "roots.code",
+            "is an empty block of named roots. A project states the path, or one "
+            "entry per repository; a block with nothing in it states neither, and "
+            "every root a role would address is missing (§ 1).",
+        )
+
+    roots: dict[str, dict] = {}
+    for key, entry in stated.items():
+        at = f"roots.code.{key}"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                at,
+                f"is {type(entry).__name__}, and a named root is a block carrying "
+                "`path` and the blocks that root narrows (§ 1).",
+            )
+        unknown = sorted(set(entry) - {"path", *blocks})
+        if unknown:
+            raise ConfigError(
+                f"{at}.{unknown[0]}",
+                "is not a key a named root carries. The surface shows an entry "
+                f"with `path` and {' and '.join(f'`{b}`' for b in blocks) or 'nothing else'}"
+                ", and a key beside those would be a per-root fact nothing reads (§ 1).",
+            )
+        if not entry.get("path"):
+            raise ConfigError(
+                f"{at}.path",
+                "required: a named root states the path every git and gh call "
+                "addresses for it, read relative to the skills root like the "
+                "single form's own value (§ 1).",
+            )
+        roots[key] = {
+            "path": entry["path"],
+            **{b: _merged(_get(data, b), entry.get(b)) for b in blocks},
+        }
+
+    # ⛔ The two keys no two roots may share, refused here rather than left to
+    # produce a plausible answer later. The slug is the sharper of the two: it is
+    # reached either by writing one twice or by leaving it off an entry, so that
+    # the project's own block answers for both roots -- which is a second root
+    # addressed as the first, silently, by every call that follows.
+    for field, where in (("path", "path"), ("repo", "host.repo")):
+        seen: dict[object, str] = {}
+        for key, root in roots.items():
+            block = root if field == "path" else (root.get("host") or {})
+            value = block.get(field) if isinstance(block, dict) else None
+            if value is None:
+                continue
+            first = seen.setdefault(value, key)
+            if first != key:
+                raise ConfigError(
+                    f"roots.code.{key}.{where}",
+                    f"resolves to {value!r}, which `roots.code.{first}` resolves "
+                    "to as well. Two names for one repository is what this facet "
+                    "exists against: state it per root, or write one root (§ 1).",
+                )
+    return roots, True
+
+
 class Config:
     """A project's facts, resolved. Read through the accessors, not the dict."""
 
     def __init__(self, data: dict, skills_root: str, facts: dict, source: str | None = None,
-                 surface: str | None = None):
+                 surface: str | None = None, *, root_key: str | None = None,
+                 views: "dict[str, Config] | None" = None,
+                 overridden: set[str] | None = None):
         self.data = data
         self.skills_root = skills_root
         self.facts = facts
+        # Which of § 1's roots this object answers for, or None where it answers
+        # for the project. A view's `data` carries that root's path and its
+        # resolved blocks, so every accessor below reads one root's facts
+        # without knowing it is doing so -- which is what keeps a consumer
+        # written against one repository correct against a project with two.
+        self.root_key = root_key
+        self.views: dict[str, Config] = views if views is not None else {}
+        # The paths some entry states for itself, so a project-level read of one
+        # is refused rather than answered from the block it narrows (§ 1).
+        self.overridden = overridden or set()
         # The file this came from, where it came from one. `None` for a
         # configuration handed over as text, which is the self-test loading the
         # examples -- reporting a path that was never opened would be the
@@ -667,8 +810,41 @@ class Config:
         return os.path.normpath(os.path.join(self.skills_root, self.get("roots.code")))
 
     @property
-    def code_is_own_repo(self) -> bool:
-        return bool(self.get("roots.code_is_own_repo"))
+    def root_keys(self) -> list[str]:
+        """The names § 1's roots are addressed by, in the order stated."""
+        return list(self.views)
+
+    def root(self, key: str) -> "Config":
+        """One of § 1's roots by name, or a stop naming the ones there are.
+
+        ⛔ The stop is § 1's: a role handed a root this project does not carry
+        reports it rather than falling back to whichever root is first. Which
+        root a given work item belongs to is #57's question and is stated
+        nowhere yet, so the key reaching here comes from a person or from an
+        invocation.
+        """
+        if key in self.views:
+            return self.views[key]
+        raise ConfigError(
+            "roots.code",
+            f"carries no root named {key!r}. It carries "
+            f"{', '.join(repr(k) for k in self.views) or 'none'} (§ 1).",
+        )
+
+    @property
+    def only_root(self) -> "Config":
+        """This project's one root, or a stop naming the several it has."""
+        if self.root_key is not None:
+            return self
+        if len(self.views) == 1:
+            return next(iter(self.views.values()))
+        raise ConfigError(
+            "roots.code",
+            f"carries {len(self.views)} named roots -- "
+            f"{', '.join(repr(k) for k in self.views)} -- and this read wants one. "
+            "Name the root (§ 1); a role with no key for it stops rather than "
+            "taking the first.",
+        )
 
     @property
     def tracker_kind(self) -> str:
@@ -678,7 +854,35 @@ class Config:
     def has_tracker(self) -> bool:
         return self.tracker_kind != "none"
 
+    def per_root(self, path: str) -> list[str]:
+        """The per-root facts a project-level read of `path` would cross.
+
+        Empty for a project whose code is one repository written as one path,
+        which is why every consumer written against that shape reads on
+        unchanged. Non-empty only where some entry of § 1's collection states
+        the fact itself -- `host.kind` stated once above two roots is still one
+        answer, and is not refused.
+        """
+        if self.root_key is not None:
+            return []
+        return sorted(
+            crossed
+            for crossed in self.overridden
+            if path == crossed
+            or path.startswith(f"{crossed}.")
+            or crossed.startswith(f"{path}.")
+        )
+
     def get(self, path: str, default=None):
+        crossed = self.per_root(path)
+        if crossed:
+            raise ConfigError(
+                path,
+                f"is stated per code root here ({', '.join(crossed)}), and this "
+                f"read is the project's. {len(self.views)} roots carry it -- "
+                f"{', '.join(repr(k) for k in self.views)} -- so there is no one "
+                "answer to give and the first of them is not it (§ 1).",
+            )
         return _get(self.data, path, default)
 
     def mirrors(self) -> list[dict]:
@@ -691,7 +895,13 @@ class Config:
         absence and not an empty answer -- what that means is `unavailable()`'s
         to say, and `host_checks.py` answers *no answer* from it rather than
         *not covered*.
+
+        ⚠️ Read per root where § 1's collection states the checks per root, by
+        the refusal `get` carries: one flat list across two repositories would
+        be a single answer made of two disjoint check sets, which is the shape
+        that grain exists against.
         """
+        self.get("host.checks")
         return mirrored_runs(self.data)
 
     def host_runs(self) -> list[dict]:
@@ -704,6 +914,7 @@ class Config:
         host's own definitions has to see, and which a per-command view
         legitimately drops.
         """
+        self.get("host.checks")
         return host_runs(self.data)
 
     def runner(self) -> dict | None:
@@ -717,6 +928,7 @@ class Config:
         default answers, and what that default is lives where the per-kind
         template does rather than on this surface.
         """
+        self.get("host.runner")
         return host_runner(self.data)
 
     def pull_request_title(self) -> dict | None:
@@ -729,7 +941,23 @@ class Config:
         enforce and none for a role to render, which is a configuration rather
         than a gap.
         """
+        self.get("host.pull_request_title")
         return host_pull_request_title(self.data)
+
+    def _report_roots(self) -> "list[tuple[str, Config]]":
+        """(what to prefix a line with, the root to read it from).
+
+        ⛔ Every arm of the report below that reads a per-root fact reads it
+        through this, because an absence is the root's rather than the
+        project's: a project with two code repositories whose first runs
+        workflows and whose second runs none has one of each answer, and a
+        single line would state whichever came first. Where there is one root
+        the prefix is empty and the line is exactly the line it was before § 1
+        carried a collection at all.
+        """
+        if len(self.views) <= 1:
+            return [("", self.only_root)]
+        return [(f"`{key}`: ", view) for key, view in self.views.items()]
 
     def unavailable(self) -> list[str]:
         """What this configuration cannot support, and why.
@@ -738,6 +966,7 @@ class Config:
         decision or a legitimate absence, never a broken install.
         """
         out = []
+        roots = self._report_roots()
         if not self.has_tracker:
             out.append(
                 "No tracker is configured (`tracker.kind: none`). Branching, the "
@@ -810,12 +1039,13 @@ class Config:
                 "invoked with no item asks for one by number rather than "
                 f"choosing: {' '.join(str(reason).split())}"
             )
-        if not self.get("host.checks"):
-            out.append(
-                "The host runs no checks, so every verdict is local and `done`'s "
-                "`gate_green` reads `checks_local` for its source (§ 17). An "
-                "empty check list reads as no answer, never as green."
-            )
+        for where, root in roots:
+            if not root.get("host.checks"):
+                out.append(
+                    f"{where}The host runs no checks, so every verdict is local and "
+                    "`done`'s `gate_green` reads `checks_local` for its source "
+                    "(§ 17). An empty check list reads as no answer, never as green."
+                )
         # § 2. The runner statement's absence, reported for the reason § 15's is:
         # a role or an installer that would have asked where this project's jobs
         # run learns that the project declared the host kind's own default,
@@ -823,27 +1053,29 @@ class Config:
         # absence and never as a label -- the default is the host's, carried
         # nowhere on this surface, so naming one here would be this reader
         # inventing the fact the facet exists to have stated.
-        if self.get("host.runner") is None:
-            out.append(
-                "No runner is stated (`host.runner` is absent), so every job of "
-                "this project's workflows runs on the host kind's own default, "
-                "every job's budget is a run budget rather than a queue budget, "
-                "and nothing holds a workflow file to a label, a budget or a "
-                "supersession group (§ 2)."
-            )
+        for where, root in roots:
+            if root.get("host.runner") is None:
+                out.append(
+                    f"{where}No runner is stated (`host.runner` is absent), so every "
+                    "job of this project's workflows runs on the host kind's own "
+                    "default, every job's budget is a run budget rather than a queue "
+                    "budget, and nothing holds a workflow file to a label, a budget "
+                    "or a supersession group (§ 2)."
+                )
         # § 2. The title form's absence, reported for the same reason: the two
         # readers of that facet are a role that writes a title and a step that
         # installs the gate refusing one, and each of them would otherwise meet
         # a key that is not there. ⛔ Reported as the absence of a *rule* and
         # never as a permission -- a reader answering *any title is allowed*
         # would be stating a rule the project did not write.
-        if self.get("host.pull_request_title") is None:
-            out.append(
-                "No title form is stated (`host.pull_request_title` is absent), so "
-                "a pull request title here opens with no work-item reference: the "
-                "finishing role renders none, no title gate is installed, and "
-                "nothing holds a title to anything (§ 2)."
-            )
+        for where, root in roots:
+            if root.get("host.pull_request_title") is None:
+                out.append(
+                    f"{where}No title form is stated (`host.pull_request_title` is "
+                    "absent), so a pull request title here opens with no work-item "
+                    "reference: the finishing role renders none, no title gate is "
+                    "installed, and nothing holds a title to anything (§ 2)."
+                )
         # § 17, and the complement of the arm above: the two facets together are
         # every verdict there is, so an empty list here is reported for the
         # reason an empty `host.checks` is. ⛔ Where both are empty the project
@@ -862,13 +1094,14 @@ class Config:
         # checks has a guard that can refuse, which is a behaviour rather than an
         # absence -- and `never_guard: []` is not reported either, that being the
         # ordinary configuration rather than something a role cannot do.
-        if not self.get("host.checks"):
-            out.append(
-                "No command is guarded against a run the host has already made "
-                "(`host.checks: []`, § 18), so that guard matches nothing here. "
-                "A configuration rather than a partial install: there is no "
-                "mirrored command for a local run to duplicate."
-            )
+        for where, root in roots:
+            if not root.get("host.checks"):
+                out.append(
+                    f"{where}No command is guarded against a run the host has already "
+                    "made (`host.checks: []`, § 18), so that guard matches nothing "
+                    "here. A configuration rather than a partial install: there is no "
+                    "mirrored command for a local run to duplicate."
+                )
         # § 19, and the stated absence of a list rather than of a carrier: the
         # guard is installed in every project the install reaches, so what `[]`
         # buys is the difference between a project that decided no command of its
@@ -950,15 +1183,29 @@ class Config:
         return out
 
     def to_dict(self) -> dict:
-        return {
+        out = {
             "skills_root": os.path.abspath(self.skills_root),
             "config_path": self.config_path,
             "surface_path": self.surface_path,
-            "code_root": os.path.abspath(self.code_root),
-            "code_is_own_repo": self.code_is_own_repo,
-            "config": self.data,
-            "unavailable": self.unavailable(),
         }
+        # § 1 has a role name the repository its configuration addresses before
+        # it acts, so where there are several the report names each of them with
+        # the root it belongs to. ⛔ `code_root` is emitted only where there is
+        # one, rather than emitted as the first of several: a reader of this
+        # output has no way to tell a single root from a silent pick, and that
+        # key is the one every role's own report is written from.
+        if len(self.views) == 1:
+            out["code_root"] = os.path.abspath(self.only_root.code_root)
+        out["code_roots"] = {
+            key: {
+                "code_root": os.path.abspath(view.code_root),
+                "repo": view.get("host.repo"),
+            }
+            for key, view in self.views.items()
+        }
+        out["config"] = self.data
+        out["unavailable"] = self.unavailable()
+        return out
 
 
 # --- validation ------------------------------------------------------------
@@ -999,6 +1246,14 @@ RETIRED = [
         "the skills root is the directory the role was invoked in, which no "
         "configuration can state -- it is where this file is found. See § 1, "
         "`The skills root is where the role runs`. Delete the key",
+    ),
+    (
+        "roots.code_is_own_repo",
+        "whether a code root is a repository of its own is established at the "
+        "root where a rule wants it -- `rev-parse --show-toplevel` there, with "
+        "`.gitmodules` separating a submodule from an ignored nested repository "
+        "-- and the two rules keyed to it are addressed to a person. No script "
+        "and no role ever read the key. See § 1. Delete the key",
     ),
     (
         "version",
@@ -3063,18 +3318,79 @@ def _resolve(
     source: str | None = None,
     surface: str | None = None,
 ) -> Config:
-    for path, value in facts["defaults"].items():
-        _set_default(data, path, value)
-    validate(data, facts)
+    roots, collection = _code_roots(data, facts)
 
-    config = Config(data, skills_root, facts, source, surface)
-    if check_paths and not os.path.isdir(config.code_root):
-        raise ConfigError(
-            "roots.code",
-            f"names {config.code_root!r}, which does not exist. A skill stops "
-            "here rather than proceeding -- a fresh clone of an outer "
-            "repository does not contain the inner one.",
+    # ⛔ One view per root, each resolved and validated as a configuration of one
+    # repository -- so every rule below is enforced per root without being
+    # written twice, and the two forms § 1 states differ in `_code_roots` alone.
+    # ⚠️ The single form's view shares this dict rather than copying it: a
+    # project with one code repository is then not merely validated the same way
+    # but reading the same object, which is what makes *unchanged* a property
+    # rather than a claim.
+    views: dict[str, Config] = {}
+    # ⛔ Complete before the first view is validated, rather than accumulated as
+    # the loop runs. It is what decides whether a refusal names the entry a
+    # person would write the key in, and a set still filling up would answer
+    # that differently for the first root than for the last -- the first one's
+    # missing slug reported at the project's path and the second one's at its
+    # own, for one defect written twice.
+    overridden: set[str] = {"roots.code"} if collection else set()
+    if collection:
+        for key in roots:
+            for name in facts.get("per_root") or ():
+                entry = _get(data, f"roots.code.{key}.{name}") or {}
+                overridden.update(f"{name}.{stated}" for stated in entry)
+
+    for key, root in roots.items():
+        if collection:
+            view = dict(data)
+            view["roots"] = {**(data.get("roots") or {}), "code": root["path"]}
+            for name, block in root.items():
+                if name != "path":
+                    view[name] = block
+        else:
+            view = data
+        for path, value in facts["defaults"].items():
+            _set_default(view, path, value)
+        try:
+            validate(view, facts)
+        except ConfigError as error:
+            if not collection:
+                raise
+            # The key a view refuses on is that root's, so the refusal names
+            # where a person would write it rather than a path the file does not
+            # carry. ⚠️ A key no root states for itself keeps its own path: the
+            # project's own block is where it is written and where it is missing
+            # from, so rewriting that one would send a reader to an entry that
+            # was never its home.
+            at = error.key
+            if at == "roots.code":
+                at = f"roots.code.{key}.path"
+            elif any(
+                at == stated or at.startswith(f"{stated}.") for stated in overridden
+            ):
+                at = f"roots.code.{key}.{at}"
+            raise ConfigError(at, str(error).partition(": ")[2]) from None
+        views[key] = Config(
+            view, skills_root, facts, source, surface, root_key=key
         )
+        # A view is the whole of its own answer, so it reports itself as the one
+        # root there is. ⛔ Without this a root resolved by name reports no root
+        # at all, which is the one output § 1 forbids: a role names the
+        # repository its configuration addresses before it acts.
+        views[key].views = {key: views[key]}
+
+    config = Config(
+        data, skills_root, facts, source, surface, views=views, overridden=overridden
+    )
+    for key, view in views.items():
+        if check_paths and not os.path.isdir(view.code_root):
+            raise ConfigError(
+                "roots.code" if not collection else f"roots.code.{key}.path",
+                f"names {view.code_root!r}, which does not exist. A skill stops "
+                "here rather than proceeding -- a fresh clone of an outer "
+                "repository does not contain the inner one.",
+            )
     return config
 
 
@@ -3141,6 +3457,17 @@ MARKED_REQUIRED = [
     "work_item.template.carrier",
     "work_item.type.carrier",
 ]
+
+# The blocks § 1 shows a named root carrying, stated here for the reason the list
+# above is: the reader derives them from the entry the surface shows, so an
+# assertion that derived them too would assert whatever the surface happened to
+# say. ⛔ `path` is not among them -- it is the entry's own key rather than a
+# block of the project's that the entry narrows. ⚠️ What this comparison catches
+# is the surface's entry losing a block, which empties the derivation; what it
+# cannot catch is the derivation replaced by a literal of these same contents,
+# and what catches *that* is the arm asserting the shipped collection is refused
+# once the derived set is emptied.
+PER_ROOT_BLOCKS = ["branch_model", "host"]
 
 # The conditional requirements, stated here for the reason the list above is:
 # derived assertions would assert whatever the surface happened to say. Each entry
@@ -3559,6 +3886,166 @@ def self_test() -> int:
         missing_root == "roots.code",
         f"reported {missing_root!r}",
     )
+
+    # § 1's named roots, held against the collection this repository ships.
+    print("\n§ 1's named roots, and the one answer a project-level read does not have:")
+    check(
+        "the surface shows exactly the blocks a named root carries that this test states",
+        set(surface["per_root"]) == set(PER_ROOT_BLOCKS),
+        f"the surface shows {sorted(set(surface['per_root']) - set(PER_ROOT_BLOCKS))} "
+        f"that this test does not, and this test states "
+        f"{sorted(set(PER_ROOT_BLOCKS) - set(surface['per_root']))} that the surface does not",
+    )
+    keys = _collection_keys()
+    check(
+        "an example carries named roots, so the shape an adopter copies is the one held",
+        len(keys) > 1,
+        f"the examples carry {keys!r}",
+    )
+    if len(keys) > 1:
+        first, second = keys[0], keys[1]
+        with open(_examples()[0], encoding="utf-8") as handle:
+            single = load_text(handle.read(), EXAMPLES)
+        several = _resolve(_a_collection_example(), EXAMPLES, surface, False)
+
+        # ⛔ The direction that matters, and the reason this facet is not simply
+        # a block a role loops over: a project-level read of a fact stated per
+        # root has no answer, and the first root's answer is available and
+        # wrong. A role is handed the stop instead.
+        for path in ("roots.code", "host.repo", "host.checks"):
+            refused = None
+            try:
+                several.get(path)
+            except ConfigError as error:
+                refused = error.key
+            check(
+                f"a project-level read of `{path}` is refused where a root states it",
+                refused == path,
+                f"reported {refused!r}",
+            )
+            check(
+                "and the refusal names the roots that carry it, not a count alone",
+                all(repr(k) in str(_project_read(several, path)) for k in keys),
+                str(_project_read(several, path)),
+            )
+        # ⚠️ And the complement, which is what keeps the refusal from being a
+        # project with two roots having no readable configuration at all: a fact
+        # no root states for itself is one answer and is answered.
+        shared = several.get("host.kind")
+        check(
+            "a fact no root states for itself is still answered at the project level",
+            shared is not None,
+            f"reported {shared!r}",
+        )
+        check(
+            "the mirrored-command view is refused for the same reason the key is",
+            _project_read(several, "mirrors") is not None,
+            "mirrors() answered across two repositories' disjoint check sets",
+        )
+        # Each root's own answers, which is what the refusal sends a role to.
+        per_root_repo = {k: several.root(k).get("host.repo") for k in keys}
+        check(
+            "each root answers with its own slug",
+            len(set(per_root_repo.values())) == len(keys)
+            and all(per_root_repo.values()),
+            str(per_root_repo),
+        )
+        differ = {k: several.root(k).get("branch_model.kind") for k in keys}
+        check(
+            "and with its own branch model, which is the axis the measurement forced",
+            len(set(differ.values())) > 1,
+            str(differ),
+        )
+        inherited = {k: several.root(k).get("host.landing.method") for k in keys}
+        check(
+            "a key an entry does not state is read from the project's own block",
+            len(set(inherited.values())) == 1 and all(inherited.values()),
+            str(inherited),
+        )
+        reported = several.to_dict()
+        check(
+            "the resolution reports every root with the repository it addresses",
+            set(reported["code_roots"]) == set(keys)
+            and all(r["repo"] for r in reported["code_roots"].values()),
+            str(reported["code_roots"]),
+        )
+        check(
+            "and reports no single `code_root`, which would be a silent pick",
+            "code_root" not in reported,
+            str(sorted(reported)),
+        )
+        named = several.root(keys[0]).to_dict()
+        check(
+            "a root resolved by name reports itself as the one root there is",
+            named.get("code_root") and set(named["code_roots"]) == {keys[0]},
+            str(sorted(named)),
+        )
+        absent = None
+        try:
+            several.root("a-root-no-project-carries")
+        except ConfigError as error:
+            absent = str(error)
+        check(
+            "a root this project does not carry stops, naming the ones it does",
+            absent is not None and all(repr(k) in absent for k in keys),
+            str(absent),
+        )
+
+        # ⛔ The single form, asserted rather than assumed: it is not merely
+        # validated the same way, it reads the same dict, which is what makes
+        # *a project with one code repository is unchanged* a property.
+        check(
+            "the single form's one root reads the project's own dict",
+            single.only_root.data is single.data and single.per_root("host.repo") == [],
+            f"{single.root_keys!r}, crossing {single.per_root('host.repo')!r}",
+        )
+        check(
+            "and is reported under the key § 1 gives it",
+            single.root_keys == [ONE_ROOT],
+            str(single.root_keys),
+        )
+
+        for label, mutate, expected in (
+            ("a block of named roots with nothing in it",
+             lambda roots: roots.clear(), "roots.code"),
+            ("a named root that is not a block",
+             lambda roots: roots.__setitem__(first, "a-path"), f"roots.code.{first}"),
+            ("a named root stating no path",
+             lambda roots: roots[first].pop("path"), f"roots.code.{first}.path"),
+            ("a named root carrying a block the surface does not show",
+             lambda roots: roots[first].__setitem__("deploy", {}),
+             f"roots.code.{first}.deploy"),
+            ("two roots resolving to one slug",
+             lambda roots: roots[second]["host"].__setitem__(
+                 "repo", roots[first]["host"]["repo"]),
+             f"roots.code.{second}.host.repo"),
+            ("two roots naming one path",
+             lambda roots: roots[second].__setitem__("path", roots[first]["path"]),
+             f"roots.code.{second}.path"),
+            ("a root whose own block drops a required key",
+             lambda roots: roots[first]["host"].pop("repo"),
+             f"roots.code.{first}.host.repo"),
+        ):
+            broken = _collection_broken(mutate)
+            check(
+                f"{label} is refused, with the root's own key named",
+                broken == expected,
+                f"reported {broken!r}, expected {expected!r}",
+            )
+        # ⛔ And the per-root blocks are read off the surface rather than listed
+        # in this module: with the derivation emptied, the shipped collection's
+        # own `host` is refused as a block a named root does not carry. ⚠️ What
+        # this arm does not catch is the derivation replaced by a literal of the
+        # same contents -- the set comparison above is that direction, reddening
+        # the moment the surface's entry stops showing a block.
+        blind = dict(surface)
+        blind["per_root"] = []
+        unread = _refused(_a_collection_example(), facts=blind)
+        check(
+            "the blocks a named root carries are read from the surface, not from here",
+            unread == f"roots.code.{first}.host",
+            f"reported {unread!r}",
+        )
 
     # § 1's two halves, in both directions. A retired key must be refused where a
     # project still writes it, *and* must be gone from the surface -- a key this
@@ -5421,6 +5908,50 @@ def _refuses_missing_code_root() -> str | None:
     return _refused(data, check_paths=True)
 
 
+# § 1's named roots. ⛔ The fixtures below are the **shipped** collection rather
+# than a shape written here: a hand-built one would be a form this repository
+# ships nowhere, and what the arms are for is that the form an adopter copies is
+# the form that is held. Found rather than named, for the reason
+# `_a_valid_example` is -- a fixture this code pointed at one tracker would be
+# the toolkit naming a tracker.
+def _a_collection_example() -> dict | None:
+    for path in _examples():
+        with open(path, encoding="utf-8") as handle:
+            data = _load_yaml(handle.read(), CONFIG_PATH)
+        if isinstance(data, dict) and isinstance(_get(data, "roots.code"), dict):
+            return data
+    return None
+
+
+def _collection_keys() -> list[str]:
+    data = _a_collection_example()
+    return list(_get(data, "roots.code") or {}) if data else []
+
+
+def _collection_broken(mutate) -> str | None:
+    """The key a collection with one plant in it refuses on."""
+    data = _a_collection_example()
+    mutate(_get(data, "roots.code"))
+    return _refused(data)
+
+
+def _project_read(configuration: Config, path: str) -> str | None:
+    """The message a project-level read of a per-root fact is refused with.
+
+    `None` where the read answered, which is what the complement arm asserts.
+    `mirrors` names the accessor rather than a key: the two reach one refusal,
+    the accessor asking for the key before it walks the facet.
+    """
+    try:
+        if path == "mirrors":
+            configuration.mirrors()
+        else:
+            configuration.get(path)
+    except ConfigError as error:
+        return str(error)
+    return None
+
+
 def _a_valid_example_with(path: str, value) -> dict:
     """A complete example with one key written back into it."""
     return _with(_a_valid_example(), path, value)
@@ -5489,6 +6020,12 @@ def main(argv: list[str]) -> int:
         help="resolve without testing that the configured code root exists",
     )
     parser.add_argument(
+        "--root",
+        help="the named code root to resolve, where § 1's collection carries "
+        "several. Omitted, the whole configuration is reported and a fact "
+        "stated per root is reported per root",
+    )
+    parser.add_argument(
         "--self-test",
         action="store_true",
         help="hold this reader to the surface and the examples",
@@ -5501,6 +6038,8 @@ def main(argv: list[str]) -> int:
 
     try:
         config = load(args.skills_root, check_paths=not args.no_check_paths)
+        if args.root:
+            config = config.root(args.root)
     except ConfigError as error:
         print(str(error), file=sys.stderr)
         return 1

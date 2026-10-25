@@ -3,7 +3,6 @@
 # Example data — not any project's facts.
 roots:
   code: "."
-  code_is_own_repo: false
 
 host:
   kind: github
