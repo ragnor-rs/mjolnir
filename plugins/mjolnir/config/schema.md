@@ -1969,6 +1969,70 @@ exit event does anything.** ⚠️ **That is the common case**, and a project in
 that can refuse a call rather than a partial install — so a guard installed and silent and a guard
 absent are the same thing here, as they are for the project that states no configuration at all.
 
+### A branch that has fallen behind its base, and the two points it is reported at
+
+⛔ **A branch behind its base is reported and never refused, and the two points it is answered at
+are what decide that rather than a preference.** Falling behind is a state somebody else's merge
+produced, so there is no call in hand to hold: both points are exit events — the turn ending, and a
+merge that has **already run** — and neither carries a decision a guard could make.
+⚠️ **So [§ Which direction a guard fails in](#which-direction-a-guard-fails-in) does not settle
+this one.** Whether an act can be undone decides which direction an unestablished record fails in;
+here there is no act, and what an unestablished reading costs is a report naming what it could not
+read.
+
+⛔ **It answers at the turn's end and after a merge, and at no other exit.** A session ending is a
+report nobody is left to act on, and a subagent stopping is not this tree's turn ending — it would
+repeat one answer once per subagent in a turn that has not finished. ⚠️ **Both are events a release
+arm is already registered on**, which makes this an arm beside the ones above rather than a carrier
+of its own, by the ordering argument
+[§ A lease](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it) makes for the
+third refusal.
+
+⛔ **Three answers, and only the middle one carries a figure**: **level**, **behind** and
+**unestablished**. ⚠️ Each names what would move it — nothing, the base brought in, or the read
+that failed — which a report owes for the same reason a refusal does.
+
+⛔ **What *behind* means is the base's commits whose patch this branch does not carry, and ancestry
+is read for it nowhere.** Ancestry is trustworthy in one direction only, by
+[§ 10](#the-claim-on-a-work-item)'s own reading of it: a true answer proves content landed and a
+false one proves nothing, the base having been rebased and its hashes rewritten. ⛔ **A count of the
+base's commits is the same mistake reached by arithmetic** — measured on a rewritten base, where
+ancestry and a plain count each report a branch carrying every patch the base has as behind by as
+many commits as were rewritten. ⚠️ **A merge commit carries no patch of its own and is not
+counted**, so the figure is a floor rather than a total; what it is never allowed to be is a
+*behind* a rewrite produced.
+
+⛔ **The base's head is read from the remote and never from this tree's own view of it.** One of the
+two points is a merge that has just moved the base, so the tracking ref is stale exactly where the
+answer is wanted. ⛔ **A head the remote reports and this tree does not hold is *behind* with the
+figure unestablished**, naming the fetch that would establish it — never *level*, which is
+[§ 2](#2-code-host)'s absence-of-signal rule arriving one ref over.
+
+⛔ **A project that publishes no base is silent, and a base that could not be reached is
+unestablished.** That is this section's own absent-against-unreadable split one subsection over: a
+code root with no remote has no base to fall behind, by
+[§ 10](#the-claim-on-a-work-item)'s derived local-only case, and a report on every turn that there
+is nothing to report is how a guard comes to be turned off. A remote that does not answer is the
+other case and says which half it could not reach.
+
+⛔ **The answer names the tree it was taken in.** Trees are one per item by
+[§ 10](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it) and a session may stand in
+any of them, so an answer about a branch with no tree named is an answer whose subject a reader has
+to guess.
+
+⛔ **No key states a figure the count is held against, and the boundary test is why.** *N commits
+behind* is a judgement rather than a fact a role reads to decide what to do next
+([§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls)), and a
+project that could set the line under which nothing is said would have absence of signal back as an
+answer. ⚠️ **What is stated is the figure itself**, and what reads it is the person the report is
+addressed to.
+
+⚠️ **One limit, measured rather than derived: a branch whose own change has just landed as a squash
+reads as behind by one.** The squash is a patch no commit of the branch matches, so the figure is
+true of the branch's commits while the content is already in both. The remedy is the same either
+way — the base brought in, or the tree released — which is why it is stated here rather than
+answered with a special case.
+
 ## 8. Language, register, audience — per artifact, not per project
 
 ```yaml
