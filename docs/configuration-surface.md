@@ -27,10 +27,12 @@ role.
 the date had none, so the role that owns both could state where one of them goes and not the other;
 [`schema.md § 4.5`](../plugins/mjolnir/config/schema.md#45-due-date) is that carrier, and it is
 deliberately narrower than the copy it was taken from. It says where a date is written and not what
-the date is, because the one derivation measured runs from a priority the surface does not yet
-carry — a facet that absorbed the arithmetic would have generalised a four-row table no second
-project was found to have, and settled a question
-[#46](https://github.com/ragnor-rs/mjolnir/issues/46) is open to settle.
+the date is: the one derivation measured runs from the item's priority through a four-row table that
+no second project was found to have, so a facet absorbing the arithmetic would have generalised one
+project's habit. ⚠️ **Priority has since acquired a carrier of its own**
+([`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority), below) **and the division is unchanged**
+— the table is still one project's, which is the measurement that decided it rather than the absence
+of anywhere to read a tier from.
 
 **Why the gate's own checks are not a third ordered list.** The readiness gate and what counts as
 done are configured lists because the copies of *those* roles diverge: the five starting copies
@@ -595,9 +597,11 @@ surface, and what it rests on is worth stating before the argument: two shapes, 
 the six projects.
 
 - **One surveyed copy of the starting role checks an item's position in a priority queue** — the
-  eight-check copy named in the readiness-gate section above. That check reads an order, and
-  neither the copy nor the surface said where the order comes from. A gate whose input is a
-  convention is the shape this whole document exists to catch.
+  eight-check copy named in the readiness-gate section above. A gate whose input is a convention is
+  the shape this whole document exists to catch, and that check's input is a facet of its own
+  ([`schema.md § 4.6`](../plugins/mjolnir/config/schema.md#46-priority)) rather than anything this
+  ordering supplies: ⚠️ **the two are different questions**, which is why a project may configure
+  either without the other and why neither reads the other's key.
 - **This repository's own ordering is a row table in a document outside every tree**, in the agent
   harness's per-project store, with the argument for each row written beside it. Nothing shipped
   from a plugin can reach that file. The role that needed it read it through a carrier only this
@@ -617,15 +621,17 @@ project whose next item is the first row of whatever the tracker listed: that re
 store over. So `carrier: none` makes a role ask for an item by number, and the plain-issues
 example is written that way rather than given a query to look tidy.
 
-## The four facets, and the absent case
+## The work-item facets, and the absent case
 
 Issue type ([`schema.md § 4.1`](../plugins/mjolnir/config/schema.md#41-type)), status
 ([`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)),
-estimate ([`§ 4.3`](../plugins/mjolnir/config/schema.md#43-estimate)) and template
-([`§ 4.4`](../plugins/mjolnir/config/schema.md#44-template)) are each per-project,
-and each was carried by a different mechanism depending on the project. Three of the four had a
-real absent case — which is where the schema's absence-is-a-configuration rule comes from: a
-procedure that treats absence as an unset value fails on a project that is correctly configured.
+estimate ([`§ 4.3`](../plugins/mjolnir/config/schema.md#43-estimate)), template
+([`§ 4.4`](../plugins/mjolnir/config/schema.md#44-template)) and priority
+([`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority)) are each per-project,
+and each was carried by a different mechanism depending on the project. Each but status has a
+real absent case of its own — which is where the schema's absence-is-a-configuration rule comes
+from: a procedure that treats absence as an unset value fails on a project that is correctly
+configured.
 
 - **Type** — five carriers observed: a native field; a label convention, because a user-owned
   repository on one host has no type field at all; a bare label whose absence means the other
@@ -648,6 +654,36 @@ procedure that treats absence as an unset value fails on a project that is corre
   fails a free-prose description however clear, because the structure is what makes it checkable.
   Hence the semantic-section map in
   [`schema.md § 4.4`](../plugins/mjolnir/config/schema.md#44-template).
+- **Priority** — three projects carry one, between them over two carriers; a fourth parses a tier
+  and writes it nowhere; two have no convention at all. A carries a four-value prefixed label axis
+  on its board:
+  exactly one label per card, never absent, and it is the input to the eight-check gate named in
+  the readiness-gate section above. C uses the tracker's own priority field, three of its values.
+  F labels its top tier alone with a prefixed label and leaves everything below it bare. B's
+  filing role takes the same `high | medium | low` argument the other two take and has nowhere on
+  its board to put it, which is the absent case with a working loop around it rather than a gap in
+  one. D and E carry nothing. ⚠️ **The two that share a tracker kind do not share a prefix**, which
+  is the sharpest thing in the row: F's axis and this repository's own are both prefixed labels on
+  plain issues and the prefixes differ, so a procedure matching a literal would read one project's
+  axis and no other's.
+
+**What priority needed that the other facets did not: a statement of how two items compare.** The
+others answer a question about one item — what type it is, what it is worth, which template it
+used. This one is read by a check that asks whether work ranking above an item is ahead of it, and
+two measured axes answer that two ways: one ranks by a four-value list whose colours happen to run
+green to red, and another by a single label whose absence covers everything else. Hence the ordered
+`values` list and the rule that an item carrying none is unranked rather than lowest, both in
+[`schema.md § 4.6`](../plugins/mjolnir/config/schema.md#46-priority) — and hence the refusal there
+rather than a check reporting itself unanswered forever on a project that configured it with no
+axis to read.
+
+**And what it deliberately does not carry.** A's gate turns the tier into a due date through a
+four-row table, which is the derivation the date facet's own paragraph at the top of this document
+declines to generalise. That decision is unchanged by the tier now having a key: what made the
+table one project's habit was that no second project was found to have one, and that is still true.
+⚠️ This repository's own axis is the other half of why the facet is a carrier rather than a rule —
+its two labels sat on the host while what they meant lived in a person's head and in one
+project-local script, which is the shape every facet here was extracted from.
 
 ## The enforcement half: three keys, and the rest procedure
 

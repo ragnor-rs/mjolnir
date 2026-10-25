@@ -52,6 +52,14 @@ work_item:
     absent_reason: >-
       There is no item to carry a date, and no gating role to write one: the only role mapped
       below is the day log, which measures a day rather than committing to one.
+  priority:
+    carrier: none
+    absent_reason: >-
+      There is no item to rank and nothing to rank it against. The gate below is empty too, so
+      no check reads a tier here.
+    revisit_when: >-
+      A tracker is configured at all, which is the first moment there is a set of items for one
+      to be more important than another.
 
 statuses: []
 # An empty status list is legitimate. Every role is absent, so the procedure never asks the

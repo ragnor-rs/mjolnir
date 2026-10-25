@@ -82,6 +82,15 @@ work_item:
     absent_reason: >-
       The sprint and the fix version carry the dates here, as they carry the sizing above;
       a date per item would be a second commitment beside the one the sprint already states.
+  priority:
+    carrier: native             # a built-in field on this tracker, as the type above is
+    # ⚠️ Stated and ordered even though the tracker owns the field: what the tracker holds is
+    # its own, but how two items compare is this surface's (§ 4.6), and an adapter asked to
+    # rank the tracker's own words would be inventing the order rather than reading it.
+    values: [Highest, High, Medium, Low, Lowest]
+    # `never`, for the reason every status below carries it: the credential is a person's own
+    # account. The tier is read for the gate and written by nobody here.
+    writer: never
 
 statuses:
   - { name: "<not started>", role: initial,     writer: never }

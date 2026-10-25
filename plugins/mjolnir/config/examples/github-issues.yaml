@@ -70,6 +70,18 @@ work_item:
       backlog is the whole of what this project commits to.
     revisit_when: >-
       The gating role is mapped, which is the only thing on this surface that writes a date.
+  priority:
+    # The partial axis, which is a shape rather than a half-written configuration: the filing
+    # role takes a tier as an argument and writes a label for the top one only, so the axis
+    # holds exactly one value and an item without it is **unranked** (§ 4.6) — never read as
+    # the lowest. ⚠️ The argument's own middle default is not a value here: nothing is written
+    # for it, so nothing on the item carries it and `values` says what the item can hold.
+    carrier: label
+    label_prefix: "priority:"
+    values: [top]
+    # The filing role writes the tier it was handed and never one it worked out, which is
+    # what `procedure` means on this facet.
+    writer: procedure
 
 # ⛔ Two statuses, because an issue has two states and there is no field to carry a third.
 # No `in_flight` role at all: nothing on this tracker can hold "someone is working on it",

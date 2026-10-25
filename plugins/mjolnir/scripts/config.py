@@ -1851,6 +1851,112 @@ def validate(data: dict, facts: dict) -> None:
                     "a file no item can legitimately have used (§ 4.4).",
                 )
 
+    # § 4.6. The one facet another facet's check reads, so what a stated carrier
+    # owes is what `queue_position` cannot run without. Whether the carrier is
+    # written at all is the surface's `# required` marker; these are held here for
+    # the reason § 4.5's `field` is -- the role that meets the gap is a gate
+    # refusing an item, which is the one role that may not ask for anything.
+    #
+    # ⚠️ `None` is in the guard below and is not dead: the suite resolves a copy of
+    # the surface with this carrier's `# required` marker stripped, to assert that
+    # no rule here answers whether the key is written. Under that surface a
+    # configuration carrying no carrier reaches this block, and every rule in it
+    # has to stay silent for one.
+    priority = _get(data, "work_item.priority.carrier")
+    if priority not in (None, "none"):
+        values = _get(data, "work_item.priority.values")
+        # ⛔ Held to being a list, and the direction that matters is the shape
+        # rather than the length: one value is a legitimate axis -- the measured
+        # partial one labels its top tier alone -- while a single value written
+        # bare reads as a sequence of characters, and the comparison § 5's check
+        # performs would then rank two items letter by letter.
+        if not isinstance(values, list) or not values:
+            raise ConfigError(
+                "work_item.priority.values",
+                f"is {values!r}; § 4.6 states it as the values the axis holds, "
+                "ordered most important first and written as a list even where "
+                "there is one. It is the whole of what makes two items "
+                "comparable, so a carrier stating none leaves `queue_position` "
+                "(§ 5) with nothing to compare.",
+            )
+        for index, value in enumerate(values):
+            if value is None or (isinstance(value, str) and not value.strip()):
+                raise ConfigError(
+                    f"work_item.priority.values[{index}]",
+                    f"is {value!r}, which names no tier (§ 4.6). An entry naming "
+                    "nothing still takes a rank in the order while matching no "
+                    "item, so every tier below it is compared against one the "
+                    "tracker cannot hold.",
+                )
+        if len(set(map(str, values))) != len(values):
+            raise ConfigError(
+                "work_item.priority.values",
+                f"repeats a value in {values!r}, and § 4.6 reads the list itself "
+                "as the order: a tier written twice holds two ranks at once, so "
+                "the comparison between those two ranks has no answer.",
+            )
+        if priority == "label" and not _get(data, "work_item.priority.label_prefix"):
+            raise ConfigError(
+                "work_item.priority.label_prefix",
+                "required when the carrier is `label`: the prefix is what keeps "
+                "this axis apart from every other label on an item (§ 4.6), and "
+                "without it a reader matching a bare value picks up whatever "
+                "else the project happens to label with that word.",
+            )
+        if priority == "field" and not _get(data, "work_item.priority.field"):
+            raise ConfigError(
+                "work_item.priority.field",
+                "required when the carrier is `field`: there is nowhere to read "
+                "the tier from, which is § 4.5's rule for the same carrier on "
+                "the date.",
+            )
+        # ⛔ Who writes it, out of § 4.2's vocabulary and never a second one: the
+        # alternation is read from the surface at the path that states it, so a
+        # value added there is accepted here with no edit, and a facet that
+        # carried its own narrower copy would be free to disagree with it.
+        writers = vocabulary(facts, "writer", "a priority writer")
+        writer = _get(data, "work_item.priority.writer")
+        if writer is None:
+            raise ConfigError(
+                "work_item.priority.writer",
+                "required where a priority is carried: § 4.6 states who writes "
+                f"it out of § 4.2's vocabulary ({' | '.join(writers)}). A tier "
+                "with no stated writer reads as one any role may set, which is "
+                "the derivation § 4.6 forbids.",
+            )
+        if writer not in writers:
+            raise ConfigError(
+                "work_item.priority.writer",
+                f"is {writer!r}; § 4.6 takes § 4.2's writers "
+                f"({' | '.join(writers)}).",
+            )
+    # ⛔ And the check that reads the facet, refused where the facet is absent
+    # rather than left to report itself unanswered on every item forever. ⚠️ The
+    # reason quoted is the **project's own**: `absent_reason` says why it carries
+    # no tier, and that is the sentence whoever configured this gate has to read.
+    # A message of this reader's own would be a second answer to a question the
+    # configuration already answers, one facet over.
+    #
+    # ⚠️ `none` is the whole of the absent case reachable here, and that is the
+    # surface's doing rather than an assumption: the `# required` marker above
+    # refuses a missing or empty carrier, and the `# absent_reason` loop above
+    # refuses `none` with no reason -- so a branch for either would be a branch
+    # no configuration can reach and no plant could redden.
+    gate = _get(data, "readiness")
+    if priority == "none" and isinstance(gate, list) and any(
+        isinstance(entry, dict) and entry.get("check") == "queue_position"
+        for entry in gate
+    ):
+        stated = " ".join(str(_get(data, "work_item.priority.absent_reason")).split())
+        raise ConfigError(
+            "work_item.priority.carrier",
+            "is `none` while `readiness` configures `queue_position`, which reads "
+            "this facet and nothing else (§ 5). The check would be comparing this "
+            "item against work it has no way to rank, and the facet's own stated "
+            f"reason for carrying no tier is: {stated!r}. Carry the facet, or drop "
+            "the check.",
+        )
+
     # § 10. Where a tree is created is required under the mode that creates trees
     # and meaningless under the mode that does not, which is the shape
     # `work_in_shared_checkout` already has. It is required rather than defaulted
@@ -3031,6 +3137,7 @@ MARKED_REQUIRED = [
     "tracker.kind",
     "work_item.due_date.carrier",
     "work_item.estimate.carrier",
+    "work_item.priority.carrier",
     "work_item.template.carrier",
     "work_item.type.carrier",
 ]
@@ -3092,6 +3199,7 @@ MARKED_ABSENT_CAPABLE = [
     "ordering",
     "work_item.due_date",
     "work_item.estimate",
+    "work_item.priority",
     "work_item.template",
     "work_item.type",
 ]
@@ -4400,6 +4508,37 @@ def _planted_violations():
          at("ordering", {"carrier": "command"})),
         ("a field-carried date with no field named", "work_item.due_date.field",
          at("work_item.due_date", {"carrier": "field"})),
+        # § 4.6's branches. ⚠️ Each writes the facet whole rather than editing one
+        # key of the fixture's own, so what the plant states is what the refusal
+        # has to be about: a carrier's keys differ per carrier, and a plant that
+        # left another carrier's keys standing could pass on a rule it did not name.
+        ("a priority axis whose values are not a list",
+         "work_item.priority.values",
+         _a_priority_carried_as("label", label_prefix="P: ", values="High",
+                                writer="procedure")),
+        ("a priority value that names no tier",
+         "work_item.priority.values[1]",
+         _a_priority_carried_as("label", label_prefix="P: ", values=["High", "  "],
+                                writer="procedure")),
+        ("a priority axis repeating a tier, so two ranks hold one value",
+         "work_item.priority.values",
+         _a_priority_carried_as("label", label_prefix="P: ", values=["High", "High"],
+                                writer="procedure")),
+        ("a label-carried priority with no prefix to tell the axis by",
+         "work_item.priority.label_prefix",
+         _a_priority_carried_as("label", values=["High"], writer="procedure")),
+        ("a field-carried priority with no field named",
+         "work_item.priority.field",
+         _a_priority_carried_as("field", values=["High"], writer="procedure")),
+        ("a carried priority with nobody stated to write it",
+         "work_item.priority.writer",
+         _a_priority_carried_as("label", label_prefix="P: ", values=["High"])),
+        ("a priority writer outside § 4.2's vocabulary",
+         "work_item.priority.writer",
+         _a_priority_carried_as("label", label_prefix="P: ", values=["High"],
+                                writer="whoever asks")),
+        ("a gate reading a queue the facet does not carry",
+         "work_item.priority.carrier", _gates_on_a_queue_with_no_priority),
         ("a judged set written as one tree rather than a list",
          "e2e_register.judged", _an_e2e_register_with(judged="a-judged-tree")),
         ("a judged entry that is not a tree at all",
@@ -4648,6 +4787,44 @@ def _a_type_with_no_prefix(data: dict) -> dict:
     """
     node = data.setdefault("work_item", {}).setdefault("type", {})
     node["values"] = list(node.get("values") or []) + ["epic"]
+    return data
+
+
+def _a_priority_carried_as(carrier: str, **overrides) -> dict:
+    """§ 4.6's facet rewritten whole, so a plant states every key it means to.
+
+    Written as a replacement rather than as a key set on top of the example's
+    own: the keys a carrier owes differ per carrier, so a plant that edited one
+    key would leave the fixture carrying another carrier's keys and could pass
+    for a reason this plant does not name.
+    """
+
+    def mutate(data: dict) -> dict:
+        node = {"carrier": carrier}
+        node.update(overrides)
+        data.setdefault("work_item", {})["priority"] = node
+        return data
+
+    return mutate
+
+
+def _gates_on_a_queue_with_no_priority(data: dict) -> dict:
+    """§ 5's one check that reads another facet, configured where it is absent.
+
+    The check is **added** to whatever gate the fixture carries rather than the
+    gate being replaced, for the reason `_a_type_with_no_prefix` adds a value:
+    the shape the rule is for is a project that configures the check and does
+    not carry the facet, which is a gate growing an entry and not a gate
+    rewritten.
+    """
+    data.setdefault("work_item", {})["priority"] = {
+        "carrier": "none",
+        "absent_reason": "nothing here ranks one item against another",
+    }
+    gate = data.get("readiness")
+    data["readiness"] = (gate if isinstance(gate, list) else []) + [
+        {"check": "queue_position", "ahead_allowed": 0, "stop": "Higher-ranked work is ahead."}
+    ]
     return data
 
 

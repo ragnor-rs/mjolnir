@@ -12,6 +12,8 @@ The whole graph arrives in one GraphQL call (`Issue.blockedBy`), which returns w
   plan-status.py              read and report; the snapshot is left alone
   plan-status.py --stamp      same, then write the snapshot as the new baseline
   plan-status.py --queue      the takeable items and nothing else, in row order, one per line
+  plan-status.py --startable  which items MAY be started, from the host and the configuration
+                              alone — no plan, no snapshot. Not an ordering
   plan-status.py --bootstrap  the one run that proceeds with no plan: report the live state and
                               the graph's layers so the document can be drafted, and write nothing
 
@@ -37,9 +39,13 @@ import re
 import subprocess
 import sys
 
-TIERS = ("P: Highest", "P: High")
 PLAN_GLOB = "execution-plan-*.md"
 SNAPSHOT_NAME = ".plan-snapshot.json"
+
+# This project's own root, derived from where this file sits rather than from the working
+# directory. ⛔ The difference is load-bearing: a session standing in a worktree would otherwise
+# read the primary checkout's configuration and report an axis this branch does not carry.
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), *([".."] * 4)))
 
 GRAPH_QUERY = """
 query($owner:String!, $name:String!, $cursor:String) {
@@ -226,25 +232,92 @@ def layers(live_items, live_edges):
     return found, sorted(left), blockers
 
 
+def priority_axis():
+    """(the label prefix, the tiers as whole labels in the facet's order), read and never written.
+
+    ⛔ Read out of this project's own configuration through the shipped reader. The tiers were a
+    constant in this file and a convention on the host, which is two statements of one fact;
+    `plugins/mjolnir/config/schema.md § 4.6` carries it now, so a tier added or dropped there
+    needs no edit here. ⚠️ The order is the facet's list order, which is what makes two items
+    comparable at all — nothing here sorts the values.
+    """
+    sys.path.insert(0, os.path.join(ROOT, "plugins", "mjolnir", "scripts"))
+    import config
+    loaded = config.load(ROOT, check_paths=False)
+    carrier = loaded.get("work_item.priority.carrier")
+    if carrier != "label":
+        raise SystemExit(f"this project's `work_item.priority.carrier` is {carrier!r}, and the "
+                         "reading below is of labels on an issue — schema § 4.6 is where that "
+                         "carrier is stated, and this script has no other way to read a tier")
+    prefix = loaded.get("work_item.priority.label_prefix")
+    return prefix, [f"{prefix}{value}" for value in loaded.get("work_item.priority.values") or []]
+
+
 def report_tiers(issues, live_items):
-    """The `P:` tiers, counted and never inferred. Returns the items outside the acceptable set."""
+    """The priority tiers, counted and never inferred. Returns the items outside the stated set."""
+    prefix, acceptable = priority_axis()
     tiers = collections.Counter()
     offenders, unlabelled = [], []
     for number in live_items:
-        labels = [l for l in issues[number]["labels"] if l.startswith("P: ")]
-        tier = labels[0] if labels else "none"
+        labels = [l for l in issues[number]["labels"] if l.startswith(prefix)]
+        # ⚠️ *unranked* and not *none*, in the count as well as in the line below: § 4.6 reads an
+        # item carrying no value as outside the axis rather than at the bottom of it, and a count
+        # labelled `none` beside a line labelled `unranked` reads as two different figures.
+        tier = labels[0] if labels else "unranked"
         tiers[tier] += 1
-        if tier == "none":
+        if tier == "unranked":
             unlabelled.append(number)
-        elif tier not in TIERS:
+        elif tier not in acceptable:
             offenders.append((number, tier))
-    print("  P: tiers           : " + ", ".join(
+    print(f"  {prefix}tiers".ljust(21) + ": " + ", ".join(
         f"{tier} {count}" for tier, count in sorted(tiers.items())))
-    print(f"  unlabelled         : {unlabelled}  (a legitimate state)")
+    # ⚠️ *Unranked*, which is the facet's own word for it: an issue carrying no label is not the
+    # lowest tier here, and most of this backlog serves this repository's own loop.
+    print(f"  unranked           : {unlabelled}  (a legitimate state)")
     if offenders:
-        print("  ⛔ BELOW P: High    : " + ", ".join(f"#{n} {t}" for n, t in offenders)
+        print(f"  ⛔ OUTSIDE {', '.join(acceptable)}: "
+              + ", ".join(f"#{n} {t}" for n, t in offenders)
               + "   — ask; never add or raise a label to close the gap")
     return offenders
+
+
+def startable(repo):
+    """Which items may be started now, answered from the host and this project's configuration.
+
+    ⛔ Not an ordering, and the output says so: what this answers is the *may* question — every
+    live item all of whose blockers have landed — grouped by the tier
+    `plugins/mjolnir/config/schema.md § 4.6` carries. Which of them to take next is § 12's, and
+    on this project that is the row table `--queue` reads out of the ordering document.
+    ⚠️ Items inside one tier print by number, which is not a ranking: nothing derives an order
+    inside a tier, and the document is where that argument lives.
+    """
+    prefix, tiers = priority_axis()
+    issues = live(repo)
+    ready = [n for n in sorted(issues)
+             if not any(not closed for _b, closed in issues[n]["blocked_by"])]
+    by_tier = collections.defaultdict(list)
+    for number in ready:
+        carried = [l for l in issues[number]["labels"] if l.startswith(prefix)]
+        by_tier[carried[0] if carried else None].append(number)
+    print(f"repository           : {repo}   (the host, and nothing outside this repository)")
+    print(f"priority axis        : {prefix!r} over {', '.join(tiers)}   (schema § 4.6)")
+    print(f"startable now        : {len(ready)} of {len(issues)} live — every blocker landed")
+
+    def show(label, numbers, note=""):
+        for number in numbers:
+            print(f"  {label:<14}  #{number}  {issues[number]['title'][:58]}{note}")
+
+    for tier in tiers:
+        show(tier, by_tier.get(tier, []))
+    outside = sorted(t for t in by_tier if t is not None and t not in tiers)
+    for tier in outside:
+        show("⛔ " + tier, by_tier[tier], "   — a tier the facet does not carry")
+    # Last, and never folded into the lowest tier: § 4.6 reads an item carrying no value as
+    # unranked, so the order it prints in is arrival and not rank.
+    show("unranked", by_tier.get(None, []))
+    print("\n⚠️ which items MAY be started — the host's relations composed with the priority facet. "
+          "Which to take next is the ordering facet's answer: `--queue`.")
+    return 1 if outside else 0
 
 
 def report_graph(issues, live_items, edges, live_edges, baseline, tested):
@@ -327,6 +400,9 @@ def main():
                          "'no edge'; recorded on --stamp so they stop being re-flagged")
     ap.add_argument("--queue", action="store_true",
                     help="print the takeable items in row order, one per line, and nothing else")
+    ap.add_argument("--startable", action="store_true",
+                    help="which items MAY be started, from the host's relations and the priority "
+                         "facet alone — no ordering document is read, and this is not an ordering")
     ap.add_argument("--bootstrap", action="store_true",
                     help="report the live state and the graph's layers for a store that has no "
                          "ordering document yet, and write nothing")
@@ -336,16 +412,26 @@ def main():
         # Opt-in rather than automatic recovery, and this is why: a run from a branch worktree
         # resolves a different session store, where a plan is absent for a reason that is not
         # "this project has none". Drafting on that refusal would write a second ordering.
-        if args.plan or args.snapshot or args.stamp or args.tested or args.queue:
+        if (args.plan or args.snapshot or args.stamp or args.tested or args.queue
+                or args.startable):
             raise SystemExit("--bootstrap writes nothing and addresses no plan, so --plan, "
-                             "--snapshot, --stamp, --tested and --queue have nothing to act "
-                             "on here")
+                             "--snapshot, --stamp, --tested, --queue and --startable have "
+                             "nothing to act on here")
         found = plans()
         if found:
             raise SystemExit("this store already orders this backlog, and an ordering document is "
                              "under no version control, so nothing here overwrites one:\n  "
                              + "\n  ".join(found) + "\nRun without --bootstrap.")
         return bootstrap(args.repo or resolve_repo())
+    if args.startable:
+        # ⛔ Before the plan is resolved, which is the whole of what this mode is for: the *may*
+        # question is answered by the host's own relations and the priority facet, so a store with
+        # no ordering document in it must not be a refusal here.
+        if args.stamp or args.tested or args.plan or args.snapshot or args.queue:
+            raise SystemExit("--startable answers from the host alone and writes nothing, so "
+                             "--plan, --snapshot, --stamp, --tested and --queue have nothing to "
+                             "act on here")
+        return startable(args.repo or resolve_repo())
     if args.queue:
         if args.stamp or args.tested:
             raise SystemExit("--queue reports a queue and writes nothing, so --stamp and "

@@ -89,6 +89,17 @@ work_item:
     absent_reason: >-
       No gating role is mapped here, and the date has exactly one writer. Readiness is what
       this board tracks; when an item is due is not a question it answers.
+  priority:
+    # A board holds a single-select column, which is what `field` names: the tier is a field
+    # here rather than a label, so the field is stated and `values` is its options in the
+    # board's own order. ⚠️ `field` is the same carrier word § 4.5 offers for a date, under the
+    # same rule: a carrier naming a field owes the field's name, or there is nowhere to read.
+    carrier: field
+    field: "Priority"
+    values: [Urgent, High, Medium, Low]
+    # `orderer`: the column is set by whoever ordered the work, so the procedure reads the
+    # tier and reports the one it would have suggested rather than writing it (§ 4.2).
+    writer: orderer
 
 statuses:
   - { name: "Todo",        role: initial,     writer: procedure }
