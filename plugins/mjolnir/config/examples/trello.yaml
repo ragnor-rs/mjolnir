@@ -15,6 +15,16 @@ host:
     - workflow: "Tests"
       mirrors: "<the test command>"
       triggers: "pull_request -> <integration branch>"
+  # ⛔ Stated here because this tracker has **no** `link_for_close` (§ 3): nothing on a card closes
+  # it when a branch lands, so the title is the only place the pull request says which card it is
+  # for, and a reader of the code host has nothing else to follow. ⚠️ A bracketed number and never
+  # a hash — `#75` autolinks to issue or pull request 75 in the INNER repository, which is an
+  # unrelated object, and the card's own number is relative to its board rather than to anything
+  # the code host holds.
+  pull_request_title:
+    reference: "[<number>]"
+    repeated: false             # one card per change here; two would read as one scope
+    into: ["*"]                 # every pull request, there being one integration branch
   # The third method, and this facet belongs to the INNER repository like everything else in this
   # block (§ 1): the outer repository's own settings are read by nothing here. A rebase keeps the
   # integration branch linear while rewriting the hashes, which is why § 10's landed reading is
@@ -222,7 +232,11 @@ environment:
   # whose `policy.forbid_on_item` above bars credentials from ever reaching a card is the same
   # project that has to say which credentials its roles hold — the write side and this one are
   # the same boundary from opposite directions.
-  inherits: [PATH, HOME, TRACKER_KEY, TRACKER_TOKEN]
+  # ⛔ These two names are the implementation's own and not placeholders: the adapter behind
+  # `kind: trello` reads exactly them, so a project that renames them here hands its roles a shell
+  # the adapter cannot address — which comes back as a failed operation naming both, never as a
+  # capability this tracker lacks.
+  inherits: [PATH, HOME, TRELLO_KEY, TRELLO_TOKEN]
 
 e2e_register:
   # ⚠️ The decision rather than the absence of one: this project drives the tier by hand, and
