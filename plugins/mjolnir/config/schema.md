@@ -551,8 +551,7 @@ that store is classified under is #40's.
 
 ```yaml
 roots:
-  code: "."                # the path every git and gh call addresses; required
-  code_is_own_repo: false  # true when `code` is its own repository; default
+  code: "."                # the path every git and gh call addresses, or the block below; required
 ```
 
 ⛔ **The code root is configured, never inferred.** `git rev-parse --show-toplevel` from the
@@ -560,11 +559,73 @@ skills root is wrong wherever these differ, and a `gh` call that inherits the wo
 addresses the wrong repository — both having done something plausible first. Every `git` and
 `gh` invocation in the shared procedure names its root explicitly.
 
-`code_is_own_repo: true` is the case where the code is a git-ignored subdirectory that is its
-own repository, possibly under a different owner, and not a submodule. Branches, pull requests
-and CI then belong to the inner repository and the engagement material to the outer. A skill
-stops rather than proceeding when a `code` root that should exist does not — a fresh clone of
-the outer repository does not have it.
+A code root that is a git-ignored subdirectory of the skills root — its own repository, possibly
+under a different owner, and not a submodule — is an ordinary value of that key rather than a case
+a second key announces. Branches, pull requests and CI then belong to the inner repository and the
+engagement material to the outer. A skill stops rather than proceeding when a `code` root that
+should exist does not — a fresh clone of the outer repository does not have it.
+
+```yaml
+# retired: roots.code_is_own_repo
+```
+
+⛔ **`roots.code_is_own_repo` is retired, and a configuration that still declares it is refused
+with the key named.** It said whether the code root was a repository of its own, and **no script
+and no role ever read it**: the two rules keyed to it — the ownership of branches, pull requests
+and CI above, and § 11's `committed` placement — are each addressed to a person, and the value is
+derivable where a rule does want it, from `rev-parse --show-toplevel` at each root with
+`.gitmodules` separating a submodule from an ignored nested repository. ⚠️ **Derivability alone is
+not what retires a key** — the code root above is derivable too and is configured anyway, because
+deriving it is *wrong* wherever the two roots differ. What retires this one is the pair: nothing
+read it, and what it stated can be established at the point a rule needs it.
+
+### A project's code is not always one repository
+
+```yaml
+roots:
+  code:                    # one path, as above, or a block of named roots
+    app:
+      path: "<a subdirectory>"
+      host: { repo: "OWNER/APP", checks: [...] }    # § 2's block, this root's own
+    site:
+      path: "<another subdirectory>"
+      host: { repo: "OWNER/SITE", checks: [...] }
+      branch_model: { kind: in_place }              # § 10's block, where this root's differs
+```
+
+**The grain is per repository and not per project**, for three axes at once: the path above, the
+host with its `checks` ([§ 2](#2-code-host)), and the branch model ([§ 10](#10-branch-model)).
+Measured on a project whose code is two repositories nested inside the checkout its skills run in
+and ignored by it: the two share nothing but the host kind — disjoint check sets, a different
+number of long-lived branches each, and a deploy that takes a ref on one side and no ref at all on
+the other
+([the measurement](../../../docs/build-surface.md#a-verdict-is-a-command-a-root-and-a-condition)).
+
+⛔ **The single form stays valid and keeps its meaning.** A project with one code repository writes
+the path above, with `host` and `branch_model` at the top level, and nothing about how it is read
+changes; the reader resolves it to one named root, under the key `code`, which is what a report
+names it by. So the collection is what a project with two writes, never a migration a project with
+one performs to stand still.
+
+⛔ **An entry's `host` and `branch_model` are read key by key over the project's own.** A key an
+entry states is that root's; a key it does not is the project's, read exactly where a single-root
+project's is read. The slug and the `checks` beside it are what travel with the root they describe,
+and `kind`, `landing` and the rest are ordinarily the project's.
+
+⛔ **A fact some entry states is refused at the project level, with the roots named.** A role asking
+for one answer where the configuration holds two is handed a stop and never the first of them —
+[§ 2](#2-code-host)'s rule that absence of signal is not an answer, in the direction where a
+plausible answer is available and wrong. A fact no entry states is not refused, there being one
+answer to give.
+
+⛔ **No two entries may resolve to the same `host.repo`, and no two may name the same `path`.** Two
+names for one repository is the defect this facet exists against, reached either by stating a slug
+twice or by leaving it off an entry so that the project's own answers for both.
+
+⛔ **A role handed a root key this block does not carry stops and reports, naming the keys it does
+carry.** ⚠️ **Which root a given work item belongs to is stated nowhere yet** —
+[#57](https://github.com/ragnor-rs/mjolnir/issues/57) is that question, and until it lands a role
+that needs one root out of several has no key to be handed and stops by the rule above.
 
 ### The skills root is where the role runs
 
@@ -581,9 +642,11 @@ fact no configuration can state is a definition. The test is whether a project c
 written the value down.
 
 ⛔ **A role names what it resolved before it acts: the root, the file it read there, the surface
-that file was held to, and the repository that file's configuration addresses.** The reader reports
+that file was held to, and each code root with the repository it addresses.** The reader reports
 each of them, so this costs the role a sentence and no work. The list is stated here and a role
-reads it from here.
+reads it from here. ⚠️ **Each** rather than *the*, because a project's code is not always one
+repository: a role naming one of several has stated a fact about the wrong half of the work, and
+the reader reports them keyed by the name the collection above gives each.
 
 ⚠️ **That naming is the only guard, and it is weaker than a stop.** Run from a directory with no
 configuration, a role stops; run from a *sibling project that has one*, it resolves that project
@@ -649,6 +712,12 @@ host:
 ```
 
 Independent of the tracker. A project may keep its cards in one system and its code in another.
+
+⛔ **This block is read per code root.** Where [§ 1](#a-projects-code-is-not-always-one-repository)
+carries named roots, an entry's own `host` is read key by key over this one, and the slug and the
+`checks` beside it are the repository's rather than the project's — that section states the
+resolution, what it refuses and the two keys no two roots may share, and this one is not a second
+copy of it.
 
 **`checks` is the single statement of the host's workflows and jobs** — which runs exist, which
 local command each one mirrors, what triggers it, and which paths it watches. Every consumer reads
@@ -2312,6 +2381,12 @@ Where a branch is cut, and therefore which working tree every step after the gat
 `in_place` — an answer, not an omission. The absence that is a configuration here is
 `exclusive_resources: []`, which is a statement that nothing contends, not a missing value.
 
+⛔ **It is read per code root, like the host above it.** Where
+[§ 1](#a-projects-code-is-not-always-one-repository) carries named roots, an entry's own
+`branch_model` is read key by key over this block — measured on the one project with two code
+repositories, whose roots differ in how many long-lived branches each carries. That section states
+the resolution and this one does not restate it.
+
 **Several roles read it, which is why it is an axis rather than each role's own assumption:** the
 dirty-tree derivation (§6), where the starting role cuts the branch, which tree a verdict belongs
 to, and what the finishing role releases once the work has landed. Where the model is stated
@@ -3099,10 +3174,11 @@ person reads and here for what the next role does.
 ### The store, and when an in-tree store is safe
 
 ⛔ **`dir` is read relative to the skills root, like every other path on this surface (§ 1), and
-`committed` means that repository.** Where the code is its own repository (§ 1's
-`code_is_own_repo`), the branches and pull requests belong to the inner one while this store sits
-in the outer — so a committed plan there is reviewable with the engagement material and **not** in
-the pull request. Both are legal; which one a project gets is not a property of `committed` alone.
+`committed` means that repository.** Where a code root is a repository of its own — § 1's
+ignored-nested case, established at each root rather than announced by a key — the branches and
+pull requests belong to the inner one while this store sits in the outer, so a committed plan there
+is reviewable with the engagement material and **not** in the pull request. Both are legal; which
+one a project gets is not a property of `committed` alone.
 
 ⛔ **An in-tree store is safe under `branch_model.kind: worktree` only with
 `committed: true`, and the reader refuses the combination.** The teardown takes everything git

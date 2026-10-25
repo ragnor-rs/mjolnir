@@ -1544,7 +1544,7 @@ def _a_project(tmp: str, checks=None, title=None, runner=None) -> config.Config:
     """
     with open(os.path.join(config.EXAMPLES, "github-issues.yaml"), encoding="utf-8") as handle:
         data = yaml.safe_load(handle)
-    data["roots"] = {"code": ".", "code_is_own_repo": False}
+    data["roots"] = {"code": "."}
     data.setdefault("host", {})["kind"] = "github"
     data["host"]["checks"] = [] if checks is None else checks
     # ⚠️ Each is popped rather than left as the example wrote it, so an arm asking
