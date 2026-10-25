@@ -846,6 +846,28 @@ answer — every id resolved from the board by the name a configuration gives, e
 its own column's type, and every operation that writes reading the item first, so that a number
 naming a pull request is refused *before* the write rather than after it.
 
+For the cards behind `kind: trello` it is a different list, because the tracker is: a state resolved
+to **one** list by name, with an ambiguous name and a name the board does not have both refused
+rather than resolved by position; a card number resolved through the board's own index, re-read once
+before refusing, because the number is relative to its board and is not an address any endpoint
+takes; the number read from the field and parsed from the URL in that order, the URL arm being the
+one a real interface over this tracker makes necessary; a collection refused at the host's ceiling,
+there being no cursor to follow; a filing that resolves the `initial` role, because a card cannot
+exist with no list; and every write that carries text held to `policy.forbid_on_item` before the
+call, which is the first time anything in this toolkit performs that refusal rather than asking a
+role to observe it.
+
+⛔ **Two of its properties are about the report rather than the call**, and both are there because
+the failure is invisible otherwise — the first of them being
+[schema § 14's own rule](../plugins/mjolnir/config/schema.md#nothing-credential-shaped-leaves-for-a-surface-outside-the-project)
+that a refusal never quotes the value it refused. The key and the token travel as query parameters
+on this
+tracker, so every failure message quotes a call that carries them: the suite plants recognisable
+values in the shell, fails a call, and asserts the message names the two **variables** and contains
+neither value. And the four operations that carry a person's text each refuse a planted barred span
+with the write unmade, beside a sentence that has to stay green — an exemption with nothing asserted
+to stay green is a guard that could be refusing everything and reading as correct.
+
 Two kinds, as everywhere here. **Computed**: the operation set is compared against the list
 [schema § 3](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)
 states, so an operation the surface grows is unimplemented-and-unaccounted-for rather than quietly
@@ -905,6 +927,22 @@ therefore answers in the same shape an issue's does, and a fake answers every ca
 answer rather than only the ones the passing path makes — a fake that refuses an unexpected call
 turns a behavioural red into a traceback, and a traceback where a verdict belongs is a case nobody
 counted.
+
+⚠️ **The third implementation's breaks found the same class a third time, in two further shapes**,
+which is what makes it a property of this method rather than of one suite. **One**: a value computed
+inside an assertion — `item_number(card) == 75` written out — raises where the comparison is, so
+removing the arm under test ended the run having printed no failure at all; every read of an
+operation's answer now goes through a helper that reports a refusal as a value, the catching helpers
+above being no use to a case that was not expecting one. **Two**: a fake whose two answers about one
+card were built separately disagreed, so an archived card read back open and the assertion about it
+was green against the fixture rather than against the module — the single-card answer is now read
+out of the same index the collection answers with.
+
+⛔ **And one of them was not a suite defect but a leak**, caught by the sweep in `tools/` rather than
+by any of this — the sweep whose other half is [the surface's rule that no value appears under a
+carrier root](../plugins/mjolnir/config/schema.md#the-configuration-surface). The first draft of
+that suite carried a card URL read off a live board, short link and all. A fixture URL is a shape,
+and the shape survives a host that resolves nowhere.
 
 ## Beside them: the claim on a work item
 

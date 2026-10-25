@@ -477,6 +477,20 @@ project using it**, which is the measurement behind
 [`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability).
 No comment action, no short-id field, no label at creation time — each of those is one tracker's
 API and not one project's choice, and no configuration a project writes can reach any of them.
+
+⛔ **The sentence above is narrowed by what building the third implementation found, and the four
+Trello cells are where** — the rule it serves being
+[`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability),
+which is what the narrowing has to leave standing. *API* there is doing work it cannot carry: a
+tracker is reached through
+some **interface**, a project's copy had one, and four of that column's cells are properties of the
+interface rather than of the tracker. Measured against a live Trello through a different interface
+and read against the published reference — the detail is
+[below](#what-building-the-card-implementation-established) — three of the four reproduce on that
+second interface and one does not: **comments exist**. What the sentence still holds for is the
+direction of the argument, which is the half § 3 depends on: none of the four is a configuration a
+project writes, and a project cannot reach any of them either way. What it must not be read as is
+*this tracker cannot*, which is the reading the implementation would have taken into the adapter.
 ⚠️ **And three of the six run on a single tracker**, so a difference between those three cannot be
 a capability difference at all — the API answering them is one API. What projects were found
 differing in is which mechanism carries the type, the estimate and the template, which is a facet
@@ -503,6 +517,50 @@ takes because of what came back, and none of them is derivable from the table ab
 Both of the last two came out of writing rather than reading, with every read already green — which
 is the same shape the first implementation's three defects had, and the reason the live half of a
 run through this port is a write and not a report.
+
+### What building the card implementation established
+
+⛔ **Not *measured*, and the heading says so deliberately** — which is
+[`schema.md § 11 → A report names what it could not establish`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)
+applied to this document rather than to a run. The implementation behind `kind: trello` speaks the
+tracker's HTTP interface with a key and a token, and this repository's shell holds neither — so
+nothing below was established by running the adapter. Two weaker sources were used instead and are
+**named per row**, because they do not agree everywhere:
+
+- **a live board, through a different interface** — a connector over the same tracker, which reads
+  and writes cards but is not the interface the adapter speaks. What it shows about the tracker's
+  own shapes is observation; what it shows about an endpoint is nothing.
+- **the published reference** — the tracker's own statement about the interface the adapter does
+  speak. Authoritative about the endpoint and unverified against a running one.
+
+| What was asked | What came back | Established by |
+|---|---|---|
+| where a card's number lives | the card's URL is `/c/<link>/<number>-<slug>`, and the number opens the last segment; the connector's card carries **no** short-id field at all, which is this survey's own row | a live board |
+| what a card's state is | the board's states are its **lists**, and whether a card is archived is a separate fact — so a card in the project's terminal list is not archived and an archived card is still in a list. Both are reported, never collapsed | a live board |
+| what classifies a card | labels, as board-level objects carrying a free-text name. ⚠️ The name is neither unique nor required — the live board carried one label with a name and no colour — so a name is resolved to **at most one** label and an ambiguous one is refused | a live board |
+| whether a comment can be posted | **yes**, and this is the one row that refutes the survey above: the connector posts one, lists them, reads one back, and the board's own history names `COMMENT` as an action type | a live board |
+| whether a check item can be removed | the connector has `create`, `add_item` and `update_item` — rename and tick — and **no delete**, which is the survey's row exactly; the checklist endpoint documents `DELETE /checklists/{id}/checkItems/{id}` | both, disagreeing |
+| whether labels can be set at creation | the connector creates a card from a list, a name, a description, a due date and a position, then attaches labels one call each — the survey's row; the card endpoint documents `idLabels` on the create and on the update | both, disagreeing |
+| what a custom field costs | the live board has **none**, and the connector addresses one by an option id per type. So the one value § 4.5 names reaches this tracker as the card's own `due`, and a facet pointing anywhere else is refused naming the power-up it would need | a live board |
+| how a card is addressed by its number | the card endpoints take an id or a short link and **not** the number; the number resolves only as a nested segment of the board's own card path, which is the slot the documented `filter` keyword occupies. So the adapter resolves a number through the board's card index instead — which is also the only route to an **archived** card by number | both, agreeing |
+| whether a collection can be read whole | the card collection names no cursor, and a collection answers at most 1000. ⛔ So there is no page to follow and nothing to truncate, and the only honest guard is to **refuse** an answer that reaches the ceiling — a board that genuinely holds that many included | the published reference |
+| what a refusal looks like | 429 with the limit named, at 300 requests per 10 seconds per key and 100 per token; the key and the token travel as query parameters, which is why every failure message here names them rather than quoting the call it made | the published reference |
+
+⛔ **Where the two sources disagree the adapter follows the reference, and the direction of the two
+mistakes is the argument** — under
+[`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability),
+which makes a capability the adapter's own fact and leaves nothing else to decide it. An operation
+declared absent that in fact exists leaves a role taking a
+stated fallback for ever with nothing reporting it; one declared present that does not exist comes
+back as a failed operation naming the call. The second is visible and the first is not, so the two
+disagreeing rows — the check-item delete and the labels at creation — are implemented.
+
+⚠️ **What this leaves unestablished, which is more than for the two implementations before it**: no
+call in that adapter has been made to a running host, so the three reference-only rows are the
+reference's word and nothing beyond it. What a run of it takes is a board and the pair of variables
+[`examples/trello.yaml`](../plugins/mjolnir/config/examples/trello.yaml) names, and the shell this
+repository's own roles are handed holds neither — which is a fact about this repository rather than
+about the adapter, since nothing here is configured for that tracker.
 
 ⚠️ **What the implementation's own suite cannot answer is what the host does with a payload**, which
 is why the read half is driven against a live board by hand and recorded on the work item: a board
