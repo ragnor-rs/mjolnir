@@ -646,7 +646,8 @@ WHOLE = Change(
     added=[("a.py", "    return value"),
            ("tools/" + os.path.basename(__file__), "    # TODO: the forms this file forbids"),
            ("docs/configuration-surface.md",
-            "the one derivation measured runs from a priority the surface does not yet carry"),
+            "no second project was found to have, so a facet absorbing the arithmetic would have "
+            "generalised one"),
            ("plugins/mjolnir/scripts/port.py",
             "    # sweep above forbids -- and would need editing every time an"),
            ("plugins/mjolnir/skills/review/SKILL.md",

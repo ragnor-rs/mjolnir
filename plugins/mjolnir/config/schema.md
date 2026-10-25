@@ -1330,7 +1330,7 @@ covers the operations the survey reached and says which it did not.
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
 | `set_labels` | every label set in one call | one call per label, and a set that is left partial is reported rather than retried silently |
-| `set_field` | a value written onto the item where a facet states where it goes — § 4.3's estimate wherever its carrier is not a label, and § 4.5's date | the value is reported for whoever does write it, and the gating role leaves the item where it stands: an item advanced without the commitment it was meant to carry reads as gated to every role after it |
+| `set_field` | a value written onto the item where a facet states where it goes — § 4.3's estimate and § 4.6's priority wherever either carrier is not a label, and § 4.5's date | the value is reported for whoever does write it, and the gating role leaves the item where it stands: an item advanced without the commitment it was meant to carry reads as gated to every role after it |
 | `assign` | the item assigned to the person the role acts for | the report names who holds the item; a session's **claim** is not this operation and does not fall back to it — it rides the branch ref ([§ 10](#the-claim-on-a-work-item)) |
 | `checklist_read` | the item's check items, and which of them are ticked | the role has **no answer** about the checklist and says so; an unreadable checklist is never read as an empty one, by § 2's rule that absence of signal is not an answer |
 | `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
@@ -1348,8 +1348,10 @@ rather than reading a configuration.
 drift apart, and an adapter naming an operation this table does not state is refused.
 
 Where two projects on the **same** tracker genuinely differ, the difference is already a facet
-here rather than a capability: what carries the type, the estimate or the template, each with its
-own absent case (§ 4.1, § 4.3, § 4.4); what the tracker may hold at all (`policy` below); and who
+here rather than a capability: what carries the type, the estimate, the template or the priority,
+each with its own absent case (§ 4.1, § 4.3, § 4.4, § 4.6) — two projects on the same plain-issues
+tracker carry the last of those as two different label prefixes, which is the shape this sentence
+is written against; what the tracker may hold at all (`policy` below); and who
 may write a given state (§ 4.2). Three stated homes, none of them a per-project override of what
 the tracker is able to do.
 
@@ -1588,9 +1590,9 @@ place is a promise made where nobody was asked for one.
 `native` is the tracker's own due date and `field` is a named field where the tracker has none.
 ⚠️ **The carrier says where a date is written, never what the date is.** What computes one is not
 on this surface: the one copy of this role that was measured derives it from the item's priority
-through a stated table, and priority is carried three ways by three projects with no facet of its
-own — #46's. So a project adopting the gate states the carrier here and supplies the date itself,
-through the ask the role owes it.
+through a stated table, and no second project was found to have one.
+[`§ 4.6`](#46-priority) carries the tier and deliberately not the table. So a project adopting the
+gate states the carrier here and supplies the date itself, through the ask the role owes it.
 
 ⛔ **A date the item already states wins over anything computed for it.** An external commitment is
 recorded when the item is written, precisely so the gate can honour it; arithmetic that overwrote
@@ -1604,6 +1606,69 @@ commit to no per-item date — and it carries its reason like every other absenc
 before the work, the day the work actually landed is a measurement taken after, and neither number
 ever moves onto the other.
 
+### 4.6 Priority
+
+```yaml
+work_item:
+  priority:
+    carrier: native | field | label | none    # required; absent_reason
+    field: "…"                   # when carrier is field
+    label_prefix: "P:"           # when carrier is label
+    values: [Expedite, High, Medium, Low]     # ordered, most important first
+    writer: orderer              # one of § 4.2's writers
+    absent_reason: "…"           # required when carrier is none
+    revisit_when: "…"
+```
+
+How important an item is **against the other items**, which is the half that makes it a facet rather
+than a field: `native` is the tracker's own priority, `field` a named field where the tracker has
+none, and `label` a prefixed axis in a flat label list. ⛔ **No operation is added to
+[§ 3](#3-tracker-port) for it** — a label is read through `read_item` and written through
+`set_labels`, every other carrier through `read_item` and `set_field` — so a tracker this surface
+already names carries this facet or states its absence, and none of them needs a new capability to
+do either.
+
+⛔ **`values` is the whole of what makes two items comparable, and it is ordered, most important
+first.** [`§ 5`](#5-readiness-gate--an-ordered-predicate-list)'s `queue_position` asks whether work
+ranking above this item is ahead of it, which is a question about two items rather than about one:
+a carrier stating what an item holds and not how two of them compare answers it for neither, and a
+free-text field is exactly that. ⚠️ **The order is the list's own**, never the values' spelling and
+never a label's colour — the one measured axis whose colour carries the ranking runs green to red,
+and nothing that reads a tracker sees a colour.
+
+⛔ **The writer is stated per project out of
+[§ 4.2](#42-status--an-ordered-set-of-name-role-writer)'s vocabulary, and no role derives a
+priority.** `procedure` here means a role writes the value it was handed — on its invocation, or
+already on the item — and never one it worked out. The measured answers differ: one project's
+filing role takes a tier as an argument and defaults it, a second parses the same argument and
+writes it nowhere, and on a third whoever ordered the work sets it, which is `orderer`. A procedure
+that inferred a tier would be ranking somebody's work, which is [§ 12](#12-ordering)'s rule about
+an ordering, one facet over.
+
+⛔ **A value already on the item is never rewritten, whatever the writer is.** `procedure` licenses
+the first write and not a correction: re-ranking work somebody has already ranked is the orderer's
+call and belongs to no role in the loop, and the measured copy of the starting role says so in those
+terms about a card in flight. That is [`§ 4.5`](#45-due-date)'s rule about a date the item already
+states, on the facet § 4.5 was measured deriving from.
+
+⛔ **An item carrying no value is unranked, and is never read as the lowest one.** That is § 2's
+absence-of-signal rule where the permissive reading is both available and wrong: one measured axis
+labels its top tier alone and leaves the rest bare, and another states outright that a missing label
+does not mean the item is unimportant. So `queue_position` reports an unranked item as
+**unanswered** rather than passed ([`§ 11`](#a-report-names-what-it-could-not-establish)).
+⚠️ **A filing role's default is not a value on the item**: the project with the partial axis
+defaults its argument to a middle tier and writes nothing for it, so the axis holds the one value
+and `values` says so.
+
+**What this facet does not carry is the arithmetic from a tier to a date**, and § 4.5 is unchanged
+by it existing: the one derivation measured is a four-row table on one project. A tier here and a
+date there stay two statements, and the gating role supplies the date through the ask § 4.5 owes it.
+
+⚠️ **`carrier: none` is a first-class setting, on § 4.3's terms rather than on a second statement of
+them.** A backlog ordered by its blockers alone carries no tier, and so does one whose filing role
+takes a tier as an argument and has nowhere on the tracker to put it; `revisit_when` carries the
+trigger that would give either one a carrier.
+
 ## 5. Readiness gate — an ordered predicate list
 
 ```yaml
@@ -1613,7 +1678,7 @@ readiness:                                   # required
   - { check: field_present,     field: "…",        stop: "…" }
   - { check: label_absent,      label: "…",        stop: "…" }
   - { check: ref_exists,        ref: "…",          stop: "…" }
-  - { check: queue_position,    ahead_allowed: 0,  stop: "…" }
+  - { check: queue_position,    ahead_allowed: 0,  stop: "…" }   # reads work_item.priority, § 4.6
   - { check: claim_free,                           stop: "…" }
 ```
 
@@ -1635,6 +1700,14 @@ or quiet:
 - **Some failures are not defects.** An item that is correct and merely early, or one whose
   board automation did not fire, stops without being flagged. A gate that flags those flags an
   item whose author has nothing to fix.
+
+- ⛔ **`queue_position` reads [`§ 4.6`](#46-priority) and nothing else.** It is the one check in
+  this library whose input is another facet, and a project configuring it while that facet's
+  carrier is `none` is **refused, naming the facet's own `absent_reason`** — the gap is settled
+  where the configuration is read rather than by a gate running a check with nothing to compare.
+  ⚠️ **It is not [§ 12](#12-ordering)'s ordering.** That facet says which item to *offer* and a
+  project may configure either of the two without the other, so an ordering is not available as
+  the thing a gate compares.
 
 ### The mark that says an item is not ready, and the two roles that read it
 
@@ -3098,9 +3171,11 @@ on another — the ordering measured here lives outside every tracker and every 
 behind the port would oblige each adapter to answer a question its tracker does not hold.
 
 ⛔ **An ordering is not a gate.** § 5 asks whether *this* item may start; this says which item to
-offer first, and a project may configure either without the other. Where a gate does configure
-`queue_position`, this facet is where that queue comes from — the two are one statement read by
-two roles, not the same check twice.
+offer first, and a project may configure either without the other. ⛔ **Which is also why a gate's
+`queue_position` does not read this facet**: a check whose input may legitimately be absent would be
+a check that stops meaning anything on the project that configured it, so what that one compares is
+the priority [`§ 4.6`](#46-priority) carries, and the two are different questions rather than one
+statement read twice.
 
 ## 13. What counts as done — an ordered check list, and who answers each check
 

@@ -76,9 +76,13 @@ guarantees is that the body about to be filed and the request behind it are the 
 the conversation with whoever asked it; say so and stop. Filing it converts somebody's uncertainty
 into a commitment nobody made.
 
-`$ARGUMENTS` may carry a priority. Where the project's tracker carries one, it is set from there;
-where it does not, the reader says so and the argument is reported as unused rather than silently
-dropped.
+`$ARGUMENTS` may carry a priority, and [`§ 4.6`](../../config/schema.md#46-priority) states where it
+goes, which values the axis holds and **who may write it**. A tier is written here only where that
+facet's `writer` is `procedure`; under any other writer it is reported for whoever does write it and
+the item is filed without one. Where the facet is absent the reader says so and the argument is
+reported as **unused** rather than silently dropped. ⛔ **And no tier is ever derived** — not from
+the request's urgency, not from what the item blocks — which is the facet's own rule and the reason
+an argument that carries none leaves the item unranked.
 
 ## 1. One request is often several items
 

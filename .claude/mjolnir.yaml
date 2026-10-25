@@ -263,6 +263,23 @@ work_item:
     revisit_when: >-
       Someone outside the build starts asking when a given issue lands, which is the same
       trigger the estimate above carries and would be answered by the same role.
+  priority:
+    # This backlog's own axis, which existed as a convention before it was a key: the two
+    # labels are on the host, and what they meant was readable in a person's head and in one
+    # project-local script. ⛔ The values are NOT repeated in `tracker.labels` above — that
+    # list classifies work by the part of the toolkit it touches, and a second statement of
+    # this vocabulary there would be free to disagree with this one.
+    carrier: label
+    label_prefix: "P: "
+    # Two values and no third: nothing below `P: High` is ever set here, so the axis holds
+    # these and an issue carrying neither is **unranked** rather than low (§ 4.6). That is
+    # load-bearing on this backlog — most issues serve this repository's own loop and are not
+    # less important for it.
+    values: [Highest, High]
+    # `orderer`: a tier here says an external consumer depends on the item, which is a fact
+    # about those projects rather than about this one. No role derives it, and the procedure
+    # reports the tier it would have suggested instead of writing one.
+    writer: orderer
 
 statuses:
   # Two states, and that is the whole vocabulary: a plain issue is open or closed.

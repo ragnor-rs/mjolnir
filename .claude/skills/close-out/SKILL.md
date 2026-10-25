@@ -5,8 +5,8 @@ description: Bring this project's backlog, dependency graph and execution plan b
 
 # Close out a batch
 
-Four things have to agree: the **open set**, its **`P:` labels**, the **dependency relations**, and
-the **row table** in the execution plan. This role reads all four in one call, names every
+Four things have to agree: the **open set**, its **priority tiers**, the **dependency relations**,
+and the **row table** in the execution plan. This role reads all four in one call, names every
 disagreement, makes the edits that are mechanical, and **asks** about the ones that are judgement.
 
 ⛔ **Run it from the primary checkout**, not from a branch worktree. The plan is one file outside
@@ -34,8 +34,9 @@ returns what polling `dependencies/blocked_by` per issue returns. ⛔ **Read its
 touching anything**, and ⛔ **do not re-derive any of its figures by hand** — a second derivation
 is a second answer.
 
-It reports: open count and `P:` tiers · relations, acyclicity, edge-free new filings · coverage of
-the row table with every landed-but-still-placed issue and **the exact edit shape its row needs** ·
+It reports: open count and the priority tiers · relations, acyclicity, edge-free new filings ·
+coverage of the row table with every landed-but-still-placed issue and **the exact edit shape its
+row needs** ·
 ordering violations · same-row edges split into *stated*, *reading order only* and *contradicted* ·
 what was filed, what landed and which relations were added or removed since the last stamped pass ·
 the unblocked queue in row order.
@@ -43,6 +44,21 @@ the unblocked queue in row order.
 Exit 1 means something needs an edit. The `since the last pass` block is the only cheap way to see
 a **relation** change: a dependency edit bumps no `updated_at`, so `GET /issues?since=` cannot find
 it, and the snapshot diff can.
+
+### Which items may be started, with no document read
+
+```bash
+python3 .claude/skills/close-out/scripts/plan-status.py --startable
+```
+
+The *may* question alone: every live item whose blockers have all landed, grouped by the tier the
+priority facet carries. ⛔ **It reads no plan and no snapshot**, so it is the one mode that answers
+from a branch worktree and from a store holding no ordering document — the host's relations composed
+with
+[`schema.md § 4.6`](../../../plugins/mjolnir/config/schema.md#46-priority), and nothing outside this
+repository. ⚠️ **It is not an ordering and must not be read as one**: which item to take next is the
+ordering facet's answer and on this project that is the row table, which `--queue` prints and this
+mode deliberately does not consult.
 
 ### No ordering document yet
 
@@ -80,18 +96,22 @@ file: it states the ordering that is true now.
 
 ## 2. Priority — count, never infer
 
-`P: Highest`, `P: High`, or none. None is a legitimate state; **below `P: High` is not**, because
-the plan's ordering is a yield subpriority *inside* `P: Highest`.
+⛔ **The axis is `work_item.priority` in this project's own configuration and is restated nowhere
+here** — the prefix, the tiers and their order, read by the script above and printed in its report
+([`schema.md § 4.6`](../../../plugins/mjolnir/config/schema.md#46-priority)). An item carrying no
+tier is **unranked**, which is a legitimate state and not the lowest one; a tier the facet does not
+carry is not legitimate, because the plan's ordering is a yield subpriority *inside* the highest
+tier the facet states.
 
 **The call on an item filed unlabelled is delegated to this role.** The test is one question: **is
-this item work for one of the target projects?** If yes, `P: Highest`; if it serves this
+this item work for one of the target projects?** If yes, the highest tier; if it serves this
 repository's own loop instead, no label, which is not a demotion. ⛔ State the derivation in the
 reply every time, in one sentence.
 
 ⛔ **Never derive a label from a row, a relation, or this report.** A row is yield and a relation is
 a hard constraint; neither is a priority. A label arriving after an ordering moves no row.
 ⛔ **Raising or lowering a label its author or the person running this already set is not
-delegated** — ask, with the options. Same for anything the script prints as `BELOW P: High`.
+delegated** — ask, with the options. Same for anything the script prints as `OUTSIDE`.
 
 ## 3. Relations — the test, then the answer either way
 

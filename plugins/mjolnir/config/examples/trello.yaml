@@ -66,6 +66,18 @@ work_item:
     # tracker has a due date of its own, so no field is named. The readiness gate below reads
     # it back as the mark that this card has been through the gate.
     carrier: native
+  priority:
+    # The one example whose gate configures `queue_position` (below), so this is the facet that
+    # check reads: it asks whether work ranking above this card is ahead of it, and the ranking
+    # is this list's order (§ 4.6). Exactly one label per card and never absent, which is this
+    # board's own rule rather than anything the surface states.
+    carrier: label
+    label_prefix: "P: "
+    values: [Expedite, High, Medium, Low]
+    # The filing role writes it from its argument. ⚠️ Re-ranking a card already in flight is the
+    # orderer's call and no role's — § 4.6 states that as the rule rather than as a second
+    # writer here, which is why the key can carry the writer of the first write alone.
+    writer: procedure
 
 statuses:
   - { name: "<backlog>",     role: initial,     writer: procedure }
