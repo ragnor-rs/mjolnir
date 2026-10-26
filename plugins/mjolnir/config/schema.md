@@ -1866,7 +1866,10 @@ or quiet:
   one code root may not configure it** — there is one answer, so the check would pass every item
   and read as coverage where § 4.7 refuses the facet outright. ⛔ **What answers it is the same
   resolution the roles run** rather than a second reading of the mapping: a gate that matched the
-  carrier itself could admit an item the role that resolves its root then stops on.
+  carrier itself could admit an item the role that resolves its root then stops on. ⚠️ **Nothing
+  holds a gate to answering it that way** — no predicate in this library has a shipped
+  implementation — so what keeps the two from diverging is that the mapping is read in one place
+  and a role addressing the project instead of the root is refused by the reader (§ 1).
 
 ### The mark that says an item is not ready, and the two roles that read it
 
