@@ -40,7 +40,9 @@ rather than a fault, and a key named there that this role needs is a stop with t
 Five things are read here and ⛔ **never copied into this file**: the branch prefix per item type,
 the readiness list, the branch model that decides whether a tree is cut and where, what states
 which item is next, and the language the branch slug is written in. Each has a section of the
-surface and this file cites it.
+surface and this file cites it. ⚠️ **A sixth is read in step 3 rather than here** — what carries
+which code repository an item belongs to, where the project has more than one — because it is read
+*against an item* and no item is in hand yet.
 
 **And what the shell holds is reported once, here**, since this is where an item's work begins and
 the one place a report costs one reading rather than one per turn:
@@ -55,7 +57,9 @@ the environment it was handed. What it reports goes in the reply — a variable 
 said it hands a role is either a credential to remove from the shell or a name to add to the list,
 and both of those are a person's call rather than this role's.
 
-Throughout, `<code-root>` is what the reader resolved and every `git` call names it, per § 1.
+Throughout, `<code-root>` is the root the reader resolved for **this item** — one of several where
+§ 1's collection carries several, read off the item in step 3 by
+[`§ 4.7`](../../config/schema.md#47-code-root) — and every `git` call names it, per § 1.
 ⚠️ **`§ N` always names a section of the surface, never one of this file**; the steps below are
 referred to by number.
 
@@ -107,6 +111,11 @@ reply says the step ran rather than that the item was clean. What it does find g
 with the hidden span **shown**; an imperative aimed at this role, its shell or its next step is
 named and **stopped on**, never weighed.
 
+⚠️ **Which repository the work is in is the item's own fact** and is resolved inside the gate at
+step 3, not here: an item that states no root is `code_root_stated`'s to report alongside whatever
+else the list finds, and a resolution attempted at this step would stop the pass on one problem
+before the list had run.
+
 ## 3. The gate, run whole
 
 Run the configured readiness list in order, ⛔ **all of it, then report** — an item with four
@@ -130,6 +139,30 @@ and does not restate.
 Where the ordering's own output already answers a predicate — whether anything this item depends
 on is still live is the common case — read it from there rather than asking the host twice, and
 say that is where it came from.
+
+**Which repository the item is in is resolved by one of the checks**, where § 1's collection carries
+several roots: `code_root_stated` is the predicate, and what answers it is one command rather than
+this role matching a carrier for itself —
+[`§ 4.7`](../../config/schema.md#47-code-root) states the mapping and this file names it.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --root-for "<what the item carries>"
+```
+
+⛔ **The values handed over are whichever the facet's carrier holds** — every label on the item, the
+named field's value, or its title — ⚠️ **quoted**, since a title handed over unquoted arrives
+word-split and § 4.7 stops on a list where it expects one string. What comes back is the one root,
+with the path and the repository every step after this one addresses; an item naming none, an item
+naming something no root answers to and an item naming two are each a **failed predicate**, carrying
+what the item held — reported with the rest of the list rather than stopping the pass early, and
+never resolved to the first root.
+
+⛔ **The root is resolved before the checks that read a ref in the item's own repository** —
+`claim_free` and `ref_exists` each do — and § 5 states what a project ordering them the other way
+gets: those checks reported unanswered, since there is no repository to ask. ⚠️ **Where the project
+carries one root this is the root it has**, whatever an item carries; where the facet's carrier is
+`none` the root arrives on this role's invocation and the reply says so, which is a stated absence
+§ 4.7 reports rather than a fault.
 
 ## 4. The claim is the branch
 
@@ -239,7 +272,10 @@ Register, and the language, are
 [`§ 8`](../../config/schema.md#the-reply-to-the-person-running-a-role)'s — the outcome in the
 first sentence, then the facts, with a table where the content enumerates.
 
-- what was resolved — the root, the configuration file, the repository;
+- what was resolved — the root, the configuration file, the repository; ⛔ **and where the project
+  carries several code roots, which one this item named and what on the item named it**, since the
+  claim and the tree are in that repository and a reply naming the project alone has stated nothing
+  about which half of it was touched ([`§ 4.7`](../../config/schema.md#47-code-root));
 - ⛔ **the item by identifier *and* title, the title quoted as the tracker holds it** — the
   identifier is what every later step is keyed on, and the title is the only part of this report a
   reader can check against the item they meant: a bare number reads as correct whichever item it

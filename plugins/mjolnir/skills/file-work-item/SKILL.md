@@ -215,6 +215,21 @@ nobody goes back and corrects. State both values in the stop.
 text** — [`§ 4.4`](../../config/schema.md#44-template) states why the text cannot tell two
 templates apart.
 
+**Which code repository the work is in is asked for here or nowhere**, where the project carries
+several code roots: [`§ 4.7`](../../config/schema.md#47-code-root) makes it a facet of the item, the
+gate refuses an item that states none, and this is the one role that writes the item in the first
+place. ⛔ **It is asked for and never worked out** — § 4.7 rules out the branch, the type and the
+assignee as sources, and the measured rule is that the repository is decided by *whose code it is*
+rather than by whose need the work serves, which no role can read off a request. Where the facet is
+absent, or the project has one root, there is nothing to write and nothing to ask.
+
+⛔ **Under a `title_prefix` carrier the answer is part of the title and so belongs to this step**,
+not to the writes below: § 4.7 has that carrier written by the title `create_item` is handed, and
+⚠️ **§ 4.7's match is a whole word** — the value opens the title and the character after it is not
+one that continues a word — so a title composed without it names no root and a title composed
+around it cannot be corrected later, the facet's own no-rewriting rule applying to the title it
+rides. A `label` or `field` carrier is written below with the project's other facets.
+
 **Both facets have an absent case, and filing works in it.** Where no carrier states a type, there
 is no type to cross-check and the reply says so rather than reporting a check that passed. Where
 there is no template at all, this role writes the semantic sections under headings it chooses in
@@ -303,6 +318,9 @@ Then report, in the register
   that no item was filed, said plainly;
 - every relation written, and which other items were edited to carry the reverse end;
 - the type and the template used, or that the project carries neither;
+- **which code repository each item was written against**, where the project carries several — and
+  where its carrier is `none`, that the item states none and the root reaches a later role on its
+  invocation ([`§ 4.7`](../../config/schema.md#47-code-root));
 - **every fallback taken**, naming the operation and what it did instead;
 - anything barred by policy, and anything that could not be established.
 

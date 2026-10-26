@@ -68,6 +68,13 @@ written in, and ⛔ **which roles this project maps at all** — `carriers`
 ([`§ 7`](../../config/schema.md#7-carrier)), which is what step 6's hand-over and step 8's ask both
 read. Each has a section of the surface and this file cites it.
 
+⚠️ **Where the project carries several code roots, two of those eight are the root's rather than
+the project's** — the branch model and the host's runs, which
+[`§ 1`](../../config/schema.md#a-projects-code-is-not-always-one-repository) states are read per
+code root — so the reader refuses a project-level read of the slug or of `host.checks`, and this
+role resolves the item's own root in step 2, once the item is in hand. The other six are the
+project's and are answered here as they always were.
+
 Throughout, `<work-root>` is the tree the work is in — which
 [`§ 10`](../../config/schema.md#where-the-work-happens) decides and this file does not — and every
 `git` call names it, per § 1. ⚠️ **`§ N` always names a section of the surface, never one of this
@@ -113,6 +120,23 @@ the one it was given and said nothing.
 Where neither the argument nor the branch states a number, the port's `item_number` fallback
 ([`§ 3`](../../config/schema.md#the-operations-and-what-an-absent-capability-does)) is the answer
 and it is a stop: a role with no number does not invent one.
+
+**Then, where § 1's collection carries several code roots, which repository this item is in** —
+read off the item by [`§ 4.7`](../../config/schema.md#47-code-root), with the same command and the
+same mapping the starting role ran. ⛔ **Here rather than in step 1**, because the item is what
+carries the answer and step 1 has not resolved one yet; and ⛔ **before step 3**, because the commit
+is the first act that addresses a repository:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --root-for "<what the item carries>"
+```
+
+⛔ **An item that names no root is a stop and the first root is not the answer**, because what
+follows opens a pull request and merges it. ⚠️ **The branch is not the source of this fact** — § 10
+composes it from the prefix, the number and the title and it carries no repository — and where the
+facet's carrier is `none` the root arrives on this role's invocation, which the reply names as
+§ 4.7's stated absence. ⚠️ **The value is quoted**, since a title handed over unquoted arrives
+word-split and § 4.7 stops on a list where it expects one string.
 
 ## 3. The commit
 

@@ -115,6 +115,28 @@ work_item:
     # orderer's call and no role's — § 4.6 states that as the rule rather than as a second
     # writer here, which is why the key can carry the writer of the first write alone.
     writer: procedure
+  code_root:
+    # The one example with two code roots above, so the one that has this facet at all — § 4.7
+    # refuses it on a project with one root, and requires it here. A fourth prefixed label axis
+    # on a board that already carries three, which is what makes `label` the cheap answer here:
+    # the tracker has no field to add one to. ⚠️ The mapping is not the identity on purpose — the
+    # label is what a person reads on a card and the key is what § 1 names the root by, and a
+    # project is free to spell them differently.
+    # ⚠️ Example data, like the rest of this file, and deliberately the richer of the two shapes:
+    # the project this file is written from carries the fact nowhere today, which is `carrier: none`
+    # with a reason. With one multi-root example there is room for one of the two, and the mapping
+    # and the gate entry are what need illustrating; the absent case is two keys and is held by the
+    # reader's own suite.
+    carrier: label
+    # ⚠️ The prefix is matched literally, trailing space included, so the four axes in this file
+    # differ in that one respect rather than by convention: this one and `P: ` carry the space the
+    # board's own labels have, `T:` and `E:` are written without it.
+    label_prefix: "R: "
+    roots:
+      app: "<the label this board puts on a card whose code is the app's>"
+      site: "<the label this board puts on a card whose code is the site's>"
+    # ⛔ No `writer` key: § 4.7 carries none, and § 4.6's rules reach this value as written —
+    # no role derives it, and a value already on the card is never rewritten.
 
 statuses:
   - { name: "<backlog>",     role: initial,     writer: procedure }
@@ -134,6 +156,9 @@ readiness:
   - { check: no_open_blockers, stop: "An open blocker has to land first." }
   - { check: assignee_matches_role, stop: "The assignee does not match the role on the item." }
   - { check: queue_position, ahead_allowed: 0, on_fail: stop_quietly, stop: "Higher-priority work is ahead of this in the queue." }
+  # § 4.7, and § 5 requires the entry of any project carrying that facet: the last point before a
+  # claim is taken, where the two repositories above are still a question rather than a branch.
+  - { check: code_root_stated, stop: "The card does not say which repository the work is in." }
 
 # ⛔ A person-answered check on the tracker with the fewest places to put the answer. There is
 # no comment action here, and `policy.forbid_on_item` above bars branch names from the card

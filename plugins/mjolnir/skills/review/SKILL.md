@@ -44,6 +44,14 @@ addresses, the exclusive resources a local check has to hold a place in, the lan
 the findings and the reply are written in, and where an artifact crossing a role boundary lives.
 Each has a section of the surface and this file cites it.
 
+⚠️ **Where the project carries several code roots, the first and the fourth of those seven are the
+root's rather than the project's** — the host's runs and the branch model, which
+[`§ 1`](../../config/schema.md#a-projects-code-is-not-always-one-repository) states are read per
+code root — so the reader refuses a project-level read of either and this role resolves the item's
+own root in step 2, once the change and its item are in hand. ⚠️ **The tracker port is not one of
+them**: one tracker answers for every root of a project, so a project-level read of it is the one
+answer there is.
+
 Throughout, `<work-root>` is the tree the work is in — which
 [`§ 10`](../../config/schema.md#where-the-work-happens) decides and this file does not — and every
 `git` call names it. ⚠️ **`§ N` always names a section of the surface, never a step of this file.**
@@ -78,6 +86,20 @@ the branch reviews code nobody asked about and reports it under the number they 
 ⛔ **Never run on the integration branch.** Every one of the five copies carried this and it is the
 only rule all five agreed on: a pass standing on the base commits its fixes there, and step 5 would
 do it without a word. The branch under review is a branch, or this role does not run.
+
+**Then, where § 1's collection carries several code roots, which repository this change is in** —
+read off its **item** by [`§ 4.7`](../../config/schema.md#47-code-root), which is where that fact
+lives, and never off the branch:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --root-for "<what the item carries>"
+```
+
+⛔ **The runs read in step 8, the threads answered in step 7 and the record written in step 9 are
+that root's**, and an item naming no root is a stop rather than the first root — a review recorded
+against the wrong repository is a verdict about a change nobody made. ⚠️ Where the facet's carrier
+is `none` the root arrives on this role's invocation, which is § 4.7's stated absence and goes in
+the reply. ⚠️ **The value is quoted**, a title handed over unquoted arriving word-split.
 
 ## 3. Read the whole conversation first
 
