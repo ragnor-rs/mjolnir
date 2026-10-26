@@ -70,6 +70,7 @@ ROLES = {
     "plugins/mjolnir/skills/finish/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/gate-work-item/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/review/SKILL.md": PROCEDURE,
+    "plugins/mjolnir/skills/save/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/start/SKILL.md": PROCEDURE,
 }
 

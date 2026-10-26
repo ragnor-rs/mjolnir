@@ -1682,3 +1682,82 @@ the four guards produced the first while the project had written every one of th
 reported the version skew as a skew. The rule removes the state, and naming the resolved surface
 among what a role reports is what makes the remaining case visible at the moment it happens —
 [`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration).
+
+## The bookkeeping role: three copies that are a third of it, and two keys that came out of it
+
+The role is the most-divided of the nine, and it divided in two directions at once. Four projects
+carry it whole. **Three further copies are its commit third alone**, under two other names and two
+different carriers — one a skill, one a command — which is the *one name, a subset role* case
+[above](#name-and-role-diverge-in-both-directions) and the reason the inventory key is
+*(role, carrier)* read out of the body rather than the directory name.
+
+What that forced is a key naming which thirds a project runs, at
+[`schema.md § 23`](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs),
+and ⚠️ **the load-bearing observation is which reading it rules out**: the measured
+commit-third-only project **has a tracker**. So the question is not derivable from the tracker axis,
+from the carrier axis, or from anything else already on the surface — a project with a board and a
+backlog can still have a bookkeeping carrier that commits and does nothing else, and that is a
+configuration rather than an adoption that stopped halfway.
+
+The order the thirds run in is procedure and not part of the key, for a reason the copies agree on
+without stating: everything after the tracker describes what it now says, so a commit written first
+describes a state the item does not hold yet.
+
+### Staging is per role, measured inside one project
+
+The first form of the staging ruling made `staging` a project-level value. It is wrong, and the
+counter-example is one project holding both positions **in two of its own carriers**:
+
+| the carrier | what it states | why it is right there |
+|---|---|---|
+| its bookkeeping copy | stage everything, no exceptions, and do not edit, format, reorder or fix any file | the person asked for the tree as it stands, and an unstaged file is simply missing next session |
+| its finishing role, same repository | never stage everything; name the paths you intend, and watch for credentials and build output | that commit rides an item's branch into a pull request, where a swept-in artifact lands with it |
+
+Neither is a mistake, so a single value cannot express that project without making one of its two
+roles wrong — and the ruling as first written would have picked one of them. The revised key is
+[`schema.md § 6 → What staging is per`](../plugins/mjolnir/config/schema.md#what-staging-is-per-and-the-two-rules-that-hold-regardless),
+with one entry per role that commits.
+
+⚠️ **What the split does not touch is the pair of rules that hold regardless**, and the strict copy
+of the `all` position is the evidence for that rather than against it: it names a credential file
+outright. So `all` is *no path filtering* and has never been *no scanning*, which is the distinction
+a per-role key has to keep and the one a reader skimming two opposite instructions would lose.
+
+### A save is owed at a compaction boundary, and nothing delivers one
+
+A window is summarised without being asked, long before a session ends, and what the summary dropped
+is unrecoverable from inside the session — the measurements are
+[above](#the-window-is-a-resource-the-loop-spends). That makes a compaction a save point like any
+other, which is
+[`schema.md § 23 → When a save is owed`](../plugins/mjolnir/config/schema.md#when-a-save-is-owed-and-the-boundary-it-names).
+
+⚠️ **The mechanism that would have handed the role that boundary is unavailable, and the limit is
+recorded rather than designed around.** The event that fires before a window is compacted is one of
+two that **never fired** in the measurement that built
+[`schema.md § 7`'s table](../plugins/mjolnir/config/schema.md#what-a-hook-can-establish-about-the-role-it-is-running-under),
+so what it carries is unestablished and a rule resting on it would be written against a measurement
+nobody has taken. The role therefore takes the boundary when it notices one, the artifact names
+which boundary it was, and the cost — a compaction nobody saved before costs the window — is stated
+on the surface instead of being discovered by whoever loses one.
+
+⚠️ **Two of the item's acceptance bullets split at exactly that line, and only one end of the split
+is held mechanically.** *A save at a compaction boundary writes what a save at session end would
+write, and says which boundary it was* is decidable: one form, every field required, the boundary a
+field of it, and a written artifact read back against all of that. *Resumable from the artifact
+alone, proved by a resume that reads it* is decidable only as far as the fields — the suite writes a
+form, reads it back and asserts every field is recovered, which is a resume reading the artifact at
+the mechanical end. Whether the prose a role wrote **into** those fields is enough for a later pass
+to continue is the *quoting* kind of judgement this repository keeps off its gates, and it is read
+rather than enforced.
+
+### What has no key yet, and why that is a filed item rather than a gap
+
+The memory third's store is declared by no key on this surface. It is a separate outcome — a store
+the branch model can move, which is a question about where a file lives rather than about which
+thirds a role runs — so it is a numbered item this one blocks, and
+[`schema.md § 23`](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs)
+names it where the third is listed. ⛔ **What keeps that honest is that the absence is reported
+rather than silent**: a project naming the memory third gets it in the reader's `unavailable` list
+and the role says what it could not write, because a third that quietly did not run reads exactly
+like one that did —
+[`schema.md § 11 → A report names what it could not establish`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish).

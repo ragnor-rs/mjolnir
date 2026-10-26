@@ -38,10 +38,11 @@ entry there is a stated absence rather than a fault, and a key named there that 
 stop with the key named.
 
 Seven things are read here and ⛔ **never copied into this file**: the host's runs and what each of
-them mirrors, the tracker port's capabilities and what each absent one falls back to, the staging
-and trailer rules a fix commit runs under, the branch model that decides which tree every step
-addresses, the exclusive resources a local check has to hold a place in, the language and register
-the findings and the reply are written in, and where an artifact crossing a role boundary lives.
+them mirrors, the tracker port's capabilities and what each absent one falls back to, the trailer
+rule and **this role's own** staging entry a fix commit runs under, the branch model that decides
+which tree every step addresses, the exclusive resources a local check has to hold a place in, the
+language and register the findings and the reply are written in, and where an artifact crossing a
+role boundary lives.
 Each has a section of the surface and this file cites it.
 
 ⚠️ **Where the project carries several code roots, the first and the fourth of those seven are the
@@ -304,7 +305,10 @@ role's text is a copy that drifts from the record it came from.
 The commit is entirely [`§ 6`](../../config/schema.md#6-commit-behaviour)'s — staging, the message
 mechanism, the style, and the [authorship
 rule](../../config/schema.md#authorship-is-procedure-not-configuration) that bars a generated-by
-marker from the message as it bars one from the change's body. ⛔ **Once the branch is pushed, a fix
+marker from the message as it bars one from the change's body. ⛔ **The staging mode read is this
+role's own entry**, staging being per role
+([`§ 6`](../../config/schema.md#what-staging-is-per-and-the-two-rules-that-hold-regardless)) and a
+fix commit riding an open change into a merge. ⛔ **Once the branch is pushed, a fix
 is a second commit** — never an amend and a force push. Rewriting an open change's history is not
 implied by *review this*, and the second commit is the better record of what the review found.
 

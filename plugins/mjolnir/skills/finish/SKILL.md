@@ -59,11 +59,12 @@ defaults, and two sets drift apart with nothing noticing.
 ⛔ **Read the `unavailable` list before acting on anything.** An entry there is a stated absence
 rather than a fault, and a key named there that this role needs is a stop with the key named.
 
-Eight things are read here and ⛔ **never copied into this file**: the staging and trailer rules the
-commit runs under, the branch model that decides which tree every step after this one addresses,
-the host's own runs and what each of them mirrors, **what this project counts as done and who
-answers each of those checks**, **how a pull request lands here and what deletes the branch once it
-has**, the closing capability behind the port, the language and register the pull request is
+Eight things are read here and ⛔ **never copied into this file**: the trailer rule and **this
+role's own** staging entry the commit runs under, the branch model that decides which tree every
+step after this one addresses, the host's own runs and what each of them mirrors, **what this
+project counts as done and who answers each of those checks**, **how a pull request lands here and
+what deletes the branch once it has**, the closing capability behind the port, the language and
+register the pull request is
 written in, and ⛔ **which roles this project maps at all** — `carriers`
 ([`§ 7`](../../config/schema.md#7-carrier)), which is what step 6's hand-over and step 8's ask both
 read. Each has a section of the surface and this file cites it.
@@ -144,6 +145,12 @@ Entirely [`§ 6`](../../config/schema.md#6-commit-behaviour)'s — staging, the 
 style, and the authorship rule that
 [binds every author field](../../config/schema.md#authorship-is-procedure-not-configuration). This
 file states none of it and the configuration supplies the part that varies.
+
+⛔ **The staging mode read is this role's own entry and never another role's.** It is per role
+([`§ 6`](../../config/schema.md#what-staging-is-per-and-the-two-rules-that-hold-regardless)), and
+the project measured holding two different modes held them in two of its own carriers — this commit
+rides an item's branch into a pull request, which is the reason this role's entry is usually the
+stricter one. ⚠️ A mode that merely looks like the project's answer is the wrong entry read.
 
 A dirty tree here is **derived** from the branch model rather than configured, which is § 6's
 derivation over [`§ 10`](../../config/schema.md#10-branch-model)'s key. Report what was found,

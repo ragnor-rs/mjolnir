@@ -183,8 +183,14 @@ already_run:
   never_guard: []
   escape: "RUN_IT_ANYWAY"
 
+# § 6. The commit-third-only shape: the bookkeeping carrier here is the commit and nothing else,
+# and it stages everything deliberately — that is what the person invoking it asked for. The two
+# roles that commit onto an item's branch name their paths.
 commit:
-  staging: explicit
+  staging:
+    session: all
+    finish: explicit
+    review: explicit
   trailer: read_from_history
 
 # § 20's stated absence. This project deploys from a branch and nothing collects a section out of
@@ -200,6 +206,13 @@ carriers:
   finish: skill
   review: skill
   deploy: skill
+  session: command
+
+# § 23. One third of the role, which is a configuration rather than a half-finished adoption:
+# this project's bookkeeping carrier commits and does nothing else. ⛔ Not derivable from the
+# tracker being absent — the board above is the counter-example.
+session:
+  parts: [commit]
 
 language:
   work_item: ru

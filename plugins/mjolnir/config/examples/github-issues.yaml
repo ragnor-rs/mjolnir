@@ -116,8 +116,15 @@ checks_local: []
 already_run:
   never_guard: []
 
+# § 6. The measured split, written down: the bookkeeping role stages everything because the
+# person asked for the tree as it stands and an unstaged file is simply missing next session,
+# while the two roles that commit onto an item's branch name their paths — a swept-in artifact
+# there lands in the pull request. ⚠️ `all` is no path filtering and never no scanning.
 commit:
-  staging: explicit
+  staging:
+    session: all
+    finish: explicit
+    review: explicit
   trailer: read_from_history
 
 # § 20. One section, and it is here because another role reads it: the deploy collects it out of
@@ -135,6 +142,12 @@ carriers:
   start: skill
   finish: skill
   review: skill
+  session: skill
+
+# § 23. The whole role: the tracker brought current, memory refreshed, then the commit — in that
+# order, which is procedure and not this list's.
+session:
+  parts: [tracker, memory, commit]
 
 language:
   work_item: en
