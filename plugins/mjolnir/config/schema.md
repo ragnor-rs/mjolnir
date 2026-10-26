@@ -1343,6 +1343,7 @@ tracker:
 ```yaml
 tracker:
   kind: jira
+  site: "https://<site>"        # required_when: tracker.kind = jira
   project_key: "KEY"            # required_when: tracker.kind = jira
   transitions:
     resolve: by_name
@@ -1360,6 +1361,14 @@ tracker:
 resolve: by_name }` — declares the block and not the key inside it, so the inline spelling would
 have left the surface declaring `status_field.resolve` and not its two counterparts, for no reason
 to do with the trackers.
+
+⚠️ **One of them carries two required keys, because neither half of that address is derivable from
+the other.** A project key names a project *within* an installation and says nothing about which
+installation answers; the site says which one and nothing about which project, so a configuration
+carrying one of them is as unaddressable as one carrying neither. ⛔ And the project key is not
+merely a label there: an item's key resolves across a whole site, so it is also what an adapter
+holds a key to before reading or writing — a key from another project answers perfectly, and every
+write against it lands in somebody else's backlog.
 
 For `github-issues` and `none` this surface states **no block beyond the kind**, and a
 configuration naming either and stopping is complete rather than half-written: the first addresses

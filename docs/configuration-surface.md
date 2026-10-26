@@ -453,9 +453,12 @@ refused there rather than reported, because this is the one search the filing ro
 with the gating role: of the two values that role writes, the estimate reaches the item as a label
 on the copy measured, and the date
 ([`schema.md § 4.5`](../plugins/mjolnir/config/schema.md#45-due-date)) reaches it as a field, which
-no operation carried. One copy performs that write; what it looks like on the other two
-implementations is unmeasured, which is why the operation has no row here rather than a row with a
-gap in it.
+no operation carried. ⛔ **What that bound no longer covers is the implementations**: two of them
+perform the write now, and each shapes a value by the field's own type rather than by what the
+value is — a column's type on the board, and a site-wide field catalogue on the issue tracker,
+where the estimate turns out to be a member of a composite field rather than a scalar. The rows
+below carry those; the operation still has no row in the table above, because the table records
+what the **copies** did and no copy was measured writing one.
 
 | Operation | GitHub Projects | Jira | Trello |
 |---|---|---|---|
@@ -577,6 +580,63 @@ about the adapter, since nothing here is configured for that tracker.
 is why the read half is driven against a live board by hand and recorded on the work item: a board
 past one page read whole, a card's columns out of one query, and the pull-request guard refusing a
 real pull request number.
+
+### What building the issue implementation established
+
+⛔ **Not *measured*, and the heading says so for the reason the one above it does** —
+[`schema.md § 11 → A report names what it could not establish`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)
+applied to this document rather than to a run. The implementation behind `kind: jira` speaks the
+tracker's own HTTP interface with an account and a token, and this repository's shell holds
+neither. Two weaker sources were used and are **named per row**, because they do not answer the
+same questions:
+
+- **a live site, through a different interface** — a connector over the same tracker, reading a real
+  project's issues, workflows, link types and field values. What it shows about the tracker's own
+  shapes is observation; what it shows about an endpoint is nothing.
+- **the published reference** — the tracker's own statement about the interface the adapter does
+  speak. Authoritative about the endpoint and unverified against a running one.
+
+| What was asked | What came back | Established by |
+|---|---|---|
+| what an item's identifier is | the project's key and a number, and the key resolves across the **whole site** — so a key from another project answers perfectly rather than being refused, which makes the project key a guard and not a label | a live site |
+| what a state is | a status the item is **in** and a transition that leads there, and a transition's `name` is a separate field from the `to.name` it leads to. ⛔ So a status word is matched on what a move leads to; matching the verb would match the wrong half on every workflow whose verbs differ from its states | a live site |
+| which statuses an item can reach | what the workflow offers **for that item's type**: on one project defining nine statuses, one type offered three of them and another all nine. ⚠️ So a word the project states and this item cannot reach has two readings — a vocabulary the tracker lacks, or a move this workflow does not allow from here — and neither is assumed | a live site |
+| which types an item can have | nine available on one project with six in use, against a branch-prefix vocabulary of five — the case behind `type_branch_prefix` being a map rather than a boolean ([`schema.md § 4.1`](../plugins/mjolnir/config/schema.md#41-type)). ⛔ And a type is **required at creation**: there is no filing without one, which is the one place this tracker forces a question the code-host trackers leave open | a live site |
+| what a dependency's two sides are called | the link type reads `inward: is blocked by` / `outward: blocks`, and the call's `inwardIssue` is the item that **blocks** — the inversion this survey's own row named, now with both halves in hand. ⛔ Read the wording and the dependency is filed the wrong way round, and nothing in the answer says so | a live site |
+| how a dependency reads back | the entry an item carries names the *other* side, so an entry holding `inwardIssue` means this item **is blocked by** it. ⛔ Which is why the adapter's direction is held by a round trip rather than by reading the call: the write and the read are two separate chances to invert it | a live site |
+| whether an estimate exists on this tracker | a native composite field, holding a duration as text (`2h`) and mirrored as seconds, with a value on the large majority of one real project's items — and the values come from a closed ladder of size classes mapping to hours rather than being free numbers, so `estimate` here is *(native field, hours, a closed set)*. ⛔ What the sprint answers is the **gate** and not the carrier: an item with no estimate still starts, which is a statement about the readiness list. Reading that as the carrier being absent is how a configuration comes to claim a project sizes nothing while its own board sizes nearly every item | a live site |
+| what a search costs | a query with **no restriction is refused outright** — *Unbounded JQL queries are not allowed here*. ⛔ So the project restriction is the only shape the host accepts, which is also why the state qualifier the plain-issues implementation has to refuse cannot arrive here: every term is quoted into an operand | a live site |
+| what a body is | a structured document rather than a string, on the interface version the adapter speaks. ⚠️ So no markdown body is simply sent: the adapter renders headings, paragraphs, bullet and ordered lists and fenced code, states that nothing else survives, and reads a document back the same way — a fuller renderer is a markdown parser, which would be the implementation deciding what a template means | both, agreeing |
+| how a custom field is addressed | by an id that is **site-specific**, so a field is named in a configuration and resolved against the site's own catalogue per run. ⚠️ And a name is not unique there, so an ambiguous one is refused rather than resolved by position | both, agreeing |
+| who moved an item | the history names an author, and ⛔ **a script running under somebody's token is indistinguishable from that person in it**. So the advance-off-a-merge operation reports whether the last status change was made by something *other than this credential* and refuses to call it automation | the published reference |
+| whether the merge is visible here | **no**: the merge is on the code host, and nothing on this tracker ties a status change to one. ⛔ So `link_for_close` is absent — there is no closing keyword to compose — and the advance operation answers the tracker's half alone, with the other half read from § 2's host | both, agreeing |
+| how a search is paged | a cursor in the answer, followed until the host says it is the last page. ⚠️ A page that fills says nothing about whether more exist, which is the same silent ceiling the board implementation pays a cursor-follower to avoid | the published reference |
+
+⛔ **One defect this implementation's own suite found, recorded because the shape generalises** —
+the standard it is measured against being
+[`schema.md § What earns a test`](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable),
+which is where a guard's red has to be believable rather than merely present. The address and the
+credential were resolved **inside** the named transport in the first draft — and a
+transport is a *seam*, so every guard inside it is a guard a substituted transport walks straight
+past. A site carrying a path and a shell holding no token both read as *the call went out and the
+host answered*. Both guards sit above the seam, which is where the card implementation puts its
+own, and the transport is handed an address and a credential rather than reading either — so a
+guard on either is a guard every transport is held by, the substituted one included.
+
+⛔ **And one it reddened in a sibling**, held to the same standard —
+[`schema.md § What earns a test`](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable).
+The port contract's suite registers a double against a kind
+nothing is installed for, and it chose one out of the set the surface states — so the day the last
+implementation landed there was no such kind left and the whole block went unasserted while
+reporting a failure nobody could fix. ⚠️ A gate that reddens on the project finishing is the shape,
+and the fix is the one the same file already records a block earlier: the kind is **derived** from a
+stated word rather than chosen out of the stated set.
+
+⚠️ **What this leaves unestablished** is what the two implementations before it leave: no call has
+been made to a running host through the interface the adapter speaks, so every reference-only row
+above is the reference's word and nothing beyond it. What a run takes is the site and the pair of
+variables [`examples/jira.yaml`](../plugins/mjolnir/config/examples/jira.yaml) names, and the shell
+this repository's own roles are handed holds neither.
 
 ## What is an ordered list of named checks rather than procedure
 
