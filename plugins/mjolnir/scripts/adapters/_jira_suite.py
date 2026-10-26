@@ -729,6 +729,90 @@ def self_test() -> int:
         all(absent_port.implements(name) for name in ADAPTER.operations),
     )
 
+    # --- `writer: never`, honoured through the port rather than here ---------
+    #
+    # ⛔ Asked through `Port.advance_to` and not of this module, because the
+    # writer refusal is § 4.2's and the port is what performs it: a case that
+    # checked the words here would prove nothing about what a role meets. What
+    # this holds is the half that is **this** example's -- every status it maps
+    # is written by somebody other than the procedure, so a whole loop over them
+    # writes nothing at all and says so for each.
+    writers = {
+        str(status.get("role")): str(status.get("writer"))
+        for status in _statuses(configuration)
+    }
+    check(
+        "the example states a writer other than the procedure for every status",
+        writers and all(writer != "procedure" for writer in writers.values()),
+        f"states {writers!r}",
+    )
+    refusals = {}
+    never_writing = host()
+    for role in sorted(writers):
+        outcome = with_host(
+            never_writing,
+            lambda role=role: port.Port(configuration, adapter=ADAPTER, stated=stated)
+            .advance_to(role),
+        )
+        refusals[role] = outcome
+    check(
+        "an advance to each of them is refused with the writer named, and none is a failure",
+        all(
+            getattr(outcome, "refused", False)
+            and getattr(outcome, "writer", None) == writers[role]
+            and writers[role] in getattr(outcome, "detail", "")
+            for role, outcome in refusals.items()
+        ),
+        f"got {[str(outcome) for outcome in refusals.values()]!r}",
+    )
+    check(
+        "and a pass over every one of them reaches the host not once",
+        never_writing.calls == [],
+        f"called {never_writing.calls}",
+    )
+    # ⚠️ The other half of the same rule, and the half that is **not** a failure:
+    # a role no status here maps is a legitimate configuration (§ 4.2), so it is
+    # reported rather than refused -- a vocabulary this project does not have is
+    # not a vocabulary this tracker cannot hold.
+    unmapped = [role for role in config.facts_for("role") if role not in writers]
+    check(
+        "the example leaves a role unmapped, so the reported arm is reachable",
+        bool(unmapped),
+        f"maps {sorted(writers)!r} of {config.facts_for('role')!r}",
+    )
+    if unmapped:
+        quiet = host()
+        outcome = with_host(
+            quiet,
+            lambda: port.Port(configuration, adapter=ADAPTER, stated=stated)
+            .advance_to(unmapped[0]),
+        )
+        check(
+            "and an advance to it is reported, not refused and not raised",
+            not getattr(outcome, "performed", True)
+            and not getattr(outcome, "refused", True)
+            and unmapped[0] in getattr(outcome, "detail", "")
+            and quiet.calls == [],
+            f"got {str(outcome)!r} after {quiet.calls}",
+        )
+
+    # --- the two languages this kind's branch slug depends on ----------------
+    #
+    # ⛔ Asserted of the **example**, which is the only thing a suite can hold
+    # here: § 8 makes a branch slug a *translation* of the item's title where the
+    # two languages differ, and the role that composes the name is what performs
+    # it -- no mechanism anywhere judges prose. What this keeps is the condition
+    # the rule needs in order to be exercised at all: the day this example's two
+    # languages become one, the translation arm stops being reachable from any
+    # shipped configuration and nothing else would say so.
+    item_language = str(configuration.get("language.work_item") or "")
+    repo_language = str(configuration.get("language.repo") or "")
+    check(
+        "the example states an item language and a repository language, and they differ",
+        bool(item_language) and bool(repo_language) and item_language != repo_language,
+        f"states work_item={item_language!r} repo={repo_language!r}",
+    )
+
     # --- the identifier, and the project guard ------------------------------
     check("a key is the identifier, returned as given", item_number(key(7)) == key(7))
     check(

@@ -1118,29 +1118,36 @@ def self_test() -> int:
             f"reported {reported[:1]!r}",
         )
 
-    # The seam the three adapters register against. The kind is taken from the
-    # surface rather than written here, for the same reason the fixtures are
+    # The seam the installed adapters register against. The word is taken from
+    # the surface rather than written here, for the same reason the fixtures are
     # taken from the examples directory: nothing in this file names a tracker.
-    # ⛔ A kind **nothing is installed for**, asked of the registry rather than
-    # taken as `kinds[0]`. The index was the same defect this suite fixed one
-    # block up: `register` refuses a kind already present, so the day the
-    # first-listed kind had an adapter this raised an uncaught refusal and killed
-    # every assertion after it -- and `ADAPTERS.pop` would have uninstalled a
-    # real implementation mid-run, leaving the checks below reading a registry
-    # this suite had corrupted. The order of two words in a markdown alternation
-    # was the only thing holding it.
+    # ⛔ A kind **nothing is installed for**, and ⛔ one the surface does not
+    # state either -- **derived** from a stated word rather than chosen out of
+    # the stated set. Two earlier shapes were both wrong for the same reason, a
+    # step apart: `kinds[0]` collided with a real implementation the day the
+    # first-listed kind had one, and picking the first stated kind nothing was
+    # installed for made this block a gate that **reddens on the project
+    # finishing** -- measured, on the change that landed the last of them, where
+    # there was no free kind left and the whole block went unasserted while the
+    # run reported a failure nobody could fix. ⚠️ `ADAPTERS.pop` below is the
+    # reason the kind must not be a real one: it would uninstall a live
+    # implementation mid-run, leaving every later check reading a registry this
+    # suite had corrupted.
     kinds = _real_tracker_kinds()
     load_adapters()
-    free = [kind for kind in kinds if kind not in ADAPTERS]
     check("the surface states a tracker kind to register against", bool(kinds))
+    # The suffix is this suite's own and the word before it is the surface's, so
+    # this names no tracker while being derived from one.
+    derived = f"{kinds[0]}-nothing-answers-for" if kinds else None
+    free = bool(derived) and derived not in kinds and derived not in ADAPTERS
     check(
-        "and one with nothing installed, to register a double against",
-        bool(free),
-        "every kind the surface states already has an implementation; this block "
-        "needs one that does not, so it cannot evict a real one",
+        "and a kind derived from it that nothing states and nothing installed",
+        free,
+        f"`{derived}` is either stated by the surface or already installed, so "
+        "registering a double against it would evict or shadow a real one",
     )
     if free:
-        kind = free[0]
+        kind = derived
         register(kind, Adapter({"read_item": lambda *a, **k: "read"}))
         registered = _any_example()
         registered.data["tracker"]["kind"] = kind

@@ -3810,6 +3810,11 @@ MARKED_REQUIRED_WHEN = [
     ("tracker.project.number", "tracker.kind", "github-projects"),
     ("tracker.project.owner", "tracker.kind", "github-projects"),
     ("tracker.project_key", "tracker.kind", "jira"),
+    # ⚠️ Two entries for one kind, which is the first block where that happens:
+    # § 3 states that an address and the project within it are different halves
+    # and that neither is derivable from the other, so a configuration carrying
+    # one of them is as unaddressable as one carrying neither.
+    ("tracker.site", "tracker.kind", "jira"),
 ]
 
 # The keys the surface marks procedure, stated here for the reason the lists

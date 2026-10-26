@@ -857,7 +857,45 @@ exist with no list; and every write that carries text held to `policy.forbid_on_
 call, which is the first time anything in this toolkit performs that refusal rather than asking a
 role to observe it.
 
-⛔ **Two of its properties are about the report rather than the call**, and both are there because
+⛔ **The forms that decide whether a span belongs to a barred class are one module, not one per
+implementation** — the rule they answer being
+[schema § 3 → A write forbidden by policy rather than by capability](../plugins/mjolnir/config/schema.md#a-write-forbidden-by-policy-rather-than-by-capability).
+They were written with the card implementation and copied nowhere: the second
+implementation to need them moved them to `adapters/_policy.py` instead, since two modules carrying
+one grammar are two statements allowed to disagree and the one that rots is whichever tracker
+nobody is looking at. ⚠️ What stays per implementation is the **refusal**, whose wording names the
+thing a write was about to reach — a card, an item — which is the half that genuinely differs.
+
+For the issues behind `kind: jira` it is a third list again, and the tracker is the reason: the
+identifier is a **key** and not a number, so the guard every operation resolves through is that the
+key belongs to the project this configuration states — a key resolves across the whole site, so one
+from another project answers perfectly and every write lands in somebody else's backlog. Beside it:
+a status reached by the transition that **leads to** it rather than by the transition's own name,
+with a word no move reaches refused and both readings of that stated; a dependency whose direction
+is held by a **round trip** rather than by reading the call, because the write and the read are two
+separate chances to invert the tracker's own inward-against-outward wording; a body rendered to the
+document shape this tracker takes and read back from it, with the shapes that do not survive named
+in the module and asserted to come back as the text they were written as; a search bounded by the
+project, which is the host's own requirement rather than a convenience, and every term quoted into
+its operand so that no caller can narrow the states a duplicate check covers; and a field addressed
+by **name** and resolved against the site's own catalogue, every custom id being site-specific.
+
+⛔ **Two of this one's properties are about where a guard sits rather than what it says**, and both
+came out of the suite rather than out of review — which is
+[schema § What earns a test](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable)
+doing the work it is there for. The address and the credential were resolved inside
+the named transport, which is a *seam* — so both guards were walked past by the substituted
+transport, and a site carrying a path and a shell holding no token read as calls that went out and
+were answered. They sit above the seam now, and the suite asserts the transport is **handed** an
+address and a credential rather than reading either. ⚠️ The second is in the port's own suite rather
+than this one: its block registering a double against an uninstalled kind chose one out of the set
+the surface states, so landing the last implementation left no such kind and the block went
+unasserted — a gate that reddens on the project finishing. The kind is derived from a stated word
+now, which is the fix the same file already recorded one block earlier for the same shape of
+mistake.
+
+⛔ **Two of the card implementation's properties are about the report rather than the call**, and
+both are there because
 the failure is invisible otherwise — the first of them being
 [schema § 14's own rule](../plugins/mjolnir/config/schema.md#nothing-credential-shaped-leaves-for-a-surface-outside-the-project)
 that a refusal never quotes the value it refused. The key and the token travel as query parameters
