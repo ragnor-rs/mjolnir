@@ -42,8 +42,14 @@ host:
 
 tracker:
   kind: jira
+  # Two halves of one address, and neither is derivable from the other: the site says which
+  # installation answers, the project key says which project within it. ⚠️ The key alone is
+  # not an address — every key on a site resolves site-wide, which is also what makes the
+  # key the guard an adapter holds a value to.
+  site: "https://<site>"
   project_key: "KEY"
-  # Transitions are found by name; there is no closing keyword on this tracker.
+  # Transitions are found by name — by the status a transition LEADS TO, which is a separate
+  # field from the transition's own name. There is no closing keyword on this tracker.
   transitions: { resolve: by_name }
   # No capability is stated here — schema § 3, `Who declares a capability`.
   policy:
@@ -62,10 +68,20 @@ work_item:
     # Improvement resolves by whether a user can see the change.
     Improvement: feat|refactor
   estimate:
-    carrier: none
-    absent_reason: >-
-      This project plans with a sprint and a fix version rather than with a per-item number;
-      the sprint is what the readiness gate checks.
+    # A native field on this tracker, holding a duration rather than a free number.
+    carrier: field
+    unit: hours
+    # ⚠️ A closed ladder of size classes and not a number anybody types: each rung maps to
+    # hours, and work that is not an item carries a multiplier applied outside the tracker.
+    # A project with a ladder wants the ladder validated, which is a different configuration
+    # from "a number field" — hence `values` beside the unit.
+    values: [1, 2, 4, 8, 24]
+    # ⚠️ What the sprint carries is the GATE's business and not this facet's: the readiness
+    # list below checks the sprint and the fix version, so an item with no estimate still
+    # starts. That is a statement about the gate, and reading it as an absent carrier is how
+    # this file previously came to claim the project had no estimate at all.
+    # Who writes it is § 4.3's question rather than this file's; no role here writes one
+    # today, so the value arrives by hand.
   template:
     carrier: file
     dir: ".claude/templates"
@@ -232,8 +248,9 @@ environment:
   # Two variables rather than one: this tracker authenticates as a person, so the credential
   # and the account it belongs to are separate facts and both are read. ⚠️ Which is also why
   # `writer: never` appears throughout this file — the same credential that makes the write
-  # possible is what makes it read as that person speaking.
-  inherits: [PATH, HOME, TRACKER_API_TOKEN, TRACKER_ACCOUNT]
+  # possible is what makes it read as that person speaking. ⛔ The names are the ones the
+  # implementation reads: a list naming only the token would read as complete.
+  inherits: [PATH, HOME, JIRA_ACCOUNT, JIRA_API_TOKEN]
 
 e2e_register:
   # The facet carried in full: a suite of journeys, a document that says which journey each case

@@ -1343,10 +1343,18 @@ tracker:
 ```yaml
 tracker:
   kind: jira
+  site: "https://<site>"        # required_when: tracker.kind = jira
   project_key: "KEY"            # required_when: tracker.kind = jira
   transitions:
     resolve: by_name
 ```
+
+⚠️ **Two keys, because neither half of this address is derivable from the other.** The project
+key names a project *within* an installation and says nothing about which installation answers;
+the site says which one and nothing about which project. ⛔ And the key is not merely a label:
+an item's key resolves across a whole site, so the project key is also what an adapter holds a
+key to before reading or writing — without it, a key from another project answers perfectly and
+every write lands in somebody else's backlog.
 
 ```yaml
 tracker:
