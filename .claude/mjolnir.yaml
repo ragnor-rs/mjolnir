@@ -168,6 +168,15 @@ host:
     - workflow: "Save artifact"
       mirrors: "python3 plugins/mjolnir/scripts/save.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The counterpart carrier of the entry above, and the one whose suite asserts a **negative**:
+    # that every reading it takes creates and removes nothing, with one exception named rather than
+    # smoothed over — reading a working tree through git may refresh git's own index, which is git's
+    # cache and not the reading's output. ⛔ Not a superlative: the install entry's suite asserts a
+    # narrower negative of the same kind, so what is particular here is the scope rather than the
+    # shape — a whole fixture tree digested before and after.
+    - workflow: "Session restore"
+      mirrors: "python3 plugins/mjolnir/scripts/load.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Single source of truth"
       mirrors: "python3 tools/check_single_source.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -358,6 +367,10 @@ carriers:
   finish: skill
   review: skill
   session: skill
+  # § 24's counterpart of the role above it, mapped here because this project is where the gap it
+  # closes was measured: the phrase every one of the surveyed projects' tooling already classified
+  # as a bookkeeping turn, with no implementation anywhere.
+  load: skill
 
 # § 23. All three thirds: the backlog is this project's own tracker, memory is what a later
 # session reads this build's rulings out of, and the commit is § 6's above. ⚠️ `memory` is stated
@@ -442,8 +455,9 @@ context:
     # keeps per-item working papers out of its history, so `committed` is false — and that is
     # what obliges the store to sit outside every tree, because `kind: worktree` with
     # `work_in_shared_checkout: never` means every item's work happens in a tree that is then
-    # removed. ⚠️ The temp-directory hazard § 11 states is accepted here knowingly: a plan lost
-    # to a reboot is replayable from the session transcript, which is #31's own finding.
+    # removed. ⚠️ The temp-directory hazard § 11 states is accepted here knowingly, and § 24 is
+    # where the replay it rests on is stated: a file the session wrote whole replays from the
+    # transcript byte for byte, and one it only ever edited does not.
     dir: "$TMPDIR/mjolnir/artifacts"
     committed: false
 

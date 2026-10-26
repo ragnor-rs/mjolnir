@@ -135,6 +135,13 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/prune.py", "hook"],
             "timeout": 60,
             "statusMessage": "Reaping the trees whose branches have landed"
+          },
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/load.py", "resume"],
+            "timeout": 10,
+            "statusMessage": "Reading what this resumed window states about itself"
           }
         ]
       }

@@ -228,11 +228,18 @@ key either way. The remedy is the same act in both cases — make the file match
 what is marked required and deleting what is marked retired — so what is given up is a diagnostic,
 not a behaviour, and no reader has to be told what to do with a revision it can no longer read.
 
-## The loop — nine roles
+## The loop — ten roles
 
 File a work item · gate it into committed work · start it · finish it · review it · deploy ·
-log the day · keep the session's books · produce deliverables. Two utilities travel beside the
-loop without being part of it.
+log the day · keep the session's books · restore a session's context · produce deliverables. Two
+utilities travel beside the loop without being part of it.
+
+⚠️ **Keeping the session's books and restoring its context are one pair**, and the count moved to
+ten when the second of them was written: bookkeeping persists what happened at a boundary and
+[§ 24](#24-session-restore--the-readings-a-pass-is-resumed-from) restores it at the start of the
+next pass. ⛔ **A pair rather than one role with two modes**, because what each may do is opposite —
+one writes and the other is read-only — and a role free to do both would be free to restore by
+deciding.
 
 A project maps a subset — an absent role is a legitimate configuration, not a partial install;
 one adopting project runs a single role. Each role's carrier (skill, command or hook) is §7's
@@ -2194,7 +2201,7 @@ and not by a reader rejecting a configuration.
 ### What a hook refuses, and the record it reads
 
 ⛔ **A hook refuses an act on the strength of a record, never on a reading of the work.** The
-division is [§ The loop](#the-loop--nine-roles)'s — procedure produces a record and enforcement
+division is [§ The loop](#the-loop--ten-roles)'s — procedure produces a record and enforcement
 reads it — and this subsection is the enforcement half of it: what a guard reads, what a refusal
 has to name, and what a project with nothing to guard gets.
 
@@ -3266,7 +3273,7 @@ branch_model:
   procedure knows**: a build directory, a dependency cache, an editor's directory and a log are
   four unrelated names, and a carrier shipping any of them would be this toolkit carrying a
   project's value — which
-  [the check that holds this toolkit to naming none](../../../docs/single-source-of-truth.md#the-second-sweep)
+  [the check that holds this toolkit to naming none](../../../docs/single-source-of-truth.md#the-second-sweep-naming-no-other-project)
   refuses. ⚠️ **`[]` is a stated absence and the safe one**: a project stating it keeps every tree
   holding any ignored file at all, which costs disk rather than data.
 - **Each entry is a path matched with the shell's own glob rules, anchored at the *end* of the
@@ -3526,7 +3533,7 @@ done:
   refuse one of two correct configurations.
 - ⛔ **`answered_by: human` is not satisfiable by the procedure, and no amount of reading the diff
   satisfies it.** The answer is **recorded** where something else can read it and the record says
-  **who** answered — the division [§ The loop](#the-loop--nine-roles) already states: procedure
+  **who** answered — the division [§ The loop](#the-loop--ten-roles) already states: procedure
   produces a record and enforcement reads it, so the record is written whether or not a hook
   refuses the merge on it.
   ⚠️ **It is the record and not the report**: a verdict that exists only in a role's reply is a
@@ -4852,6 +4859,108 @@ one § 11 names rather than a second store beside it** — a role's working pape
 gate has to read are two other things, which [§ 11](#the-store-and-when-an-in-tree-store-is-safe)
 and [§ 7](#what-a-hook-refuses-and-the-record-it-reads) rule respectively, and a save that wrote to
 the wrong one of the three is either lost with the tree or unreadable by the thing that needs it.
+
+## 24. Session restore — the readings a pass is resumed from
+
+**The counterpart of [§ 23](#23-session-bookkeeping--which-thirds-a-project-runs): that role
+persists what happened at a boundary, this one restores what is in flight at the start of a pass.**
+⛔ **It declares no key.** Which readings a load takes is procedure, for the reason the thirds one
+section up are configuration: the thirds were measured diverging across the projects this surface
+was derived from, and this role was measured implemented in **none** of them — a phrase those
+projects' own tooling already classified as a bookkeeping turn, with no implementation anywhere to
+diverge from
+([the measurement](../../../docs/configuration-surface.md#the-tenth-role-every-copy-named-and-none-of-them-wrote)).
+
+```yaml
+# procedure: readings
+```
+
+⛔ **`readings` is the key this surface will never declare, and a configuration stating one is
+refused with the key named.** It is the key a project would reach for first — the shape
+`session.parts` has one section up — and ⚠️ **the two are not the same question**: a third a
+project does not run is work nobody asked for, while a reading a project switched off is a reading
+whose absence reads exactly like a reading that found nothing. ⛔ **Which is this role's whole
+failure mode**: it reports rather than acts, so what it leaves out is all it can get wrong.
+
+- ⛔ **A load restores context; it does not decide anything.** The mirror of § 23's rule for the
+  role it is the counterpart of: it does not start work, pick the next item, fix what it finds, move
+  a state or answer a question somebody is waiting on. It reports, and the person reading it
+  decides. ⚠️ **A load that helpfully starts the obvious next thing has removed the moment a person
+  sees the state**, which is the moment the role exists for.
+- ⛔ **And it is read-only — no tracker write, no commit, no branch switch, no file restored, and no
+  fetch.** ⚠️ **The fetch is the one worth naming**, because it is the one a reading would seem to
+  need: a fetch writes refs into the repository, so every answer about a remote is against the
+  remote-tracking refs the tree already has and **says so**. A reading stated as current that is
+  one fetch stale is the same defect as a cold environment reported as warm, one axis over.
+- ⛔ **Every reading is reported, and one that could not be taken is reported as that**
+  ([§ 11](#a-report-names-what-it-could-not-establish)). ⚠️ **Three verdicts and not two**: taken,
+  absent because the mechanism it reads is not there, and **unanswered** because nothing asked. The
+  third is the one a report collapses into a green by accident.
+- ⛔ **A disagreement between what the item says and what the branch says is surfaced and never
+  resolved.** An item in flight with no branch, and a branch whose item is already closed, are the
+  two cheap tells that a pass was interrupted — and resolving either is an act, which belongs to the
+  role that owns it.
+- ⛔ **The artifact is read first and the transcript only as evidence**, which is
+  [§ 11](#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it)'s order and not
+  this section's: the artifact was written for this moment, and a window's summary is lossy.
+- ⛔ **Whether what the next step needs is standing is read from the project's own script and from
+  nowhere else.** [§ 1](#what-the-procedure-models-and-what-it-only-names-and-calls) already rules
+  that a procedure restoring an environment is not surface — no role reads a verdict out of it — so
+  this role **names** what the project points at and reports the reading as one it could not take
+  where there is nothing to name. ⚠️ **Never as an environment that is up**, which is the one
+  mis-report this role's own acceptance is written against.
+- ⛔ **A recalled fact is checked before it is reported, or reported as unchecked.** Memory states
+  what was true when it was written, so a load that restates one has made a stale fact this
+  session's premise — the cheapest way a wrong premise enters work. ⚠️ **Where the store that third
+  writes is declared by no key** (§ 23's own absence, #35's to close), the reading is reported
+  unavailable like any other.
+- ⛔ **The readings themselves are not listed here**, by the rule § 23 gives for a save artifact's
+  form one section over: a list beside this rule would be one list for one, holding nothing to the
+  carrier that performs it while promising a sweep whatever the carrier dropped. ⚠️ **What that
+  leaves open is stated rather than closed**: a reading the carrier adds and this section's prose
+  fall out of step with no check reporting it.
+
+### What a load may not assume survived
+
+⛔ **A load runs after an arbitrary gap, and the gap is where things vanish** — so each of these is
+read rather than assumed, and reported rather than worked around:
+
+| what may be gone | what the role does about it |
+|---|---|
+| **A working file a pass referred to.** [§ 11](#the-store-and-when-an-in-tree-store-is-safe) states the hazard the other way round — a store under a system temp directory does not survive a reboot, and a pointer to it outlives the file in silence | Report it missing **and** whether it can be replayed, which is answerable rather than a matter of hope: a file the session wrote whole is in the record with its full content and replays byte for byte, and one the session only ever edited is not. ⛔ **Reported and not replayed**: replaying is a write |
+| **The claim on the item.** A session that died holds the same published ref as one that is running ([§ 10](#the-claim-on-a-work-item)) | Report both readings and **ask**. ⛔ **Resolved by nobody here**, which is that section's rule and the one leg of the route a person still resumes by hand |
+| **The window the last pass ran in.** A compaction drops what the summary did not keep, and nothing left in the window says what was lost | Report what the record says a compaction dropped. ⚠️ **What the summary dropped is gone from the window and is still in the record**, which is what makes the replay above answerable at all |
+| **The checkout itself**, moved or renamed, which breaks every absolute path written down earlier | Report the path that does not resolve as that, never as the thing it pointed at being absent |
+
+⚠️ **The record a pass leaves is wider than the one file the obvious sweep reads**, and the
+direction it errs in is against the sweep: work delegated to a sub-window — the practice
+[§ 11](#11-session-context) recommends — writes its trace beside the pass's own record rather than
+into it, so a sweep reading one file under-reports exactly the passes that were run well. ⛔ **So
+what sits beside it is counted and said out loud rather than read**, the count being what tells a
+person there is something there to go and read, and reading all of it being a spend of the one
+resource this role exists to protect.
+
+### The window's own reading
+
+⛔ **A resume into a nearly full window is a different starting position from a resume into an empty
+one, and the report says which.** It is the one live reading of the window the harness offers, it
+arrives on the event that opens a session, and
+[`docs/configuration-surface.md`](../../../docs/configuration-surface.md#why-there-is-no-threshold-on-the-surface)
+records why there is no threshold on this surface to compare it against.
+
+⛔ **The reading reaches the session and not only the person**, which is the opposite channel from
+the one [§ 19](#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs) uses for the
+price of the same event: what a resume costs in money is somebody's call, and how much of the window
+is already spent changes what the pass should do next — so it has to reach whoever is writing.
+⚠️ **Both are read off one payload and neither is the other**, which is why the two arms are
+separate and the report says which of them said nothing.
+
+⛔ **Where the harness hands no reading, the report says it was handed none.** ⚠️ **Measured rather
+than assumed, and the measurement is the reason this is a rule**: on the harness version this was
+written against, a resumed session's event carried no token count, no time since the last response
+and nothing about the prompt cache — so a role written to rely on them would report a resume as
+cheap, an unstated figure and a small one reading identically
+([the measurement](../../../docs/configuration-surface.md#what-a-resumed-session-is-actually-handed)).
 
 ## What the toolkit installs into a project, and what takes it out
 

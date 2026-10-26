@@ -12,13 +12,14 @@
 # projects rather than derived from the surface — it is carrier basenames and no project's name —
 # and #104's decision 4 is where it gives way to each project's own `carriers:` block.
 
-# The nine roles of the loop, by the key a `carriers:` block uses for each.
+# The ten roles of the loop, by the key a `carriers:` block uses for each.
 #
-# ⚠️ The surface states the loop in prose (schema.md § "The loop — nine roles") and states no
+# ⚠️ The surface states the loop in prose (schema.md § "The loop — ten roles") and states no
 # key per role, so this list is the only place the keys are written down — and the check holds
 # it to the surface both ways: the heading's count word and the number of `·`-separated phrases
-# in the paragraph under it must both equal the length of this list. A tenth role added to the
-# surface reddens this check rather than being silently uncounted.
+# in the paragraph under it must both equal the length of this list. An eleventh role added to
+# the surface reddens this check rather than being silently uncounted — which is what it did when
+# the tenth arrived, reported as the loop's size disagreeing three ways.
 roles:
   - file
   - gate
@@ -28,6 +29,7 @@ roles:
   - deploy
   - day_log
   - session
+  - load
   - deliverables
 
 # How a carrier's own name maps to a role. Keyed by the carrier's basename — a skill directory,
@@ -63,6 +65,9 @@ carriers:
   day-report:     { role: day_log }
   save:           { role: session }
   ship:           { role: session, partial: "commit third only — the shape #12 names" }
+  load:           { role: load }         # the restoring role, the counterpart of `save` (#31) —
+                                         # and the one carrier whose basename is also the
+                                         # role key, which is why it reads as a repetition
   deliverables:   { role: deliverables }   # itself three roles sharing one name (#14)
 
   # The names a reconciled role is shipped under, which are the role's own rather than the

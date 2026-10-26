@@ -11,10 +11,12 @@ cites.
 Projects are referred to as A–F throughout. Naming them is forbidden here, and the counts are
 what carry the argument anyway.
 
-## The pattern is nine roles, not eight
+## The survey found nine roles, not eight
 
-The loop's statement is [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles).
-What the survey established is the count: gating is a genuine ninth role rather than a variant.
+The loop's statement is [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--ten-roles),
+and it now states ten — the tenth is the subsection below, which the survey found in every project's
+tooling and in no project's implementation. What the survey established about the nine it could read
+is the count: gating is a genuine ninth role rather than a variant.
 One project splits intake into *write the item* and *gate it into committed work*, and its gate
 copy owns the due date and the estimate; the projects without the role fold a little into filing
 and a little into starting, and neither place sets a date. The same project refuses to let
@@ -47,6 +49,28 @@ open where a decision belongs. The one genuinely per-project input, what bar a d
 have reached, is already
 [`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)'s
 rule and is read there rather than restated.
+
+### The tenth role every copy named and none of them wrote
+
+The role that **restores** a session's context is the counterpart of the one that persists it, and
+the survey found it in a shape none of the other nine came in: named by the tooling of every project
+that has any of this tooling, and implemented by none of them. The phrase a session is loaded with
+sits in the excluded-turn list of **each day-log script the survey read** — the five of the six
+projects that carry one — classified there as the tooling's own upkeep, exactly as the save it
+mirrors is, so those scripts already deducted the minutes of a role no project had written down.
+⚠️ **Which is also what settles whether it is work**: the classification is those
+scripts', it predates the role being written, and
+[`schema.md § 24`](../plugins/mjolnir/config/schema.md#24-session-restore--the-readings-a-pass-is-resumed-from)
+changes nothing about it.
+
+That is the strongest case for extracting a role there is, and it is also the weakest evidence base
+of any role here, both of which are worth saying plainly:
+
+| | |
+|---|---|
+| **Why it is a role** | Tooling in several projects names it, people invoke it, and it is performed from memory and differently every time. Its failure mode is quiet — a sweep that misses the unpushed commits, reports a cold environment as warm, or restates a stale recollection as current produces a confident and wrong picture of where the work is, which the next hour is then spent acting on |
+| **Why its readings are procedure rather than configuration** | The thirds of the role it mirrors are configuration because the copies **diverged** — counted in [the section on that role](#the-bookkeeping-role-three-copies-that-are-a-third-of-it-and-two-keys-that-came-out-of-it) and nowhere else. Here there is nothing to diverge from, so a key stating which readings run would be a project's licence to switch one off — and a reading switched off reads exactly like a reading that found nothing, which is this role's whole failure mode |
+| **What that leaves weaker than the nine** | Every other role here was reconciled from copies that could be read against each other. This one was derived from performing it, so the list of readings is one performer's habit written down and held by a carrier rather than a merge of five. The honest consequence is that it is likelier than its siblings to be missing a reading, and the place that shows up is a report that was confidently complete |
 
 ### The loop does not continue itself
 
@@ -141,7 +165,7 @@ completion that some reason about explicitly and others do not have.
 ## The axes, and why each is independent
 
 The axes are stated in
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles) — which
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--ten-roles) — which
 carries the list, and no count, so this document does not hold a copy of one. There are more than
 the three that are obvious. The measurements that forced each to be independent:
 
@@ -645,7 +669,7 @@ this repository's own roles are handed holds neither.
 ## What is an ordered list of named checks rather than procedure
 
 No count is given, for the reason [`schema.md § The
-loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles) gives for the axes — a count
+loop`](../plugins/mjolnir/config/schema.md#the-loop--ten-roles) gives for the axes — a count
 restated elsewhere drifts the moment one is added — and this section is the demonstration: it gained
 what counts as done after it was written, which would have made a number in the heading wrong while
 the gate stayed green.
@@ -1008,7 +1032,7 @@ reach it and no other's. Hence the statement as procedure in
 
 **Why the surface, and not either of the two homes it was weighed against.** The discipline is read
 by two legs — the implementing one, which no role owns, and the reviewing role — and
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles) already settles
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--ten-roles) already settles
 what follows: a rule read by two roles and written in one of their skills is a second authority for
 the other. Promoting these rules into the reviewing role's own text is therefore the option with a
 precedent against it rather than the cheap one, and it is ruling 11's reasoning arriving a second
@@ -1206,7 +1230,7 @@ repository's standing remedy — and the gate prints the live figure instead as 
 own run's output.
 
 What is stable enough to state without a number going stale: **a single role runs to thousands of
-tokens and carries dozens of ⛔ and ⚠️ markers, and the loop has nine roles.** A window largely
+tokens and carries dozens of ⛔ and ⚠️ markers, and the loop has ten roles.** A window largely
 spent on procedure before a line of anyone's code is read is what § 11 exists to notice, and the
 harness vendor's own guidance is that an over-long instructions file is not read selectively — it
 is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
@@ -1241,8 +1265,70 @@ rules are stated instead, and the one live reading goes where something already 
 guard's own bar at
 [`schema § 19 → What an approval is per`](../plugins/mjolnir/config/schema.md#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs),
 which reports a resume priced above it and reports **no figure** where the harness gave none, and
-[#31](https://github.com/ragnor-rs/mjolnir/issues/31), the role that restores a session, for the
-context half of the same payload.
+[`schema § 24 → The window's own reading`](../plugins/mjolnir/config/schema.md#the-windows-own-reading),
+the role that restores a session, for the context half of the same payload. ⚠️ **Both arms are
+written around that payload carrying nothing**, which the subsection below is why.
+
+### What a resumed session is actually handed
+
+The field list two paragraphs up — the one carrying the vendor's own link — is the vendor's
+documentation. What a resumed session's event actually carried,
+probed rather than read: **five fields, and none of the four the documentation names.** A
+`SessionStart` payload on a resumed session carried the session's own identifier, its transcript
+path, the working directory, the event name and `source: resume` — no token count, no time since the
+last response, nothing about the prompt cache, and no price. The harness in question is **eighteen
+patch versions older** than the one the fields are documented from, which is the explanation and not
+an excuse: a machine running this toolkit is as likely to be behind as current.
+
+Three consequences, and the first is the one that matters:
+
+- ⚠️ **An arm written to rely on those fields reports nothing on a machine where they are absent,
+  and nothing is indistinguishable from a cheap resume.** So both arms reading that payload are
+  written around the absence — the price half already reported *no figure* rather than *free*, and
+  the context half says it was handed no reading rather than describing an empty window.
+- ⚠️ **A tested-absence claim about a harness event is an assertion until a probe answers it**, and
+  this is the second time that has been paid for in this repository. The probe is cheap: a settings
+  file supplying one hook, a print-mode session, and the same session resumed — the payload lands in
+  a file and the question is answered in two commands.
+- ⛔ **What the probe measured is a version and not a contract**, so the arms are written to read the
+  fields where they are there. A reading that arrives tomorrow is reported with no edit, and the
+  rule those arms are held to is
+  [`schema § 24 → The window's own reading`](../plugins/mjolnir/config/schema.md#the-windows-own-reading)
+  rather than anything stated here.
+
+### What a compaction leaves behind, and what it does not take
+
+The replay answer the restoring role gives rests on this, so it is measured rather than reasoned
+about. A compaction **appends** to the transcript it summarises rather than replacing it: one
+`system` record carrying the compaction's own metadata — its trigger, the token count before and
+after, and the cumulative total dropped — and one `user` record flagged as the summary, marked
+visible in the transcript only. Measured on one of this repository's own compacted sessions: 617,688
+tokens before, 14,285 after, 603,403 dropped, and **426 tool calls still in the file ahead of the
+boundary**, 132 of them calls that wrote a file, each with its full input.
+
+- ⛔ **So a compaction costs the window and not the evidence.** A file a session wrote before a
+  compaction is as replayable after one as before it, which is the difference between *lost* and
+  *out of the window* —
+  [`schema § 24 → What a load may not assume survived`](../plugins/mjolnir/config/schema.md#what-a-load-may-not-assume-survived)
+  is where that is a rule.
+- ⚠️ **The replay has a real limit, and it is the first call rather than the compaction.** A file
+  the session wrote whole is in the record with its content; a file it only ever *edited* is in the
+  record as a set of differences against content nothing there holds. The harness keeps the
+  pre-edit copy in a store of its own, which the sweep names rather than reads.
+- ⚠️ **One logical session is one session transcript here**, which is the opposite of what was
+  expected when the role was specified: across **863** session transcripts in this machine's store —
+  the top-level files, which is the universe the claim is about and not the 2,406 files the store
+  holds in all — none carried records of a
+  session other than the one its name states, and a resumed session probed directly wrote to the
+  same path it had before. So *the last session* and *the last session transcript* coincide, and the
+  sweep is written against the file.
+- ⚠️ **The sidecars are the other half of that and go the other way.** In this project's own store:
+  **153** subagent transcripts and **41** tool-result directories against **138** session
+  transcripts — and every sidecar sampled carries its **parent's** session identifier, which is
+  exactly the spans-more-than-one-file shape the item predicted, one level down from where it was
+  predicted. Delegating to a sub-window is the practice § 11 recommends, and it writes its trace out
+  of the file a sweep reads — so the sweep counts what is beside it and says it counted rather than
+  read.
 
 ### Why `committed` is a key of its own, and not implied by `dir`
 
