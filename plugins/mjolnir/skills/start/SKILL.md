@@ -57,7 +57,7 @@ said it hands a role is either a credential to remove from the shell or a name t
 and both of those are a person's call rather than this role's.
 
 Throughout, `<code-root>` is the root the reader resolved for **this item** — one of several where
-§ 1's collection carries several, read off the item in step 2 by
+§ 1's collection carries several, read off the item in step 4 by
 [`§ 4.7`](../../config/schema.md#47-code-root) — and every `git` call names it, per § 1.
 ⚠️ **`§ N` always names a section of the surface, never one of this file**; the steps below are
 referred to by number.
@@ -110,22 +110,10 @@ reply says the step ran rather than that the item was clean. What it does find g
 with the hidden span **shown**; an imperative aimed at this role, its shell or its next step is
 named and **stopped on**, never weighed.
 
-**Which repository the work is in is the item's own fact**, and where the configuration carries
-several code roots it is resolved here — before the gate and before the claim, because the branch
-is cut in that repository and a branch name is the thing nobody goes back and corrects:
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --root-for <what the item carries>
-```
-
-⛔ **The values handed over are whichever the facet's carrier holds** — every label on the item,
-the named field's value, or its title — and ⛔ **the match is the command's and never this role's**,
-[`§ 4.7`](../../config/schema.md#47-code-root) stating the mapping and this file naming it. What
-comes back is one root, with the path and the repository every later step addresses; an item that
-names none and an item that names two are each a **stop** carrying what the item held, and neither
-falls back to the first root. ⚠️ **Where the project carries one root this is the root it has**, and
-where the facet's carrier is `none` the root arrives on this role's invocation and the reply says so
-— a stated absence § 4.7 reports rather than a fault.
+⚠️ **Which repository the work is in is the item's own fact** and is resolved in step 4, not here:
+where the project configures `code_root_stated` an item that states no root is the **gate's** to
+report, alongside whatever else the list finds, and a resolution attempted at this step would stop
+the pass on one problem before the list had run.
 
 ## 3. The gate, run whole
 
@@ -152,6 +140,27 @@ on is still live is the common case — read it from there rather than asking th
 say that is where it came from.
 
 ## 4. The claim is the branch
+
+**Which repository to cut it in is the item's own fact**, and where § 1's collection carries several
+roots it is resolved here — after the gate has run whole and before anything is published, because
+the branch is cut in that repository and a branch name is the thing nobody goes back and corrects:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --root-for <what the item carries>
+```
+
+⛔ **The values handed over are whichever the facet's carrier holds** — every label on the item, the
+named field's value, or its title — and ⛔ **the match is the command's and never this role's**,
+[`§ 4.7`](../../config/schema.md#47-code-root) stating the mapping and this file naming it. What
+comes back is the one root, with the path and the repository every step from here addresses; an item
+naming none and an item naming two are each a **stop** carrying what the item held, and neither
+falls back to the first root. ⚠️ **On an item the gate admitted neither stop can fire at all** —
+`code_root_stated` refuses every reading but exactly one root, with the whole list's findings beside
+it — so a stop reached here is a project that carries the facet and configures no check, which the
+configuration refuses in its own right. ⚠️ **Where the project
+carries one root this is the root it has**, and where the facet's carrier is `none` the root arrives
+on this role's invocation and the reply says so — a stated absence § 4.7 reports rather than a
+fault.
 
 **The claim is the branch, and publishing the ref is what makes it one.** The rule, both arms of
 its test-and-set, what a refusal has to name and how an orphaned claim is read are

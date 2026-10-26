@@ -1778,7 +1778,9 @@ title, which is what a tracker with neither fields nor labels still has.
 A label is read through `read_item` and written through `set_labels`, a field through `read_item`
 and `set_field`, and a title prefix is read through `read_item` and written by the title
 `create_item` is handed — so no tracker this surface names needs a new capability to carry this
-facet or to state its absence.
+facet or to state its absence. ⚠️ **That there is no operation rewriting a title is not a gap
+here**: the no-rewriting rule below is what makes the write a once-only act, so the carrier that
+rides the title needs no second write to be complete.
 
 ⛔ **`roots` is total over the collection's keys, and the reader refuses a gap naming the root.**
 That is § 4.1's rule for the branch prefix, and it fails in the same expensive place: a root with
@@ -1854,14 +1856,17 @@ or quiet:
   the thing a gate compares.
 
 - ⛔ **`code_root_stated` reads [`§ 4.7`](#47-code-root) and is the second check in this library
-  whose input is another facet.** It passes an item whose stated value resolves to one of § 1's
-  named roots and stops one that states none or states something no root answers to. ⛔ **A project
+  whose input is another facet.** It passes an item whose stated value resolves to **exactly one**
+  of § 1's named roots, and stops all three of the other readings: an item that states none, one
+  that states something no root answers to, and one that states two. ⛔ **A project
   carrying the facet configures it and is refused where it does not**, which is the direction the
   sibling above is refused in, inverted for the reason that matters here: the check is the last
   point before a claim is taken, and a role past the gate that stops instead has already read the
   item, cut nothing and reported a gap the gate was configured to catch. ⚠️ **And a project with
   one code root may not configure it** — there is one answer, so the check would pass every item
-  and read as coverage where § 4.7 refuses the facet outright.
+  and read as coverage where § 4.7 refuses the facet outright. ⛔ **What answers it is the same
+  resolution the roles run** rather than a second reading of the mapping: a gate that matched the
+  carrier itself could admit an item the role that resolves its root then stops on.
 
 ### The mark that says an item is not ready, and the two roles that read it
 
