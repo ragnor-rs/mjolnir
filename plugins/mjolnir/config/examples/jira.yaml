@@ -78,10 +78,10 @@ work_item:
     values: [1, 2, 4, 8, 24]
     # ⚠️ What the sprint carries is the GATE's business and not this facet's: the readiness
     # list below checks the sprint and the fix version, so an item with no estimate still
-    # starts. That is a statement about the gate, and reading it as an absent carrier is how
-    # this file previously came to claim the project had no estimate at all.
-    # Who writes it is § 4.3's question rather than this file's; no role here writes one
-    # today, so the value arrives by hand.
+    # starts. That is a statement about the gate, and a configuration that reads it as the
+    # carrier being absent claims a project sizes nothing while its own board sizes nearly
+    # every item. Who writes it is § 4.3's question rather than this file's; no role here
+    # writes one, so the value arrives by hand.
   template:
     carrier: file
     dir: ".claude/templates"
