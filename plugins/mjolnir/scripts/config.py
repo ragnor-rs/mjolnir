@@ -1041,11 +1041,14 @@ class Config:
                 "⛔ The first root is not the answer -- a role stops here rather "
                 "than landing the work in whichever repository is written first.",
             )
+        # ⚠️ The roots are named and their number is not: the mapping may hold
+        # more than two, and a message saying *two* would be wrong on a project
+        # this reader accepts.
         raise ConfigError(
             "work_item.code_root",
             f"resolves to {', '.join(sorted(matched))} on this item, which carries "
-            f"{shown}. An item belongs to one repository (§ 4.7), and which of two "
-            "stated answers is meant is not this reader's to choose.",
+            f"{shown}. An item belongs to one repository (§ 4.7), and which of the "
+            "roots it names is meant is not this reader's to choose.",
         )
 
     @property
@@ -4314,6 +4317,14 @@ def self_test() -> int:
             )
         # ⛔ And the stop names the roots or the values rather than a count: the
         # remedy is stating one of them on the item.
+        #
+        # ⚠️ Bound before the `try` and not only inside it. Reviewed on this
+        # change: with the resolution planted away, the three arms above reddened
+        # correctly and this one raised `NameError` instead of reporting --
+        # aborting the suite over every assertion after it, which is every § 4.7
+        # plant below. A traceback where a verdict belongs, in exactly the run
+        # the plants exist for.
+        named_in_stop = False
         try:
             several.root_for(["a label no root answers to"])
         except ConfigError as error:

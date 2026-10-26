@@ -1847,18 +1847,20 @@ or quiet:
   board automation did not fire, stops without being flagged. A gate that flags those flags an
   item whose author has nothing to fix.
 
-- ⛔ **`queue_position` reads [`§ 4.6`](#46-priority) and nothing else.** It is the one check in
-  this library whose input is another facet, and a project configuring it while that facet's
-  carrier is `none` is **refused, naming the facet's own `absent_reason`** — the gap is settled
-  where the configuration is read rather than by a gate running a check with nothing to compare.
+- ⛔ **`queue_position` reads [`§ 4.6`](#46-priority) and nothing else**, and a project configuring
+  it while that facet's carrier is `none` is **refused, naming the facet's own `absent_reason`** —
+  the gap is settled where the configuration is read rather than by a gate running a check with
+  nothing to compare. ⚠️ **No count of the checks whose input is another facet is carried here, and
+  no claim that this is the only one**: what a bullet states is which facet its check reads, so a
+  check added to the library above states its own and falsifies nothing written here.
   ⚠️ **It is not [§ 12](#12-ordering)'s ordering.** That facet says which item to *offer* and a
   project may configure either of the two without the other, so an ordering is not available as
   the thing a gate compares.
 
-- ⛔ **`code_root_stated` reads [`§ 4.7`](#47-code-root) and is the second check in this library
-  whose input is another facet.** It passes an item whose stated value resolves to **exactly one**
-  of § 1's named roots, and stops all three of the other readings: an item that states none, one
-  that states something no root answers to, and one that states two. ⛔ **A project
+- ⛔ **`code_root_stated` reads [`§ 4.7`](#47-code-root) and nothing else**, as the bullet above
+  reads § 4.6. It passes an item whose stated value resolves to **exactly one** of § 1's named
+  roots, and stops all three of the other readings: an item that states none, one that states
+  something no root answers to, and one that states two. ⛔ **A project
   carrying the facet configures it and is refused where it does not**, which is the direction the
   sibling above is refused in, inverted for the reason that matters here: the check is the last
   point before a claim is taken, and a role past the gate that stops instead has already read the
