@@ -749,6 +749,157 @@ def _code_roots(data: dict, facts: dict) -> tuple[dict[str, dict], bool]:
     return roots, True
 
 
+def _gates_on_code_root(data: dict) -> bool:
+    """Whether `readiness` configures § 5's `code_root_stated`."""
+    gate = _get(data, "readiness")
+    return isinstance(gate, list) and any(
+        isinstance(entry, dict) and entry.get("check") == "code_root_stated"
+        for entry in gate
+    )
+
+
+def _code_root_facet(data: dict, roots: dict[str, dict]) -> None:
+    """§ 4.7: which of § 1's roots a work item belongs to.
+
+    ⛔ Project-level rather than one of `validate`'s, and that is not a placement
+    preference: a view carries one root's path at `roots.code`, so every rule in
+    `validate` is blind to how many roots there are -- which is the whole
+    condition this facet turns on. ⚠️ It runs *after* those rules, so a facet
+    that is both misplaced and missing its reason is refused on the reason
+    first; the two refusals name different keys and neither hides the other.
+    """
+    named = ", ".join(repr(key) for key in roots)
+    facet = _get(data, "work_item.code_root")
+
+    # ⛔ The single form, refused with the facet stated. § 4.7's reason is § 1's
+    # retirement argument taken before the key exists: with one repository there
+    # is one answer, so the value is read by nothing and a project that wrote it
+    # would be ignored in silence.
+    if len(roots) < 2:
+        if facet is not None:
+            raise ConfigError(
+                "work_item.code_root",
+                f"is stated while `roots.code` carries one root ({named}). § 4.7 "
+                "makes this facet the answer to which of several repositories an "
+                "item belongs to, and a project with one is never asked for it -- "
+                "so the value would be read by nothing. Delete the facet, or state "
+                "the roots it is choosing between (§ 1).",
+            )
+        if _gates_on_code_root(data):
+            raise ConfigError(
+                "readiness",
+                f"configures `code_root_stated` while `roots.code` carries one root "
+                f"({named}). The check reads § 4.7 and there is one answer, so it "
+                "would pass every item and read as coverage (§ 5).",
+            )
+        return
+
+    carrier = _get(data, "work_item.code_root.carrier")
+    if carrier is None:
+        raise ConfigError(
+            "work_item.code_root.carrier",
+            f"required where `roots.code` carries several roots ({named}): every "
+            "role past the gate resolves the repository from the item, and § 4.7 "
+            "is where a project states what carries that fact. ⛔ A role with "
+            "nothing to read stops rather than taking the first root, so the gap "
+            "is a loop that cannot run on all but one of these repositories. "
+            "State the carrier, or `none` with the reason the tracker cannot hold "
+            "it.",
+        )
+
+    # ⛔ The stated absence, and the check that reads the facet refused with it --
+    # § 4.6's shape for `queue_position`, with the project's own reason quoted
+    # rather than a sentence of this reader's.
+    if carrier == "none":
+        if _gates_on_code_root(data):
+            stated = " ".join(
+                str(_get(data, "work_item.code_root.absent_reason")).split()
+            )
+            raise ConfigError(
+                "work_item.code_root.carrier",
+                "is `none` while `readiness` configures `code_root_stated`, which "
+                "reads this facet and nothing else (§ 5). The check would be "
+                "refusing every item for a fact the tracker cannot hold, and the "
+                f"facet's own stated reason is: {stated!r}. Carry the facet, or "
+                "drop the check -- the root then arrives on each role's invocation "
+                "(§ 4.7).",
+            )
+        return
+
+    if carrier == "label" and not _get(data, "work_item.code_root.label_prefix"):
+        raise ConfigError(
+            "work_item.code_root.label_prefix",
+            "required when the carrier is `label`: the prefix is what keeps this "
+            "axis apart from every other label on an item (§ 4.7), which is "
+            "§ 4.6's rule for the same carrier one facet over.",
+        )
+    if carrier == "field" and not _get(data, "work_item.code_root.field"):
+        raise ConfigError(
+            "work_item.code_root.field",
+            "required when the carrier is `field`: there is nowhere to read the "
+            "root from (§ 4.7).",
+        )
+
+    mapping = _get(data, "work_item.code_root.roots")
+    if not isinstance(mapping, dict) or not mapping:
+        raise ConfigError(
+            "work_item.code_root.roots",
+            f"is {mapping!r}; § 4.7 states it as every named root of § 1 mapped to "
+            "what the carrier holds for it. A carrier with no mapping is a value on "
+            f"an item that names no repository, with {named} to choose between.",
+        )
+    # ⛔ Total over the collection, which is § 4.1's rule for the branch prefix and
+    # fails in the same expensive place: the gap surfaces at a role that has
+    # already admitted the item.
+    for key in roots:
+        if key not in mapping:
+            raise ConfigError(
+                f"work_item.code_root.roots.{key}",
+                "is missing, and § 4.7's mapping is total over § 1's roots. A root "
+                "with no value is a repository no item can name, and nothing refuses "
+                "the item until a role needs the answer.",
+            )
+    seen: dict[str, str] = {}
+    for key, value in mapping.items():
+        at = f"work_item.code_root.roots.{key}"
+        if key not in roots:
+            raise ConfigError(
+                at,
+                f"names a root `roots.code` does not carry. It carries {named} "
+                "(§ 4.7). A value mapped to nothing is an item resolving to a "
+                "repository the project cannot address.",
+            )
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(
+                at,
+                f"is {value!r}; § 4.7 states what the carrier holds for this root, "
+                "and an entry naming nothing matches no item while reading as a "
+                "root that is carried.",
+            )
+        first = seen.setdefault(value, key)
+        if first != key:
+            raise ConfigError(
+                at,
+                f"is {value!r}, which `work_item.code_root.roots.{first}` holds as "
+                "well. One value answering for two roots is an item that resolves "
+                "to both, and choosing either would be this reader deciding what "
+                "the configuration did not (§ 4.7).",
+            )
+
+    # ⛔ And the check, required rather than refused -- the inverse direction from
+    # § 4.6's, for the reason § 5 states: this is the last point before a claim is
+    # taken, and a role that stops instead has already read the item and reported
+    # a gap the gate exists to catch.
+    if not _gates_on_code_root(data):
+        raise ConfigError(
+            "readiness",
+            "configures no `code_root_stated` while `work_item.code_root` carries "
+            f"the roots {named} (§ 5). An item naming no repository would then be "
+            "admitted by the gate and stop a role downstream, which is the one "
+            "place § 4.7's answer is expensive to be missing.",
+        )
+
+
 class Config:
     """A project's facts, resolved. Read through the accessors, not the dict."""
 
@@ -818,10 +969,10 @@ class Config:
         """One of § 1's roots by name, or a stop naming the ones there are.
 
         ⛔ The stop is § 1's: a role handed a root this project does not carry
-        reports it rather than falling back to whichever root is first. Which
-        root a given work item belongs to is #57's question and is stated
-        nowhere yet, so the key reaching here comes from a person or from an
-        invocation.
+        reports it rather than falling back to whichever root is first. The key
+        reaching here is the name § 1's collection gives a root -- from a
+        person, from an invocation, or from `root_for` below, which is where an
+        item's own answer is turned into one.
         """
         if key in self.views:
             return self.views[key]
@@ -829,6 +980,72 @@ class Config:
             "roots.code",
             f"carries no root named {key!r}. It carries "
             f"{', '.join(repr(k) for k in self.views) or 'none'} (§ 1).",
+        )
+
+    def root_for(self, values: list[str]) -> "Config":
+        """§ 1's root the item itself names, by § 4.7's facet, or a stop.
+
+        `values` is what the item carries on whichever carrier the facet names:
+        every label on it, the named field's value, or its title. ⛔ **One
+        implementation, so two roles cannot disagree** -- the alternative is
+        each role matching a prefix for itself, which is the divergence § 4.7's
+        mapping exists to close, one facet over from the branch name's.
+
+        The refusals are § 4.7's, and both directions are stops: an item naming
+        no root and an item naming two are each reported rather than resolved,
+        because the permissive reading of either is this project's work landing
+        in the wrong repository.
+        """
+        # One root is the case § 4.7 refuses the facet in, so there is nothing
+        # on the item to read and nothing to disagree with. ⚠️ Reported as the
+        # one root rather than refused: a role calling this on a single-root
+        # project is correct, and what it needs back is the root.
+        if len(self.views) < 2:
+            return self.only_root
+        carrier = self.get("work_item.code_root.carrier")
+        if carrier == "none":
+            stated = " ".join(str(self.get("work_item.code_root.absent_reason")).split())
+            raise ConfigError(
+                "work_item.code_root.carrier",
+                "is `none`, so no item here states which repository it belongs to "
+                f"and the project's stated reason is: {stated!r}. The root arrives "
+                "on the invocation instead, and a role takes neither the first of "
+                f"{', '.join(repr(k) for k in self.views)} nor a guess (§ 4.7).",
+            )
+        mapping = self.get("work_item.code_root.roots")
+        held = [v for v in values if isinstance(v, str) and v.strip()]
+        prefix = self.get("work_item.code_root.label_prefix") or ""
+        matched = set()
+        for key, value in mapping.items():
+            for carried in held:
+                # Each carrier matched the way § 4.7 states it is held: a label
+                # is the mapped value behind the axis's prefix, a field is the
+                # value itself, and a title prefix is the opening of the title.
+                if carrier == "label":
+                    found = carried.startswith(prefix) and carried[len(prefix):] == value
+                elif carrier == "title_prefix":
+                    found = carried.startswith(value)
+                else:
+                    found = carried == value
+                if found:
+                    matched.add(key)
+        if len(matched) == 1:
+            return self.views[next(iter(matched))]
+        shown = ", ".join(repr(v) for v in held) or "nothing"
+        if not matched:
+            raise ConfigError(
+                "work_item.code_root",
+                f"is not stated on this item: it carries {shown}, and the facet's "
+                f"carrier `{carrier}` holds "
+                f"{', '.join(f'{v!r} for {k}' for k, v in mapping.items())} (§ 4.7). "
+                "⛔ The first root is not the answer -- a role stops here rather "
+                "than landing the work in whichever repository is written first.",
+            )
+        raise ConfigError(
+            "work_item.code_root",
+            f"resolves to {', '.join(sorted(matched))} on this item, which carries "
+            f"{shown}. An item belongs to one repository (§ 4.7), and which of two "
+            "stated answers is meant is not this reader's to choose.",
         )
 
     @property
@@ -3380,6 +3597,10 @@ def _resolve(
         # repository its configuration addresses before it acts.
         views[key].views = {key: views[key]}
 
+    # § 4.7, after every view and before the paths are tested: the rules turn on
+    # how many roots there are, which no view can see.
+    _code_root_facet(data, roots)
+
     config = Config(
         data, skills_root, facts, source, surface, views=views, overridden=overridden
     )
@@ -3524,6 +3745,7 @@ MARKED_ABSENT_CAPABLE = [
     "e2e_register",
     "executed",
     "ordering",
+    "work_item.code_root",
     "work_item.due_date",
     "work_item.estimate",
     "work_item.priority",
@@ -4045,6 +4267,172 @@ def self_test() -> int:
             "the blocks a named root carries are read from the surface, not from here",
             unread == f"roots.code.{first}.host",
             f"reported {unread!r}",
+        )
+
+        # § 4.7. ⛔ Against the **shipped** collection for the reason the arms
+        # above are: what an adopter copies is what is held, and a hand-built
+        # facet here would be a shape this repository ships nowhere. Its own
+        # `roots.code` is the single form, so every arm below is reached through
+        # the one example that carries two.
+        print("\n§ 4.7, which of several code roots a work item belongs to:")
+        facet = _get(_a_collection_example(), "work_item.code_root") or {}
+        prefix = facet.get("label_prefix") or ""
+        mapping = facet.get("roots") or {}
+        check(
+            "the collection example carries the facet, every root mapped",
+            facet.get("carrier") and set(mapping) == set(keys),
+            f"carrier {facet.get('carrier')!r} mapping {sorted(mapping)!r}",
+        )
+        # ⛔ The resolution itself, per root: the value the item carries resolves
+        # to that root's own view and never to the first of them. ⚠️ Asserted on
+        # the slug rather than on the object, because a view answering for the
+        # wrong root would otherwise read as a pass.
+        resolved = {
+            key: several.root_for([f"{prefix}{value}"]).get("host.repo")
+            for key, value in mapping.items()
+        }
+        check(
+            "an item's own value resolves to that root and no other",
+            resolved == {k: several.root(k).get("host.repo") for k in mapping},
+            str(resolved),
+        )
+        for label, values, wanted in (
+            ("an item carrying nothing the facet maps", ["a label no root answers to"],
+             "is not stated on this item"),
+            ("an item naming two roots", [f"{prefix}{mapping[k]}" for k in keys],
+             "belongs to one repository"),
+        ):
+            stopped = None
+            try:
+                several.root_for(values)
+            except ConfigError as error:
+                stopped = str(error)
+            check(
+                f"{label} stops rather than resolving",
+                stopped is not None and wanted in stopped,
+                str(stopped),
+            )
+        # ⛔ And the stop names the roots or the values rather than a count: the
+        # remedy is stating one of them on the item.
+        try:
+            several.root_for(["a label no root answers to"])
+        except ConfigError as error:
+            named_in_stop = all(repr(v) in str(error) for v in mapping.values())
+        check(
+            "the stop names what the carrier holds for each root",
+            named_in_stop,
+            "the refusal named no mapped value",
+        )
+
+        for label, mutate, expected in (
+            ("several roots with the facet absent",
+             lambda data: _get(data, "work_item").pop("code_root"),
+             "work_item.code_root.carrier"),
+            ("a label-carried root with no prefix to tell the axis by",
+             lambda data: _get(data, "work_item.code_root").pop("label_prefix"),
+             "work_item.code_root.label_prefix"),
+            ("a field-carried root with no field named",
+             lambda data: _get(data, "work_item.code_root").update(carrier="field"),
+             "work_item.code_root.field"),
+            ("a mapping that is not a block",
+             lambda data: _get(data, "work_item.code_root").update(roots="app"),
+             "work_item.code_root.roots"),
+            ("a root the mapping leaves out",
+             lambda data: _get(data, "work_item.code_root.roots").pop(second),
+             f"work_item.code_root.roots.{second}"),
+            ("a mapping entry naming a root the project does not carry",
+             lambda data: _get(data, "work_item.code_root.roots").__setitem__(
+                 "a-root-no-project-carries", "x"),
+             "work_item.code_root.roots.a-root-no-project-carries"),
+            ("a mapped value naming nothing",
+             lambda data: _get(data, "work_item.code_root.roots").__setitem__(second, "  "),
+             f"work_item.code_root.roots.{second}"),
+            ("two roots answering to one value",
+             lambda data: _get(data, "work_item.code_root.roots").__setitem__(
+                 second, _get(data, "work_item.code_root.roots")[first]),
+             f"work_item.code_root.roots.{second}"),
+            ("a carried facet the gate does not check",
+             lambda data: data.__setitem__("readiness", [
+                 entry for entry in data["readiness"]
+                 if entry.get("check") != "code_root_stated"
+             ]),
+             "readiness"),
+            ("the facet absent and the check configured anyway",
+             lambda data: _get(data, "work_item.code_root").update(
+                 carrier="none", absent_reason="the tracker cannot hold it"),
+             "work_item.code_root.carrier"),
+        ):
+            data = _a_collection_example()
+            mutate(data)
+            broken = _refused(data)
+            check(
+                f"{label} is refused, with the key named",
+                broken == expected,
+                f"reported {broken!r}, expected {expected!r}",
+            )
+
+        # ⚠️ The green side of the absent case, verified by disabling the arm
+        # above rather than asserted around it: a tracker that cannot hold the
+        # fact is a configuration, so `carrier: none` **with** the check dropped
+        # loads -- and then the resolution stops, quoting the project's own
+        # reason, instead of answering with the first root.
+        absent_facet = _a_collection_example()
+        _get(absent_facet, "work_item.code_root").clear()
+        _get(absent_facet, "work_item.code_root").update(
+            carrier="none", absent_reason="the board has nowhere to put it"
+        )
+        absent_facet["readiness"] = [
+            entry for entry in absent_facet["readiness"]
+            if entry.get("check") != "code_root_stated"
+        ]
+        loaded_absent = _refused(absent_facet)
+        check(
+            "a tracker that cannot hold the fact is a configuration, not a refusal",
+            loaded_absent is None,
+            f"refused on {loaded_absent!r}",
+        )
+        if loaded_absent is None:
+            stated = _resolve(absent_facet, EXAMPLES, surface, False)
+            check(
+                "and it is reported as an absence rather than left to be discovered",
+                any("code_root" in line for line in stated.unavailable()),
+                str(stated.unavailable()),
+            )
+            no_answer = None
+            try:
+                stated.root_for(["anything at all"])
+            except ConfigError as error:
+                no_answer = str(error)
+            check(
+                "and the resolution stops with the project's reason, not the first root",
+                no_answer is not None and "nowhere to put it" in no_answer,
+                str(no_answer),
+            )
+
+        # ⛔ The single form, which is the other half of § 4.7's condition: a
+        # project with one repository is never asked for the fact, so stating it
+        # is refused rather than read by nothing -- and so is the check.
+        for label, mutate, expected in (
+            ("the facet stated where there is one root",
+             lambda data: _place(data, "work_item.code_root.carrier", "label"),
+             "work_item.code_root"),
+            ("the check configured where there is one root",
+             lambda data: data["readiness"].append(
+                 {"check": "code_root_stated", "stop": "No repository stated."}),
+             "readiness"),
+        ):
+            data = _a_valid_example()
+            mutate(data)
+            broken = _refused(data)
+            check(
+                f"{label} is refused, with the key named",
+                broken == expected,
+                f"reported {broken!r}, expected {expected!r}",
+            )
+        check(
+            "and a single-root project that states neither is unchanged",
+            _refused(_a_valid_example()) is None,
+            f"refused on {_refused(_a_valid_example())!r}",
         )
 
     # § 1's two halves, in both directions. A retired key must be refused where a
@@ -6019,11 +6407,20 @@ def main(argv: list[str]) -> int:
         action="store_true",
         help="resolve without testing that the configured code root exists",
     )
-    parser.add_argument(
+    named = parser.add_mutually_exclusive_group()
+    named.add_argument(
         "--root",
         help="the named code root to resolve, where § 1's collection carries "
         "several. Omitted, the whole configuration is reported and a fact "
         "stated per root is reported per root",
+    )
+    named.add_argument(
+        "--root-for",
+        nargs="+",
+        metavar="VALUE",
+        help="what the item carries on § 4.7's carrier -- every label on it, the "
+        "named field's value, or its title -- resolved to the one root it "
+        "names. A root named by none of them, or by two, is a stop",
     )
     parser.add_argument(
         "--self-test",
@@ -6040,6 +6437,8 @@ def main(argv: list[str]) -> int:
         config = load(args.skills_root, check_paths=not args.no_check_paths)
         if args.root:
             config = config.root(args.root)
+        elif args.root_for:
+            config = config.root_for(args.root_for)
     except ConfigError as error:
         print(str(error), file=sys.stderr)
         return 1

@@ -693,8 +693,9 @@ example is written that way rather than given a query to look tidy.
 Issue type ([`schema.md § 4.1`](../plugins/mjolnir/config/schema.md#41-type)), status
 ([`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)),
 estimate ([`§ 4.3`](../plugins/mjolnir/config/schema.md#43-estimate)), template
-([`§ 4.4`](../plugins/mjolnir/config/schema.md#44-template)) and priority
-([`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority)) are each per-project,
+([`§ 4.4`](../plugins/mjolnir/config/schema.md#44-template)), priority
+([`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority)) and code root
+([`§ 4.7`](../plugins/mjolnir/config/schema.md#47-code-root)) are each per-project,
 and each was carried by a different mechanism depending on the project. Each but status has a
 real absent case of its own — which is where the schema's absence-is-a-configuration rule comes
 from: a procedure that treats absence as an unset value fails on a project that is correctly
@@ -733,6 +734,18 @@ configured.
   is the sharpest thing in the row: F's axis and this repository's own are both prefixed labels on
   plain issues and the prefixes differ, so a procedure matching a literal would read one project's
   axis and no other's.
+
+- **Code root** — **one project in six has more than one code repository, and it carries this fact
+  nowhere.** A's two repositories are nested under a checkout that tracks no code of its own, and
+  its instructions file records the consequence as a rule rather than as a gap: *no skill on the
+  route drives* the second one, so that repository's branches, pull requests, dispatch and board
+  moves are done by hand against its own equivalents. ⚠️ **The same file states what decides which
+  repository a card belongs in** — *whose code it is, never which track asked for it*, with a
+  dashboard that is one track's need and the other repository's code given as the case — and its
+  board carries two label axes, one for whose need the work serves and one for who does the work,
+  **neither of which answers it**. So the fact is neither carried nor derivable there, which is the
+  absent case with no loop around it: the carriers a tracker could hold it in are a label, a field,
+  a component or a title prefix, and nothing was found holding it in any of them.
 
 **What priority needed that the other facets did not: a statement of how two items compare.** The
 others answer a question about one item — what type it is, what it is worth, which template it

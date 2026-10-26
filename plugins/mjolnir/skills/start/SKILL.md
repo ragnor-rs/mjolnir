@@ -37,9 +37,10 @@ defaults, and two sets drift apart with nothing noticing.
 ⛔ **Read the `unavailable` list before acting on anything.** An entry there is a stated absence
 rather than a fault, and a key named there that this role needs is a stop with the key named.
 
-Five things are read here and ⛔ **never copied into this file**: the branch prefix per item type,
+Six things are read here and ⛔ **never copied into this file**: the branch prefix per item type,
 the readiness list, the branch model that decides whether a tree is cut and where, what states
-which item is next, and the language the branch slug is written in. Each has a section of the
+which item is next, the language the branch slug is written in, and **what carries which code
+repository an item belongs to** where the project has more than one. Each has a section of the
 surface and this file cites it.
 
 **And what the shell holds is reported once, here**, since this is where an item's work begins and
@@ -55,7 +56,9 @@ the environment it was handed. What it reports goes in the reply — a variable 
 said it hands a role is either a credential to remove from the shell or a name to add to the list,
 and both of those are a person's call rather than this role's.
 
-Throughout, `<code-root>` is what the reader resolved and every `git` call names it, per § 1.
+Throughout, `<code-root>` is the root the reader resolved for **this item** — one of several where
+§ 1's collection carries several, read off the item in step 2 by
+[`§ 4.7`](../../config/schema.md#47-code-root) — and every `git` call names it, per § 1.
 ⚠️ **`§ N` always names a section of the surface, never one of this file**; the steps below are
 referred to by number.
 
@@ -106,6 +109,23 @@ that step is for and what it is not: ⚠️ **a run that found nothing is not a 
 reply says the step ran rather than that the item was clean. What it does find goes in the reply
 with the hidden span **shown**; an imperative aimed at this role, its shell or its next step is
 named and **stopped on**, never weighed.
+
+**Which repository the work is in is the item's own fact**, and where the configuration carries
+several code roots it is resolved here — before the gate and before the claim, because the branch
+is cut in that repository and a branch name is the thing nobody goes back and corrects:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --root-for <what the item carries>
+```
+
+⛔ **The values handed over are whichever the facet's carrier holds** — every label on the item,
+the named field's value, or its title — and ⛔ **the match is the command's and never this role's**,
+[`§ 4.7`](../../config/schema.md#47-code-root) stating the mapping and this file naming it. What
+comes back is one root, with the path and the repository every later step addresses; an item that
+names none and an item that names two are each a **stop** carrying what the item held, and neither
+falls back to the first root. ⚠️ **Where the project carries one root this is the root it has**, and
+where the facet's carrier is `none` the root arrives on this role's invocation and the reply says so
+— a stated absence § 4.7 reports rather than a fault.
 
 ## 3. The gate, run whole
 
@@ -239,7 +259,10 @@ Register, and the language, are
 [`§ 8`](../../config/schema.md#the-reply-to-the-person-running-a-role)'s — the outcome in the
 first sentence, then the facts, with a table where the content enumerates.
 
-- what was resolved — the root, the configuration file, the repository;
+- what was resolved — the root, the configuration file, the repository; ⛔ **and where the project
+  carries several code roots, which one this item named and what on the item named it**, since
+  every act after step 2 addressed that repository and a reply naming the project alone has stated
+  nothing about which half of it was touched ([`§ 4.7`](../../config/schema.md#47-code-root));
 - ⛔ **the item by identifier *and* title, the title quoted as the tracker holds it** — the
   identifier is what every later step is keyed on, and the title is the only part of this report a
   reader can check against the item they meant: a bare number reads as correct whichever item it

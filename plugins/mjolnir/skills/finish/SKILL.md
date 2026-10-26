@@ -68,6 +68,21 @@ written in, and ⛔ **which roles this project maps at all** — `carriers`
 ([`§ 7`](../../config/schema.md#7-carrier)), which is what step 6's hand-over and step 8's ask both
 read. Each has a section of the surface and this file cites it.
 
+⚠️ **Where the project carries several code roots, every fact above is the root's and not the
+project's**, so the reader refuses a project-level read of the slug or the check list and this role
+resolves the item's own root first — [`§ 4.7`](../../config/schema.md#47-code-root), the same
+command and the same mapping the starting role ran, re-read from the item rather than taken off the
+branch:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --root-for <what the item carries>
+```
+
+⛔ **An item that names no root is a stop and the first root is not the answer**, because what
+follows opens a pull request and merges it. ⚠️ **The branch is not the source of this fact** — it
+carries the prefix, the number and the slug and no repository — and where the facet's carrier is
+`none` the root arrives on this role's invocation, which the reply names as § 4.7's stated absence.
+
 Throughout, `<work-root>` is the tree the work is in — which
 [`§ 10`](../../config/schema.md#where-the-work-happens) decides and this file does not — and every
 `git` call names it, per § 1. ⚠️ **`§ N` always names a section of the surface, never one of this

@@ -44,6 +44,19 @@ addresses, the exclusive resources a local check has to hold a place in, the lan
 the findings and the reply are written in, and where an artifact crossing a role boundary lives.
 Each has a section of the surface and this file cites it.
 
+⚠️ **Where the project carries several code roots, the first two of those seven are the root's
+rather than the project's**, so the reader refuses a project-level read of them and this role
+resolves the item's own root first, by [`§ 4.7`](../../config/schema.md#47-code-root):
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --root-for <what the item carries>
+```
+
+⛔ **The runs read, the threads answered and the record written are that root's**, and an item
+naming no root is a stop rather than the first root — a review recorded against the wrong
+repository is a verdict about a change nobody made. ⚠️ Where the facet's carrier is `none` the root
+arrives on this role's invocation, which is § 4.7's stated absence and goes in the reply.
+
 Throughout, `<work-root>` is the tree the work is in — which
 [`§ 10`](../../config/schema.md#where-the-work-happens) decides and this file does not — and every
 `git` call names it. ⚠️ **`§ N` always names a section of the surface, never a step of this file.**
