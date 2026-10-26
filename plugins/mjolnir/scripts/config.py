@@ -4059,7 +4059,7 @@ MARKED_REQUIRED_WHEN = [
 # surface happened to say. ⛔ This one carries the whole weight of the class,
 # since the reader keeps no list of its own to compare against -- drop the clause
 # from the surface and this is what reddens.
-MARKED_PROCEDURE = ["audit_trail", "fail_open", "install", "waive_review"]
+MARKED_PROCEDURE = ["audit_trail", "fail_open", "install", "readings", "waive_review"]
 
 # The list keys whose membership a rule in this reader reads off the surface, and
 # the members each shows. Stated here for the reason the sets above are, and

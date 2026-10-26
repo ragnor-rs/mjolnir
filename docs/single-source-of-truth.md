@@ -3247,6 +3247,77 @@ judgement, green on prose reworded into its opposite, and it is read rather than
 - **Whatever is not committed**, and **issues and pull requests**, for the reason the checks above
   give: the workflow holds no credential.
 
+## The restoring role's readings, and the negative no sibling suite asserts
+
+`plugins/mjolnir/scripts/load.py --self-test` runs in the `Session restore` workflow, with no
+credential and no network. ⛔ The rules are
+[schema § 24](../plugins/mjolnir/config/schema.md#24-session-restore--the-readings-a-pass-is-resumed-from)
+and its two subsections, and this document states none of them: what is recorded here is the reach
+of the carrier, which is narrower than § 24 in the places named below.
+
+What it holds:
+
+- **The readings, in the procedure's order, each with its verdict.** Three verdicts rather than
+  two — taken, absent because the mechanism is not there, and **unanswered** because nothing asked —
+  and the suite asserts each one on a reading that really has that state here, including the
+  agreement between the reading this module calls storeless and the absence the configuration reader
+  reports for the third that writes that store. The item reading's availability is the **port's**
+  answer, asserted through a stand-in that says yes and one that says no, so this module cannot
+  become a second answer to it.
+- **Where the work is, against real repositories.** A bare repository, a clone, a second clone that
+  moves the published ref, and a fetch in between: that is what makes the behind-the-remote arm an
+  assertion rather than a hope, and it is the reading that cannot be taken from the tree alone. The
+  unpushed arm is asserted before a push, after one, and after a commit that follows it.
+- **What the last pass was doing, against real transcripts.** The compaction metadata read off a
+  boundary record, the summary record **not** read as the last instruction, an instruction with no
+  reply after it reported as a stop mid-turn, a half-written last line skipped rather than fatal,
+  and the sidecars counted rather than read.
+- **Whether a file that is gone replays, and from what.** Four shapes: first written whole, written
+  whole *before* a compaction boundary, only ever edited, and never written at all — plus the backup
+  record that names the second place to look.
+- **The window's own reading, in both directions.** A payload stating one is reported with every
+  figure in it; a payload stating none is reported as *handed no reading* rather than as an empty
+  window; a session that merely opened is said nothing to; and a project that configures nothing, or
+  maps no restoring role, is said nothing to either.
+- ⛔ **That every reading writes nothing** — the negative, and the one property here that cannot be
+  read off an output. The rule is
+  [schema § 24](../plugins/mjolnir/config/schema.md#24-session-restore--the-readings-a-pass-is-resumed-from)'s
+  read-only half. Every subcommand runs against a fixture where a naive implementation would have
+  written: a store that is not there, a transcript that is not there, a working file that is
+  missing. The fixture is digested before and after and held to being identical, directories
+  included. ⚠️ **Directories are in that snapshot because a files-only one passed the shape that
+  would fail** — a module creating the store it could not find — found by planting that write and
+  watching the general arm stay green while one named assertion beside it reddened.
+- ⛔ **And that two runs of the same invocation agree**, asserted on the serialised answer of each
+  subcommand rather than on a field of it, which is what forbids a clock reading or a run's own
+  identifier from reaching a report.
+- **That the carrier still calls this module on the event the window reading arrives on**, with the
+  `resume` subcommand rather than the script's name alone.
+
+### What this check deliberately does not hold
+
+- **Whether a load happened at all**, and **whether what the report says is worth acting on**.
+  Nothing fires when a person comes back to work, so there is no act for a gate to read; and whether
+  a sweep's prose gave somebody an accurate picture is the *quoting* kind of judgement, green on a
+  report reworded into its opposite.
+- **Whether the readings are the right set.** The order and the membership are this module's, and
+  § 24 deliberately holds them to nothing else — ⚠️ **so a reading nobody has thought of is a hole
+  no run here reports**, which is the cost of the surface not carrying the list and is stated in
+  [`docs/configuration-surface.md`](configuration-surface.md#the-tenth-role-every-copy-named-and-none-of-them-wrote)
+  rather than left to be inferred from a green run.
+- **The store the harness keeps its records in.** The derivation is the harness's own convention
+  rather than a published contract, and the suite asserts it against the rule it implements rather
+  than against the harness: a convention that changes is reported by the sweep as a store it could
+  not find, which is the direction that fails safe.
+- **Whether a replayable file would replay.** What is asserted is that the calls are found and
+  classified; actually applying them is a write, which this role does not do and no suite here
+  performs on its behalf.
+- **Whether the environment is up.** [Schema § 1](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
+  keeps that off the surface, so there is no command for a suite to run and the reading is the
+  project's own script's — what is asserted is that its absence is reported as a reading not taken.
+- **Whatever is not committed**, and **issues and pull requests**, for the reason every check above
+  gives: the workflow holds no credential.
+
 ## Each check has a violation it is asserted to redden on
 
 `--self-test` plants one violation per check and asserts that check goes red, as the first step of
@@ -3305,7 +3376,11 @@ same fixture stating one gets both. The title form's own suite plants a project 
 whose every title must get *no answer* rather than either verdict. The sweep over landed trees
 plants both directions of **every** arm it has rather than of the holes alone — a must-remove
 beside each must-keep — because a sweep that removes nothing passes a red-side-only suite whole,
-and the half that would then be untested is the half that deletes files. ⛔ A red-only suite says
+and the half that would then be untested is the half that deletes files. The restoring role's own
+suite inverts that pair: what it plants is a state a sweep would have **written** into — a store
+that is not there, a transcript that is not there, a working file that is missing — and the
+assertion is that the tree is unchanged afterwards, so there the green side is the whole rule and
+the plant exists to prove the snapshot can see a write at all. ⛔ A red-only suite says
 nothing about any of them.
 **A green plant naming an exclusion is verified by switching that exclusion off** and watching it
 redden — one that cannot fail is one nobody checked — while a plant naming an omission has nothing

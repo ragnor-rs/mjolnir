@@ -66,7 +66,7 @@ whole and took the claim by publishing the ref; finishing took the branch to an 
 reviewing role conducted the review and drove the gate; and a second finishing pass merged it.
 ⚠️ **The interleave is not this record's invention and not this run's choice** — that finishing is
 entered twice with the review between its passes, and what the second pass owes beyond the merge, is
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles)'s, stated there
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--ten-roles)'s, stated there
 once.
 
 ⛔ **These carriers are not the loop, and this document does not say which ones are missing.** Which
@@ -186,5 +186,5 @@ project carries locally, and which of those are still unshipped — the target i
 command above names this checkout rather than carrying a path.
 
 ⛔ No figure it prints is copied into this document. The loop is stated once, in
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--nine-roles), and a count
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--ten-roles), and a count
 beside it here would drift the moment a role lands.

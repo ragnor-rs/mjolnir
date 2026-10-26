@@ -7,7 +7,7 @@ alike any more, and the lines that differ are the corrections you paid for once 
 everywhere else. You find out which copy is wrong when it is already wrong.
 
 mjolnir is that process as **one shared procedure over per-project configuration** —
-[nine roles](plugins/mjolnir/config/schema.md#the-loop--nine-roles), from filing a work item to
+[ten roles](plugins/mjolnir/config/schema.md#the-loop--ten-roles), from filing a work item to
 the day's log, reading whatever differs between your projects out of one file you write once.
 
 Installed as a Claude Code plugin. **No clone, no submodule, no symlink, and no copy of the
@@ -93,6 +93,7 @@ a setting, is [`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
 | `/mjolnir:finish` | Commits, pushes, opens the change, reads the host's answer about it, asks before merging, and releases the tree once the merge is read back from state |
 | `/mjolnir:review` | Reads the conversation, reads the diff, reproduces what it finds, fixes it under the same item, and drives the gate green |
 | `/mjolnir:save` | Keeps the session's books: your tracker brought current, memory refreshed, then the commit — and the durable artifact a later pass resumes from, with the boundary it was taken at named |
+| `/mjolnir:load` | The counterpart: tells you where the work actually stands when you come back to it — the commits nothing outside your tree has, the branch behind the ref its claim is published on, what the last pass was doing and what its compaction dropped, whether a working file that is gone can be replayed and from what. Read-only, and it decides nothing |
 | `/mjolnir:day-report` | Builds a day's time-log entry from session transcripts, git, the host, chat and the calendar |
 
 You type the first one, and the loop carries the item from there: `start` hands the finished branch
@@ -111,6 +112,7 @@ to ask you are stated too —
 | [`plugins/mjolnir/skills/finish/`](plugins/mjolnir/skills/finish/) | Take a finished branch to a landed pull request: the commit, the push, the pull request, the host's answer about it, what the project counts as done and who answers each of those checks, the merge read back from state, the item's move through the port, and the tree released |
 | [`plugins/mjolnir/skills/review/`](plugins/mjolnir/skills/review/) | Review an open change and drive its gate green: the conversation read first, the diff read whatever else reads it, every finding reproduced and fixed under the same item, every thread answered, and a record of whether a person is going to look — which this role writes and never acts on |
 | [`plugins/mjolnir/skills/save/`](plugins/mjolnir/skills/save/) | Keep the session's books: the thirds your project runs and nothing else, in one order — the tracker current, memory refreshed, the commit staged the way *this* role is configured — with no status whose writer is somebody else, and the artifact a later pass resumes from written before the boundary rather than after it |
+| [`plugins/mjolnir/skills/load/`](plugins/mjolnir/skills/load/) | Restore what is in flight at the start of a pass: every reading reported — where the work is, what the item says, what the last pass was doing, what the environment is, what memory claims and what the resumed window states — with the ones it could not take named rather than left out, and nothing fetched, stashed, moved or decided |
 | [`plugins/mjolnir/skills/day-report/`](plugins/mjolnir/skills/day-report/) | Build a working day's time-log entry from session transcripts, git, the code host, chat and the calendar |
 | [`plugins/mjolnir/config/`](plugins/mjolnir/config/) | The configuration surface: the schema, and a whole example per tracker including a deliberately trackerless one |
 | [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) | What a role runs on rather than reimplements: the configuration reader, the tracker port behind [`schema.md § 3`](plugins/mjolnir/config/schema.md#3-tracker-port), and the carriers that ship with the surface and run in an adopting project. Which they are is what the directory says, and each one's reach is recorded in [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) — so no list of them is carried here |
@@ -143,7 +145,7 @@ end state.
 ## Where the rules live
 
 **The single statement of every rule and flow is
-[`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the nine-role loop and
+[`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the ten-role loop and
 its axes, the tracker port and its capabilities, the work-item facets with their absent
 cases, the status writers, the readiness gate, what counts as done and who answers each of those
 checks, commit behaviour, the day log, the branch model, the session's context, the ordering, and

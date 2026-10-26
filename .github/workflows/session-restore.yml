@@ -1,0 +1,37 @@
+name: Session restore
+
+# The restoring role's readings, and the evidence each one is read out of: the readings in the
+# procedure's order, where the work is, what the last pass was doing, and whether a working file
+# that is gone replays. Its own workflow rather than a job of a sibling, for the reason its
+# siblings are: a `host.checks` entry states one mirrored local command, so two commands behind
+# one workflow name could not be stated on the surface at all.
+#
+# No credential and no network. The suite builds real repositories and real transcripts in a
+# temporary directory, because what is in question is what git and the harness's own records say
+# about a position and a replay, and a stand-in would assert the stand-in's idea of one.
+#
+# ⛔ What this run holds that no sibling does is a **negative**: every reading is run against a
+# tree where a naive implementation would have written — a store that is not there, a working file
+# that is missing — and the tree is held to being byte-identical afterwards, git's own index
+# excepted and named. A property like that cannot be read off an output, which is why it is
+# asserted here rather than reviewed.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  session-restore:
+    name: Session restore
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command — the string `host.checks` states this run mirrors.
+      - name: Assert each reading, that none of them writes, and that two runs agree
+        run: python3 plugins/mjolnir/scripts/load.py --self-test
