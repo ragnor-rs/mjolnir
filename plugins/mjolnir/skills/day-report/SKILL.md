@@ -307,6 +307,9 @@ deduction.
 
 - ⛔ **The loop's own skills are not on that list and must never join it.** Filing, starting,
   finishing and reviewing a work item, and deploying, are the work — not the upkeep around it.
+  ⚠️ **The two bookkeeping roles are the stated exception rather than a gap in that list**: keeping
+  the session's books and restoring its context are the upkeep, which is what the surveyed scripts
+  already classified them as, and the enumeration above is the whole of what counts as work.
 - ⚠️ **It only bites where nothing else was running.** Ritual events stop *anchoring* time rather
   than being subtracted from it, so a save inside real work costs nothing and a save that was the
   only thing holding an evening open stops holding it. This is why the deduction is small — a

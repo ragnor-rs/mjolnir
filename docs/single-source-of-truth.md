@@ -283,7 +283,7 @@ Stated, because an unstated limit reads later as coverage.
   unstated here is the boundary rather than a missing facet.
   ⚠️ What a file's prose **is** held to,
   whichever register a project nominates over it, is
-  [§ The floor under file prose](#the-floor-under-file-prose-held-on-the-lines-a-change-adds) — and
+  [§ The file-prose floor, retired](#the-file-prose-floor-retired) — and
   a floor is not a register, so nothing there closes this gap either.
   ⚠️ **Measured on `docs/working-on-the-toolkit.md`:** setting its role to `procedure` leaves every
   check green, because the checks that discriminate on a role read a binding statement or a citation
@@ -3257,9 +3257,8 @@ of the carrier, which is narrower than § 24 in the places named below.
 
 What it holds:
 
-- **The readings, in the procedure's order, each with its verdict.** Three verdicts rather than
-  two — taken, absent because the mechanism is not there, and **unanswered** because nothing asked —
-  and the suite asserts each one on a reading that really has that state here, including the
+- **The readings, in the procedure's order, each with its verdict.** The three verdicts § 24 states
+  are asserted one by one, each on a reading that really has that state here, including the
   agreement between the reading this module calls storeless and the absence the configuration reader
   reports for the third that writes that store. The item reading's availability is the **port's**
   answer, asserted through a stand-in that says yes and one that says no, so this module cannot
@@ -3267,14 +3266,21 @@ What it holds:
 - **Where the work is, against real repositories.** A bare repository, a clone, a second clone that
   moves the published ref, and a fetch in between: that is what makes the behind-the-remote arm an
   assertion rather than a hope, and it is the reading that cannot be taken from the tree alone. The
-  unpushed arm is asserted before a push, after one, and after a commit that follows it.
+  unpushed arm is asserted before a push, after one, and after a commit that follows it. ⚠️ **And
+  four readings that were each found reporting something false with a straight face** are asserted
+  beside them: a repository with no commit yet, a repository with no remote at all, a detached head,
+  and a base ref the tree does not have — each of which this reading now reports as unread rather
+  than as a position of zero.
 - **What the last pass was doing, against real transcripts.** The compaction metadata read off a
-  boundary record, the summary record **not** read as the last instruction, an instruction with no
-  reply after it reported as a stop mid-turn, a half-written last line skipped rather than fatal,
-  and the sidecars counted rather than read.
-- **Whether a file that is gone replays, and from what.** Four shapes: first written whole, written
-  whole *before* a compaction boundary, only ever edited, and never written at all — plus the backup
-  record that names the second place to look.
+  boundary record, the summary record **not** read as the last instruction, the harness's own
+  plumbing not read as one either, a transcript ending on an instruction *after* a reply reported as
+  a stop mid-turn, a last line cut mid-character skipped rather than fatal, the cap naming what it
+  did not read, and the sidecars counted rather than read.
+- **Whether a file that is gone replays, and from what.** Six shapes: first written whole, written
+  whole *before* a compaction boundary, only ever edited, never written at all, a whole write of
+  **another** path, and a path that does not resolve — plus the backup record that names the second
+  place to look. ⚠️ **The fifth of those is the discriminator**, and it is asserted because deleting
+  the path comparison left every other assertion green.
 - **The window's own reading, in both directions.** A payload stating one is reported with every
   figure in it; a payload stating none is reported as *handed no reading* rather than as an empty
   window; a session that merely opened is said nothing to; and a project that configures nothing, or
@@ -3284,15 +3290,26 @@ What it holds:
   [schema § 24](../plugins/mjolnir/config/schema.md#24-session-restore--the-readings-a-pass-is-resumed-from)'s
   read-only half. Every subcommand runs against a fixture where a naive implementation would have
   written: a store that is not there, a transcript that is not there, a working file that is
-  missing. The fixture is digested before and after and held to being identical, directories
-  included. ⚠️ **Directories are in that snapshot because a files-only one passed the shape that
-  would fail** — a module creating the store it could not find — found by planting that write and
-  watching the general arm stay green while one named assertion beside it reddened.
+  missing. The fixture is digested before and after, and held to carrying the same entries — files,
+  directories, symlinks and whatever else is there — with **one exemption named**: git's own index,
+  which a read of a working tree may refresh and which is git's cache rather than this module's
+  output. ⚠️ **Directories and symlinks are both in that snapshot because a narrower one passed the
+  shape that would fail** — a module creating the store it could not find, then one planting a link
+  — each found by planting the write and watching the general arm stay green while one named
+  assertion beside it reddened. ⚠️ **The exemption passes vacuously in the fixture measured**, which
+  is stated because a green run over it reads as the exception having been observed.
 - ⛔ **And that two runs of the same invocation agree**, asserted on the serialised answer of each
-  subcommand rather than on a field of it, which is what forbids a clock reading or a run's own
-  identifier from reaching a report.
+  **reading** rather than on a field of it, which is what forbids a clock reading or a run's own
+  identifier from reaching a report. ⚠️ **The hook arm is not among them** — it is in the
+  writes-nothing sweep and in no determinism check, which is stated rather than left to be read off
+  the word *each*.
 - **That the carrier still calls this module on the event the window reading arrives on**, with the
-  `resume` subcommand rather than the script's name alone.
+  `resume` subcommand rather than the script's name alone — and **the hook's own path through the
+  command line**, the payload on standard input, including the unreadable payload that must be
+  silence rather than a refusal.
+- **Each documented exit status on the path that produces it**, including the one split that is the
+  whole reason there are four: a store that is **there and empty** against a store whose location
+  could not be derived at all.
 
 ### What this check deliberately does not hold
 
@@ -3312,9 +3329,18 @@ What it holds:
 - **Whether a replayable file would replay.** What is asserted is that the calls are found and
   classified; actually applying them is a write, which this role does not do and no suite here
   performs on its behalf.
-- **Whether the environment is up.** [Schema § 1](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
+- **Whether the environment is standing.** [Schema § 1](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
   keeps that off the surface, so there is no command for a suite to run and the reading is the
-  project's own script's — what is asserted is that its absence is reported as a reading not taken.
+  project's own script's — what is asserted is that its absence is reported as a reading not taken,
+  and that a project pointing at one is handed the pointer's own value.
+- **Which harness-written records are plumbing.** The list of markers is matched on the harness's
+  own markup because no field marks those records, measured — ⚠️ **so a marker the harness renames
+  is a plumbing record read as an instruction again**, and no run here would report it. The suite
+  asserts the shapes that exist today and the weakness is stated rather than implied.
+- **That the base derivation stays local.** The one derivation of which branch the base is may ask
+  the remote where a clone recorded no default, which writes nothing and is a network read: every
+  assertion here names the base explicitly, so what the suite covers is the readings taken from that
+  name and not the derivation that would have found it.
 - **Whatever is not committed**, and **issues and pull requests**, for the reason every check above
   gives: the workflow holds no credential.
 

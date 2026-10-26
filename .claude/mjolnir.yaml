@@ -168,9 +168,12 @@ host:
     - workflow: "Save artifact"
       mirrors: "python3 plugins/mjolnir/scripts/save.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
-    # ⚠️ The counterpart carrier of the entry above, and the one whose suite asserts a **negative**
-    # about the tree it runs in: that every reading it takes leaves the tree byte-identical. So this
-    # run holds something no other entry here does — a property that cannot be read off an output.
+    # ⚠️ The counterpart carrier of the entry above, and the one whose suite asserts a **negative**:
+    # that every reading it takes creates and removes nothing, with one exception named rather than
+    # smoothed over — reading a working tree through git may refresh git's own index, which is git's
+    # cache and not the reading's output. ⛔ Not a superlative: the install entry's suite asserts a
+    # narrower negative of the same kind, so what is particular here is the scope rather than the
+    # shape — a whole fixture tree digested before and after.
     - workflow: "Session restore"
       mirrors: "python3 plugins/mjolnir/scripts/load.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]

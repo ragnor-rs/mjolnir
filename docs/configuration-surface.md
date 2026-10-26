@@ -53,11 +53,12 @@ rule and is read there rather than restated.
 ### The tenth role every copy named and none of them wrote
 
 The role that **restores** a session's context is the counterpart of the one that persists it, and
-the survey found it in a shape none of the other nine came in: named by every project's tooling and
-implemented by none of it. The phrase a session is loaded with sits in the excluded-turn list of
-each day-log script the survey read — classified there as the tooling's own upkeep, exactly as the
-save it mirrors is — so the projects' own scripts already deducted the minutes of a role no project
-had written down. ⚠️ **Which is also what settles whether it is work**: the classification is those
+the survey found it in a shape none of the other nine came in: named by the tooling of every project
+that has any of this tooling, and implemented by none of them. The phrase a session is loaded with
+sits in the excluded-turn list of **each day-log script the survey read** — the five of the six
+projects that carry one — classified there as the tooling's own upkeep, exactly as the save it
+mirrors is, so those scripts already deducted the minutes of a role no project had written down.
+⚠️ **Which is also what settles whether it is work**: the classification is those
 scripts', it predates the role being written, and
 [`schema.md § 24`](../plugins/mjolnir/config/schema.md#24-session-restore--the-readings-a-pass-is-resumed-from)
 changes nothing about it.
@@ -68,7 +69,7 @@ of any role here, both of which are worth saying plainly:
 | | |
 |---|---|
 | **Why it is a role** | Tooling in several projects names it, people invoke it, and it is performed from memory and differently every time. Its failure mode is quiet — a sweep that misses the unpushed commits, reports a cold environment as warm, or restates a stale recollection as current produces a confident and wrong picture of where the work is, which the next hour is then spent acting on |
-| **Why its readings are procedure rather than configuration** | The thirds of the role it mirrors are configuration because the copies **diverged**: one project runs the commit third alone. Here there is nothing to diverge from, so a key stating which readings run would be a project's licence to switch one off — and a reading switched off reads exactly like a reading that found nothing, which is this role's whole failure mode |
+| **Why its readings are procedure rather than configuration** | The thirds of the role it mirrors are configuration because the copies **diverged** — counted in [the section on that role](#the-bookkeeping-role-three-copies-that-are-a-third-of-it-and-two-keys-that-came-out-of-it) and nowhere else. Here there is nothing to diverge from, so a key stating which readings run would be a project's licence to switch one off — and a reading switched off reads exactly like a reading that found nothing, which is this role's whole failure mode |
 | **What that leaves weaker than the nine** | Every other role here was reconciled from copies that could be read against each other. This one was derived from performing it, so the list of readings is one performer's habit written down and held by a carrier rather than a merge of five. The honest consequence is that it is likelier than its siblings to be missing a reading, and the place that shows up is a report that was confidently complete |
 
 ### The loop does not continue itself
@@ -1270,7 +1271,8 @@ written around that payload carrying nothing**, which the subsection below is wh
 
 ### What a resumed session is actually handed
 
-The paragraph above is the vendor's documentation. What a resumed session's event actually carried,
+The field list two paragraphs up — the one carrying the vendor's own link — is the vendor's
+documentation. What a resumed session's event actually carried,
 probed rather than read: **five fields, and none of the four the documentation names.** A
 `SessionStart` payload on a resumed session carried the session's own identifier, its transcript
 path, the working directory, the event name and `source: resume` — no token count, no time since the
@@ -1313,15 +1315,20 @@ boundary**, 132 of them calls that wrote a file, each with its full input.
   the session wrote whole is in the record with its content; a file it only ever *edited* is in the
   record as a set of differences against content nothing there holds. The harness keeps the
   pre-edit copy in a store of its own, which the sweep names rather than reads.
-- ⚠️ **One logical session is one file here**, which is the opposite of what was expected when the
-  role was specified: across **863** transcripts in this machine's store, none carried records of a
+- ⚠️ **One logical session is one session transcript here**, which is the opposite of what was
+  expected when the role was specified: across **863** session transcripts in this machine's store —
+  the top-level files, which is the universe the claim is about and not the 2,406 files the store
+  holds in all — none carried records of a
   session other than the one its name states, and a resumed session probed directly wrote to the
-  same path it had before. So *the last session* and *the last file* coincide, and the sweep is
-  written against the file.
-- ⚠️ **What sits beside those files is not small.** In this project's own store: **153** subagent
-  transcripts and **41** tool-result directories against **138** session transcripts. Delegating to
-  a sub-window is the practice § 11 recommends, and it writes its trace out of the file a sweep
-  reads — so the sweep counts what is beside it and says it counted rather than read.
+  same path it had before. So *the last session* and *the last session transcript* coincide, and the
+  sweep is written against the file.
+- ⚠️ **The sidecars are the other half of that and go the other way.** In this project's own store:
+  **153** subagent transcripts and **41** tool-result directories against **138** session
+  transcripts — and every sidecar sampled carries its **parent's** session identifier, which is
+  exactly the spans-more-than-one-file shape the item predicted, one level down from where it was
+  predicted. Delegating to a sub-window is the practice § 11 recommends, and it writes its trace out
+  of the file a sweep reads — so the sweep counts what is beside it and says it counted rather than
+  read.
 
 ### Why `committed` is a key of its own, and not implied by `dir`
 

@@ -3273,7 +3273,7 @@ branch_model:
   procedure knows**: a build directory, a dependency cache, an editor's directory and a log are
   four unrelated names, and a carrier shipping any of them would be this toolkit carrying a
   project's value — which
-  [the check that holds this toolkit to naming none](../../../docs/single-source-of-truth.md#the-second-sweep)
+  [the check that holds this toolkit to naming none](../../../docs/single-source-of-truth.md#the-second-sweep-naming-no-other-project)
   refuses. ⚠️ **`[]` is a stated absence and the safe one**: a project stating it keeps every tree
   holding any ignored file at all, which costs disk rather than data.
 - **Each entry is a path matched with the shell's own glob rules, anchored at the *end* of the
@@ -4866,7 +4866,7 @@ the wrong one of the three is either lost with the tree or unreadable by the thi
 persists what happened at a boundary, this one restores what is in flight at the start of a pass.**
 ⛔ **It declares no key.** Which readings a load takes is procedure, for the reason the thirds one
 section up are configuration: the thirds were measured diverging across the projects this surface
-was derived from, and this role was measured in **none** of them — the phrase every one of those
+was derived from, and this role was measured implemented in **none** of them — a phrase those
 projects' own tooling already classified as a bookkeeping turn, with no implementation anywhere to
 diverge from
 ([the measurement](../../../docs/configuration-surface.md#the-tenth-role-every-copy-named-and-none-of-them-wrote)).
