@@ -90,8 +90,11 @@ already_run:
   # it was.
   never_guard: []
 
+# § 6. Empty, and that is this project's one mapped role answering: nothing here commits, so
+# there is no role for an entry to be about. `{}` rather than an unset key, for the reason
+# `checks_local` above is written that way.
 commit:
-  staging: explicit
+  staging: {}
   trailer: read_from_history
 
 # § 20's stated absence, and on this project it is the ordinary one: no role here reads a section
@@ -100,6 +103,11 @@ body_sections: []
 
 carriers:
   day_log: skill
+
+# § 23. No bookkeeping role is mapped, so no third of it runs — the empty list being the stated
+# decision rather than an unset key, which would read the same and mean nothing.
+session:
+  parts: []
 
 language:
   work_item: en

@@ -1,0 +1,32 @@
+name: Save artifact
+
+# The bookkeeping role's two derivations: which thirds of it run, and the form of the artifact a
+# save writes. Its own workflow rather than a job of a sibling, for the reason its siblings are: a
+# `host.checks` entry states one mirrored local command, so two commands behind one workflow name
+# could not be stated on the surface at all.
+#
+# No credential and no network. The suite writes artifacts in memory, breaks each in one stated
+# way, and asserts the reading back names what is wrong — plus the round trip that is the
+# decidable end of "resumable from the artifact alone". What the round trip cannot establish is
+# whether the prose in those fields is enough for a later pass to continue, and the suite says so
+# rather than reading as though it had.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  save-artifact:
+    name: Save artifact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command — the string `host.checks` states this run mirrors.
+      - name: Assert every way an artifact fails the form, then hold the derivations
+        run: python3 plugins/mjolnir/scripts/save.py --self-test

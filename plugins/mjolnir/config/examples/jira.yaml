@@ -166,8 +166,14 @@ already_run:
   never_guard: []
   operational_when: "<the probe that prints `operational` where the runners can take a job>"
 
+# § 6. The `all` position on every role that commits: nobody here reads a staged set, so a file
+# left out of one is the file that goes missing. ⚠️ It buys no exception to the scan — a
+# credential or a client file stops the commit under either value.
 commit:
-  staging: all
+  staging:
+    session: all
+    finish: all
+    review: all
   trailer: read_from_history
 
 # § 20. Two sections, because two roles each read one — and two entries, never one entry naming
@@ -189,6 +195,15 @@ carriers:
   finish: skill
   review: skill
   deploy: skill                 # split per environment at the project level
+  session: skill
+
+# § 23. All three thirds stated. ⚠️ The memory third is the one a project on a tracker this far
+# from the code would lean on hardest — what the next session needs is rarely on the card — and it
+# is also the one whose store no key carries yet, so the reader reports it unavailable and the role
+# says what it could not write. Stated anyway, because the decision is the project's and the
+# absence is the surface's.
+session:
+  parts: [tracker, memory, commit]
 
 language:
   work_item: ru

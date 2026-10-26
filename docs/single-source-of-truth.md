@@ -3185,6 +3185,68 @@ command line carries a status of its own for it for the same reason.
 - **Whatever is not committed**, and **issues and pull requests**, for the reasons the checks above
   give: the workflow holds no credential.
 
+## The bookkeeping role's two derivations, and the round trip that is the resumability arm
+
+`plugins/mjolnir/scripts/save.py --self-test` runs in the `Save artifact` workflow, with no
+credential and no network. ⛔ The rules are
+[schema § 23](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs)
+and its two subsections, and this document states none of them: what is recorded here is the reach
+of the carrier, which is narrower than § 23 in one direction the section itself is careful to name.
+
+What it holds, both halves being derivations rather than verdicts about a project:
+
+- **Which thirds run, in the procedure's order.** The vocabulary is read out of the surface through
+  the shared reader and the order is this module's, so the two are held to each other: a third the
+  surface states and this module places nowhere is reported as **unplaced** rather than run in an
+  order nothing decided, and the suite asserts both directions of that agreement. The ordering is
+  asserted on a list written **backwards**, because an assertion written in the order it expects
+  asserts the expectation and not the code.
+- **The form of a save artifact, and a written one read back against it.** That every field is
+  required and that the boundary is drawn from a closed set are the **carrier's** statements, which
+  [schema § 23 → The artifact's form](../plugins/mjolnir/config/schema.md#the-artifacts-form-is-the-carriers-not-the-roles)
+  rules they must be and this document only describes. The same answer serves the role that wrote
+  the artifact and the pass that reads one back, those being one question asked from two sides —
+  which is why there is one subcommand and not two.
+
+⚠️ **The fields are keys and the prose beside them is the project's own.** A form demanding English
+headings would ship one project's vocabulary to every project, which
+[schema § 8](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project)
+refuses; a key is not prose. So this check reads whether a field is answered and never what the
+answer says.
+
+⚠️ **The round trip is the decidable end of one acceptance bullet and is reported as that rather
+than as the bullet.** The suite writes a complete artifact, reads it back and asserts **every field
+by name** is recovered — a count would pass a form that recovered the same number of fields under
+different names. That is a resume reading the artifact at the mechanical end. Whether the prose a
+role wrote into those fields is enough for a later pass to continue is the *quoting* kind of
+judgement, green on prose reworded into its opposite, and it is read rather than enforced.
+
+### What this check deliberately does not hold
+
+- **Whether a save happened at all.** Nothing fires when a window is compacted — the event is one
+  of two that never fired in the measurement behind
+  [schema § 7's table](../plugins/mjolnir/config/schema.md#what-a-hook-can-establish-about-the-role-it-is-running-under)
+  — so there is no act for a gate to read and no record for one to miss. The boundary field says
+  which boundary a save that *was* written was taken at, and a compaction nobody saved before is
+  invisible to this and to everything else.
+- **Whether a third that ran did its work.** That the tracker is current, that memory was
+  refreshed, that the commit carries what it should: each is the port's, the store's or § 6's, and
+  a second answer here would be the duplication the toolkit exists to delete. What this reports is
+  which thirds the project runs and which of their mechanisms are absent.
+- **Whether the artifact is where § 11 says.** The store's path and whether it is committed are the
+  configuration reader's, refused there; this reads a file it is handed by path.
+- **Whether the boundary names match the occasions the surface states.** The four names are the
+  form's, by § 23's rule that the form is the carrier's, and the surface states the occasions a save
+  is owed at in prose. ⚠️ **Nothing compares the two**, so an occasion added to the surface and the
+  form's set fall out of step with no run reporting it — stated here because a green run over the
+  four names reads as though the pair had been checked.
+- **A status this role may not write.** The writer model is a configured fact
+  ([schema § 4.2](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer))
+  and the reader reports it; whether a role respected it is a property of a tracker write that
+  already happened, which no local suite can see.
+- **Whatever is not committed**, and **issues and pull requests**, for the reason the checks above
+  give: the workflow holds no credential.
+
 ## Each check has a violation it is asserted to redden on
 
 `--self-test` plants one violation per check and asserts that check goes red, as the first step of

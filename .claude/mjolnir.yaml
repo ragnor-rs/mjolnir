@@ -165,6 +165,9 @@ host:
     - workflow: "Rules loaded"
       mirrors: "python3 plugins/mjolnir/scripts/load_the_rules.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Save artifact"
+      mirrors: "python3 plugins/mjolnir/scripts/save.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Single source of truth"
       mirrors: "python3 tools/check_single_source.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -327,7 +330,14 @@ already_run:
   escape: "MJOLNIR_RUN_ANYWAY"
 
 commit:
-  staging: explicit
+  # Per role (§ 6), and the same answer for all three here rather than by default: every commit
+  # this repository makes rides an item's branch into a pull request, the bookkeeping one
+  # included, so there is no role whose commit nobody reviews and nothing to be swept in
+  # unnoticed.
+  staging:
+    session: explicit
+    finish: explicit
+    review: explicit
   # ⛔ Not read_from_history. The only author is this host's authenticated user; no tool,
   # assistant or generator is credited as author, committer or co-author. See the
   # authorship rule in the schema — it is procedure, not a setting, and `read_from_history`
@@ -347,6 +357,15 @@ carriers:
   start: skill
   finish: skill
   review: skill
+  session: skill
+
+# § 23. All three thirds: the backlog is this project's own tracker, memory is what a later
+# session reads this build's rulings out of, and the commit is § 6's above. ⚠️ `memory` is stated
+# while the store it writes to is declared by no key yet (#35), so the reader reports that third
+# unavailable — which is the honest reading of a project that does refresh memory through a
+# mechanism the surface has not taken over.
+session:
+  parts: [tracker, memory, commit]
 
 language:
   work_item: en

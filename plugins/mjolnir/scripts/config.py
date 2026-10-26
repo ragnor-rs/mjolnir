@@ -329,6 +329,7 @@ def surface_facts(surface_text: str) -> dict:
     """
     defaults: dict[str, object] = {}
     enums: dict[str, list[str]] = {}
+    lists: dict[str, list[str]] = {}
     required: dict[str, str] = {}
     required_when: dict[tuple[str, str, str], str] = {}
     absent_reason: dict[str, str] = {}
@@ -424,6 +425,27 @@ def surface_facts(surface_text: str) -> dict:
                     enums.setdefault(path, [v.strip() for v in candidate.split("|")])
                     break
 
+            # ⛔ The third shape, and it is a *list's* vocabulary rather than a
+            # value's: a key whose value is a list shows its members as the list
+            # itself. An alternation beside such a key cannot be read by the
+            # alternation rule above -- that rule holds the value, and the value
+            # here is the whole list -- so the two are separate facts and a
+            # reader asking the wrong one of them refuses every configuration
+            # stating more than one member.
+            #
+            # ⚠️ Why that matters beyond tidiness: a reader older than the key
+            # resolves the newer surface by § 1, so an alternation it reads with
+            # the wrong rule refuses a configuration the branch adding the key
+            # legitimately wrote -- measured on this repository, every guard in
+            # a work tree going quiet at once. A list's vocabulary written this
+            # way is simply unread by an older reader, which is the direction
+            # that fails safe.
+            shown = _literal(value.strip()) if value.strip().startswith("[") else None
+            if isinstance(shown, list) and shown and all(
+                isinstance(member, str) for member in shown
+            ):
+                lists.setdefault(path, [member.strip() for member in shown])
+
     # A reader that derives nothing accepts anything, so an unreadable surface
     # is refused here rather than silently waved through. ⛔ `required` is in
     # this list for a sharper reason than the other two: a surface whose
@@ -509,11 +531,21 @@ def surface_facts(surface_text: str) -> dict:
     return {
         "defaults": defaults,
         "enums": enums,
+        # ⚠️ Deliberately **not** in the `missing` refusal above, for the reason
+        # `per_root` is not: a surface showing no inline list would empty this,
+        # and the failure that follows is closed rather than silent —
+        # `vocabulary_list` refuses at the point of use, naming the path.
+        "lists": lists,
         "required": required,
         "required_when": required_when,
         "absent_reason": absent_reason,
         "procedure": procedure,
         "per_root": per_root,
+        # Every path the blocks declare, for the one rule that is about a key's
+        # *children* rather than its value: § 6 states which roles commit by
+        # showing one entry each, and a reader that listed them would be the
+        # second statement every marker above exists to avoid.
+        "declared": declared,
     }
 
 
@@ -565,6 +597,22 @@ def vocabulary(facts: dict, path: str, what: str) -> list[str]:
         raise ConfigError(
             os.path.relpath(SURFACE, PLUGIN_ROOT),
             f"states no `{path}` alternation, so {what} would be unchecked.",
+        )
+    return found
+
+
+def vocabulary_list(facts: dict, path: str, what: str) -> list[str]:
+    """The members a list key may carry, read off the list the surface shows.
+
+    The counterpart of `vocabulary` for a key whose value is a list: what the
+    surface states there is the membership rather than the value, so the two
+    facts are read apart and a refusal names which one is missing.
+    """
+    found = facts["lists"].get(path)
+    if not found:
+        raise ConfigError(
+            os.path.relpath(SURFACE, PLUGIN_ROOT),
+            f"shows no `{path}` list, so {what} would be unchecked.",
         )
     return found
 
@@ -1372,6 +1420,38 @@ class Config:
                     "reference: the finishing role renders none, no title gate is "
                     "installed, and nothing holds a title to anything (§ 2)."
                 )
+        # § 23. Which thirds of the bookkeeping role this project does not run,
+        # and the one third whose mechanism the surface does not carry yet. ⛔ The
+        # memory arm is reported wherever the third is named, rather than the
+        # third being dropped: a third that silently did not run reads exactly
+        # like one that did, which is the failure direction § 11's
+        # report-what-you-could-not-establish rule exists for.
+        parts = _absent_as(self.get("session.parts"), [])
+        if not parts:
+            out.append(
+                "No bookkeeping role runs here (`session.parts: []`), so nothing "
+                "brings the tracker current, refreshes memory or commits on that "
+                "role's account. A stated decision rather than a partial install "
+                "(§ 23)."
+            )
+        else:
+            if "memory" in parts:
+                out.append(
+                    "The memory third of the bookkeeping role is mapped and the "
+                    "store it writes to is declared by no key on this surface "
+                    "(#35), so that third is **unavailable**: the role says what "
+                    "it could not write rather than skipping it (§ 23)."
+                )
+            # The vocabulary is the surface's, read rather than listed: a fourth
+            # third would otherwise be absent from this report alone.
+            every = self.facts.get("lists", {}).get("session.parts", [])
+            missing = [t for t in every if t not in parts]
+            if missing:
+                out.append(
+                    "The bookkeeping role runs " + ", ".join(parts) + " here and "
+                    "not " + ", ".join(missing) + ", which is a configuration of "
+                    "that role rather than a third of it going wrong (§ 23)."
+                )
         # § 17, and the complement of the arm above: the two facets together are
         # every verdict there is, so an empty list here is reported for the
         # reason an empty `host.checks` is. ⛔ Where both are empty the project
@@ -1592,6 +1672,16 @@ INDEX = re.compile(r"\[\d+\]")
 # only as far as whoever last remembered to extend a list here. It did not:
 # `day_log.round_ties`, `day_log.sections` and `work_item.estimate.unit` were
 # each stated as a closed set and accepted anything.
+# § 6's one conditional committing role, and the third of it that decides the
+# condition. ⛔ Two names rather than a rule written out: the surface states that
+# the bookkeeping role's commit is a third of that role
+# ([§ 6](#what-staging-is-per-and-the-two-rules-that-hold-regardless)), and these
+# are the spellings it states the role and the third under. A reader working the
+# condition out of `carriers` alone would require a staging mode of a project
+# whose bookkeeping role never commits.
+SESSION_ROLE = "session"
+COMMIT_THIRD = "commit"
+
 CONTEXTUAL = {
     "role",
     "writer",
@@ -3152,6 +3242,152 @@ def validate(data: dict, facts: dict) -> None:
                 f"is {carrier!r}; the surface allows {' | '.join(allowed)}.",
             )
 
+    # § 6. Staging is per role, and which roles commit is read off the surface's
+    # own block rather than listed here -- the derivation § 1's per-root blocks
+    # already have, for the same reason: a fourth committing role is a fence edit
+    # and not an edit to this module.
+    committing = sorted({
+        path.split(".")[2]
+        for path in facts["declared"]
+        if path.startswith("commit.staging.")
+    })
+
+    # § 23 first, because § 6's per-role requirement reads it: the bookkeeping
+    # role's commit is a third of that role, so whether it commits at all is
+    # `session.parts`'s answer and not `carriers`'s. ⛔ Read through `_absent_as`,
+    # so this shape rule answers what a stated value has to be and never whether
+    # the key is written -- requiredness is the surface's marker, and a work tree
+    # whose surface predates the key marks nothing.
+    parts = _absent_as(_get(data, "session.parts"), [])
+    if not isinstance(parts, list):
+        raise ConfigError(
+            "session.parts",
+            f"is {parts!r}; § 23 states the thirds of the bookkeeping role that "
+            "run here as a list, or `[]` where the project maps no such role. A "
+            "value that is not a list leaves the role running whichever thirds it "
+            "reads out of it.",
+        )
+    if parts:
+        thirds = vocabulary_list(
+            facts, "session.parts", "a third of the bookkeeping role"
+        )
+        for part in parts:
+            if part not in thirds:
+                raise ConfigError(
+                    "session.parts",
+                    f"names {part!r}; the surface allows {' | '.join(thirds)} (§ 23).",
+                )
+        repeated = sorted({p for p in parts if parts.count(p) > 1})
+        if repeated:
+            raise ConfigError(
+                "session.parts",
+                f"names {', '.join(repeated)} more than once. It is a set: a third "
+                "stated twice does not run twice (§ 23).",
+            )
+    if SESSION_ROLE in carriers and not parts:
+        raise ConfigError(
+            "session.parts",
+            "is empty while `carriers` maps the role, which is a role mapped to "
+            "do nothing. An empty list is how a project that maps no bookkeeping "
+            "role states it, and the two read identically otherwise (§ 23).",
+        )
+    if parts and SESSION_ROLE not in carriers:
+        raise ConfigError(
+            "session.parts",
+            f"states {', '.join(map(str, parts))} while `carriers` maps no "
+            f"`{SESSION_ROLE}` role, so nothing runs them (§ 7). Map the role or "
+            "state `[]`.",
+        )
+
+    # ⛔ Read through `_absent_as` for the reason § 23's block above is: an absent
+    # block falls to the per-role requirement below, which names the role rather
+    # than the block.
+    staging = _absent_as(_get(data, "commit.staging"), {})
+    if not isinstance(staging, dict):
+        raise ConfigError(
+            "commit.staging",
+            f"is {staging!r}; § 6 states it per role -- one entry per role that "
+            "commits, or `{}` where the project maps none of them. A single value "
+            "for a project is the shape that made one of two roles wrong in the "
+            "project this was measured in.",
+        )
+    # ⛔ A surface that declares the block with no role under it is refused at the
+    # point of use and never on sight. `per_root` already declined the other
+    # shape for this reason: a refusal on the whole surface would leave a work
+    # tree whose branch predates the fence unable to read its own configuration
+    # (§ 1), while a configuration that states no entry has nothing to hold.
+    if staging and not committing:
+        raise ConfigError(
+            "commit.staging",
+            f"states {', '.join(sorted(map(str, staging)))} while the surface this "
+            "tree is held to declares no role under `commit.staging`, so this "
+            "reader cannot tell which roles commit and would hold every entry to "
+            "nothing (§ 6).",
+        )
+    for role in staging:
+        # ⛔ Before the sort, which is where a key that is not a string arrives as
+        # a traceback naming nothing -- out of the one module whose whole promise
+        # is naming the key. An unquoted word that reads as a number or a boolean
+        # is the shape it comes in.
+        if not isinstance(role, str):
+            raise ConfigError(
+                "commit.staging",
+                f"carries an entry keyed {role!r}, which is not a role's name. "
+                f"§ 6 states the roles that commit: {' | '.join(committing)}.",
+            )
+    # Which roles commit *here*: mapped, and for the bookkeeping role only where
+    # the commit third is one it runs. ⛔ The condition is § 6's own statement
+    # about that role and is not derivable from `carriers`, which says a role is
+    # mapped and nothing about which of its thirds run.
+    commits_here = [
+        role
+        for role in committing
+        if role in carriers
+        and (role != SESSION_ROLE or COMMIT_THIRD in parts)
+    ]
+    for role in sorted(staging):
+        if role not in committing:
+            raise ConfigError(
+                f"commit.staging.{role}",
+                f"names a role that does not commit. § 6 states the roles that do: "
+                f"{' | '.join(committing)}.",
+            )
+        if role not in carriers:
+            raise ConfigError(
+                f"commit.staging.{role}",
+                "names a role `carriers` does not map, so nothing here ever reads "
+                "it (§ 7). Map the role or drop the entry -- an unmapped role and a "
+                "misspelled one read alike, and this is where they come apart.",
+            )
+        if role not in commits_here:
+            raise ConfigError(
+                f"commit.staging.{role}",
+                f"states a staging mode for a commit this project never makes: "
+                f"`session.parts` does not run the `{COMMIT_THIRD}` third, so that "
+                "role reaches no commit here (§ 23). Drop the entry or run the "
+                "third.",
+            )
+        # ⛔ Only the empty value, because the surface's own alternation on each
+        # entry is what holds a *stated* one and the generic enum rule above
+        # performs it. What that rule cannot answer is a key written with nothing
+        # after it, which it reads as absent and skips -- leaving the one role
+        # whose staging nobody chose looking configured.
+        if staging[role] is None:
+            raise ConfigError(
+                f"commit.staging.{role}",
+                "is written and empty, so that role's commit runs on the staging "
+                "nobody chose. The surface allows "
+                f"{' | '.join(vocabulary(facts, f'commit.staging.{role}', 'a staging mode'))} "
+                "(§ 6).",
+            )
+    for role in commits_here:
+        if role not in staging:
+            raise ConfigError(
+                f"commit.staging.{role}",
+                "required: the project maps that role and it commits, so this is "
+                "the staging nobody chose otherwise (§ 6).",
+            )
+
     # § 8. A width is a count of columns, and absence is the answer "this
     # project does not hard-wrap" rather than a missing setting -- so the key is
     # not required, and a value that is present is held to being a positive
@@ -3748,6 +3984,7 @@ MARKED_REQUIRED = [
     "ordering.carrier",
     "readiness",
     "roots.code",
+    "session",
     "spend_guard.deny",
     "statuses",
     "tracker.kind",
@@ -3823,6 +4060,13 @@ MARKED_REQUIRED_WHEN = [
 # since the reader keeps no list of its own to compare against -- drop the clause
 # from the surface and this is what reddens.
 MARKED_PROCEDURE = ["audit_trail", "fail_open", "install", "waive_review"]
+
+# The list keys whose membership a rule in this reader reads off the surface, and
+# the members each shows. Stated here for the reason the sets above are, and
+# ⛔ scoped to the paths a rule reads: the surface shows other lists to
+# illustrate a project's own values, and holding those would be an inventory of
+# the fence instead of one of what is enforced.
+SHOWN_LISTS = {"session.parts": ["tracker", "memory", "commit"]}
 
 MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
@@ -3924,6 +4168,40 @@ def self_test() -> int:
     ]
     check("a deliberately absent facet loads silently", bool(silent))
 
+    # § 23's report arms, each held by the example that takes it: one example
+    # runs the commit third alone and one maps no bookkeeping role at all. ⛔ The
+    # last assertion is what keeps this honest -- an arm no example reaches is an
+    # arm nothing asserts can speak, which is how the § 19 arm one facet over got
+    # to be deletable with every assertion green.
+    subset, unmapped = [], []
+    for name, example in loaded.items():
+        parts = _absent_as(example.get("session.parts"), [])
+        lines = example.unavailable()
+        every = example.facts.get("lists", {}).get("session.parts", [])
+        if not parts:
+            unmapped.append(name)
+            check(
+                f"{name} says no bookkeeping role runs there",
+                any("session.parts: []" in line for line in lines),
+                f"reported {lines!r}",
+            )
+        elif len(parts) < len(every):
+            subset.append(name)
+            check(
+                f"{name} names the thirds of that role it does not run",
+                all(
+                    any(third in line for line in lines)
+                    for third in every
+                    if third not in parts
+                ),
+                f"reported {lines!r}",
+            )
+    check(
+        "an example reaches each of those two arms",
+        bool(subset) and bool(unmapped),
+        f"a subset in {subset!r}, none mapped in {unmapped!r}",
+    )
+
     # The surface's key-clause marked sets, against the test's own statement of
     # them. ⚠️ The retirement class is held separately, below: it is marked by a
     # line rather than by a key's clause, and its two statements are the reader's
@@ -3948,6 +4226,20 @@ def self_test() -> int:
             derived == expected,
             f"the surface marks {sorted(derived - expected)} that this test does not, "
             f"and this test states {sorted(expected - derived)} that the surface does not",
+        )
+
+    # The list vocabularies a rule reads off the surface, held to a statement
+    # written here for the reason the marked sets above are: the reader derives
+    # them from the surface, so an assertion that derived them too would assert
+    # whatever the surface happened to show and pass. ⛔ Only the paths a rule
+    # actually reads — a list the surface shows to illustrate a project's own
+    # values is not a vocabulary, and asserting those would be an inventory of
+    # the fence rather than of what is enforced.
+    for path, expected in sorted(SHOWN_LISTS.items()):
+        check(
+            f"the surface shows `{path}` as exactly the list this test states",
+            surface["lists"].get(path) == expected,
+            f"the surface shows {surface['lists'].get(path)!r}",
         )
 
     for facet in MARKED_ABSENT_CAPABLE:
@@ -4977,6 +5269,15 @@ def self_test() -> int:
     # it holds is that the refusal does not name *that* key, and not that the
     # configuration loads: a rule reading two keys against each other may
     # legitimately refuse on the other one, which is a different statement.
+    #
+    # ⚠️ **And that is also the limit, stated rather than discovered.** A rule
+    # refusing under a *child* of the marked key walks through this arm, the two
+    # paths being different strings -- so `session` marked and `session.parts`
+    # refused reads as compliant here. Both of this surface's block-valued
+    # required keys are in that position, and what covers them is `_absent_as` at
+    # each rule rather than this assertion. Measured by review on the change that
+    # added the second of them; widening the arm to descendants is a change to
+    # every key's assertion and is not this one's to make.
     with open(SURFACE, encoding="utf-8") as handle:
         marked = surface_facts(handle.read())
     for path in sorted(marked["required"]):
@@ -5139,6 +5440,15 @@ def self_test() -> int:
                     any(path in line for line in reported),
                     f"reported {reported!r}",
                 )
+            # § 23's third arm, which only a project stating the memory third
+            # reaches -- this one does, so it is held here rather than over the
+            # examples with the other two.
+            if "memory" in (config.get("session.parts") or []):
+                check(
+                    "and names the memory third unavailable, its store having no key",
+                    any("#35" in line for line in reported),
+                    f"reported {reported!r}",
+                )
             # The resolved identity, which is the only guard § 1 has against a
             # role run from a sibling project: the reader says which root it
             # resolved and which file it read, both absolute, for the role to
@@ -5238,8 +5548,49 @@ def _planted_violations():
         ("a value outside an alternation", "tracker.kind", at("tracker.kind", "gitlab")),
         ("a carrier outside its alternation", "work_item.type.carrier",
          at("work_item.type.carrier", "telepathy")),
-        ("a staging mode outside its alternation", "commit.staging",
+        # § 6's per-role block, one plant per arm. ⛔ The scalar arm is the
+        # withdrawn tolerance: a configuration written the way the first form of
+        # that ruling told projects to write it has to stop loading, or the two
+        # shapes coexist and one role goes on being wrong.
+        ("a staging mode stated once for the whole project", "commit.staging",
          at("commit.staging", "sometimes")),
+        # ⚠️ The out-of-alternation case is the generic enum rule's and is
+        # planted there; what this arm answers is the *empty* value, which that
+        # rule reads as absent and skips.
+        ("a staging mode written empty", "commit.staging.finish",
+         at("commit.staging.finish", None)),
+        ("a staging entry for a role that does not commit", "commit.staging.day_log",
+         at("commit.staging.day_log", "all")),
+        # ⛔ Planted by unmapping a role the surface *does* state commits, not by
+        # inventing one: a role outside that set is refused by the arm above, so
+        # a plant written that way asserts the wrong arm and leaves this one
+        # unasserted. Measured on this change, by review.
+        ("a staging entry for a role `carriers` does not map", "commit.staging.review",
+         lambda data: _without(data, "carriers.review")),
+        ("a staging mode outside its alternation, held by the alternation rule",
+         "commit.staging.finish", at("commit.staging.finish", "sometimes")),
+        ("a staging entry keyed by something that is not a role", "commit.staging",
+         _a_staging_entry_keyed_by_a_number),
+        ("a staging entry for a commit the bookkeeping role never makes",
+         "commit.staging.session",
+         at("session.parts", ["tracker"])),
+        ("a committing role mapped with no staging stated", "commit.staging.finish",
+         lambda data: _without(data, "commit.staging.finish")),
+        # § 23's thirds, one plant per arm.
+        ("a parts list that is not a list", "session.parts",
+         at("session.parts", "commit")),
+        ("a third outside the vocabulary", "session.parts",
+         at("session.parts", ["tracker", "telepathy"])),
+        ("a third stated twice", "session.parts",
+         at("session.parts", ["commit", "commit"])),
+        ("a bookkeeping role mapped to run no third", "session.parts",
+         at("session.parts", [])),
+        # ⚠️ Its staging entry goes with the carrier, or § 6's unmapped-role arm
+        # above refuses first and this arm is asserted by nothing.
+        ("thirds stated while no bookkeeping role is mapped", "session.parts",
+         lambda data: _without(
+             _without(data, "carriers.session"), "commit.staging.session"
+         )),
         ("a unit outside its alternation", "work_item.estimate.unit",
          at("work_item.estimate.unit", "furlongs")),
         ("a rounding tie outside its alternation", "day_log.round_ties",
@@ -5826,6 +6177,18 @@ def _an_absent_executed_with(**overrides):
         return data
 
     return mutate
+
+
+def _a_staging_entry_keyed_by_a_number(data: dict) -> dict:
+    """An entry whose key YAML reads as a number rather than a role's name.
+
+    Written here rather than through the path helper, which writes every segment
+    as a string: the defect is a key that is not a string, so a plant that wrote
+    `"1"` would assert the wrong thing and stay green.
+    """
+    staging = data.setdefault("commit", {}).setdefault("staging", {})
+    staging[1] = "all"
+    return data
 
 
 def _a_type_with_no_prefix(data: dict) -> dict:

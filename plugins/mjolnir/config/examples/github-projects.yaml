@@ -138,8 +138,13 @@ already_run:
   never_guard: ["npm run lint -- --fix"]
   escape: "SKIP_ALREADY_RUN"
 
+# § 6. One entry per role that commits, and here they agree — which is a decision this project
+# states three times rather than a default it inherited once.
 commit:
-  staging: explicit
+  staging:
+    session: explicit
+    finish: explicit
+    review: explicit
   trailer: read_from_history
 
 # § 20, and the entry names the carrier below it rather than a person: the deploy role reads this
@@ -156,6 +161,12 @@ carriers:
   finish: skill
   review: skill
   deploy: skill
+  session: command              # the whole loop here is commands except where it is not
+
+# § 23. Two thirds: the board is brought current and the work committed, and nothing here keeps
+# a memory store for a later session to read.
+session:
+  parts: [tracker, commit]
 
 language:
   work_item: en

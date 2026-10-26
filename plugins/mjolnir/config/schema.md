@@ -1935,9 +1935,60 @@ on the item, rather than choosing between two labels or inventing a third.
 
 ```yaml
 commit:
-  staging: explicit | all                    # required
+  staging:                                   # required; one entry per role that commits
+    session: explicit | all
+    finish: explicit | all
+    review: explicit | all
   trailer: none | read_from_history | "<literal trailer line>" # required
 ```
+
+### What staging is per, and the two rules that hold regardless
+
+⛔ **`staging` is per role, and a single value for a project is refused.** ⛔ **The entries the
+block above shows are the roles that commit, and no prose here repeats them**: the block is the
+statement, a reader derives the set from it, and a list written beside it would be the copy that
+goes stale the first time a fourth entry lands — with every gate green and the prose wrong.
+
+⚠️ **Measured inside one project, which holds both positions in two of its own carriers**: one of
+them stages every change with no exceptions, the other names the paths it means, both are correct
+for what they are, and a project-level key cannot express that project without making one of the two
+wrong — which the first form of this ruling did. The two copies and the reason each is right are in
+[`docs/configuration-surface.md`](../../../docs/configuration-surface.md#staging-is-per-role-measured-inside-one-project),
+which is where every measurement on this surface lives rather than beside the rule it forced.
+
+⚠️ **One of those roles reaches a commit only where it is configured to**, which is the bookkeeping
+role: its commit is a third of itself
+([§ 23](#23-session-bookkeeping--which-thirds-a-project-runs)), so ⛔ **an entry for it is required
+where that third runs and refused where it does not** — a staging mode stated for a commit the
+project never makes is a project believing it configured something that runs on whatever the role
+does instead. ⚠️ **The other entries carry no such condition**: a role mapped is a role that
+commits.
+
+⛔ **An entry is required for every committing role the project maps, and refused for a role it does
+not map** ([§ 7](#7-carrier)'s `carriers`). A project mapping none of them states an empty block,
+which is a decision rather than a gap; a project mapping one and stating nothing for it is refused
+with the role named, because the alternative is a commit whose staging nobody chose.
+
+⚠️ **A project whose own carrier for some other role commits is a stop, and the limit is stated
+here rather than met.** The entries above are the roles this procedure commits in, so an entry for
+any other role is refused naming the ones that do — and the remedy is this block growing an entry,
+not a project writing one the reader would then hold to nothing. ⛔ **The refusal is the right
+direction and the reason is the alternative**: a staging mode accepted for a role nothing reads it
+for is a project believing it configured a commit that runs on whatever the role does instead.
+
+⛔ **And `all` means no path filtering, never no scanning.** Two rules hold under both values,
+because every copy already carried them and only the default differed: the parallel-session
+exception — another session live, or status showing files this session never touched ⇒ stage
+explicit paths and name what was left alone — and the secret-and-client-material scan, which
+**stops rather than commits**. The strictest copy of the `all` position names a credential file
+outright, so the scan is not what the two values are about.
+
+⚠️ **The cost of the refusal is stated here rather than met.** A configuration written the way the
+first form of this ruling told projects to write it stops loading, with the key named and the
+per-role form in the message — the same cost
+[§ 2](#a-workflow-whose-jobs-mirror-more-than-one-command) states beside its own withdrawn
+tolerance, and taken for the same reason: a second way of stating one fact is a second way for two
+roles to disagree about it.
 
 ### Authorship is procedure, not configuration
 
@@ -1964,11 +2015,9 @@ graph. So the rule is **not** an invariant over history and must never be read a
 rewrite it. The only thing it asks of the past is that `read_from_history` not mistake it for a
 signature.
 
-- `staging` is the only part of this section that is configuration. **Two rules are shared
-  regardless**, because every copy already carried them and only the default differed: the
-  parallel-session exception (another session live, or status showing files this session never
-  touched ⇒ stage explicit paths and name what was left alone), and the secret-and-client-material
-  scan that stops rather than commits.
+- `staging` is the only part of this section that is configuration, and what it is per — along
+  with the two rules that hold under either of its values — is
+  [the subsection above](#what-staging-is-per-and-the-two-rules-that-hold-regardless).
 - **The message is written with repeated `-m`, one per paragraph.** No temporary file, so no race
   between two sessions; no heredoc, so no permission-allowlist accumulation; a trailer, where a
   project has a legitimate one, still parses as a final paragraph.
@@ -3341,10 +3390,15 @@ not exist yet is created by the first role that writes to it: unlike `roots.code
 absence is not a stop.
 
 `carrier: none` is a real configuration: a project that maps one role, so nothing is handed from
-one role to another and no boundary exists for an artifact to cross, writes none, states why, and
-is not misconfigured for it. ⚠️ **It is not the configuration for a loop that hands work through
-the item instead** — rule 2 above names an item body as a store whose text a role may not obey, so
-a handoff that travels through one has the next role reading what it must refuse to act on.
+one role to another, writes none, states why, and is not misconfigured for it. ⚠️ **What such a
+project accepts is a cost rather than the absence of one.** ⛔ **A boundary exists in every project,
+whether or not a second role is mapped** —
+[§ 23](#when-a-save-is-owed-and-the-boundary-it-names) states that a compaction and a session's end
+are two of them — so what a project without a store gives up is a window summarised mid-work with
+nothing outside it holding what was lost. ⚠️ **It is not the
+configuration for a loop that hands work through the item instead** — rule 2 above names an item
+body as a store whose text a role may not obey, so a handoff that travels through one has the next
+role reading what it must refuse to act on.
 
 ## 12. Ordering
 
@@ -4684,6 +4738,120 @@ window that the next call can spend differently.
 [§ 7](#a-hook-in-a-project-that-states-no-configuration), which keeps the two apart for the reason
 that section states.
 
+## 23. Session bookkeeping — which thirds a project runs
+
+```yaml
+session:                                     # required
+  parts: [tracker, memory, commit]
+```
+
+⚠️ **The vocabulary is the list shown above and not an alternation beside the key**, which is the
+shape [§ 9](#9-day-log)'s stream and exclusion lists already have. ⛔ **Not a convention**: an
+alternation marks what a *value* may be, the value of this key is the whole list, and a reader
+reading the first rule where the second applies refuses every project stating more than one member.
+⚠️ **Measured on this repository, in the change that added this section**: the reader that answers
+for a session is the installed one while the surface is the tree's own
+([§ 1](#the-surface-is-resolved-beside-the-configuration)), so a reader older than the key read the
+alternation under the wrong rule and every guard in a work tree went quiet at once. A list's
+membership written this way is simply unread by an older reader, which is the direction that fails
+safe.
+
+**The role brings the tracker current, refreshes memory, then commits.** ⛔ **In that order, and the
+order is procedure**: everything after the tracker describes what it now says, so a commit written
+before the move is a message about a state the item does not hold yet. `parts` states **which**
+thirds run and never their sequence — a set rather than a sequence, and a project writing it in
+another order gets the procedure's order anyway.
+
+⛔ **Which thirds run is configuration and is derivable from no other axis.** ⚠️ **The tell is that
+the measured commit-third-only project has a tracker**, so the presence of one answers nothing here
+— and neither does the inventory key *(role, carrier)* that found those copies. The survey, and how
+many copies of the role are whole and how many are a third of it, are in
+[`docs/configuration-surface.md`](../../../docs/configuration-surface.md#the-bookkeeping-role-three-copies-that-are-a-third-of-it-and-two-keys-that-came-out-of-it);
+⛔ **no count of them is written here**, because a count restated beside the rule drifts from the
+measurement the moment either is re-read.
+
+- ⛔ **An empty list is the configuration of a project that maps no bookkeeping role**, and a
+  project that maps one ([§ 7](#7-carrier)'s `carriers`) and states an empty list is refused. The
+  two read identically otherwise, which is the shape every stated absence on this surface exists
+  against. ⛔ **And the converse is refused with it**: thirds stated where `carriers` maps no such
+  role are thirds nothing runs, which reads from the item's side exactly like a role that ran them.
+- ⛔ **A third named twice is refused**, the list being a set.
+- ⛔ **A third whose mechanism is absent is reported, never quietly dropped**, and ⚠️ **which
+  mechanism answers for which third is worth being exact about, because only one of the three is
+  answered by this surface's reader.** The tracker third's is the port's, so an absent write
+  capability is reported by the port's own fallback
+  ([§ 3](#the-operations-and-what-an-absent-capability-does)) and the status writer model is
+  [§ 4.2](#42-status--an-ordered-set-of-name-role-writer)'s; the commit third's is
+  [§ 6](#what-staging-is-per-and-the-two-rules-that-hold-regardless)'s, and a mapped role whose
+  commit third runs with no staging stated for it is refused there. ⛔ **The memory third's store is
+  declared by no key on this surface** — that is #35's — which is the one of the three the reader
+  reports in its `unavailable` list wherever `parts` names it.
+- ⛔ **The role writes no status whose configured writer is somebody else, and names the writer it
+  deferred to** ([§ 4.2](#42-status--an-ordered-set-of-name-role-writer)). ⚠️ **Every copy carrying
+  a tracker third** independently forbids setting certain states and names who does set them, which
+  is where that model came from in the first place — and a copy that is the commit third alone
+  forbids nothing, having no status to write.
+- ⛔ **A save persists what happened; it does not decide anything.** Every copy states this, and it
+  is the tell for what a save is not: a role that would choose what to do next has left this one.
+
+### When a save is owed, and the boundary it names
+
+⛔ **A window is compacted long before a session ends, so a compaction boundary is a save point like
+any other.** [§ 11](#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it)
+states the durable half — what the summary dropped is gone, lossy and unrecoverable from inside the
+session, so the artifact is the handoff and the transcript is only evidence. What this section adds
+is **when** one is owed: at a role boundary, at a compaction boundary, at the session's end, and
+whenever a person asks.
+
+⛔ **One form for every boundary, and the artifact names which boundary it was.** A save at a
+compaction boundary writes what a save at session end would write; without the boundary named,
+nothing reading the artifact can tell a save taken mid-item from one taken after the work was done,
+and the two license different next steps.
+
+⚠️ **No event delivers the compaction boundary to this role, and that is measured rather than
+assumed.** [§ 7](#what-a-hook-can-establish-about-the-role-it-is-running-under) records the event
+that fires before a window is compacted as one of two that **never fired** in the measurement that
+built that table, so what it carries is unestablished. ⛔ **So the boundary is one the role takes
+when it observes it, and never one it is handed** — and the cost is stated rather than discovered: a
+compaction nobody saved before costs the window, and the thing that keeps the item itself is the
+published claim ([§ 10](#the-claim-on-a-work-item)) rather than anything in the window.
+
+⛔ **None of this widens the rule above.** A save still persists what happened and decides nothing;
+this states when one is owed.
+
+### The artifact's form is the carrier's, not the role's
+
+⛔ **The fields a save artifact carries are derived by the carrier the role calls, and are written
+into no role's own text.** That is
+[§ 10](#the-branch-name-a-claim-is-taken-on)'s rule for a branch name one role over, and for the
+same reason: a form copied into a role's text is a form allowed to disagree with the one thing that
+holds a written artifact to it. What the role supplies is the content; what comes back names what is
+missing.
+
+⛔ **What the form is for is a resume that reads the artifact and nothing else**, and that is the
+whole of the test a field is admitted by: a session that dies mid-item costs the window rather than
+the work only where what the next pass needs is in the file. ⛔ **The fields themselves are not
+listed here**, by the rule one paragraph up: an enumeration beside it would be one field for one,
+holding nothing to the carrier while promising a resume whatever the carrier dropped. ⛔ **Every
+field the form states is required and the
+boundary is drawn from a closed set, and both of those are the carrier's statements rather than
+this surface's**: a field a project could omit is a field a resume cannot rely on, and a boundary a
+reader cannot place is a save it cannot tell mid-item from finished.
+
+⚠️ **The boundaries' own names are the form's too, and the surface states only the occasions.**
+[The subsection above](#when-a-save-is-owed-and-the-boundary-it-names) states *when* a save is owed;
+what each of those occasions is called in the field is the carrier's, and ⛔ **nothing holds the two
+to each other** — a fifth occasion there and the form's set fall out of step with no check
+reporting it. ⚠️ **Stated rather than closed**, because the alternative is this surface carrying the
+vocabulary and the form's own authority with it.
+
+⚠️ **This says what an artifact carries; [§ 11](#the-store-and-when-an-in-tree-store-is-safe) says
+where it lives and whether it is committed.** Where that store's carrier is `none` there is nowhere
+to write one, and the role reports that rather than inventing a path. ⚠️ **And the artifact is the
+one § 11 names rather than a second store beside it** — a role's working papers and the record a
+gate has to read are two other things, which [§ 11](#the-store-and-when-an-in-tree-store-is-safe)
+and [§ 7](#what-a-hook-refuses-and-the-record-it-reads) rule respectively, and a save that wrote to
+the wrong one of the three is either lost with the tree or unreadable by the thing that needs it.
 
 ## What the toolkit installs into a project, and what takes it out
 
