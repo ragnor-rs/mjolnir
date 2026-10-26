@@ -4832,9 +4832,9 @@ reader cannot place is a save it cannot tell mid-item from finished.
 ⚠️ **The boundaries' own names are the form's too, and the surface states only the occasions.**
 [The subsection above](#when-a-save-is-owed-and-the-boundary-it-names) states *when* a save is owed;
 what each of those occasions is called in the field is the carrier's, and ⛔ **nothing holds the two
-to each other** — an occasion added there is a name somebody adds to the form, with no check
-reporting the gap. ⚠️ **Stated rather than closed**, because the alternative is this surface
-carrying the vocabulary and the form's own authority with it.
+to each other** — a fifth occasion there and the form's set fall out of step with no check
+reporting it. ⚠️ **Stated rather than closed**, because the alternative is this surface carrying the
+vocabulary and the form's own authority with it.
 
 ⚠️ **This says what an artifact carries; [§ 11](#the-store-and-when-an-in-tree-store-is-safe) says
 where it lives and whether it is committed.** Where that store's carrier is `none` there is nowhere

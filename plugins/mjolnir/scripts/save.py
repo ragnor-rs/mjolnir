@@ -168,9 +168,9 @@ FIELDS = [
 #
 # ⚠️ What that leaves open is stated rather than closed: § 23 states *when* a
 # save is owed in prose, and nothing holds these four names to that prose. A
-# fifth occasion added there is a fifth name somebody has to add here, and no
-# check reports the gap -- the same limit `READS` below carries, and the reason
-# neither is written as though the surface decided it.
+# fifth occasion there and this set fall out of step with no check reporting it
+# -- the same limit `READS` above carries, and the reason neither is written as
+# though the surface decided it.
 BOUNDARIES = ["handoff", "compaction", "session_end", "asked"]
 
 

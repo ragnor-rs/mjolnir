@@ -3199,9 +3199,9 @@ judgement, green on prose reworded into its opposite, and it is read rather than
   configuration reader's, refused there; this reads a file it is handed by path.
 - **Whether the boundary names match the occasions the surface states.** The four names are the
   form's, by § 23's rule that the form is the carrier's, and the surface states the occasions a save
-  is owed at in prose. ⚠️ **Nothing compares the two**, so an occasion added to the surface is a
-  name somebody adds to the form and no run reports the gap — stated here because a green run over
-  the four names reads as though the pair had been checked.
+  is owed at in prose. ⚠️ **Nothing compares the two**, so an occasion added to the surface and the
+  form's set fall out of step with no run reporting it — stated here because a green run over the
+  four names reads as though the pair had been checked.
 - **A status this role may not write.** The writer model is a configured fact
   ([schema § 4.2](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer))
   and the reader reports it; whether a role respected it is a property of a tracker write that
