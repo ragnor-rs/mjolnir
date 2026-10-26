@@ -3163,10 +3163,12 @@ What it holds, both halves being derivations rather than verdicts about a projec
   order nothing decided, and the suite asserts both directions of that agreement. The ordering is
   asserted on a list written **backwards**, because an assertion written in the order it expects
   asserts the expectation and not the code.
-- **The form of a save artifact, and a written one read back against it.** Every field is required
-  and the boundary is a closed set. The same answer serves the role that wrote the artifact and the
-  pass that resumes from it, those being one question asked from two sides — which is why there is
-  one subcommand and not two.
+- **The form of a save artifact, and a written one read back against it.** That every field is
+  required and that the boundary is drawn from a closed set are the **carrier's** statements, which
+  [schema § 23 → The artifact's form](../plugins/mjolnir/config/schema.md#the-artifacts-form-is-the-carriers-not-the-roles)
+  rules they must be and this document only describes. The same answer serves the role that wrote
+  the artifact and the pass that reads one back, those being one question asked from two sides —
+  which is why there is one subcommand and not two.
 
 ⚠️ **The fields are keys and the prose beside them is the project's own.** A form demanding English
 headings would ship one project's vocabulary to every project, which
@@ -3195,6 +3197,11 @@ judgement, green on prose reworded into its opposite, and it is read rather than
   which thirds the project runs and which of their mechanisms are absent.
 - **Whether the artifact is where § 11 says.** The store's path and whether it is committed are the
   configuration reader's, refused there; this reads a file it is handed by path.
+- **Whether the boundary names match the occasions the surface states.** The four names are the
+  form's, by § 23's rule that the form is the carrier's, and the surface states the occasions a save
+  is owed at in prose. ⚠️ **Nothing compares the two**, so an occasion added to the surface is a
+  name somebody adds to the form and no run reports the gap — stated here because a green run over
+  the four names reads as though the pair had been checked.
 - **A status this role may not write.** The writer model is a configured fact
   ([schema § 4.2](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer))
   and the reader reports it; whether a role respected it is a property of a tracker write that

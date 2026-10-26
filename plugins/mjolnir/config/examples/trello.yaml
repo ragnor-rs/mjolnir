@@ -209,8 +209,9 @@ carriers:
   session: command
 
 # § 23. One third of the role, which is a configuration rather than a half-finished adoption:
-# this project's bookkeeping carrier commits and does nothing else. ⛔ Not derivable from the
-# tracker being absent — the board above is the counter-example.
+# this project's bookkeeping carrier commits and does nothing else. ⛔ And it is not derivable
+# from whether the project has a tracker — the board above is a tracker, and this is still the
+# commit third alone.
 session:
   parts: [commit]
 

@@ -47,9 +47,12 @@ Usage:
                                        report what a resuming pass reads out of it
 
 Exit status, and ⛔ **four values rather than two**: 0 the artifact holds or the
-report was produced, 1 the artifact does not hold, 2 the configuration could not
-be read, 3 there is nothing to answer about -- this project maps no bookkeeping
-role, or states no configuration at all. ⚠️ The last is § 11's rule at a command
+report was produced, 1 the artifact does not hold, 2 something that had to be
+read could not be -- the configuration, or the artifact's own file -- and 3 there
+is nothing to answer about, this project mapping no bookkeeping role or stating
+no configuration at all. ⚠️ **2 and 1 are apart on purpose**: an artifact whose
+file could not be opened has not failed the form, and a role told it failed would
+rewrite a file that is already right. ⚠️ The last is § 11's rule at a command
 line: *no answer* collapsed into 0 reads as an artifact that passed, and into 1
 as a role whose every save is wrong.
 """
@@ -122,7 +125,12 @@ def _place(stated: list) -> list[dict]:
 
 def thirds(configuration: config.Config) -> list[dict]:
     """Which thirds run here, in the procedure's order, each with its state."""
-    return _place(list(configuration.get("session.parts") or []))
+    stated = configuration.get("session.parts")
+    # ⛔ A value the reader has already refused cannot arrive here, and the
+    # normalisation is still written: a string handed to `_place` is iterated
+    # character by character, so the one shape that would read as a list of
+    # thirds and be none is the one left out rather than guessed at.
+    return _place(list(stated) if isinstance(stated, list) else [])
 
 
 # --- the form --------------------------------------------------------------
@@ -148,9 +156,21 @@ FIELDS = [
     ("asked", "every question this pass asked and its answer, or that it is open"),
 ]
 
-# ⛔ The boundaries § 23 states, as the field's closed set. A save taken at a
-# boundary this does not name is an artifact whose reader cannot tell what it is
-# holding, so the value is refused rather than passed through.
+# The names this form gives § 23's four occasions, as the field's closed set. A
+# save taken at a boundary this does not name is an artifact whose reader cannot
+# tell what it is holding, so the value is refused rather than passed through.
+#
+# ⛔ The spellings are **this form's** and the surface states none of them, which
+# is § 23's rule that the form is the carrier's rather than an omission. So a
+# refusal here names the form and never the section: a message citing § 23 for
+# these four tokens sends a person to a passage that does not carry them, which
+# is worse than carrying the set here.
+#
+# ⚠️ What that leaves open is stated rather than closed: § 23 states *when* a
+# save is owed in prose, and nothing holds these four names to that prose. A
+# fifth occasion added there is a fifth name somebody has to add here, and no
+# check reports the gap -- the same limit `READS` below carries, and the reason
+# neither is written as though the surface decided it.
 BOUNDARIES = ["handoff", "compaction", "session_end", "asked"]
 
 
@@ -177,10 +197,20 @@ def read(text: str) -> tuple[dict | None, list[str]]:
         document = config._load_yaml(text, "the save artifact")
     except config.ConfigError as exc:
         return None, [str(exc)]
+    # ⛔ An empty artifact is named as empty rather than by the type its parse
+    # happened to produce: it is the commonest way this goes wrong — the role
+    # created the file and wrote nothing into it — and a reader quoting a
+    # language's type name at a person has reported the implementation instead
+    # of the problem.
+    if document is None:
+        return None, [
+            "the artifact is empty, so none of the form's fields can be read out "
+            "of it: an empty file is a save that did not happen"
+        ]
     if not isinstance(document, dict):
         return None, [
-            f"the artifact is {type(document).__name__} rather than a block of "
-            "fields, so none of the form's fields can be read out of it"
+            "the artifact is not a block of fields, so none of the form's fields "
+            "can be read out of it"
         ]
 
     problems = []
@@ -195,7 +225,33 @@ def read(text: str) -> tuple[dict | None, list[str]]:
                 f"`{name}` is written and empty, which reads as answered and is "
                 f"not: it carries {carries}"
             )
-    for name in sorted(set(document) - known):
+            continue
+        # ⛔ A structure is not an answer, and it passes every other arm here. A
+        # field carries prose a later pass reads, so a mapping or a list under
+        # one is a field a resume cannot read while the form reports it
+        # answered. ⚠️ A number is accepted: an identifier is one.
+        if isinstance(value, (dict, list)):
+            problems.append(
+                f"`{name}` carries a {'block' if isinstance(value, dict) else 'list'} "
+                f"rather than an answer, so nothing reads what it carries: it "
+                f"carries {carries}"
+            )
+            continue
+        # ⛔ And a boolean is not an answer either, which the arms above all let
+        # through: `false` is neither empty nor a container, so a field carrying
+        # it reported as answered. ⚠️ A number is accepted on purpose — an
+        # identifier is one — and the limit that leaves is stated rather than
+        # closed: a field carrying `0` passes, because refusing it would refuse
+        # an item numbered zero.
+        if isinstance(value, bool):
+            problems.append(
+                f"`{name}` carries {str(value).lower()} rather than an answer, so "
+                f"nothing reads what it carries: it carries {carries}"
+            )
+    # ⛔ Sorted by the key's text and not by the key, because a key YAML read as
+    # a number sorts against a string and raises -- out of the one function whose
+    # contract is to return problems rather than to fail.
+    for name in sorted((key for key in document if key not in known), key=str):
         problems.append(
             f"`{name}` is not a field of the form, so whatever it carries is read "
             "by nothing. The form is this module's and not the writing role's"
@@ -203,9 +259,9 @@ def read(text: str) -> tuple[dict | None, list[str]]:
     boundary = document.get("boundary")
     if boundary is not None and boundary not in BOUNDARIES:
         problems.append(
-            f"`boundary` is {boundary!r}; § 23 states {' | '.join(BOUNDARIES)}. A "
-            "boundary a reader cannot place is a save it cannot tell mid-item from "
-            "finished"
+            f"`boundary` is {boundary!r}; the form states "
+            f"{' | '.join(BOUNDARIES)}. A boundary a reader cannot place is a save "
+            "it cannot tell mid-item from finished"
         )
     recovered = {name: document.get(name) for name, _ in FIELDS}
     return recovered, problems
@@ -239,8 +295,23 @@ PLANTED = [
     ("a boundary outside its set", lambda: _an_artifact(boundary="whenever"), "`boundary` is 'whenever'"),
     ("a field the form does not carry", lambda: _an_artifact(mood="hopeful"),
      "`mood` is not a field of the form"),
+    ("a field carrying a block rather than an answer",
+     lambda: _an_artifact(acceptance="\n  what: it asks"), "`acceptance` carries a block"),
+    ("a field carrying a list rather than an answer",
+     lambda: _an_artifact(asked="[one, two]"), "`asked` carries a list"),
+    ("a field carrying a boolean rather than an answer",
+     lambda: _an_artifact(acceptance="false"), "`acceptance` carries false"),
+    # ⛔ Both an extra key YAML reads as text and one it reads as a number, which
+    # is the pair that made the report raise instead of reporting: one of each
+    # cannot be sorted against the other.
+    ("extra fields keyed by text and by a number together",
+     lambda: _an_artifact(mood="hopeful", **{"1": "stray"}),
+     "`1` is not a field of the form"),
     ("an artifact that is not a block of fields", lambda: "- just a list\n",
-     "rather than a block of fields"),
+     "not a block of fields"),
+    ("an empty artifact", lambda: "", "the artifact is empty"),
+    ("an artifact of nothing but a comment", lambda: "# a save that did not happen\n",
+     "the artifact is empty"),
     ("an artifact that does not parse", lambda: "boundary: [unclosed\n", "the save artifact"),
 ]
 
@@ -333,7 +404,7 @@ def self_test() -> int:
     )
     check(
         "the order this module places and the surface's vocabulary agree",
-        set(ORDER) == set(live.facts.get("enums", {}).get("session.parts", [])),
+        set(ORDER) == set(live.facts.get("lists", {}).get("session.parts", [])),
         "a third the surface states is placed nowhere here, or the other way "
         "round -- either leaves a third running in an order nothing decided",
     )
@@ -369,8 +440,8 @@ def self_test() -> int:
         )
 
     print()
-    print("a project that maps no bookkeeping role, and one that states nothing")
-    import tempfile  # noqa: PLC0415 -- the only arm that needs a directory
+    print("every documented exit status, on the path that produces it")
+    import tempfile  # noqa: PLC0415 -- the arms that need a directory
 
     with tempfile.TemporaryDirectory() as root:
         check(
@@ -379,6 +450,30 @@ def self_test() -> int:
             "whoever invoked this by name is owed the answer that the project "
             "states nothing, which § 7 makes an invitation rather than silence",
         )
+        # ⛔ The other three are asserted here because only the `3` path was,
+        # which left the `0`/`1` split that is the whole point of `check` proved
+        # by nothing. Found by review on this change.
+        held = os.path.join(root, "holds.yaml")
+        with open(held, "w", encoding="utf-8") as handle:
+            handle.write(complete)
+        check(
+            "an artifact that holds exits zero",
+            main(["check", "--file", held]) == 0,
+        )
+        broken = os.path.join(root, "broken.yaml")
+        with open(broken, "w", encoding="utf-8") as handle:
+            handle.write(_without("acceptance"))
+        check(
+            "an artifact that does not hold exits one",
+            main(["check", "--file", broken]) == 1,
+        )
+        check(
+            "an artifact whose file cannot be read exits two, not one",
+            main(["check", "--file", os.path.join(root, "no-such-file.yaml")]) == 2,
+            "a file that could not be opened has not failed the form, and a role "
+            "told it failed would rewrite a file that is already right",
+        )
+        check("the form is answered with no configuration at all", main(["form"]) == 0)
 
     print()
     check(
@@ -410,11 +505,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--self-test", action="store_true")
     sub = parser.add_subparsers(dest="what")
 
-    shape = sub.add_parser("form", help="the fields a save artifact carries")
-    shape.add_argument("--skills-root", default=".")
+    # ⛔ Neither subcommand takes `--skills-root`, and that is a removal rather
+    # than an omission: the form is procedure and the reading holds a file it is
+    # handed, so neither reads a project's configuration at all. A flag accepted
+    # and unread is a flag somebody passes and believes.
+    sub.add_parser("form", help="the fields a save artifact carries")
 
     reading = sub.add_parser("check", help="hold a written artifact to the form")
-    reading.add_argument("--skills-root", default=".")
     reading.add_argument("--file", required=True)
 
     args = parser.parse_args(argv)
@@ -474,6 +571,16 @@ def main(argv: list[str] | None = None) -> int:
         for entry in running
         if not entry["placed"]
     ]
+    # ⛔ A third that runs and has nowhere to put its output reads exactly like
+    # one that works, which is the direction the whole report exists against.
+    # § 23 says the role reports the absent store rather than inventing a path,
+    # and this is where it is handed that answer.
+    if running and configuration.get("context.artifacts.carrier") == "none":
+        report.append(
+            "No artifact store is carried (`context.artifacts.carrier: none`), "
+            "so there is nowhere for a save to write the artifact a later pass "
+            "reads: the role reports that rather than inventing a path (§ 23)."
+        )
     if not running:
         report.append(
             "No bookkeeping role runs here (`session.parts: []`), so there is no "

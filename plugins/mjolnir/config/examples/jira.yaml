@@ -181,8 +181,11 @@ carriers:
   deploy: skill                 # split per environment at the project level
   session: skill
 
-# § 23. The whole role, and the memory third is the one a project on a tracker this far from the
-# code leans on hardest: what the next session needs is rarely on the card.
+# § 23. All three thirds stated. ⚠️ The memory third is the one a project on a tracker this far
+# from the code would lean on hardest — what the next session needs is rarely on the card — and it
+# is also the one whose store no key carries yet, so the reader reports it unavailable and the role
+# says what it could not write. Stated anyway, because the decision is the project's and the
+# absence is the surface's.
 session:
   parts: [tracker, memory, commit]
 

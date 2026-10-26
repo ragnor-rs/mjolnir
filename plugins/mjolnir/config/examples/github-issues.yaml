@@ -144,8 +144,10 @@ carriers:
   review: skill
   session: skill
 
-# § 23. The whole role: the tracker brought current, memory refreshed, then the commit — in that
-# order, which is procedure and not this list's.
+# § 23. All three thirds stated: the tracker brought current, memory refreshed, then the commit —
+# in that order, which is procedure and not this list's. ⚠️ The memory third's store is carried by
+# no key yet, so the reader reports that third unavailable and the role says what it could not
+# write; the entry states the project's decision rather than what runs today.
 session:
   parts: [tracker, memory, commit]
 

@@ -106,9 +106,13 @@ The reverse also happens, and a name-keyed merge produces nonsense on it:
   non-technical reader in one project, and a tab-separated invoice line-item file with an hourly
   rate conversion in two others. Same directory name, different output, different trigger, no
   shared procedure.
-- **One name, a subset role.** One project's bookkeeping skill is the *commit third* of the role
-  with the board and memory halves absent. Counting it as a full copy overstates adoption;
-  counting it as unrelated loses that project's commit behaviour.
+- **One name, a subset role.** A bookkeeping carrier can be the *commit third* of the role with
+  the board and memory halves absent. Counting such a copy as a full one overstates adoption;
+  counting it as unrelated loses that project's commit behaviour. ⚠️ **How many copies are whole
+  and how many are a third is counted once**, in
+  [the section on that role](#the-bookkeeping-role-three-copies-that-are-a-third-of-it-and-two-keys-that-came-out-of-it),
+  and this passage carries no number of its own — the first version of it said *one project's* and
+  the survey the role was extracted from found more.
 
 So the inventory key is *(role, carrier)*, established by reading the body, and a merge must be
 able to say "this copy implements a third of that role".
@@ -1652,6 +1656,38 @@ making, so it stays in the tree; the surface is what that statement is held to, 
 work has to be the one in the tree as well. Resolving both from the primary checkout and resolving
 neither are the two symmetric answers, and each reproduces one direction of the failure.
 
+### The direction the bound above does not state: a new surface read by an old reader
+
+The bound above says the skew is one-directional and that a key a branch *adds* loads against the
+installed surface. ⚠️ **That clause predates the rule beside it.** With the surface now resolved
+from the tree, a key a branch adds is held by the **tree's** surface and read by the **installed**
+reader — a third combination, and it reproduces the same failure the section opens with.
+
+Measured in the change that added § 23. The new key's value is a list, and its membership was first
+written as an alternation beside the key. An alternation marks what a *value* may be; the value of
+that key is the whole list — so the installed reader, which has no rule telling the two apart for
+this key, compared the list against the members and refused the configuration. Four guards then
+reported the project's configuration as unreadable and held the command to nothing — the spend one,
+the live one, the context one on both of its events, and the enforcement one — on every call, for
+as long as the branch stood. ⚠️ **The outward guard is absent from that list and was not spared
+either**: it answers only on a write leaving the project, so a session making none hears nothing
+from it in the ordinary case — the same silence from a different cause, which is why the count is
+four rather than every hook installed.
+
+⛔ **What fixed it is the surface writing a list's membership as the list**, which is the shape
+[`schema.md § 9`](../plugins/mjolnir/config/schema.md#9-day-log)'s streams and exclusions already
+had and which [`schema.md § 23`](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs)
+now states as a rule rather than a habit: a membership written that way is **unread** by a reader
+older than the key instead of misread by it, and unread is the direction that fails safe. The
+reader derives the two facts apart, and a refusal names which of them is missing.
+
+⚠️ **What this does not fix is the class.** Any rule a new surface states and an older reader
+performs differently reproduces it, and nothing compares the two copies: the installed reader's
+version is not a fact this repository's gates can see. The remedy that generalises is the one above
+applied as a habit — a new surface statement that an older reader will *not* read beats one it will
+read wrongly — and the cost of getting it wrong is bounded to a branch's own work tree, since an
+adopter has no second copy of the surface at all.
+
 ⚠️ **An adopter is unaffected, and that is a property of the test rather than a case handled.** A
 project that consumes the plugin carries no copy of this surface, so there is nothing for the
 resolution to find and the installed copy is read — the behaviour that existed before the rule. The
@@ -1685,11 +1721,13 @@ among what a role reports is what makes the remaining case visible at the moment
 
 ## The bookkeeping role: three copies that are a third of it, and two keys that came out of it
 
-The role is the most-divided of the nine, and it divided in two directions at once. Four projects
-carry it whole. **Three further copies are its commit third alone**, under two other names and two
-different carriers — one a skill, one a command — which is the *one name, a subset role* case
-[above](#name-and-role-diverge-in-both-directions) and the reason the inventory key is
-*(role, carrier)* read out of the body rather than the directory name.
+This role divided in two directions at once, and this is the one place the copies are counted.
+**Four projects carry it whole; three further copies are its commit third alone**, under two other
+names and two different carriers — one a skill, one a command — which is the *one name, a subset
+role* case [above](#name-and-role-diverge-in-both-directions) and the reason the inventory key is
+*(role, carrier)* read out of the body rather than the directory name. ⚠️ **No superlative is
+claimed for the figure**: the day-log role's five copies carry their own argument for extraction a
+document over, and a *most* stated in two places is the restated fact this document keeps catching.
 
 What that forced is a key naming which thirds a project runs, at
 [`schema.md § 23`](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs),
@@ -1699,9 +1737,11 @@ from the carrier axis, or from anything else already on the surface — a projec
 backlog can still have a bookkeeping carrier that commits and does nothing else, and that is a
 configuration rather than an adoption that stopped halfway.
 
-The order the thirds run in is procedure and not part of the key, for a reason the copies agree on
-without stating: everything after the tracker describes what it now says, so a commit written first
-describes a state the item does not hold yet.
+The order the thirds run in is procedure and not part of the key, and ⚠️ **the reason is one the
+copies agree on without any of them stating it** — which is why the rule is on the surface at
+[`schema.md § 23`](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs)
+and the observation is here: no copy had to be overridden to reach it, so there was no divergence to
+rule on, only a sequence every copy already ran in.
 
 ### Staging is per role, measured inside one project
 
@@ -1740,15 +1780,11 @@ nobody has taken. The role therefore takes the boundary when it notices one, the
 which boundary it was, and the cost — a compaction nobody saved before costs the window — is stated
 on the surface instead of being discovered by whoever loses one.
 
-⚠️ **Two of the item's acceptance bullets split at exactly that line, and only one end of the split
-is held mechanically.** *A save at a compaction boundary writes what a save at session end would
-write, and says which boundary it was* is decidable: one form, every field required, the boundary a
-field of it, and a written artifact read back against all of that. *Resumable from the artifact
-alone, proved by a resume that reads it* is decidable only as far as the fields — the suite writes a
-form, reads it back and asserts every field is recovered, which is a resume reading the artifact at
-the mechanical end. Whether the prose a role wrote **into** those fields is enough for a later pass
-to continue is the *quoting* kind of judgement this repository keeps off its gates, and it is read
-rather than enforced.
+⚠️ **Two of the item's acceptance bullets split at exactly that line**, one of them decidable and
+one of them only decidable as far as the artifact's fields. Which end of that split the carrier
+holds, and what it does not reach, is the reach of a check and belongs where every other check's
+reach does —
+[`docs/single-source-of-truth.md`](single-source-of-truth.md#the-bookkeeping-roles-two-derivations-and-the-round-trip-that-is-the-resumability-arm).
 
 ### What has no key yet, and why that is a filed item rather than a gap
 
