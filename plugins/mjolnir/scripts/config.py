@@ -749,6 +749,27 @@ def _code_roots(data: dict, facts: dict) -> tuple[dict[str, dict], bool]:
     return roots, True
 
 
+# § 4.7's carriers that an item holds exactly one of: the named field's value, and
+# the title. `label` is the other kind -- an item carries every label it has, and
+# the axis's prefix is what picks this one out of them.
+ONE_VALUE_CARRIERS = ("field", "title_prefix")
+
+# A character that continues a word, for § 4.7's title carrier. ⛔ The match is
+# anchored on a boundary rather than on `startswith` alone, and the finding that
+# forced it is in the suite: with a bare `startswith`, a root mapped to `app` took
+# every item whose title opened *appendix*, which is the silent wrong root this
+# facet exists against. ⚠️ `-` and `_` continue a word here, so `app` and
+# `app-site` are distinguishable values rather than one stranding the other.
+WORD_CHARACTER = re.compile(r"[A-Za-z0-9_-]")
+
+
+def _opens_with(text: str, value: str) -> bool:
+    """Whether `text` opens with `value` as a whole word (§ 4.7, title carrier)."""
+    if text == value:
+        return True
+    return text.startswith(value) and not WORD_CHARACTER.match(text[len(value):])
+
+
 def _gates_on_code_root(data: dict) -> bool:
     """Whether `readiness` configures § 5's `code_root_stated`."""
     gate = _get(data, "readiness")
@@ -886,6 +907,26 @@ def _code_root_facet(data: dict, roots: dict[str, dict]) -> None:
                 "the configuration did not (§ 4.7).",
             )
 
+    # ⛔ Under the title carrier, distinctness is not equality. A value that opens
+    # another value as a whole word answers for both roots on every item of the
+    # longer one, so the longer root is a repository no item can reach -- the
+    # failure the totality rule above exists against, arrived at from the other
+    # side. ⚠️ Refused here rather than at the match, because a project that
+    # loaded and then stopped every item is the gap this surface settles where the
+    # configuration is read.
+    if carrier == "title_prefix":
+        for key, value in mapping.items():
+            for other, shorter in mapping.items():
+                if other != key and _opens_with(value, shorter):
+                    raise ConfigError(
+                        f"work_item.code_root.roots.{key}",
+                        f"is {value!r}, which opens with "
+                        f"{shorter!r} — `work_item.code_root.roots.{other}`'s value — "
+                        "as a whole word. Under the title carrier that makes every "
+                        f"title of `{key}` answer for `{other}` as well, so one of the "
+                        "two roots is a repository no item can reach (§ 4.7).",
+                    )
+
     # ⛔ And the check, required rather than refused -- the inverse direction from
     # § 4.6's, for the reason § 5 states: this is the last point before a claim is
     # taken, and a role that stops instead has already read the item and reported
@@ -996,6 +1037,20 @@ class Config:
         because the permissive reading of either is this project's work landing
         in the wrong repository.
         """
+        # ⛔ A view is refused rather than answered, and it is told apart from a
+        # single-root project by its own key and not by the number of roots it
+        # carries: `_resolve` narrows every view to itself, so both hold one.
+        # Reviewed on this change: a view answered with *its* root whatever the
+        # item said, which is the silent pick this method exists to refuse, one
+        # caller further in than § 1's own refusal reaches.
+        if self.root_key is not None:
+            raise ConfigError(
+                "work_item.code_root",
+                f"cannot be resolved against the root `{self.root_key}` alone: this "
+                "configuration has already been narrowed to one root, so the "
+                "question *which root does this item name* has been answered by "
+                "whoever narrowed it. Ask the project (§ 4.7).",
+            )
         # One root is the case § 4.7 refuses the facet in, so there is nothing
         # on the item to read and nothing to disagree with. ⚠️ Reported as the
         # one root rather than refused: a role calling this on a single-root
@@ -1015,16 +1070,31 @@ class Config:
         mapping = self.get("work_item.code_root.roots")
         held = [v for v in values if isinstance(v, str) and v.strip()]
         prefix = self.get("work_item.code_root.label_prefix") or ""
+        # ⛔ A carrier an item holds one of is handed one value, and several is a
+        # stop rather than a search through them. Reviewed on this change: a title
+        # handed over unquoted arrives word-split, and one *word* of it opening
+        # with a mapped value resolved the item -- so the permissive reading of a
+        # longer list is the wrong root reached through a shell quirk.
+        if carrier in ONE_VALUE_CARRIERS and len(held) > 1:
+            raise ConfigError(
+                "work_item.code_root",
+                f"was handed {len(held)} values for the `{carrier}` carrier, which "
+                f"an item holds one of: {', '.join(repr(v) for v in held)}. A title "
+                "or a field value is one string, and a list of them is a value that "
+                "was split on the way in (§ 4.7).",
+            )
         matched = set()
         for key, value in mapping.items():
             for carried in held:
                 # Each carrier matched the way § 4.7 states it is held: a label
                 # is the mapped value behind the axis's prefix, a field is the
-                # value itself, and a title prefix is the opening of the title.
+                # value itself, and a title prefix opens the title as a whole
+                # word -- never as a bare `startswith`, which is the finding
+                # `_opens_with` above carries.
                 if carrier == "label":
                     found = carried.startswith(prefix) and carried[len(prefix):] == value
                 elif carrier == "title_prefix":
-                    found = carried.startswith(value)
+                    found = _opens_with(carried, value)
                 else:
                     found = carried == value
                 if found:
@@ -1033,10 +1103,16 @@ class Config:
             return self.views[next(iter(matched))]
         shown = ", ".join(repr(v) for v in held) or "nothing"
         if not matched:
+            # ⚠️ The two cases are named apart, because their remedies are: an
+            # item holding nothing needs the value added, and an item holding
+            # something no root answers to needs that value corrected or the
+            # mapping extended. Reviewed on this change, where one message said
+            # *not stated on this item* about an item that stated something.
             raise ConfigError(
                 "work_item.code_root",
-                f"is not stated on this item: it carries {shown}, and the facet's "
-                f"carrier `{carrier}` holds "
+                ("is not stated on this item at all" if not held else
+                 f"names no root this project carries: the item holds {shown}")
+                + f", and the facet's carrier `{carrier}` holds "
                 f"{', '.join(f'{v!r} for {k}' for k, v in mapping.items())} (§ 4.7). "
                 "⛔ The first root is not the answer -- a role stops here rather "
                 "than landing the work in whichever repository is written first.",
@@ -4290,18 +4366,32 @@ def self_test() -> int:
         # to that root's own view and never to the first of them. ⚠️ Asserted on
         # the slug rather than on the object, because a view answering for the
         # wrong root would otherwise read as a pass.
-        resolved = {
-            key: several.root_for([f"{prefix}{value}"]).get("host.repo")
-            for key, value in mapping.items()
-        }
+        #
+        # ⚠️ The refusal is caught rather than allowed to raise. Reviewed on this
+        # change: a plant that turns the match into a *stop* -- deleting the
+        # label arm is one -- raised through this arm and aborted the suite,
+        # since `self_test` is called outside the caller's own handler. The
+        # sibling arm below had the same hole as an unbound name.
+        resolved = {}
+        for key, value in mapping.items():
+            try:
+                resolved[key] = several.root_for([f"{prefix}{value}"]).get("host.repo")
+            except ConfigError as error:
+                resolved[key] = f"stopped: {error}"
         check(
             "an item's own value resolves to that root and no other",
             resolved == {k: several.root(k).get("host.repo") for k in mapping},
             str(resolved),
         )
+        # ⚠️ The three readings are asserted on the lead clause each one carries,
+        # because the remedies differ: a value to add, a value to correct, and a
+        # value to remove. Reviewed on this change, where one message told the
+        # second case to add what it already had.
         for label, values, wanted in (
+            ("an item carrying nothing at all", [],
+             "is not stated on this item at all"),
             ("an item carrying nothing the facet maps", ["a label no root answers to"],
-             "is not stated on this item"),
+             "names no root this project carries"),
             ("an item naming two roots", [f"{prefix}{mapping[k]}" for k in keys],
              "belongs to one repository"),
         ):
@@ -4319,11 +4409,12 @@ def self_test() -> int:
         # remedy is stating one of them on the item.
         #
         # ⚠️ Bound before the `try` and not only inside it. Reviewed on this
-        # change: with the resolution planted away, the three arms above reddened
-        # correctly and this one raised `NameError` instead of reporting --
-        # aborting the suite over every assertion after it, which is every § 4.7
-        # plant below. A traceback where a verdict belongs, in exactly the run
-        # the plants exist for.
+        # change: with the resolution planted away to one that *answers*, this
+        # arm raised `NameError` instead of reporting -- aborting the suite over
+        # every assertion after it, which is every § 4.7 plant below. A traceback
+        # where a verdict belongs, in exactly the run the plants exist for. ⚠️ The
+        # arm three above had the mirror of it for a plant that *stops*, and the
+        # pair is the reason both now catch rather than one.
         named_in_stop = False
         try:
             several.root_for(["a label no root answers to"])
@@ -4381,6 +4472,75 @@ def self_test() -> int:
                 broken == expected,
                 f"reported {broken!r}, expected {expected!r}",
             )
+
+        # ⛔ The two carriers the shipped collection cannot also carry, each
+        # matched its own way and each with the finding that forced the rule.
+        # ⚠️ Reviewed on this change: both of these branches had no arm at all,
+        # and both carried a defect -- which is why the fixture is built here
+        # rather than the coverage being left to whichever carrier an example
+        # happens to ship.
+        print("\n§ 4.7's other two carriers, and the matching each states:")
+        for label, data, values, wanted in (
+            ("a title opening with a mapped value as a whole word",
+             _a_collection_carrying("title_prefix", {first: "app", second: "site"}),
+             ["app: add a button"], f"root {first}"),
+            ("a title merely *beginning* with one, which is not a match",
+             _a_collection_carrying("title_prefix", {first: "app", second: "site"}),
+             ["appendix: rework the appendix"], "stop work_item.code_root"),
+            ("a title handed over word-split, which is one value split on the way in",
+             _a_collection_carrying("title_prefix", {first: "app", second: "site"}),
+             "Fix the app header".split(), "stop work_item.code_root"),
+            ("a value that opens another as a whole word, refused at the configuration",
+             _a_collection_carrying("title_prefix", {first: "app", second: "app site"}),
+             ["app site: a page"], f"refused work_item.code_root.roots.{second}"),
+            ("a value that opens another only mid-word, which stays two roots",
+             _a_collection_carrying("title_prefix", {first: "app", second: "app-site"}),
+             ["app-site: a page"], f"root {second}"),
+            ("a field's value, matched whole",
+             _a_collection_carrying("field", {first: "APP", second: "SITE"}, field="Repo"),
+             ["SITE"], f"root {second}"),
+            ("a field's value naming no root",
+             _a_collection_carrying("field", {first: "APP", second: "SITE"}, field="Repo"),
+             ["OTHER"], "stop work_item.code_root"),
+        ):
+            answered = _resolved_or_refused(data, values)
+            check(
+                f"{label} answers `{wanted}`",
+                answered == wanted,
+                f"answered {answered!r}",
+            )
+        # ⛔ And a root resolved by name may not answer for an item: it has been
+        # narrowed already, so the question has been answered by whoever narrowed
+        # it. ⚠️ Told apart from a single-root project by the view's own key, both
+        # carrying one root -- which is the confusion the arm reproduced.
+        narrowed = None
+        try:
+            several.root(first).root_for([f"{prefix}{mapping[second]}"])
+        except ConfigError as error:
+            narrowed = str(error)
+        check(
+            "a root resolved by name refuses to answer which root an item names",
+            narrowed is not None and first in narrowed,
+            str(narrowed),
+        )
+        # ⚠️ And the absent case's own `absent_reason` rule, on the configuration
+        # where `carrier: none` is *legal*. The generic arm for every
+        # absent-capable facet builds its fixture on a single-root example, which
+        # § 4.7 refuses outright -- so without this one, nothing asserts the rule
+        # on the shape that can actually carry it.
+        several_none = _a_collection_example()
+        _get(several_none, "work_item.code_root").clear()
+        _get(several_none, "work_item.code_root")["carrier"] = "none"
+        several_none["readiness"] = [
+            entry for entry in several_none["readiness"]
+            if entry.get("check") != "code_root_stated"
+        ]
+        reasonless = _refused(several_none)
+        check(
+            "several roots, `carrier: none` and no reason is refused, with the key named",
+            reasonless == "work_item.code_root.absent_reason",
+            f"reported {reasonless!r}",
+        )
 
         # ⚠️ The green side of the absent case, verified by disabling the arm
         # above rather than asserted around it: a tracker that cannot hold the
@@ -6332,6 +6492,37 @@ def _collection_broken(mutate) -> str | None:
     data = _a_collection_example()
     mutate(_get(data, "roots.code"))
     return _refused(data)
+
+
+def _a_collection_carrying(carrier: str, mapping: dict, **keys) -> dict:
+    """The shipped collection with § 4.7's facet carried another way.
+
+    ⛔ The one place a § 4.7 fixture is built rather than shipped, and the reason
+    is the shipped collection can carry one carrier at a time: the two it does
+    not carry are the two whose matching rules differ from it, so arms over the
+    shipped file alone leave `_opens_with` and the one-value rule unexercised.
+    ⚠️ The roots are the shipped collection's own, so the mapping is still held
+    to the keys a project actually has.
+    """
+    data = _a_collection_example()
+    facet = _get(data, "work_item.code_root")
+    facet.clear()
+    facet.update(carrier=carrier, roots=mapping, **keys)
+    return data
+
+
+def _resolved_or_refused(data: dict, values: list[str]) -> str:
+    """`root <slug>` where § 4.7's resolution answers, `stop <key>` where it does not."""
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    try:
+        config = _resolve(data, EXAMPLES, facts, False)
+    except ConfigError as error:
+        return f"refused {error.key}"
+    try:
+        return f"root {config.root_for(values).root_key}"
+    except ConfigError as error:
+        return f"stop {error.key}"
 
 
 def _project_read(configuration: Config, path: str) -> str | None:

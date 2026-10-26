@@ -168,10 +168,12 @@ that opens at an indent is reachable by no absolute path. What catches both is t
 suite asserting that every marked condition is met by some example configuration.
 
 **A condition whose refusal needs an argument stays in prose** beside the key, enforced by the rule
-in the section that states it — `tree_dir`, `context.artifacts.dir` and `ordering.command` each do,
-and each refusal says something about trees, boundaries or orderings that `required where X is Y`
-would lose. ⚠️ **So the split is not expressible-versus-not**: two of those three could be marked,
-and `tree_dir` has a half no marker can state at all (null under `in_place`). What the marker is for
+in the section that states it — `tree_dir`, `context.artifacts.dir`, `ordering.command` and
+`work_item.code_root.carrier` each do, and each refusal says something about trees, boundaries,
+orderings or repositories that `required where X is Y` would lose. ⚠️ **So the split is not
+expressible-versus-not**: two of those could be marked, `tree_dir` has a half no marker can state
+at all (null under `in_place`), and the last turns on *how many* roots a project carries, which no
+condition on a key's value can reach. What the marker is for
 is a condition stated the same way across many keys, where the generic message is the whole of what
 a reader needs. Either way, *must this be written at all* and *must this be written given that* are
 different questions, and the bare `# required` answers only the first.
@@ -623,10 +625,9 @@ names for one repository is the defect this facet exists against, reached either
 twice or by leaving it off an entry so that the project's own answers for both.
 
 ⛔ **A role handed a root key this block does not carry stops and reports, naming the keys it does
-carry.** Which root a given work item belongs to is the item's own fact and is read off it, by
-[§ 4.7](#47-code-root): a project carrying several roots states which carrier holds the answer and
-what each root answers to, and the key reaching the rule above therefore comes from the item, from
-a person, or — where that facet's carrier is `none` — from the invocation.
+carry.** Which root a given work item belongs to is the item's own fact, read off it by
+[§ 4.7](#47-code-root), so the key reaching the rule above is the name this collection gives a
+root and not a guess about one.
 
 ### The skills root is where the role runs
 
@@ -1759,14 +1760,15 @@ Which of [§ 1](#a-projects-code-is-not-always-one-repository)'s code roots the 
 rather than a second key beside the roots: the same kind of work lands in either repository
 depending on whose code it is, and the one project measured with two roots states exactly that —
 *which of the two a change belongs in is decided by whose code it is, never by which track asked
-for it*, with a dashboard that is one track's need and another's code given as the case.
+for it* — and the case it gives is the discriminating one: a counter, a tag set and a consent gate
+are all one track's need, and their code is in the repository that track does not own.
 
 ⛔ **Nothing else can answer it, and each alternative is ruled out for a reason rather than by
-preference.** Not the branch — [§ 10](#the-claim-on-a-work-item) cuts it from this answer, so a
-branch that carried it would be derived from itself. Not the item's type
-([§ 4.1](#41-type)) and not whoever is assigned, by the measurement above. Not the project's
-own first root, which is [§ 2](#2-code-host)'s absence-of-signal rule in the direction where a
-plausible answer is available and wrong.
+preference.** Not the branch — [§ 10](#the-branch-name-a-claim-is-taken-on) composes it from the
+prefix, the number and the title and carries no repository, and it is cut after this answer is
+needed. Not the item's type ([§ 4.1](#41-type)) and not whoever is assigned, by the measurement
+above. Not the project's own first root, which is [§ 2](#2-code-host)'s absence-of-signal rule in
+the direction where a plausible answer is available and wrong.
 
 **Three carriers, and `native` is deliberately not among them.** No tracker measured has a
 repository of its own on an item, so `native` would name a field no tracker has: `field` is a
@@ -1774,13 +1776,12 @@ named field, a custom one or a native one repurposed — a component being the m
 that — `label` a prefixed axis in a flat label list, and `title_prefix` the leading text of the
 title, which is what a tracker with neither fields nor labels still has.
 
-⛔ **No operation is added to [§ 3](#the-operations-and-what-an-absent-capability-does) for it.**
-A label is read through `read_item` and written through `set_labels`, a field through `read_item`
-and `set_field`, and a title prefix is read through `read_item` and written by the title
-`create_item` is handed — so no tracker this surface names needs a new capability to carry this
-facet or to state its absence. ⚠️ **That there is no operation rewriting a title is not a gap
-here**: the no-rewriting rule below is what makes the write a once-only act, so the carrier that
-rides the title needs no second write to be complete.
+⛔ **No operation is added to [§ 3](#the-operations-and-what-an-absent-capability-does) for it**,
+on [§ 4.6](#46-priority)'s terms rather than on a second statement of them: a label and a field
+each ride the operations that facet names. What is this facet's own is the third carrier — a title
+prefix is read through `read_item` and written by the title `create_item` is handed — and
+⚠️ **that no operation rewrites a title is not a gap here**: the no-rewriting rule below makes the
+write a once-only act, so the carrier that rides the title needs no second write to be complete.
 
 ⛔ **`roots` is total over the collection's keys, and the reader refuses a gap naming the root.**
 That is § 4.1's rule for the branch prefix, and it fails in the same expensive place: a root with
@@ -1789,30 +1790,61 @@ item. ⛔ **No two roots may share a value**, for § 1's reason one level down �
 to one label is the item resolving to both, and a reader that picked either would be choosing where
 the configuration chose nothing.
 
+⛔ **How a value is matched is stated per carrier, and distinctness means whatever the match
+means.** A label is the mapped value behind the axis's prefix and a field's is the value itself,
+both compared whole. ⛔ **A title prefix opens the title as a whole word** — never as a bare
+*begins with*, which is how a root mapped to `app` took every item whose title opened *appendix*.
+So under that carrier the reader also refuses a mapping one of whose values opens another as a
+whole word, naming both: every title of the longer root would answer for the shorter one too,
+leaving one of the two a repository no item can reach — the totality rule above, arrived at from
+the other side. ⚠️ **`-` and `_` continue a word**, so `app` and `app-site` are two values and
+neither strands the other.
+
+⛔ **A carrier an item holds one of is handed one value, and several is a stop.** A field's value
+and a title are one string each; a label carrier is the other kind, where every label on the item
+is handed over and the prefix picks the axis out. ⚠️ **The stop is not pedantry**: a title handed
+to a shell unquoted arrives word-split, and one *word* of it matching resolved the item to a root
+the title never named.
+
 ⛔ **The facet is required where § 1 carries several roots and refused where it carries one**, both
 with the roots named. Required there because every role past the gate needs the answer and the
 collection gives it somewhere to resolve *to*; refused here because a project with one repository
 is never asked for the fact, and a facet nothing reads is § 1's retirement argument taken before
 the key exists. ⚠️ **It is a rule of the reader rather than a `# required_when` marker**, for the
 reason `branch_model.tree_dir` is: the condition is the number of roots rather than a key's value,
-and the refusal names what a role was left unable to do.
+and the refusal names what a role was left unable to do. ⚠️ **A root resolved by name answers for
+itself and not for an item** — the question *which root does this item name* has been answered by
+whoever narrowed it — and on a project with one root the resolution is that root, whatever an item
+carries, there being one answer and no facet to read.
 
-⚠️ **`carrier: none` on a project with several roots is a legitimate setting and is reported**, by
-[§ 11](#a-report-names-what-it-could-not-establish): the tracker cannot carry the fact, so every
-role that needs a root takes it on its invocation and says that is where it came from. ⛔ **No role
-falls back to the first root**, which is the one outcome this facet exists against.
+⚠️ **`carrier: none` on a project with several roots is a legitimate setting**, reported as every
+absent-capable facet is: the tracker cannot carry the fact, so the root arrives on the invocation
+of each role that needs one and that role names where it came from, by § 1's rule that a role
+states what it resolved. ⚠️ **A tracker whose `policy` bars the class this value falls into is the
+same case** — a repository identifier may be a hosting detail that
+[§ 3](#a-write-forbidden-by-policy-rather-than-by-capability) keeps off an item — and the carrier
+is then `none` for a reason the facet records.
 
 ⛔ **The gate's own check is [§ 5](#5-readiness-gate--an-ordered-predicate-list)'s
-`code_root_stated`**, and a project carrying this facet configures it: an item that names no root
-is refused before a claim is taken rather than stopping a role that has already cut a branch for
-it.
+`code_root_stated`, and a project whose carrier is not `none` configures it.** Where the carrier
+*is* `none` the check is refused instead, there being nothing on an item for it to read: the two
+directions are one rule about whether the facet has a value to compare, and § 5 states both.
 
 **What this facet does not carry is a writer**, and that is an omission with a trigger rather than
 an oversight: the fact is stated when the work is described, no project was measured carrying it at
-all, and a key naming who writes it would be a facet invented rather than found.
-[`§ 4.6`](#46-priority)'s rules reach it as written — no role derives the value, and a value
-already on the item is never rewritten. ⚠️ `revisit_when` is where a project records the trigger:
-two roles writing this value differently is what would make the writer a key.
+all, and a key naming who writes it would be a facet invented rather than found. ⛔ **No role
+derives the value and a value already on the item is never rewritten** — [§ 4.6](#46-priority)'s
+pair of rules, holding here with no writer for them to range over, which is what makes the title
+carrier complete rather than a write waiting for a second operation. ⚠️ `revisit_when` is where a
+project records the trigger: two roles writing this value differently is what would make the writer
+a key.
+
+⚠️ **One consequence of the title carrier, stated rather than discovered.** The branch name's slug
+is derived from the item's title under a stated bound
+([§ 10](#the-branch-name-a-claim-is-taken-on)), and the root's own word is part of that title — so
+on such a project every branch name opens with it and spends part of the bound on it. No measured
+project carries this facet at all, let alone under this carrier, so this is a cost named before
+anybody pays it rather than one anybody has.
 
 ## 5. Readiness gate — an ordered predicate list
 
@@ -1860,18 +1892,23 @@ or quiet:
 - ⛔ **`code_root_stated` reads [`§ 4.7`](#47-code-root) and nothing else**, as the bullet above
   reads § 4.6. It passes an item whose stated value resolves to **exactly one** of § 1's named
   roots, and stops all three of the other readings: an item that states none, one that states
-  something no root answers to, and one that states two. ⛔ **A project
-  carrying the facet configures it and is refused where it does not**, which is the direction the
-  sibling above is refused in, inverted for the reason that matters here: the check is the last
-  point before a claim is taken, and a role past the gate that stops instead has already read the
-  item, cut nothing and reported a gap the gate was configured to catch. ⚠️ **And a project with
-  one code root may not configure it** — there is one answer, so the check would pass every item
-  and read as coverage where § 4.7 refuses the facet outright. ⛔ **What answers it is the same
-  resolution the roles run** rather than a second reading of the mapping: a gate that matched the
-  carrier itself could admit an item the role that resolves its root then stops on. ⚠️ **Nothing
-  holds a gate to answering it that way** — no predicate in this library has a shipped
-  implementation — so what keeps the two from diverging is that the mapping is read in one place
-  and a role addressing the project instead of the root is refused by the reader (§ 1).
+  something no root answers to, and one that states two. ⛔ **A project whose carrier is not
+  `none` configures it, and is refused where it does not** — the inverse of the sibling above, for
+  the reason that matters here: the check is the last point before a claim is taken, and a role
+  past the gate that stops instead has already read the item and reported a gap the gate was
+  configured to catch. ⚠️ **Where the carrier *is* `none` the check is refused**, as the sibling's
+  facet is, there being nothing on an item to read; and ⚠️ **a project with one code root may
+  configure neither it nor the facet** — one answer makes the check pass every item, which reads
+  as coverage. ⛔ **What answers it is the same resolution the roles run** rather than a second
+  reading of the mapping: a gate that matched the carrier itself could admit an item the role that
+  resolves its root then stops on. ⚠️ **Where a project orders it after a check that reads a ref in
+  the item's own repository** — `claim_free` and `ref_exists` both do — those checks have no root
+  to read against and are reported unanswered by
+  [§ 11](#a-report-names-what-it-could-not-establish)'s rule rather than passed. ⚠️ **What holds
+  the gate to answering it through that resolution is nothing**: a predicate here may have a
+  shipped implementation and `claim_free` does, but no list's own execution is anybody's
+  implementation, so what keeps the two from diverging is that the mapping is read in one place and
+  a role addressing the project instead of the root is refused by the reader (§ 1).
 
 ### The mark that says an item is not ready, and the two roles that read it
 

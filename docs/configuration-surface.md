@@ -735,17 +735,19 @@ configured.
   plain issues and the prefixes differ, so a procedure matching a literal would read one project's
   axis and no other's.
 
-- **Code root** — **one project in six has more than one code repository, and it carries this fact
-  nowhere.** A's two repositories are nested under a checkout that tracks no code of its own, and
-  its instructions file records the consequence as a rule rather than as a gap: *no skill on the
-  route drives* the second one, so that repository's branches, pull requests, dispatch and board
-  moves are done by hand against its own equivalents. ⚠️ **The same file states what decides which
-  repository a card belongs in** — *whose code it is, never which track asked for it*, with a
-  dashboard that is one track's need and the other repository's code given as the case — and its
-  board carries two label axes, one for whose need the work serves and one for who does the work,
-  **neither of which answers it**. So the fact is neither carried nor derivable there, which is the
-  absent case with no loop around it: the carriers a tracker could hold it in are a label, a field,
-  a component or a title prefix, and nothing was found holding it in any of them.
+- **Code root** — the one project with more than one code repository
+  ([counted in the sibling document](build-surface.md#a-verdict-is-a-command-a-root-and-a-condition))
+  **carries this fact nowhere.** A's instructions file records the consequence as a rule rather
+  than as a gap: *no skill on the route drives* the second one, so that repository's branches,
+  pull requests, dispatch and board moves are done by hand against its own equivalents.
+  ⚠️ **The same file states what decides which repository a card belongs in** — *whose code it is,
+  never which track asked for it* — and the case it gives is the one that discriminates: a counter,
+  a tag set and a consent gate are all one track's need, and their code is in the repository that
+  track does not own. ⚠️ Two of that board's label axes look like candidates and answer neither
+  question — one carries whose need the work serves and one carries who does the work — so the fact
+  is neither carried nor derivable there. That is the absent case with no loop around it: the
+  carriers a tracker could hold it in are a label, a field, a component or a title prefix, and
+  nothing was found holding it in any of them.
 
 **What priority needed that the other facets did not: a statement of how two items compare.** The
 others answer a question about one item — what type it is, what it is worth, which template it

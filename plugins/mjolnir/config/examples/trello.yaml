@@ -122,7 +122,15 @@ work_item:
     # the tracker has no field to add one to. ⚠️ The mapping is not the identity on purpose — the
     # label is what a person reads on a card and the key is what § 1 names the root by, and a
     # project is free to spell them differently.
+    # ⚠️ Example data, like the rest of this file, and deliberately the richer of the two shapes:
+    # the project this file is written from carries the fact nowhere today, which is `carrier: none`
+    # with a reason. With one multi-root example there is room for one of the two, and the mapping
+    # and the gate entry are what need illustrating; the absent case is two keys and is held by the
+    # reader's own suite.
     carrier: label
+    # ⚠️ The prefix is matched literally, trailing space included, so the four axes in this file
+    # differ in that one respect rather than by convention: this one and `P: ` carry the space the
+    # board's own labels have, `T:` and `E:` are written without it.
     label_prefix: "R: "
     roots:
       app: "<the label this board puts on a card whose code is the app's>"
