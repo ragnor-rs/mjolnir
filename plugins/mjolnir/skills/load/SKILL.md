@@ -186,11 +186,14 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/load.py" session --root <the tree, or the
   --exclude <the transcript this session is writing>
 ```
 
-⛔ **Name `--exclude`, and the reply says whether it was named.** The store holds the file this pass
-is itself writing, and it sorts first — so a sweep that excludes nothing reports this session's own
-last words back as *what the last pass was doing*. ⚠️ **Where the session cannot tell which
-transcript is its own**, the command says so in its own report and the first entry is read as
-possibly this pass's rather than as the pass before it.
+⛔ **Name `--exclude`, and the reply says what was excluded rather than what was asked for.** The
+store holds the file this pass is itself writing, and it sorts first — so a sweep that excludes
+nothing reports this session's own last words back as *what the last pass was doing*. ⚠️ **Either
+the transcript's path or its bare name is taken**, and a value matching no file in the store comes
+back as having matched nothing: ⛔ **that answer is the reading**, so it goes in the reply and is
+never read as an exclusion that took. ⚠️ **Where the session cannot tell which transcript is its
+own**, the command says so in its own report and the first entry is read as possibly this pass's
+rather than as the pass before it.
 
 - ⚠️ **Run it for the tree the work is in *and* for the checkout it was cut from**, where the
   branch model cuts a tree per item ([`§ 10`](../../config/schema.md#10-branch-model)): the store
@@ -298,8 +301,9 @@ it — the outcome in the first sentence, then the facts, with a table where the
   readings with the question put to the person;
 - what the last pass was doing: the artifact and whether it held — or that the store holds none for
   this item — the boundary it names, the last instruction and the last reply, **which of the two the
-  record ends on**, every compaction and what it dropped, whether a transcript was excluded, and
-  the counts of what was not read: the older transcripts and the sidecars;
+  record ends on**, every compaction and what it dropped, **which transcript was excluded** — the
+  file the sweep actually dropped, and that the value matched nothing where it did — and the counts
+  of what was not read: the older transcripts and the sidecars;
 - every file the pass wrote that is now missing, and for each whether it replays, from what, and
   whether a compaction stands between the write and now;
 - the environment, as the project's own script answers it — or that this pass could not take the
