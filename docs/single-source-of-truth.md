@@ -3275,7 +3275,14 @@ What it holds:
   boundary record, the summary record **not** read as the last instruction, the harness's own
   plumbing not read as one either, a transcript ending on an instruction *after* a reply reported as
   a stop mid-turn, a last line cut mid-character skipped rather than fatal, the cap naming what it
-  did not read, and the sidecars counted rather than read.
+  did not read, and the sidecars counted rather than read. ⚠️ **And the exclusion in three arms**,
+  which is the reading's own hazard rather than a transcript's shape: the calling session's
+  transcript excluded by its path and by its bare name alike, a value matching no file in the store
+  reported as having matched nothing, and the warning that the first entry may be the caller's own
+  **not** silenced by a value that excluded nothing. ⛔ **The third is what makes the other two
+  assertions rather than conveniences** — the field carried the argument rather than what was
+  dropped, so the failure and its own alarm were switched off by the same mistake, and each arm is
+  held by reverting one line and watching that arm alone redden.
 - **Whether a file that is gone replays, and from what.** Six shapes: first written whole, written
   whole *before* a compaction boundary, only ever edited, never written at all, a whole write of
   **another** path, and a path that does not resolve — plus the backup record that names the second
