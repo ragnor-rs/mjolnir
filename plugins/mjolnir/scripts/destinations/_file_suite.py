@@ -309,13 +309,23 @@ def self_test() -> int:
             beside.invoke("append_day", A_DAY, 1.0, "Outside the tree.").performed,
         )
         # ⛔ And the variable a project writes is expanded here, which is what § 11
-        # leaves to the role's own command. Planted as a variable the environment
-        # does hold, since the point is that expansion happens at all.
-        named = _port(os.path.join("$HOME", "..", "nothing-is-written-here"), root)
-        located = named.invoke("locate", A_DAY).result
+        # leaves to the role's own command. ⚠️ The variable is **this suite's own**
+        # and is set for the call rather than borrowed from the environment: a plant
+        # on a name the machine happens to hold is a plant that answers differently
+        # on a machine that does not — and the two names a reader reaches for first
+        # are a home directory, which the sweep in `tools/` forbids naming, and the
+        # temp root, which is not set everywhere this runs.
+        variable = "MJOLNIR_FILE_SUITE_STORE"
+        os.environ[variable] = os.path.join(workspace, "named-by-a-variable")
+        try:
+            named = _port(os.path.join(f"${variable}", "store"), root)
+            located = named.invoke("locate", A_DAY).result
+        finally:
+            os.environ.pop(variable, None)
         check(
             "a directory naming a shell variable is expanded by this adapter",
-            "$HOME" not in located and located.startswith(os.sep),
+            located == os.path.join(workspace, "named-by-a-variable", "store",
+                                    f"day-report-{A_DAY}.txt"),
             f"located {located!r}",
         )
 
