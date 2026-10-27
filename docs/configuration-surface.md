@@ -2029,7 +2029,7 @@ this block carries a default, and the reason is that rather than a preference ab
 
 ### What a refusal buys over a convention
 
-The standing practice before this facet was a rule somebody has to remember: run the bookkeeping
+The standing practice before this facet was a rule held in one project's prose: run the bookkeeping
 role from the main checkout and reach into the tree with an explicit path. It is correct and it is
 unenforceable, which is the shape this toolkit replaces everywhere else. `write_from` is that rule
 made a value, and the thing it buys is the **pair of outcomes** at
