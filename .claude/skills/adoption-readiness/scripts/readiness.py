@@ -600,7 +600,10 @@ def main(argv: list[str]) -> int:
     # name: the label column is narrower than a dotted kind path, which ran the
     # value straight into the label with no space between them — and the package
     # is what the sweep actually read.
-    for _name, spec in sorted(port.surface_ports().items()):
+    # ⚠️ Ordered by what is printed. Sorting by the port's dotted name while
+    # printing its package put these lines in an order keyed on something the
+    # reader cannot see.
+    for spec in sorted(port.surface_ports().values(), key=lambda one: one.package):
         installed = ", ".join(sorted(port.load_adapters(spec))) or "none"
         print(line(f"{spec.package} installed", installed))
 

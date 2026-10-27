@@ -936,10 +936,19 @@ class Port:
             # What the absence *means* per operation, and not a second statement
             # that the absence exists: the reader already reports that, and two
             # hand-written sentences for one fact is the defect, not the report.
+            # ⛔ What the configuration *says* and not what it resolved to. The
+            # same adapter answers for a kind written `none` and for a kind the
+            # configuration never states, and a report that said `none` either way
+            # would be telling somebody their file carries a word it does not --
+            # sending them to read a key that is not there.
             out.append(
-                f"The configuration states `{self.name}: {NONE}`, so the port "
-                "implements nothing and every operation below takes its stated "
-                "fallback."
+                (
+                    f"The configuration states `{self.name}: {NONE}`"
+                    if self.kind == NONE
+                    else f"The configuration states no `{self.name}`"
+                )
+                + ", so the port implements nothing and every operation below "
+                "takes its stated fallback."
             )
         elif self.adapter is None:
             out.append(
@@ -1793,6 +1802,11 @@ def _hold_registration(check, spec: PortSpec) -> None:
             _discovery_failed.pop(package, None)
             _discovered.discard(package)
             ADAPTERS.pop(package, None)
+            # ⛔ And the temporary root comes back off the path. Discovery appends
+            # the package's parent, so leaving it adds one dead entry per port per
+            # run -- under a comment claiming nothing has to be put back.
+            if planted in sys.path:
+                sys.path.remove(planted)
 
 
 def _hold_own_configuration(check, spec: PortSpec) -> None:
