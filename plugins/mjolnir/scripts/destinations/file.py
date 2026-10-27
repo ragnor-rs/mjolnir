@@ -98,6 +98,18 @@ _HOURS_LINE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 
+# ⛔ What the writer may write, which is **the reader's own grammar** and not a
+# second one. A value this store cannot read back is an entry it recorded and
+# permanently cannot answer about: `append_day` reported the day logged, and
+# every later period read it as a day it could not read. Measured, on a value
+# written with a comma for a decimal point.
+_WRITABLE_HOURS = re.compile(r"^[0-9]+(?:\.[0-9]+)?$")
+
+# A variable `expandvars` left behind, in either spelling it understands. ⛔ Not a
+# general shell grammar: it is exactly what that function would have replaced, so
+# what is left over is what it could not resolve.
+_VARIABLE = re.compile(r"\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?")
+
 # The configuration the port last handed down, and the only place one comes from.
 # ⛔ Never resolved here, and never from the working directory: which project's
 # day a store holds is § 1's skills root to decide and the port's to pass, and a
@@ -143,9 +155,16 @@ def _prefix() -> str:
     return _spec().prefix
 
 
-def _key(name: str = OUT_DIR) -> str:
-    """The dotted path of one of this kind's keys, for a refusal to name."""
-    return f"{_prefix()}.{name}"
+def _key() -> str:
+    """This kind's one key, for a refusal to name.
+
+    ⛔ One key and no parameter. The parameter was how three refusals came to name
+    `day_log.destination.day`, `.range` and `.implementations.file` -- none of
+    which this surface declares, while a `ConfigError`'s key is contractually the
+    thing to go and edit. A refusal about a **call** names the operation list
+    instead.
+    """
+    return f"{_prefix()}.{OUT_DIR}"
 
 
 def _code_roots() -> list[str]:
@@ -174,7 +193,7 @@ def _directory() -> str:
     """
     if _bound is None:
         raise port.ConfigError(
-            f"{_prefix()}.implementations.file",
+            _spec().name,
             "was asked for an operation before the port bound a configuration to "
             "it. Every operation is reached through `Port.invoke`, which binds "
             "first; a direct call bypasses the one place the project is stated.",
@@ -188,7 +207,46 @@ def _directory() -> str:
             "`day_log` carrier needs no store -- so a project that does map one "
             "states it.",
         )
-    resolved = os.path.abspath(os.path.expanduser(os.path.expandvars(stated)))
+    # ⛔ A string, and said so rather than handed to the path machinery. A number
+    # or a list reaches `expandvars` as a `TypeError` out of the operation, which
+    # is the raw traceback this package refuses to hand a role.
+    if not isinstance(stated, str):
+        raise port.ConfigError(
+            _key(),
+            f"is {stated!r}, which is not a directory. § 26 states this key as a "
+            "store's address, and an address is written as a string.",
+        )
+    expanded = os.path.expanduser(os.path.expandvars(stated))
+    # ⛔ A variable that did not expand is refused, never joined. `expandvars`
+    # leaves an unset name **literally**, so `$TMPDIR/<project>` on a machine with
+    # no `TMPDIR` -- a container, a cron shell, most Linux -- silently addresses a
+    # directory named `$TMPDIR` under wherever the process happened to be
+    # standing. ⚠️ The refusal names the variable, which is the one sentence that
+    # fixes it.
+    unexpanded = _VARIABLE.findall(expanded)
+    if unexpanded:
+        raise port.ConfigError(
+            _key(),
+            f"is {stated!r} and names {', '.join(sorted(set(unexpanded)))}, which "
+            "the environment this role runs in does not set. § 26 has the role's "
+            "own command expand a variable rather than the reader, so an unset "
+            "one is a store with no address -- never a directory of that name.",
+        )
+    # ⛔ Absolute, and refused rather than joined onto the working directory. A
+    # relative address resolves to a different store per invocation directory, and
+    # a project on the worktree branch model runs from a different tree per item --
+    # so `read_day` answers *not recorded* for a day that is recorded in the store
+    # beside it, and the role's documented next step appends a second entry for
+    # the same day.
+    if not os.path.isabs(expanded):
+        raise port.ConfigError(
+            _key(),
+            f"is {stated!r}, which is relative, so it names a different store for "
+            "every directory a role runs from. § 26 states this key as the store's "
+            "address; an address is absolute, `~`-relative, or written with a "
+            "variable that expands to one.",
+        )
+    resolved = os.path.abspath(expanded)
     # ⛔ The code roots and not the working directory: a role runs from a tree and
     # addresses a project, so the question is whether the configured directory is
     # inside a repository this configuration names (§ 1).
@@ -226,15 +284,57 @@ def _day(day: str) -> str:
     and no later read finds -- an entry written and permanently invisible, which
     is the one failure a store silently has.
     """
+    # ⛔ Keyed on the port's operation list and not on a `day_log.destination.day`,
+    # which is no key this surface declares. A `ConfigError`'s key is the thing to
+    # go and edit, and what is wrong here is the call rather than a configuration
+    # -- so the key names where § 26 states what each operation is asked for.
     try:
         return datetime.date.fromisoformat(str(day)).strftime(DATE)
     except ValueError:
         raise port.ConfigError(
-            _key("day"),
-            f"was given {day!r}, which is not a day written `{DATE}`. An entry is "
-            "addressed by the day § 9 measured, and a day this store cannot name "
-            "would be written to a file nothing later reads.",
+            f"{_prefix()}.operations",
+            f"was given {day!r} as a day, which is not written `{DATE}`. An entry "
+            "is addressed by the day § 9 measured, and a day this store cannot "
+            "name would be written to a file nothing later reads.",
         ) from None
+
+
+def _canonical(named: str) -> str | None:
+    """The day a file name states, where this store could have written that name.
+
+    ⛔ Held to the **writer's** own spelling and not to what a date parser will
+    accept. `date.fromisoformat` takes the basic form `20260304` and week dates
+    like `2026-W10-1`, neither of which this store ever writes -- so such a file
+    used to parse, normalise to a different name, and send the read looking for a
+    file that is not there: the period then reported that day as holding no hours
+    line it could read, which is a false reason pointing at the wrong fix, and
+    where both names existed one of the two entries was silently dropped while
+    *one entry per day* read as held.
+    """
+    try:
+        day = datetime.date.fromisoformat(named)
+    except ValueError:
+        return None
+    return day.strftime(DATE) if day.strftime(DATE) == named else None
+
+
+def _reachable(directory: str) -> bool:
+    """Whether a directory that is not there is merely absent.
+
+    ⛔ The distinction `isdir` cannot make: it answers `False` for a directory
+    nobody has created yet and for one behind a parent that cannot be read, and
+    § 26 holds those apart -- the first is a store with nothing in it, the second
+    is a store that could not be asked. Decided by the nearest ancestor that does
+    exist, since that is what a later `makedirs` would have to go through.
+    """
+    here = directory
+    while True:
+        parent = os.path.dirname(here)
+        if parent == here:
+            return False
+        if os.path.lexists(parent):
+            return os.path.isdir(parent) and os.access(parent, os.R_OK | os.X_OK)
+        here = parent
 
 
 def _make(directory: str) -> None:
@@ -247,9 +347,27 @@ def _make(directory: str) -> None:
         ) from None
 
 
-def _render(hours, description: str) -> str:
+def _render(hours, description: str, operation: str) -> str:
+    """The entry's text, refusing an hours value this store could not read back.
+
+    ⛔ Held to `_HOURS_LINE`'s own grammar rather than to a type. A negative, an
+    exponent, `inf`, a comma for a decimal point or anything a caller passes as
+    text all format perfectly well and then read back as an entry present with no
+    hours -- so the write reports the day recorded and every period read reports
+    it unreadable, with nothing between the two saying what happened.
+    """
+    written = f"{hours}"
+    if not _WRITABLE_HOURS.match(written):
+        raise port.ConfigError(
+            f"{_prefix()}.operations.{operation}",
+            f"was given {hours!r} as the day's hours, which this store cannot read "
+            "back: it writes and reads one `Hours worked` line, and that line "
+            "carries a number with an optional decimal part. An entry written "
+            "with anything else is one this store would report as unreadable "
+            "forever after reporting the day recorded.",
+        )
     return _ENTRY.format(
-        label=HOURS_LABEL, hours=hours, description=str(description).strip()
+        label=HOURS_LABEL, hours=written, description=str(description).strip()
     )
 
 
@@ -278,58 +396,95 @@ def read_day(day: str) -> dict | None:
             f"`{path}` exists and could not be read ({error.strerror})"
         ) from None
     found = _HOURS_LINE.search(text)
+    # ⛔ The description is every line that is not the hours line, and not the
+    # tail after it. This store writes the label first, but § 26 has what comes
+    # back out treated as text somebody may have edited -- and a person who moved
+    # their hours to the bottom of the entry had the whole description read as
+    # empty, which the documented redo (`read_day` then `replace_day`) would then
+    # write back as an entry with no description at all.
+    if found:
+        description = (text[: found.start()] + text[found.end() :]).strip()
+    else:
+        description = text.strip()
     return {
         "day": _day(day),
         "path": path,
         "hours": float(found.group("hours")) if found else None,
-        "description": text[found.end() :].strip() if found else text.strip(),
+        "description": description,
         "text": text,
     }
 
 
 def append_day(day: str, hours, description: str) -> dict:
-    """Record one day's two values, refusing a day already recorded."""
-    standing = read_day(day)
-    if standing is not None:
-        raise port.ConfigError(
-            _key(),
-            f"already holds an entry for {_day(day)} at `{standing['path']}`. "
-            "§ 26 has `read_day` decide which write is asked for, and an append "
-            "beside an entry that is already there is two entries claiming the "
-            "same hours. Ask for a replacement.",
-        )
+    """Record one day's two values, refusing a day already recorded.
+
+    ⛔ The refusal is the **write's** own, not a prior read's. `read_day` decides
+    which of the two writes a role asks for (§ 26), but a check-then-write leaves
+    a window: two sessions of one project -- the ordinary case under the worktree
+    branch model -- each read nothing, each write, the second truncates the first,
+    and both report the day recorded. Opening exclusively makes *one entry per
+    day* a property of the file system rather than of the interval between two
+    calls.
+    """
+    text = _render(hours, description, "append_day")
     path = _path(day)
     _make(os.path.dirname(path))
     try:
-        with open(path, "w", encoding="utf-8") as handle:
-            handle.write(_render(hours, description))
+        with open(path, "x", encoding="utf-8") as handle:
+            handle.write(text)
+    except FileExistsError:
+        raise port.ConfigError(
+            f"{_prefix()}.operations.append_day",
+            f"was asked to record {_day(day)}, which `{path}` already holds. "
+            "§ 26 has `read_day` decide which write is asked for, and an append "
+            "beside an entry that is already there is two entries claiming the "
+            "same hours. Ask for a replacement.",
+        ) from None
     except OSError as error:
         raise port.HostUnavailable(
             f"`{path}` could not be written ({error.strerror}), so the day was "
             "not recorded"
         ) from None
-    return {"day": _day(day), "path": path, "hours": hours}
+    return {"day": _day(day), "path": path, "hours": float(hours)}
 
 
 def replace_day(day: str, hours, description: str) -> dict:
     """Rebuild the day's entry whole, unlinking whatever was there.
 
-    ⛔ Unlink and write, never an update in place: § 26's rule, and the failure it
-    names is specific -- a rebuilt entry shorter than the one it replaces leaves
-    the tail of the old one behind, which reads as part of the new description.
+    ⛔ Whole and never an update in place: § 26's rule, and the failure it names is
+    specific -- a rebuilt entry shorter than the one it replaces leaves the tail of
+    the old one behind, which reads as part of the new description.
+
+    ⛔ Written beside the entry and moved over it, rather than unlinked and
+    written. Unlink-then-create satisfies *rebuilt whole* and loses the day
+    outright where anything fails between the two: no space on the write, the mode
+    changing underneath, the process dying -- and the outcome a role is handed
+    then says the store could not be reached, which § 26 defines as *the entry
+    already there is left exactly as it stands*. So the report would tell somebody
+    their old entry survived at the one moment it had just been deleted. A rename
+    over the path leaves either the old entry or the new one and never neither.
     """
     path = _path(day)
     _make(os.path.dirname(path))
+    text = _render(hours, description, "replace_day")
+    beside = f"{path}.rebuilding"
     try:
-        if os.path.exists(path):
-            os.unlink(path)
-        with open(path, "x", encoding="utf-8") as handle:
-            handle.write(_render(hours, description))
+        with open(beside, "w", encoding="utf-8") as handle:
+            handle.write(text)
+        os.replace(beside, path)
     except OSError as error:
+        # ⛔ The half-written file goes, and the entry that was there stays. The
+        # removal is itself guarded: a failure here must not replace the refusal
+        # above with one about the temporary file.
+        try:
+            os.unlink(beside)
+        except OSError:
+            pass
         raise port.HostUnavailable(
-            f"`{path}` could not be rebuilt ({error.strerror})"
+            f"`{path}` could not be rebuilt ({error.strerror}), so the entry that "
+            "was there is unchanged"
         ) from None
-    return {"day": _day(day), "path": path, "hours": hours}
+    return {"day": _day(day), "path": path, "hours": float(hours)}
 
 
 def read_hours(first: str, last: str) -> dict:
@@ -338,11 +493,19 @@ def read_hours(first: str, last: str) -> dict:
     ⛔ Per day and never a total, with the days this store holds and could not
     read named beside the ones it could. § 26's rule: a consumer that summed what
     it could parse would under-report a period and nothing would say so.
+
+    ⛔ `unreadable` is keyed by **day** and holds only days inside the period, so a
+    consumer may read it as *of the period I was asked about, these I could not
+    read*. A file this store cannot place in a day at all goes in `unplaced`,
+    keyed by its name: it may be the entry a period is missing, so it is reported
+    rather than swept past, but it cannot be known to fall inside the range -- and
+    reported among the days it made a fully readable period come back partly
+    unreadable, which is a consumer stopping on an answer that was complete.
     """
     start, end = _day(first), _day(last)
     if start > end:
         raise port.ConfigError(
-            _key("range"),
+            f"{_prefix()}.operations.read_hours",
             f"was asked for {start} to {end}, which ends before it begins. A "
             "period read backwards would come back empty, which reads exactly "
             "like a period nobody worked.",
@@ -350,11 +513,28 @@ def read_hours(first: str, last: str) -> dict:
     directory = _directory()
     hours: dict[str, float] = {}
     unreadable: dict[str, str] = {}
+    unplaced: dict[str, str] = {}
+    answer = {
+        "first": start,
+        "last": end,
+        "hours": hours,
+        "unreadable": unreadable,
+        "unplaced": unplaced,
+    }
+    # ⛔ A directory that is not there is answered; one that cannot be *reached* is
+    # not. `isdir` answers `False` for both -- an unreadable parent, a dangling
+    # link, a loop, an address naming a regular file -- and the two came back as
+    # byte-identical empty answers, measured. ⚠️ That is the one direction § 26
+    # forbids outright: a period the store could not be asked about read exactly
+    # like a period nobody worked, and a billing consumer would have invoiced the
+    # difference.
     if not os.path.isdir(directory):
-        # ⚠️ Not an error and not an empty answer either: a directory that is not
-        # there holds no entry, and the caller is told which range was asked about
-        # so it can tell that from a range of days nobody logged.
-        return {"first": start, "last": end, "hours": hours, "unreadable": unreadable}
+        if os.path.lexists(directory) or not _reachable(directory):
+            raise port.HostUnavailable(
+                f"`{directory}` is not a directory this store can read, so no "
+                "period could be read"
+            )
+        return answer
     try:
         entries = sorted(os.listdir(directory))
     except OSError as error:
@@ -365,14 +545,15 @@ def read_hours(first: str, last: str) -> dict:
     for entry in entries:
         if not entry.startswith(STEM) or not entry.endswith(SUFFIX):
             continue
-        day = entry[len(STEM) : -len(SUFFIX)]
-        try:
-            day = datetime.date.fromisoformat(day).strftime(DATE)
-        except ValueError:
-            # A file whose name is this store's shape and whose day is not a day.
-            # ⛔ Reported rather than skipped: it may be the entry the period is
-            # missing, and a sweep that dropped it would answer short.
-            unreadable[entry] = "the file name carries no day this store can read"
+        named = entry[len(STEM) : -len(SUFFIX)]
+        day = _canonical(named)
+        if day is None:
+            # A file whose name is this store's shape and whose day this store
+            # cannot place. ⛔ Reported rather than skipped: it may be the entry
+            # the period is missing, and a sweep that dropped it would answer
+            # short. ⛔ Under `unplaced` and not among the days, for the reason the
+            # docstring gives -- it cannot be known to be inside the range.
+            unplaced[entry] = "the file name carries no day this store can write"
             continue
         if day < start or day > end:
             continue
@@ -384,7 +565,7 @@ def read_hours(first: str, last: str) -> dict:
             )
             continue
         hours[day] = read["hours"]
-    return {"first": start, "last": end, "hours": hours, "unreadable": unreadable}
+    return answer
 
 
 def locate(day: str) -> str:
