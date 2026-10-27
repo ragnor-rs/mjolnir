@@ -637,19 +637,25 @@ WHOLE = Change(
     threads=[{"resolved": True, "outdated": False, "path": "a.py", "line": 3, "first": "Answered."}],
     # A marker in this file is exempt and a line in a sibling tool is not;
     # the first half is asserted by this fixture staying green.
-    # ⛔ The three lines below are the honest form of a limit, taken from lines
-    # this repository already carries, and they are in the whole-change fixture
-    # so the green side of the unowned-remedy arm is asserted rather than
+    # ⛔ The three lines below are the honest form of a limit, written in the
+    # shape this repository's own prose uses, and they are in the whole-change
+    # fixture so the green side of the unowned-remedy arm is asserted rather than
     # assumed: each says a thing is absent and none says nobody owns the cure.
     # Widening the arm to the unfinished half reddens this fixture, which is the
     # assertion that the carve-out is load-bearing.
+    #
+    # ⚠️ **Of that shape, and no longer quoted from a live file.** One of them was
+    # a verbatim line of `port.py`, under a comment saying so -- a copy of a line
+    # in a second place, which went stale the first time that file was reworded
+    # and left the comment asserting something untrue. A fixture owns its own
+    # text.
     added=[("a.py", "    return value"),
            ("tools/" + os.path.basename(__file__), "    # TODO: the forms this file forbids"),
            ("docs/configuration-surface.md",
             "no second project was found to have, so a facet absorbing the arithmetic would have "
             "generalised one"),
            ("plugins/mjolnir/scripts/port.py",
-            "    # sweep above forbids -- and would need editing every time an"),
+            "    # spelling either side out would need editing every time an"),
            ("plugins/mjolnir/skills/review/SKILL.md",
             "still needs an answer on the thread, and a thread nobody replied to is an open "
             "question.")],

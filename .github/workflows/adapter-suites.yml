@@ -1,15 +1,16 @@
 name: Adapter suites
 
-# Every installed implementation of the tracker port, held to its own suite. The sibling
-# workflow holds the *contract* — the operation list, the absent case, the writer refusal, all
-# read out of § 3 of plugins/mjolnir/config/schema.md. What an implementation decides for itself
-# is not reachable from there: a cursor followed to the end of a board, an id resolved by name
-# rather than written down, a guard that refuses before it writes.
+# Every installed implementation of every port the surface declares, held to its own suite. The
+# sibling workflow holds the *contract* — the operation list, the absent case, the writer
+# refusal, each read out of the section that port's own marker names. What an implementation
+# decides for itself is not reachable from there: a cursor followed to the end of a board, an id
+# resolved by name rather than written down, a guard that refuses before it writes.
 #
-# ⛔ One entry rather than one per implementation, and the runner asks the port what is
-# installed: a gate entry per tracker would spell a tracker's name in the configuration and
-# again in a file name, and plugins/mjolnir/scripts/adapters/ is the one place in this toolkit
-# where a tracker's name belongs.
+# ⛔ One entry rather than one per implementation or one per port, and the runner asks the
+# surface which ports there are and each port what is installed: a gate entry per
+# implementation would spell what is behind a port in the configuration and again in a file
+# name, and a port's own package under plugins/mjolnir/scripts/ is the one place in this
+# toolkit where that name belongs.
 #
 # A workflow of its own rather than a second job of a sibling, per § 2: a `host.checks` entry
 # states one mirrored command, so two commands behind one workflow name could not be stated on

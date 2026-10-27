@@ -50,6 +50,19 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --port day_log.destination.kind
 ⚠️ **The default argument of that command is the *tracker* port**, which is a different operation
 list — so the `--port` is not optional here.
 
+**Then every operation goes through the same carrier**, which is what *names the port and never a
+destination* means in practice:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --port day_log.destination.kind \
+  --invoke <operation> --argument <value> --argument <value>
+```
+
+⛔ **This is the only way an entry is written, and a path is never composed here.** The arguments
+are the ones § 26 states that operation is asked for, in that order, each passed as written. What
+comes back names the operation, whether it was **performed**, **failed** or **refused**, and what
+it answered — and ⛔ **a failure or a refusal is reported to the person rather than worked around**.
+
 - ⛔ **`read_day` first, then one write.** `append_day` for a day the read says is not recorded,
   `replace_day` for one it says is. A day asked for twice as an append is two entries claiming the
   same hours, and the cross-day validation of §4 reports that as a doubled total. ⚠️ **Where
@@ -65,7 +78,11 @@ list — so the `--port` is not optional here.
 - ⛔ **A store that could not be reached is a named absence, and the day is not reported as
   logged.** That is the port's `failed` outcome rather than a fallback: the capability works and the
   call did not go through, so nothing was recorded and the report says so with the store's own
-  words.
+  words. ⚠️ **A period read back the same way is subject to the same rule** — a store that could
+  not be reached is never an empty period, which reads exactly like a period nobody worked.
+- ⚠️ **A `read_hours` answer carries two lists and they are not one**: the days inside the period it
+  could not read, and whatever the store holds that it could not place in a day at all. ⛔ **Only
+  the first says anything about the period asked for.**
 - ⛔ **Nothing this skill generates lands in the project directory.** A skill directory holds
   instructions and scripts, never output, and the working tree holds no generated file at all.
   Do not rely on `.gitignore` for this: a repository that names its generated files one by one,
@@ -481,8 +498,7 @@ script is the project's own until it is extracted into the plugin — the transi
 carries on [`config/schema.md § 9`](../../config/schema.md#9-day-log). ⛔ **So the validation below
 is available on the file destination and on no other**: where a project states another kind, say the
 cross-day validation could not be run rather than reporting an entry as validated. What answers it
-once the script is shared is `read_hours`, which is the operation § 26 states for exactly this and
-for the billing one.
+once the script is shared is `read_hours`, which is the operation § 26 states for exactly this.
 
 It recomputes every recorded day and **fails** on the ways an entry can be wrong against
 its neighbours, plus the one way its hours line can be wrong on its own:

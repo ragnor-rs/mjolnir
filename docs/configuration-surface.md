@@ -2101,12 +2101,16 @@ and what follows is the argument it was replaced on rather than a second stateme
 
 **The surveyed copies all wrote a file**, which is why nothing in the original survey put this in
 tension: a directory addresses a file store completely, and a single implementation needs no
-contract. Four facts moved it afterwards, and none of them is about files being insufficient.
+contract. What moved it afterwards is below, and none of it is about files being insufficient.
 
-- **A second role reads the store.** The billing one takes a period's **hours** out of what the day
-  log wrote, and against a directory of per-day text files that is a filename convention the
-  surface never stated. An operation with a stated absent case is the shape that already answers
-  this everywhere else here.
+- **The store is read back, and not only written.** § 9's own cross-day validation already reads
+  every recorded day, and against a directory of per-day text files that is a filename convention
+  the surface never stated. ⚠️ **A second reader is proposed and not built** — the role that takes
+  a period's line items out of the same store is in
+  [`divergences-and-rulings.md`](divergences-and-rulings.md)'s still-open list — so what carries
+  this is the reader that exists, with the proposed one as the reason the shape has to admit
+  another. An operation with a stated absent case is what already answers this everywhere else
+  here.
 - **The grain of the two values differs by consumer.** Hours aggregate across days and a
   description does not, so the store has to be readable for hours over a range without the
   descriptions being what is read — which a store addressed as *a directory of entries* cannot
@@ -2115,11 +2119,12 @@ contract. Four facts moved it afterwards, and none of them is about files being 
   addressed by an identifier and a tab, and the artifact store's own `dir`
   ([`schema.md § 11`](../plugins/mjolnir/config/schema.md#the-store-and-when-an-in-tree-store-is-safe))
   cannot carry one either.
-- **Three of the day-log role's own rules were written in one carrier's vocabulary.** *A redo
-  deletes the file and writes a new one* is how a **file** is rebuilt whole; a spreadsheet row is
-  replaced, and a store with no delete would be patched in place — which is the thing the rule
-  exists to forbid. The rule was right and its statement was not portable, which is the diagnosis
-  that makes this a port rather than a second key.
+- **The day-log role's own rules were written in one carrier's vocabulary.** *A redo deletes the
+  file and writes a new one* is how a **file** is rebuilt whole; a spreadsheet row is replaced, and
+  a store with no delete would be patched in place — which is the thing the rule exists to forbid.
+  The rule was right and its statement was not portable, which is the diagnosis that makes this a
+  port rather than a second key, and the same reading reaches every other place that skill said
+  *the file* where it meant *the entry*.
 
 ### The section a port's operation list is read from had to become a parameter
 
@@ -2139,8 +2144,12 @@ marker on the line stating its kind.
 ⚠️ **The marker's own limit is stated rather than discovered**: two near-miss spellings come back
 **dropped** rather than refused — a clause that lost its colon, which is indistinguishable from
 English prose, and a capitalised keyword, matched case-sensitively like every other clause there.
-What catches both is the reader's own inventory comparison rather than the guard, which is why that
-comparison is written out rather than derived.
+⛔ **What catches a marker lost that way is the contract and not the reader**
+([`schema.md § 26 → Which section`](../plugins/mjolnir/config/schema.md#which-section-a-ports-operation-list-is-read-from)):
+its section's table then belongs to no port, which is refused as an operation list nothing reads.
+⚠️ **The reader's own inventory comparison catches it only where the surface is left declaring no
+port at all** — with another port still declared the inventory is non-empty and that comparison is
+silent, which is why the comparison is written out rather than derived but is not what holds this.
 
 ### Where the directory went, and why it is still not required
 

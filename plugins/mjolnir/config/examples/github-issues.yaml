@@ -160,8 +160,8 @@ memory:
   # ⚠️ A placeholder, like every other path in this file: a real one here would be a directory on
   # whoever's machine wrote it. § 25 takes an absolute path, a `~`-relative one or a shell variable
   # the role's own command expands — the reader keeps the value as written and expands nothing,
-  # which is the shape `day_log.out_dir` below already has. ⛔ Not a temp directory: these facts
-  # outlive the work, and a store under one does not outlive a reboot (§ 11).
+  # which is the shape `day_log.destination.out_dir` below already has. ⛔ Not a temp
+  # directory: these facts outlive the work, and a store under one does not outlive a reboot (§ 11).
   store: "<an absolute path outside every working tree>"
   # The one file parallel sessions contend on. The per-fact files beside it are safe under parallel
   # trees, two sessions rarely writing the same fact; this one is read by every session, so two

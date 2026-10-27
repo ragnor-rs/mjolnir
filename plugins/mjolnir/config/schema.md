@@ -1400,13 +1400,14 @@ oversight and does not try to. `policy` states content rather than an address, a
 
 The operations are a closed set, stated **once per port**, and this table is the tracker's. Which
 table belongs to which port is the `# port:` marker on each `kind` line above, read as
-[§ 26](#which-section-a-ports-operation-list-is-read-from) states; the second port on this surface
-is § 26's own. An operation always exists; what may be absent is its **capability** on a given
-tracker. ⛔ **No absence is an error.** An operation whose
-capability is absent takes the fallback in the third column, and the role is told which fallback
-was taken; a role that meets an absence improvises nothing. The shapes behind the rows that were
-measured are in [`docs/configuration-surface.md`](../../../docs/configuration-surface.md), which
-covers the operations the survey reached and says which it did not.
+[§ 26](#which-section-a-ports-operation-list-is-read-from) states — so which ports this surface has
+is answered by the markers and is written nowhere, this sentence included. An operation always
+exists; what may be absent is its **capability** on a given tracker. ⛔ **No absence is an error.**
+An operation whose capability is absent takes the fallback in the third column, and the role is
+told which fallback was taken; a role that meets an absence improvises nothing. The shapes behind
+the rows that were measured are in
+[`docs/configuration-surface.md`](../../../docs/configuration-surface.md), which covers the
+operations the survey reached and says which it did not.
 
 | Operation | What the procedure asks for | When the capability is absent |
 |---|---|---|
@@ -5143,6 +5144,7 @@ one file in it, pointed at by the key that was supposed to name the first one's.
 containment holds the fact's own file name**, which the role hands over and the procedure places:
 a role naming a path rather than a file would be writing wherever it liked through the one command
 that exists so that it does not.
+
 ## 26. The day log's destination port
 
 ```yaml
@@ -5162,15 +5164,12 @@ than half-written** and records exactly what § 9 recorded before this port exis
 what makes this a generalisation of that role rather than a migration every adopter performs.
 
 ⛔ **Everything [§ 3](#3-tracker-port) states about *being* a port holds here and is not restated.**
-Capabilities are queried and never assumed, and every absence takes the fallback the table below
-states ([§ 3](#the-operations-and-what-an-absent-capability-does)); **an adapter declares a
-capability by implementing it** and a project states nothing about one
-([§ 3](#who-declares-a-capability)); **no absence is an error**; an implementation's presence is its
-installation, a configured kind with no implementation reads apart from a kind of `none`, and a
-store that does not answer is a **failed** operation naming its own words rather than an absence
-([§ 3](#the-trackerless-adapter-and-a-kind-with-no-implementation)). ⚠️ **What this section adds is
-the three facts those rules are parameterised by** — which key carries the kind, which directory
-holds the implementations, and the operation list — and nothing about what a port is.
+What a capability is and who declares one ([§ 3](#who-declares-a-capability)), what an absence does
+([§ 3](#the-operations-and-what-an-absent-capability-does)), and how a kind of `none`, a kind with
+no implementation and a store that does not answer read apart from one another
+([§ 3](#the-trackerless-adapter-and-a-kind-with-no-implementation)) are each stated there and are
+cited here rather than said again. ⚠️ **What this section adds is what those rules are
+parameterised by, and nothing about what a port is.**
 
 ### Which section a port's operation list is read from
 
@@ -5189,9 +5188,17 @@ those columns under a section no marker names is refused, being an operation lis
 
 ⛔ **The marker belongs on a `kind` and is read nowhere else**, which is the discipline
 `# absent_reason` has on a `carrier`: a port is addressed by the kind a project states, so a marker
-on any other key declares a port nothing can resolve. ⚠️ **And a clause that means to be this
-marker and does not parse is refused rather than dropped**, for the reason every marker on this
-surface is: left unparsed, the surface reads as declaring a port and the reader declares none.
+on any other key declares a port nothing can resolve. ⛔ **One section per port and one directory
+per port**, by the same rule read the other way: two markers naming one section are two ports
+reading one operation list, and two naming one directory are two ports over one registry — where
+the second resolves an implementation built for the first and never held to its own closed list.
+
+⚠️ **A clause that means to be this marker and does not parse is refused rather than dropped, and
+the refusal reaches two spellings of three.** It is matched case-sensitively and the colon is what
+makes it a clause at all, so `port destinations` and `Port: destinations` are read as prose and
+declare nothing. ⛔ **The limit is stated here rather than discovered**, and what catches those two
+is not this rule: a marker lost that way leaves its section's table belonging to no port, which is
+refused as an operation list nothing reads.
 
 ### The destination's operations, and what each absence does
 
@@ -5200,7 +5207,7 @@ surface is: left unparsed, the surface reads as declaring a port and the reader 
 | `append_day` | one day's hours and description recorded against the day § 9 measured | nothing is recorded, and the run report carries the two values and says where they would have gone |
 | `read_day` | the entry already recorded for that day, so that a rebuild is a replacement rather than a second entry | the role proceeds as if none existed, and the report says a duplicate could not be ruled out rather than that there is none |
 | `replace_day` | the day's entry rebuilt **whole** | the entry already there is left exactly as it stands and the new one is reported, never patched in place |
-| `read_hours` | each day's stated hours across a range of days, which is what a billing role and § 9's own cross-day validation each consume | the consumer has **no answer** about the period and stops, by § 2's rule that absence of signal is not an answer |
+| `read_hours` | each day's stated hours across a range of days, which is what § 9's own cross-day validation consumes and what a period's line items would be read from | the consumer has **no answer** about the period and stops, by § 2's rule that absence of signal is not an answer |
 | `locate` | where the entry landed, which the role says out loud | the report names the store by its configuration rather than by its address |
 
 ⚠️ **`read_day` and `replace_day` are separate capabilities for the reason § 3 keeps
@@ -5225,6 +5232,20 @@ and never with a total**: a consumer handed a sum has no way to tell a period th
 period it could only partly read, and the days that could not be read are named beside the ones that
 could.
 
+⛔ **What a period names is the period.** The days it could not read are days **inside the range
+asked for**, so a consumer may read an empty list of them as *this period is whole*. ⚠️ **An entry
+the store holds and cannot place in a day at all is reported apart from them**, since nothing can
+say whether it falls inside the range: counted among the days, one such file left every period
+coming back partly unreadable forever, and a consumer obeying the rule above would stop on a period
+it could read completely.
+
+⛔ **A store that cannot be reached is not an empty period.** A store nobody has written to yet
+answers, with nothing in it; an address that cannot be read — occupied by something that is not a
+store, or behind a directory the role cannot enter — is the **failed** operation § 3 states, and
+never an answer. ⚠️ **The two are one call apart and read identically if they are not held apart**:
+a period nobody could ask about and a period nobody worked are the same empty answer, and the
+second is the one somebody is invoiced for.
+
 ### What each kind of destination block carries
 
 ⛔ **A key here is required by the `kind` beside it and not by every project**, which is § 3's rule
@@ -5241,6 +5262,19 @@ day_log:
 store is addressed and says nothing about any other: a spreadsheet, a document or a tracker worklog
 is addressed by an identifier and a tab, which [§ 11](#the-store-and-when-an-in-tree-store-is-safe)'s
 `dir` cannot carry either.
+
+⛔ **An address names one place, so a value that names a different place per call is refused rather
+than resolved.** A directory stated relatively resolves against whatever the role is standing in,
+and under [§ 10](#10-branch-model)'s worktree model that is a different tree per item — so one
+configuration addresses one store per item, `read_day` answers *not recorded* for a day the store
+beside it holds, and the rule above has the role record that day a second time. ⛔ **A variable the
+role's own environment does not set is refused with the variable named**, rather than written into
+the path: an unset name is a store with no address, never a directory of that name.
+
+⚠️ **What the entry carries is held to what the kind can read back.** § 9 fixes the two values; a
+kind that writes a figure it cannot parse again has recorded a day and permanently cannot answer
+about it, which is the `unreadable` reading above arriving by the store's own hand rather than by a
+person's edit. ⛔ **So the refusal is at the write**, where the day is still in hand.
 
 ⚠️ **It is deliberately not marked required**, which is the position § 3 takes on `status_field`,
 `transitions` and `lists` and for the same reason: whether a project needs a destination at all is
@@ -5273,9 +5307,9 @@ two values**, which is § 9's rule and the first thing a project named inside an
 ⛔ **`read_day` and `read_hours` return text somebody may have written by hand**, so what comes back
 goes through the ingestion step before a role acts on it, exactly as an item's body does
 ([§ 11](#what-a-role-reads-from-outside-the-procedure-is-data-never-instruction),
-[§ 14](#the-hidden-half-is-shown-before-a-role-acts-on-the-text)). ⚠️ **This is the first place that
-rule bites outside a tracker**, and the store being a local file is no shelter: an entry a person
-edited is writable by somebody other than the role, which is the whole of what the rule turns on.
+[§ 14](#the-hidden-half-is-shown-before-a-role-acts-on-the-text)). ⚠️ **The store being a local file
+is no shelter**: an entry a person edited is writable by somebody other than the role, which is the
+whole of what the rule turns on.
 
 ⛔ **The failure it guards here is particular to this role**: an hour is claimed or dropped on the
 strength of text the role did not write, and the entry goes to whoever is paying. A directive read

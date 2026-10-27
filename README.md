@@ -53,7 +53,7 @@ file, that file. Every row below is checkable in the tree it links.
 |---|---|
 | **It models the process you already run** | Filing, gating, starting, finishing, reviewing, logging a day. There is no spec artifact to adopt, no phase to pass through, and no persona to learn |
 | **Your tracker stays your tracker** | Your statuses, your labels, your ordering, your definition of done — read through a port with a stated fallback for every capability your tracker lacks, rather than replaced by a board of its own ([`§ 3`](plugins/mjolnir/config/schema.md#3-tracker-port)) |
-| **Your timesheet stays your timesheet** | Where a day's hours land is a port too, with a store you name and the same stated fallback per capability it lacks — so the role that measures a day and the role that bills a period read one contract instead of a filename convention ([`§ 26`](plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port)) |
+| **Your timesheet stays your timesheet** | Where a day's hours land is a port too, with a store you name and the same stated fallback per capability it lacks — so what measures a day and what reads a period back out of it share one contract instead of a filename convention, and the hours never reach your repository, your tracker or a commit ([`§ 26`](plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port)) |
 | **Absence is a configuration, not a failure** | No board, no estimate, no item template, no due date, no priority axis, no tracker at all — each is a stated answer the procedure runs on, with the reason recorded where the key would have been |
 | **Nothing of it lives in your repository** | One file you write. No vendored copy, no templates directory, nothing to re-sync when the procedure improves. Where something only your host or your git can read has to be a file, the toolkit writes it rather than asking you to: marked as generated, re-derived from your configuration, and taken back out when you stop asking for it. [What an install may do](plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out) is stated before anything writes one |
 | **Your commands, run and reported** | What counts as done is an ordered list of checks you name, each with who answers it ([`§ 13`](plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)), and which item is next comes from a command you configure ([`§ 12`](plugins/mjolnir/config/schema.md#12-ordering)). Your build, your suites, your ordering argument |
@@ -150,9 +150,9 @@ end state.
 [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the ten-role loop and
 its axes, the tracker port and its capabilities, the work-item facets with their absent
 cases, the status writers, the readiness gate, what counts as done and who answers each of those
-checks, commit behaviour, the day log, the branch model, the session's context, the ordering, the
-memory store and which working directory may refresh it, and what a role holds and what may cross
-the boundary out of it.
+checks, commit behaviour, the day log and the port that says where its entries land, the branch
+model, the session's context, the ordering, the memory store and which working directory may
+refresh it, and what a role holds and what may cross the boundary out of it.
 Everything else written about the procedure, in this repository or on a work item, explains or
 records; none of it is a second authority.
 

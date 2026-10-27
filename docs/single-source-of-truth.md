@@ -798,10 +798,10 @@ procedure is refused with the writer named
 and that against a configuration whose `kind` is `none` every operation is unavailable while the
 report reads as a configuration rather than a fault.
 
-⛔ **And it holds every one of those once per port the surface declares**, rather than once. There
-are two — the tracker's and the day log's destination
-([schema § 26](../plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port)) — and the
-list comes off the surface's own markers, so a third is held the moment it is declared. ⚠️ **Two
+⛔ **And it holds every one of those once per port the surface declares**, rather than once. The
+list comes off the surface's own `# port:` markers
+([schema § 26](../plugins/mjolnir/config/schema.md#which-section-a-ports-operation-list-is-read-from)),
+so a port is held the moment it is declared and no count of them is written here. ⚠️ **Two
 properties of that loop are asserted rather than assumed**, because the way this gate would fail
 is by holding the general machine against one port and reading green: that the surface declares
 more than one port at all, and that the one `load()` answers for with no argument is among them.
@@ -854,9 +854,10 @@ implementation would spell a tracker's name in this repository's configuration a
 name, and a port's own package is the one place in the toolkit where the thing behind it may be
 named. ⛔ **One entry across the ports as well**: the runner asks the surface which ports there are
 and sweeps each one's package, so a new port's implementations are covered the moment they land.
-⚠️ **What it asserts beyond running the suites is that every declared port has one**, because a
-port whose package holds nothing would otherwise leave this runner covering the other one and
-reporting a healthy count.
+⚠️ **What it asserts beyond running the suites is that every declared port has an implementation
+installed** — not that every implementation has a suite, which stays *reported rather than failed*
+as it always was. A port whose package holds nothing would otherwise leave this runner covering
+the rest and reporting a healthy count.
 
 What it holds is per implementation, and the implementation states it: the contract's suite reaches
 none of it. For the board behind `kind: github-projects` that is every list read whole or refused

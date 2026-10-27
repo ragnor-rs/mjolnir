@@ -12,7 +12,11 @@ Two things true of this directory and stated nowhere else:
     A file name, a cell reference, a worklog endpoint: the contract beside this
     package reads an operation list and a fallback off the surface and knows no
     store by name, and the day-log role names the port rather than a path. This
-    package is the exemption that makes those two keepable.
+    package is the exemption that makes those two keepable. ⚠️ **Held by reading
+    and not by a check**, unlike the tracker half: that sweep reddens on a kind
+    word the surface states, and this port's kinds are ordinary English -- `file`
+    is in `__file__` and in every sentence about a file. The limit is stated here
+    rather than left for somebody to find out by trusting it.
   * ⚠️ **Which port a module answers for is which directory it sits in**, and
     there is deliberately no `PORT` name in a module here. A declaration would be
     a second statement of a fact the directory already carries, and the one way it

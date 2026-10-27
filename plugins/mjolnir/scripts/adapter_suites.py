@@ -7,13 +7,21 @@ implementation's own decisions are not reachable from there: a cursor followed t
 the end, an id resolved by name, a guard that refuses before it writes. Those live
 in the implementation and are held by a suite beside them.
 
-⛔ **This runner names no tracker, no store and no port.** A port's own package is
-the one place in the toolkit the thing behind it may be named, and a gate entry
-per implementation would spell one in the configuration and again in a workflow
-file. So the gate runs *this*, which asks the surface which ports there are, asks
-each port what is installed, and runs whatever suite each module exposes -- a new
-implementation, and a new port, are covered the moment they land, with nothing to
-remember.
+⛔ **This runner names no tracker.** A port's own package is the one place in the
+toolkit the thing behind it may be named, and a gate entry per implementation
+would spell one in the configuration and again in a workflow file. So the gate
+runs *this*, which asks the surface which ports there are, asks each port what is
+installed, and runs whatever suite each module exposes -- a new implementation,
+and a new port, are covered the moment they land, with nothing to remember.
+
+⚠️ **Only the tracker half of that is held by a check, and the limit is stated
+rather than left to be discovered.** The contract's own sweep reddens on any
+`tracker.kind` the surface states, in either spelling; the same sweep cannot be
+run for the destination port, whose kinds are ordinary English words -- `file`
+appears in `__file__`, in *a file name*, in half the prose here. ⛔ So what holds
+a store's vocabulary out of the shared procedure is this sentence and the review
+that reads it, not a gate, and a claim to the contrary would be the kind of
+unheld assertion the surface spends its refusals on.
 
 ⚠️ **An implementation with no suite is reported, not failed.** The first one
 built was proved against the live tracker this repository runs on, and a runner
