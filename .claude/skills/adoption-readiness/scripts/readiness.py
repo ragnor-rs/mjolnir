@@ -585,7 +585,18 @@ def main(argv: list[str]) -> int:
     # reading the registry before anything built a `Port` reported `none` while
     # an implementation was installed -- and three lines further down this same
     # report named it. One fact, two answers, the wrong one in the summary.
-    print(line("adapters registered", ", ".join(sorted(port.load_adapters())) or "none"))
+    #
+    # ⛔ Once per port the surface declares, and never the one port this script
+    # happens to care most about: a line naming a single port's implementations
+    # reads as the whole of what is built, and a port whose package is empty is
+    # exactly what a readiness answer has to carry.
+    # ⚠️ Labelled by the **package** that was swept rather than by the port's
+    # name: the label column is narrower than a dotted kind path, which ran the
+    # value straight into the label with no space between them — and the package
+    # is what the sweep actually read.
+    for _name, spec in sorted(port.surface_ports().items()):
+        installed = ", ".join(sorted(port.load_adapters(spec))) or "none"
+        print(line(f"{spec.package} installed", installed))
 
     # ⛔ A list nobody passed is reported rather than resolved to nothing. An empty run that
     # printed a summary and exited 0 would read as "every target is ready". Answered before the

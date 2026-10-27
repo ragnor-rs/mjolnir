@@ -697,7 +697,7 @@ def self_test() -> int:
     check(
         "the port resolves an implementation of this kind, declaring these operations",
         discovered is not None
-        and discovered is not port.TRACKERLESS
+        and discovered is not port.UNCONFIGURED
         and sorted(discovered.operations) == sorted(ADAPTER.operations),
         unresolved or f"resolved {discovered!r}",
     )

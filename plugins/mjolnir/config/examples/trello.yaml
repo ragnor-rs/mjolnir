@@ -224,7 +224,6 @@ language:
     day_log: { language: en, register: business, audience: "the person the hours are reported to" }
 
 day_log:
-  out_dir: "$TMPDIR/<project>"
   day_start: "05:00"
   round_to: 0.1                 # this project states one decimal, so the grid is not asserted
   round_ties: down
@@ -247,6 +246,12 @@ day_log:
     calendars:
       - "<the calendar whose titles are legible>"
       - "<a free-busy calendar: times only, no titles>"
+  # § 25's port. ⛔ A card on this board is not where an entry goes, whatever `policy` above
+  # permits: hours never reach a tracker (§ 9), and this project's board is a third party's
+  # service besides. The store is a file outside every checkout.
+  destination:
+    kind: file
+    out_dir: "$TMPDIR/<project>"
 
 branch_model:
   # The project's own, read by the root whose entry above states nothing of its own (§ 1) — here

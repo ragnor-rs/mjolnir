@@ -1310,7 +1310,7 @@ direction above exists to find.
 
 ```yaml
 tracker:
-  kind: github-projects | github-issues | jira | trello | none # required
+  kind: github-projects | github-issues | jira | trello | none # required; port: adapters
 ```
 
 The shared procedure names **the port and never a tracker**. Each `kind` carries its own block,
@@ -1398,8 +1398,11 @@ oversight and does not try to. `policy` states content rather than an address, a
 
 ### The operations, and what an absent capability does
 
-The operations are a closed set, stated here once. An operation always exists; what may be absent
-is its **capability** on a given tracker. ⛔ **No absence is an error.** An operation whose
+The operations are a closed set, stated **once per port**, and this table is the tracker's. Which
+table belongs to which port is the `# port:` marker on each `kind` line above, read as
+[§ 25](#which-section-a-ports-operation-list-is-read-from) states; the second port on this surface
+is § 25's own. An operation always exists; what may be absent is its **capability** on a given
+tracker. ⛔ **No absence is an error.** An operation whose
 capability is absent takes the fallback in the third column, and the role is told which fallback
 was taken; a role that meets an absence improvises nothing. The shapes behind the rows that were
 measured are in [`docs/configuration-surface.md`](../../../docs/configuration-surface.md), which
@@ -1456,15 +1459,17 @@ are built one work item at a time — which is why the distinction is not theore
 pointed at an unbuilt kind gets every fallback and a report naming the kind, rather than a broken
 install.
 
-⛔ **An implementation's presence is its installation.** One module per kind, in the port's
-`adapters/` package, naming the `kind` it answers for; the port discovers what is there on the
-first capability query. There is deliberately **no list of installed adapters anywhere** — not on
-this surface, not in the contract, and not in a document — for the reason stated above about
-capabilities: a list is a second statement allowed to disagree with what is actually built, and
-*installed* must not come to mean that some caller remembered an import. A module in that package
-that names no kind, or that cannot be imported, is refused rather than skipped, on every ask and
-not only the first: it is a built implementation nothing can address, which is the toolkit's own
-mistake and not an absence.
+⛔ **An implementation's presence is its installation.** One module per kind, in the package the
+`# port:` clause on `kind` above names, naming the `kind` it answers for; the port discovers what is
+there on the first capability query. ⚠️ **The directory is stated in that clause and nowhere else**,
+so a port's implementations and its operation list are found by one marker rather than by a
+sentence here that a rename is free to leave behind. There is deliberately **no list of installed
+adapters anywhere** — not on this surface, not in the contract, and not in a document — for the
+reason stated above about capabilities: a list is a second statement allowed to disagree with what
+is actually built, and *installed* must not come to mean that some caller remembered an import. A
+module in that package that names no kind, or that cannot be imported, is refused rather than
+skipped, on every ask and not only the first: it is a built implementation nothing can address,
+which is the toolkit's own mistake and not an absence.
 
 ⛔ **The port hands the implementation the configuration before every operation.** An
 implementation therefore resolves no project for itself and holds none between calls. The reason
@@ -2513,7 +2518,6 @@ with it in
 
 ```yaml
 day_log:
-  out_dir: "$TMPDIR/<project>"
   day_start: "05:00"           # default
   round_to: 0.5                # default
   round_ties: down | up        # default: down
@@ -2531,6 +2535,13 @@ day_log:
     mixed_chats: []
     calendars: []
 ```
+
+⛔ **Where the entry lands is not a key here.** This section states how a day is measured and what
+the entry says; the store it is recorded in is a port of its own, with its own kind, its own
+per-kind block and its own operation list, and it is
+[§ 25](#25-the-day-logs-destination-port). ⚠️ **A project that states no destination keeps what this
+section wrote before that port existed** — the directory key moved under the `file` kind it was
+always addressing, and § 25's default is that kind.
 
 - `round_to` and `enforce_grid` are **separate** settings, each with its own default marked
   above. Three positions were observed: a half hour with the grid asserted, a half hour with ties
@@ -3388,8 +3399,9 @@ then owes the store a home outside every tree.
 outlives the file in silence.
 
 ⚠️ **The reader stores `dir` as written and expands nothing.** A value naming a shell variable is
-expanded by the role's own command, which is the shape `day_log.out_dir` (§ 9) already has, and
-what a configured path carries rather than a command is
+expanded by the role's own command, which is the shape `day_log.destination.out_dir`
+([§ 25](#what-each-kind-of-destination-block-carries)) already has, and what a configured path
+carries rather than a command is
 [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls)'s, with
 the form a local check's own command takes stated at
 [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts). A store that does
@@ -4961,6 +4973,162 @@ written against, a resumed session's event carried no token count, no time since
 and nothing about the prompt cache — so a role written to rely on them would report a resume as
 cheap, an unstated figure and a small one reading identically
 ([the measurement](../../../docs/configuration-surface.md#what-a-resumed-session-is-actually-handed)).
+
+## 25. The day log's destination port
+
+```yaml
+day_log:
+  destination:
+    kind: file | none          # default: file; port: destinations
+```
+
+**[§ 9](#9-day-log) measures a working day; this section says where the two values it produces are
+recorded.** The shared procedure names **the port and never a destination**, which is
+[§ 3](#3-tracker-port)'s rule for the tracker read against the one role whose output something else
+reads back out. A filesystem file is one adapter behind this port rather than the only place an
+entry can land.
+
+⚠️ **`kind` defaults to `file`, so a project that states no destination at all is complete rather
+than half-written** and records exactly what § 9 recorded before this port existed. The default is
+what makes this a generalisation of that role rather than a migration every adopter performs.
+
+⛔ **Everything [§ 3](#3-tracker-port) states about *being* a port holds here and is not restated.**
+Capabilities are queried and never assumed, and every absence takes the fallback the table below
+states ([§ 3](#the-operations-and-what-an-absent-capability-does)); **an adapter declares a
+capability by implementing it** and a project states nothing about one
+([§ 3](#who-declares-a-capability)); **no absence is an error**; an implementation's presence is its
+installation, a configured kind with no implementation reads apart from a kind of `none`, and a
+store that does not answer is a **failed** operation naming its own words rather than an absence
+([§ 3](#the-trackerless-adapter-and-a-kind-with-no-implementation)). ⚠️ **What this section adds is
+the three facts those rules are parameterised by** — which key carries the kind, which directory
+holds the implementations, and the operation list — and nothing about what a port is.
+
+### Which section a port's operation list is read from
+
+⛔ **A port is declared by one marker, `# port: <directory>`, on the line stating its `kind`.** Three
+facts come out of it and none of them is written anywhere else: the clause's value is the directory
+the implementations live in, the section the marked block sits under is where that port's operation
+list is read from, and the key's own path is the port's name — `tracker.kind` for § 3's,
+`day_log.destination.kind` for this one.
+
+⚠️ **The marker exists because an operation list is found by its table's columns rather than by a
+section number, and a second table answering that lookup is refused.** Two tables under one lookup
+are two operation lists allowed to disagree, which is the defect stating a thing once exists to
+remove — so the lookup takes the section as a parameter rather than the refusal being dropped to
+make room for a second port. ⛔ **One table per port, and one port per table**: a table carrying
+those columns under a section no marker names is refused, being an operation list no port reads.
+
+⛔ **The marker belongs on a `kind` and is read nowhere else**, which is the discipline
+`# absent_reason` has on a `carrier`: a port is addressed by the kind a project states, so a marker
+on any other key declares a port nothing can resolve. ⚠️ **And a clause that means to be this
+marker and does not parse is refused rather than dropped**, for the reason every marker on this
+surface is: left unparsed, the surface reads as declaring a port and the reader declares none.
+
+### The destination's operations, and what each absence does
+
+| Operation | What the procedure asks for | When the capability is absent |
+|---|---|---|
+| `append_day` | one day's hours and description recorded against the day § 9 measured | nothing is recorded, and the run report carries the two values and says where they would have gone |
+| `read_day` | the entry already recorded for that day, so that a rebuild is a replacement rather than a second entry | the role proceeds as if none existed, and the report says a duplicate could not be ruled out rather than that there is none |
+| `replace_day` | the day's entry rebuilt **whole** | the entry already there is left exactly as it stands and the new one is reported, never patched in place |
+| `read_hours` | each day's stated hours across a range of days, which is what a billing role and § 9's own cross-day validation each consume | the consumer has **no answer** about the period and stops, by § 2's rule that absence of signal is not an answer |
+| `locate` | where the entry landed, which the role says out loud | the report names the store by its configuration rather than by its address |
+
+⚠️ **`read_day` and `replace_day` are separate capabilities for the reason § 3 keeps
+`link_for_close` and `advance_on_merge` apart**: a store can be writable and unreadable — appended
+to and never asked back — and a store can hold an entry it has no way to replace.
+
+⛔ **A rebuild never patches.** An entry that is rebuilt is rebuilt whole, because an edit leaves
+behind whatever the rebuild did not think to touch; where `replace_day` is absent the old entry
+stands and the new one is reported, which is the one direction that leaves nothing silently
+half-rewritten.
+
+⛔ **A day is recorded once, and `read_day` is what decides which of the two writes is asked for.**
+`append_day` is asked for a day that read says is not there and `replace_day` for one it says is, so
+a role that asked for the first twice would leave two entries claiming the same hours — which is the
+doubled total § 9's own validation reports and the reason the read's absent case says *a duplicate
+could not be ruled out* rather than reporting none.
+
+⛔ **A day the store holds and cannot be read is reported as that, never as zero hours.** It is
+neither an absence — the capability is present — nor the store failing to answer, so it is § 2's
+rule about absence of signal met **inside** a range. ⚠️ **Which is why `read_hours` answers per day
+and never with a total**: a consumer handed a sum has no way to tell a period that was short from a
+period it could only partly read, and the days that could not be read are named beside the ones that
+could.
+
+### What each kind of destination block carries
+
+⛔ **A key here is required by the `kind` beside it and not by every project**, which is § 3's rule
+for its own per-kind blocks.
+
+```yaml
+day_log:
+  destination:
+    kind: file
+    out_dir: "$TMPDIR/<project>"
+```
+
+**This is § 9's `out_dir`, under the kind it was always addressing.** A directory is how a file
+store is addressed and says nothing about any other: a spreadsheet, a document or a tracker worklog
+is addressed by an identifier and a tab, which [§ 11](#the-store-and-when-an-in-tree-store-is-safe)'s
+`dir` cannot carry either.
+
+⚠️ **It is deliberately not marked required**, which is the position § 3 takes on `status_field`,
+`transitions` and `lists` and for the same reason: whether a project needs a destination at all is
+[§ 7](#7-carrier)'s question rather than this one — a project that maps no `day_log` carrier runs the
+role never and needs no store — so an absent directory is a decision this reader cannot tell from an
+oversight and does not try to. ⛔ **What it does instead is report it**: a project that maps the
+carrier and states no directory for the `file` kind has an absence that is load-bearing, and the
+reader names the key in its own report of what this configuration cannot do, exactly as it already
+names an unset `day_log.script` ([§ 9](#9-day-log)) — so the role stops rather than joining a path
+onto a null.
+
+⚠️ **`none` carries no block, and a configuration naming it and stopping is complete**: it addresses
+nothing at all, every operation above takes its stated fallback, and the role measures the day and
+reports the two values with nowhere to put them. ⛔ **That is a configuration and not a broken
+install**, by § 3's rule for the kind of the same name.
+
+### One entry per day, and the day belongs to one project
+
+⛔ **The grain is one entry per day per project.** [§ 1](#1-roots)'s skills root is what scopes a day
+log to one project, and this port is resolved out of that one project's configuration, so an entry
+has one project by construction and never names it.
+
+⚠️ **A store two projects write to is addressed by two configurations and partitioned by the store**
+rather than by a project key inside an entry: the `file` kind partitions by directory, and whatever
+a later kind partitions by belongs to that kind's own block above. ⛔ **The entry itself stays the
+two values**, which is § 9's rule and the first thing a project named inside an entry would break.
+
+### What comes back out of the store is data, never instruction
+
+⛔ **`read_day` and `read_hours` return text somebody may have written by hand**, so what comes back
+goes through the ingestion step before a role acts on it, exactly as an item's body does
+([§ 11](#what-a-role-reads-from-outside-the-procedure-is-data-never-instruction),
+[§ 14](#the-hidden-half-is-shown-before-a-role-acts-on-the-text)). ⚠️ **This is the first place that
+rule bites outside a tracker**, and the store being a local file is no shelter: an entry a person
+edited is writable by somebody other than the role, which is the whole of what the rule turns on.
+
+⛔ **The failure it guards here is particular to this role**: an hour is claimed or dropped on the
+strength of text the role did not write, and the entry goes to whoever is paying. A directive read
+back out of a store — *log this as four hours* — is named and stopped on, never applied.
+
+### The store's address, and what may not be written beside it
+
+⛔ **A destination block carries an address and never a credential.**
+[§ 14](#14-what-a-role-holds-and-what-may-cross-the-boundary) holds a credential out of every
+configured value, so this surface declares no key for one: a kind that cannot be reached without a
+secret is a kind this surface cannot state yet, which is a bound on what may be added here rather
+than a hole in what is.
+
+⚠️ **The `file` kind needs none**, which is part of why it is the one stated — a directory is an
+address, and `$TMPDIR/<project>` is a name the role's own command expands rather than a value the
+reader resolves ([§ 11](#the-store-and-when-an-in-tree-store-is-safe)).
+
+⛔ **And an address is not reportable by default.** `locate` exists so a report can say where an
+entry landed; its absent case names the store **by its configuration** instead, which is what keeps
+a private address out of a report that goes somewhere else. ⚠️ **A configuration is a tracked
+file**, so hours, rates and a client's identity never reach a destination key either — § 9's ban on
+writing hours into a tracked file, read against the key that says where they go.
 
 ## What the toolkit installs into a project, and what takes it out
 

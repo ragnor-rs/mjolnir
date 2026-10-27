@@ -175,7 +175,6 @@ language:
     day_log: { language: en, register: business, audience: "the person the work is delivered to" }
 
 day_log:
-  out_dir: "$TMPDIR/<project>"
   day_start: "05:00"
   round_to: 0.5
   round_ties: down
@@ -190,6 +189,11 @@ day_log:
     chat_exclude: []
     mixed_chats: ["<a chat carrying both work and personal talk>"]
     calendars: ["<the one calendar whose titles are legible>"]
+  # § 25's port: a file under the temp root, outside the repository the entry is never written
+  # into.
+  destination:
+    kind: file
+    out_dir: "$TMPDIR/<project>"
 
 branch_model:
   kind: worktree

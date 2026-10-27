@@ -795,8 +795,23 @@ rather than written in the script; that an unavailable operation comes back as t
 there and never as an error; that an advance to a status whose configured writer is not the
 procedure is refused with the writer named
 ([schema § 4.2](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer));
-and that against a configuration with no tracker every operation is unavailable while the report
-reads as a configuration rather than a fault.
+and that against a configuration whose `kind` is `none` every operation is unavailable while the
+report reads as a configuration rather than a fault.
+
+⛔ **And it holds every one of those once per port the surface declares**, rather than once. There
+are two — the tracker's and the day log's destination
+([schema § 25](../plugins/mjolnir/config/schema.md#25-the-day-logs-destination-port)) — and the
+list comes off the surface's own markers, so a third is held the moment it is declared. ⚠️ **Two
+properties of that loop are asserted rather than assumed**, because the way this gate would fail
+is by holding the general machine against one port and reading green: that the surface declares
+more than one port at all, and that the one `load()` answers for with no argument is among them.
+⚠️ **Every plant is spliced into the port's own section** rather than into the document, which is a
+measured correction: a plant on the operation column's name hit whichever section stated it first,
+so for the second port it unmade the other port's table and asserted nothing.
+
+One check is the half the per-port lookup cannot see: an operation table sitting under a section no
+`# port:` marker names is refused on the surface, that being an operation list no port reads and no
+adapter is held to.
 
 The kinds are the same two as above. Reading the operation list and the fallback text out of the
 surface is **computed** — a reworded fallback travels, and a table that states the list twice, or
@@ -836,8 +851,12 @@ trackers.
 credential and no network. It asks the port what is installed and runs whatever suite each
 implementation exposes. ⛔ **One entry rather than one per tracker**: a gate entry per
 implementation would spell a tracker's name in this repository's configuration and again in a file
-name, and the port's `adapters/` package is the one place in the toolkit where a tracker's name
-belongs.
+name, and a port's own package is the one place in the toolkit where the thing behind it may be
+named. ⛔ **One entry across the ports as well**: the runner asks the surface which ports there are
+and sweeps each one's package, so a new port's implementations are covered the moment they land.
+⚠️ **What it asserts beyond running the suites is that every declared port has one**, because a
+port whose package holds nothing would otherwise leave this runner covering the other one and
+reporting a healthy count.
 
 What it holds is per implementation, and the implementation states it: the contract's suite reaches
 none of it. For the board behind `kind: github-projects` that is every list read whole or refused
@@ -1576,11 +1595,11 @@ that the grammar stays narrow, and each of them reddens the moment the vocabular
 ### What this check deliberately does not hold
 
 - **The ordering document, which is where the rule was measured.** It lives outside every tree —
-  § 12's carrier resolves it, as § 9's `out_dir` resolves the day log — so no diff reaches either,
-  and a check on the gate cannot read a file the gate never sees. What holds the rule there is the
-  close-out role, whose own text carries the forbidden forms for that reason. ⚠️ The day log is a
-  different case rather than a second gap: its content **is** an account of work, which the rule's
-  own carve-out for an artifact the procedure exists to produce covers.
+  § 12's carrier resolves it, as § 25's destination port resolves the day log — so no diff reaches
+  either, and a check on the gate cannot read a file the gate never sees. What holds the rule
+  there is the close-out role, whose own text carries the forbidden forms for that reason.
+  ⚠️ The day log is a different case rather than a second gap: its content **is** an account of
+  work, which the rule's own carve-out for an artifact the procedure exists to produce covers.
 - **A work item body, a pull request body or a review comment.** The same half of the same rule the
   width check cannot reach, and for the same reason: those surfaces are not files. The nothing-
   deferred gate does read a body, so an arm there is possible — what stopped it here is that this

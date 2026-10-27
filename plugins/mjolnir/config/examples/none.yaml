@@ -116,7 +116,6 @@ language:
     day_log: { language: en, register: technical, audience: "whoever keeps this project's own record" }
 
 day_log:
-  out_dir: "$TMPDIR/<project>"
   day_start: "05:00"
   round_to: 0.5
   round_ties: down
@@ -131,6 +130,11 @@ day_log:
     chat_exclude: []
     mixed_chats: []
     calendars: []
+  # § 25's port, with the kind left to its default — which is the arm the other examples do not
+  # show: a project that states where the entry goes and not what kind of store it is gets the
+  # file kind, and the directory below is that kind's own block.
+  destination:
+    out_dir: "$TMPDIR/<project>"
 
 branch_model:
   # The in-place case, and the one that makes the dirty-tree derivation (schema § 6) observable:

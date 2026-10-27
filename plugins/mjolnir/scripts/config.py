@@ -236,6 +236,51 @@ REQUIRED_WHEN_NEAR_MISS = re.compile(r"^(?:required[_ ]when\s*:|required_when\b)
 # of which absences are deliberate -- and a sixth facet invisible to both rules.
 ABSENT_REASON_CLAUSE = re.compile(r"^absent_reason$")
 
+# `# port: <directory>` beside a `kind` declares that key as a port's kind, and
+# the clause's value as the directory the implementations behind it live in. The
+# section the marked block sits under is the third fact it carries, and it is not
+# in the clause at all: it is where that port's operation list is read from, so a
+# contract can hold two ports to two tables without either being read as the
+# other's. § 25 states the rule; this reader performs it.
+#
+# ⛔ Only the directory is in the clause, and the port's **name** is the key's own
+# path. A clause carrying a name as well would be a second spelling of a path the
+# line already states, free to disagree with it -- which is the shape every other
+# marker here was written to avoid.
+PORT_CLAUSE = re.compile(r"^port\s*:\s*(?P<package>[a-z][a-z0-9_]*)$")
+
+# ⛔ And a clause that means to be it and does not parse is refused rather than
+# dropped, which is `# required_when`'s rule one marker over and for the identical
+# reason: left unparsed, the surface reads as declaring a port and this reader
+# declares none, so the contract finds one operation list where two are stated and
+# refuses every configuration -- or finds the wrong one and refuses nothing.
+#
+# ⚠️ It demands the colon, so the English word is still writable in prose beside a
+# block. What it does not demand is a value this reader can check: whether the
+# directory is there at all is the contract's question rather than this one's, an
+# absent directory being a port with nothing installed rather than a surface that
+# does not say what it meant.
+PORT_NEAR_MISS = re.compile(r"^port\s*:")
+
+# The key a port's kind is written on. ⛔ Grammar rather than a list of ports: the
+# marker is refused anywhere else, the way `# absent_reason` is refused off a
+# `carrier`, because a port is addressed by the kind a project states and a marker
+# on any other key declares a port nothing can resolve.
+PORT_KEY = "kind"
+
+# The two kinds of § 25's destination port this reader has to tell apart, spelled
+# out because which member of an alternation means what is not something the
+# alternation says -- the discipline the contract beside this module already
+# applies to its own two writer words. Both are held to the surface's own set by
+# the self-test, so renaming one there reddens the build instead of silently
+# turning a report into the wrong words.
+#
+# ⛔ They are read to say what a configuration cannot do and for nothing else. What
+# each absence leaves an operation doing is the port's to report, a capability
+# being the adapter's fact (§ 3), so neither of these reaches a fallback.
+NO_DESTINATION = "none"
+FILE_DESTINATION = "file"
+
 # A fenced block of the surface, the heading it sits under, and a `key:` line
 # inside one. List items are not matched on purpose -- a `- { ... }` line is an
 # entry, not a key.
@@ -334,6 +379,7 @@ def surface_facts(surface_text: str) -> dict:
     required_when: dict[tuple[str, str, str], str] = {}
     absent_reason: dict[str, str] = {}
     procedure: dict[str, str] = {}
+    ports: dict[str, tuple[str, str]] = {}
     declared: set[str] = set()
 
     for heading, block in _fences(surface_text):
@@ -402,6 +448,35 @@ def surface_facts(surface_text: str) -> dict:
                         "the key it names never having had a line; read as a clause here "
                         "it states a rule nothing performs.",
                     )
+                found = PORT_CLAUSE.match(clause)
+                if found:
+                    # ⛔ Refused off a `kind` for the reason `# absent_reason` is
+                    # refused off a `carrier`: the port is addressed by the kind
+                    # a project states, so a marker on any other key declares a
+                    # port no configuration can resolve and no contract can find.
+                    if path.rpartition(".")[2] != PORT_KEY:
+                        raise ConfigError(
+                            path,
+                            f"carries `# {clause}`, which declares a port and is "
+                            f"read only on a `{PORT_KEY}`. A port is addressed by "
+                            "the kind a project states, so a marker anywhere else "
+                            "names a port nothing resolves. Move it to the block's "
+                            f"`{PORT_KEY}` line or delete it.",
+                        )
+                    # Keyed by the kind's own path, which **is** the port's name.
+                    # First statement wins, as every marker above: a key shown in
+                    # a second fence showing one facet of the block must not be
+                    # able to move the port's section out from under its table.
+                    ports.setdefault(path, (heading, found.group("package")))
+                elif PORT_NEAR_MISS.match(clause):
+                    raise ConfigError(
+                        path,
+                        f"carries `# {clause}`, which means to be the port marker "
+                        "and does not parse as one. The form is "
+                        "`# port: <directory>`, the directory bare and lower-case. "
+                        "Left unparsed this key declares no port, and a surface "
+                        "stating two operation lists has one read for both.",
+                    )
                 if ABSENT_REASON_CLAUSE.match(clause):
                     # ⛔ Refused rather than ignored where it is not on a
                     # `carrier`: the rule it marks reads `carrier: none`, so a
@@ -461,6 +536,12 @@ def surface_facts(surface_text: str) -> dict:
             ("required key", required),
             ("conditionally required key", required_when),
             ("absent-capable facet", absent_reason),
+            # ⛔ A surface declaring no port leaves the contract beside this
+            # reader with no operation list to find and no section to find one
+            # under, so every capability query would refuse. Reported here as a
+            # surface that changed shape rather than at the first query, which is
+            # where it would otherwise surface -- inside a role, as a traceback.
+            ("port", ports),
         )
         if not found
     ]
@@ -540,6 +621,12 @@ def surface_facts(surface_text: str) -> dict:
         "required_when": required_when,
         "absent_reason": absent_reason,
         "procedure": procedure,
+        # `the kind's dotted path -> (the section its operation list is under,
+        # the directory its implementations live in)`. Read by the contract beside
+        # this module, which is the only thing that needs it: a port is a
+        # procedure's shape rather than a value a configuration states, so nothing
+        # in `validate` below reads this.
+        "ports": ports,
         "per_root": per_root,
         # Every path the blocks declare, for the one rule that is about a key's
         # *children* rather than its value: § 6 states which roles commit by
@@ -1546,6 +1633,29 @@ class Config:
                 "here. It names the project's evidence script, which is "
                 "transitional until the script is extracted into the plugin."
             )
+        # § 25's own two absences, read the way § 3's are: the kind that addresses
+        # nothing, and the key the configured kind cannot be addressed without.
+        # ⛔ What each absence leaves the five operations doing is the port's to
+        # report and never this reader's -- a capability is the adapter's fact --
+        # so these name the configuration and stop there.
+        destination = self.get("day_log.destination.kind")
+        if destination == NO_DESTINATION:
+            out.append(
+                "No destination is configured for the day log "
+                f"(`day_log.destination.kind: {NO_DESTINATION}`), so the role "
+                "measures the day and has nowhere to record it. What that leaves "
+                "each of § 25's operations doing is the port's to report."
+            )
+        elif destination == FILE_DESTINATION and self.get(
+            "day_log.destination.out_dir"
+        ) is None:
+            out.append(
+                "`day_log.destination.out_dir` is not set and "
+                f"`day_log.destination.kind` is `{FILE_DESTINATION}`, so the day "
+                "log has no directory to write an entry into. § 25 states the key "
+                "is not required -- a project that maps no `day_log` carrier needs "
+                "no store -- so it is reported here rather than refused."
+            )
 
         for role, status in (
             (s.get("role"), s) for s in (self.get("statuses") or [])
@@ -1597,8 +1707,8 @@ class Config:
 # default is read off `# default` -- see `surface_facts`. What the table cost
 # while it existed: its entries paraphrased the sections they cited, nothing
 # could hold the paraphrase to the original, the judgement calls it encoded
-# (`carriers` required, `day_log.out_dir` not) were stated in no section, and
-# the self-test generated its missing-key assertions from the table, so
+# (`carriers` required, the day log's own directory not) were stated in no
+# section, and the self-test generated its missing-key assertions from the table, so
 # deleting an entry deleted the enforcement and its only assertion together --
 # silently green. Adding a required key is now a marker on the surface and
 # nothing here.
@@ -4061,6 +4171,18 @@ MARKED_REQUIRED_WHEN = [
 # from the surface and this is what reddens.
 MARKED_PROCEDURE = ["audit_trail", "fail_open", "install", "readings", "waive_review"]
 
+# The ports the surface declares, as `(the kind's path, the directory its
+# implementations live in)` -- stated here for the reason the sets above are, and
+# carrying the same whole weight `MARKED_PROCEDURE` does: this reader keeps no
+# list of ports of its own, so dropping the clause from the surface is what this
+# reddens on. ⛔ The **section** each is read under is deliberately not here: it is
+# a heading, so stating it would make renumbering a section a change to this file
+# -- which is the one thing the marker was chosen over a section number to avoid.
+MARKED_PORTS = [
+    ("day_log.destination.kind", "destinations"),
+    ("tracker.kind", "adapters"),
+]
+
 # The list keys whose membership a rule in this reader reads off the surface, and
 # the members each shows. Stated here for the reason the sets above are, and
 # ⛔ scoped to the paths a rule reads: the surface shows other lists to
@@ -4220,6 +4342,14 @@ def self_test() -> int:
         ),
         ("absent-capable", set(surface["absent_reason"]), set(MARKED_ABSENT_CAPABLE)),
         ("procedure-only", set(surface["procedure"]), set(MARKED_PROCEDURE)),
+        # ⛔ The kind and its directory together, which is what the clause states:
+        # comparing the kinds alone would leave the directory -- the half a
+        # contract resolves an implementation through -- asserted by nothing.
+        (
+            "port",
+            {(path, package) for path, (_section, package) in surface["ports"].items()},
+            set(MARKED_PORTS),
+        ),
     ):
         check(
             f"the surface marks exactly the {label} keys this test states",
@@ -5071,6 +5201,99 @@ def self_test() -> int:
             f"derived {reported!r}",
         )
 
+    # § 25's marker, planted the way the four classes above are. ⛔ Each of these
+    # is a shape that leaves the surface reading as declaring a port while this
+    # reader declares none -- and a surface stating two operation lists with one
+    # port declared has one table read for both, which is the refusal § 25 says
+    # the parameter exists to keep.
+    with open(SURFACE, encoding="utf-8") as handle:
+        surface_text = handle.read()
+
+    # The whole class stripped. ⛔ The clause is removed by the reader's own
+    # grammar rather than by editing a copy, so a reader that stopped looking
+    # would pass this.
+    stripped = _surface_without(PORT_CLAUSE)
+    check(
+        "stripping the port marker really changes the surface",
+        stripped != surface_text,
+        "the strip was a no-op, so the plant below asserts nothing",
+    )
+    # ⚠️ The refusal is asserted by its key **and** by naming this class. Every
+    # marker class refuses on the same key -- the surface itself -- so the key
+    # alone would stay green on a surface whose *defaults* had gone missing
+    # instead, which is a different plant with a different fix.
+    try:
+        surface_facts(stripped)
+        at, said = None, ""
+    except ConfigError as error:
+        at, said = error.key, str(error)
+    check(
+        "a surface declaring no port is refused, naming the surface and the class",
+        at == os.path.relpath(SURFACE, PLUGIN_ROOT) and "no port" in said,
+        f"reported {at!r}: {said}",
+    )
+
+    # The marker where it is not read: a key that is not a `kind`. ⛔ Refused with
+    # the key named rather than dropped, the discipline `# absent_reason` has off a
+    # `carrier` -- a port is addressed by the kind a project states, so a marker
+    # anywhere else declares a port nothing resolves.
+    off_a_kind = (
+        '  repo: "OWNER/NAME"       # stated, never inherited from the working '
+        "directory; required"
+    )
+    elsewhere = surface_text.replace(
+        off_a_kind, f"{off_a_kind}; port: {MARKED_PORTS[0][1]}", 1
+    )
+    check(
+        "that plant really changed the surface",
+        elsewhere != surface_text,
+        "the line the plant keys on was reworded, so this asserts nothing",
+    )
+    try:
+        surface_facts(elsewhere)
+        at = None
+    except ConfigError as error:
+        at = error.key
+    check(
+        "the port marker off a `kind` is refused, naming the key",
+        at == "host.repo",
+        f"reported {at!r}",
+    )
+
+    # ⛔ Four spellings and not one, for the reason the procedure marker above is
+    # planted in five: a guard asserted by a single near miss leaves most of its
+    # grammar held by nothing. ⚠️ One of them must **parse**, which is the
+    # direction a guard widened to everything fails in.
+    port_marker = f"port: {MARKED_PORTS[0][1]}"
+    for label, planted, expected in (
+        ("the colon dropped", f"port {MARKED_PORTS[0][1]}", "dropped"),
+        ("a capitalised keyword", f"Port: {MARKED_PORTS[0][1]}", "dropped"),
+        ("a quoted directory", f'port: "{MARKED_PORTS[0][1]}"', "refused"),
+        ("two directories in one clause",
+         f"port: {MARKED_PORTS[0][1]} and more", "refused"),
+        ("a space before the colon", f"port : {MARKED_PORTS[0][1]}", "parsed"),
+    ):
+        try:
+            derived = surface_facts(surface_text.replace(port_marker, planted, 1))
+            got = "parsed" if MARKED_PORTS[0][0] in derived["ports"] else "dropped"
+        except ConfigError as error:
+            got = "refused" if "port marker" in str(error) else f"refused: {error}"
+        check(f"a port marker with {label} is {expected}", got == expected, f"was {got}")
+
+    # ⚠️ The two spellings above that come back `dropped` rather than `refused`
+    # are the limit this guard has, stated rather than discovered: the near miss
+    # demands the colon, so a clause that lost it is prose, and the keyword is
+    # matched case-sensitively like every other clause here. What catches both is
+    # the inventory comparison above -- the port leaves the derived set and the
+    # sets stop matching -- which is why that comparison is not derived.
+    for word in (NO_DESTINATION, FILE_DESTINATION):
+        stated = surface["enums"].get(MARKED_PORTS[0][0]) or []
+        check(
+            f"the surface still states `{word}` among this port's own kinds",
+            word in stated,
+            f"states {stated!r}",
+        )
+
     # A root with no configuration stops, and names the root it looked in --
     # which is the one case § 1 can make a stop rather than a statement.
     stopped, named = _refuses_a_root_with_no_config()
@@ -5494,6 +5717,16 @@ def _load_bearing_absences(config: Config) -> list[str]:
     absent = []
     if carriers.get("day_log") and config.get("day_log.script") is None:
         absent.append("day_log.script")
+    # § 25's, and conditioned on the **kind** as well as the carrier: the key
+    # addresses a file store and nothing else, so a project on another kind is
+    # not missing it. ⛔ Not a second rule about requiredness -- § 25 states the
+    # key is not required, and this is the report that absence reaches a role as.
+    if (
+        carriers.get("day_log")
+        and config.get("day_log.destination.kind") == FILE_DESTINATION
+        and config.get("day_log.destination.out_dir") is None
+    ):
+        absent.append("day_log.destination.out_dir")
     return absent
 
 
