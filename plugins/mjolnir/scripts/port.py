@@ -128,6 +128,19 @@ TRACKER = "tracker.kind"
 # out separately would be a second spelling of the path its own marker sits on.
 KIND_SUFFIX = ".kind"
 
+# The three answers `to_dict` gives about an adapter, and the only three. ⛔ Named
+# here rather than written at the one place they are produced, because they are a
+# **wire format**: a consumer outside this file matches on the word, so renaming
+# one is a change to somebody else's lookup table. ⚠️ Measured on this change --
+# `trackerless` became `unconfigured` and the readiness script's own three-way
+# lookup, eleven lines from an edit in the same commit, raised `KeyError` for
+# every configuration with no tracker. The self-test below holds `to_dict` to
+# producing each of these, which is the assertion whose absence let that land.
+STATE_REGISTERED = "registered"
+STATE_UNCONFIGURED = "unconfigured"
+STATE_ABSENT = "absent"
+ADAPTER_STATES = (STATE_REGISTERED, STATE_UNCONFIGURED, STATE_ABSENT)
+
 
 class HostUnavailable(Exception):
     """The tracker did not answer.
@@ -914,11 +927,11 @@ class Port:
         # this kind where the answer was the one that implements nothing, which is
         # the distinction § 3 asks the port to keep.
         adapter = (
-            "unconfigured"
+            STATE_UNCONFIGURED
             if self.adapter is UNCONFIGURED
-            else "absent"
+            else STATE_ABSENT
             if self.adapter is None
-            else "registered"
+            else STATE_REGISTERED
         )
         return {
             "port": self.name,
@@ -1368,6 +1381,31 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         f"reported {uninstalled.report()[:1]!r}",
     )
 
+    # ⛔ And the **word** each of those three states comes back as, which is the
+    # one thing in this contract a consumer outside this file matches on. ⚠️ Held
+    # because its absence was paid for: renaming one of them in `to_dict` left the
+    # readiness script's three-way lookup raising `KeyError` for every
+    # configuration with no tracker, and no assertion anywhere called `to_dict` at
+    # all. ⛔ The set is held closed as well as each member named -- a fourth state
+    # added here is a consumer's lookup table silently missing a key.
+    states = {
+        STATE_UNCONFIGURED: unconfigured,
+        STATE_ABSENT: uninstalled,
+        STATE_REGISTERED: stocked,
+    }
+    for word, answering in states.items():
+        described = answering.to_dict()
+        check(
+            f"`to_dict` reports the `{word}` state as exactly that word",
+            described["adapter"] == word,
+            f"reported {described['adapter']!r}",
+        )
+    check(
+        "and those are the only states it has, so a consumer's lookup is complete",
+        set(states) == set(ADAPTER_STATES),
+        f"this module names {sorted(ADAPTER_STATES)!r}",
+    )
+
     # § 4.2's refusal, which is the one guard above a capability: the procedure
     # asks for a role and is told whose state it is. ⚠️ The role words are taken
     # from the surface's own `role` set rather than written here -- the writers
@@ -1615,10 +1653,23 @@ def _hold_registration(check, spec: PortSpec) -> None:
             # for exactly this reason: one broken module must not make a sibling
             # port's built implementations read as absent, which is the one
             # distinction § 3 asks this module to keep, one port over.
+            #
+            # ⛔ Through a refusal that is caught, not a bare call. The regression
+            # this assertion exists for -- a failure remembered for the process
+            # rather than for the package -- makes the live sweep *raise*, and a
+            # bare call would come back as a traceback out of the suite instead of
+            # the red line and the count this file holds every other read to.
+            # Measured: planted, the run died at this line having printed `ok` for
+            # the two assertions above.
+            try:
+                live, live_refused = load_adapters(spec), None
+            except ConfigError as error:
+                live, live_refused = {}, str(error)
             check(
                 "a broken package leaves the live one's implementations installed",
-                bool(load_adapters(spec)),
-                "the live sweep came back empty after a sibling package failed",
+                bool(live),
+                live_refused
+                or "the live sweep came back empty after a sibling package failed",
             )
         finally:
             globals()["SCRIPTS_DIR"] = was_root

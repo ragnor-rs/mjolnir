@@ -116,16 +116,31 @@ def bind(configuration) -> None:
     _bound = configuration
 
 
-# The port this adapter answers for, which is the one its directory is filed
-# under. ⛔ Not a declaration the contract reads -- the package is that -- only
-# what the refusals below are keyed on, so a person reading one is sent to the key
-# they would edit rather than to a path this module spelled out.
-_PORT = "day_log.destination.kind"
+# The directory this module sits in, which is the whole of what declares which
+# port it answers for. ⛔ Derived and never written as a port's name: the package
+# beside this file states that a module here carries no `PORT` of its own, because
+# a second statement of it could be wrong in the one way nothing catches -- a
+# module filed under one package answering for another. Read off the path rather
+# than off `__package__` so it holds when this file is run directly as well.
+_PACKAGE = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _spec():
+    """This port's declaration, resolved by the directory this module sits in."""
+    for spec in port.surface_ports().values():
+        if spec.package == _PACKAGE:
+            return spec
+    raise port.ConfigError(
+        f"{_PACKAGE}/{os.path.basename(__file__)}",
+        "sits in a package no `# port:` marker names, so which port it answers "
+        "for cannot be resolved. A module's own directory is what declares that "
+        "(§ 26), and no port on the surface is read out of this one.",
+    )
 
 
 def _prefix() -> str:
     """The configuration block this port's keys sit under."""
-    return port.port_spec(_PORT).prefix
+    return _spec().prefix
 
 
 def _key(name: str = OUT_DIR) -> str:
@@ -143,7 +158,10 @@ def _code_roots() -> list[str]:
     """
     views = getattr(_bound, "views", None) or {}
     roots = [view.code_root for view in views.values()]
-    return [os.path.abspath(root) for root in roots or [_bound.code_root]]
+    # ⛔ The **real** path of each, because the comparison below is what keeps an
+    # entry out of a tracked file and a lexical comparison is not a comparison of
+    # places. A root reached through a link is the same repository.
+    return [os.path.realpath(root) for root in roots or [_bound.code_root]]
 
 
 def _directory() -> str:
@@ -174,14 +192,23 @@ def _directory() -> str:
     # ⛔ The code roots and not the working directory: a role runs from a tree and
     # addresses a project, so the question is whether the configured directory is
     # inside a repository this configuration names (§ 1).
+    #
+    # ⛔ And asked of the **real** path on both sides. `abspath` normalises `..`
+    # and resolves no link at all, so a directory reaching a code root through a
+    # symlink was accepted and an entry would have landed inside the repository --
+    # measured, with `locate` naming a path under the temp root whose real path was
+    # in the checkout. What is returned is still the path the project wrote, since
+    # that is the address a report names and the one a person recognises.
+    real = os.path.realpath(resolved)
     for root in _code_roots():
-        if resolved == root or resolved.startswith(root + os.sep):
+        if real == root or real.startswith(root + os.sep):
+            through = "" if real == resolved else f" by way of {real!r}"
             raise port.ConfigError(
                 _key(),
                 f"resolves to {resolved!r}, which is inside the code root "
-                f"{root!r}. § 9 keeps an entry out of every tracked file, and a "
-                "directory inside the repository puts one a `git add -A` away "
-                "from a commit whatever the ignore file says.",
+                f"{root!r}{through}. § 9 keeps an entry out of every tracked "
+                "file, and a directory inside the repository puts one a "
+                "`git add -A` away from a commit whatever the ignore file says.",
             )
     return resolved
 

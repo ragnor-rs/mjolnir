@@ -421,10 +421,16 @@ def tracker(loaded) -> tuple[str, int, int, str]:
     described = over.to_dict()
     operations = described["operations"]
     available = sum(1 for entry in operations.values() if entry["available"])
+    # ⛔ Keyed on the port's own names for its three states and never on copies of
+    # the words. ⚠️ Measured: this dict held `trackerless` as a literal, the port
+    # renamed that state to `unconfigured`, and every configuration with no tracker
+    # reached this line as `KeyError` — a traceback where a readiness answer
+    # belongs, from a script the same change was editing.
     detail = {
-        "registered": f"an adapter is registered for `{described['kind']}`",
-        "trackerless": "the trackerless adapter — a stated configuration, not a gap",
-        "absent": f"no adapter built yet for `{described['kind']}`",
+        port.STATE_REGISTERED: f"an adapter is registered for `{described['kind']}`",
+        port.STATE_UNCONFIGURED: "the adapter that implements nothing — a stated "
+        "configuration, not a gap",
+        port.STATE_ABSENT: f"no adapter built yet for `{described['kind']}`",
     }[described["adapter"]]
     return described["adapter"], available, len(operations), detail
 

@@ -3277,7 +3277,7 @@ own store. A project that states it keeps no memory is apart from all three — 
 about rather than a question that failed — and the status it exits with is asserted over a shipped
 example written into a temporary skills root. What no arm reaches is whether the store a project
 **pinned** is the store its harness writes: that is a fact about a machine outside the run, named in
-§ 26's own table as the thing a pinned carrier owes and held by nobody.
+§ 25's own table as the thing a pinned carrier owes and held by nobody.
 
 ⚠️ **And the admission reaches the entry's shape rather than its truth.** That a fact states its
 provenance and its premise is decidable and is asserted field by field; whether the premise still

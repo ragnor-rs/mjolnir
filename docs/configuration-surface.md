@@ -2091,15 +2091,6 @@ than implied: that a fact carries its provenance and its premise is decidable, a
 premise still holds is read against the tree by whoever reads the fact. `asof` was considered for
 the form and left out for that reason — a date says when a fact was written, not whether it is still
 true, so it would answer staleness with a number that reads like an answer.
-The memory third's store is declared by no key on this surface. It is a separate outcome — a store
-the branch model can move, which is a question about where a file lives rather than about which
-thirds a role runs — so it is a numbered item this one blocks, and
-[`schema.md § 23`](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs)
-names it where the third is listed. ⛔ **What keeps that honest is that the absence is reported
-rather than silent**: a project naming the memory third gets it in the reader's `unavailable` list
-and the role says what it could not write, because a third that quietly did not run reads exactly
-like one that did —
-[`schema.md § 11 → A report names what it could not establish`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish).
 
 ## The day log's destination port
 

@@ -1391,7 +1391,7 @@ class Config:
         return [(f"`{key}`: ", view) for key, view in self.views.items()]
 
     def _memory_report(self) -> list[str]:
-        """§ 26's own report, for a project that runs the memory third.
+        """§ 25's own report, for a project that runs the memory third.
 
         ⛔ **What this names is what the store's carrier leaves open, never that
         the third is unavailable.** Before § 25 the third had no store at all and
@@ -1712,7 +1712,7 @@ class Config:
                 "No destination is configured for the day log "
                 f"(`day_log.destination.kind: {NO_DESTINATION}`), so the role "
                 "measures the day and has nowhere to record it. What that leaves "
-                "each of § 25's operations doing is the port's to report."
+                "each of § 26's operations doing is the port's to report."
             )
         elif destination == FILE_DESTINATION and self.get(
             "day_log.destination.out_dir"
@@ -5403,10 +5403,10 @@ def self_test() -> int:
             f"derived {reported!r}",
         )
 
-    # § 25's marker, planted the way the four classes above are. ⛔ Each of these
+    # § 26's marker, planted the way the four classes above are. ⛔ Each of these
     # is a shape that leaves the surface reading as declaring a port while this
     # reader declares none -- and a surface stating two operation lists with one
-    # port declared has one table read for both, which is the refusal § 25 says
+    # port declared has one table read for both, which is the refusal § 26 says
     # the parameter exists to keep.
     with open(SURFACE, encoding="utf-8") as handle:
         surface_text = handle.read()
@@ -5948,7 +5948,7 @@ def _load_bearing_absences(config: Config) -> list[str]:
     absent = []
     if carriers.get("day_log") and config.get("day_log.script") is None:
         absent.append("day_log.script")
-    # § 25's, and conditioned on the **kind** as well as the carrier: the key
+    # § 26's, and conditioned on the **kind** as well as the carrier: the key
     # addresses a file store and nothing else, so a project on another kind is
     # not missing it. ⛔ Not a second rule about requiredness -- § 26 states the
     # key is not required, and this is the report that absence reaches a role as.
