@@ -148,8 +148,9 @@ end state.
 [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the ten-role loop and
 its axes, the tracker port and its capabilities, the work-item facets with their absent
 cases, the status writers, the readiness gate, what counts as done and who answers each of those
-checks, commit behaviour, the day log, the branch model, the session's context, the ordering, and
-what a role holds and what may cross the boundary out of it.
+checks, commit behaviour, the day log, the branch model, the session's context, the ordering, the
+memory store and which working directory may refresh it, and what a role holds and what may cross
+the boundary out of it.
 Everything else written about the procedure, in this repository or on a work item, explains or
 records; none of it is a second authority.
 
@@ -339,6 +340,27 @@ of the direction it fails in. A project that lists no command and states no size
 and no replacement — the read is the one arm that needs no list, and `reread: allow` is how you say
 no to it; what no check can reach is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-context-half-a-call-bounded-where-it-is-made-and-what-comes-back).
+
+⛔ **What a session remembers is not quietly written where the next one will never look for it.**
+An agent harness names its memory store after the directory the session is standing in, so work in
+a per-item tree gets a *different* store: the index every session loads is absent, and a save lands
+somewhere the checkout never reads — and nothing says so, because the save reports success. You name
+the store once, or you say that the harness decides it and the toolkit must not guess, and the
+difference is what you get back: a store you pinned is written from any tree with its index appended
+**under a lock**, and a store the harness derives has the memory step **refuse** from a tree and
+name the checkout it would have run from. Either way the answer is one of two things a role has to
+say out loud rather than a write nobody sees. And what goes in carries where the fact came from and
+what it rests on, so a later pass reads a fact it can check instead of restating one. The
+[memory rule](plugins/mjolnir/config/schema.md#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)
+is the single statement of the block,
+[the carriers](plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)
+of what each one closes and what it leaves open,
+[write_from](plugins/mjolnir/config/schema.md#write_from-and-the-pair-of-outcomes-a-refusal-is-one-half-of)
+of the pair of outcomes, and
+[what may enter](plugins/mjolnir/config/schema.md#what-may-enter-the-store-and-what-a-reader-does-with-what-is-in-it)
+of the admission. A project that keeps no memory says so with a reason and the step does not run;
+what no check can reach is in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-memory-store-the-write-decision-and-the-two-arms-on-the-index).
 
 ### Who this page is written for
 

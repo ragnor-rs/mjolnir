@@ -215,6 +215,14 @@ carriers:
 session:
   parts: [commit]
 
+# § 25. The bookkeeping role here is the commit third alone, so there is no memory third to write a
+# store and this carrier says so — one statement with the list above rather than a second one, the
+# reader refusing any disagreement.
+memory:
+  carrier: none
+  absent_reason: "The bookkeeping role here commits and does nothing else, so no third of it would
+    write a store. Stated with the thirds above rather than discovered from them."
+
 language:
   work_item: ru
   repo: en

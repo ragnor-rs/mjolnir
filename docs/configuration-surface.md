@@ -1932,14 +1932,162 @@ holds, and what it does not reach, is the reach of a check and belongs where eve
 reach does —
 [`docs/single-source-of-truth.md`](single-source-of-truth.md#the-bookkeeping-roles-two-derivations-and-the-round-trip-that-is-the-resumability-arm).
 
-### What has no key yet, and why that is a filed item rather than a gap
+## The memory store is derived from the working directory
 
-The memory third's store is declared by no key on this surface. It is a separate outcome — a store
-the branch model can move, which is a question about where a file lives rather than about which
-thirds a role runs — so it is a numbered item this one blocks, and
-[`schema.md § 23`](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs)
-names it where the third is listed. ⛔ **What keeps that honest is that the absence is reported
-rather than silent**: a project naming the memory third gets it in the reader's `unavailable` list
-and the role says what it could not write, because a third that quietly did not run reads exactly
-like one that did —
-[`schema.md § 11 → A report names what it could not establish`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish).
+The memory third of the bookkeeping role was the one third of it with no store on the surface at
+all. What it writes to was found by reading the memory step of every copy that carries one and by
+asking where the store this project itself refreshes lives, and the answer is the reason the facet
+is not a path key:
+[`schema.md § 25`](../plugins/mjolnir/config/schema.md#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from).
+
+### What the copies' memory steps say, read rather than assumed
+
+Every copy that carries the role whole carries a memory step, and the four of them were read
+against each other. ⚠️ **They agree on more than the surface needed and disagree on exactly one
+thing**, which is what decided the facet's shape:
+
+| what was read | how many copies | what it decided |
+|---|---|---|
+| the store is the agent harness's own per-project directory, named after the **absolute path of the checkout** | all four, each writing that path out in full | `derived` is the measured case rather than a hypothetical one, and a path key alone would not describe any of them |
+| the shape is one file per fact plus an index file loaded at session start | all four | `index` names a real file rather than an invented one, and the index's own line format is each project's |
+| the index line is written `- [Title](file.md) — hook` | all four, identically | the carrier takes the line as given: the format is the project's and is not the toolkit's to state |
+| delete a memory the day it is proved wrong, because a stale one is asserted with the same confidence as a true one | two of the four, one adding that the project *has been bitten by exactly that* | the read-time half of the rule was already somebody's practice, and § 24 had already taken it |
+| prefer recording the measurement over the conclusion — a memory saying *X is slow* rots in a way one carrying the figure and the date does not | one | **the write-time half, invented independently**: this is `provenance` and `premise` in prose, and it is the strongest evidence the entry form has |
+| the tree hazard, at all | **one of the four** | the hazard is real and is not generally known: three copies of the same step, on the same harness, say nothing about it |
+
+**The one copy that does state it states it twice, and the second statement is a repair rather than
+a rule.** It carries a standing instruction to run the role from the main checkout, and a
+script that **symlinks each worktree's derived directory to the checkout's**, with the diagnosis
+written out in the script's own header: the harness derives its per-project directory from the
+working directory, so a worktree session gets one with no store in it — no index is loaded, and
+anything saved lands where the main checkout never reads it.
+
+⚠️ **That repair is what `carrier: path` is for, and not what `derived` plus `any_tree` is**, which
+is worth being exact about because it is the first question the refusal at
+[`schema.md § 25 → write_from`](../plugins/mjolnir/config/schema.md#write_from-and-the-pair-of-outcomes-a-refusal-is-one-half-of)
+raises. A project that has linked its trees' directories has *made the store pinnable*: it names
+that one path, every tree writes it, and the link is how the harness's own loader comes to agree
+with the pin. The refused pair is the other case — a project that has done nothing, where *wherever
+the session is standing* really is a different store.
+
+**The measurement in this repository**, which is the copy that has done nothing and is therefore
+the one the `derived` arm is written from. The agent harness keeps a per-project directory and
+derives its name from the **absolute path of the working directory**. At the time this was read the
+harness held five such directories for this one repository — the primary checkout's and one for each
+of four worktrees cut from it — and the store existed under the checkout's alone. The other four
+carried transcripts and no store. So a session standing in a tree had: no index to load, and nowhere
+a save would write that the checkout would ever read. Nothing announced either half; the save
+reports success.
+
+| what was measured | what follows |
+|---|---|
+| five per-project directories for one repository, one per working directory | the store is a function of where the session stands, not of which project it is |
+| a store under the checkout's directory and under none of the four trees' | a session in a tree loads no index and writes where nothing reads |
+| nothing in either half says so | the hazard is silent, which is what makes it a rule rather than a caution |
+
+**A moved or renamed checkout is the same failure without a tree**, which is why the facet is not
+scoped to the worktree branch model: the derived name changes with the path, and the old store is
+orphaned.
+[`schema.md § 24`](../plugins/mjolnir/config/schema.md#what-a-load-may-not-assume-survived)
+already lists a moved checkout among what a load must not assume survived, and this is what it
+breaks. A store outside the tree is also outside `.gitignore`, so the argument that two copies are
+safe where both are ignored does not reach it — these facts are neither committed nor ignored, and a
+reader assumes a project's memory is in the project.
+[`schema.md § 25 → Why a project cannot simply be told to write a path`](../plugins/mjolnir/config/schema.md#why-a-project-cannot-simply-be-told-to-write-a-path)
+is where all three of those land.
+
+### Why two carriers rather than one path key
+
+The obvious shape — a path every project writes — was tried against this project first and does not
+survive it. The store this repository refreshes is the harness's own derived directory; a path
+written in the configuration would create a **second** store, one the procedure writes and the
+harness's own machinery ignores. That is two records of one thing allowed to disagree, which is the
+defect the whole toolkit exists to delete, so the honest value for a project in that position is a
+statement that the harness decides and the procedure must not guess.
+
+What the two carriers buy is therefore different in kind rather than in degree, and the table at
+[`schema.md § 25 → The carriers`](../plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)
+is the comparison: a pinned store closes the hazard by construction and owes the project one thing
+to keep true, while a derived store closes nothing by construction and has its two open halves
+reported instead. Neither is the better configuration in general; which one a project gets is a
+property of where its store already is.
+
+**Why the absent case is a carrier and not a null path.** The first form of this facet made the
+block optional — written where `session.parts` names the third, refused where it did not. It is
+wrong for a mechanical reason found by this repository's own gate: every configuration here is held
+to carrying every top-level key the surface declares, so an optional block is a block three of the
+five shipped examples could not write. The absent case is therefore `carrier: none` with a reason,
+exactly as every other facet's is, and what keeps that from being a second statement of the thirds
+list is that the reader refuses every disagreement between the two —
+[`schema.md § 25 → The carrier and the third have to agree`](../plugins/mjolnir/config/schema.md#the-carrier-and-the-third-have-to-agree-in-both-directions).
+
+⚠️ **A second mechanical finding, recorded because it decided a key's shape.** `write_from` was
+first marked `# default: main_tree`. A marked default is applied by creating whatever blocks it
+needs to land in, so the default wrote a `memory` block into every project — including the shipped
+collection example, which then stopped loading, naming a store it does not configure. No key under
+this block carries a default, and the reason is that rather than a preference about defaults.
+
+### What a refusal buys over a convention
+
+The standing practice before this facet was a rule held in one project's prose: run the bookkeeping
+role from the main checkout and reach into the tree with an explicit path. It is correct and it is
+unenforceable, which is the shape this toolkit replaces everywhere else. `write_from` is that rule
+made a value, and the thing it buys is the **pair of outcomes** at
+[`schema.md § 25 → write_from`](../plugins/mjolnir/config/schema.md#write_from-and-the-pair-of-outcomes-a-refusal-is-one-half-of):
+either the one store was written, or the third refused and the reply names it. A third that quietly
+wrote nothing reads exactly like one that wrote.
+
+**Which working directory a session is standing in is read from git and never from the
+configuration**, and that is the part worth recording: § 1 resolves a work tree against that tree's
+own files, so a session in a tree resolves the *tree* as its skills root. Comparing a working
+directory against the resolved root answers *yes, this is the checkout* in exactly the case the
+facet is written about. What answers it instead is `--git-dir` against `--git-common-dir`, which
+differ in a linked worktree and agree in the checkout — and where git answers neither, the decision
+is reported unanswered rather than as the checkout, the permissive reading being the one that writes
+a tree's own store.
+
+### The index contends and the per-fact files do not
+
+The store's shape where one exists is one file per fact plus an index file loaded at session start.
+The per-fact files are safe under parallel trees — two sessions rarely write the same fact — and the
+index is not, being the file every session reads and rewrites.
+[`schema.md § 25 → The index`](../plugins/mjolnir/config/schema.md#the-index-is-the-one-file-two-sessions-contend-on)
+makes the write an append under a lock rather than a read, an edit and a write back.
+
+⚠️ **The measurement that decided how that is tested.** The obvious assertion — many sessions
+writing at once, every entry still present — **passes with no lock at all**: twelve processes each
+appending one short line kept all twelve lines with the `flock` call removed. So the outcome arm
+does not reach the mechanism, and a second arm holds it directly: with one process holding the lock,
+a second writer must wait. That one is the single assertion that reddens when the lock goes. The two
+arms and what each reaches are in
+[`docs/single-source-of-truth.md`](single-source-of-truth.md#the-memory-store-the-write-decision-and-the-two-arms-on-the-index).
+
+### Write-time admission, and the half a reader cannot recover
+
+A store's failure mode is not only where it is but what gets into it. The published work on agent
+memory names a poisoned store as a defect class whose sound defences are **admission at write
+time** — what may be committed, with what provenance — and a **re-check at read time**, and names
+prompt-level filtering of a store that is already wrong as repeatedly insufficient. A store whose
+only policy is *the save writes it* has neither.
+
+⚠️ **And one of the surveyed copies had already reached the write-time half on its own**, in its own
+words: prefer recording the measurement over the conclusion, because a memory saying *X is slow*
+rots in a way one carrying the figure and the date does not. That is this rule arrived at from
+inside the practice rather than from the literature, which is the same convergence the extraction
+argument rests on [above](#the-strongest-argument-for-extraction-is-not-borrowed) — and it is why
+the form asks for the source and not only for a label.
+
+So the entry form carries the fact, its provenance, what it was established from, and the premise it
+rests on, and the admission runs before anything is written:
+[`schema.md § 25 → What may enter the store`](../plugins/mjolnir/config/schema.md#what-may-enter-the-store-and-what-a-reader-does-with-what-is-in-it).
+Two of those four earn their place from a direction this surface already names: a recalled fact
+reflects what was true when it was written
+([`schema.md § 24`](../plugins/mjolnir/config/schema.md#24-session-restore--the-readings-a-pass-is-resumed-from)),
+so an entry that does not say what would falsify it obliges its reader to invent the check — and a
+repeated fact rendered identically to a measured one becomes a measured one by being read twice.
+
+⚠️ **What the rule reaches is the entry's shape and not its truth**, and the split is stated rather
+than implied: that a fact carries its provenance and its premise is decidable, and whether the
+premise still holds is read against the tree by whoever reads the fact. `asof` was considered for
+the form and left out for that reason — a date says when a fact was written, not whether it is still
+true, so it would answer staleness with a number that reads like an answer.

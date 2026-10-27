@@ -1303,6 +1303,65 @@ class Config:
             return [("", self.only_root)]
         return [(f"`{key}`: ", view) for key, view in self.views.items()]
 
+    def _memory_report(self) -> list[str]:
+        """§ 25's own report, for a project that runs the memory third.
+
+        ⛔ **What this names is what the store's carrier leaves open, never that
+        the third is unavailable.** Before § 25 the third had no store at all and
+        the whole of it was reported absent; what is reported now is narrower and
+        has to stay narrower, because a third reported unavailable is a third the
+        role is told to skip.
+
+        ⚠️ **The `path` arm is not reported**, by the rule the rest of this
+        method follows: a store the project pinned is a store the procedure
+        writes, which is a behaviour rather than an absence.
+        """
+        out = []
+        carrier = self.get(f"{MEMORY_KEY}.carrier")
+        # ⛔ Reached only where the third runs, so this cannot be `none` without
+        # the reader having refused the configuration first -- and the `none` case
+        # is reported by the generic absent-carrier arm below, exactly like every
+        # other facet's. A second line for it here would be the same absence
+        # stated twice, free to drift from the one every other facet gets.
+        if carrier == "none":
+            return out
+        # ⛔ Compared against the value rather than read as a boolean, and never
+        # defaulted here: § 25 gives this key no default, so a configuration that
+        # reaches this method has stated one of the two words.
+        write_from = self.get(f"{MEMORY_KEY}.write_from")
+        if carrier == "derived":
+            out.append(
+                "The memory store is the harness's own (`memory.carrier: "
+                "derived`), so the procedure composes no path to it and resolves "
+                "nothing inside it: the index two sessions contend on cannot be "
+                "appended under a lock here, and a checkout that is moved or "
+                "renamed derives a different store and orphans the old one "
+                "silently. Both are reported rather than closed (§ 25)."
+            )
+        if write_from == "main_tree":
+            out.append(
+                "The memory third runs from the shared checkout alone "
+                "(`memory.write_from: main_tree`), so a save standing in a tree "
+                "**refuses** that third and names the refusal rather than writing "
+                "the tree's own store (§ 25)."
+            )
+        # ⛔ Asked of every root rather than of one, `branch_model` being a block
+        # § 1 lets a named root carry: a project whose first repository cuts trees
+        # and whose second does not has a key that decides something, and a line
+        # read off whichever root came first would state the opposite for half of
+        # it.
+        if not any(
+            view.get("branch_model.kind") == "worktree" for view in self.views.values()
+        ):
+            out.append(
+                "No code root here cuts a tree per item, so `memory.write_from` "
+                "decides nothing: there is no second working directory for the "
+                "memory third to run from. A stated key rather than an inert one "
+                "-- the branch model is the project's and may change under a "
+                "configuration that already carries this (§ 25)."
+            )
+        return out
+
     def unavailable(self) -> list[str]:
         """What this configuration cannot support, and why.
 
@@ -1376,6 +1435,20 @@ class Config:
                 "and no run is held to a floor: "
                 f"{' '.join(str(reason).split())}"
             )
+        # § 25, and reported for the reason § 15's is: a role that would have
+        # refreshed memory, or read it, learns that the project keeps none --
+        # rather than meeting a block that is not there. ⛔ And it is reported as
+        # *no store* and never as a store that is empty: a reading nobody could
+        # take and a store with nothing in it license different next steps, and
+        # the second is the one a later pass acts on.
+        if self.get(f"{MEMORY_KEY}.carrier") == "none":
+            reason = self.get(f"{MEMORY_KEY}.absent_reason")
+            out.append(
+                "No memory store is carried (`memory.carrier: none`), so the "
+                "bookkeeping role's memory third does not run and a restoring "
+                "pass has no store to check a recalled fact against: "
+                f"{' '.join(str(reason).split())}"
+            )
         if self.get("ordering.carrier") == "none":
             reason = self.get("ordering.absent_reason")
             out.append(
@@ -1435,13 +1508,8 @@ class Config:
                 "(§ 23)."
             )
         else:
-            if "memory" in parts:
-                out.append(
-                    "The memory third of the bookkeeping role is mapped and the "
-                    "store it writes to is declared by no key on this surface "
-                    "(#35), so that third is **unavailable**: the role says what "
-                    "it could not write rather than skipping it (§ 23)."
-                )
+            if MEMORY_THIRD in parts:
+                out += self._memory_report()
             # The vocabulary is the surface's, read rather than listed: a fourth
             # third would otherwise be absent from this report alone.
             every = self.facts.get("lists", {}).get("session.parts", [])
@@ -1681,6 +1749,13 @@ INDEX = re.compile(r"\[\d+\]")
 # whose bookkeeping role never commits.
 SESSION_ROLE = "session"
 COMMIT_THIRD = "commit"
+# § 25's two spellings, which are the same string and are not the same fact: the
+# first is the third's name inside `session.parts` and the second is the block's
+# own key. ⛔ Apart on purpose, for the reason the pair above it is: a rule reading
+# one of them where it means the other is the defect these constants exist
+# against, and the two could legitimately diverge.
+MEMORY_THIRD = "memory"
+MEMORY_KEY = "memory"
 
 CONTEXTUAL = {
     "role",
@@ -2332,6 +2407,108 @@ def _every_key(data, prefix: str = ""):
     elif isinstance(data, list):
         for index, item in enumerate(data):
             yield from _every_key(item, f"{prefix[:-1]}[{index}].")
+
+
+def _memory(data: dict, parts: list) -> None:
+    """§ 25's block, against the third that writes it.
+
+    ⛔ **Both directions, because the two misconfigurations fail opposite ways.**
+    A store configured where the third does not run is a path nothing ever writes,
+    which reads from the configuration exactly like a store that is kept current.
+    A third that runs with `carrier: none` is the role choosing a path of its own,
+    which is the one fact § 25 exists to have given it.
+
+    ⚠️ The shape rules alone. Whether `carrier` is written at all is the surface's
+    `# required` marker, which values it and `write_from` may take is its
+    alternation, and whether `store`, `index` and `write_from` are written is its
+    conditional marker -- each performed by the generic rules above. What is left
+    here is the agreement with `session.parts`, the keys a carrier cannot read,
+    and the one pairing of two stated values that is the hazard as a permission.
+    """
+    carrier = _get(data, f"{MEMORY_KEY}.carrier")
+    # ⛔ A shape rule answers what a value has to be and never whether it is
+    # written: requiredness is the `# required` marker, enforced above, and a
+    # rule refusing absence here would state one fact twice -- outliving the
+    # first the day a resolved surface stops marking the key (§ 1).
+    if carrier is None:
+        return
+
+    runs = MEMORY_THIRD in parts
+    if runs and carrier == "none":
+        raise ConfigError(
+            f"{MEMORY_KEY}.carrier",
+            f"is `none` while `session.parts` names the `{MEMORY_THIRD}` third "
+            "(§ 25), which is a third mapped to write a store the project says it "
+            "keeps none of. A role meeting that writes to a path of its own "
+            "choosing -- under a derived location, a different path in every tree, "
+            "reported as a save that succeeded. State a carrier, or drop the third.",
+        )
+    if not runs and carrier != "none":
+        raise ConfigError(
+            f"{MEMORY_KEY}.carrier",
+            f"states a memory store while `session.parts` does not run the "
+            f"`{MEMORY_THIRD}` third, so nothing here ever writes it (§ 25). A "
+            "store configured for a third nothing runs reads from the "
+            "configuration exactly like one being kept current. Run the third, or "
+            "state `carrier: none` with the reason.",
+        )
+
+    # ⛔ Refused rather than accepted and unread, carrier by carrier: a key naming
+    # a location nothing opens is a project believing its store is pinned while
+    # every tree still derives its own.
+    unread = {
+        "derived": (
+            ("store", "index"),
+            "Under that carrier the harness decides where the store is and the "
+            "procedure resolves nothing inside it, so this key is read by nothing "
+            "while reading as a store somebody pinned. State `carrier: path` with "
+            "the store, or drop the key.",
+        ),
+        "none": (
+            ("store", "index", "write_from"),
+            "Under that carrier the memory third does not run, so there is nothing "
+            "to write and nobody to read this. Run the third with a carrier, or "
+            "drop the key.",
+        ),
+    }.get(carrier)
+    if unread:
+        keys, why = unread
+        for key in keys:
+            if _has(data, f"{MEMORY_KEY}.{key}"):
+                raise ConfigError(
+                    f"{MEMORY_KEY}.{key}",
+                    f"is written beside `carrier: {carrier}` (§ 25). {why}",
+                )
+    index = _get(data, f"{MEMORY_KEY}.index")
+    if isinstance(index, str) and (
+        os.path.isabs(index) or ".." in index.replace("\\", "/").split("/")
+    ):
+        # ⛔ The store is the unit this facet addresses, so an index outside it is
+        # a second store with one file in it, pointed at by the key that was
+        # meant to name the first one's. ⚠️ Refused here rather than at the write,
+        # where a role meeting it has already resolved a path it may not write.
+        raise ConfigError(
+            f"{MEMORY_KEY}.index",
+            f"is {index!r}, which reaches outside the store (§ 25). It names the "
+            "one file inside `store` that every session reads -- an absolute path "
+            "or one climbing out with `..` makes it a second store with a single "
+            "file in it, under the key that was supposed to name the first one's.",
+        )
+    if carrier == "derived" and _get(data, f"{MEMORY_KEY}.write_from") == "any_tree":
+        # ⛔ The one pairing of two individually legal values that is the hazard
+        # itself, and the one rule here no single-key marker reaches. Under a
+        # derived store *wherever the session is standing* is a different store,
+        # so this pair licenses exactly the write § 25 is written to stop -- and
+        # licenses it in the shape that reports success.
+        raise ConfigError(
+            f"{MEMORY_KEY}.write_from",
+            "is `any_tree` beside `carrier: derived` (§ 25), which is the hazard "
+            "written as a permission: a derived store is derived from the working "
+            "directory, so a save from a tree writes a store the checkout never "
+            "reads and reports that it succeeded. Pin the store with "
+            "`carrier: path`, or state `main_tree` and let the third refuse from "
+            "a tree.",
+        )
 
 
 def validate(data: dict, facts: dict) -> None:
@@ -3388,6 +3565,19 @@ def validate(data: dict, facts: dict) -> None:
                 "the staging nobody chose otherwise (§ 6).",
             )
 
+    # § 25, whose condition is the `parts` list read above. ⛔ The requiredness is
+    # a rule rather than a `# required_when` marker: that marker compares one
+    # key's value against a literal, and what makes this block needed is a
+    # *list's membership*, which no comparison of that shape reaches.
+    #
+    # ⚠️ **After § 6's block and not before it, which is ordering rather than
+    # arrangement.** § 6 refuses a staging entry for a bookkeeping role whose
+    # commit third does not run, and the configuration that trips it states a
+    # `parts` list with neither the commit third nor the memory one -- so a § 25
+    # refusal raised first would answer that configuration with the wrong key,
+    # and the older rule would be left asserted by nothing.
+    _memory(data, parts)
+
     # § 8. A width is a count of columns, and absence is the answer "this
     # project does not hard-wrap" rather than a missing setting -- so the key is
     # not required, and a value that is present is held to being a positive
@@ -3981,6 +4171,7 @@ MARKED_REQUIRED = [
     "language.repo",
     "language.work_item",
     "live_guard.session_tools",
+    "memory.carrier",
     "ordering.carrier",
     "readiness",
     "roots.code",
@@ -4043,6 +4234,16 @@ MARKED_REQUIRED_WHEN = [
     # reported and nothing is judged, so marking it required would refuse that.
     ("executed.declares", "executed.carrier", "command"),
     ("executed.reports", "executed.carrier", "command"),
+    # § 25's four, each meaningless under a carrier that cannot read it -- and
+    # each *refused* there rather than merely unmarked, which is a rule of the
+    # reader beside the marker rather than a second spelling of it. ⚠️
+    # `write_from` is two entries for one key, which is what the marker's own
+    # keying is for: it is needed under either carrier that writes and read by
+    # nothing under the one that does not.
+    ("memory.index", "memory.carrier", "path"),
+    ("memory.store", "memory.carrier", "path"),
+    ("memory.write_from", "memory.carrier", "derived"),
+    ("memory.write_from", "memory.carrier", "path"),
     ("tracker.board", "tracker.kind", "trello"),
     ("tracker.project.number", "tracker.kind", "github-projects"),
     ("tracker.project.owner", "tracker.kind", "github-projects"),
@@ -4072,6 +4273,7 @@ MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
     "e2e_register",
     "executed",
+    "memory",
     "ordering",
     "work_item.code_root",
     "work_item.due_date",
@@ -5440,15 +5642,44 @@ def self_test() -> int:
                     any(path in line for line in reported),
                     f"reported {reported!r}",
                 )
-            # § 23's third arm, which only a project stating the memory third
-            # reaches -- this one does, so it is held here rather than over the
-            # examples with the other two.
-            if "memory" in (config.get("session.parts") or []):
-                check(
-                    "and names the memory third unavailable, its store having no key",
-                    any("#35" in line for line in reported),
-                    f"reported {reported!r}",
-                )
+            # § 25's arms, which only a project running the memory third reaches
+            # -- this one does, so they are held here rather than over the
+            # examples. ⛔ Asserted on what each arm names and not on a count:
+            # this project takes the `derived` carrier, so both the unclosed
+            # halves and the refusal from a tree have to be in the report, and a
+            # suite counting lines would pass with either of them deleted.
+            if MEMORY_THIRD in (config.get("session.parts") or []):
+                for named, stated in (
+                    ("memory.carrier", config.get("memory.carrier") == "derived"),
+                    (
+                        "memory.write_from",
+                        config.get("memory.write_from") == "main_tree",
+                    ),
+                ):
+                    if not stated:
+                        continue
+                    check(
+                        f"and names `{named}` among them, this project stating it",
+                        any(named in line for line in reported),
+                        f"reported {reported!r}",
+                    )
+            # ⛔ The § 25 arm no shipped configuration reaches, asserted in both
+            # directions over one key. Every example running the memory third
+            # cuts a tree per item, so the line about `write_from` deciding
+            # nothing would otherwise be a branch nothing can fail -- and the
+            # negative is asserted with it, or the arm would pass by printing
+            # that line always.
+            inert = _refused_or_reported(_an_in_place_memory_project())
+            check(
+                "a project that cuts no tree is told `write_from` decides nothing",
+                any("decides nothing" in line for line in inert),
+                f"reported {inert!r}",
+            )
+            check(
+                "and a project that cuts one is not told that",
+                not any("decides nothing" in line for line in reported),
+                f"reported {reported!r}",
+            )
             # The resolved identity, which is the only guard § 1 has against a
             # role run from a sibling project: the reader says which root it
             # resolved and which file it read, both absolute, for the role to
@@ -5591,6 +5822,64 @@ def _planted_violations():
          lambda data: _without(
              _without(data, "carriers.session"), "commit.staging.session"
          )),
+        # § 25's block, one plant per arm, and ⛔ both directions of the agreement
+        # rather than one: a store configured for a third nothing runs and a third
+        # running with `none` fail in opposite directions, and the first of them
+        # reads from the configuration like a store being kept current.
+        #
+        # ⚠️ The commit third stays in this list, or § 6's own arm above refuses
+        # first and this plant is asserted by nothing.
+        ("a memory store stated for a third nothing runs", f"{MEMORY_KEY}.carrier",
+         at("session.parts", ["tracker", "commit"])),
+        ("the memory third running with no store carried", f"{MEMORY_KEY}.carrier",
+         lambda data: at(f"{MEMORY_KEY}.absent_reason", "a planted reason")(
+             at(f"{MEMORY_KEY}.carrier", "none")(
+                 _without(_without(data, f"{MEMORY_KEY}.store"),
+                          f"{MEMORY_KEY}.index")
+             )
+         )),
+        # ⛔ The pinned keys under the carrier that resolves nothing inside the
+        # store, one plant each: the second is reached only with the first key
+        # gone, the loop refusing on whichever it meets first.
+        ("a store pinned beside the carrier that composes no path",
+         f"{MEMORY_KEY}.store", at(f"{MEMORY_KEY}.carrier", "derived")),
+        ("an index named beside the carrier that composes no path",
+         f"{MEMORY_KEY}.index",
+         lambda data: at(f"{MEMORY_KEY}.carrier", "derived")(
+             _without(data, f"{MEMORY_KEY}.store")
+         )),
+        # ⛔ The pairing of two individually legal values that is the hazard
+        # written as a permission, which no single-key rule reaches.
+        ("a derived store a save may write from any tree",
+         f"{MEMORY_KEY}.write_from",
+         lambda data: at(f"{MEMORY_KEY}.write_from", "any_tree")(
+             at(f"{MEMORY_KEY}.carrier", "derived")(
+                 _without(_without(data, f"{MEMORY_KEY}.store"),
+                          f"{MEMORY_KEY}.index")
+             )
+         )),
+        # ⛔ The other entry of the refused-keys table, and the key that is unique
+        # to it: a project that keeps no memory stating which tree may write it
+        # has written a policy for a third that does not run.
+        ("a tree stated beside the carrier that writes nothing",
+         f"{MEMORY_KEY}.write_from",
+         lambda data: at(f"{MEMORY_KEY}.absent_reason", "a planted reason")(
+             at(f"{MEMORY_KEY}.carrier", "none")(
+                 at("session.parts", ["tracker", "commit"])(
+                     _without(_without(data, f"{MEMORY_KEY}.store"),
+                              f"{MEMORY_KEY}.index")
+                 )
+             )
+         )),
+        # ⛔ Both ways an index reaches outside the store it is supposed to sit in.
+        ("an index climbing out of the store", f"{MEMORY_KEY}.index",
+         at(f"{MEMORY_KEY}.index", "../elsewhere/index.md")),
+        ("an index named absolutely", f"{MEMORY_KEY}.index",
+         at(f"{MEMORY_KEY}.index", "/somewhere/else/index.md")),
+        ("a memory carrier outside its alternation", f"{MEMORY_KEY}.carrier",
+         at(f"{MEMORY_KEY}.carrier", "telepathy")),
+        ("a write-from outside its alternation", f"{MEMORY_KEY}.write_from",
+         at(f"{MEMORY_KEY}.write_from", "whichever_tree")),
         ("a unit outside its alternation", "work_item.estimate.unit",
          at("work_item.estimate.unit", "furlongs")),
         ("a rounding tie outside its alternation", "day_log.round_ties",
@@ -6742,6 +7031,34 @@ def _in_tree_and_uncommitted(data: dict) -> dict:
     )
     data.setdefault("branch_model", {})["kind"] = "worktree"
     return data
+
+
+def _an_in_place_memory_project() -> dict:
+    """A project that runs the memory third and cuts no tree.
+
+    ⛔ Built from two shipped examples rather than written here, and built at all
+    because no single example is in this state: every one that runs the memory
+    third cuts a tree per item, so § 25's *this key decides nothing* line would be
+    a branch nothing could fail. ⚠️ Both halves are found by the value they carry
+    rather than named, which is the rule `_a_valid_example` above follows.
+    """
+    pinned = _example_meeting(f"{MEMORY_KEY}.carrier", "path")
+    in_place = _example_meeting("branch_model.kind", "in_place")
+    if pinned is None or in_place is None:
+        return {}
+    return _with(dict(pinned), "branch_model", in_place["branch_model"])
+
+
+def _refused_or_reported(data: dict) -> list[str]:
+    """What `unavailable()` reports for `data`, or the one refusal it raised."""
+    if not data:
+        return ["no example carries the halves this fixture is built from"]
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    try:
+        return _resolve(data, EXAMPLES, facts, False).unavailable()
+    except ConfigError as error:
+        return [f"refused {error.key}"]
 
 
 def _a_valid_example() -> dict:
