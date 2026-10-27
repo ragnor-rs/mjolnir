@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""The bookkeeping role's two derivations: which thirds run, and the artifact's form.
+"""The bookkeeping role's derivations: which thirds run, the artifact's form, and the store.
 
-`session.parts` (§ 23) and the save artifact are one role's facts with more than
-one reader -- the role writes an artifact and a later pass reads one -- so the
-derivation lives here rather than in the role's own text. ⛔ **That is § 10's
+`session.parts` (§ 23), the save artifact and § 25's memory store are one role's
+facts with more than one reader -- the role writes and a later pass reads -- so
+the derivation lives here rather than in the role's own text. ⛔ **That is § 10's
 rule for a branch name, one role over**: a form copied into a role's text is a
 form allowed to disagree with the thing that holds a written artifact to it, and
 the direction nothing reports is the reader accepting an artifact that is missing
@@ -11,8 +11,9 @@ what a resume needs.
 
 ⛔ **It states no rule of its own.** Which thirds there are, the order they run
 in, when a save is owed and what the artifact is for are `../config/schema.md`
-§ 23's, read through the shared reader. What this module owns is what neither of
-its readers should perform twice:
+§ 23's; where the memory store is, which working directory may write it and what
+an entry has to carry are § 25's. Both are read through the shared reader. What
+this module owns is what none of its readers should perform twice:
 
   * **The thirds this project runs**, in the procedure's order rather than the
     order a configuration happens to list them in, each with what it reads and
@@ -23,6 +24,16 @@ its readers should perform twice:
     how the writing role checks what it wrote and how a resuming pass reads it,
     the same answer serving both because they are the same question asked from
     two sides.
+  * **The memory store's location and the write decision** (§ 25): the path a
+    project pinned or the answer that there is none to compose, and whether the
+    working directory the session is standing in may write it -- *write*,
+    *refuse*, or an answer nobody could establish, which is three values and
+    never two.
+  * **The memory entry's form, and its admission**: a fact carries where it came
+    from and what it rests on, held at write time, because a store already
+    carrying an unprovenanced fact cannot be read back into one that does not.
+  * **The locked append to the index**, which is the one file two sessions
+    contend on.
 
 ⛔ **The fields are keys and never headings, and the prose under them is the
 project's own.** § 8 fixes the language an artifact is written in per project, so
@@ -41,20 +52,40 @@ artifact answers all of them, and the sufficiency of what is written in them is
 read rather than enforced.
 
 Usage:
-    save.py [--skills-root DIR]        the thirds this project runs, in order
-    save.py form [--skills-root DIR]   the fields a save artifact carries
+    save.py [--skills-root DIR]        the thirds this project runs, in order --
+                                       and, where the memory third is one of
+                                       them, § 25's store and the write decision
+    save.py form                       the fields a save artifact carries
     save.py check --file PATH          hold a written artifact to the form, and
                                        report what a resuming pass reads out of it
+    save.py entry                      the fields a memory entry carries (§ 25)
+    save.py recall --file PATH         hold a written entry to the entry form, and
+                                       hand it back with its premise unchecked
+    save.py memory [--skills-root DIR] [--standing-in DIR]
+                                       where the store is, whether that directory
+                                       may write it, and what the carrier leaves
+                                       open
+    save.py remember [--skills-root DIR] [--standing-in DIR]
+                     --entry PATH --name FILE --line TEXT
+                                       admit one entry, place it in the store
+                                       under that name, and append its index line
+                                       under a lock
 
-Exit status, and ⛔ **four values rather than two**: 0 the artifact holds or the
-report was produced, 1 the artifact does not hold, 2 something that had to be
-read could not be -- the configuration, or the artifact's own file -- and 3 there
-is nothing to answer about, this project mapping no bookkeeping role or stating
-no configuration at all. ⚠️ **2 and 1 are apart on purpose**: an artifact whose
-file could not be opened has not failed the form, and a role told it failed would
+Exit status, and ⛔ **four values rather than two**: 0 the artifact or entry
+holds, the write happened, or the report was produced, 1 it does not hold or the
+write was refused, 2 something that had to be read could not be -- the
+configuration, the artifact's own file, or the entry's -- and 3 there is nothing
+to answer about, this project mapping no bookkeeping role or stating no
+configuration at all. ⚠️ **2 and 1 are apart on purpose**: an artifact whose file
+could not be opened has not failed the form, and a role told it failed would
 rewrite a file that is already right. ⚠️ The last is § 11's rule at a command
 line: *no answer* collapsed into 0 reads as an artifact that passed, and into 1
 as a role whose every save is wrong.
+
+⚠️ **`memory` is the one subcommand whose non-zero status is not a fault.** A
+refusal to write from a tree is that command working, so it exits 0 and says so;
+the 1 is reserved for the decision nobody could establish, which is § 11's rule
+again one command over.
 """
 
 from __future__ import annotations
@@ -87,19 +118,25 @@ READS = {
         "and no status whose writer is somebody else"
     ),
     "memory": (
-        "a store of its own, which no key on this surface declares yet (#35)"
+        "the store § 25's `memory` block states, and which working directory that "
+        "block lets a save write it from"
     ),
     "commit": "this role's own `commit.staging` entry (§ 6)",
 }
 
-# The one third whose mechanism the surface does not carry, named here because
-# the reader reports the same absence and the two have to agree. ⛔ A third
-# listed here is reported unavailable rather than skipped: a third that silently
-# did not run reads exactly like one that did.
-WITHOUT_A_MECHANISM = {"memory"}
+# The third whose mechanism is a block of the project's rather than a capability
+# of something else, and the key that carries it. ⛔ Availability is asked of the
+# configuration rather than written down here: before § 25 this third had no
+# store at all and was listed as unavailable unconditionally, and what replaced
+# that is a question -- is the block there -- whose answer can be no again. ⚠️ It
+# can be no on a *correct* project: § 1 resolves a work tree against its own
+# surface, so a tree cut before § 25 states no block and the reader that ruled it
+# marked none, which is the direction that fails safe.
+MEMORY_THIRD = "memory"
+MEMORY_KEY = "memory"
 
 
-def _place(stated: list) -> list[dict]:
+def _place(stated: list, carried=lambda name: True) -> list[dict]:
     """The stated thirds in the procedure's order, whatever order they arrived in.
 
     ⛔ A seam of its own, so the ordering is asserted against a list written
@@ -116,7 +153,7 @@ def _place(stated: list) -> list[dict]:
         {
             "part": name,
             "reads": READS.get(name, "nothing this module can name"),
-            "available": name not in WITHOUT_A_MECHANISM,
+            "available": carried(name),
             "placed": name in ORDER,
         }
         for name in placed + unplaced
@@ -126,11 +163,23 @@ def _place(stated: list) -> list[dict]:
 def thirds(configuration: config.Config) -> list[dict]:
     """Which thirds run here, in the procedure's order, each with its state."""
     stated = configuration.get("session.parts")
+
+    def carried(name: str) -> bool:
+        # ⛔ One third's availability is a question and the other two's is not:
+        # the tracker third's mechanism is the port's own answer and the commit
+        # third's is held by the reader refusing a mapped role with no staging,
+        # so neither is answered a second time here (§ 23). The memory third's is
+        # a block of the project's, and whether that block is there is a fact
+        # this module can read.
+        if name != MEMORY_THIRD:
+            return True
+        return configuration.get(f"{MEMORY_KEY}.carrier") is not None
+
     # ⛔ A value the reader has already refused cannot arrive here, and the
     # normalisation is still written: a string handed to `_place` is iterated
     # character by character, so the one shape that would read as a list of
     # thirds and be none is the one left out rather than guessed at.
-    return _place(list(stated) if isinstance(stated, list) else [])
+    return _place(list(stated) if isinstance(stated, list) else [], carried)
 
 
 # --- the form --------------------------------------------------------------
@@ -173,6 +222,19 @@ FIELDS = [
 # though the surface decided it.
 BOUNDARIES = ["handoff", "compaction", "session_end", "asked"]
 
+# The fields of this form whose value comes from a set, and what a reader loses
+# where one is outside it. ⛔ Keyed by field so `_held` performs it for either
+# form: a closed set is a property of a field rather than of a form, and a
+# function taking one set for one named field would hold the other form's by
+# nothing.
+CLOSED = {
+    "boundary": (
+        BOUNDARIES,
+        "A boundary a reader cannot place is a save it cannot tell mid-item from "
+        "finished",
+    ),
+}
+
 
 def form() -> dict:
     """The fields a save artifact carries, and the boundary vocabulary."""
@@ -186,36 +248,46 @@ def form() -> dict:
     }
 
 
-def read(text: str) -> tuple[dict | None, list[str]]:
-    """(the fields a resuming pass reads, the problems holding it to the form).
+def _held(
+    text: str, fields: list, closed: dict, what: str
+) -> tuple[dict | None, list[str]]:
+    """(the fields a reader recovers, the problems holding the text to the form).
 
-    ⛔ Parsed through the one reader's YAML rather than a grammar of its own: an
-    artifact is a configuration-shaped file, and a second parser for one format
-    is the defect this module is an instance of refusing.
+    ⛔ Parsed through the one reader's YAML rather than a grammar of its own: a
+    written form is a configuration-shaped file, and a second parser for one
+    format is the defect this module is an instance of refusing.
+
+    ⛔ **One function for both of this module's forms**, and that is the rule
+    rather than a convenience: the save artifact and § 25's memory entry are each
+    a block of keys whose values a later pass reads, so a second copy of these
+    arms would be a copy allowed to hold one of them to less than the other --
+    and the half that drifted would be the newer one, with every assertion green.
+    `closed` is the only thing that differs between them: the fields whose value
+    comes from a set the form states.
     """
     try:
-        document = config._load_yaml(text, "the save artifact")
+        document = config._load_yaml(text, what)
     except config.ConfigError as exc:
         return None, [str(exc)]
-    # ⛔ An empty artifact is named as empty rather than by the type its parse
+    # ⛔ An empty file is named as empty rather than by the type its parse
     # happened to produce: it is the commonest way this goes wrong — the role
     # created the file and wrote nothing into it — and a reader quoting a
     # language's type name at a person has reported the implementation instead
     # of the problem.
     if document is None:
         return None, [
-            "the artifact is empty, so none of the form's fields can be read out "
+            f"{what} is empty, so none of the form's fields can be read out "
             "of it: an empty file is a save that did not happen"
         ]
     if not isinstance(document, dict):
         return None, [
-            "the artifact is not a block of fields, so none of the form's fields "
+            f"{what} is not a block of fields, so none of the form's fields "
             "can be read out of it"
         ]
 
     problems = []
-    known = {name for name, _ in FIELDS}
-    for name, carries in FIELDS:
+    known = {name for name, _ in fields}
+    for name, carries in fields:
         if name not in document:
             problems.append(f"`{name}` is missing, and it carries {carries}")
             continue
@@ -256,15 +328,357 @@ def read(text: str) -> tuple[dict | None, list[str]]:
             f"`{name}` is not a field of the form, so whatever it carries is read "
             "by nothing. The form is this module's and not the writing role's"
         )
-    boundary = document.get("boundary")
-    if boundary is not None and boundary not in BOUNDARIES:
-        problems.append(
-            f"`boundary` is {boundary!r}; the form states "
-            f"{' | '.join(BOUNDARIES)}. A boundary a reader cannot place is a save "
-            "it cannot tell mid-item from finished"
-        )
-    recovered = {name: document.get(name) for name, _ in FIELDS}
+    for name, (allowed, why) in sorted(closed.items()):
+        value = document.get(name)
+        if value is not None and value not in allowed:
+            problems.append(
+                f"`{name}` is {value!r}; the form states {' | '.join(allowed)}. {why}"
+            )
+    recovered = {name: document.get(name) for name, _ in fields}
     return recovered, problems
+
+
+def read(text: str) -> tuple[dict | None, list[str]]:
+    """(the fields a resuming pass reads, the problems holding it to the form)."""
+    return _held(text, FIELDS, CLOSED, "the save artifact")
+
+
+# --- the memory store (§ 25) -----------------------------------------------
+#
+# ⛔ Three things the role must not perform for itself, for the reason the form
+# above is here: each has more than one reader -- the bookkeeping role writes the
+# store and the restoring role reads it -- and each is a question whose wrong
+# answer is silent.
+#
+#   * **Where the store is**, which is a path the project states or an answer
+#     that there is no path to compose.
+#   * **Whether the working directory the session is standing in may write it**,
+#     which is the only arm that turns § 25's measured hazard into something a
+#     role can act on rather than a caution it has to remember.
+#   * **What an entry carries**, which is the write-time admission § 25 states:
+#     a fact with no provenance and no premise is a fact a later pass can only
+#     restate.
+
+# ⛔ The two readings an entry's provenance may carry, and the whole point of the
+# set: a fact this pass observed and a fact it read somewhere and passed on are
+# different evidence, and a store that renders them identically is a store where
+# the second becomes the first by being read twice (§ 25).
+PROVENANCE = ["measured", "repeated"]
+
+# ⛔ The fields, by the same rule the artifact's are: every one required, and the
+# list is what *checkable rather than restatable* means in fields. A reader with
+# these four can say what the fact is, how it came to be believed, what it was
+# established from, and what would have to change for it to stop being true --
+# and § 24's obligation to check a recalled fact is takeable only with the last
+# of those.
+#
+# ⚠️ `asof` is deliberately not among them, and the omission is stated rather
+# than silent: a date says when the fact was written and not whether its premise
+# still holds, so a form carrying one would answer staleness with a number that
+# reads like an answer. What `premise` asks for is the check itself.
+ENTRY_FIELDS = [
+    ("fact", "the fact itself, in the project's own language (§ 8)"),
+    ("provenance", "how it came to be believed -- " + " | ".join(PROVENANCE)),
+    ("source", "what it was established from: the command, the file, the person"),
+    ("premise", "what would have to change for it to stop being true"),
+]
+
+ENTRY_CLOSED = {
+    "provenance": (
+        PROVENANCE,
+        "A fact whose provenance a reader cannot place is a fact that becomes "
+        "measured by being read twice",
+    ),
+}
+
+
+def entry_form() -> dict:
+    """The fields a memory entry carries, and the provenance vocabulary."""
+    return {
+        "fields": [{"field": name, "carries": what} for name, what in ENTRY_FIELDS],
+        "provenance": list(PROVENANCE),
+        "shape": (
+            "one block of `field: value` pairs, the keys as spelled here and the "
+            "values in the project's own language (§ 8)"
+        ),
+        "admission": (
+            "an entry missing any of these is refused at write time rather than "
+            "filtered at read time: a store already carrying an unprovenanced "
+            "fact cannot be read back into one that does not (§ 25)"
+        ),
+    }
+
+
+def read_entry(text: str) -> tuple[dict | None, list[str]]:
+    """(what a reader recovers from an entry, the problems holding it to the form)."""
+    return _held(text, ENTRY_FIELDS, ENTRY_CLOSED, "the memory entry")
+
+
+def _git(where: str, *args: str) -> str | None:
+    """One read-only git answer from `where`, or None where git cannot give one."""
+    import subprocess  # noqa: PLC0415 -- the only arm that needs a process
+
+    try:
+        done = subprocess.run(
+            ["git", "-C", where, *args],
+            capture_output=True, text=True, check=False,
+        )
+    except OSError:
+        return None
+    return done.stdout.strip() if done.returncode == 0 else None
+
+
+def standing_in_a_tree(where: str) -> tuple[bool | None, str | None]:
+    """(whether `where` is a linked worktree, the main checkout's path).
+
+    ⛔ Asked of git and never of the configuration, which is the whole substance
+    of this function. § 1 resolves a work tree against that tree's own files, so
+    a session standing in a tree resolves the *tree* as its skills root -- which
+    means comparing a working directory against the resolved root answers `yes,
+    this is the checkout` in exactly the case § 25 is written about.
+
+    ⚠️ `None` where git could not answer, and it is returned rather than
+    defaulted: a working directory nothing could place is reported unplaced, and
+    the permissive reading of it is the one that writes a tree's own store
+    (§ 11's rule that a report names what it could not establish).
+    """
+    own = _git(where, "rev-parse", "--path-format=absolute", "--git-dir")
+    shared = _git(where, "rev-parse", "--path-format=absolute", "--git-common-dir")
+    if not own or not shared:
+        return None, None
+    checkout = os.path.dirname(os.path.normpath(shared))
+    return os.path.normpath(own) != os.path.normpath(shared), checkout
+
+
+def memory(configuration: config.Config, standing_in: str) -> dict:
+    """§ 25's store, the write decision for one working directory, and what is open.
+
+    ⛔ The decision is three-valued and never two: write, refuse, and *could not
+    be established*. The third is the one a report collapses into a permission by
+    accident, and collapsing it writes a tree's own store and says it succeeded.
+    """
+    carrier = configuration.get(f"{MEMORY_KEY}.carrier")
+    if carrier is None:
+        return {
+            "carried": False,
+            "may_write": None,
+            "report": [
+                "No `memory` block is carried, so there is no store for the memory "
+                "third to write and this pass composes no path (§ 25). ⛔ Not that "
+                "the third ran: a surface older than § 25 marks no such block, so "
+                "a tree cut before it reads as a project that states none."
+            ],
+        }
+    write_from = configuration.get(f"{MEMORY_KEY}.write_from")
+    in_a_tree, checkout = standing_in_a_tree(standing_in)
+
+    out = {
+        "carried": True,
+        "carrier": carrier,
+        "write_from": write_from,
+        "standing_in": os.path.abspath(standing_in),
+        "in_a_tree": in_a_tree,
+        "main_checkout": checkout,
+        "store": None,
+        "index": None,
+        "unclosed": [],
+        "report": [],
+    }
+
+    if carrier == "path":
+        # ⚠️ Expanded here and not by the reader, which is § 11's rule for the
+        # artifact store's own path one facet over: the reader keeps what a
+        # project wrote, and the role's command is what resolves `~` and a shell
+        # variable in it. Relative is relative to the skills root, like every
+        # path on this surface (§ 1).
+        stated = str(configuration.get(f"{MEMORY_KEY}.store"))
+        resolved = os.path.expanduser(os.path.expandvars(stated))
+        if not os.path.isabs(resolved):
+            resolved = os.path.join(os.path.abspath(configuration.skills_root), resolved)
+        out["store"] = os.path.normpath(resolved)
+        out["index"] = os.path.join(
+            out["store"], str(configuration.get(f"{MEMORY_KEY}.index"))
+        )
+        out["unclosed"].append(
+            "The store the project pinned is the store the procedure writes, and "
+            "nothing here holds it to being the store the harness writes: two of "
+            "them held apart by nobody is the same defect one level out (§ 25)."
+        )
+    else:
+        out["unclosed"] += [
+            "The index two sessions contend on cannot be appended under a lock "
+            "from here, the store's own directory being what this carrier must "
+            "not guess at -- so concurrent entries can lose each other (§ 25).",
+            "A checkout that is moved or renamed derives a different store and "
+            "orphans the old one, with nothing said (§ 25).",
+        ]
+        out["report"].append(
+            "The store is the harness's own (`memory.carrier: derived`), so this "
+            "pass composes no path to it and the third is run through whatever "
+            "the harness hands the session (§ 25)."
+        )
+
+    if write_from == "any_tree":
+        out["may_write"] = True
+        out["report"].append(
+            "`memory.write_from: any_tree`, so the memory third runs from this "
+            "working directory and writes the configured store rather than the "
+            "one the directory would derive (§ 25)."
+        )
+    elif in_a_tree is None:
+        # ⛔ Unanswered, and never read as the checkout. The permissive reading
+        # here is the one that writes a tree's own store and reports success.
+        out["may_write"] = None
+        out["report"].append(
+            "`memory.write_from: main_tree`, and whether this working directory "
+            "is a linked tree or the checkout could not be established -- git "
+            "answered neither `--git-dir` nor `--git-common-dir`. ⛔ Reported "
+            "unanswered rather than as the checkout (§ 11): the permissive "
+            "reading is the one that writes a tree's own store."
+        )
+    elif in_a_tree:
+        out["may_write"] = False
+        out["report"].append(
+            "`memory.write_from: main_tree` and this working directory is a "
+            "linked tree, so the memory third **refuses** here and the refusal is "
+            f"named: the checkout it would run from is {checkout!r} (§ 25)."
+        )
+    else:
+        out["may_write"] = True
+        out["report"].append(
+            "`memory.write_from: main_tree` and this working directory is the "
+            "checkout, so the memory third runs here (§ 25)."
+        )
+    return out
+
+
+def _contained(name: str) -> str | None:
+    """The problem with `name` as a file inside the store, or None.
+
+    ⛔ The role hands a name over and **this** places it, which is the whole
+    reason the command exists -- so a name that is a path would be the role
+    writing wherever it liked through the one call written to stop that (§ 25).
+    """
+    if not name or not name.strip():
+        return (
+            "the fact's own file is unnamed, so there is nothing for the store to "
+            "hold it under (§ 25)"
+        )
+    if os.path.isabs(name) or os.path.basename(name) != name or name in (".", ".."):
+        return (
+            f"the fact's file name is {name!r}, which is a path rather than a name "
+            "inside the store: this command places the file, so a name that "
+            "reaches out of the store writes where nothing reads and where § 25's "
+            "rules about the store do not hold"
+        )
+    return None
+
+
+def remember(
+    configuration: config.Config,
+    standing_in: str,
+    entry: str,
+    name: str,
+    line: str,
+) -> tuple[int, dict]:
+    """Admit one entry, place it in the store, and append its index line under a lock.
+
+    ⛔ **The admission runs before anything is written**, which is § 25's whole
+    position on this: a store that accepts an unprovenanced fact cannot be read
+    back into one that does not, so the one place the rule buys anything is here.
+
+    ⛔ **The fact's file is placed by this command and never by the role**, so no
+    role ever composes a path inside the store -- which is the same division
+    `memory` above draws for the store itself.
+
+    ⛔ **And the index is appended under a lock rather than read, edited and
+    written back.** The per-fact files are safe under parallel trees, two sessions
+    rarely writing the same fact; the index is the file every session reads, and
+    two concurrent rewrites of it lose each other.
+    """
+    where = memory(configuration, standing_in)
+    if where["may_write"] is not True:
+        return 1, {
+            "wrote": False,
+            "problems": where["report"],
+            "where": where,
+        }
+    if where["carrier"] != "path":
+        return 1, {
+            "wrote": False,
+            "problems": [
+                "The store is the harness's own (`memory.carrier: derived`), so "
+                "there is no directory for this command to write a fact into and "
+                "no index for it to lock: the third is run through the harness "
+                "and ⛔ the contention on its index stays open (§ 25)."
+            ],
+            "where": where,
+        }
+    try:
+        with open(entry, encoding="utf-8") as handle:
+            text = handle.read()
+    except OSError as exc:
+        return 2, {"wrote": False, "problems": [str(exc)], "where": where}
+    recovered, problems = read_entry(text)
+    if problems:
+        return 1, {"wrote": False, "problems": problems, "where": where}
+    uncontained = _contained(name)
+    if uncontained:
+        return 1, {"wrote": False, "problems": [uncontained], "where": where}
+    if not line.strip():
+        return 1, {
+            "wrote": False,
+            "problems": [
+                "the index line is blank, so the entry would be written into the "
+                "store and reachable from nothing that reads it (§ 25)"
+            ],
+            "where": where,
+        }
+    os.makedirs(where["store"], exist_ok=True)
+    placed = os.path.join(where["store"], name)
+    # ⛔ The fact's file first and the index line second, which is ordering rather
+    # than arrangement: an index line pointing at a file that is not there yet is
+    # a store a concurrent reader finds broken, while a file no line points at is
+    # a store that is merely missing one entry.
+    with open(placed, "w", encoding="utf-8") as handle:
+        handle.write(text)
+    _append_under_lock(where["index"], line.rstrip("\n") + "\n")
+    return 0, {
+        "wrote": True,
+        "store": where["store"],
+        "index": where["index"],
+        "fact": placed,
+        "read": recovered,
+        "unclosed": where["unclosed"],
+        "where": where,
+    }
+
+
+def _append_under_lock(path: str, line: str) -> None:
+    """Append one line to `path`, holding an exclusive lock across the write.
+
+    ⛔ `O_APPEND` alone is not what this rests on and the lock is not decoration:
+    the failure § 25 names is a *read, edit, write back* of the whole index, and
+    what the lock buys is that a reader taking the file between two sessions'
+    writes cannot see it half-written either. ⚠️ Where the platform has no
+    `fcntl` the append still happens and the lock does not, which is stated here
+    rather than discovered: every runner this is held on is POSIX.
+    """
+    try:
+        import fcntl  # noqa: PLC0415 -- POSIX only, and the fallback is the append
+    except ImportError:
+        fcntl = None
+    handle = open(path, "a", encoding="utf-8")
+    try:
+        if fcntl is not None:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        handle.write(line)
+        handle.flush()
+        os.fsync(handle.fileno())
+    finally:
+        if fcntl is not None:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        handle.close()
 
 
 # --- the self-test ---------------------------------------------------------
@@ -285,6 +699,67 @@ def _without(field: str) -> str:
     written["boundary"] = "compaction"
     del written[field]
     return "\n".join(f"{name}: {value}" for name, value in written.items()) + "\n"
+
+
+class _AConfigurationStating:
+    """A configuration this reader cannot produce, for the one state it has to read.
+
+    ⛔ Built rather than loaded, and the reason is the rule under test: § 25
+    refuses a project that runs the memory third and states no block, so a
+    configuration in that state is one no file in this repository can reach. It
+    is still a state `thirds` has to answer, because § 1 resolves a work tree
+    against that tree's own surface -- so a tree cut before § 25 states no block
+    and was ruled by a surface that marked none. ⚠️ The permissive reading of it
+    runs a third with no store, which is what makes the arm worth an object.
+    """
+
+    def __init__(self, **values):
+        self.values = values
+
+    def get(self, path, default=None):
+        return self.values.get(path, default)
+
+
+def _an_entry(**overrides) -> str:
+    """A complete memory entry, to break in a stated way."""
+    written = {name: f"what {name} carries" for name, _ in ENTRY_FIELDS}
+    written["provenance"] = "measured"
+    written.update(overrides)
+    return "\n".join(
+        f"{name}: {value}" for name, value in written.items() if value is not None
+    ) + "\n"
+
+
+def _an_entry_without(field: str) -> str:
+    written = {name: f"what {name} carries" for name, _ in ENTRY_FIELDS}
+    written["provenance"] = "measured"
+    del written[field]
+    return "\n".join(f"{name}: {value}" for name, value in written.items()) + "\n"
+
+
+# (label, how to write it, a fragment the refusal has to name). ⛔ One per arm of
+# the admission, and the provenance arms are the ones § 25 spends the rule on: a
+# fact admitted with no provenance is the one a later pass turns into a measured
+# one by reading it twice.
+ENTRY_PLANTED = [
+    ("a fact with no provenance", lambda: _an_entry_without("provenance"),
+     "`provenance` is missing"),
+    ("a fact with nothing it was established from",
+     lambda: _an_entry_without("source"), "`source` is missing"),
+    ("a fact stating no premise", lambda: _an_entry_without("premise"),
+     "`premise` is missing"),
+    ("a provenance outside its set", lambda: _an_entry(provenance="obvious"),
+     "`provenance` is 'obvious'"),
+    ("a premise written empty", lambda: _an_entry(premise='""'),
+     "`premise` is written and empty"),
+    ("a field the entry form does not carry", lambda: _an_entry(asof="today"),
+     "`asof` is not a field of the form"),
+    ("a fact carrying a block rather than an answer",
+     lambda: _an_entry(fact="\n  what: it claims"), "`fact` carries a block"),
+    ("an empty entry", lambda: "", "the memory entry is empty"),
+    ("an entry that does not parse", lambda: "fact: [unclosed\n",
+     "the memory entry"),
+]
 
 
 # (label, how to write it, a fragment the refusal has to name)
@@ -309,11 +784,414 @@ PLANTED = [
      "`1` is not a field of the form"),
     ("an artifact that is not a block of fields", lambda: "- just a list\n",
      "not a block of fields"),
-    ("an empty artifact", lambda: "", "the artifact is empty"),
+    ("an empty artifact", lambda: "", "the save artifact is empty"),
     ("an artifact of nothing but a comment", lambda: "# a save that did not happen\n",
-     "the artifact is empty"),
+     "the save artifact is empty"),
     ("an artifact that does not parse", lambda: "boundary: [unclosed\n", "the save artifact"),
 ]
+
+
+def _an_example_whose_carrier_is(carrier: str) -> dict | None:
+    """The first example configuring § 25 that way, as a parsed block of keys.
+
+    Found by the value rather than named, which is the rule the reader's own
+    fixtures follow: a file this code pointed at would be the toolkit naming one
+    project's tracker, and a carrier no example illustrates has to fail here
+    rather than quietly borrow the other arm's file.
+    """
+    for name in sorted(os.listdir(config.EXAMPLES)):
+        if not name.endswith((".yaml", ".yml")):
+            continue
+        with open(os.path.join(config.EXAMPLES, name), encoding="utf-8") as handle:
+            data = config._load_yaml(handle.read(), config.CONFIG_PATH)
+        if isinstance(data, dict) and (data.get(MEMORY_KEY) or {}).get(
+            "carrier"
+        ) == carrier:
+            return data
+    return None
+
+
+def _resolved(data: dict) -> config.Config:
+    with open(config.SURFACE, encoding="utf-8") as handle:
+        facts = config.surface_facts(handle.read())
+    return config._resolve(data, config.EXAMPLES, facts, False)
+
+
+def _a_checkout_and_a_tree(root: str) -> tuple[str, str]:
+    """A real checkout with a real linked worktree beside it.
+
+    ⛔ Built with git rather than faked, because what is under test is a reading
+    git gives: a fixture of two directories would assert this module's own
+    arithmetic over a shape the hazard never comes in. ⚠️ This is the measured
+    case § 25 is written from -- a session standing in the second of these gets a
+    different store derived for it, with nothing said.
+    """
+    import subprocess  # noqa: PLC0415 -- the arms that need a repository
+
+    checkout = os.path.join(root, "checkout")
+    os.makedirs(checkout)
+    quiet = {"cwd": checkout, "check": True, "capture_output": True}
+    subprocess.run(["git", "init", "-q", "-b", "main"], **quiet)
+    # ⚠️ An identity with no address in it, which git accepts and the names sweep
+    # requires: an address identifies a person or an account on a service, and
+    # this repository carries none anywhere. Found by that gate on this change.
+    subprocess.run(["git", "config", "user.email", "a-planted-identity"], **quiet)
+    subprocess.run(["git", "config", "user.name", "A Planted Author"], **quiet)
+    with open(os.path.join(checkout, "a-file"), "w", encoding="utf-8") as handle:
+        handle.write("a tracked file, so there is a commit to branch from\n")
+    subprocess.run(["git", "add", "a-file"], **quiet)
+    subprocess.run(["git", "commit", "-q", "-m", "a planted commit"], **quiet)
+    tree = os.path.join(root, "a-tree")
+    subprocess.run(
+        ["git", "worktree", "add", "-q", "-b", "a-planted-branch", tree], **quiet
+    )
+    return checkout, tree
+
+
+def _memory_arms(check) -> None:
+    """§ 25's half of this module, asserted over real directories and real files."""
+    import subprocess  # noqa: PLC0415 -- the concurrency and the git arms
+    import tempfile  # noqa: PLC0415
+
+    # --- the entry form, and the admission it is the whole of ---------------
+    complete = _an_entry()
+    recovered, problems = read_entry(complete)
+    check("a complete memory entry holds", not problems, f"reported {problems!r}")
+    for name, _carries in ENTRY_FIELDS:
+        check(
+            f"`{name}` survives the round trip",
+            (recovered or {}).get(name) is not None,
+            f"recovered {recovered!r}",
+        )
+    for label, write, named in ENTRY_PLANTED:
+        _recovered, found = read_entry(write())
+        check(
+            f"{label} is refused, naming it",
+            any(named in problem for problem in found),
+            f"reported {found!r}",
+        )
+    # ⛔ The two forms are held apart as well as each held: a field of one
+    # accepted by the other would be a save writing a memory entry into the
+    # artifact, or the reverse, with both forms reporting it held.
+    check(
+        "the artifact's own fields are not a memory entry",
+        bool(read_entry(_an_artifact())[1]),
+        "an artifact passed the entry form, so the two are one form wearing two "
+        "names",
+    )
+    check(
+        "and a memory entry is not a save artifact",
+        bool(read(complete)[1]),
+        "an entry passed the artifact form, which is the same collapse the other "
+        "way round",
+    )
+    check(
+        "no field is shared between the two forms",
+        not ({name for name, _ in FIELDS} & {name for name, _ in ENTRY_FIELDS}),
+        "a field in both forms is a field whose meaning depends on which file it "
+        "is in, which no reader of either can tell",
+    )
+
+    with tempfile.TemporaryDirectory() as root:
+        checkout, tree = _a_checkout_and_a_tree(root)
+
+        # --- which directory is a tree, read from git --------------------
+        in_checkout, from_checkout = standing_in_a_tree(checkout)
+        in_tree, from_tree = standing_in_a_tree(tree)
+        check(
+            "the checkout is read as the checkout",
+            in_checkout is False,
+            f"came back {in_checkout!r}",
+        )
+        check(
+            "the linked tree is read as a tree",
+            in_tree is True,
+            f"came back {in_tree!r} -- this is the reading the whole refusal "
+            "rests on",
+        )
+        check(
+            "and both answers name the same checkout to run from",
+            from_checkout is not None
+            and os.path.realpath(from_checkout) == os.path.realpath(from_tree),
+            f"came back {from_checkout!r} and {from_tree!r}",
+        )
+        outside = os.path.join(root, "no-repository")
+        os.makedirs(outside)
+        unplaced, _ = standing_in_a_tree(outside)
+        check(
+            "a directory git cannot place comes back unanswered, not as a checkout",
+            unplaced is None,
+            f"came back {unplaced!r} -- the permissive reading here is the one "
+            "that writes a tree's own store",
+        )
+
+        # --- the write decision, both carriers and both policies ---------
+        pinned_data = _an_example_whose_carrier_is("path")
+        derived_data = _an_example_whose_carrier_is("derived")
+        check(
+            "an example pins its store, so the `path` arm is exercised",
+            pinned_data is not None,
+        )
+        check(
+            "an example leaves it to the harness, so the `derived` arm is too",
+            derived_data is not None,
+        )
+        if pinned_data is None or derived_data is None:
+            return
+
+        store = os.path.join(root, "a-store")
+        pinned_data[MEMORY_KEY]["store"] = store
+        pinned_data[MEMORY_KEY]["index"] = "the-index.md"
+        pinned_any = _resolved(pinned_data)
+        placed = memory(pinned_any, tree)
+        check(
+            "a pinned store resolves to the stated path, whatever tree asked",
+            placed["store"] == os.path.normpath(store),
+            f"resolved {placed['store']!r}",
+        )
+        check(
+            "and its index sits inside that store",
+            placed["index"] == os.path.join(os.path.normpath(store), "the-index.md"),
+            f"resolved {placed['index']!r}",
+        )
+        check(
+            "a pinned store with `any_tree` is written from a tree",
+            placed["may_write"] is True,
+            f"decided {placed['may_write']!r}: {placed['report']!r}",
+        )
+        # ⛔ The two other spellings § 25's fence allows, asserted because each is
+        # resolved here rather than by the reader -- which keeps a path as
+        # written. A relative one resolved against the working directory instead
+        # of the skills root would land in whichever tree asked, which is the
+        # hazard this facet exists to close arriving through its own carrier.
+        relative = {**pinned_data, MEMORY_KEY: {**pinned_data[MEMORY_KEY],
+                                                "store": "a-relative-store"}}
+        against_root = memory(_resolved(relative), tree)
+        check(
+            "a relative store resolves against the skills root, not the tree",
+            against_root["store"]
+            == os.path.join(os.path.abspath(config.EXAMPLES), "a-relative-store"),
+            f"resolved {against_root['store']!r}",
+        )
+        tilde = {**pinned_data, MEMORY_KEY: {**pinned_data[MEMORY_KEY],
+                                             "store": os.path.join("~", "a-store")}}
+        check(
+            "and a `~`-relative one is expanded rather than taken literally",
+            memory(_resolved(tilde), tree)["store"]
+            == os.path.join(os.path.expanduser("~"), "a-store"),
+            f"resolved {memory(_resolved(tilde), tree)['store']!r}",
+        )
+
+        # ⛔ The same configuration with the one key changed, so the decision is
+        # asserted against the key that makes it rather than against a second
+        # fixture that differs in more than one way.
+        strict = {**pinned_data, MEMORY_KEY: {**pinned_data[MEMORY_KEY],
+                                              "write_from": "main_tree"}}
+        strict_config = _resolved(strict)
+        refused = memory(strict_config, tree)
+        allowed = memory(strict_config, checkout)
+        check(
+            "the same store with `main_tree` refuses from a tree",
+            refused["may_write"] is False,
+            f"decided {refused['may_write']!r}: {refused['report']!r}",
+        )
+        check(
+            "and the refusal names the checkout it would run from",
+            any("checkout" in line for line in refused["report"]),
+            f"reported {refused['report']!r}",
+        )
+        check(
+            "the same store with `main_tree` is written from the checkout",
+            allowed["may_write"] is True,
+            f"decided {allowed['may_write']!r}: {allowed['report']!r}",
+        )
+        unplaced_decision = memory(strict_config, outside)
+        check(
+            "and from a directory git cannot place it is unanswered, not permitted",
+            unplaced_decision["may_write"] is None,
+            f"decided {unplaced_decision['may_write']!r}",
+        )
+
+        harness = memory(_resolved(derived_data), checkout)
+        check(
+            "a derived store resolves to no path at all",
+            harness["store"] is None and harness["index"] is None,
+            f"resolved {harness['store']!r} and {harness['index']!r}",
+        )
+        check(
+            "and names the two halves it leaves open rather than one",
+            len(harness["unclosed"]) == 2
+            and any("lock" in line for line in harness["unclosed"])
+            and any("renamed" in line for line in harness["unclosed"]),
+            f"named {harness['unclosed']!r}",
+        )
+        absent = memory(
+            _AConfigurationStating(**{"session.parts": list(ORDER)}), checkout
+        )
+        check(
+            "a project carrying no block is told so rather than given a path",
+            absent["carried"] is False and absent["may_write"] is None,
+            f"came back {absent!r}",
+        )
+
+        # --- the admission, at the point of writing ----------------------
+        entry_path = os.path.join(root, "an-entry.yaml")
+        with open(entry_path, "w", encoding="utf-8") as handle:
+            handle.write(complete)
+        bad_path = os.path.join(root, "a-bad-entry.yaml")
+        with open(bad_path, "w", encoding="utf-8") as handle:
+            handle.write(_an_entry_without("provenance"))
+
+        status, answer = remember(pinned_any, tree, bad_path, "a-fact.md", "- a line")
+        check(
+            "an entry with no provenance is refused before anything is written",
+            status == 1
+            and answer["wrote"] is False
+            and not os.path.exists(placed["index"]),
+            f"exited {status} with {answer!r}, and the index "
+            f"{'exists' if os.path.exists(placed['index']) else 'does not'}",
+        )
+        status, answer = remember(strict_config, tree, entry_path, "a-fact.md", "- a line")
+        check(
+            "a complete entry is still refused from a tree under `main_tree`",
+            status == 1 and answer["wrote"] is False,
+            f"exited {status} with {answer!r}",
+        )
+        status, answer = remember(pinned_any, tree, entry_path, "a-fact.md", "   ")
+        check(
+            "an entry with a blank index line is refused, being reachable by nothing",
+            status == 1 and answer["wrote"] is False,
+            f"exited {status} with {answer!r}",
+        )
+        status, answer = remember(
+            _resolved(derived_data), checkout, entry_path, "a-fact.md", "- a line"
+        )
+        check(
+            "a derived store has no index for this command to write, and says so",
+            status == 1 and any("derived" in line for line in answer["problems"]),
+            f"exited {status} with {answer!r}",
+        )
+        status, answer = remember(
+            pinned_any, tree, os.path.join(root, "no-such-entry.yaml"), "a-fact.md",
+            "- a line",
+        )
+        check(
+            "an entry whose file cannot be read exits two, not one",
+            status == 2,
+            f"exited {status} with {answer!r}",
+        )
+        status, answer = remember(
+            pinned_any, tree, entry_path, "a-fact.md", "- the first line"
+        )
+        check(
+            "a complete entry under a pinned store is written, and the index with it",
+            status == 0 and answer["wrote"] is True,
+            f"exited {status} with {answer!r}",
+        )
+        with open(placed["index"], encoding="utf-8") as handle:
+            check(
+                "and the index carries the line it was handed",
+                handle.read() == "- the first line\n",
+                "the line the role handed over is not what the index holds",
+            )
+        check(
+            "and the fact itself is placed in the store under the name handed over",
+            answer.get("fact") == os.path.join(placed["store"], "a-fact.md")
+            and os.path.isfile(answer["fact"]),
+            f"placed {answer.get('fact')!r}",
+        )
+        with open(answer["fact"], encoding="utf-8") as handle:
+            check(
+                "with the entry's own text in it, unchanged",
+                handle.read() == complete,
+                "the file in the store is not what the role wrote",
+            )
+        # ⛔ Both ways a name reaches out of the store, and ⚠️ the index asserted
+        # untouched after each: a refusal that had already appended the line
+        # would leave an index pointing at a fact nobody wrote.
+        before = open(placed["index"], encoding="utf-8").read()
+        for label, named in (
+            ("a name that is a path", "elsewhere/a-fact.md"),
+            ("a name that climbs out of the store", "../a-fact.md"),
+            ("a name that is absolute", "/tmp/a-fact.md"),
+            ("a name that is blank", "   "),
+        ):
+            status, answer = remember(
+                pinned_any, tree, entry_path, named, "- a line"
+            )
+            check(
+                f"{label} is refused, and the index is left alone",
+                status == 1
+                and answer["wrote"] is False
+                and open(placed["index"], encoding="utf-8").read() == before,
+                f"exited {status} with {answer!r}",
+            )
+
+        # --- the index, which is the one file two sessions contend on -----
+        #
+        # ⛔ Two arms, because only one of them reaches the lock, and that was
+        # **measured rather than reasoned about**: with the `flock` call removed
+        # from `_append_under_lock`, twelve writers appending one short line each
+        # still kept all twelve lines and the count arm below stayed green, while
+        # the exclusion arm under it was the single assertion that reddened. So
+        # the count arm holds the outcome § 25 states and the exclusion arm holds
+        # the mechanism it rests on, and neither stands in for the other.
+        child = [
+            sys.executable,
+            "-c",
+            "import sys; sys.path.insert(0, sys.argv[1]); import save; "
+            "save._append_under_lock(sys.argv[2], sys.argv[3])",
+            os.path.dirname(os.path.abspath(__file__)),
+        ]
+        index = placed["index"]
+        writers = [
+            subprocess.Popen([*child, index, f"- line {n}\n"]) for n in range(12)
+        ]
+        for writer in writers:
+            writer.wait()
+        with open(index, encoding="utf-8") as handle:
+            written = handle.read().splitlines()
+        check(
+            "twelve sessions writing at once lose none of each other's entries",
+            all(f"- line {n}" in written for n in range(12))
+            and len(written) == 13,
+            f"the index holds {len(written)} lines: {written!r}",
+        )
+
+        try:
+            import fcntl  # noqa: PLC0415
+        except ImportError:
+            fcntl = None
+        check(
+            "this platform has the lock, so the exclusion below is asserted",
+            fcntl is not None,
+            "without `fcntl` the append happens and the lock does not, which is "
+            "stated in `_append_under_lock` and is not what this runs on",
+        )
+        if fcntl is not None:
+            holder = open(index, "a", encoding="utf-8")
+            try:
+                fcntl.flock(holder.fileno(), fcntl.LOCK_EX)
+                blocked = True
+                try:
+                    subprocess.run(
+                        [*child, index, "- a line nobody should see yet\n"],
+                        timeout=2, capture_output=True, check=False,
+                    )
+                    blocked = False
+                except subprocess.TimeoutExpired:
+                    pass
+                check(
+                    "a second writer waits while the lock is held",
+                    blocked,
+                    "the append completed with another process holding the lock, "
+                    "so the whole read-edit-write-back failure § 25 names is "
+                    "open: this is the arm that reddens when the `flock` call "
+                    "goes",
+                )
+            finally:
+                fcntl.flock(holder.fileno(), fcntl.LOCK_UN)
+                holder.close()
 
 
 def self_test() -> int:
@@ -392,15 +1270,47 @@ def self_test() -> int:
         all(entry["reads"] for entry in thirds(live)),
         f"came back {thirds(live)!r}",
     )
-    # ⛔ Stated as an equivalence rather than as *memory is unavailable*, so the
-    # arm keeps holding the day that third acquires a store.
+    # ⛔ The availability arm, now that the one third whose mechanism was missing
+    # has acquired one (§ 25). It is asserted in **both** directions over the two
+    # configurations that produce them, rather than as an equivalence against a
+    # set written here: a set would make this an assertion about this file's own
+    # spelling, which is what the retired one was.
+    live_memory = [e for e in thirds(live) if e["part"] == MEMORY_THIRD]
     check(
-        "a third with no mechanism is reported unavailable rather than dropped",
-        all(
-            entry["available"] == (entry["part"] not in WITHOUT_A_MECHANISM)
-            for entry in thirds(live)
-        ),
-        f"came back {thirds(live)!r}",
+        "this project runs the memory third, so both arms below are asked",
+        bool(live_memory) and live.get(f"{MEMORY_KEY}.carrier") is not None,
+        f"came back {live_memory!r} -- with the third absent the arms assert "
+        "nothing",
+    )
+    check(
+        "a third whose block the project carries is reported available",
+        all(entry["available"] for entry in live_memory),
+        f"came back {live_memory!r}",
+    )
+    older = thirds(_AConfigurationStating(**{"session.parts": list(ORDER)}))
+    check(
+        "a third whose block is absent is reported unavailable rather than dropped",
+        [entry["part"] for entry in older] == list(ORDER)
+        and [entry["available"] for entry in older]
+        == [name != MEMORY_THIRD for name in ORDER],
+        f"came back {older!r}",
+    )
+    # ⛔ The one thing holding this module's reading to the surface's own
+    # spelling. A block renamed on the surface would otherwise leave every
+    # project's memory third reported unavailable, in silence and green -- which
+    # is the exact shape the availability question replaced.
+    with open(config.SURFACE, encoding="utf-8") as handle:
+        surface_text = handle.read()
+    check(
+        "the block this module reads is one the surface declares",
+        f"{MEMORY_KEY}.carrier" in config.surface_keys(surface_text),
+        f"`{MEMORY_KEY}.carrier` is declared nowhere on the surface, so this "
+        "module reads a key no project can write",
+    )
+    check(
+        "and the third it reads that block for is one the surface states",
+        MEMORY_THIRD in live.facts.get("lists", {}).get("session.parts", []),
+        f"`{MEMORY_THIRD}` is not a third the surface states",
     )
     check(
         "the order this module places and the surface's vocabulary agree",
@@ -413,31 +1323,40 @@ def self_test() -> int:
         set(ORDER) <= set(READS),
         f"placed {ORDER!r} and names {sorted(READS)!r}",
     )
-    check(
-        "and the third with no mechanism is one the surface states",
-        WITHOUT_A_MECHANISM <= set(ORDER),
-        f"{WITHOUT_A_MECHANISM!r} against {ORDER!r}",
-    )
-    # ⛔ The reader reports the same absence, and nothing but this holds the two
-    # statements to each other: a third this module calls unavailable while the
-    # reader reports it carried is a role told to skip a third that can run, and
-    # the other direction is a role running one that cannot.
-    stated_here = set(live.get("session.parts") or [])
-    check(
-        "this project states a third with no mechanism, so that arm was asked",
-        bool(WITHOUT_A_MECHANISM & stated_here),
-        f"{WITHOUT_A_MECHANISM!r} against {sorted(stated_here)!r} -- with no "
-        "overlap the agreement below is asserted over nothing",
-    )
-    for third in sorted(WITHOUT_A_MECHANISM & stated_here):
+    # ⛔ The reader's own § 25 report, held against this module's: the two name
+    # the same open halves, and nothing but this keeps them doing so. A reader
+    # reporting a hazard this module does not, or the other way round, is a role
+    # whose reply names one of the two and acts on the other.
+    # ⚠️ Each arm is conditioned on the value that makes the reader report it, so
+    # a project that pinned its store and lets any tree write it asserts neither
+    # -- and the guard below is what keeps *this* project from silently becoming
+    # that one while these two stay green over nothing.
+    reported = live.unavailable()
+    asked = 0
+    if live.get(f"{MEMORY_KEY}.carrier") == "derived":
+        asked += 1
         check(
-            f"the reader reports `{third}` unavailable too",
-            any(
-                third in line and "unavailable" in line
-                for line in live.unavailable()
-            ),
-            f"reported {live.unavailable()!r}",
+            "the reader names the derived carrier among what it cannot close",
+            any(f"{MEMORY_KEY}.carrier" in line for line in reported),
+            f"reported {reported!r}",
         )
+    if live.get(f"{MEMORY_KEY}.write_from") == "main_tree":
+        asked += 1
+        check(
+            "and names the directories a save may not refresh memory from",
+            any(f"{MEMORY_KEY}.write_from" in line for line in reported),
+            f"reported {reported!r}",
+        )
+    check(
+        "this project states at least one of the two, so the pair above was asked",
+        asked > 0,
+        "neither value this repository configures reaches the reader's § 25 "
+        "report, so the two arms above are asserted over nothing",
+    )
+
+    print()
+    print("§ 25's store, the write decision, and the entry a save may admit")
+    _memory_arms(check)
 
     print()
     print("every documented exit status, on the path that produces it")
@@ -474,6 +1393,24 @@ def self_test() -> int:
             "told it failed would rewrite a file that is already right",
         )
         check("the form is answered with no configuration at all", main(["form"]) == 0)
+        check(
+            "and so is the entry form, which is procedure the same way",
+            main(["entry"]) == 0,
+        )
+        entry = os.path.join(root, "an-entry.yaml")
+        with open(entry, "w", encoding="utf-8") as handle:
+            handle.write(_an_entry())
+        check("an entry that holds exits zero", main(["recall", "--file", entry]) == 0)
+        with open(entry, "w", encoding="utf-8") as handle:
+            handle.write(_an_entry_without("premise"))
+        check(
+            "an entry that does not hold exits one",
+            main(["recall", "--file", entry]) == 1,
+        )
+        check(
+            "an entry whose file cannot be read exits two, not one",
+            main(["recall", "--file", os.path.join(root, "no-entry.yaml")]) == 2,
+        )
 
     print()
     check(
@@ -505,37 +1442,77 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--self-test", action="store_true")
     sub = parser.add_subparsers(dest="what")
 
-    # ⛔ Neither subcommand takes `--skills-root`, and that is a removal rather
-    # than an omission: the form is procedure and the reading holds a file it is
-    # handed, so neither reads a project's configuration at all. A flag accepted
-    # and unread is a flag somebody passes and believes.
+    # ⛔ Four subcommands take no `--skills-root`, and that is a removal rather
+    # than an omission: a form is procedure and a reading holds a file it is
+    # handed, so none of them reads a project's configuration at all. A flag
+    # accepted and unread is a flag somebody passes and believes.
     sub.add_parser("form", help="the fields a save artifact carries")
+    sub.add_parser("entry", help="the fields a memory entry carries (§ 25)")
 
     reading = sub.add_parser("check", help="hold a written artifact to the form")
     reading.add_argument("--file", required=True)
+
+    recalling = sub.add_parser(
+        "recall", help="hold a written memory entry to the entry form (§ 25)"
+    )
+    recalling.add_argument("--file", required=True)
+
+    # ⛔ These two do read the configuration, and both take the working directory
+    # explicitly rather than reading `os.getcwd()`: the decision they answer is
+    # *about* a directory, so a caller asking about one it is not standing in --
+    # the suite below, and a role reporting what a tree would get -- has to be
+    # able to ask. ⚠️ The default is the current directory, which is the case a
+    # role actually invokes.
+    located = sub.add_parser("memory", help="§ 25's store, and the write decision")
+    located.add_argument("--skills-root", default=".")
+    located.add_argument("--standing-in", default=".")
+
+    writing = sub.add_parser(
+        "remember", help="admit one entry and append its index line under a lock"
+    )
+    writing.add_argument("--skills-root", default=".")
+    writing.add_argument("--standing-in", default=".")
+    writing.add_argument("--entry", required=True)
+    writing.add_argument("--name", required=True)
+    writing.add_argument("--line", required=True)
 
     args = parser.parse_args(argv)
     if args.self_test:
         return self_test()
 
-    # ⛔ The form is this module's and is answered before any configuration is
-    # read: it is procedure, so a project that configures nothing still has one.
+    # ⛔ Either form is this module's and is answered before any configuration is
+    # read: both are procedure, so a project that configures nothing still has
+    # them.
     if args.what == "form":
         print(json.dumps(form(), indent=2, ensure_ascii=False))
         return 0
+    if args.what == "entry":
+        print(json.dumps(entry_form(), indent=2, ensure_ascii=False))
+        return 0
 
-    if args.what == "check":
+    if args.what in ("check", "recall"):
         try:
             with open(args.file, encoding="utf-8") as handle:
                 text = handle.read()
         except OSError as exc:
             print(exc, file=sys.stderr)
             return 2
-        recovered, problems = read(text)
-        print(json.dumps(
-            {"holds": not problems, "problems": problems, "read": recovered},
-            indent=2, ensure_ascii=False,
-        ))
+        recovered, problems = (
+            read(text) if args.what == "check" else read_entry(text)
+        )
+        answer = {"holds": not problems, "problems": problems, "read": recovered}
+        # ⛔ A recalled entry is handed back with its premise named as unchecked,
+        # never as a fact that is current: § 24 obliges the reading role to check
+        # one, and a carrier that returned the fact alone would have made the
+        # restatement the easier of the two paths.
+        if args.what == "recall" and not problems:
+            answer["unchecked"] = (
+                "The premise above has not been checked by this command and "
+                "cannot be: it is read against the tree by whoever reads the "
+                "fact. ⛔ Report the fact with its premise, or report it "
+                "unchecked -- never as current (§ 24, § 25)."
+            )
+        print(json.dumps(answer, indent=2, ensure_ascii=False))
         return 0 if not problems else 1
 
     # ⛔ Asked before the configuration is loaded and answered rather than
@@ -557,6 +1534,24 @@ def main(argv: list[str] | None = None) -> int:
     except (config.ConfigError, OSError) as exc:
         print(exc, file=sys.stderr)
         return 2
+
+    if args.what == "memory":
+        answer = memory(configuration, args.standing_in)
+        answer["form"] = entry_form()
+        print(json.dumps(answer, indent=2, ensure_ascii=False))
+        # ⛔ Zero wherever the question was answered, whichever way it was
+        # answered: a refusal to write from this directory is this command
+        # working, and a caller reading a non-zero status as a broken run would
+        # go looking for a fault instead of moving to the checkout. ⚠️ The one
+        # non-zero is the unanswerable case, which is not a decision at all.
+        return 0 if answer["may_write"] is not None else 1
+
+    if args.what == "remember":
+        status, answer = remember(
+            configuration, args.standing_in, args.entry, args.name, args.line
+        )
+        print(json.dumps(answer, indent=2, ensure_ascii=False))
+        return status
 
     running = thirds(configuration)
     report = [
@@ -586,9 +1581,19 @@ def main(argv: list[str] | None = None) -> int:
             "No bookkeeping role runs here (`session.parts: []`), so there is no "
             "third to run and nothing to save (§ 23)."
         )
+    # § 25's answer, carried in this report rather than left for the role to ask
+    # about separately: the write decision is about the directory the role is
+    # standing in, so a role that read it later -- after the tracker third, say,
+    # or at the point of writing -- would have run two thirds before learning the
+    # middle one refuses here.
+    located = None
+    if any(entry["part"] == MEMORY_THIRD for entry in running):
+        located = memory(configuration, ".")
+        report += located["report"]
+        report += located["unclosed"]
     print(json.dumps(
         {"parts": running, "store": configuration.get("context.artifacts.carrier"),
-         "report": report},
+         "memory": located, "report": report},
         indent=2, ensure_ascii=False,
     ))
     return 0 if running else NOTHING_TO_ANSWER

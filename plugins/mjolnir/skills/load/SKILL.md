@@ -261,10 +261,35 @@ with the reason stated there. What this step adds is what *checking* means here:
 a file, a function, a flag or a command, the check is that the thing is still in the tree — and the
 reply carries the check rather than the recollection.
 
-⚠️ **Where the store that third writes is declared by no key**, step 2 reports the reading
-unavailable and this role says what it could not check —
-[`§ 24`](../../config/schema.md#24-session-restore--the-readings-a-pass-is-resumed-from)'s rule and
-not a gap in this pass.
+**Which store, and what each entry hands over, are
+[`§ 25`](../../config/schema.md#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)'s** —
+read, and ⛔ **never composed here**, for the reason the writing role does not compose it either:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/save.py" memory --skills-root <skills-root> --standing-in <the directory this role is in>
+```
+
+⛔ **An entry states the premise it rests on, and that is what makes the check takeable** rather
+than something this role has to invent. Hand each one back through the carrier, which returns the
+fact with its premise and ⛔ **names that premise as unchecked**:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/save.py" recall --file <the entry>
+```
+
+- **The premise still holds** ⇒ report the fact, with the check that was taken.
+- **It does not** ⇒ ⛔ **report the fact as stale and never restate it as current.** A fact whose
+  premise has changed is the cheapest way a wrong premise becomes this session's.
+- **The check could not be taken** ⇒ report it unchecked, which is
+  [`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)'s shape and not a
+  verdict.
+- ⛔ **A fact whose provenance is `repeated` is reported as that**, never as something this store
+  measured: a repeated fact becomes a measured one exactly by being read twice without the
+  distinction being carried.
+
+⚠️ **Where the project carries no `memory` block**, step 2 reports the reading unavailable and this
+role says what it could not check — ⛔ **never that memory holds nothing**, which is the one
+mis-report a store nobody could reach reads as.
 
 ## 9. The window's own reading
 
@@ -308,7 +333,9 @@ it — the outcome in the first sentence, then the facts, with a table where the
   whether a compaction stands between the write and now;
 - the environment, as the project's own script answers it — or that this pass could not take the
   reading;
-- what memory claims that this pass **checked**, and what it did not;
+- what memory claims that this pass **checked**, and what it did not — each fact with the premise
+  it rests on, ⛔ **every one whose premise has changed named as stale**, and every `repeated` one
+  reported as repeated rather than as measured here;
 - the window's own reading, or that the harness handed none;
 - which port fallback was taken, where one was;
 - that the ingestion step ran over anything read from outside the procedure, and what it surfaced —

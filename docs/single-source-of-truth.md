@@ -3185,15 +3185,18 @@ command line carries a status of its own for it for the same reason.
 - **Whatever is not committed**, and **issues and pull requests**, for the reasons the checks above
   give: the workflow holds no credential.
 
-## The bookkeeping role's two derivations, and the round trip that is the resumability arm
+## The bookkeeping role's derivations, and the round trip that is the resumability arm
 
 `plugins/mjolnir/scripts/save.py --self-test` runs in the `Save artifact` workflow, with no
 credential and no network. ⛔ The rules are
 [schema § 23](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs)
-and its two subsections, and this document states none of them: what is recorded here is the reach
-of the carrier, which is narrower than § 23 in one direction the section itself is careful to name.
+and its two subsections, together with
+[schema § 25](../plugins/mjolnir/config/schema.md#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)
+for the store one of those thirds writes, and this document states none of them: what is recorded
+here is the reach of the carrier, which is narrower than either section in the directions named
+below.
 
-What it holds, both halves being derivations rather than verdicts about a project:
+What it holds, each being a derivation rather than a verdict about a project:
 
 - **Which thirds run, in the procedure's order.** The vocabulary is read out of the surface through
   the shared reader and the order is this module's, so the two are held to each other: a third the
@@ -3208,6 +3211,18 @@ What it holds, both halves being derivations rather than verdicts about a projec
   the artifact and the pass that reads one back, those being one question asked from two sides —
   which is why there is one subcommand and not two.
 
+- **Where the memory store is, and whether a working directory may write it.** Both are
+  [schema § 25](../plugins/mjolnir/config/schema.md#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)'s,
+  and the decision is three-valued: write, refuse, and *could not be established*. The suite builds
+  a real checkout with a real linked worktree beside it and asserts each value against the directory
+  that produces it, because a fixture of two directories would assert this module's own arithmetic
+  over a shape the hazard never arrives in.
+- **The memory entry's form, and its admission at write time.** The fields and the provenance set
+  are the **carrier's**, by the same rule the artifact's form is, and the admission runs before
+  anything is written. One function holds both forms, so neither can come to be held to less than
+  the other — and the suite asserts the two are not interchangeable in both directions, an artifact
+  failing the entry form and an entry failing the artifact's.
+
 ⚠️ **The fields are keys and the prose beside them is the project's own.** A form demanding English
 headings would ship one project's vocabulary to every project, which
 [schema § 8](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project)
@@ -3221,6 +3236,32 @@ different names. That is a resume reading the artifact at the mechanical end. Wh
 role wrote into those fields is enough for a later pass to continue is the *quoting* kind of
 judgement, green on prose reworded into its opposite, and it is read rather than enforced.
 
+### The memory store, the write decision, and the two arms on the index
+
+⚠️ **One of these two arms does not reach the mechanism, and that was measured rather than
+reasoned about.** Twelve processes each appending one line to the index keep all twelve lines **with
+the lock removed** — a short append is atomic without one — so the arm asserting the outcome
+[schema § 25](../plugins/mjolnir/config/schema.md#the-index-is-the-one-file-two-sessions-contend-on)
+states passes over a mechanism that is not there. The second arm holds the mechanism directly: with
+one process holding the lock, a writer calling the carrier's own append must wait. With the `flock`
+call taken out, that is the single assertion in the suite that reddens.
+
+So the pair is deliberate and neither stands in for the other: the first is what the rule is for,
+the second is what the rule is.
+
+⚠️ **What the write decision's own arms reach, and what they do not.** That the carrier reads a
+linked worktree as a tree and a checkout as a checkout is asserted over directories git actually
+made, and that a directory git cannot place comes back unanswered rather than as the checkout is
+asserted too — the permissive reading there being the one that writes a tree's own store. What no
+arm reaches is whether the store a project **pinned** is the store its harness writes: that is a
+fact about a machine outside the run, named in § 25's own table as the thing a pinned carrier owes
+and held by nobody.
+
+⚠️ **And the admission reaches the entry's shape rather than its truth.** That a fact states its
+provenance and its premise is decidable and is asserted field by field; whether the premise still
+holds is read against the tree by whoever reads the fact, which is the *quoting* kind of judgement
+one half over from the round trip above.
+
 ### What this check deliberately does not hold
 
 - **Whether a save happened at all.** Nothing fires when a window is compacted — the event is one
@@ -3233,6 +3274,10 @@ judgement, green on prose reworded into its opposite, and it is read rather than
   refreshed, that the commit carries what it should: each is the port's, the store's or § 6's, and
   a second answer here would be the duplication the toolkit exists to delete. What this reports is
   which thirds the project runs and which of their mechanisms are absent.
+- **Whether a recalled fact is still true.** The entry states its premise and the admission holds
+  that it does; the premise itself is read against the tree by the restoring role
+  ([schema § 24](../plugins/mjolnir/config/schema.md#24-session-restore--the-readings-a-pass-is-resumed-from)),
+  and no suite can take that reading for a store on somebody's machine.
 - **Whether the artifact is where § 11 says.** The store's path and whether it is committed are the
   configuration reader's, refused there; this reads a file it is handed by path.
 - **Whether the boundary names match the occasions the surface states.** The four names are the

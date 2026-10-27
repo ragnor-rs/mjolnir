@@ -124,8 +124,8 @@ READS = {
         "by no key on this surface (§ 1's four absences)"
     ),
     "memory": (
-        "the store the bookkeeping role's memory third writes, which no key on "
-        "this surface declares yet (#35)"
+        "the store § 25's `memory` block states, and each fact's own provenance "
+        "and premise -- never the fact restated as current (§ 24)"
     ),
     "window": (
         "what the harness hands a `SessionStart` arm about a resumed window, "
@@ -133,10 +133,15 @@ READS = {
     ),
 }
 
-# The reading whose store the surface does not carry at all, named here because
-# the configuration reader reports the same absence for the third that writes it
-# and the two statements have to agree.
-WITHOUT_A_STORE = {"memory"}
+# The reading whose store is a block of the project's rather than a capability of
+# something else, and the key that carries it. ⛔ Availability is asked of the
+# configuration rather than written down here: before § 25 this reading had no
+# store at all and was listed as unavailable unconditionally, and what replaced
+# that is a question -- is the block there -- whose answer can be no again. ⚠️ It
+# can be no on a *correct* project, § 1 resolving a work tree against that tree's
+# own surface: a tree cut before § 25 states no block.
+MEMORY_READING = "memory"
+MEMORY_KEY = "memory"
 
 # The reading this module cannot answer the availability of, because what answers
 # it is the payload of an event that has not fired yet. ⛔ Reported as unanswered
@@ -160,8 +165,8 @@ def readings(configuration: config.Config, *, tracker=None) -> list[dict]:
     for name in ORDER:
         if name in ANSWERED_ELSEWHERE:
             available = None
-        elif name in WITHOUT_A_STORE:
-            available = False
+        elif name == MEMORY_READING:
+            available = configuration.get(f"{MEMORY_KEY}.carrier") is not None
         elif name == "item":
             available = bool(tracker.implements("read_item")) if tracker else None
         elif name == "last_pass":
@@ -214,11 +219,26 @@ def report_for(configuration: config.Config, taken: list[dict]) -> list[str]:
             "own setup and teardown: the environment reading is taken by reading what "
             "it names, and ⛔ never by running a teardown (§ 10)."
         )
-    if not said["memory"]["available"]:
+    if not said[MEMORY_READING]["available"]:
         lines.append(
-            "`memory` reads a store no key on this surface declares (#35), so the "
-            "role says what it could not check rather than restating a recalled "
-            "fact as current (§ 24)."
+            f"`{MEMORY_READING}` reads the store § 25's `{MEMORY_KEY}` block "
+            "states and this project carries no such block, so the role says what "
+            "it could not check rather than restating a recalled fact as current "
+            "(§ 24). ⛔ Not that memory holds nothing: a tree whose surface "
+            "predates § 25 reads this way too."
+        )
+    else:
+        # ⛔ The reading's own obligation, handed over rather than left to be
+        # remembered: § 24 says a recalled fact is checked or reported unchecked,
+        # and § 25 is what makes the check takeable by having the entry state its
+        # own premise. A report naming the store and not the premise leaves the
+        # role to invent the check, which is the restatement the rule is against.
+        lines.append(
+            f"`{MEMORY_KEY}.carrier` is "
+            f"`{configuration.get(f'{MEMORY_KEY}.carrier')}`, so each recalled "
+            "fact carries its provenance and the premise it rests on (§ 25): the "
+            "reading reports the fact **with** that premise, or reports it "
+            "unchecked -- ⛔ never as current (§ 24)."
         )
     if said["window"]["available"] is None:
         lines.append(
@@ -1294,17 +1314,56 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
         set(ORDER) <= set(READS),
         f"placed {ORDER!r} and names {sorted(READS)!r}",
     )
-    # ⛔ Stated as an equivalence rather than as *memory is unavailable*, so the
-    # arm keeps holding the day that reading acquires a store.
+    # ⛔ The store reading, now that it has a store to read (§ 25), asserted in
+    # both directions over the two configurations that produce them rather than
+    # as an equivalence against a set written here -- a set would make this an
+    # assertion about this file's own spelling.
+    class _Stating:
+        """A configuration this reader cannot produce, for the state it must read.
+
+        § 25 refuses a project that runs the memory third and states no block, so
+        this is a state no loadable configuration here reaches -- and it is the
+        one a tree cut before § 25 is in, § 1 resolving such a tree against its
+        own surface. The permissive reading of it restates a recalled fact as
+        current, which is what makes the arm worth an object.
+        """
+
+        def __init__(self, **values):
+            self.values = values
+
+        def get(self, path, default=None):
+            return self.values.get(path, default)
+
+    carried = [e for e in taken if e["reading"] == MEMORY_READING]
     check(
-        "a reading with no store is reported unavailable rather than dropped",
+        "this project carries the block, so both arms below are asked",
+        bool(carried) and live.get(f"{MEMORY_KEY}.carrier") is not None,
+        f"came back {carried!r} -- with no block the arms assert nothing",
+    )
+    check(
+        "a store the project carries is reported available",
+        all(entry["available"] for entry in carried),
+        f"came back {carried!r}",
+    )
+    absent = readings(_Stating(), tracker=None)
+    check(
+        "a store no block states is reported unavailable rather than dropped",
         all(
             entry["available"] is False
-            for entry in taken
-            if entry["reading"] in WITHOUT_A_STORE
+            for entry in absent
+            if entry["reading"] == MEMORY_READING
         ),
-        f"came back {taken!r}",
+        f"came back {absent!r}",
     )
+    # ⛔ The one thing holding this module's reading to the surface's own
+    # spelling. A block renamed on the surface would otherwise leave every
+    # project's memory reading reported unavailable, in silence and green.
+    with open(config.SURFACE, encoding="utf-8") as handle:
+        check(
+            "the block this module reads is one the surface declares",
+            f"{MEMORY_KEY}.carrier" in config.surface_keys(handle.read()),
+            f"`{MEMORY_KEY}.carrier` is declared nowhere on the surface",
+        )
     check(
         "the reading nothing here can answer comes back unanswered, not absent",
         all(
@@ -1315,24 +1374,30 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
         f"came back {taken!r}",
     )
     check(
-        "the storeless reading is one the procedure places",
-        WITHOUT_A_STORE | ANSWERED_ELSEWHERE <= set(ORDER),
-        f"{WITHOUT_A_STORE | ANSWERED_ELSEWHERE!r} against {ORDER!r}",
-    )
-    # ⛔ The configuration reader reports the same absence for the third that
-    # writes that store, and nothing but this holds the two statements to each
-    # other: a reading this module calls unavailable while the reader reports it
-    # carried is a role told to skip a reading that can run.
-    check(
-        "the reader reports the same store absent",
-        any("memory" in line and "unavailable" in line for line in live.unavailable()),
-        f"reported {live.unavailable()!r}",
+        "the store reading and the unanswerable one are each placed",
+        {MEMORY_READING} | ANSWERED_ELSEWHERE <= set(ORDER),
+        f"{{{MEMORY_READING!r}}} | {ANSWERED_ELSEWHERE!r} against {ORDER!r}",
     )
     said = report_for(live, taken)
     check(
         "this project's own absences are each said out loud",
-        any("#35" in line for line in said) and any("mechanics" in line for line in said),
+        any("mechanics" in line for line in said),
         f"said {said!r}",
+    )
+    # ⛔ The reading's § 24 obligation is in the report wherever the store is
+    # carried, and it is the premise rather than the store that has to be named:
+    # a report naming where memory is leaves the role to invent the check, which
+    # is the restatement § 24 forbids.
+    check(
+        "a carried store is reported with the premise a reader has to check",
+        any("premise" in line for line in said),
+        f"said {said!r}",
+    )
+    absent_said = report_for(_Stating(), readings(_Stating(), tracker=None))
+    check(
+        "and a store no block states is reported as a reading nobody took",
+        any(MEMORY_KEY in line and "could not check" in line for line in absent_said),
+        f"said {absent_said!r}",
     )
 
     # ⛔ The other arm of the environment reading, which this project cannot

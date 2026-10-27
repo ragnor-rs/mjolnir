@@ -109,6 +109,14 @@ carriers:
 session:
   parts: []
 
+# § 25. No bookkeeping role is mapped at all, so no third of one writes a store. ⛔ Stated rather
+# than left to be inferred from the empty list above: the two read identically to a role only
+# because the reader refuses them to disagree.
+memory:
+  carrier: none
+  absent_reason: "No bookkeeping role is mapped here, so there is no third of one to write a store.
+    The cost is that nothing outlives a session but the repository itself."
+
 language:
   work_item: en
   repo: en
