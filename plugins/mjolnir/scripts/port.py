@@ -3,10 +3,13 @@
 
 The shared procedure names **the port and never the thing behind it**. This
 module is every port the surface declares: it reads the operation list and the
-absent case out of the surface beside it -- `../config/schema.md`, § 3 for the
-tracker and § 26 for the day log's destination -- answers whether a given
-operation is available here, and resolves the one that is not into the fallback
-the surface states for it. One implementation per kind is **discovered** -- a
+absent case out of the surface beside it -- `../config/schema.md`, each port
+from the section its own marker sits in -- answers whether a given operation is
+available here, and resolves the one that is not into the fallback the surface
+states for it. ⛔ **Which sections those are is not written here.** Naming them
+would be the list of ports the first bullet below says this module does not
+carry, and the receipt is that it drifted: a sibling change renumbered a section
+while this one was open, and every copy of the number had to be walked by hand. One implementation per kind is **discovered** -- a
 module in that port's own package beside this one, naming the kind it answers
 for -- so the contract itself knows none of them by name and nothing has to
 remember an import.
@@ -423,6 +426,28 @@ def surface_ports(surface_text: str | None = None) -> dict[str, PortSpec]:
         name: PortSpec(name, section, package)
         for name, (section, package) in declared.items()
     }
+    # ⛔ And the other direction of § 26's *one port per table*, which the orphan
+    # check below cannot see: two markers naming one **section** are two ports
+    # reading one operation list, and two naming one **package** are two ports
+    # over one registry -- where the second port resolves an implementation
+    # registered for the first and never held to its own closed list, so every
+    # operation answers from an adapter built for somebody else. Both were
+    # reachable by editing the surface and neither was refused, measured.
+    for facet, taken in (("section", "section"), ("directory", "package")):
+        seen: dict[str, str] = {}
+        for name in sorted(specs):
+            value = getattr(specs[name], taken)
+            if value in seen:
+                raise ConfigError(
+                    os.path.relpath(config.SURFACE, config.PLUGIN_ROOT),
+                    f"declares `{seen[value]}` and `{name}` with one {facet}, "
+                    f"{value!r}. The surface states one table per port and one "
+                    "port per table: two ports sharing a section read one list, "
+                    "and two sharing a directory resolve one registry -- so an "
+                    "implementation built for one answers for the other, held to "
+                    "a list it was never checked against.",
+                )
+            seen[value] = name
     sections = {spec.section for spec in specs.values()}
     for heading in operation_sections(surface_text):
         if heading not in sections:
@@ -430,8 +455,8 @@ def surface_ports(surface_text: str | None = None) -> dict[str, PortSpec]:
                 os.path.relpath(config.SURFACE, config.PLUGIN_ROOT),
                 f"states an `{OPERATION_COLUMN}` / `{ABSENT_COLUMN}` table under "
                 f"§ {heading}, which no `# port:` marker names. That is an "
-                "operation list no port reads and no adapter is held to -- § 26 "
-                "states one table per port and one port per table.",
+                "operation list no port reads and no adapter is held to -- the "
+                "surface states one table per port and one port per table.",
             )
     return specs
 
@@ -445,7 +470,7 @@ def port_spec(name: str = TRACKER) -> PortSpec:
         raise ConfigError(
             name,
             "is not a port the surface declares. A port is declared by a "
-            "`# port:` marker on its `kind` line (§ 26), and the surface declares "
+            "`# port:` marker on its `kind` line, and the surface declares "
             f"{', '.join('`' + key + '`' for key in sorted(specs))}.",
         ) from None
 
@@ -595,9 +620,16 @@ def load_adapters(spec: PortSpec | None = None) -> dict[str, Adapter]:
         return dict(registry)
     directory = spec.directory
     if not os.path.isdir(directory):
-        # ⚠️ Not a fault. A declared port whose directory is not there yet has
-        # every kind unbuilt, which is the state § 3 already holds apart from a
-        # project that configured none -- and the report below says which.
+        # ⚠️ Not a fault **of the contract**. A declared port whose directory is
+        # not there yet has every kind unbuilt, which is the state § 3 already
+        # holds apart from a project that configured none -- and the report below
+        # says which. ⛔ That is a statement about this function and not about
+        # whether the toolkit may ship such a port: the suite below and the
+        # adapter-suite runner each hold every declared port to having an
+        # implementation installed, because a port on this surface with nothing
+        # behind it is a hole in the toolkit rather than a configuration. The two
+        # readings are not in tension -- one is what a role is handed at run time,
+        # the other is what a gate requires of this repository.
         _discovered.add(spec.package)
         return dict(registry)
     import importlib
@@ -949,6 +981,43 @@ class Port:
         }
 
 
+def invocation_report(name: str, operation: str, outcome: "Outcome") -> dict:
+    """What performing one operation comes back as, for a role to read.
+
+    ⛔ Every one of `Outcome`'s three answers is a field, and `performed` is not
+    inferred from `result` being there: an operation that legitimately answers
+    `None` -- a day with no entry -- would otherwise read as one that did not run.
+    """
+    return {
+        "port": name,
+        "operation": operation,
+        "performed": outcome.performed,
+        "failed": outcome.failed,
+        "refused": outcome.refused,
+        "detail": outcome.detail,
+        "result": outcome.result,
+    }
+
+
+def refusal_report(name: str, operation: str, error: ConfigError) -> dict:
+    """What a refusal comes back as, in the same shape an outcome does.
+
+    ⛔ The same keys, so a role reads one thing. A refusal reported in a shape of
+    its own is a role writing two readers, and the second one is the one nobody
+    tests.
+    """
+    return {
+        "port": name,
+        "operation": operation,
+        "performed": False,
+        "failed": False,
+        "refused": True,
+        "detail": str(error),
+        "result": None,
+        "key": error.key,
+    }
+
+
 def load(skills_root: str = ".", name: str = TRACKER, **kwargs) -> Port:
     """One port over the configuration at `skills_root`, read through #1's reader.
 
@@ -1201,9 +1270,18 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         # cannot contribute operations. ⛔ Planted inside this port's own section,
         # for the reason the plants above are: appended to the document it would
         # sit under the last section and assert nothing about this one.
+        #
+        # ⛔ And spliced **directly behind the table's last row**, with a row this
+        # reader would otherwise accept. The earlier plant put a `Thing | Other`
+        # table two blank lines down: those headers are discarded whatever the
+        # fence does, and a blank line already ends a table, so the assertion
+        # passed identically with the fence handling removed -- measured. What
+        # discriminates is a row that *is* operation-shaped, immediately after the
+        # fence, with nothing else to end the table.
         glued = with_body(
-            f"{body}\n```yaml\nkey: value\n```\n\n"
-            "| Thing | Other |\n|---|---|\n| `telepathy` | x |\n"
+            body.replace(
+                row, f"{row}\n```yaml\nkey: value\n```\n| `telepathy` | asks | x |", 1
+            )
         )
         read_back = operations(glued, spec.section, spec.prefix)
         check(
@@ -1404,6 +1482,33 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         "and those are the only states it has, so a consumer's lookup is complete",
         set(states) == set(ADAPTER_STATES),
         f"this module names {sorted(ADAPTER_STATES)!r}",
+    )
+
+    # What performing an operation comes back as. ⛔ Asserted over the report
+    # builder rather than by running the command, because invoking an operation
+    # for real is a write against whatever this project configures -- a tracker,
+    # or somebody's timesheet. ⚠️ A port whose operations no role can reach is a
+    # contract nobody can keep, which is why that path exists at all; it shipped
+    # with nothing holding its shape, which is how the state words above shipped
+    # wrong one field over.
+    done = Port(
+        _any_example(), spec, adapter=Adapter({first: lambda *a, **k: None}), stated=stated
+    ).invoke(first)
+    reported = invocation_report(spec.name, first, done)
+    check(
+        "an operation that answers `None` still reports as performed",
+        reported["performed"] and reported["result"] is None,
+        f"reported {reported!r}",
+    )
+    refusal = refusal_report(
+        spec.name, "telepathy", ConfigError(f"{spec.prefix}.operations.telepathy", "x")
+    )
+    check(
+        "a refusal reports in the same shape an outcome does, plus the key",
+        set(refusal) == set(reported) | {"key"}
+        and refusal["refused"]
+        and not refusal["performed"],
+        f"reported {sorted(refusal)!r} against {sorted(reported)!r}",
     )
 
     # § 4.2's refusal, which is the one guard above a capability: the procedure
@@ -1661,10 +1766,21 @@ def _hold_registration(check, spec: PortSpec) -> None:
             # the red line and the count this file holds every other read to.
             # Measured: planted, the run died at this line having printed `ok` for
             # the two assertions above.
+            #
+            # ⛔ And it is a **real** sweep. With the package still marked swept
+            # this returned the memo without looking at a directory -- and
+            # `SCRIPTS_DIR` is pointed at the temporary root here, so the live
+            # port's own directory does not even exist at this moment. Both are
+            # put back for the duration, or the assertion holds the memo rather
+            # than the sweep.
+            globals()["SCRIPTS_DIR"] = was_root
+            _discovered.discard(spec.package)
             try:
                 live, live_refused = load_adapters(spec), None
             except ConfigError as error:
                 live, live_refused = {}, str(error)
+            finally:
+                globals()["SCRIPTS_DIR"] = planted
             check(
                 "a broken package leaves the live one's implementations installed",
                 bool(live),
@@ -1805,6 +1921,31 @@ def self_test() -> int:
         == os.path.relpath(config.SURFACE, config.PLUGIN_ROOT),
         f"reported {_refused(lambda: surface_ports(orphan))!r}",
     )
+    # ⛔ And the other direction of the same rule, which the orphan check cannot
+    # see. Both plants copy a declared marker onto a second key: one leaves the
+    # section it sits under alone, so two ports read one table; the other gives it
+    # its own section and keeps the directory, so two ports resolve one registry
+    # and the second answers from an implementation held to the first's list.
+    # Neither was refused before this was written.
+    # ⚠️ The plant declares a whole block of its own, because the marker is read
+    # only on a `kind`: copying the clause onto a neighbouring key is refused by
+    # that rule instead and never reaches this one. Measured while writing it.
+    one = specs[sorted(specs)[0]]
+    body = section_body(surface_text, one.section)
+    heading = body.splitlines()[0]
+    second = (
+        f"{heading}\n\n```yaml\n"
+        "a_port_this_suite_planted:\n"
+        f"  kind: a | b          # port: {one.package}\n"
+        "```\n"
+    )
+    twinned = surface_text.replace(body, body.replace(heading, second, 1), 1)
+    check(
+        "two ports declared under one section are refused, naming the surface",
+        _refused(lambda: surface_ports(twinned))
+        == os.path.relpath(config.SURFACE, config.PLUGIN_ROOT),
+        f"reported {_refused(lambda: surface_ports(twinned))!r}",
+    )
 
     # Each port's own kinds, needed below and asserted before anything indexes it.
     kinds = _real_tracker_kinds()
@@ -1931,6 +2072,21 @@ def main(argv: list[str]) -> int:
         help="report every port the surface declares rather than one",
     )
     parser.add_argument(
+        "--invoke",
+        metavar="OPERATION",
+        help="perform one of this port's operations rather than reporting it, and "
+        "print the outcome. Every value is passed as written; an implementation "
+        "holds what it will accept",
+    )
+    parser.add_argument(
+        "--argument",
+        action="append",
+        default=[],
+        metavar="VALUE",
+        help="one argument for `--invoke`, repeated in the order the operation "
+        "takes them. Always passed as text",
+    )
+    parser.add_argument(
         "--no-check-paths",
         action="store_true",
         help="resolve without testing that the configured code root exists",
@@ -1945,6 +2101,50 @@ def main(argv: list[str]) -> int:
     if args.self_test:
         print("Holding the port contract to the surface and the examples:")
         return self_test()
+
+    # ⛔ Performing an operation is a separate request from reporting one, and the
+    # two are not combined. ⚠️ This exists because a port whose operations no role
+    # can reach is a contract nobody can keep: the tracker port's roles have a
+    # host client of their own to perform with, and § 26's has none -- its adapter
+    # *is* the only writer. Without this the day-log role was told to call five
+    # operations and left to compose a path by hand, which is the one thing its
+    # own text forbids.
+    if args.invoke:
+        if args.ports:
+            print(
+                "Refused: `--invoke` performs one port's operation, so it is not "
+                "asked of every port at once.",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            answering = load(
+                args.skills_root, args.port, check_paths=not args.no_check_paths
+            )
+            outcome = answering.invoke(args.invoke, *args.argument)
+        except ConfigError as error:
+            # ⛔ Reported as a refusal and never as a traceback. A value the
+            # configuration states badly, or an operation this port does not
+            # state, is an answer a role can put in its report -- and the
+            # alternative measured here was a raw exception reaching a role that
+            # had been told the absence would be reported to it.
+            print(
+                json.dumps(
+                    refusal_report(args.port, args.invoke, error),
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+            return 1
+        print(
+            json.dumps(
+                invocation_report(answering.name, args.invoke, outcome),
+                indent=2,
+                ensure_ascii=False,
+                default=str,
+            )
+        )
+        return 0 if outcome.performed else 1
 
     # ⛔ One port by default and never all of them. A role reads this output for
     # the fallbacks it must take, and a report carrying a second port's fallbacks

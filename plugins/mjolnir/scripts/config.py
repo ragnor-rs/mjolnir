@@ -70,6 +70,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 import re
@@ -280,6 +281,15 @@ PORT_KEY = "kind"
 # being the adapter's fact (§ 3), so neither of these reaches a fallback.
 NO_DESTINATION = "none"
 FILE_DESTINATION = "file"
+
+# The file kind's one key, and where it sits. ⛔ Spelled once here rather than in
+# each of the three places that read it -- the two reports and the load-bearing
+# list -- since those three disagreeing is the whole failure mode this reader is
+# built to not have.
+DESTINATION_BLOCK = "day_log.destination"
+OUT_DIR_KEY = "out_dir"
+OUT_DIR_PATH = f"{DESTINATION_BLOCK}.{OUT_DIR_KEY}"
+DESTINATION_KIND_PATH = f"{DESTINATION_BLOCK}.kind"
 
 # A fenced block of the surface, the heading it sits under, and a `key:` line
 # inside one. List items are not matched on purpose -- a `- { ... }` line is an
@@ -1706,20 +1716,18 @@ class Config:
         # ⛔ What each absence leaves the five operations doing is the port's to
         # report and never this reader's -- a capability is the adapter's fact --
         # so these name the configuration and stop there.
-        destination = self.get("day_log.destination.kind")
+        destination = self.get(DESTINATION_KIND_PATH)
         if destination == NO_DESTINATION:
             out.append(
                 "No destination is configured for the day log "
-                f"(`day_log.destination.kind: {NO_DESTINATION}`), so the role "
+                f"(`{DESTINATION_KIND_PATH}: {NO_DESTINATION}`), so the role "
                 "measures the day and has nowhere to record it. What that leaves "
                 "each of § 26's operations doing is the port's to report."
             )
-        elif destination == FILE_DESTINATION and self.get(
-            "day_log.destination.out_dir"
-        ) is None:
+        elif destination == FILE_DESTINATION and self.get(OUT_DIR_PATH) is None:
             out.append(
-                "`day_log.destination.out_dir` is not set and "
-                f"`day_log.destination.kind` is `{FILE_DESTINATION}`, so the day "
+                f"`{OUT_DIR_PATH}` is not set and "
+                f"`{DESTINATION_KIND_PATH}` is `{FILE_DESTINATION}`, so the day "
                 "log has no directory to write an entry into. § 26 states the key "
                 "is not required -- a project that maps no `day_log` carrier needs "
                 "no store -- so it is reported here rather than refused."
@@ -4384,6 +4392,17 @@ MARKED_PORTS = [
     ("tracker.kind", "adapters"),
 ]
 
+# The entry the plants below are written against, ⛔ selected by its path and
+# never by its position. Indexing this list made the destination-specific
+# assertions -- the two kind words, which are § 26's and no other port's -- say
+# whatever the first-listed port happened to be, so a third port prepended here
+# would have sent them at somebody else's enum and reddened for a reason with
+# nothing to do with the change that added it.
+PLANTED_PORT = next(
+    (entry for entry in MARKED_PORTS if entry[0] == DESTINATION_KIND_PATH),
+    MARKED_PORTS[0],
+)
+
 # The list keys whose membership a rule in this reader reads off the surface, and
 # the members each shows. Stated here for the reason the sets above are, and
 # ⛔ scoped to the paths a rule reads: the surface shows other lists to
@@ -5444,7 +5463,7 @@ def self_test() -> int:
         "directory; required"
     )
     elsewhere = surface_text.replace(
-        off_a_kind, f"{off_a_kind}; port: {MARKED_PORTS[0][1]}", 1
+        off_a_kind, f"{off_a_kind}; port: {PLANTED_PORT[1]}", 1
     )
     check(
         "that plant really changed the surface",
@@ -5466,18 +5485,18 @@ def self_test() -> int:
     # planted in five: a guard asserted by a single near miss leaves most of its
     # grammar held by nothing. ⚠️ One of them must **parse**, which is the
     # direction a guard widened to everything fails in.
-    port_marker = f"port: {MARKED_PORTS[0][1]}"
+    port_marker = f"port: {PLANTED_PORT[1]}"
     for label, planted, expected in (
-        ("the colon dropped", f"port {MARKED_PORTS[0][1]}", "dropped"),
-        ("a capitalised keyword", f"Port: {MARKED_PORTS[0][1]}", "dropped"),
-        ("a quoted directory", f'port: "{MARKED_PORTS[0][1]}"', "refused"),
+        ("the colon dropped", f"port {PLANTED_PORT[1]}", "dropped"),
+        ("a capitalised keyword", f"Port: {PLANTED_PORT[1]}", "dropped"),
+        ("a quoted directory", f'port: "{PLANTED_PORT[1]}"', "refused"),
         ("two directories in one clause",
-         f"port: {MARKED_PORTS[0][1]} and more", "refused"),
-        ("a space before the colon", f"port : {MARKED_PORTS[0][1]}", "parsed"),
+         f"port: {PLANTED_PORT[1]} and more", "refused"),
+        ("a space before the colon", f"port : {PLANTED_PORT[1]}", "parsed"),
     ):
         try:
             derived = surface_facts(surface_text.replace(port_marker, planted, 1))
-            got = "parsed" if MARKED_PORTS[0][0] in derived["ports"] else "dropped"
+            got = "parsed" if PLANTED_PORT[0] in derived["ports"] else "dropped"
         except ConfigError as error:
             got = "refused" if "port marker" in str(error) else f"refused: {error}"
         check(f"a port marker with {label} is {expected}", got == expected, f"was {got}")
@@ -5489,7 +5508,7 @@ def self_test() -> int:
     # the inventory comparison above -- the port leaves the derived set and the
     # sets stop matching -- which is why that comparison is not derived.
     for word in (NO_DESTINATION, FILE_DESTINATION):
-        stated = surface["enums"].get(MARKED_PORTS[0][0]) or []
+        stated = surface["enums"].get(PLANTED_PORT[0]) or []
         check(
             f"the surface still states `{word}` among this port's own kinds",
             word in stated,
@@ -5903,6 +5922,61 @@ def self_test() -> int:
                 not any("decides nothing" in line for line in reported),
                 f"reported {reported!r}",
             )
+            # ⛔ § 26's two arms, which **no shipped configuration reaches** --
+            # every example states the file kind and a directory for it -- and
+            # which nothing held: both `out.append` blocks could be deleted whole
+            # and every assertion in this file stayed green. Asserted in both
+            # directions over one key apiece, for the reason the arm above is: a
+            # branch that always printed its line would pass a one-directional
+            # check.
+            valid = _a_valid_example()
+            no_store = _refused_or_reported(
+                _with(copy.deepcopy(valid), "day_log.destination.kind", NO_DESTINATION)
+            )
+            check(
+                "a project whose destination kind is `none` is told it has nowhere to record",
+                any("nowhere to record it" in line for line in no_store),
+                f"reported {no_store!r}",
+            )
+            check(
+                "and a project that states a store is not told that",
+                not any("nowhere to record it" in line for line in reported),
+                f"reported {reported!r}",
+            )
+            unaddressed = copy.deepcopy(valid)
+            unaddressed["day_log"]["destination"].pop(OUT_DIR_KEY, None)
+            missing_dir = _refused_or_reported(unaddressed)
+            check(
+                "a project on the file kind with no directory is told the key is unset",
+                any(f"`{OUT_DIR_PATH}` is not set" in line for line in missing_dir),
+                f"reported {missing_dir!r}",
+            )
+            check(
+                "and a project that states one is not told that",
+                not any(f"`{OUT_DIR_PATH}` is not set" in line for line in reported),
+                f"reported {reported!r}",
+            )
+            # ⛔ And the same absence as a **load-bearing** one, which is a second
+            # list with a second condition -- the carrier as well as the kind --
+            # so it is asserted in both directions of that condition too.
+            absences = _load_bearing_absences(
+                _resolve(unaddressed, EXAMPLES, surface, False)
+            )
+            check(
+                "and it is named as a load-bearing absence, the carrier being mapped",
+                OUT_DIR_PATH in absences,
+                f"named {absences!r}",
+            )
+            carrierless = copy.deepcopy(unaddressed)
+            carrierless.get("carriers", {}).pop("day_log", None)
+            check(
+                "while a project that maps no day-log carrier is not missing a store",
+                OUT_DIR_PATH
+                not in _load_bearing_absences(
+                    _resolve(carrierless, EXAMPLES, surface, False)
+                ),
+                "an absent store was named for a project that runs the role never",
+            )
             # The resolved identity, which is the only guard § 1 has against a
             # role run from a sibling project: the reader says which root it
             # resolved and which file it read, both absolute, for the role to
@@ -5954,10 +6028,10 @@ def _load_bearing_absences(config: Config) -> list[str]:
     # key is not required, and this is the report that absence reaches a role as.
     if (
         carriers.get("day_log")
-        and config.get("day_log.destination.kind") == FILE_DESTINATION
-        and config.get("day_log.destination.out_dir") is None
+        and config.get(DESTINATION_KIND_PATH) == FILE_DESTINATION
+        and config.get(OUT_DIR_PATH) is None
     ):
-        absent.append("day_log.destination.out_dir")
+        absent.append(OUT_DIR_PATH)
     return absent
 
 
