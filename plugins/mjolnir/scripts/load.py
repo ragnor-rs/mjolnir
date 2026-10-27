@@ -51,7 +51,7 @@ Usage:
     load.py where --repo-root DIR      where the work is, read-only and unfetched
                 [--remote NAME] [--base BRANCH]
     load.py session --root DIR         what the last pass was doing, from the store
-                [--store DIR] [--exclude NAME]
+                [--store DIR] [--exclude PATH-OR-NAME]
     load.py replay --missing PATH      whether a file that is gone replays, and
                 --transcript PATH      from what
     load.py resume                     the `SessionStart` arm, payload on stdin
@@ -59,7 +59,11 @@ Usage:
 ⚠️ **`--base` and `--exclude` are the two flags a role is expected to pass** and
 the reason each exists is a reading that is wrong without it: an underived base
 is a position against nothing, and an unexcluded transcript is the file this pass
-is writing read back as the pass before it.
+is writing read back as the pass before it. ⛔ **`--exclude` takes the
+transcript's path or its bare name**, and a value matching nothing in the store
+is reported as having matched nothing rather than as an exclusion that took --
+the flag naming the one file whose contents would otherwise be read back as
+somebody else's words.
 
 Exit status, and ⛔ **four values rather than two**: 0 the reading was produced,
 1 nothing is being asked about -- a path that is not a repository, a store that
@@ -751,7 +755,16 @@ def session(root: str | Path, *, store: str | Path | None = None, exclude: str =
     answer["sidecars"] = len(list(where.glob("*/subagents/agent-*.jsonl")))
     answer["tool_results"] = len([p for p in where.glob("*/tool-results") if p.is_dir()])
     answer["transcripts_in_the_store"] = len(files)
-    taken = [path for path in files if not (exclude and path.name.startswith(exclude))]
+    # ⛔ Either form a caller can hold, because the role's instruction names "the
+    # transcript this session is writing" and a session holds that as a **path**
+    # at least as often as a bare name. A path matched against a file name
+    # matches nothing, and matching nothing is the one failure this flag exists
+    # to prevent -- measured by running this role on this project, where the
+    # sweep came back with the calling session's own last instruction and last
+    # reply reported as the previous pass's.
+    needle = Path(exclude).name if exclude else ""
+    dropped = {path.name for path in files if needle and path.name.startswith(needle)}
+    taken = [path for path in files if path.name not in dropped]
     for path in taken[:READ_BACK]:
         try:
             answer["transcripts"].append(transcript(path))
@@ -763,7 +776,20 @@ def session(root: str | Path, *, store: str | Path | None = None, exclude: str =
     # 138 transcripts and a quarter of a million characters of JSON handed to the
     # role that exists to spend the window carefully (§ 11).
     answer["older_unread"] = max(0, len(taken) - READ_BACK)
-    answer["excluded"] = exclude or None
+    # ⛔ What was excluded, never what was asked for. The two were one field and
+    # the field carried the argument, so a value matching no file in the store
+    # came back reported as applied -- absence of signal read as an answer, which
+    # § 11 forbids and which this reading cannot afford: the whole point of the
+    # flag is that the file it names is the one that would otherwise be read back
+    # as the last pass. The ask is kept beside it so a report can name it.
+    answer["excluded"] = sorted(dropped) or None
+    answer["exclude_asked"] = exclude or None
+    if exclude and not dropped:
+        answer["unestablished"].append(
+            f"`--exclude {exclude}` matched no transcript in this store, so nothing "
+            "was excluded and the first reading below may be the one this pass is "
+            "itself writing. ⛔ Not an exclusion that took (§ 11)"
+        )
     answer["report"] = _session_report(answer)
     return answer
 
@@ -790,11 +816,25 @@ def _session_report(found: dict) -> list[str]:
         # ⛔ The reading's own hazard, said out loud: the file a pass is writing
         # is in this store and sorts first, so a sweep that excluded nothing may
         # be reporting its own words back as the last pass's.
-        lines.append(
-            "No transcript was excluded, so the first of these may be the one this "
-            "pass is itself writing — name it on `--exclude` to read the pass before "
-            "it (§ 24)."
-        )
+        #
+        # ⛔ Gated on what was **excluded** and never on what was asked for. It
+        # was gated on the ask, so a value that matched nothing silenced the one
+        # warning about that value -- the failure and its own alarm switched off
+        # by the same mistake.
+        if found.get("exclude_asked"):
+            lines.append(
+                f"`--exclude {found['exclude_asked']}` matched no transcript here, so "
+                "nothing was excluded and the first of these may be the one this pass "
+                "is itself writing. ⚠️ Either the transcript's path or its name is "
+                "taken, so a value matching nothing names a file that is not in this "
+                "store (§ 24)."
+            )
+        else:
+            lines.append(
+                "No transcript was excluded, so the first of these may be the one this "
+                "pass is itself writing — name it on `--exclude` to read the pass before "
+                "it (§ 24)."
+            )
     if found.get("older_unread"):
         lines.append(
             f"{found['older_unread']} older transcript(s) in this store were counted and "
@@ -1673,6 +1713,33 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
             any("may be the one this" in line for line in read["report"]),
             f"reported {read['report']!r}",
         )
+        # ⛔ The three arms of the exclusion, each planted. A session holds the
+        # transcript it is writing as a path, the role's own instruction names it
+        # that way, and a path matched against a file name excluded nothing while
+        # reporting that it had -- with the warning about exactly that gated on
+        # the argument being empty, so the mistake switched off its own alarm.
+        # Measured by running this role on this project rather than by reading it.
+        by_name = session(work, store=store, exclude="aaaa.jsonl")
+        by_path = session(work, store=store, exclude=str(derived / "aaaa.jsonl"))
+        check(
+            "`--exclude` takes the transcript's path and its bare name alike",
+            by_name["excluded"] == by_path["excluded"] == ["aaaa.jsonl"]
+            and by_name["transcripts"] == [] and by_path["transcripts"] == [],
+            f"by name {by_name['excluded']!r}, by path {by_path['excluded']!r}",
+        )
+        missed = session(work, store=store, exclude=str(derived / "zzzz.jsonl"))
+        check(
+            "a value matching no transcript is reported as having matched nothing",
+            missed["excluded"] is None
+            and any("matched no transcript" in line for line in missed["unestablished"]),
+            f"came back {missed['excluded']!r} with {missed['unestablished']!r}",
+        )
+        check(
+            "and its warning is not silenced by the argument that failed to take",
+            any("matched no transcript here" in line for line in missed["report"])
+            and missed["exclude_asked"] == str(derived / "zzzz.jsonl"),
+            f"reported {missed['report']!r}",
+        )
         # ⛔ What the harness writes as a `user` record that no person typed. The
         # plant is the shape measured on this repository's own store, where 78 of
         # 138 transcripts ended on one and the reading took it as the last
@@ -2151,7 +2218,10 @@ def main(argv: list[str] | None = None) -> int:
     last = sub.add_parser("session", help="what the last pass was doing")
     last.add_argument("--root", required=True)
     last.add_argument("--store", default=None)
-    last.add_argument("--exclude", default="", help="a transcript this pass is itself writing")
+    last.add_argument(
+        "--exclude", default="", metavar="PATH-OR-NAME",
+        help="a transcript this pass is itself writing, by path or by bare name",
+    )
 
     lost = sub.add_parser("replay", help="whether a file that is gone replays, and from what")
     lost.add_argument("--missing", required=True)
