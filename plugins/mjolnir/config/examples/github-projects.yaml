@@ -168,6 +168,15 @@ carriers:
 session:
   parts: [tracker, commit]
 
+# § 25's absent case, and it is the same statement as the list above rather than a second one: the
+# reader refuses any disagreement between them. ⚠️ The cost is a cost and not nothing — what a
+# later pass here has to re-derive, it re-derives — and this project accepts it because the board
+# is where its facts already live.
+memory:
+  carrier: none
+  absent_reason: "Everything a later session needs about an item is on the item's own card, which
+    this project's board keeps rich. A store beside it would be a second place to look."
+
 language:
   work_item: en
   repo: en
@@ -189,7 +198,7 @@ day_log:
     chat_exclude: []
     mixed_chats: ["<a chat carrying both work and personal talk>"]
     calendars: ["<the one calendar whose titles are legible>"]
-  # § 25's port: a file under the temp root, outside the repository the entry is never written
+  # § 26's port: a file under the temp root, outside the repository the entry is never written
   # into.
   destination:
     kind: file

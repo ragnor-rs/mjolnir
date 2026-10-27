@@ -373,12 +373,28 @@ carriers:
   load: skill
 
 # § 23. All three thirds: the backlog is this project's own tracker, memory is what a later
-# session reads this build's rulings out of, and the commit is § 6's above. ⚠️ `memory` is stated
-# while the store it writes to is declared by no key yet (#35), so the reader reports that third
-# unavailable — which is the honest reading of a project that does refresh memory through a
-# mechanism the surface has not taken over.
+# session reads this build's rulings out of, and the commit is § 6's above.
 session:
   parts: [tracker, memory, commit]
+
+# § 25. ⛔ `derived` because that is what is true here, and not because pinning is harder: the
+# store this project actually refreshes is the agent harness's own per-project directory, whose
+# name the harness derives from the absolute path of the working directory. A path written here
+# would be a *second* store — one the procedure writes and the harness's own machinery ignores —
+# which is two records of one thing allowed to disagree, the defect this whole toolkit deletes.
+#
+# ⚠️ Measured in this repository rather than reasoned about: with four trees cut from this
+# checkout, the harness held a per-project directory for each of them and the store existed under
+# the checkout's alone. A save from a tree would have written where the checkout never reads, and
+# reported that it succeeded.
+#
+# What the carrier leaves open is accepted knowingly, and the reader reports each of it: the index
+# cannot be appended under a lock from here, and a checkout moved or renamed orphans the store.
+# `main_tree` is what turns the measurement above into a refusal a role has to name rather than a
+# write nobody sees — and it is the only value this carrier allows, the reader refusing the other.
+memory:
+  carrier: derived
+  write_from: main_tree
 
 language:
   work_item: en
@@ -411,7 +427,7 @@ day_log:
     chat_exclude: []
     mixed_chats: []
     calendars: []
-  # § 25's port. A file under the temp root, which is the kind the default names anyway — written
+  # § 26's port. A file under the temp root, which is the kind the default names anyway — written
   # out rather than left implicit because the directory is this project's own and the kind is what
   # the directory belongs to.
   destination:

@@ -4,14 +4,14 @@
 The shared procedure names **the port and never the thing behind it**. This
 module is every port the surface declares: it reads the operation list and the
 absent case out of the surface beside it -- `../config/schema.md`, § 3 for the
-tracker and § 25 for the day log's destination -- answers whether a given
+tracker and § 26 for the day log's destination -- answers whether a given
 operation is available here, and resolves the one that is not into the fallback
 the surface states for it. One implementation per kind is **discovered** -- a
 module in that port's own package beside this one, naming the kind it answers
 for -- so the contract itself knows none of them by name and nothing has to
 remember an import.
 
-⛔ **Which port is a parameter and never a branch.** § 25 states the marker that
+⛔ **Which port is a parameter and never a branch.** § 26 states the marker that
 declares one, and the three facts it carries: the key a project writes the kind
 on, the section the operation list is read from, and the directory the
 implementations live in. A second copy of this machine per port would be a second
@@ -108,7 +108,7 @@ PROCEDURE = "procedure"
 NEVER = "never"
 
 # The kind that addresses nothing, shared by every port: § 3's trackerless
-# configuration and § 25's project with no destination are the same statement one
+# configuration and § 26's project with no destination are the same statement one
 # port apart, and both get the adapter that implements nothing. Spelled out for
 # the reason the two writers above are, and held to **every** port's own kind set
 # by the self-test -- a port whose alternation lost the word would otherwise have
@@ -118,7 +118,7 @@ NONE = "none"
 # The port `load()` answers for with no argument. ⛔ The default and not a second
 # statement of what ports exist: the surface's markers are the statement, and the
 # self-test holds this name to being one of them. Every role but § 9's asks for
-# this one, which is the whole of why it is the default -- and § 25's is asked for
+# this one, which is the whole of why it is the default -- and § 26's is asked for
 # by name, on the invocation, rather than by a second constant here.
 TRACKER = "tracker.kind"
 
@@ -182,7 +182,7 @@ def _tables(text: str) -> list[tuple[str, list[list[str]]]]:
     **ends** the table above it -- it used to merely be skipped, which glued an
     unrelated table's rows onto the one before it and read them as operations.
 
-    ⛔ The heading travels with the table because § 25 makes the section a
+    ⛔ The heading travels with the table because § 26 makes the section a
     **parameter** of this contract rather than a fact baked into it: two ports
     state two tables with the same columns, and a lookup by columns alone has one
     answer for both. ⚠️ Headings inside a fence are not headings -- a `markdown`
@@ -258,7 +258,7 @@ def operation_sections(surface_text: str) -> list[str]:
 
     What `surface_ports` holds the declared ports against: a table carrying these
     columns under a section no marker names is an operation list no port reads,
-    which is the half of § 25's *one table per port, one port per table* that the
+    which is the half of § 26's *one table per port, one port per table* that the
     per-port lookup below cannot see.
     """
     return [
@@ -272,7 +272,7 @@ def operations(surface_text: str, section: str, prefix: str) -> dict[str, str]:
     """`operation -> what the procedure does when its capability is absent`.
 
     Read from the operation table under `section`, which is where that port's
-    marker puts it (§ 25). Four shapes are refused rather than read past, each
+    marker puts it (§ 26). Four shapes are refused rather than read past, each
     naming what it refuses on, because every one of them silently changes the
     list or a fallback: a second table with these headers under the same section
     (the list is stated once per port), an operation stated twice, a row with a
@@ -361,7 +361,7 @@ def names_a_tracker(text: str, kinds: list[str]) -> list[str]:
 class PortSpec:
     """One port, as the surface declares it.
 
-    Three facts and no fourth, every one of them off the `# port:` marker § 25
+    Three facts and no fourth, every one of them off the `# port:` marker § 26
     states: the configuration key carrying the kind -- which **is** the port's
     name -- the section its operation list is read from, and the directory its
     implementations live in. ⛔ Nothing here is written in this module. A list of
@@ -417,7 +417,7 @@ def surface_ports(surface_text: str | None = None) -> dict[str, PortSpec]:
                 os.path.relpath(config.SURFACE, config.PLUGIN_ROOT),
                 f"states an `{OPERATION_COLUMN}` / `{ABSENT_COLUMN}` table under "
                 f"§ {heading}, which no `# port:` marker names. That is an "
-                "operation list no port reads and no adapter is held to -- § 25 "
+                "operation list no port reads and no adapter is held to -- § 26 "
                 "states one table per port and one port per table.",
             )
     return specs
@@ -432,7 +432,7 @@ def port_spec(name: str = TRACKER) -> PortSpec:
         raise ConfigError(
             name,
             "is not a port the surface declares. A port is declared by a "
-            "`# port:` marker on its `kind` line (§ 25), and the surface declares "
+            "`# port:` marker on its `kind` line (§ 26), and the surface declares "
             f"{', '.join('`' + key + '`' for key in sorted(specs))}.",
         ) from None
 
@@ -490,7 +490,7 @@ class Adapter:
 
 
 # The adapter for the kind that addresses nothing (§ 3's trackerless
-# configuration, § 25's project with no destination): it implements nothing, so
+# configuration, § 26's project with no destination): it implements nothing, so
 # every operation takes its stated fallback. It is an adapter rather than a branch
 # in the procedure -- which is the whole of why a `kind` of `none` reports as a
 # configuration and never as a broken install. ⛔ One object for every port, there
@@ -552,7 +552,7 @@ def load_adapters(spec: PortSpec | None = None) -> dict[str, Adapter]:
 
     **The module's presence is the install**, per § 3 -- which also states why no
     list of them is written anywhere, so this does not restate it. Which directory
-    is swept is the port's `# port:` marker (§ 25) and never an argument a caller
+    is swept is the port's `# port:` marker (§ 26) and never an argument a caller
     composes.
 
     ⚠️ Imported here rather than at module scope: an adapter imports this module
@@ -669,7 +669,7 @@ class Port:
     """One of the surface's ports, over one project's configuration.
 
     ⛔ Which port is a `PortSpec` read off the surface and never a branch here:
-    the contract is one machine, and § 25 makes the section, the kind's key and
+    the contract is one machine, and § 26 makes the section, the kind's key and
     the implementation directory its parameters.
     """
 
@@ -714,7 +714,7 @@ class Port:
         """Whether this port addresses anything at all.
 
         ⛔ An unstated kind counts as unconfigured and never as a kind named
-        `None`: § 25 defaults its own kind and § 3 marks its own required, so a
+        `None`: § 26 defaults its own kind and § 3 marks its own required, so a
         port reaching here with neither is a surface this contract cannot resolve
         rather than a store to go looking for.
         """
@@ -939,7 +939,7 @@ class Port:
 def load(skills_root: str = ".", name: str = TRACKER, **kwargs) -> Port:
     """One port over the configuration at `skills_root`, read through #1's reader.
 
-    `name` is the key carrying the kind, which is the port's name (§ 25). It
+    `name` is the key carrying the kind, which is the port's name (§ 26). It
     defaults to § 3's, that being the port every role but § 9's asks for.
     """
     return Port(config.load(skills_root, **kwargs), port_spec(name))
@@ -970,7 +970,7 @@ def load_every(skills_root: str = ".", **kwargs) -> dict[str, Port]:
 # ⛔ **Every assertion below runs once per port the surface declares**, over the
 # ports the markers name rather than over a list here. A suite that held one port
 # would be a suite that holds the contract for the port it was written against
-# and claims the machine is general -- which is precisely the claim § 25 makes
+# and claims the machine is general -- which is precisely the claim § 26 makes
 # and the one this file has to pay for.
 
 
@@ -1376,7 +1376,7 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
     #
     # ⛔ Guarded by the **operation** rather than by the port's name: the status
     # machinery hangs off `set_state`, so a port whose list does not carry it has
-    # no advance to refuse. A branch on which port this is would be the thing § 25
+    # no advance to refuse. A branch on which port this is would be the thing § 26
     # says this contract must not grow.
     if "set_state" not in stated:
         return
@@ -1715,7 +1715,7 @@ def self_test() -> int:
 
     # ⛔ More than one, asserted rather than assumed. Every assertion below runs
     # per port, so a surface that had lost a marker would run the whole suite
-    # against one port and report green -- which is the generality § 25 claims
+    # against one port and report green -- which is the generality § 26 claims
     # going unheld while reading as held.
     check(
         "it declares more than one, so the contract is held as the machine it is",
@@ -1738,7 +1738,7 @@ def self_test() -> int:
         f"reported {_refused(lambda: port_spec('telepathy.kind'))!r}",
     )
     # ⛔ An operation table under a section no marker names is refused **here**,
-    # the per-port lookup being unable to see it: § 25's *one port per table*, and
+    # the per-port lookup being unable to see it: § 26's *one port per table*, and
     # the half that would otherwise let a whole operation list sit on the surface
     # holding no adapter to anything.
     orphan = surface_text + "\n## A section no marker names\n\n" + "\n".join(

@@ -109,6 +109,14 @@ carriers:
 session:
   parts: []
 
+# § 25. No bookkeeping role is mapped at all, so no third of one writes a store. ⛔ Stated rather
+# than left to be inferred from the empty list above: the two read identically to a role only
+# because the reader refuses them to disagree.
+memory:
+  carrier: none
+  absent_reason: "No bookkeeping role is mapped here, so there is no third of one to write a store.
+    The cost is that nothing outlives a session but the repository itself."
+
 language:
   work_item: en
   repo: en
@@ -130,7 +138,7 @@ day_log:
     chat_exclude: []
     mixed_chats: []
     calendars: []
-  # § 25's port, with the kind left to its default — which is the arm the other examples do not
+  # § 26's port, with the kind left to its default — which is the arm the other examples do not
   # show: a project that states where the entry goes and not what kind of store it is gets the
   # file kind, and the directory below is that kind's own block.
   destination:

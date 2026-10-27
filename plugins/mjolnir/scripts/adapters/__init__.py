@@ -4,9 +4,9 @@ A module here states a `KIND` and an `ADAPTER` and **is** an install; the rule
 and its reasoning are
 [`schema.md § 3`](../../config/schema.md#3-tracker-port), which this package
 points at rather than restating. ⚠️ **Which port a module answers for is which
-directory it sits in** — § 25 makes the directory one of the three facts a port's
+directory it sits in** — § 26 makes the directory one of the three facts a port's
 own marker carries, so a module here answers for § 3's port and a module in the
-sibling package answers for § 25's.
+sibling package answers for § 26's.
 
 Two things true of this directory and stated nowhere else:
 

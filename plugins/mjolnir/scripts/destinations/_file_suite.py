@@ -103,7 +103,7 @@ def self_test() -> int:
         here = _port(store, root)
         spec = port.port_spec(PORT)
 
-        # Every operation § 25 states is implemented, asserted as a **relation**
+        # Every operation § 26 states is implemented, asserted as a **relation**
         # against the surface's own list rather than as a count or a list of
         # names: a number here would be wrong the next time the section grows.
         check(
@@ -149,7 +149,7 @@ def self_test() -> int:
             f"read {read!r}",
         )
 
-        # ⛔ The acceptance condition § 25 states for every adapter: a rebuilt day
+        # ⛔ The acceptance condition § 26 states for every adapter: a rebuilt day
         # leaves **one** entry. Proved by rebuilding a day already recorded and
         # counting what the directory holds, rather than by reading the file --
         # the failure this is about is a second file beside the first.
@@ -170,7 +170,7 @@ def self_test() -> int:
         )
 
         # ⛔ And an append over a recorded day is refused rather than written
-        # beside it, which is the doubled total § 25 names.
+        # beside it, which is the doubled total § 26 names.
         check(
             "an append over a day already recorded is refused, naming the key",
             refused(lambda: here.invoke("append_day", A_DAY, 1.0, "Again."))
@@ -216,7 +216,7 @@ def self_test() -> int:
 
         # ⛔ A day the store holds and cannot read is named, never counted as
         # nothing. Planted by rewriting an entry the way a person correcting a
-        # figure by hand would -- which is § 25's rule that what comes back out of
+        # figure by hand would -- which is § 26's rule that what comes back out of
         # a store is data rather than this adapter's own output.
         with open(os.path.join(store, f"day-report-{NEXT_DAY}.txt"), "w", encoding="utf-8") as handle:
             handle.write("three and a half hours, roughly\n\nHalf a day.\n")
@@ -276,7 +276,7 @@ def self_test() -> int:
         root = os.path.join(workspace, "repository")
         os.makedirs(root)
         spec = port.port_spec(PORT)
-        # ⛔ No directory stated, which § 25 keeps unrequired and this adapter
+        # ⛔ No directory stated, which § 26 keeps unrequired and this adapter
         # therefore refuses at the first operation with the key named.
         unset = _port("", root)
         check(

@@ -3,7 +3,7 @@
 One module per `day_log.destination.kind`. A module here states a `KIND` and an
 `ADAPTER` and **is** an install; the rule and its reasoning are
 [`schema.md § 3`](../../config/schema.md#the-trackerless-adapter-and-a-kind-with-no-implementation),
-which [`§ 25`](../../config/schema.md#25-the-day-logs-destination-port) holds this
+which [`§ 26`](../../config/schema.md#26-the-day-logs-destination-port) holds this
 port to rather than restating -- and this package points at rather than copying.
 
 Two things true of this directory and stated nowhere else:

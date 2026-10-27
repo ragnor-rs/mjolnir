@@ -2,29 +2,29 @@
 """A day's entry as one text file in a directory, behind the destination port.
 
 The cheapest store there is, and the one a project has before it has anywhere
-else to put an entry. It is also the kind § 25 defaults to, which is the whole
+else to put an entry. It is also the kind § 26 defaults to, which is the whole
 reason this adapter exists first: a project that states no destination has to
 keep writing exactly what the day-log role wrote before that port existed, and an
 adapter nothing stands on is an adapter whose holes are nobody's problem.
 
 What it implements, and what it deliberately does not:
 
-  * **Every operation § 25 states.** A directory can be appended to, read back,
+  * **Every operation § 26 states.** A directory can be appended to, read back,
     rewritten whole, swept across a range and named, so none of the five is a
     capability this store lacks. ⛔ No count of them is carried here: the list is
-    closed and stated once, in § 25, and a number here would be wrong the next
+    closed and stated once, in § 26, and a number here would be wrong the next
     time it grows.
   * **`append_day` refuses a day that is already recorded**, rather than writing
-    beside it. § 25 makes `read_day` what decides which of the two writes is
+    beside it. § 26 makes `read_day` what decides which of the two writes is
     asked for, and an append that silently became a second entry is the doubled
     total that section names. The refusal is a `ConfigError` on the role's own
     call and not a `HostUnavailable`: the store is fine and the call was wrong.
-  * **`replace_day` unlinks and writes**, never opens for update. § 25's rule is
+  * **`replace_day` unlinks and writes**, never opens for update. § 26's rule is
     that a rebuilt entry is rebuilt whole, and an in-place write leaves whatever
     the rebuild did not think to touch -- a shorter description over a longer one
     leaves the tail of the longer.
   * **`read_hours` answers per day and never with a total**, and names the days it
-    found and could not read beside the ones it could. § 25's rule, and the one
+    found and could not read beside the ones it could. § 26's rule, and the one
     place this store can quietly under-report: a day whose hours line a person
     edited into something unparsable is not zero hours, and a consumer summing
     what it could parse would lose it with nothing saying so.
@@ -34,7 +34,7 @@ What it implements, and what it deliberately does not:
 
 **The entry's own shape is this kind's and is stated once, here.** § 9 fixes
 *what* an entry carries -- the hours and the description, and nothing else -- and
-§ 25 fixes *that* a file store addresses by directory; how those two values sit in
+§ 26 fixes *that* a file store addresses by directory; how those two values sit in
 a text file is neither section's business and is `_ENTRY` below. ⚠️ **It is
 written and parsed by one statement**, so a reworded label is reworded for both
 halves at once; the suite plants a hand-edited entry to show the read can fail at
@@ -73,7 +73,7 @@ KIND = "file"
 
 # The configuration key this adapter is addressed by. ⛔ Read from the port rather
 # than written out: the prefix is the port's own, so a second spelling here would
-# be free to disagree with the marker § 25 states it on.
+# be free to disagree with the marker § 26 states it on.
 OUT_DIR = "out_dir"
 
 # One day's file. ⚠️ The stem is what § 9 wrote before this port existed and is
@@ -89,7 +89,7 @@ DATE = "%Y-%m-%d"
 # the label is substituted into the first and matched by the second, so there is
 # no second spelling to drift. ⚠️ The read is deliberately looser than the write
 # -- any spacing, any case -- because a person who opens an entry and corrects a
-# figure is the expected author of the text being parsed, and § 25 has what comes
+# figure is the expected author of the text being parsed, and § 26 has what comes
 # back out of the store treated as data rather than as this adapter's own output.
 HOURS_LABEL = "Hours worked"
 _ENTRY = "{label}: {hours}\n\n{description}\n"
@@ -151,7 +151,7 @@ def _directory() -> str:
 
     Two refusals, each naming the key: no directory configured, and a directory
     inside a code root. ⚠️ Both are `ConfigError` rather than `HostUnavailable` --
-    § 25 states the key is not required, so an absent one is a configuration this
+    § 26 states the key is not required, so an absent one is a configuration this
     adapter cannot act on and never a store that failed.
     """
     if _bound is None:
@@ -166,7 +166,7 @@ def _directory() -> str:
         raise port.ConfigError(
             _key(),
             "is not set, so this kind has no directory to write an entry into. "
-            "§ 25 states the key is not required -- a project that maps no "
+            "§ 26 states the key is not required -- a project that maps no "
             "`day_log` carrier needs no store -- so a project that does map one "
             "states it.",
         )
@@ -267,7 +267,7 @@ def append_day(day: str, hours, description: str) -> dict:
         raise port.ConfigError(
             _key(),
             f"already holds an entry for {_day(day)} at `{standing['path']}`. "
-            "§ 25 has `read_day` decide which write is asked for, and an append "
+            "§ 26 has `read_day` decide which write is asked for, and an append "
             "beside an entry that is already there is two entries claiming the "
             "same hours. Ask for a replacement.",
         )
@@ -287,7 +287,7 @@ def append_day(day: str, hours, description: str) -> dict:
 def replace_day(day: str, hours, description: str) -> dict:
     """Rebuild the day's entry whole, unlinking whatever was there.
 
-    ⛔ Unlink and write, never an update in place: § 25's rule, and the failure it
+    ⛔ Unlink and write, never an update in place: § 26's rule, and the failure it
     names is specific -- a rebuilt entry shorter than the one it replaces leaves
     the tail of the old one behind, which reads as part of the new description.
     """
@@ -309,7 +309,7 @@ def read_hours(first: str, last: str) -> dict:
     """Each day's stated hours between two days, both ends included.
 
     ⛔ Per day and never a total, with the days this store holds and could not
-    read named beside the ones it could. § 25's rule: a consumer that summed what
+    read named beside the ones it could. § 26's rule: a consumer that summed what
     it could parse would under-report a period and nothing would say so.
     """
     start, end = _day(first), _day(last)

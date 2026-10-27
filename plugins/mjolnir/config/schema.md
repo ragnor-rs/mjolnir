@@ -1400,8 +1400,8 @@ oversight and does not try to. `policy` states content rather than an address, a
 
 The operations are a closed set, stated **once per port**, and this table is the tracker's. Which
 table belongs to which port is the `# port:` marker on each `kind` line above, read as
-[§ 25](#which-section-a-ports-operation-list-is-read-from) states; the second port on this surface
-is § 25's own. An operation always exists; what may be absent is its **capability** on a given
+[§ 26](#which-section-a-ports-operation-list-is-read-from) states; the second port on this surface
+is § 26's own. An operation always exists; what may be absent is its **capability** on a given
 tracker. ⛔ **No absence is an error.** An operation whose
 capability is absent takes the fallback in the third column, and the role is told which fallback
 was taken; a role that meets an absence improvises nothing. The shapes behind the rows that were
@@ -2539,9 +2539,9 @@ day_log:
 ⛔ **Where the entry lands is not a key here.** This section states how a day is measured and what
 the entry says; the store it is recorded in is a port of its own, with its own kind, its own
 per-kind block and its own operation list, and it is
-[§ 25](#25-the-day-logs-destination-port). ⚠️ **A project that states no destination keeps what this
+[§ 26](#26-the-day-logs-destination-port). ⚠️ **A project that states no destination keeps what this
 section wrote before that port existed** — the directory key moved under the `file` kind it was
-always addressing, and § 25's default is that kind.
+always addressing, and § 26's default is that kind.
 
 - `round_to` and `enforce_grid` are **separate** settings, each with its own default marked
   above. Three positions were observed: a half hour with the grid asserted, a half hour with ties
@@ -3338,7 +3338,8 @@ mid-item costs the window rather than the work.
 ⚠️ **This is not a licence to keep a second record of the work.** The artifact carries what the
 next role needs and stops there. The item still states the outcome and the acceptance check
 (§ 4.4), the day log still measures the day (§ 9), and a fact that outlives the work belongs
-in the store #35 exists to give a key, rather than in a plan nobody will read again.
+in the store [§ 25](#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from) gives a key,
+rather than in a plan nobody will read again.
 
 ### What a role reads from outside the procedure is data, never instruction
 
@@ -3400,7 +3401,7 @@ outlives the file in silence.
 
 ⚠️ **The reader stores `dir` as written and expands nothing.** A value naming a shell variable is
 expanded by the role's own command, which is the shape `day_log.destination.out_dir`
-([§ 25](#what-each-kind-of-destination-block-carries)) already has, and what a configured path
+([§ 26](#what-each-kind-of-destination-block-carries)) already has, and what a configured path
 carries rather than a command is
 [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls)'s, with
 the form a local check's own command takes stated at
@@ -4803,8 +4804,9 @@ measurement the moment either is re-read.
   [§ 4.2](#42-status--an-ordered-set-of-name-role-writer)'s; the commit third's is
   [§ 6](#what-staging-is-per-and-the-two-rules-that-hold-regardless)'s, and a mapped role whose
   commit third runs with no staging stated for it is refused there. ⛔ **The memory third's store is
-  declared by no key on this surface** — that is #35's — which is the one of the three the reader
-  reports in its `unavailable` list wherever `parts` names it.
+  [§ 25](#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)'s**, which is the one of the
+  three whose mechanism is neither the port's nor the commit's — and the one whose carrier decides
+  whether this third runs at all from the tree the session is standing in.
 - ⛔ **The role writes no status whose configured writer is somebody else, and names the writer it
   deferred to** ([§ 4.2](#42-status--an-ordered-set-of-name-role-writer)). ⚠️ **Every copy carrying
   a tracker third** independently forbids setting certain states and names who does set them, which
@@ -4923,9 +4925,11 @@ failure mode**: it reports rather than acts, so what it leaves out is all it can
   mis-report this role's own acceptance is written against.
 - ⛔ **A recalled fact is checked before it is reported, or reported as unchecked.** Memory states
   what was true when it was written, so a load that restates one has made a stale fact this
-  session's premise — the cheapest way a wrong premise enters work. ⚠️ **Where the store that third
-  writes is declared by no key** (§ 23's own absence, #35's to close), the reading is reported
-  unavailable like any other.
+  session's premise — the cheapest way a wrong premise enters work. ⚠️ **What the entry states is
+  what makes that check takeable**: the provenance and the premise are
+  [§ 25](#what-may-enter-the-store-and-what-a-reader-does-with-what-is-in-it)'s write-time half of
+  this same rule, and where that section's carrier leaves the store unreachable from here the
+  reading is reported unavailable like any other.
 - ⛔ **The readings themselves are not listed here**, by the rule § 23 gives for a save artifact's
   form one section over: a list beside this rule would be one list for one, holding nothing to the
   carrier that performs it while promising a sweep whatever the carrier dropped. ⚠️ **What that
@@ -4974,7 +4978,172 @@ and nothing about the prompt cache — so a role written to rely on them would r
 cheap, an unstated figure and a small one reading identically
 ([the measurement](../../../docs/configuration-surface.md#what-a-resumed-session-is-actually-handed)).
 
-## 25. The day log's destination port
+## 25. The memory store, and the tree a save may refresh it from
+
+```yaml
+memory:
+  carrier: path | derived | none             # required; absent_reason
+  store: "<the one store — absolute, ~-relative, or relative to the skills root>"   # required_when: memory.carrier = path
+  index: "<the one file inside the store that every session reads>"   # required_when: memory.carrier = path
+  write_from: main_tree | any_tree   # required_when: memory.carrier = path; required_when: memory.carrier = derived
+  absent_reason: "…"                         # required when carrier is none
+```
+
+**The counterpart key to [§ 23](#23-session-bookkeeping--which-thirds-a-project-runs)'s memory
+third and [§ 24](#24-session-restore--the-readings-a-pass-is-resumed-from)'s memory reading.** That
+third writes a store and that reading reads one, and until this section neither of them could name
+it: both reported the store as declared by no key, which is why a project running the third got it
+back as **unavailable** rather than as a third that ran.
+
+⚠️ **This is a facet and not one of the axes**, which is the shape
+[§ 11](#11-session-context)'s artifact store already has. The axes are independent of one another;
+this store is not — whether it moves under the role at all is decided by `branch_model.kind`
+([§ 10](#10-branch-model)), and the rule below is read off that key.
+
+⚠️ **It is a third store and not either of the two already on this surface.**
+[§ 11](#the-store-and-when-an-in-tree-store-is-safe) names the store a role boundary is crossed in —
+a plan, a progress file, read by the next role and then spent — and
+[§ 7](#what-a-hook-refuses-and-the-record-it-reads) the record a gate reads. This one holds what
+**outlives the work entirely**. Three stores, three lifetimes, and a fact written into the wrong one
+of them is either spent with the item or unreadable by the thing that needed it.
+
+### The carrier and the third have to agree, in both directions
+
+⛔ **`carrier: none` and a `session.parts` list that omits the memory third are one statement made
+twice, and the reader refuses every disagreement between them.** A project that runs that third with
+`carrier: none` is a role choosing a path of its own, which is the one fact this section exists to
+have given it; a project stating a store the third never runs has a path nothing writes, which reads
+from the configuration exactly like a store being kept current. ⚠️ **That is
+[§ 23](#23-session-bookkeeping--which-thirds-a-project-runs)'s own shape between `parts` and
+`carriers`**, in both directions and for the same reason, and the refusal is what makes two
+statements one.
+
+⛔ **And the agreement is a rule of the reader rather than a `# required_when` marker.** That
+marker compares one key's value against a stated literal; the condition here is a **list's
+membership**, which no comparison of that shape reaches — the division
+[§ The file itself](#the-file-itself) draws for §§ 10, 11 and 12, each of whose refusals carries
+an argument a marker's message cannot.
+
+⚠️ **`carrier: none` is what *keeps no memory* is written as**, and it is a real configuration
+rather than a gap: a project that runs the other two thirds states it with a reason, exactly as a
+commit-third-only project states its `parts` in § 23, and the reader reports it in `unavailable`.
+
+⛔ **No key under this block carries a default, and that is mechanical rather than a preference.**
+A marked default is applied by creating whatever blocks it needs to land in, so a default here would
+write this block into every project — including the ones that state `carrier: none` with a reason,
+for whom it would write a key the rules below refuse. ⛔ **And `write_from` would be the wrong key
+to default in any case**: its value decides whether work somebody did is written or refused, and a
+project that inherited that silently would be the one reading its own store as current.
+
+### Why a project cannot simply be told to write a path
+
+⛔ **The store's location is derived from the working directory, so a session in a tree gets a
+different store.** The index every session loads is absent there, and what a save writes lands where
+the checkout will never read it. ⚠️ **Nothing announces either half — the save reports success**,
+which is what makes this a rule rather than a caution.
+
+⛔ **And a tree is not the only way the derivation bites.** A checkout moved or renamed derives a
+different store with no tree involved, and the old one is simply orphaned —
+[§ 24](#what-a-load-may-not-assume-survived) already lists a moved checkout among what a load must
+not assume survived, and this is what it breaks.
+
+⚠️ **A store outside the tree is outside `.gitignore` as well**, so the argument that two copies of
+a thing are safe when both are ignored does not reach it: these facts are neither committed nor
+ignored, they are elsewhere. Worth stating, because a reader assumes a project's memory is in the
+project. The measurements are in
+[`docs/configuration-surface.md`](../../../docs/configuration-surface.md#the-memory-store-is-derived-from-the-working-directory).
+
+### The carriers, and what each of them closes
+
+| `carrier` | what the procedure does | what that closes | what it leaves open |
+|---|---|---|---|
+| `path` | resolves `store`, writes the fact as a file under it, and appends the index line under a lock | one store from every tree, whatever the working directory would have derived; and an index that keeps concurrent entries | that the store the project states is the store the harness writes. ⛔ Two stores held apart by nobody is the same defect one level out |
+| `derived` | composes no path at all, and names the store as the harness's | nothing by construction. ⚠️ The refusal `write_from` carries below is the whole of what is closed here | the index's contention and the moved checkout, each **reported** rather than closed |
+| `none` | nothing: the memory third does not run, which `session.parts` states as well | the question. ⚠️ Not a hazard closed but one the project does not have | what a later pass has to re-derive, which is the cost § 23 already prices for a project running fewer thirds |
+
+⛔ **`derived` is not an absence and is never reported as one.** The facet is carried — by the
+harness — and the procedure's whole part in it is to name that and refuse to guess. A role that
+composed the derivation itself would be a second implementation of somebody else's rule: correct
+until that rule changes, and silently writing to a store nothing reads afterwards.
+
+⛔ **`store`, `index` and `write_from` are each refused under the carrier that cannot read them**,
+rather than accepted and unread: `store` and `index` under `derived`, because the procedure resolves
+nothing inside a store it must not guess at, and all three under `none`, because nothing writes.
+A key naming a file nothing opens is a key read by nothing while reading as a store somebody
+pinned — which is the defect every marker on this surface exists to remove.
+
+### `write_from`, and the pair of outcomes a refusal is one half of
+
+- **`main_tree`** — the third runs from the shared checkout alone. ⛔ **Run from a tree it refuses,
+  and the refusal is reported**: it never writes the tree's own store, and it never passes in
+  silence.
+- **`any_tree`** — the third runs wherever the session is standing and writes the **configured**
+  store rather than the one the working directory derives.
+- ⛔ **`derived` with `any_tree` is refused.** Under a derived store, *wherever the session is
+  standing* is a different store, so that pair is the hazard above written as a permission.
+  ⚠️ **A project that has made every tree's derived directory resolve to one store has not met this
+  refusal** — it has made the store **pinnable**, so it names that path under `carrier: path` and
+  every tree writes it. That is the shape the one surveyed project which had diagnosed this
+  arrived at on its own
+  ([the reading](../../../docs/configuration-surface.md#what-the-copies-memory-steps-say-read-rather-than-assumed)),
+  and the refused pair is the other case: a project that has done nothing.
+- ⛔ **Either the one store was written or the third refused, and the reply names which**
+  ([§ 11](#a-report-names-what-it-could-not-establish)). A third that quietly wrote nothing reads
+  exactly like one that wrote, which is the failure direction this whole section is pointed at.
+- ⚠️ **Under a branch model that cuts no tree the key decides nothing**, there being no second
+  working directory to run from, and the reader says so rather than refusing it: the mode is the
+  project's and may change under a configuration that already states this. ⛔ **It is still
+  written** — a key stated under every mode is a key a project does not have to revisit when it
+  changes mode, which is the moment the hazard arrives.
+
+### What may enter the store, and what a reader does with what is in it
+
+⛔ **Admission is at write time, and the rule is that an entry carries where the fact came from and
+what it rests on.** A store whose only policy is *the save writes it* has no admission at all, and
+[§ 24](#24-session-restore--the-readings-a-pass-is-resumed-from) already states the read-time half —
+a recalled fact is checked or reported unchecked. What this adds is the half that makes that
+reachable:
+
+- ⛔ **Provenance, so that a measured fact and a repeated one are told apart.** A fact this pass
+  observed and a fact it read somewhere and passed on are different evidence, and a store that
+  renders them identically is a store where the second becomes the first by being read twice.
+- ⛔ **The premise, so that a reader checks rather than restates.** § 24 obliges a load to check a
+  recalled fact; an entry that does not say what would falsify it obliges the reader to invent the
+  check, and a check nobody can state is a check nobody takes.
+- ⛔ **The fields themselves are the carrier's and are written into no role's text**, which is
+  [§ 23](#the-artifacts-form-is-the-carriers-not-the-roles)'s rule for the save artifact's form one
+  section over, and for the same reason: a form copied into a role's text is a form allowed to
+  disagree with the one thing that holds a written entry to it.
+- ⚠️ **What the admission rule reaches is the entry's shape and not its truth**, stated rather than
+  implied: that a fact states its provenance and its premise is decidable, and whether the premise
+  still holds is read. Filtering a store that is already wrong at the point of reading it is
+  reportedly where this fails, which is the argument for spending the rule at write time
+  ([the reading](../../../docs/configuration-surface.md#the-memory-store-is-derived-from-the-working-directory)).
+
+⛔ **The contents stay in the project.** A memory store holds hosts, names and operational facts,
+and none of that crosses into the toolkit: this facet carries a pointer and a shape, which is the
+same boundary § 1 draws for a project's code and § 9 for its evidence.
+
+### The index is the one file two sessions contend on
+
+⛔ **The per-fact files are safe under parallel trees and the index is not.** Two sessions rarely
+write the same fact, so the files do not collide; the index is the file **every** session reads, and
+two concurrent rewrites of one file lose each other. So `index` names it, and a write to it is an
+**append under a lock** rather than a read, an edit and a write back.
+
+⚠️ **Under `carrier: derived` that protection is unavailable and is reported as unavailable**, the
+store's own directory being the thing the procedure must not guess. It is the sharper of the two
+halves that arm leaves open, because it is the one that loses work somebody did rather than writing
+it somewhere unread.
+
+⛔ **`index` names a file inside the store and is refused where it reaches outside one** — an
+absolute path, or one that climbs out with `..`. The store is the unit this facet addresses: every
+rule above is about which directory is written, and an index somewhere else is a second store with
+one file in it, pointed at by the key that was supposed to name the first one's. ⚠️ **The same
+containment holds the fact's own file name**, which the role hands over and the procedure places:
+a role naming a path rather than a file would be writing wherever it liked through the one command
+that exists so that it does not.
+## 26. The day log's destination port
 
 ```yaml
 day_log:

@@ -42,13 +42,14 @@ commits in **that** repository; the statement is the only thing that catches it.
 ⛔ **Do not parse the configuration here.** A role that reads it itself is a second set of defaults,
 and two sets drift apart with nothing noticing.
 
-Seven things are read here and ⛔ **never copied into this file**: the thirds this project runs and
+Eight things are read here and ⛔ **never copied into this file**: the thirds this project runs and
 what each of them reads, **this role's own** staging entry and the trailer rule its commit runs
 under, the branch model that decides which tree every step addresses and what a dirty one means,
 every status word and **who the writer of each one is**, the tracker port's capabilities and what
 each absent one falls back to, where an artifact crossing a role boundary lives and whether it is
-committed, and the language and register the artifact and this reply are written in. Each has a
-section of the surface and this file cites it.
+committed, where the memory store is and which working directory may write it, and the language and
+register the artifact and this reply are written in. Each has a section of the surface and this
+file cites it.
 
 ⛔ **Read the `unavailable` list before acting on anything.** An entry there is a stated absence
 rather than a fault, and the entries that change what this role does are named there: a third whose
@@ -144,17 +145,61 @@ rewritten here.
 ## 5. The memory third
 
 **Refresh the store the project keeps for what outlives the work**, so that the next pass reads a
-fact rather than re-deriving it.
+fact rather than re-deriving it. The store, the directory this third may run from and what an entry
+has to carry are all [`§ 25`](../../config/schema.md#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)'s,
+⛔ **and none of them is composed here** — one command answers all three, for the directory this
+role is actually standing in:
 
-⛔ **Where the reader reports this third unavailable, it is named and not run.** The store it writes
-to is declared by no key on the surface yet —
-[`§ 23`](../../config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs) states that and
-names the work item it waits on — so a role that wrote to a path of its own choosing would be
-inventing the one fact this third needs to be configured.
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/save.py" memory --skills-root <skills-root> --standing-in <the directory this role is in>
+```
+
+⛔ **Read the decision and do not argue with it.** It is three-valued, and the third value is the
+one a report turns into a permission by accident:
+
+| what comes back | what this role does with it |
+|---|---|
+| **it may write** | run the third, and the reply says which store |
+| **it refuses** | ⛔ **do not write, and name the refusal in the reply** with the checkout it would have run from. A third that quietly wrote nothing reads exactly like one that wrote ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)) |
+| **it could not be established** | ⛔ **the same as a refusal, and reported as unanswered rather than as a refusal.** The permissive reading of a directory nothing could place is the one that writes a tree's own store |
+| **no block is carried** | the project states no store, so there is nothing to refresh and the reply says that — ⚠️ **never that memory holds nothing**, a tree whose surface predates § 25 reading the same way |
+
+⛔ **What the carrier also hands back is what it could not close, and that goes in the reply as
+given.** Under the carrier that leaves the store to the harness it is two things — the index two
+sessions contend on, and a checkout that may have moved — and both are the project's stated cost
+rather than this pass's failure.
+
+**Each fact goes in as an entry, and the form is the carrier's**
+([`§ 25`](../../config/schema.md#what-may-enter-the-store-and-what-a-reader-does-with-what-is-in-it)):
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/save.py" entry
+```
+
+⛔ **The admission is at write time and this role does not perform it by hand.** Write the entry as
+a block of those fields, then hand over the entry, **the name the fact is to be kept under** and the
+index line together — the name is a file name and ⛔ **never a path**, because the carrier is what
+places the file, and the line's own wording is the project's, in the project's language:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/save.py" remember --skills-root <skills-root> --standing-in <this directory> --entry <the entry this role wrote> --name <the file name in the store> --line <the index line>
+```
+
+- **It wrote** ⇒ the reply names the store, the fact's file and the index.
+- **It refused** ⇒ the refusal names which field the entry is missing, that the name reaches outside
+  the store, that the directory may not write, or that this carrier has no index to reach.
+  ⛔ **Fix it and hand it over again** — a fact admitted with no provenance is one a later pass
+  turns into a measured fact by reading it twice.
+- **It exits two** ⇒ the entry's file could not be read, which is not the admission refusing it.
+
+⛔ **No step of this role composes a path inside the store**, which is why the name and the line go
+through that command rather than being written by hand: the store's own location is the carrier's
+answer, and a role joining a file onto it has derived the one thing it was handed.
 
 ⚠️ **This is not step 7's artifact and the two are not interchangeable.** The artifact carries what
 the **next pass** needs and is spent when the work lands; this store carries what outlives the work
-entirely. A fact written into the wrong one of the two is either spent or kept forever.
+entirely. A fact written into the wrong one of the two is either spent or kept forever — and the
+two forms have no field in common, so neither file is readable as the other.
 
 ## 6. The commit third
 
@@ -229,6 +274,9 @@ sentence, then the facts, with a table where the content enumerates.
   with the reason — an absent mechanism, named;
 - what the tracker third changed, item by item, and ⛔ **every move it did not make with the writer
   it deferred to**;
+- the memory third: which store, which entries went in, and ⛔ **where it refused, that it refused
+  and the directory it would have run from** — never a third that silently wrote nothing; and
+  ⛔ **what the store's carrier leaves open**, as the carrier reported it;
 - that the ingestion step ran over anything read from outside the procedure, and what it surfaced —
   ⛔ **never that an item was clean**;
 - the commit: its staging mode and that it was **this role's** entry, what the dirty-tree reading

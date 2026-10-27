@@ -53,7 +53,7 @@ file, that file. Every row below is checkable in the tree it links.
 |---|---|
 | **It models the process you already run** | Filing, gating, starting, finishing, reviewing, logging a day. There is no spec artifact to adopt, no phase to pass through, and no persona to learn |
 | **Your tracker stays your tracker** | Your statuses, your labels, your ordering, your definition of done — read through a port with a stated fallback for every capability your tracker lacks, rather than replaced by a board of its own ([`§ 3`](plugins/mjolnir/config/schema.md#3-tracker-port)) |
-| **Your timesheet stays your timesheet** | Where a day's hours land is a port too, with a store you name and the same stated fallback per capability it lacks — so the role that measures a day and the role that bills a period read one contract instead of a filename convention ([`§ 25`](plugins/mjolnir/config/schema.md#25-the-day-logs-destination-port)) |
+| **Your timesheet stays your timesheet** | Where a day's hours land is a port too, with a store you name and the same stated fallback per capability it lacks — so the role that measures a day and the role that bills a period read one contract instead of a filename convention ([`§ 26`](plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port)) |
 | **Absence is a configuration, not a failure** | No board, no estimate, no item template, no due date, no priority axis, no tracker at all — each is a stated answer the procedure runs on, with the reason recorded where the key would have been |
 | **Nothing of it lives in your repository** | One file you write. No vendored copy, no templates directory, nothing to re-sync when the procedure improves. Where something only your host or your git can read has to be a file, the toolkit writes it rather than asking you to: marked as generated, re-derived from your configuration, and taken back out when you stop asking for it. [What an install may do](plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out) is stated before anything writes one |
 | **Your commands, run and reported** | What counts as done is an ordered list of checks you name, each with who answers it ([`§ 13`](plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)), and which item is next comes from a command you configure ([`§ 12`](plugins/mjolnir/config/schema.md#12-ordering)). Your build, your suites, your ordering argument |
@@ -116,9 +116,9 @@ to ask you are stated too —
 | [`plugins/mjolnir/skills/load/`](plugins/mjolnir/skills/load/) | Restore what is in flight at the start of a pass: every reading reported — where the work is, what the item says, what the last pass was doing, what the environment is, what memory claims and what the resumed window states — with the ones it could not take named rather than left out, and nothing fetched, stashed, moved or decided |
 | [`plugins/mjolnir/skills/day-report/`](plugins/mjolnir/skills/day-report/) | Build a working day's time-log entry from session transcripts, git, the code host, chat and the calendar |
 | [`plugins/mjolnir/config/`](plugins/mjolnir/config/) | The configuration surface: the schema, and a whole example per tracker including a deliberately trackerless one |
-| [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) | What a role runs on rather than reimplements: the configuration reader, the one port contract behind both [`schema.md § 3`](plugins/mjolnir/config/schema.md#3-tracker-port) and [`§ 25`](plugins/mjolnir/config/schema.md#25-the-day-logs-destination-port), and the carriers that ship with the surface and run in an adopting project. Which they are is what the directory says, and each one's reach is recorded in [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) — so no list of them is carried here |
+| [`plugins/mjolnir/scripts/`](plugins/mjolnir/scripts/) | What a role runs on rather than reimplements: the configuration reader, the one port contract behind both [`schema.md § 3`](plugins/mjolnir/config/schema.md#3-tracker-port) and [`§ 26`](plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port), and the carriers that ship with the surface and run in an adopting project. Which they are is what the directory says, and each one's reach is recorded in [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md) — so no list of them is carried here |
 | [`plugins/mjolnir/scripts/adapters/`](plugins/mjolnir/scripts/adapters/) | One implementation of the tracker port per tracker, installed by being there, per [`schema.md § 3`](plugins/mjolnir/config/schema.md#3-tracker-port). Which kinds are built is what the directory says, so no list of them is carried here |
-| [`plugins/mjolnir/scripts/destinations/`](plugins/mjolnir/scripts/destinations/) | The same, for where a day's time-log entry is recorded — a second port behind the same contract, per [`schema.md § 25`](plugins/mjolnir/config/schema.md#25-the-day-logs-destination-port). Which directory holds a port's implementations is a marker on the line stating its kind, so neither the toolkit nor this table carries a list |
+| [`plugins/mjolnir/scripts/destinations/`](plugins/mjolnir/scripts/destinations/) | The same, for where a day's time-log entry is recorded — a second port behind the same contract, per [`schema.md § 26`](plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port). Which directory holds a port's implementations is a marker on the line stating its kind, so neither the toolkit nor this table carries a list |
 | [`docs/configuration-surface.md`](docs/configuration-surface.md) | Why the surface has this shape — the measurements behind it, taken by reading every copy of every process role across the six projects |
 | [`docs/build-surface.md`](docs/build-surface.md) | The same, for the half the roles do not carry: what the six projects build, check and deploy with, and why so little of it is on the surface |
 | [`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) | Every divergence found between the old copies and which behaviour was kept, including where a ruling overrode a stated counter-argument |
@@ -150,8 +150,9 @@ end state.
 [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md)** — the ten-role loop and
 its axes, the tracker port and its capabilities, the work-item facets with their absent
 cases, the status writers, the readiness gate, what counts as done and who answers each of those
-checks, commit behaviour, the day log, the branch model, the session's context, the ordering, and
-what a role holds and what may cross the boundary out of it.
+checks, commit behaviour, the day log, the branch model, the session's context, the ordering, the
+memory store and which working directory may refresh it, and what a role holds and what may cross
+the boundary out of it.
 Everything else written about the procedure, in this repository or on a work item, explains or
 records; none of it is a second authority.
 
@@ -341,6 +342,27 @@ of the direction it fails in. A project that lists no command and states no size
 and no replacement — the read is the one arm that needs no list, and `reread: allow` is how you say
 no to it; what no check can reach is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-context-half-a-call-bounded-where-it-is-made-and-what-comes-back).
+
+⛔ **What a session remembers is not quietly written where the next one will never look for it.**
+An agent harness names its memory store after the directory the session is standing in, so work in
+a per-item tree gets a *different* store: the index every session loads is absent, and a save lands
+somewhere the checkout never reads — and nothing says so, because the save reports success. You name
+the store once, or you say that the harness decides it and the toolkit must not guess, and the
+difference is what you get back: a store you pinned is written from any tree with its index appended
+**under a lock**, and a store the harness derives has the memory step **refuse** from a tree and
+name the checkout it would have run from. Either way the answer is one of two things a role has to
+say out loud rather than a write nobody sees. And what goes in carries where the fact came from and
+what it rests on, so a later pass reads a fact it can check instead of restating one. The
+[memory rule](plugins/mjolnir/config/schema.md#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)
+is the single statement of the block,
+[the carriers](plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)
+of what each one closes and what it leaves open,
+[write_from](plugins/mjolnir/config/schema.md#write_from-and-the-pair-of-outcomes-a-refusal-is-one-half-of)
+of the pair of outcomes, and
+[what may enter](plugins/mjolnir/config/schema.md#what-may-enter-the-store-and-what-a-reader-does-with-what-is-in-it)
+of the admission. A project that keeps no memory says so with a reason and the step does not run;
+what no check can reach is in
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-memory-store-the-write-decision-and-the-two-arms-on-the-index).
 
 ### Who this page is written for
 

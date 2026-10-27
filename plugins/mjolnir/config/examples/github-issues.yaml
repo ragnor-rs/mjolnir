@@ -145,11 +145,31 @@ carriers:
   session: skill
 
 # § 23. All three thirds stated: the tracker brought current, memory refreshed, then the commit —
-# in that order, which is procedure and not this list's. ⚠️ The memory third's store is carried by
-# no key yet, so the reader reports that third unavailable and the role says what it could not
-# write; the entry states the project's decision rather than what runs today.
+# in that order, which is procedure and not this list's. The store that middle third writes is
+# § 25's block below, which is written here exactly because this list names the third.
 session:
   parts: [tracker, memory, commit]
+
+# § 25. The store pinned, which is the arm that closes the hazard by construction rather than by a
+# refusal: the location is stated once, so every tree writes the same store whatever the working
+# directory would have derived, and the index is appended under a lock. ⚠️ The path is outside the
+# repository on purpose — the facts outlive the item, so the branch model's teardown must not be
+# able to reach them, and `committed` has nothing to say about a file in nobody's tree.
+memory:
+  carrier: path
+  # ⚠️ A placeholder, like every other path in this file: a real one here would be a directory on
+  # whoever's machine wrote it. § 25 takes an absolute path, a `~`-relative one or a shell variable
+  # the role's own command expands — the reader keeps the value as written and expands nothing,
+  # which is the shape `day_log.out_dir` below already has. ⛔ Not a temp directory: these facts
+  # outlive the work, and a store under one does not outlive a reboot (§ 11).
+  store: "<an absolute path outside every working tree>"
+  # The one file parallel sessions contend on. The per-fact files beside it are safe under parallel
+  # trees, two sessions rarely writing the same fact; this one is read by every session, so two
+  # concurrent rewrites of it lose each other.
+  index: "index.md"
+  # Safe here only because the store above is pinned: with the location stated and the index
+  # appended under a lock, a session standing in a tree writes the same store the checkout reads.
+  write_from: any_tree
 
 language:
   work_item: en
@@ -175,7 +195,7 @@ day_log:
     chat_exclude: []
     mixed_chats: []
     calendars: []
-  # § 25's port: a file under the temp root, which is the cheapest store there is and the one a
+  # § 26's port: a file under the temp root, which is the cheapest store there is and the one a
   # project has before it has anywhere else to put an entry.
   destination:
     kind: file
