@@ -166,7 +166,16 @@ def readings(configuration: config.Config, *, tracker=None) -> list[dict]:
         if name in ANSWERED_ELSEWHERE:
             available = None
         elif name == MEMORY_READING:
-            available = configuration.get(f"{MEMORY_KEY}.carrier") is not None
+            # ⛔ Two values mean there is nothing to read, and only one of them is
+            # an absent block. ⚠️ Found by review on this change, reproduced: a
+            # project stating `carrier: none` had this reading reported
+            # **available**, which is a load told to check a recalled fact against
+            # a store the project says it keeps none of -- and this role runs
+            # whatever `session.parts` says, so it is exactly those projects that
+            # reach it.
+            available = configuration.get(f"{MEMORY_KEY}.carrier") not in (
+                None, "none",
+            )
         elif name == "item":
             available = bool(tracker.implements("read_item")) if tracker else None
         elif name == "last_pass":
@@ -220,13 +229,26 @@ def report_for(configuration: config.Config, taken: list[dict]) -> list[str]:
             "it names, and ⛔ never by running a teardown (§ 10)."
         )
     if not said[MEMORY_READING]["available"]:
-        lines.append(
-            f"`{MEMORY_READING}` reads the store § 25's `{MEMORY_KEY}` block "
-            "states and this project carries no such block, so the role says what "
-            "it could not check rather than restating a recalled fact as current "
-            "(§ 24). ⛔ Not that memory holds nothing: a tree whose surface "
-            "predates § 25 reads this way too."
-        )
+        # ⛔ The two absences are reported apart, because they license different
+        # next steps: a project that states it keeps no memory has nothing to read
+        # and never will, while a block nothing declares is a tree resolved against
+        # a surface that predates the key (§ 1) and reads the same from here.
+        # Collapsing them would tell the first that its own decision was a gap.
+        if configuration.get(f"{MEMORY_KEY}.carrier") == "none":
+            lines.append(
+                f"`{MEMORY_READING}` reads a store this project states it keeps "
+                "none of (`memory.carrier: none`), so there is no recalled fact to "
+                "check and the role says that (§ 25). ⛔ Not a store that is "
+                "empty, and not a reading that failed: a stated decision."
+            )
+        else:
+            lines.append(
+                f"`{MEMORY_READING}` reads the store § 25's `{MEMORY_KEY}` block "
+                "states and this project carries no such block, so the role says "
+                "what it could not check rather than restating a recalled fact as "
+                "current (§ 24). ⛔ Not that memory holds nothing: a tree whose "
+                "surface predates § 25 reads this way too."
+            )
     else:
         # ⛔ The reading's own obligation, handed over rather than left to be
         # remembered: § 24 says a recalled fact is checked or reported unchecked,
@@ -1398,6 +1420,31 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
         "and a store no block states is reported as a reading nobody took",
         any(MEMORY_KEY in line and "could not check" in line for line in absent_said),
         f"said {absent_said!r}",
+    )
+    # ⛔ The project that keeps no memory, which is a shipped configuration and
+    # not a built fixture -- and which this role runs for whatever `session.parts`
+    # says. ⚠️ Found by review on this change, reproduced: this reading came back
+    # **available** for it, which is a load told to check a recalled fact against
+    # a store the project states it keeps none of.
+    keeps_none = _Stating(**{f"{MEMORY_KEY}.carrier": "none"})
+    kept = readings(keeps_none, tracker=None)
+    check(
+        "a store the project states it keeps none of is not reported available",
+        all(
+            entry["available"] is False
+            for entry in kept
+            if entry["reading"] == MEMORY_READING
+        ),
+        f"came back {kept!r}",
+    )
+    # ⛔ And the two absences are reported apart, because they license different
+    # next steps: a stated decision, against a block nothing declares.
+    kept_said = report_for(keeps_none, kept)
+    check(
+        "and it is reported as a stated decision rather than as a block that is missing",
+        any("keeps" in line and "none of" in line for line in kept_said)
+        and not any("carries no such block" in line for line in kept_said),
+        f"said {kept_said!r}",
     )
 
     # ⛔ The other arm of the environment reading, which this project cannot

@@ -461,12 +461,41 @@ def memory(configuration: config.Config, standing_in: str) -> dict:
     if carrier is None:
         return {
             "carried": False,
+            "carrier": None,
             "may_write": None,
+            "store": None,
+            "index": None,
+            "unclosed": [],
             "report": [
                 "No `memory` block is carried, so there is no store for the memory "
                 "third to write and this pass composes no path (§ 25). ⛔ Not that "
                 "the third ran: a surface older than § 25 marks no such block, so "
                 "a tree cut before it reads as a project that states none."
+            ],
+        }
+    # ⛔ The project's stated absence, answered before anything below reads a key
+    # that carrier refuses. ⚠️ Found by review on this change, reproduced: without
+    # this arm a project keeping no memory fell through to the `derived` branch
+    # and was told *the store is the harness's own* -- naming a carrier it does
+    # not state, reporting two hazards it does not have, and handing back a write
+    # decision about a store that does not exist. ⛔ Reachable rather than
+    # theoretical: the restoring role runs whatever `session.parts` says, so it
+    # asks this question on exactly those projects.
+    if carrier == "none":
+        reason = configuration.get(f"{MEMORY_KEY}.absent_reason")
+        return {
+            "carried": False,
+            "carrier": carrier,
+            "may_write": None,
+            "store": None,
+            "index": None,
+            "unclosed": [],
+            "report": [
+                "No memory store is carried (`memory.carrier: none`), so the memory "
+                "third does not run and there is nothing for a restoring pass to "
+                f"check a recalled fact against: {' '.join(str(reason).split())} "
+                "⛔ Not a store that is empty, and not a write refused: there is no "
+                "store (§ 25)."
             ],
         }
     write_from = configuration.get(f"{MEMORY_KEY}.write_from")
@@ -491,14 +520,29 @@ def memory(configuration: config.Config, standing_in: str) -> dict:
         # project wrote, and the role's command is what resolves `~` and a shell
         # variable in it. Relative is relative to the skills root, like every
         # path on this surface (§ 1).
-        stated = str(configuration.get(f"{MEMORY_KEY}.store"))
+        stated = configuration.get(f"{MEMORY_KEY}.store")
+        named = configuration.get(f"{MEMORY_KEY}.index")
+        # ⛔ Unanswered rather than stringified, which is what the first form of
+        # this did: `str(None)` is a path called `None`, so a configuration this
+        # reader had not refused -- one held to a surface whose conditional marker
+        # predates these keys (§ 1) -- would have had its store composed as a
+        # directory named after a Python literal, and written to. Found by review.
+        if not isinstance(stated, str) or not isinstance(named, str):
+            out["report"].append(
+                "`memory.carrier: path` with no `store` and `index` to resolve, so "
+                "where the store is could not be established and this pass "
+                "composes no path (§ 25). ⛔ Reported unanswered rather than "
+                "guessed: the surface requires both keys under this carrier, so "
+                "meeting this means the configuration was held to a surface that "
+                "does not."
+            )
+            out["may_write"] = None
+            return out
         resolved = os.path.expanduser(os.path.expandvars(stated))
         if not os.path.isabs(resolved):
             resolved = os.path.join(os.path.abspath(configuration.skills_root), resolved)
         out["store"] = os.path.normpath(resolved)
-        out["index"] = os.path.join(
-            out["store"], str(configuration.get(f"{MEMORY_KEY}.index"))
-        )
+        out["index"] = os.path.join(out["store"], named)
         out["unclosed"].append(
             "The store the project pinned is the store the procedure writes, and "
             "nothing here holds it to being the store the harness writes: two of "
@@ -518,6 +562,20 @@ def memory(configuration: config.Config, standing_in: str) -> dict:
             "the harness hands the session (§ 25)."
         )
 
+    # ⛔ Held to the two words before any branch below quotes one of them. ⚠️ Each
+    # of those branches names `main_tree` in its message, so an absent key -- § 1's
+    # work-tree case again, a configuration held to a surface whose conditional
+    # marker predates this key -- would have had the decision reported under a
+    # value the project never stated. Found by review on this change.
+    if write_from not in ("main_tree", "any_tree"):
+        out["report"].append(
+            f"`memory.write_from` is {write_from!r} rather than one of the two "
+            "words § 25 states, so which working directory may refresh memory "
+            "could not be established. ⛔ Reported unanswered rather than read as "
+            "either: the permissive reading of it writes a tree's own store."
+        )
+        out["may_write"] = None
+        return out
     if write_from == "any_tree":
         out["may_write"] = True
         out["report"].append(
@@ -634,14 +692,33 @@ def remember(
             ],
             "where": where,
         }
-    os.makedirs(where["store"], exist_ok=True)
     placed = os.path.join(where["store"], name)
     # ⛔ The fact's file first and the index line second, which is ordering rather
     # than arrangement: an index line pointing at a file that is not there yet is
     # a store a concurrent reader finds broken, while a file no line points at is
     # a store that is merely missing one entry.
-    with open(placed, "w", encoding="utf-8") as handle:
-        handle.write(text)
+    #
+    # ⛔ And the write is reported rather than raised. This function's contract is
+    # to return a status and what went wrong, and a store that cannot be created
+    # or a name that is already a directory are both ordinary states of somebody
+    # else's filesystem -- so a traceback here would be the one failure mode the
+    # whole report exists against, out of the one function whose promise is to
+    # name the problem. ⚠️ The index is untouched on either, so a refusal leaves
+    # no line pointing at a fact nobody wrote. Found by review on this change.
+    try:
+        os.makedirs(where["store"], exist_ok=True)
+        with open(placed, "w", encoding="utf-8") as handle:
+            handle.write(text)
+    except OSError as exc:
+        return 1, {
+            "wrote": False,
+            "problems": [
+                f"the store would not take the fact: {exc}. ⛔ The index was left "
+                "alone, so nothing in it points at a fact that was never written "
+                "(§ 25)"
+            ],
+            "where": where,
+        }
     _append_under_lock(where["index"], line.rstrip("\n") + "\n")
     return 0, {
         "wrote": True,
@@ -791,8 +868,8 @@ PLANTED = [
 ]
 
 
-def _an_example_whose_carrier_is(carrier: str) -> dict | None:
-    """The first example configuring § 25 that way, as a parsed block of keys.
+def _an_example_file_whose_carrier_is(carrier: str) -> str | None:
+    """The path of the first example configuring § 25 that way.
 
     Found by the value rather than named, which is the rule the reader's own
     fixtures follow: a file this code pointed at would be the toolkit naming one
@@ -802,13 +879,23 @@ def _an_example_whose_carrier_is(carrier: str) -> dict | None:
     for name in sorted(os.listdir(config.EXAMPLES)):
         if not name.endswith((".yaml", ".yml")):
             continue
-        with open(os.path.join(config.EXAMPLES, name), encoding="utf-8") as handle:
+        path = os.path.join(config.EXAMPLES, name)
+        with open(path, encoding="utf-8") as handle:
             data = config._load_yaml(handle.read(), config.CONFIG_PATH)
         if isinstance(data, dict) and (data.get(MEMORY_KEY) or {}).get(
             "carrier"
         ) == carrier:
-            return data
+            return path
     return None
+
+
+def _an_example_whose_carrier_is(carrier: str) -> dict | None:
+    """The same example, as a parsed block of keys."""
+    path = _an_example_file_whose_carrier_is(carrier)
+    if path is None:
+        return None
+    with open(path, encoding="utf-8") as handle:
+        return config._load_yaml(handle.read(), config.CONFIG_PATH)
 
 
 def _resolved(data: dict) -> config.Config:
@@ -1033,6 +1120,58 @@ def _memory_arms(check) -> None:
             absent["carried"] is False and absent["may_write"] is None,
             f"came back {absent!r}",
         )
+        # ⛔ The project that keeps no memory, which is a *shipped* configuration
+        # and reaches this question through the restoring role whatever
+        # `session.parts` says. ⚠️ Found by review on this change: without its own
+        # arm it fell through to the `derived` branch and came back naming a
+        # carrier the project does not state, two hazards it does not have, and a
+        # write decision about a store that does not exist.
+        keeps_none = _an_example_whose_carrier_is("none")
+        check(
+            "an example keeps no memory, so the arm below is asked",
+            keeps_none is not None,
+        )
+        if keeps_none is not None:
+            nothing = memory(_resolved(keeps_none), checkout)
+            check(
+                "a project that keeps no memory is told there is no store",
+                nothing["carried"] is False
+                and nothing["carrier"] == "none"
+                and nothing["store"] is None
+                and nothing["may_write"] is None
+                and not nothing["unclosed"],
+                f"came back {nothing!r}",
+            )
+            check(
+                "and the answer names that carrier rather than another one",
+                any("none" in line for line in nothing["report"])
+                and not any("derived" in line for line in nothing["report"]),
+                f"reported {nothing['report']!r}",
+            )
+        # ⛔ A pinned carrier whose keys the resolved surface did not require,
+        # which is § 1's work-tree case: reported unanswered rather than composed
+        # as a path named after a Python literal. Found by review.
+        unkeyed = memory(
+            _AConfigurationStating(**{f"{MEMORY_KEY}.carrier": "path"}), checkout
+        )
+        check(
+            "a pinned carrier with no store to resolve is unanswered, not a path",
+            unkeyed["store"] is None and unkeyed["may_write"] is None,
+            f"came back {unkeyed!r}",
+        )
+        # ⛔ And the same for the key every branch of the decision quotes: an
+        # absent one is unanswered rather than read as either word. Found by
+        # review.
+        unstated = memory(
+            _AConfigurationStating(**{f"{MEMORY_KEY}.carrier": "derived"}), tree
+        )
+        check(
+            "a carrier stating no tree a save may write from is unanswered",
+            unstated["may_write"] is None
+            and any("could not be established" in line
+                    for line in unstated["report"]),
+            f"came back {unstated!r}",
+        )
 
         # --- the admission, at the point of writing ----------------------
         entry_path = os.path.join(root, "an-entry.yaml")
@@ -1110,6 +1249,21 @@ def _memory_arms(check) -> None:
         # untouched after each: a refusal that had already appended the line
         # would leave an index pointing at a fact nobody wrote.
         before = open(placed["index"], encoding="utf-8").read()
+        # ⛔ A store that will not take the fact, reported rather than raised out
+        # of the one function whose contract is to name the problem. Planted by
+        # making the name an existing directory, which is the cheapest real
+        # instance of it. Found by review on this change.
+        os.makedirs(os.path.join(placed["store"], "a-directory.md"), exist_ok=True)
+        status, answer = remember(
+            pinned_any, tree, entry_path, "a-directory.md", "- a line"
+        )
+        check(
+            "a store that will not take the fact is reported, not raised",
+            status == 1
+            and answer["wrote"] is False
+            and any("would not take" in line for line in answer["problems"]),
+            f"exited {status} with {answer!r}",
+        )
         for label, named in (
             ("a name that is a path", "elsewhere/a-fact.md"),
             ("a name that climbs out of the store", "../a-fact.md"),
@@ -1411,6 +1565,35 @@ def self_test() -> int:
             "an entry whose file cannot be read exits two, not one",
             main(["recall", "--file", os.path.join(root, "no-entry.yaml")]) == 2,
         )
+        # ⛔ The `memory` subcommand's own split, over a real skills root rather
+        # than a fixture: a project that keeps no memory has nothing to answer
+        # about, and reporting that as the status a failed question gets would
+        # read a stated decision as a fault. Found by review on this change.
+        source = _an_example_file_whose_carrier_is("none")
+        keeps_none = _an_example_whose_carrier_is("none") or {}
+        one_root = keeps_none.get("roots", {}).get("code") == "."
+        check(
+            "an example keeps no memory and states one code root, so the status "
+            "below is asked",
+            source is not None and one_root,
+            "no example is in that shape, so this arm would be asserted over a "
+            "configuration built here instead of one that ships",
+        )
+        if source is not None and one_root:
+            adopter = os.path.join(root, "an-adopter")
+            os.makedirs(os.path.join(adopter, ".claude"))
+            with open(source, encoding="utf-8") as handle:
+                written = handle.read()
+            with open(os.path.join(adopter, config.CONFIG_PATH), "w",
+                      encoding="utf-8") as handle:
+                handle.write(written)
+            check(
+                "a project that keeps no memory exits with nothing to answer about",
+                main(["memory", "--skills-root", adopter,
+                      "--standing-in", adopter]) == NOTHING_TO_ANSWER,
+                "a stated decision reported with the status a failed question "
+                "gets reads as a fault",
+            )
 
     print()
     check(
@@ -1542,9 +1725,17 @@ def main(argv: list[str] | None = None) -> int:
         # ⛔ Zero wherever the question was answered, whichever way it was
         # answered: a refusal to write from this directory is this command
         # working, and a caller reading a non-zero status as a broken run would
-        # go looking for a fault instead of moving to the checkout. ⚠️ The one
-        # non-zero is the unanswerable case, which is not a decision at all.
-        return 0 if answer["may_write"] is not None else 1
+        # go looking for a fault instead of moving to the checkout.
+        if answer["may_write"] is not None:
+            return 0
+        # ⛔ And the two remaining cases are apart, for the reason this module's
+        # own exit statuses are apart at all: a project that states it keeps no
+        # memory has *nothing to answer about*, while a decision nobody could
+        # establish is a question that was asked and failed. Collapsing the first
+        # into the second reports a stated decision as a fault. Found by review.
+        if answer.get("carrier") == "none":
+            return NOTHING_TO_ANSWER
+        return 1
 
     if args.what == "remember":
         status, answer = remember(
