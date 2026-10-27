@@ -144,6 +144,8 @@ query($owner: String!, $name: String!, $number: Int!, $after: String) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $number) {
       body
+      baseRefOid
+      headRefOid
       reviewThreads(first: 100, after: $after) {
         pageInfo { hasNextPage endCursor }
         nodes {
@@ -317,15 +319,22 @@ def _where() -> tuple[str, str, int]:
     return owner, name, int(out.stdout.strip())
 
 
-def _threads(owner: str, name: str, number: int, token: str) -> tuple[str | None, list[dict]]:
-    """Body and every thread, following the cursor.
+def _threads(
+    owner: str, name: str, number: int, token: str
+) -> tuple[str | None, list[dict], tuple[str | None, str | None]]:
+    """Body, every thread, and the two commits the change spans.
 
     ⚠️ A first page is a ceiling. A review that ran long is exactly the change
     this gate is for, so stopping at the first hundred threads would go green
     on the pull requests that need it most.
+
+    ⚠️ The two commits are read here because they are the only way to answer
+    about a file the host will not hand over a patch for: the same pair it
+    compared, asked of git instead.
     """
     body: str | None = None
     threads: list[dict] = []
+    span: tuple[str | None, str | None] = (None, None)
     after = None
     while True:
         payload = {
@@ -339,6 +348,7 @@ def _threads(owner: str, name: str, number: int, token: str) -> tuple[str | None
         if pull is None:
             raise Unreadable(f"pull request {number} was not found.")
         body = pull.get("body")
+        span = (pull.get("baseRefOid"), pull.get("headRefOid"))
         page = pull["reviewThreads"]
         for node in page["nodes"]:
             comments = (node.get("comments") or {}).get("nodes") or [{}]
@@ -350,9 +360,14 @@ def _threads(owner: str, name: str, number: int, token: str) -> tuple[str | None
                 "first": " ".join((comments[0].get("body") or "").split()),
             })
         if not page["pageInfo"]["hasNextPage"]:
-            return body, threads
+            return body, threads, span
         after = page["pageInfo"]["endCursor"]
 
+
+# A bound on the one subprocess this file runs. ⚠️ A diff of one path over two
+# commits is quick; what this is against is a git that hangs rather than answers,
+# where the gate would hold the merge by never finishing instead of by refusing.
+GIT_TIMEOUT = 60
 
 # The host stops listing a change's files here, and a change that reaches it
 # has files nothing read.
@@ -380,8 +395,55 @@ def _added_whole(entry: dict) -> list[tuple[str, str]] | None:
         return None
 
 
-def _added(owner: str, name: str, number: int,
-           token: str) -> tuple[list[tuple[str, str]], list[str]]:
+def _added_from_git(
+    path: str, span: tuple[str | None, str | None]
+) -> list[tuple[str, str]] | None:
+    """Every line this change adds to one file, from git, or None if it cannot say.
+
+    ⛔ **The same two commits the host compared**, so the answer is the patch it
+    declined to send rather than a looser reading of the file. The added-lines
+    rule is untouched: what comes back is the `+` side of a real diff, not a
+    modified file read whole, which is the thing `_added_whole` above refuses.
+
+    ⚠️ **Measured, and it is why this exists.** The host omits `patch` for a file
+    whose diff is over its per-file limit, and a change that reworked one module
+    heavily hit it — so the gate reported a file nothing read and refused a
+    change that had deferred nothing, with no reading available anywhere. The
+    runner holds the repository; asking it is the one answer that is neither a
+    relaxation nor a guess.
+
+    ⛔ **None rather than empty wherever git cannot answer** — a shallow
+    checkout, a commit the clone does not carry, a binary file. An empty answer
+    here would read as a file with nothing added, which is absence of signal
+    reported as a verdict.
+    """
+    base, head = span
+    if not base or not head:
+        return None
+    try:
+        run = subprocess.run(
+            ["git", "diff", "--unified=0", "--no-color", f"{base}..{head}", "--", path],
+            capture_output=True, text=True, timeout=GIT_TIMEOUT, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if run.returncode != 0:
+        return None
+    added = [
+        (path, match.group("text"))
+        for match in (DIFF_ADDED.match(line) for line in run.stdout.splitlines())
+        if match
+    ]
+    # ⚠️ A diff git produced for a file the host says changed, carrying no added
+    # line, is an answer -- a pure deletion. What is not an answer is git
+    # producing nothing at all because it could not reach those commits, which
+    # the return code above is how this tells apart.
+    return added
+
+
+def _added(owner: str, name: str, number: int, token: str,
+           span: tuple[str | None, str | None] = (None, None),
+           ) -> tuple[list[tuple[str, str]], list[str]]:
     """(path, added line) for every line this change writes, and what went unread.
 
     ⚠️ The host omits `patch` for a binary file, for a diff over its per-file
@@ -410,7 +472,14 @@ def _added(owner: str, name: str, number: int,
         for entry in files:
             patch = entry.get("patch")
             if patch is None:
+                # ⛔ Two answers before a file is reported unread, in this order:
+                # an added file is read whole from the tree, every line of it
+                # being one this change writes; anything else is asked of git
+                # over the same two commits the host compared. Only where
+                # neither can answer does the file stay unread.
                 whole = _added_whole(entry)
+                if whole is None:
+                    whole = _added_from_git(entry["filename"], span)
                 if whole is None:
                     unread.append(entry["filename"])
                 else:
@@ -433,8 +502,8 @@ def _added(owner: str, name: str, number: int,
 def read_change() -> Change:
     owner, name, number = _where()
     token = _token()
-    body, threads = _threads(owner, name, number, token)
-    added, unread = _added(owner, name, number, token)
+    body, threads, span = _threads(owner, name, number, token)
+    added, unread = _added(owner, name, number, token, span)
     return Change(number, body, threads, added, unread)
 
 
@@ -793,8 +862,10 @@ def self_test() -> int:
     # both directions and at the function that decides it. A file the host
     # reports **added** and supplies no patch for is read whole from the
     # checkout, every line of it being a line this change writes; a file it
-    # reports **modified** stays unread, because reading that one whole would
-    # hand somebody else's marker to this change.
+    # reports **modified** is never read whole, because that would hand somebody
+    # else's marker to this change. ⚠️ Such a file is not unread, though: the
+    # block below is the second answer it gets, and only where that cannot speak
+    # either is the file reported.
     import tempfile as _tempfile
     with _tempfile.TemporaryDirectory() as root:
         was = os.getcwd()
@@ -806,7 +877,7 @@ def self_test() -> int:
                 ("an added file with no patch is read whole from the checkout",
                  {"status": "added", "filename": "an-added-file.py"},
                  [("an-added-file.py", "one = 1"), ("an-added-file.py", "two = 2")]),
-                ("a modified file with no patch stays unread",
+                ("a modified file is not read whole by this function",
                  {"status": "modified", "filename": "an-added-file.py"}, None),
                 ("an added file that is not in the tree stays unread",
                  {"status": "added", "filename": "a-file-that-is-not-there.py"}, None),
@@ -816,6 +887,52 @@ def self_test() -> int:
                 else:
                     print(f"  DID NOT HOLD           {label}: {_added_whole(entry)!r}")
                     failures += 1
+        finally:
+            os.chdir(was)
+
+    # ⛔ And the second answer, which is what a modified file with no patch gets
+    # before it is reported unread: the same two commits the host compared, asked
+    # of git. Asserted over a repository this suite makes, so it holds wherever
+    # the suite runs rather than depending on the clone it ran in.
+    with _tempfile.TemporaryDirectory() as root:
+        was = os.getcwd()
+        try:
+            os.chdir(root)
+            quiet = {**os.environ, "GIT_AUTHOR_NAME": "s", "GIT_AUTHOR_EMAIL": "s@s",
+                     "GIT_COMMITTER_NAME": "s", "GIT_COMMITTER_EMAIL": "s@s"}
+
+            def git(*words):
+                return subprocess.run(
+                    ["git", *words], capture_output=True, text=True, env=quiet, check=True,
+                )
+
+            git("init", "--quiet")
+            with open("a-modified-file.py", "w", encoding="utf-8") as handle:
+                handle.write("kept = 1\n")
+            git("add", "a-modified-file.py")
+            git("commit", "--quiet", "-m", "before")
+            before = git("rev-parse", "HEAD").stdout.strip()
+            with open("a-modified-file.py", "w", encoding="utf-8") as handle:
+                handle.write("kept = 1\nadded = 2\n")
+            git("add", "a-modified-file.py")
+            git("commit", "--quiet", "-m", "after")
+            after = git("rev-parse", "HEAD").stdout.strip()
+            for label, span, expected in (
+                ("a modified file with no patch is read from git, added lines only",
+                 (before, after), [("a-modified-file.py", "added = 2")]),
+                ("and stays unread where the commits are not known",
+                 (None, after), None),
+                ("and stays unread where git cannot reach them",
+                 ("0" * 40, after), None),
+            ):
+                got = _added_from_git("a-modified-file.py", span)
+                if got == expected:
+                    print(f"  held                   {label}")
+                else:
+                    print(f"  DID NOT HOLD           {label}: {got!r}")
+                    failures += 1
+        except (OSError, subprocess.SubprocessError) as error:
+            print(f"  ----                   git-backed reading: not asserted ({error})")
         finally:
             os.chdir(was)
 

@@ -704,7 +704,7 @@ an answer: a marker in a file nothing read is not an absence of markers. ⚠️ 
 reports that file *added*, it is read whole from the checkout instead**: every line of an added
 file is a line the change writes, there being no earlier version for any of them to have come
 from, so the answer is the one the patch would have given.
-⛔ **A *modified* file stays unread**, and that bound is the whole of what keeps this from
+⛔ **A *modified* file is never read whole**, and that bound is the whole of what keeps this from
 weakening the rule — reading one of those whole would hand somebody else's marker to this change,
 which is what
 [schema § *Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred)'s scope
@@ -712,6 +712,24 @@ over the lines a change **adds** exists to prevent. ⚠️ Measured on a change 
 some sixteen hundred lines: the host supplied no patch, and the gate reported a file nothing read
 on a change that had deferred nothing. Both directions of the carve-out are asserted, with a third
 arm for an added file that is not in the tree, which stays unread rather than reading as empty.
+
+⛔ **And a modified file gets a second answer before it is reported: the same two commits the host
+compared, asked of git in the runner.** What comes back is the `+` side of a real diff, so the
+scope that
+[schema § *Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred)
+states over the lines a change **adds** is untouched — this is the patch the host declined to send
+rather than a looser reading. ⚠️ **Measured here too, and the reason it exists**: a change
+that reworked one module heavily went over the host's per-file limit, and the gate refused
+a change that had deferred nothing, with no reading available anywhere.
+
+⛔ **Three arms are asserted, over a repository the suite builds** so that they hold wherever
+it runs: the added lines of a modified file, and *unread* both where the two commits are not
+known and where git cannot reach them — an empty answer there would read as a file with
+nothing added, which is
+[schema § 2](../plugins/mjolnir/config/schema.md#2-code-host)'s rule that absence of signal
+is not an answer. ⚠️ **The workflow therefore checks out the whole history**, a one-commit clone
+carrying neither commit; and a run in a tree that cannot reach them still reports the file
+rather than passing it.
 
 ### What this gate deliberately does not check
 
