@@ -3,7 +3,10 @@
 A module here states a `KIND` and an `ADAPTER` and **is** an install; the rule
 and its reasoning are
 [`schema.md § 3`](../../config/schema.md#3-tracker-port), which this package
-points at rather than restating.
+points at rather than restating. ⚠️ **Which port a module answers for is which
+directory it sits in** — § 26 makes the directory one of the three facts a port's
+own marker carries, so a module here answers for § 3's port and a module in the
+sibling package answers for § 26's.
 
 Two things true of this directory and stated nowhere else:
 
@@ -18,6 +21,6 @@ Two things true of this directory and stated nowhere else:
     contract runs as `__main__` and `import port` loads it a second time, which
     means `port.ADAPTERS` and `__main__.ADAPTERS` are different objects. Nothing
     reads the registry by module name today; anything that starts to must call
-    `port.load_adapters()` rather than read `port.ADAPTERS`, which is the one
+    `port.load_adapters(spec)` rather than read `port.ADAPTERS`, which is the one
     place this has already gone wrong.
 """

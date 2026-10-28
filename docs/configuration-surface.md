@@ -2091,3 +2091,100 @@ than implied: that a fact carries its provenance and its premise is decidable, a
 premise still holds is read against the tree by whoever reads the fact. `asof` was considered for
 the form and left out for that reason — a date says when a fact was written, not whether it is still
 true, so it would answer staleness with a number that reads like an answer.
+
+## The day log's destination port
+
+The destination was on this surface from the start, and as one key: a directory, in the section
+that measures a day. That is the shape
+[`schema.md § 26`](../plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port) replaced,
+and what follows is the argument it was replaced on rather than a second statement of the rule.
+
+**The surveyed copies all wrote a file**, which is why nothing in the original survey put this in
+tension: a directory addresses a file store completely, and a single implementation needs no
+contract. What moved it afterwards is below, and none of it is about files being insufficient.
+
+- **The store is read back, and not only written.** § 9's own cross-day validation already reads
+  every recorded day, and against a directory of per-day text files that is a filename convention
+  the surface never stated. ⚠️ **A second reader is proposed and not built** — the role that takes
+  a period's line items out of the same store is in
+  [`divergences-and-rulings.md`](divergences-and-rulings.md)'s still-open list — so what carries
+  this is the reader that exists, with the proposed one as the reason the shape has to admit
+  another. An operation with a stated absent case is what already answers this everywhere else
+  here.
+- **The grain of the two values differs by consumer.** Hours aggregate across days and a
+  description does not, so the store has to be readable for hours over a range without the
+  descriptions being what is read — which a store addressed as *a directory of entries* cannot
+  express and an operation can.
+- **A store that is not a file has no directory.** A spreadsheet, a document or a worklog is
+  addressed by an identifier and a tab, and the artifact store's own `dir`
+  ([`schema.md § 11`](../plugins/mjolnir/config/schema.md#the-store-and-when-an-in-tree-store-is-safe))
+  cannot carry one either.
+- **The day-log role's own rules were written in one carrier's vocabulary.** *A redo deletes the
+  file and writes a new one* is how a **file** is rebuilt whole; a spreadsheet row is replaced, and
+  a store with no delete would be patched in place — which is the thing the rule exists to forbid.
+  The rule was right and its statement was not portable, which is the diagnosis that makes this a
+  port rather than a second key, and the same reading reaches every other place that skill said
+  *the file* where it meant *the entry*.
+
+### The section a port's operation list is read from had to become a parameter
+
+⛔ **The contract finds an operation list by its table's column headers and refuses a second one.**
+Measured, by appending a second table with those headers to the surface and asking the contract for
+the list: it came back refused, with the operation list stated more than once and the tables free to
+disagree. That refusal is correct, and it is also what made a second port impossible while the
+section the contract read was a constant —
+[`schema.md § 26 → Which section`](../plugins/mjolnir/config/schema.md#which-section-a-ports-operation-list-is-read-from)
+is the shape that resolved it, and the alternative it was chosen over was a sibling module.
+
+⚠️ **A second copy of the contract per port was the obvious move and is the worse one.** A copy is
+a second place a fallback could be defaulted, which is the defect the contract's own docstring
+exists to refuse — so what is parameterised is the lookup, and a port is three facts carried by one
+marker on the line stating its kind.
+
+⚠️ **The marker's own limit is stated rather than discovered**: two near-miss spellings come back
+**dropped** rather than refused — a clause that lost its colon, which is indistinguishable from
+English prose, and a capitalised keyword, matched case-sensitively like every other clause there.
+⛔ **What catches a marker lost that way is the contract and not the reader**
+([`schema.md § 26 → Which section`](../plugins/mjolnir/config/schema.md#which-section-a-ports-operation-list-is-read-from)):
+its section's table then belongs to no port, which is refused as an operation list nothing reads.
+⚠️ **The reader's own inventory comparison catches it only where the surface is left declaring no
+port at all** — with another port still declared the inventory is non-empty and that comparison is
+silent, which is why the comparison is written out rather than derived but is not what holds this.
+
+### Where the directory went, and why it is still not required
+
+The directory key moved under the kind it was always addressing —
+[`schema.md § 26 → What each kind`](../plugins/mjolnir/config/schema.md#what-each-kind-of-destination-block-carries).
+⚠️ **It is deliberately still unmarked**, which is the position § 3 already takes on the three
+state-mapping keys in its own per-kind blocks and for the same reason: whether a project needs a
+destination at all is the carrier axis's question, so an absent directory is a decision this reader
+cannot tell from an oversight.
+
+⛔ **What makes that safe rather than lax is that the reader reports it**, which is the route an
+unset evidence script already takes: a project mapping the day-log carrier and stating no directory
+for the file kind gets the key in `unavailable`, and the role says what it could not record —
+[`schema.md § 11 → A report names what it could not establish`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish).
+
+⚠️ **The conditional marker was measured and rejected here.** The kind defaults to the file kind, so
+a condition on that kind fires for every configuration — including one that writes no `day_log`
+block at all, which the reader's own defaults create on the way past. Marking the directory
+conditionally required would therefore refuse a project that maps no day-log carrier, which is the
+one project certain not to need it.
+
+### The grain, and the address
+
+⛔ **One entry per day per project**, which the skills root already decides rather than this port
+adding anything —
+[`schema.md § 26 → One entry per day`](../plugins/mjolnir/config/schema.md#one-entry-per-day-and-the-day-belongs-to-one-project).
+The alternative considered was one entry per day across projects with the project named inside the
+entry, and it loses to a rule the day log already carries: the entry is the two values and nothing
+else, which a project name inside it would be the first thing to break. ⚠️ **A shared timesheet is
+the first store two projects would write to**, and it is answered by the store partitioning rather
+than by the entry growing a third value.
+
+⛔ **A destination block carries an address and never a credential**, which is why this surface
+declares no key for one —
+[`schema.md § 26 → The store's address`](../plugins/mjolnir/config/schema.md#the-stores-address-and-what-may-not-be-written-beside-it).
+⚠️ **That is a stated bound on what may be added here rather than a hole in what is**: the file kind
+needs no secret, so nothing shipped is waiting on it, and a kind that cannot be reached without one
+is a kind this surface cannot state until private values have a home.

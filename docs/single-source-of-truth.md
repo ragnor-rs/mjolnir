@@ -704,7 +704,7 @@ an answer: a marker in a file nothing read is not an absence of markers. ⚠️ 
 reports that file *added*, it is read whole from the checkout instead**: every line of an added
 file is a line the change writes, there being no earlier version for any of them to have come
 from, so the answer is the one the patch would have given.
-⛔ **A *modified* file stays unread**, and that bound is the whole of what keeps this from
+⛔ **A *modified* file is never read whole**, and that bound is the whole of what keeps this from
 weakening the rule — reading one of those whole would hand somebody else's marker to this change,
 which is what
 [schema § *Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred)'s scope
@@ -712,6 +712,24 @@ over the lines a change **adds** exists to prevent. ⚠️ Measured on a change 
 some sixteen hundred lines: the host supplied no patch, and the gate reported a file nothing read
 on a change that had deferred nothing. Both directions of the carve-out are asserted, with a third
 arm for an added file that is not in the tree, which stays unread rather than reading as empty.
+
+⛔ **And a modified file gets a second answer before it is reported: the same two commits the host
+compared, asked of git in the runner.** What comes back is the `+` side of a real diff, so the
+scope that
+[schema § *Nothing is deferred*](../plugins/mjolnir/config/schema.md#nothing-is-deferred)
+states over the lines a change **adds** is untouched — this is the patch the host declined to send
+rather than a looser reading. ⚠️ **Measured here too, and the reason it exists**: a change
+that reworked one module heavily went over the host's per-file limit, and the gate refused
+a change that had deferred nothing, with no reading available anywhere.
+
+⛔ **Three arms are asserted, over a repository the suite builds** so that they hold wherever
+it runs: the added lines of a modified file, and *unread* both where the two commits are not
+known and where git cannot reach them — an empty answer there would read as a file with
+nothing added, which is
+[schema § 2](../plugins/mjolnir/config/schema.md#2-code-host)'s rule that absence of signal
+is not an answer. ⚠️ **The workflow therefore checks out the whole history**, a one-commit clone
+carrying neither commit; and a run in a tree that cannot reach them still reports the file
+rather than passing it.
 
 ### What this gate deliberately does not check
 
@@ -795,8 +813,23 @@ rather than written in the script; that an unavailable operation comes back as t
 there and never as an error; that an advance to a status whose configured writer is not the
 procedure is refused with the writer named
 ([schema § 4.2](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer));
-and that against a configuration with no tracker every operation is unavailable while the report
-reads as a configuration rather than a fault.
+and that against a configuration whose `kind` is `none` every operation is unavailable while the
+report reads as a configuration rather than a fault.
+
+⛔ **And it holds every one of those once per port the surface declares**, rather than once. The
+list comes off the surface's own `# port:` markers
+([schema § 26](../plugins/mjolnir/config/schema.md#which-section-a-ports-operation-list-is-read-from)),
+so a port is held the moment it is declared and no count of them is written here. ⚠️ **Two
+properties of that loop are asserted rather than assumed**, because the way this gate would fail
+is by holding the general machine against one port and reading green: that the surface declares
+more than one port at all, and that the one `load()` answers for with no argument is among them.
+⚠️ **Every plant is spliced into the port's own section** rather than into the document, which is a
+measured correction: a plant on the operation column's name hit whichever section stated it first,
+so for the second port it unmade the other port's table and asserted nothing.
+
+One check is the half the per-port lookup cannot see: an operation table sitting under a section no
+`# port:` marker names is refused on the surface, that being an operation list no port reads and no
+adapter is held to.
 
 The kinds are the same two as above. Reading the operation list and the fallback text out of the
 surface is **computed** — a reworded fallback travels, and a table that states the list twice, or
@@ -836,8 +869,13 @@ trackers.
 credential and no network. It asks the port what is installed and runs whatever suite each
 implementation exposes. ⛔ **One entry rather than one per tracker**: a gate entry per
 implementation would spell a tracker's name in this repository's configuration and again in a file
-name, and the port's `adapters/` package is the one place in the toolkit where a tracker's name
-belongs.
+name, and a port's own package is the one place in the toolkit where the thing behind it may be
+named. ⛔ **One entry across the ports as well**: the runner asks the surface which ports there are
+and sweeps each one's package, so a new port's implementations are covered the moment they land.
+⚠️ **What it asserts beyond running the suites is that every declared port has an implementation
+installed** — not that every implementation has a suite, which stays *reported rather than failed*
+as it always was. A port whose package holds nothing would otherwise leave this runner covering
+the rest and reporting a healthy count.
 
 What it holds is per implementation, and the implementation states it: the contract's suite reaches
 none of it. For the board behind `kind: github-projects` that is every list read whole or refused
@@ -1576,11 +1614,11 @@ that the grammar stays narrow, and each of them reddens the moment the vocabular
 ### What this check deliberately does not hold
 
 - **The ordering document, which is where the rule was measured.** It lives outside every tree —
-  § 12's carrier resolves it, as § 9's `out_dir` resolves the day log — so no diff reaches either,
-  and a check on the gate cannot read a file the gate never sees. What holds the rule there is the
-  close-out role, whose own text carries the forbidden forms for that reason. ⚠️ The day log is a
-  different case rather than a second gap: its content **is** an account of work, which the rule's
-  own carve-out for an artifact the procedure exists to produce covers.
+  § 12's carrier resolves it, as § 26's destination port resolves the day log — so no diff reaches
+  either, and a check on the gate cannot read a file the gate never sees. What holds the rule
+  there is the close-out role, whose own text carries the forbidden forms for that reason.
+  ⚠️ The day log is a different case rather than a second gap: its content **is** an account of
+  work, which the rule's own carve-out for an artifact the procedure exists to produce covers.
 - **A work item body, a pull request body or a review comment.** The same half of the same rule the
   width check cannot reach, and for the same reason: those surfaces are not files. The nothing-
   deferred gate does read a body, so an arm there is possible — what stopped it here is that this

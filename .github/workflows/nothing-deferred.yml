@@ -36,8 +36,15 @@ jobs:
     name: Nothing deferred
     runs-on: ubuntu-latest
     steps:
+      # ⛔ The whole history, not the default shallow clone. The host omits a
+      # file's patch once its diff is over a per-file limit, and this gate then
+      # has nothing to read and refuses the change — measured on a change that
+      # reworked one module heavily, which had deferred nothing. What answers it
+      # is the same two commits the host compared, asked of git here, and a
+      # one-commit clone carries neither of them.
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       # One step, one command, planted violations first: the change is held only once each

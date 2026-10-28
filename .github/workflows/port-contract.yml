@@ -1,10 +1,11 @@
 name: Port contract
 
-# The tracker port, held to the contract § 3 of plugins/mjolnir/config/schema.md states: the
-# operation list and every absent case are read out of that section, an absent capability
-# resolves to the fallback stated there, a status whose writer is not the procedure is refused
-# with the writer named, and the trackerless configuration leaves every operation unavailable
-# while reporting no fault.
+# Every port the surface declares, held to the contract § 3 of
+# plugins/mjolnir/config/schema.md states: each port's operation list and every absent case are
+# read out of the section its own marker names, an absent capability resolves to the fallback
+# stated there, a status whose writer is not the procedure is refused with the writer named, and
+# a kind of `none` leaves every operation unavailable while reporting no fault. Which ports
+# those are is not written here — the markers answer it, and this suite runs once per port.
 #
 # A workflow of its own rather than a second job of a sibling, per § 2: a `host.checks` entry
 # states one mirrored command, so two commands behind one workflow name could not be stated on

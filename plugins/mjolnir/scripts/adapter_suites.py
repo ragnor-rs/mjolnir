@@ -7,11 +7,21 @@ implementation's own decisions are not reachable from there: a cursor followed t
 the end, an id resolved by name, a guard that refuses before it writes. Those live
 in the implementation and are held by a suite beside them.
 
-⛔ **This runner names no tracker.** `adapters/` is the one place in the toolkit a
-tracker's name belongs, and a gate entry per implementation would spell one in the
-configuration and again in a workflow file. So the gate runs *this*, which asks
-the port what is installed and runs whatever suite each module exposes -- a new
-implementation is covered the moment it lands, with nothing to remember.
+⛔ **This runner names no tracker.** A port's own package is the one place in the
+toolkit the thing behind it may be named, and a gate entry per implementation
+would spell one in the configuration and again in a workflow file. So the gate
+runs *this*, which asks the surface which ports there are, asks each port what is
+installed, and runs whatever suite each module exposes -- a new implementation,
+and a new port, are covered the moment they land, with nothing to remember.
+
+⚠️ **Only the tracker half of that is held by a check, and the limit is stated
+rather than left to be discovered.** The contract's own sweep reddens on any
+`tracker.kind` the surface states, in either spelling; the same sweep cannot be
+run for the destination port, whose kinds are ordinary English words -- `file`
+appears in `__file__`, in *a file name*, in half the prose here. ⛔ So what holds
+a store's vocabulary out of the shared procedure is this sentence and the review
+that reads it, not a gate, and a claim to the contrary would be the kind of
+unheld assertion the surface spends its refusals on.
 
 ⚠️ **An implementation with no suite is reported, not failed.** The first one
 built was proved against the live tracker this repository runs on, and a runner
@@ -40,29 +50,35 @@ import port  # noqa: E402
 from config import ConfigError  # noqa: E402
 
 
-def installed_suites() -> dict[str, object]:
-    """`tracker kind -> the suite that module exposes, or None`.
+def installed_suites() -> dict[tuple[str, str], object]:
+    """`(port name, kind) -> the suite that module exposes, or None`.
 
     Read from the modules discovery imported rather than from a list: the port
     already knows what is installed, and a second list here is the shape § 3
     forbids -- one allowed to disagree with what is actually built.
+
+    ⛔ Keyed by the port as well as the kind. Two ports may state the same kind
+    word -- nothing on the surface stops them -- and a dictionary keyed on the
+    kind alone would run one of their suites and silently drop the other, while
+    the count read one.
     """
-    port.load_adapters()
-    suites: dict[str, object] = {}
-    for name, module in list(sys.modules.items()):
-        if not name.startswith(f"{port.ADAPTER_PACKAGE}."):
-            continue
-        # ⛔ The package's own rule, read here rather than restated: a module
-        # whose name opens with `_` is not an implementation, which is why
-        # discovery skips it. ⚠️ Without this a suite living in a module of its
-        # own counts as a second implementation of its own kind -- it imports the
-        # names it exercises, `KIND` among them -- and its suite would be run
-        # twice while the count read one too many.
-        if name.rpartition(".")[2].startswith("_"):
-            continue
-        kind = getattr(module, "KIND", None)
-        if kind:
-            suites[kind] = getattr(module, "self_test", None)
+    suites: dict[tuple[str, str], object] = {}
+    for name, spec in sorted(port.surface_ports().items()):
+        port.load_adapters(spec)
+        for module_name, module in list(sys.modules.items()):
+            if not module_name.startswith(f"{spec.package}."):
+                continue
+            # ⛔ The package's own rule, read here rather than restated: a module
+            # whose name opens with `_` is not an implementation, which is why
+            # discovery skips it. ⚠️ Without this a suite living in a module of
+            # its own counts as a second implementation of its own kind -- it
+            # imports the names it exercises, `KIND` among them -- and its suite
+            # would be run twice while the count read one too many.
+            if module_name.rpartition(".")[2].startswith("_"):
+                continue
+            kind = getattr(module, "KIND", None)
+            if kind:
+                suites[(name, kind)] = getattr(module, "self_test", None)
     return suites
 
 
@@ -81,29 +97,41 @@ def main(argv: list[str]) -> int:
         return 1
 
     if not suites:
-        print("  FAIL  no implementation of the port is installed, so this run holds nothing")
+        print("  FAIL  no implementation of any port is installed, so this run holds nothing")
         print("\n1 assertion did not hold.")
         return 1
 
-    failed, without = [], []
-    for kind in sorted(suites):
-        suite = suites[kind]
+    # ⛔ Every port is represented, asserted rather than assumed. A port whose
+    # package holds nothing leaves this runner covering the other one and
+    # reporting green -- which is a whole port's implementations held by nothing
+    # while the count below looks healthy.
+    failed, without, missing = [], [], []
+    for name in sorted(port.surface_ports()):
+        if not any(at == name for at, _kind in suites):
+            missing.append(name)
+
+    for at, kind in sorted(suites):
+        suite = suites[(at, kind)]
         if suite is None:
-            without.append(kind)
+            without.append(f"{at} / {kind}")
             continue
-        print(f"\n--- the `{kind}` implementation " + "-" * max(0, 50 - len(kind)))
+        label = f"{at} / {kind}"
+        print(f"\n--- the `{label}` implementation " + "-" * max(0, 40 - len(label)))
         if suite() != 0:
-            failed.append(kind)
+            failed.append(label)
 
     print()
     print(f"{len(suites)} implementation(s) installed, {len(suites) - len(without)} with a suite.")
-    for kind in without:
+    for label in without:
         print(
-            f"  no suite: `{kind}` -- reported rather than failed, which is a "
+            f"  no suite: `{label}` -- reported rather than failed, which is a "
             "decision somebody made and not an absence this runner can judge."
         )
-    if failed:
-        print(f"\n{len(failed)} implementation(s) did not hold: {', '.join(failed)}.")
+    for name in missing:
+        print(f"  FAIL  no implementation is installed for the `{name}` port")
+    if failed or missing:
+        shortfall = failed + [f"nothing installed for {name}" for name in missing]
+        print(f"\n{len(shortfall)} implementation(s) did not hold: {', '.join(shortfall)}.")
         return 1
     return 0
 

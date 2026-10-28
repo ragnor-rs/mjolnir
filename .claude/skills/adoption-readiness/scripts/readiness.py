@@ -421,10 +421,16 @@ def tracker(loaded) -> tuple[str, int, int, str]:
     described = over.to_dict()
     operations = described["operations"]
     available = sum(1 for entry in operations.values() if entry["available"])
+    # ⛔ Keyed on the port's own names for its three states and never on copies of
+    # the words. ⚠️ Measured: this dict held `trackerless` as a literal, the port
+    # renamed that state to `unconfigured`, and every configuration with no tracker
+    # reached this line as `KeyError` — a traceback where a readiness answer
+    # belongs, from a script the same change was editing.
     detail = {
-        "registered": f"an adapter is registered for `{described['kind']}`",
-        "trackerless": "the trackerless adapter — a stated configuration, not a gap",
-        "absent": f"no adapter built yet for `{described['kind']}`",
+        port.STATE_REGISTERED: f"an adapter is registered for `{described['kind']}`",
+        port.STATE_UNCONFIGURED: "the adapter that implements nothing — a stated "
+        "configuration, not a gap",
+        port.STATE_ABSENT: f"no adapter built yet for `{described['kind']}`",
     }[described["adapter"]]
     return described["adapter"], available, len(operations), detail
 
@@ -585,7 +591,21 @@ def main(argv: list[str]) -> int:
     # reading the registry before anything built a `Port` reported `none` while
     # an implementation was installed -- and three lines further down this same
     # report named it. One fact, two answers, the wrong one in the summary.
-    print(line("adapters registered", ", ".join(sorted(port.load_adapters())) or "none"))
+    #
+    # ⛔ Once per port the surface declares, and never the one port this script
+    # happens to care most about: a line naming a single port's implementations
+    # reads as the whole of what is built, and a port whose package is empty is
+    # exactly what a readiness answer has to carry.
+    # ⚠️ Labelled by the **package** that was swept rather than by the port's
+    # name: the label column is narrower than a dotted kind path, which ran the
+    # value straight into the label with no space between them — and the package
+    # is what the sweep actually read.
+    # ⚠️ Ordered by what is printed. Sorting by the port's dotted name while
+    # printing its package put these lines in an order keyed on something the
+    # reader cannot see.
+    for spec in sorted(port.surface_ports().values(), key=lambda one: one.package):
+        installed = ", ".join(sorted(port.load_adapters(spec))) or "none"
+        print(line(f"{spec.package} installed", installed))
 
     # ⛔ A list nobody passed is reported rather than resolved to nothing. An empty run that
     # printed a summary and exited 0 would read as "every target is ready". Answered before the

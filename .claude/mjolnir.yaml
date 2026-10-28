@@ -409,7 +409,6 @@ language:
     day_log: { language: en, register: technical, audience: "whoever maintains this toolkit" }
 
 day_log:
-  out_dir: "$TMPDIR/mjolnir"
   day_start: "05:00"
   round_to: 0.5
   round_ties: down
@@ -428,6 +427,12 @@ day_log:
     chat_exclude: []
     mixed_chats: []
     calendars: []
+  # § 26's port. A file under the temp root, which is the kind the default names anyway — written
+  # out rather than left implicit because the directory is this project's own and the kind is what
+  # the directory belongs to.
+  destination:
+    kind: file
+    out_dir: "$TMPDIR/mjolnir"
 
 branch_model:
   # Measured on this repository rather than declared for it: parallel sessions take a tree each
@@ -492,7 +497,7 @@ environment:
   # than in a variable, which is why no token is named below and why writing one in would be the
   # false statement rather than the cautious one.
   #
-  # ⛔ Names only. Two paths every command needs, the temp root `day_log.out_dir` and
+  # ⛔ Names only. Two paths every command needs, the temp root `day_log.destination.out_dir` and
   # `context.artifacts.dir` are written under, and the two the harness substitutes into a carrier —
   # the plugin's own location, and the per-user directory the reply hook keeps its
   # one-hand-back marker in.
