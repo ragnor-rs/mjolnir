@@ -61,6 +61,7 @@ straddles that boundary, which is the one way two entries can claim one minute.
 from __future__ import annotations
 
 import argparse
+import bisect
 import datetime as dt
 import functools
 import glob
@@ -285,6 +286,8 @@ class Settings:
         self.slack = self.round_to / 2 + EPS
 
         self.ritual = _patterns(configuration.get("day_log.ritual_retired") or [])
+        # The chat reader, built once. See `chat_reader` for why it is held.
+        self._chat = None
 
     # --- what each stream is, and whether it is read at all -------------------
 
@@ -309,7 +312,18 @@ class Settings:
         naming the kind, not an empty stream -- § 3's rule for a configured kind
         with no implementation, read one axis over. An empty stream would report
         a low total with nothing saying why.
+
+        ⛔ **One instance per configuration, held here.** The reader memoises what
+        its patterns resolve to, and a fresh instance per day defeats that -- so
+        `--check`, which asks about a day at a time, would resolve the chat list
+        once per day in the range.
         """
+        if self._chat is not None:
+            return self._chat
+        self._chat = self._chat_class()(self)
+        return self._chat
+
+    def _chat_class(self):
         reader = CHAT_KINDS.get(self.chat_kind)
         if reader is None:
             raise Unavailable(
@@ -656,7 +670,13 @@ def _parsed(stores: tuple, ritual: tuple):
             events.append((when, session or "agent", _at(timeline.get(session, []), when)))
 
     events.sort(key=lambda row: row[0])
-    return events, prompts
+    # ⛔ The timestamps are returned **beside** the events and never derived by a
+    # second cached function. A cache whose key does not determine its value is
+    # free to disagree with the thing it indexes: measured, a timestamp list held
+    # over from a run that read no sidecars was bisected against a run that did,
+    # and the slice came back short -- a day of 4.10 h read as 0.97 h, silently
+    # and in the direction nothing reports.
+    return events, prompts, [row[0] for row in events]
 
 
 def _at(line: list, when: dt.datetime) -> bool:
@@ -679,12 +699,18 @@ def session_events(settings: Settings, span: tuple, skip: set) -> tuple[list, di
     if not settings.reads("sessions"):
         return [], {}
     stores, _refused = session_stores(tuple(root for _n, root, _r in settings.roots))
-    events, prompts = _parsed(stores, tuple(settings.ritual))
+    events, prompts, stamps = _parsed(stores, tuple(settings.ritual))
     start, end = span
+    # ⛔ The window is found by bisection and never by filtering the whole list.
+    # `events` is sorted, and the days-with-activity walk asks about one day at a
+    # time across this project's entire history -- so a scan per day costs the
+    # event count times the day count. ⚠️ Measured at 74 s for a 915-day range on
+    # one project, which is the `--check` that runs by default after every report.
     inside = [
-        (when, session, ritual)
-        for when, session, ritual in events
-        if session not in skip and start <= when < end
+        row for row in events[
+            bisect.bisect_left(stamps, start):bisect.bisect_left(stamps, end)
+        ]
+        if row[1] not in skip
     ]
     shown = {
         session: [row for row in rows if start <= row[0] < end]
@@ -722,6 +748,8 @@ class TelegramExport:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.path = os.path.expanduser(os.path.expandvars(str(settings.chat_path)))
+        # `(start, end, rows, newest)` for the widest range asked for so far.
+        self._cache = None
 
     def available(self) -> bool:
         return os.path.exists(self.path)
@@ -762,6 +790,47 @@ class TelegramExport:
         if not self.available() or not patterns:
             return [], [], None
         start, end = span
+        rows, newest = self._rows(start, end)
+        rows = [row for row in rows if not any(_like(f"%{s}%", row[1]) for s in skip)]
+        events = [
+            (dt.datetime.fromisoformat(row[0]).replace(tzinfo=LOCAL),
+             "chat~" if self.mixed(row[1]) else "chat")
+            for row in rows
+        ]
+        horizon = (
+            dt.datetime.fromisoformat(newest).replace(tzinfo=LOCAL) if newest else None
+        )
+        return events, rows, horizon
+
+    def warm(self, start: dt.datetime, end: dt.datetime) -> None:
+        """Query the whole range before anything asks about one day of it.
+
+        ⛔ **Not an optimisation to the side of the measurement.** The date
+        comparison this archive is queried by cannot use an index, so every query
+        is a full scan; `--check` and `--month` ask about a day at a time, and a
+        range this project's own history is long enough to make that hundreds of
+        scans. ⚠️ **Measured before this existed**: 0.28 s per day against a
+        915-day range -- over four minutes for one `--check`, which runs by
+        default after every day report. One wide query serves all of them.
+        """
+        if self.available() and self.settings.chat_patterns:
+            self._rows(start, end)
+
+    def _rows(self, start: dt.datetime, end: dt.datetime) -> tuple[list, str | None]:
+        """The rows in `[start, end)`, from a cache that only ever widens."""
+        held = self._cache
+        if held is not None and held[0] <= start and end <= held[1]:
+            rows, newest = held[2], held[3]
+        else:
+            rows, newest = self._query(start, end)
+            self._cache = (start, end, rows, newest)
+        return [
+            row for row in rows
+            if start <= dt.datetime.fromisoformat(row[0]).replace(tzinfo=LOCAL) < end
+        ], newest
+
+    def _query(self, start: dt.datetime, end: dt.datetime) -> tuple[list, str | None]:
+        patterns = self.settings.chat_patterns
         where = " OR ".join("c.name LIKE ?" for _ in patterns)
         blocked = " ".join("AND c.name NOT LIKE ?" for _ in self.settings.chat_exclude)
         with self._connect() as db:
@@ -781,16 +850,7 @@ class TelegramExport:
             # are missing" caveat that is not true. Past this horizon messages
             # really are missing and the day really is under-measured.
             newest = db.execute("SELECT max(date) FROM messages").fetchone()[0]
-        rows = [row for row in rows if not any(_like(f"%{s}%", row[1]) for s in skip)]
-        events = [
-            (dt.datetime.fromisoformat(row[0]).replace(tzinfo=LOCAL),
-             "chat~" if self.mixed(row[1]) else "chat")
-            for row in rows
-        ]
-        horizon = (
-            dt.datetime.fromisoformat(newest).replace(tzinfo=LOCAL) if newest else None
-        )
-        return events, rows, horizon
+        return rows, newest
 
 
 CHAT_KINDS = {TelegramExport.KIND: TelegramExport}
@@ -822,22 +882,64 @@ def commits(settings: Settings, span: tuple) -> list[tuple]:
     for name, root, _repo in settings.roots:
         if not os.path.exists(os.path.join(root, ".git")):
             continue
-        listed = git(
-            root, "log", "--all",
-            f"--since={start:%Y-%m-%d %H:%M}", f"--until={end:%Y-%m-%d %H:%M}",
-            "--date=format-local:%Y-%m-%d %H:%M:%S",
-            "--pretty=format:%cd|%h|%an|%ae|%s", "--reverse",
-        )
-        for line in listed.splitlines():
-            if not line:
-                continue
-            when, sha, author, email, subject = line.split("|", 4)
+        for when, sha, author, email, subject in _commits_in(root, start, end):
             # ⚠️ Where no author is configured every commit is the owner's, which
             # is the right reading for a repository with one committer: a mark on
             # every line is a mark that says nothing.
             owned = not mine or email in mine
             out.append((name, when, sha, author, owned, subject))
     return sorted(out, key=lambda row: row[1])
+
+
+# One listing per root over the widest range asked for, filtered per day. ⛔ Not a
+# convenience: `--check` walks every day between this project's first commit and
+# today, and a listing per day per root is that many `git log` invocations -- 915
+# of them measured on one project, which is the same range the chat archive's
+# widening cache exists for.
+_COMMITS: dict = {}
+
+
+def _commits_in(root: str, start: dt.datetime, end: dt.datetime) -> list[tuple]:
+    """`(when, sha, author, email, subject)` in `[start, end)`, from a wide read."""
+    held = _COMMITS.get(root)
+    if held is None or not (held[0] <= start and end <= held[1]):
+        listed = git(
+            root, "log", "--all",
+            f"--since={start:%Y-%m-%d %H:%M}", f"--until={end:%Y-%m-%d %H:%M}",
+            "--date=format-local:%Y-%m-%d %H:%M:%S",
+            "--pretty=format:%cd|%h|%an|%ae|%s", "--reverse",
+        )
+        rows = []
+        for line in listed.splitlines():
+            if line:
+                rows.append(tuple(line.split("|", 4)))
+        _COMMITS[root] = (start, end, rows)
+        held = _COMMITS[root]
+    return [
+        row for row in held[2]
+        if start <= dt.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S").replace(
+            tzinfo=LOCAL) < end
+    ]
+
+
+def warm(settings: Settings, start: dt.datetime, end: dt.datetime) -> None:
+    """Read every stream over the whole range before any per-day loop runs.
+
+    ⛔ **Without it the caches still work and serve nobody**: the first day asked
+    about sets a narrow range that every later day misses, which is exactly the
+    per-day rescan they exist to avoid. ⚠️ Measured on one project before any of
+    this existed -- 0.28 s per day against a 915-day range, which is over four
+    minutes for a `--check` that runs by default after every report.
+    """
+    if settings.reads("sessions"):
+        session_events(settings, (start, end), set())
+    if settings.reads("commits"):
+        for _name, root, _repo in settings.roots:
+            if os.path.exists(os.path.join(root, ".git")):
+                _commits_in(root, start, end)
+    if settings.chat_available:
+        settings.chat_reader().warm(start, end)
+    host_activity(settings, (start, end))
 
 
 def commit_events(settings: Settings, span: tuple) -> list[tuple]:
@@ -1052,8 +1154,8 @@ def measure(
     tagged, prompts = session_events(settings, span, set(skip))
     chat_events, chat_rows, horizon = [], [], None
     if settings.chat_available:
-        reader = settings.chat_reader()(settings)
-        chat_events, chat_rows, horizon = reader.read(span, tuple(skip_chats))
+        chat_events, chat_rows, horizon = settings.chat_reader().read(
+            span, tuple(skip_chats))
     host_events, host_rows, host_error = host_activity(settings, span)
     outside = (
         chat_events + host_events + commit_events(settings, span)
@@ -1098,7 +1200,7 @@ def straddling(settings: Settings, first: dt.date, last: dt.date, idle: int) -> 
     tagged, _prompts = session_events(settings, span, set())
     events = [(when, src) for when, src, ritual in tagged if not ritual]
     if settings.chat_available:
-        events += settings.chat_reader()(settings).read(span)[0]
+        events += settings.chat_reader().read(span)[0]
     events += host_activity(settings, span)[0] + commit_events(settings, span)
     out = []
     for start, end, *_rest in blocks(events, idle):
@@ -1221,7 +1323,7 @@ def sources(settings: Settings) -> list[str]:
     else:
         out.append("    sessions  (not a configured stream)")
     if settings.chat_available:
-        reader = settings.chat_reader()(settings)
+        reader = settings.chat_reader()
         resolved = reader.chats()
         marked = ", ".join(
             f"{name}{'~' if reader.mixed(name) else ''}" for name in resolved
@@ -1313,7 +1415,7 @@ def show(settings: Settings, found: Day, idle: int) -> None:
             )
         elif found.horizon:
             print(f"  (archive runs to {found.horizon:%Y-%m-%d %H:%M} — this day is covered)")
-        reader = settings.chat_reader()(settings)
+        reader = settings.chat_reader()
         for when, chat, who, text in found.chat_rows:
             mark = "~" if reader.mixed(chat) else " "
             print(f"  {mark}{when[5:16]} [{chat}] {who}: {' '.join(text.split())[:180]}")
@@ -1347,6 +1449,11 @@ def check(settings: Settings, idle: int) -> int:
         print(f"CHECK  could not run: {absent}")
         return 1
 
+    # Every stream read once over the whole range, before the per-day loops. The
+    # range is two days wider at the end, which is what `straddling` asks for.
+    warm(settings, settings.window(first)[0],
+         settings.window(last + dt.timedelta(days=2))[0])
+
     stated = answer["hours"]
     problems, notes = [], []
     days = sorted(stated)
@@ -1365,15 +1472,19 @@ def check(settings: Settings, idle: int) -> int:
     for name, reason in sorted(answer["unplaced"].items()):
         problems.append(f"UNPLACED    {name} — {reason}, so it belongs to no period")
 
-    if days:
-        for start, end, edge in straddling(
-            settings, dt.date.fromisoformat(days[0]), dt.date.fromisoformat(days[-1]), idle
-        ):
-            problems.append(
-                f"OVERLAP  {start:%m-%d %H:%M}-{end:%m-%d %H:%M} runs through the "
-                f"{edge:%m-%d %H:%M} boundary — {edge.date() - dt.timedelta(days=1)} and "
-                f"{edge.date()} both measure part of it"
-            )
+    # ⛔ **Over the range measured, never over the range recorded.** A boundary
+    # crossing is computed from the blocks themselves and holds whether or not an
+    # entry exists, so anchoring it on the recorded days means a store with no
+    # entries yet has this check run over nothing at all -- and it is the one
+    # failure recording an entry cannot clear, since it says the hours belong to
+    # two days. ⚠️ Measured: a project with 0 entries reported no overlap line,
+    # which read as *no working day is claimed twice*.
+    for start, end, edge in straddling(settings, first, last, idle):
+        problems.append(
+            f"OVERLAP  {start:%m-%d %H:%M}-{end:%m-%d %H:%M} runs through the "
+            f"{edge:%m-%d %H:%M} boundary — {edge.date() - dt.timedelta(days=1)} and "
+            f"{edge.date()} both measure part of it"
+        )
 
     for name in days:
         day = dt.date.fromisoformat(name)
@@ -1472,6 +1583,10 @@ def month(settings: Settings, tag: str, idle: int) -> int:
     except Unavailable as absent:
         print(f"MONTH  could not run: {absent}")
         return 1
+
+    # The whole month read once, for the reason `check` warms its own range.
+    warm(settings, settings.window(first)[0],
+         settings.window(last + dt.timedelta(days=1))[0])
 
     stated, gaps = answer["hours"], []
     print(f"MONTH {tag}   {len(stated)} entries\n")

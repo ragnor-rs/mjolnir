@@ -28,6 +28,7 @@ rather than hand-built expectations.
 
 from __future__ import annotations
 
+import bisect
 import datetime as dt
 import json
 import os
@@ -382,6 +383,7 @@ def _clear_caches() -> None:
     day_log.working_copies.cache_clear()
     day_log.session_stores.cache_clear()
     day_log._parsed.cache_clear()  # noqa: SLF001 -- this file is that module's suite
+    day_log._COMMITS.clear()  # noqa: SLF001
     day_log._HOST.update({"since": None, "rows": [], "error": None})  # noqa: SLF001
 
 
@@ -653,6 +655,34 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                 ),
             )
 
+            print("\nthe window is bisected against the parse it indexes, and no other:")
+            _clear_caches()
+            stores, _refused = day_log.session_stores((world.root,))
+            events, _prompts, stamps = day_log._parsed(  # noqa: SLF001
+                stores, tuple(settings.ritual))
+            suite.ok(
+                "⛔ the timestamps come back from the same call as the events, in step",
+                len(stamps) == len(events)
+                and all(s is e[0] for s, e in zip(stamps, events)),
+                f"{len(stamps)} stamps against {len(events)} events",
+            )
+            suite.ok(
+                "and they are sorted, which is what makes bisecting them an answer",
+                stamps == sorted(stamps),
+            )
+            # ⛔ The plant: a timestamp list held over from a parse that read
+            # fewer files, bisected against a parse that read more, returns a
+            # short slice -- a day measured low with nothing reporting it.
+            # Measured at 4.10 h read as 0.97 h before the two were one call.
+            stale = stamps[: len(stamps) // 2]
+            start, end = settings.window(world.day)
+            suite.ok(
+                "⛔ and a stale list of them would cut the window short",
+                len(events[bisect.bisect_left(stale, start):bisect.bisect_left(stale, end)])
+                != len(events[bisect.bisect_left(stamps, start):bisect.bisect_left(stamps, end)]),
+            )
+            _clear_caches()
+
             print("\na session is identified by its record and not by its file name:")
             suite.ok(
                 "--skip-session drops the session the records name",
@@ -789,7 +819,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             "calendars": [],
         },
     )
-    reader = mixed.chat_reader()(mixed)
+    reader = mixed.chat_reader()
     suite.ok(
         "the configured mixed chat is marked and the project group is not",
         reader.mixed("A Person") and not reader.mixed("A Group - dev"),
