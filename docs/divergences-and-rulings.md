@@ -244,12 +244,16 @@ Read after the first design pass. None of it reverses a ruling; two items extend
   shareable half is the procedure and the private half is still private. Which file each half lives
   in is #43's, and until it lands a whole configuration is the untracked one, which is the shape
   #43 rejects as its own answer and the only one available before it.
-- **Two copies handle a case the other three do not**: the project is scoped but *not* scoped to
-  one person, because a second collaborator commits to the same repository. Their rule is that an
-  author filter belongs in the script, never a subtraction by hand. Hence `attribute_to`, absent by
-  default. ⚠️ **A third copy states the same rule against a case it does not yet have** — one
-  committer today, the filter named as what to reach for rather than set — which is why the key's
-  absent value is a decision there and not an oversight.
+- **Three copies meet the same case and answer it three ways**: the project is scoped to a
+  repository and *not* to one person, because somebody else commits to it. One carries an author
+  set in the script, one prints every commit's author and filters on nobody, and one states the
+  rule and sets nothing — while a fourth carries the author against a repository that has only ever
+  had one committer. The rule all three that meet it agree on is that the filter belongs in the
+  script and never in a subtraction by hand. Hence `attribute_to`.
+  ⛔ **Its absent value is the hazard rather than the safe default**: with no author configured the
+  script reads *every* commit as the log owner's, so a collaborator's commit anchors a block as the
+  owner's work with nothing marking it — which makes a latent case the case to set the key for, and
+  not one to leave until it fires.
 
 ### What extracting them found that reading them did not
 
@@ -286,22 +290,24 @@ against the five projects' real evidence rather than by comparing the five texts
 Read when the role was migrated and each project's copy deleted. **The figures agree**: on one
 closed day per project the shared role and the copy it replaced measure the same total to the
 hundredth of an hour, the same blocks, the same bookkeeping deduction and the same refused
-transcript stores — including the two projects whose rounding, exclusion set, section shape,
-register and language all differ from the others', which is what makes the agreement a statement
-about the configuration surface rather than about one project. **No difference was found that
-needed explaining.** ⚠️ **Measured on a closed day deliberately**: the first comparison was taken
-on the day in progress and the two runs disagreed by one minute, which is the later run having
-more of the day in it rather than anything about either script.
+transcript stores. **No difference was found that needed explaining.** ⚠️ **What makes that a
+statement about the configuration surface rather than about one project is that no two of the five
+configurations agree on every axis the day is measured by** — the grid, the tie, whether the grid
+is asserted, the exclusion set, the section shape, the register and the language — and every one of
+those axes is answered at least two ways across them. ⚠️ **Measured on a closed day deliberately**:
+the first comparison was taken on the day in progress and the two runs disagreed by one minute,
+which is the later run having more of the day in it rather than anything about either script.
 
 What the configurations could **not** state is a shorter list and all of it is one facet or one
 open item:
 
-- **Two of the five host facets filter with the inverse of the key this surface has.** A workflow
-  stating `paths-ignore:` runs on everything *except* a list, and [§ 2](../plugins/mjolnir/config/schema.md#2-code-host)'s
-  `paths` states only the including form, so neither entry can carry its filter and a consumer
-  reads both as running on every change. ⚠️ **That is the safe direction** — it never reports a run
-  as covering a change the host skipped — and it is the one fact in those two entries the surface
-  does not hold. #222 is the item.
+- **One project's facet carries two workflows that filter with the inverse of the key this surface
+  has.** A workflow stating `paths-ignore:` runs on everything *except* a list, and
+  [§ 2](../plugins/mjolnir/config/schema.md#2-code-host)'s `paths` states only the including form,
+  so neither of those two entries can carry its filter and a consumer reads both as running on
+  every change. ⚠️ **That is the safe direction** — it never reports a run as covering a change the
+  host skipped — and it is the one fact in those two entries the surface does not hold. #222 is the
+  item.
 - **A repository with two package roots and nothing at the top cannot state a command once.** Every
   `mirrors` in that project's facet carries the directory inline, which is #61 read from the other
   side: the key that would factor it out is the one that is open.
