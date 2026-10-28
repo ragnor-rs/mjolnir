@@ -1733,8 +1733,8 @@ class Config:
                 f"No chat evidence is carried (`{CHAT_KIND_PATH}: {NO_CHAT}`), so "
                 f"the `{CHAT_STREAM}` stream is absent here rather than empty and "
                 "the day is measured from the streams that remain. What the "
-                "archive would have been read from is `day_log.evidence.chat.path`, "
-                "which this project states no value for (§ 9)."
+                f"archive would have been read from is `{CHAT_BLOCK}.path`, which "
+                "this project states no value for (§ 9)."
             )
         # § 26's own two absences, read the way § 3's are: the kind that addresses
         # nothing, and the key the configured kind cannot be addressed without.
@@ -6331,9 +6331,10 @@ def _planted_violations():
         ("a sections mode outside its alternation", "day_log.sections",
          at("day_log.sections", "everything")),
         # § 9's streams and the chat source, one plant per arm. ⚠️ The example
-        # these break is whichever `_a_valid_example` picks, so the chat half is
-        # planted from whichever kind that file states rather than from one named
-        # here -- `_chat_source` below does the picking.
+        # these break is whichever `_a_valid_example` picks, and the two chat
+        # halves below therefore set the kind rather than reading whatever that
+        # file happened to state -- `_a_chat_kind_that_reads_an_archive` takes it
+        # off the surface's own alternation, so neither plant names a vendor.
         ("a stream list that is not a list", STREAMS_PATH,
          at(STREAMS_PATH, "sessions")),
         # ⛔ The retired stream name itself, which is the arm no `# retired:`
@@ -7548,11 +7549,22 @@ def _a_chat_kind_that_reads_an_archive() -> str:
     ⛔ Read off the surface rather than spelled here, for the reason
     `_a_valid_example` is found rather than named: a fixture naming one chat
     implementation would be this code naming a vendor, which is the thing § 9's
-    `kind` exists to stop the procedure doing. A surface that states only the
-    absent case empties this, and the plants below then fail rather than passing
-    on a configuration they did not break.
+    `kind` exists to stop the procedure doing.
+
+    ⛔ A surface stating only the absent case is refused **with the key named**
+    rather than left to raise out of the suite: the plants that use this would
+    then break nothing while still reading as plants, and a traceback naming no
+    key is the one shape this module may not fail in.
     """
-    return next(k for k in facts_for(CHAT_KIND_PATH) if k != NO_CHAT)
+    reads_one = [k for k in facts_for(CHAT_KIND_PATH) if k != NO_CHAT]
+    if not reads_one:
+        raise ConfigError(
+            CHAT_KIND_PATH,
+            "states no kind that reads an archive, so the plants that break the "
+            "chat source would break nothing and the arms they assert would be "
+            "asserted by nothing.",
+        )
+    return reads_one[0]
 
 
 def _a_chat_stream_with_no_source(data: dict) -> dict:
