@@ -21,9 +21,10 @@ whole of the bootstrap — not three pieces picked for being difficult.
 
 ⚠️ **The third row names the *issue* loop, and the distinction is not cosmetic.** The day-log
 carrier shipped in this repository's first commit, `6410f34` — so the earliest carrier of any role
-of the loop was never hand-built in this sense at all; it predates the loop it belongs to. It
-is excluded here for the reason the `day_log.script` bullet below gives: the one role whose
-carrier shipped first is the one role this project cannot run.
+of the loop was never hand-built in this sense at all; it predates the loop it belongs to. ⚠️ **It
+is also the one role whose measuring half is a script this repository ships rather than procedure
+alone**, which is why it is the role with the most evidence behind its surface and the least to
+say about how it was built.
 
 The port those operations go through is
 [`schema.md § 3`](../plugins/mjolnir/config/schema.md#3-tracker-port); the carrier each role is
@@ -73,9 +74,7 @@ once.
 roles this project carries is [`schema.md § 7`](../plugins/mjolnir/config/schema.md#7-carrier)'s
 facet, and the command in the last section derives the set from it; naming the remainder here would
 be a copy that goes stale the first time a carrier lands — the same prohibition that section already
-carries, and one the README records as having drifted once already. The one absence worth a sentence
-is the role whose carrier exists and still cannot run, for the reason the `day_log.script` bullet
-below gives.
+carries, and one the README records as having drifted once already.
 
 **Two capabilities were absent as it ran, and each took the fallback
 [`§ 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)
@@ -163,10 +162,14 @@ and reported rather than a test asserting it.
 The surface's absent cases are argued for elsewhere; here they are load-bearing rather than
 theoretical, which is a different kind of evidence than an example configuration can give.
 
-- **`day_log.script` is unset on purpose.** The evidence script is not extracted
-  ([#15](https://github.com/ragnor-rs/mjolnir/issues/15)) and this repository has no local copy to
-  point at, so the day-log role resolves the project, reads the reader's `unavailable` list, reports
-  that it cannot run and stops — rather than running a command with a null in it. The key is
+- **`day_log.ritual_retired` is stated empty on purpose.** Every command name in this
+  repository's own transcripts is either on the shared script's closed bookkeeping list or is
+  work — the loop's roles, and this project's `close-out` and `adoption-readiness` — so nothing
+  bookkeeping has been retired here. ⚠️ **Measured rather than assumed**, by reading the
+  `<command-name>` tags out of the store, which is the only way that claim can be made. The
+  reader names the emptiness, because the failure it guards is a total that is quietly *high*:
+  a project whose history does carry a command it no longer has, and which says nothing, counts
+  every one of those turns as work. The key is
   [`schema.md § 9`](../plugins/mjolnir/config/schema.md#9-day-log)'s.
 - **This project's tracker has no `in_flight` status at all**, because plain issues are open or
   closed. So *an absent status role is legitimate* is not an assertion by the surface's author: it

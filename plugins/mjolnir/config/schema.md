@@ -2523,9 +2523,9 @@ day_log:
   round_to: 0.5                # default
   round_ties: down | up        # default: down
   enforce_grid: true           # default
-  script: "<path to the evidence script>"   # null where the project has none
   streams: [sessions, commits, chat, meetings, host_activity]
   attribute_to: null           # default
+  ritual_retired: []           # default
   exclusions: [contractual, other_projects, log_upkeep, rework, overhead]   # default
   extra_exclusions:
     - { name: "…", rule: "…" }
@@ -2600,16 +2600,40 @@ against the key paths a configuration carries — cannot reach it. What refuses 
 own membership, read off the list this section shows: a member outside that list is refused with
 `streams` named and the members it allows stated.
 
-**`script` is transitional.** It points at the project's own evidence script for now, so the
-procedure can be shared before the script is. Extracting the script into the plugin is the next
-piece of this role; until then, `script` is how a project that has not been migrated keeps
-working.
+**`ritual_retired` is this project's own history, and it is names rather than patterns.** The
+bookkeeping deduction is a **closed list in the shared script** — the harness's own commands, the
+two bookkeeping roles, and this one — and what no shared list can hold is a command *this* project
+used to have. A retired name stays matched for as long as it is still in the transcripts a day can
+be backfilled from, so it is stated per project:
 
-⛔ **An unset `script` stops the day-log role, and the reader says so rather than letting the
-role run into it.** A project that maps a `day_log` carrier and leaves `script` null has an
-absence that is load-bearing: the role has no evidence to read. The reader reports it by name,
-so the absence reaches the role as a stated configuration rather than as a null substituted
-into a command.
+```yaml
+day_log:
+  ritual_retired:
+    - { command: "<the retired command's name>", title: "<the body it injected>" }
+```
+
+- ⛔ **A name, never an expression.** The anchoring is the script's and only the word is the
+  project's, which is what keeps this key from being the one route by which the deduction widens
+  onto real work — the direction this section forbids outright, because a pattern catching one real
+  instruction removes a working hour and nothing reports it.
+- `title` is the title the command's own body arrived under, where it had one, and is `null`
+  otherwise. ⚠️ **It is not derivable from the name** — it is whatever the command file's heading
+  said — which is why both halves are stated.
+- ⚠️ **Namespacing is not this key's business.** A role invoked as `<plugin>:<name>` changes the
+  string a transcript carries, and the shared script matches the bare and the namespaced form of
+  every name on its own list; what is retired is a command that no longer exists under any
+  spelling.
+
+```yaml
+# retired: day_log.script
+```
+
+⛔ **`script` is retired, and a configuration still declaring it is refused with the key named.**
+It pointed at each project's own copy of the evidence script, which was the transition that let the
+*procedure* be shared before the script was. The script is now the plugin's, one copy, and takes
+every value this section states from configuration — so a project that still names a path is
+naming a sixth copy, which is the thing that was deleted. ⚠️ **There is no key in its place**: the
+role names the shared script the way it already names the shared reader and the port.
 
 ## 10. Branch model
 

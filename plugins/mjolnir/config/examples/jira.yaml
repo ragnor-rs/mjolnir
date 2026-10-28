@@ -229,9 +229,14 @@ day_log:
   round_to: 0.5
   round_ties: down
   enforce_grid: true
-  script: ".claude/skills/day-report/scripts/active_time.py"
   streams: [sessions, commits, chat, meetings]
   attribute_to: null
+  # A command this project used to have. It is still in the transcripts a past day is
+  # backfilled from, so it stays matched for as long as that is true. ⛔ A name and a title,
+  # never a pattern: the anchoring is the shared script's, which is what keeps this key from
+  # being the route by which the deduction widens onto real work.
+  ritual_retired:
+    - { command: "deliverables", title: "Generate Monthly Deliverables Report" }
   exclusions: [contractual, log_upkeep, rework, overhead]
   sections: billed_and_not_billed
   evidence:

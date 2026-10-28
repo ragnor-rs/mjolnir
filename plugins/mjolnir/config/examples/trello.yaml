@@ -236,9 +236,14 @@ day_log:
   round_to: 0.1                 # this project states one decimal, so the grid is not asserted
   round_ties: down
   enforce_grid: false
-  script: ".claude/skills/day-report/scripts/active_time.py"
   streams: [sessions, commits, chat, meetings]
   attribute_to: null
+  # The command that kept this project's books before the role replaced it. ⚠️ Its
+  # replacement is not here and must not be: a role is on the shared closed list, and it
+  # injects a directory preamble rather than a title — which is why only the retired
+  # *command* carries one.
+  ritual_retired:
+    - { command: "checkpoint", title: "Checkpoint Every Change" }
   exclusions: [contractual, log_upkeep, rework, overhead]
   extra_exclusions:
     - name: off_plan

@@ -239,6 +239,36 @@ Read after the first design pass. None of it reverses a ruling; two items extend
   because a second collaborator commits to the same repository. Its rule is that an author filter
   belongs in the script, never a subtraction by hand. Hence `attribute_to`, absent by default.
 
+### What extracting them found that reading them did not
+
+Three of these are defects every copy shares, and each was found by running the extracted script
+against the five projects' real evidence rather than by comparing the five texts.
+
+- **A delegated sub-window writes a transcript of its own**, under the parent session's directory,
+  and no copy reads one. The parent emits a tool call and then waits, so a reading confined to the
+  top-level files can split a block that was never idle. ⛔ **The sub-window's own first record is
+  a `user` record carrying the parent's instruction to it**, so a naive reading of one would open a
+  bookkeeping turn whenever that instruction began with a bookkeeping word and write the whole
+  sub-window off. ⚠️ **Measured over 168 active days across the five projects, no day's total
+  moves**: every minute a sidecar contributes falls within the idle cutoff of a parent event
+  anyway. The reading is kept because it is the direction that cannot be silently low, and because
+  the alternative is a stream whose absence nothing reports.
+- **Commits anchor blocks in one copy and only appear in the listing in the other four**, while all
+  five state that the streams are unioned into active time. The four are therefore low against
+  their own procedure: over the same 168 days the anchors recover **5.46 h across 24 days**, the
+  worst case a day that reads 0.08 h and holds 0.35 h. Work done outside a session — a hand-written
+  fix, a rebase — leaves no other trace.
+- **A checkout reached through a symlinked ancestor is refused as another project's.** Git reports
+  a worktree by its resolved path and the harness names a transcript store after the working
+  directory *as the session saw it*, so the two never meet and that tree's whole store is dropped.
+- **A store is globbed from the configured root alone**, so a tree cut outside that prefix is never
+  even a candidate — and `tree_dir` routinely puts trees beside a root rather than under it. Both
+  of these lose real minutes in the direction with no symptom but a low total.
+- **Two patterns had already stopped matching what the harness injects.** A role installed as a
+  plugin injects its preamble at the plugin's path, which one copy's `.claude/skills/` anchor
+  cannot see; and a namespaced invocation changes the string, which no copy's pattern allowed for.
+  One project's own transcripts carry both the bare and the namespaced form of the same role.
+
 ## 6. What the five review copies added
 
 Read when that role was reconciled. Its copies ran **92 to 295 lines**, and the spread is one
@@ -346,8 +376,3 @@ had already adopted the rule.
 - Name the two `deliverables` roles apart. Proposed, not settled: one for the prose session
   summary, one for the billing-period line items. Nothing turns on the names beyond not merging
   the two roles.
-- **Extract the day log's evidence script.** The procedure is shared as of now; the script is
-  still each project's own, pointed at by `day_log.script`. That is transitional by design, so a
-  project that has not been migrated keeps working — but the end state is one copy of the script
-  too, with the day boundary, the stream set, the rounding, the ritual list and the chat patterns
-  all read from configuration.

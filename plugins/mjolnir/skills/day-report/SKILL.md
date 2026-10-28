@@ -32,11 +32,11 @@ reader's output; this file holds the procedure and none of the values. A key the
 with a default arrives with that value even when the project left it out.
 
 ⛔ **Read the `unavailable` list before doing anything else, and stop if it names a key this
-role needs.** An entry there is a stated absence, not a fault — but `day_log.script` unset
-means there is no evidence to read, and the role reports that and stops rather than running a
-command with a null in it. ⚠️ **The destination has an entry of its own there**, and it stops this
-role one step later rather than at the start: a store with no address can still be measured against,
-so the day is measured, reported in the reply, and **not** reported as recorded.
+role needs.** An entry there is a stated absence, not a fault. ⚠️ **The destination's entry is the
+one that reaches this role**, and it stops it one step later rather than at the start: a store with
+no address can still be measured against, so the day is measured, reported in the reply, and
+**not** reported as recorded. ⚠️ **An absent chat source is a narrower stop still** — the `chat`
+stream is not read and the day is measured from the streams that remain, which the report says.
 
 **Where the entry goes is a port, and this skill names the port and never a destination.** Read
 what it can do here, and what each absence does, before writing anything:
@@ -227,12 +227,20 @@ because it took real time. It didn't; drop it and name it.
 
 ### Run the script
 
-```
-python3 <day_log.script> --meeting HH:MM-HH:MM
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/day_log.py" --meeting HH:MM-HH:MM
 ```
 
+⛔ **It is the shared script and takes every value from the configuration already read above**, so
+nothing here is a path a project states and nothing here is passed to it twice. ⚠️ **Run from
+somewhere other than the skills root, it resolves whichever project has a configuration there** —
+pass `--skills-root` to address a project this role is not standing in, and say which project the
+header reported.
+
 Pass one `--meeting` per genuine meeting so its full length counts even when nothing was typed
-during it. Add `--date YYYY-MM-DD` to backfill a past day.
+during it. Add `--date YYYY-MM-DD` to backfill a past day. ⚠️ **A meeting passed to a project whose
+`streams` does not carry `meetings` is refused** rather than measured, which is that list being
+short rather than this step being wrong.
 
 ⛔ **One invocation per report.** It prints the day's evidence and the cross-report validation
 of §4, so there is nothing a second call can add. **Redirect it to a file and read the file.**
@@ -252,7 +260,13 @@ The script unions the configured `day_log.streams` into active-time blocks, spli
 nothing happened for 15 minutes:
 
 - **`sessions`** — this project's Claude transcripts. The bulk of the work, and the only stream
-  that says *why* something was done.
+  that says *why* something was done. ⚠️ **A delegated sub-window's own transcript is read with
+  them**, because the parent emits a tool call and then waits — so a run that read only the
+  top-level files would split a block that was never idle and **under-measure the best-run
+  sessions**. ⛔ **A sub-window's prompt is not a typed one**: it is the parent's instruction to
+  it, so it opens no bookkeeping turn and the mark is inherited from whatever turn was running.
+  ⚠️ **Offloaded tool output is deliberately not read** — it carries no timestamp, and the call
+  that produced it is already a record in its parent. `SOURCES` counts all three.
 - **`commits`** — by **committer** date, not author date, so a rebased commit anchors where the
   rebase happened rather than where the code was first written.
 - **`host_activity`** — items and pull requests opened, closed and merged, plus every item and
@@ -266,9 +280,10 @@ nothing happened for 15 minutes:
 
 Markers it prints: **`+`** on a timestamp means the small hours of the next morning, same
 working day, per §0. **`·`** on a prompt marks a bookkeeping turn whose minutes are already out
-of the total, per §2. **`~`** on a commit means somebody else authored it. **`?`** or **`~`** on
-a chat line marks a chat `evidence.chat.mixed` names. **`⛔`** under `SOURCES` marks input
-refused as another project's.
+of the total, per §2. **`~`** on a commit means somebody else authored it. **`~`** on a chat line,
+and the source `chat~` on a block, mark a chat `evidence.chat.mixed` names. **`⛔`** under
+`SOURCES` marks input refused as another project's. **`REPORT`** in the header is the figure the
+entry states, per §2's rounding.
 
 ## 2. Sanity-check the total
 
@@ -354,9 +369,9 @@ not this skill's job.
 
 **A turn opened by one of the harness commands — saving, clearing, exiting, switching model or
 connector, invoking this skill — or by a sign-off that ends a session, is bookkeeping until the
-next thing is typed**, and its minutes are out of the total. The patterns are `RITUAL` in the
-script; the header prints what was excluded, and `--keep-ritual` prints the total without the
-deduction.
+next thing is typed**, and its minutes are out of the total. The list is `BOOKKEEPING` in the
+shared script and is **closed**; the header prints what was excluded, and `--keep-ritual` prints
+the total without the deduction.
 
 - ⛔ **The loop's own skills are not on that list and must never join it.** Filing, starting,
   finishing and reviewing a work item, and deploying, are the work — not the upkeep around it.
@@ -372,17 +387,23 @@ deduction.
   again: saving takes minutes, so a turn running an hour is either real autonomous work or an
   empty room, and the idle cutoff already removes the second.
 - ⚠️ **A carrier's injected text is what the pattern actually matches, and it differs by
-  carrier.** A command expands into a record carrying its own title; a skill injects a
-  `Base directory for this skill:` preamble instead. **Rename either and the deduction stops
-  working silently** — the test file beside the script is what catches that.
-- ⚠️ **Namespacing changes the string.** Once a project invokes these as `mjolnir:<skill>`, the
-  typed form changes while the transcripts this script reads still hold the bare form. `RITUAL`
-  must match **both**, and a retired name stays on the list for as long as it is still in
-  history.
-- ⛔ **Never widen `RITUAL` to make a day smaller.** It is a closed list of commands that drive
+  carrier.** A command expands into a record carrying its own name in a `<command-name>` tag; a
+  skill injects a `Base directory for this skill:` preamble instead, at the path the role is
+  *installed* at — which is inside the plugin, not inside the project. **Rename either, or move
+  one, and the deduction stops working silently** — the suite beside the script is what catches
+  that, and it carries both forms because both have been measured.
+- ⚠️ **Namespacing changes the string**, and the script matches the bare and the `<plugin>:<name>`
+  form of every name on its list. ⚠️ **Not a precaution**: one project's own history carries
+  `/mjolnir:save` beside a bare `/start`, and every surveyed copy's pattern missed the first.
+- ⚠️ **A command this project used to have is `day_log.ritual_retired`**, because no shared list
+  can hold one project's history and a retired name stays matched for as long as it is still in
+  the transcripts a day can be backfilled from. ⛔ **It takes a name, never a pattern** — the
+  anchoring stays the script's, which is what keeps that key from being the one route by which
+  this list widens.
+- ⛔ **Never widen the list to make a day smaller.** It is a closed list of commands that drive
   the tooling plus a closed list of farewells. A pattern that catches one real instruction —
   "save progress and fix the failing test", "commit and open the pull request" — removes a
-  working hour and nothing reports it. Run the test file after touching it.
+  working hour and nothing reports it. Run the suite after touching it.
 - ⛔ **The deduction is the script's, never yours.** Do not shave the total by hand for a block
   that felt slow, distracted or unproductive, or for work that felt like overhead. Either it is
   one of those commands or it counts. ⚠️ **The §1 exclusions leave earlier and by name**, before
@@ -490,19 +511,21 @@ invisible to the reader.
 
 ## 4. Validate against every other report
 
-```
-python3 <day_log.script> --check
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/day_log.py" --check
 ```
 
 Run it after recording the entry, unless §1's invocation already printed the validation — in which
 case read it there rather than recomputing every report to print what is already on screen.
 
-⚠️ **This half still reads the store directly rather than through the port**, because the evidence
-script is the project's own until it is extracted into the plugin — the transition `day_log.script`
-carries on [`config/schema.md § 9`](../../config/schema.md#9-day-log). ⛔ **So the validation below
-is available on the file destination and on no other**: where a project states another kind, say the
-cross-day validation could not be run rather than reporting an entry as validated. What answers it
-once the script is shared is `read_hours`, which is the operation § 26 states for exactly this.
+⚠️ **This half reads every entry back through the port**, as `read_hours` — the operation
+[`§ 26`](../../config/schema.md#the-destinations-operations-and-what-each-absence-does) states for
+exactly this — so it is available on every kind that implements it rather than on the file store
+alone. ⛔ **Where that operation is unavailable the validation is reported as not run**, never as an
+entry validated: a period nobody could ask about and a period nobody worked are the same empty
+answer, and the second is the one somebody is invoiced for. ⚠️ **Two of its answers are about the
+store rather than about a day** — an entry it holds and could not read, and a file it cannot place
+in a day at all — and each is reported rather than counted as zero hours.
 
 It recomputes every recorded day and **fails** on the ways an entry can be wrong against
 its neighbours, plus the one way its hours line can be wrong on its own:
@@ -547,8 +570,8 @@ record that shows them honestly is the only kind whose total means anything.
 
 Where the project rolls up, one month's stated hours summed:
 
-```
-python3 <day_log.script> --month YYYY-MM
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/day_log.py" --month YYYY-MM
 ```
 
 It prints every day's stated hours, the sum, and — the point of it — every day in the month with

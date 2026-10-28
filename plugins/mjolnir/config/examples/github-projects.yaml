@@ -188,9 +188,10 @@ day_log:
   round_to: 0.5
   round_ties: down
   enforce_grid: true
-  script: ".claude/skills/day-report/scripts/active_time.py"
   streams: [sessions, commits, chat, meetings]
   attribute_to: null
+  # Nothing retired here. ⛔ The empty list is the statement.
+  ritual_retired: []
   exclusions: [contractual, other_projects, log_upkeep, rework, overhead]
   sections: billed_only
   evidence:
