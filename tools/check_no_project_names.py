@@ -301,15 +301,14 @@ PLUGIN_ROOTED = re.compile(r"\$\{?CLAUDE_PLUGIN_ROOT\}?")
 # list, so what is exempt is a file this repository holds and not a shape.
 PATH_LIKE = re.compile(r"[\w./-]+")
 
-# ⚠️ **There was a table of interpreters permitted in front of a configured
-# path**, holding one entry -- `python3 <day_log.script>`, the day log's own
-# evidence script while it was still each project's. Its own reason named what
-# would remove it: the extraction that key waited on. That has landed, the key is
-# retired, and the role now names a script the plugin ships -- which `PLUGIN_ROOTED`
-# above already permits, asserted green in both directions by its own plant. The
-# table is gone rather than left empty: an exemption path with no entry and no
-# plant is a branch nothing exercises, which is the shape that quietly stops
-# working.
+# ⛔ **An interpreter in front of a *configured* path is permitted nowhere.** No
+# role reads a script's location out of configuration -- every one it runs is
+# either a file this repository tracks or a file the plugin ships, and each of
+# those is resolved above -- so there is no table of exceptions here and an
+# instance of the form reddens. ⚠️ **Stated rather than left to the absence of
+# code**: a table with no entry and no plant is a branch nothing exercises, which
+# is the shape that reports green while it quietly stops working, so what would
+# otherwise be an empty exemption is a sentence instead.
 
 # `git` and `gh` are the shared procedure's own two commands. They are absent
 # from the lists above, and a command *rooted* at one of them is exempt from the
@@ -1600,10 +1599,9 @@ VIOLATIONS = [
      _plant_in_a_carrier("\nRun `python3 <ordering.command>` from the skills root.\n")),
     ("no stack is named in the strict set", "an interpreter prefixing a path nothing here holds",
      _plant_in_a_carrier("\nRun `node ./tooling/report.js` before the review.\n")),
-    # ⚠️ A placeholder path prefixed with an interpreter, which is what the one
-    # permitted instance of this form used to be. The exemption is retired with
-    # the key it named, so this is now an ordinary violation of the rule above --
-    # kept because it is the exact shape that was once licensed.
+    # ⚠️ A key's placeholder prefixed with an interpreter, which is the form the
+    # rule above permits nowhere: a configured path is a guess about the language
+    # the script behind it happens to be in, whichever key names it.
     ("no stack is named in the strict set",
      "an interpreter prefixing a key's placeholder rather than a command stated whole",
      _plant_in_a_carrier("\nRun `python3 <day_log.script> --check` here too.\n")),
@@ -1714,10 +1712,10 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     ("no stack is named in the strict set", "an interpreter with nothing after it",
      _plant_in_a_json_carrier(
          '{\n  "command": "python3",\n  "args": ["a-path-of-its-own"]\n}\n')),
-    # ⚠️ The day-log role's own invocation, which is the text the retired
-    # transitional entry used to cover and is now an ordinary plugin-rooted
-    # command. Planted inside that role's own directory so the green side of the
-    # scope is asserted where the real text lives rather than only in general.
+    # ⚠️ The day-log role's own invocation, planted inside that role's own
+    # directory so the green side of this scope is asserted where the live text
+    # relying on it sits rather than only in general. It is the one role that runs
+    # a script of the plugin's rather than a command a project states.
     ("no stack is named in the strict set",
      "the day-log role naming the script the plugin ships",
      _plant_in_a_named_root(

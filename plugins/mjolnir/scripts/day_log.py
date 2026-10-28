@@ -476,11 +476,11 @@ def working_copies(root: str) -> frozenset:
     failure direction that loses real minutes, and whose only tell is the
     refusal line nobody reads.
 
-    ⚠️ Measured on this change: a checkout under `/var`, which resolves to
-    `/private/var`, had its worktree's transcripts dropped while the main
-    checkout's were kept. `realpath` alone does not fix it -- it resolves the
-    one direction git has already resolved -- so what is needed is the
-    substitution read back off the root.
+    ⚠️ Measured: a checkout under `/var`, which resolves to `/private/var`, has
+    its worktree's transcripts dropped while the main checkout's are kept.
+    `realpath` alone does not close it -- it resolves the one direction git has
+    already resolved -- so what closes it is the substitution read back off the
+    root.
     """
     listed = git(root, "worktree", "list", "--porcelain")
     paths = {root} | {

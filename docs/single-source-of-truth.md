@@ -495,13 +495,12 @@ and the fourth entry landed under it, green.
 - **This repository's own slug**, derived rather than listed. Removing `host.repo` from the
   configuration reddens the build rather than quietly permitting every slug, which is one of the
   planted violations.
-- ⚠️ **One exception here had a stated end, and it has arrived.** `python3 <day_log.script>` sat in
-  a table of its own with its reason and the roots it held in, because the day log's evidence
-  script was each project's while the procedure was already shared. The extraction that key waited
-  on has landed, the key is retired, and the role names a script the plugin ships — which the
-  plugin-rooted exemption below already covers. ⛔ **The table is gone rather than left empty**: an
-  exemption path with no entry and no plant is a branch nothing exercises. Every other entry under
-  this heading is permanent.
+- ⚠️ **Every entry under this heading is permanent**, and the one that was not is no longer an
+  entry: an interpreter in front of a *configured* path had a table of its own, scoped to the roots
+  it held in, for as long as one role read its script's location out of configuration. No role
+  does. ⛔ **An exemption with no instance is removed rather than left empty**, because an
+  exemption path with no entry and no plant is a branch nothing exercises — which is the shape that
+  reports green while it quietly stops working.
 - **The public artifacts cited as evidence.** Each is an artifact rather than a project in
   scope, and each sits in a table in the script with its reason beside it, so **an entry means
   editing that table and saying why** — which is what the second one did: the published
@@ -548,12 +547,11 @@ exempted the whole directory and so would have read straight past it.
   `"args"` are separate members of one object. ⚠️ So an interpreter in front of a tracked script
   whose language the carrier beside it can see passes, by design; the residue is an interpreter in
   front of an argument assembled in a *second* region, which this reading cannot pair up.
-  ⚠️ **There was one live instance permitted by name** — `python3 <day_log.script>`, a configured
-  path the ruling above does not fit — in a table in the script with its reason and the roots it
-  was permitted in, asserted in both directions like every cited artifact. It is retired with the
-  key: the day-log role now names a script the plugin ships, which is the plugin-rooted form the
-  rule already permits, and the green side of that scope is still asserted inside the role's own
-  directory rather than only in general.
+  ⚠️ **The narrowest case of all is a role naming a script the plugin itself ships**, which the
+  file list cannot resolve because the harness substitutes the plugin's own location for the
+  variable in front of it. That is permitted by the variable rather than by a table, and its green
+  side is asserted twice — once in general, and once inside the day-log role's own directory, which
+  is the live text relying on it.
 - **A flag nobody wrote down.** Check 7's flag list is closed, like its tool list, and it errs the
   same way: the four measured spellings and the commonest of each class are in it, and a flag
   outside it passes and leaves a reviewer to catch it. ⚠️ **What is no longer a hole is the

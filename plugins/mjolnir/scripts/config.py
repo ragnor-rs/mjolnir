@@ -6167,10 +6167,9 @@ def _load_bearing_absences(config: Config) -> list[str]:
     """Keys whose absence stops a role this project maps a carrier for."""
     carriers = config.get("carriers") or {}
     absent = []
-    # ⚠️ `day_log.script` was the first entry here and is retired: the evidence
-    # script is the plugin's, so there is no path a project can fail to state and
-    # the role no longer has an absence of its own that stops it. What is left is
-    # § 26's, which stops it one step later -- a day can be measured against a
+    # ⚠️ The day-log role has no absence of its own that stops it: its evidence
+    # script is the plugin's, so there is no path a project can fail to state.
+    # What stops it is § 26's, one step later -- a day can be measured against a
     # store with no address and simply not recorded.
     # § 26's, and conditioned on the **kind** as well as the carrier: the key
     # addresses a file store and nothing else, so a project on another kind is

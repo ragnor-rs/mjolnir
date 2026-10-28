@@ -22,9 +22,9 @@ whole of the bootstrap — not three pieces picked for being difficult.
 ⚠️ **The third row names the *issue* loop, and the distinction is not cosmetic.** The day-log
 carrier shipped in this repository's first commit, `6410f34` — so the earliest carrier of any role
 of the loop was never hand-built in this sense at all; it predates the loop it belongs to. ⚠️ **It
-also carried the longest absence**: its evidence script stayed each project's own while the
-procedure was already shared, so the role resolved this project and stopped. That transition is
-closed — the script is the plugin's, one copy, and every value it reads is configured.
+is also the one role whose measuring half is a script this repository ships rather than procedure
+alone**, which is why it is the role with the most evidence behind its surface and the least to
+say about how it was built.
 
 The port those operations go through is
 [`schema.md § 3`](../plugins/mjolnir/config/schema.md#3-tracker-port); the carrier each role is
