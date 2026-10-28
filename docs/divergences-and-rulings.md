@@ -227,17 +227,29 @@ Read after the first design pass. None of it reverses a ruling; two items extend
   the code host's own item and review activity, on the grounds that review work "happens almost
   entirely on the host and leaves no other trace". The host-activity stream is available only
   where the host has an API for it.
-- **Two of the five copies were git-ignored and could not be committed to their own
-  repositories** — one because that repository sits in a client's organisation, one because it has
-  a second collaborator and the skill reads private sources. **Extraction is the only route by
-  which either project gets a shared, reviewable copy of that procedure at all**, which is a
+- **All five copies were git-ignored and could not be committed to their own repositories** —
+  two of them for reasons of their own, one because that repository sits in a client's
+  organisation and one because it has a second collaborator and the skill reads private sources,
+  and ⚠️ **all five because every copy reads one private archive on the machine the log is kept
+  on**, which is the reason that reaches every project rather than two. **Extraction is the only
+  route by which any of them gets a shared, reviewable copy of that procedure at all**, which is a
   second and independent reason to extract, applying to the role with more copies than any other
   the day-log reading had read. ⚠️ **No longer a superlative over the nine**: the bookkeeping role's
   partial copies, counted when that role was extracted, carry it past this one — which is why the
   figures live in `configuration-surface.md` per role and no *most* is claimed from either.
-- **One copy handles a case no other has**: the project is scoped but *not* scoped to one person,
-  because a second collaborator commits to the same repository. Its rule is that an author filter
-  belongs in the script, never a subtraction by hand. Hence `attribute_to`, absent by default.
+  ⚠️ **The reason moved to the configuration rather than being spent by extraction**: the keys a
+  copy's privacy turned on are
+  [`schema § 9`](../plugins/mjolnir/config/schema.md#9-day-log)'s `evidence` block, so what replaces
+  a git-ignored copy carries the same chat names, the same archive and the same calendars — the
+  shareable half is the procedure and the private half is still private. Which file each half lives
+  in is #43's, and until it lands a whole configuration is the untracked one, which is the shape
+  #43 rejects as its own answer and the only one available before it.
+- **Two copies handle a case the other three do not**: the project is scoped but *not* scoped to
+  one person, because a second collaborator commits to the same repository. Their rule is that an
+  author filter belongs in the script, never a subtraction by hand. Hence `attribute_to`, absent by
+  default. ⚠️ **A third copy states the same rule against a case it does not yet have** — one
+  committer today, the filter named as what to reach for rather than set — which is why the key's
+  absent value is a decision there and not an oversight.
 
 ### What extracting them found that reading them did not
 
@@ -268,6 +280,41 @@ against the five projects' real evidence rather than by comparing the five texts
   plugin injects its preamble at the plugin's path, which one copy's `.claude/skills/` anchor
   cannot see; and a namespaced invocation changes the string, which no copy's pattern allowed for.
   One project's own transcripts carry both the bare and the namespaced form of the same role.
+
+### What writing the five configurations found that extracting the script did not
+
+Read when the role was migrated and each project's copy deleted. **The figures agree**: on one
+closed day per project the shared role and the copy it replaced measure the same total to the
+hundredth of an hour, the same blocks, the same bookkeeping deduction and the same refused
+transcript stores — including the two projects whose rounding, exclusion set, section shape,
+register and language all differ from the others', which is what makes the agreement a statement
+about the configuration surface rather than about one project. **No difference was found that
+needed explaining.** ⚠️ **Measured on a closed day deliberately**: the first comparison was taken
+on the day in progress and the two runs disagreed by one minute, which is the later run having
+more of the day in it rather than anything about either script.
+
+What the configurations could **not** state is a shorter list and all of it is one facet or one
+open item:
+
+- **Two of the five host facets filter with the inverse of the key this surface has.** A workflow
+  stating `paths-ignore:` runs on everything *except* a list, and [§ 2](../plugins/mjolnir/config/schema.md#2-code-host)'s
+  `paths` states only the including form, so neither entry can carry its filter and a consumer
+  reads both as running on every change. ⚠️ **That is the safe direction** — it never reports a run
+  as covering a change the host skipped — and it is the one fact in those two entries the surface
+  does not hold. #222 is the item.
+- **A repository with two package roots and nothing at the top cannot state a command once.** Every
+  `mirrors` in that project's facet carries the directory inline, which is #61 read from the other
+  side: the key that would factor it out is the one that is open.
+- **A runner block is all three of its keys or none**, and the account's capacity and a job's
+  budget are facts about the account rather than about the repository — so the one project whose
+  jobs run on its own scale set states no block, and the reader reports that rather than the
+  default being read as the answer.
+- **One copy's bookkeeping list carried a role of the loop.** It discounted the turn that invokes
+  the deliverables role, which the shared closed list does not: filing, starting, finishing,
+  reviewing, deploying and the deliverables roles are the work, and only the two bookkeeping roles
+  and this one are the upkeep. ⚠️ **Latent on the day measured** — that day holds no such turn, so
+  the deduction agreed anyway — and the direction is that project's days now read a little longer,
+  which is the ruling applying rather than a regression.
 
 ## 6. What the five review copies added
 
