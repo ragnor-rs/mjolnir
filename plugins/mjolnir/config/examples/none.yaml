@@ -134,9 +134,10 @@ day_log:
   exclusions: [log_upkeep, rework, overhead]
   sections: billed_only
   evidence:
-    chat_patterns: []
-    chat_exclude: []
-    mixed_chats: []
+    # No tracker and no chat either: this project's day is measured from its own transcripts and
+    # commits, and the `chat` stream is absent from `streams` above rather than empty.
+    chat:
+      kind: none
     calendars: []
   # § 26's port, with the kind left to its default — which is the arm the other examples do not
   # show: a project that states where the entry goes and not what kind of store it is gets the

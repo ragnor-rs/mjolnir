@@ -423,9 +423,10 @@ day_log:
   exclusions: [log_upkeep, rework, overhead]
   sections: billed_only
   evidence:
-    chat_patterns: []
-    chat_exclude: []
-    mixed_chats: []
+    # No chat carries this build: it is a solo project with no client thread and no standup, so
+    # the `chat` stream is absent above rather than empty here, and the reader reports it.
+    chat:
+      kind: none
     calendars: []
   # § 26's port. A file under the temp root, which is the kind the default names anyway — written
   # out rather than left implicit because the directory is this project's own and the kind is what

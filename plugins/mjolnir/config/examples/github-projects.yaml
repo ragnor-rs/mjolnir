@@ -189,14 +189,17 @@ day_log:
   round_ties: down
   enforce_grid: true
   script: ".claude/skills/day-report/scripts/active_time.py"
-  streams: [sessions, commits, telegram, meetings]
+  streams: [sessions, commits, chat, meetings]
   attribute_to: null
   exclusions: [contractual, other_projects, log_upkeep, rework, overhead]
   sections: billed_only
   evidence:
-    chat_patterns: ["<exact chat name>"]
-    chat_exclude: []
-    mixed_chats: ["<a chat carrying both work and personal talk>"]
+    chat:
+      kind: telegram_export
+      path: "<the exported archive>"
+      patterns: ["<exact chat name>"]
+      exclude: []
+      mixed: ["<a chat carrying both work and personal talk>"]
     calendars: ["<the one calendar whose titles are legible>"]
   # § 26's port: a file under the temp root, outside the repository the entry is never written
   # into.

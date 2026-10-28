@@ -291,6 +291,18 @@ OUT_DIR_KEY = "out_dir"
 OUT_DIR_PATH = f"{DESTINATION_BLOCK}.{OUT_DIR_KEY}"
 DESTINATION_KIND_PATH = f"{DESTINATION_BLOCK}.kind"
 
+# § 9's chat source, spelled once here for the reason the destination's keys
+# above are: the stream's name in `day_log.streams`, the kind that says what
+# implements it, and the one kind word meaning there is no chat evidence at all.
+# ⛔ The stream name and the kind's path are separate constants because the rule
+# below reads them against each other -- a single spelling serving both would
+# make the agreement rule unable to state which half it found wrong.
+STREAMS_PATH = "day_log.streams"
+CHAT_STREAM = "chat"
+CHAT_BLOCK = "day_log.evidence.chat"
+CHAT_KIND_PATH = f"{CHAT_BLOCK}.kind"
+NO_CHAT = "none"
+
 # A fenced block of the surface, the heading it sits under, and a `key:` line
 # inside one. List items are not matched on purpose -- a `- { ... }` line is an
 # entry, not a key.
@@ -1711,6 +1723,19 @@ class Config:
                 "here. It names the project's evidence script, which is "
                 "transitional until the script is extracted into the plugin."
             )
+        # § 9's chat source, reported the way § 3's trackerless kind is: a stated
+        # decision that one stream has no implementation here. ⛔ Reported as the
+        # stream being **absent** and never as a source that read nothing -- an
+        # archive nobody could open and an archive with no messages in it license
+        # different next steps, and the second is the one a role would act on.
+        if self.get(CHAT_KIND_PATH) == NO_CHAT:
+            out.append(
+                f"No chat evidence is carried (`{CHAT_KIND_PATH}: {NO_CHAT}`), so "
+                f"the `{CHAT_STREAM}` stream is absent here rather than empty and "
+                "the day is measured from the streams that remain. What the "
+                f"archive would have been read from is `{CHAT_BLOCK}.path`, which "
+                "this project states no value for (§ 9)."
+            )
         # § 26's own two absences, read the way § 3's are: the kind that addresses
         # nothing, and the key the configured kind cannot be addressed without.
         # ⛔ What each absence leaves the five operations doing is the port's to
@@ -1831,6 +1856,29 @@ RETIRED = [
         "its verdict is the one to read are a `checks_local` entry's, and a "
         "`local` check reads that facet for its source. See § 17. Move the "
         "command to `checks_local` and delete the key",
+    ),
+    # § 9's three, retired together because they are one source's facets and
+    # were written as three top-level keys describing a source the surface never
+    # named. ⚠️ The stream's own retired name is **not** here and cannot be: it
+    # was a member of `day_log.streams` rather than a key, and this list is
+    # walked against the key paths a configuration carries. What refuses it is
+    # the membership rule in `validate`, read off the surface's own list.
+    (
+        "day_log.evidence.chat_patterns",
+        "the chats a day is measured from are a facet of the chat source rather "
+        "than a key of their own, and the source is named by a `kind` the way a "
+        "tracker is. See § 9. Move the value to `day_log.evidence.chat.patterns`",
+    ),
+    (
+        "day_log.evidence.chat_exclude",
+        "the chats left out are a facet of the chat source, for the reason its "
+        "patterns are. See § 9. Move the value to `day_log.evidence.chat.exclude`",
+    ),
+    (
+        "day_log.evidence.mixed_chats",
+        "the chats carrying this project's work alongside something else are a "
+        "facet of the chat source, for the reason its patterns are. See § 9. "
+        "Move the value to `day_log.evidence.chat.mixed`",
     ),
 ]
 
@@ -3696,6 +3744,61 @@ def validate(data: dict, facts: dict) -> None:
     # and the older rule would be left asserted by nothing.
     _memory(data, parts)
 
+    # § 9. The streams a day is measured from, and the chat source one of them
+    # reads. ⛔ Read through `_absent_as` for the reason § 23's `parts` is: this
+    # answers what a stated value has to be and never whether the key is
+    # written, which is the surface's marker.
+    streams = _absent_as(_get(data, STREAMS_PATH), [])
+    if not isinstance(streams, list):
+        raise ConfigError(
+            STREAMS_PATH,
+            f"is {streams!r}; § 9 states the streams a day is unioned from as a "
+            "list. A value that is not one leaves the role measuring whichever "
+            "streams it reads out of it.",
+        )
+    if streams:
+        # The membership is the surface's own list, read rather than listed --
+        # the derivation § 23's thirds already have. ⛔ It is also the only thing
+        # refusing a stream the surface has stopped stating: a member is not a
+        # key, so no `# retired:` clause can reach one, and a name dropped from
+        # the list above would otherwise be ignored rather than refused.
+        known = vocabulary_list(facts, STREAMS_PATH, "a day-log stream")
+        for stream in streams:
+            if stream not in known:
+                raise ConfigError(
+                    STREAMS_PATH,
+                    f"names {stream!r}; the surface allows {' | '.join(known)} "
+                    "(§ 9). A stream the surface has stopped stating is refused "
+                    "here rather than read as a stream that measures nothing.",
+                )
+        repeated = sorted({s for s in streams if streams.count(s) > 1})
+        if repeated:
+            raise ConfigError(
+                STREAMS_PATH,
+                f"names {', '.join(map(str, repeated))} more than once. It is a "
+                "set: a stream stated twice is not measured twice (§ 9).",
+            )
+    # ⛔ Both directions of the agreement rather than one, the shape § 25's block
+    # above has and for the same reason: the two fail opposite ways, and the
+    # first of them -- a stream listed whose source says there is none -- reads
+    # from the configuration exactly like a stream being measured.
+    chat_kind = _get(data, CHAT_KIND_PATH)
+    if chat_kind == NO_CHAT and CHAT_STREAM in streams:
+        raise ConfigError(
+            CHAT_KIND_PATH,
+            f"is `{NO_CHAT}` while `{STREAMS_PATH}` names `{CHAT_STREAM}`, which "
+            "is a stream with no source to read. State the kind that implements "
+            f"it, or drop `{CHAT_STREAM}` from the streams (§ 9).",
+        )
+    if chat_kind not in (None, NO_CHAT) and CHAT_STREAM not in streams:
+        raise ConfigError(
+            STREAMS_PATH,
+            f"does not name `{CHAT_STREAM}` while `{CHAT_KIND_PATH}` is "
+            f"{chat_kind!r}, so the archive that key addresses is opened by "
+            f"nothing. Add `{CHAT_STREAM}` to the streams, or state "
+            f"`{NO_CHAT}` as the kind (§ 9).",
+        )
+
     # § 8. A width is a count of columns, and absence is the answer "this
     # project does not hard-wrap" rather than a missing setting -- so the key is
     # not required, and a value that is present is held to being a positive
@@ -4277,6 +4380,7 @@ MARKED_REQUIRED = [
     "context.artifacts.carrier",
     "context_guard.never_bound",
     "context_guard.unbounded",
+    "day_log.evidence.chat.kind",
     "done",
     "e2e_register.carrier",
     "environment.inherits",
@@ -4338,6 +4442,9 @@ MARKED_REQUIRED_WHEN = [
     # and a rule of its own -- that refusal names what the role was left unable
     # to do, which a marker's message cannot say.
     ("branch_model.regenerable", "branch_model.kind", "worktree"),
+    # § 9's one: the archive's address, needed by the kind that reads an archive
+    # and meaningless under the kind that says there is no chat evidence at all.
+    ("day_log.evidence.chat.path", CHAT_KIND_PATH, "telegram_export"),
     # § 15's five, each meaningless where the facet is absent and each needed by
     # one of the two comparisons: the first three by the register-against-suite
     # one, the last two by the change-against-both one.
@@ -4408,7 +4515,10 @@ PLANTED_PORT = next(
 # ⛔ scoped to the paths a rule reads: the surface shows other lists to
 # illustrate a project's own values, and holding those would be an inventory of
 # the fence instead of one of what is enforced.
-SHOWN_LISTS = {"session.parts": ["tracker", "memory", "commit"]}
+SHOWN_LISTS = {
+    "session.parts": ["tracker", "memory", "commit"],
+    STREAMS_PATH: ["sessions", "commits", CHAT_STREAM, "meetings", "host_activity"],
+}
 
 MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
@@ -5967,6 +6077,33 @@ def self_test() -> int:
                 OUT_DIR_PATH in absences,
                 f"named {absences!r}",
             )
+            # ⛔ § 9's chat arm, in both directions over one key, for the reason
+            # § 26's two above are: a branch that printed its line for every
+            # project would satisfy a one-directional check while saying nothing.
+            # ⚠️ This repository states `none`, so the positive side is the live
+            # report rather than a fixture, and the negative is taken from
+            # whichever example states a kind that reads an archive.
+            check(
+                "a project with no chat evidence is told the stream is absent",
+                any(f"`{CHAT_STREAM}` stream is absent" in line for line in reported),
+                f"reported {reported!r}",
+            )
+            with_chat = _example_meeting(
+                CHAT_KIND_PATH, _a_chat_kind_that_reads_an_archive()
+            )
+            check(
+                "an example states a chat kind that reads an archive",
+                with_chat is not None,
+            )
+            if with_chat is not None:
+                chatty = _refused_or_reported(with_chat)
+                check(
+                    "and a project that carries chat evidence is not told that",
+                    not any(
+                        f"`{CHAT_STREAM}` stream is absent" in line for line in chatty
+                    ),
+                    f"reported {chatty!r}",
+                )
             carrierless = copy.deepcopy(unaddressed)
             carrierless.get("carriers", {}).pop("day_log", None)
             check(
@@ -6193,6 +6330,33 @@ def _planted_violations():
          at("day_log.round_ties", "sideways")),
         ("a sections mode outside its alternation", "day_log.sections",
          at("day_log.sections", "everything")),
+        # § 9's streams and the chat source, one plant per arm. ⚠️ The example
+        # these break is whichever `_a_valid_example` picks, and the two chat
+        # halves below therefore set the kind rather than reading whatever that
+        # file happened to state -- `_a_chat_kind_that_reads_an_archive` takes it
+        # off the surface's own alternation, so neither plant names a vendor.
+        ("a stream list that is not a list", STREAMS_PATH,
+         at(STREAMS_PATH, "sessions")),
+        # ⛔ The retired stream name itself, which is the arm no `# retired:`
+        # clause can carry: a member is not a key, so this is the only thing in
+        # the reader refusing it. ⚠️ And the one plant here whose value is a
+        # literal rather than read off the surface -- the surface has stopped
+        # stating the name, so there is nowhere left to read it from, which is
+        # the same reason `RETIRED`'s own entries are spelled out.
+        ("a stream the surface has stopped stating", STREAMS_PATH,
+         at(STREAMS_PATH, ["sessions", "telegram"])),
+        ("a stream outside the surface's list at all", STREAMS_PATH,
+         at(STREAMS_PATH, ["sessions", "telepathy"])),
+        ("a stream stated twice", STREAMS_PATH,
+         at(STREAMS_PATH, ["sessions", "sessions"])),
+        # ⛔ Both directions of the agreement, each planted on the half the other
+        # cannot reach: a chat stream whose source says there is none, and a
+        # source no stream opens.
+        ("the chat stream listed with no source to read", CHAT_KIND_PATH,
+         _a_chat_stream_with_no_source),
+        ("a chat source no stream opens", STREAMS_PATH, _a_chat_source_no_stream_reads),
+        ("a chat kind outside its alternation", CHAT_KIND_PATH,
+         at(CHAT_KIND_PATH, "smoke_signals")),
         ("a required key present but empty", "host.repo", at("host.repo", None)),
         ("an inherited set that is not a list", "environment.inherits",
          at("environment.inherits", "GH_TOKEN")),
@@ -7377,6 +7541,51 @@ def _a_valid_example() -> dict:
     """
     with open(_examples()[0], encoding="utf-8") as handle:
         return _load_yaml(handle.read(), CONFIG_PATH)
+
+
+def _a_chat_kind_that_reads_an_archive() -> str:
+    """A chat kind from the surface's own alternation that is not the absent one.
+
+    ⛔ Read off the surface rather than spelled here, for the reason
+    `_a_valid_example` is found rather than named: a fixture naming one chat
+    implementation would be this code naming a vendor, which is the thing § 9's
+    `kind` exists to stop the procedure doing.
+
+    ⛔ A surface stating only the absent case is refused **with the key named**
+    rather than left to raise out of the suite: the plants that use this would
+    then break nothing while still reading as plants, and a traceback naming no
+    key is the one shape this module may not fail in.
+    """
+    reads_one = [k for k in facts_for(CHAT_KIND_PATH) if k != NO_CHAT]
+    if not reads_one:
+        raise ConfigError(
+            CHAT_KIND_PATH,
+            "states no kind that reads an archive, so the plants that break the "
+            "chat source would break nothing and the arms they assert would be "
+            "asserted by nothing.",
+        )
+    return reads_one[0]
+
+
+def _a_chat_stream_with_no_source(data: dict) -> dict:
+    """The chat stream measured while its source says there is no chat at all."""
+    _with(data, CHAT_KIND_PATH, NO_CHAT)
+    streams = list(_absent_as(_get(data, STREAMS_PATH), []))
+    if CHAT_STREAM not in streams:
+        streams.append(CHAT_STREAM)
+    return _with(data, STREAMS_PATH, streams)
+
+
+def _a_chat_source_no_stream_reads(data: dict) -> dict:
+    """An archive configured, addressed, and opened by no stream.
+
+    ⚠️ The address goes in with the kind, or § 3's conditional marker refuses the
+    missing `path` first and this arm is asserted by nothing.
+    """
+    _with(data, CHAT_KIND_PATH, _a_chat_kind_that_reads_an_archive())
+    _with(data, f"{CHAT_BLOCK}.path", "<a planted archive>")
+    streams = [s for s in _absent_as(_get(data, STREAMS_PATH), []) if s != CHAT_STREAM]
+    return _with(data, STREAMS_PATH, streams)
 
 
 def _example_meeting(on: str, value) -> dict | None:

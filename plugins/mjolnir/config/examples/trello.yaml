@@ -237,7 +237,7 @@ day_log:
   round_ties: down
   enforce_grid: false
   script: ".claude/skills/day-report/scripts/active_time.py"
-  streams: [sessions, commits, telegram, meetings]
+  streams: [sessions, commits, chat, meetings]
   attribute_to: null
   exclusions: [contractual, log_upkeep, rework, overhead]
   extra_exclusions:
@@ -248,9 +248,15 @@ day_log:
         was worth doing.
   sections: billed_and_not_billed
   evidence:
-    chat_patterns: ["<exact chat name>"]
-    chat_exclude: []
-    mixed_chats: []
+    # ⚠️ `exclude` is the production bot's own chat on this project: driving the product by hand
+    # through a dev bot is a gate being executed and is work, while a run through the production
+    # one is being a user. The second is configured out here rather than subtracted by hand.
+    chat:
+      kind: telegram_export
+      path: "<the exported archive>"
+      patterns: ["<exact chat name>"]
+      exclude: ["<the production bot's own chat>"]
+      mixed: []
     calendars:
       - "<the calendar whose titles are legible>"
       - "<a free-busy calendar: times only, no titles>"
