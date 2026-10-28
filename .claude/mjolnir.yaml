@@ -79,6 +79,14 @@ host:
     - workflow: "Context guard"
       mirrors: "python3 plugins/mjolnir/scripts/context.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ What this run holds is the bookkeeping corpus and the stream derivations, which is
+    # what a gate can hold: whether the deduction still catches every form, whether it
+    # discounts an instruction, and whether a sub-window's minutes survive. ⛔ What it cannot
+    # hold is a measured day — that needs a store and a history, and the acceptance for it is
+    # each project's own total reproduced by hand.
+    - workflow: "Day log"
+      mirrors: "python3 plugins/mjolnir/scripts/day_log.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ What this run holds is the carrier's own suite and not a verdict about this tree:
     # `e2e_register` below is `none`, so pointed at this project the check says it has no
     # subject and exits without one. The entry is here because the carrier ships from this
@@ -413,13 +421,13 @@ day_log:
   round_to: 0.5
   round_ties: down
   enforce_grid: true
-  # ⚠️ Unset on purpose: the evidence script is not extracted yet (#15), and this repository
-  # has no local copy to point at. So the day-log role cannot run here until #15 lands —
-  # which makes this repository the first place that absence is load-bearing rather than
-  # theoretical.
-  script: null
   streams: [sessions, commits]
   attribute_to: null
+  # ⚠️ Measured rather than assumed: every command name in this project's own transcripts is
+  # either on the shared closed list or is work — the loop's roles, `close-out` and
+  # `adoption-readiness`. Nothing bookkeeping has been retired, so the list is empty, and the
+  # reader reports that by name.
+  ritual_retired: []
   exclusions: [log_upkeep, rework, overhead]
   sections: billed_only
   evidence:

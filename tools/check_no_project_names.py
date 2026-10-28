@@ -301,24 +301,15 @@ PLUGIN_ROOTED = re.compile(r"\$\{?CLAUDE_PLUGIN_ROOT\}?")
 # list, so what is exempt is a file this repository holds and not a shape.
 PATH_LIKE = re.compile(r"[\w./-]+")
 
-# An interpreter permitted in front of a configured path, by name, with its
-# reason and the roots it is permitted in -- the shape `CITED_ARTIFACTS` above
-# has, and for the same reason: an exemption that is a table entry is one
-# somebody had to write down and justify, and a new instance of the same form
-# reddens instead of inheriting the licence.
-#
-# ⛔ Scoped to the roots its entry names, because a form permitted everywhere is
-# the class reopened. ⚠️ The entry is a *configured path*, not a role's own text:
-# the key it names is marked transitional where the surface declares it, and what
-# removes this entry is the extraction that key waits on rather than an edit here.
-TRANSITIONAL_PREFIXES = {
-    "<day_log.script>": (
-        "the one key still carrying a path a role prefixes rather than a command "
-        "stated whole -- marked transitional in § 9, and settled by the extraction "
-        "that key waits on",
-        ["plugins/mjolnir/skills/day-report/"],
-    ),
-}
+# ⚠️ **There was a table of interpreters permitted in front of a configured
+# path**, holding one entry -- `python3 <day_log.script>`, the day log's own
+# evidence script while it was still each project's. Its own reason named what
+# would remove it: the extraction that key waited on. That has landed, the key is
+# retired, and the role now names a script the plugin ships -- which `PLUGIN_ROOTED`
+# above already permits, asserted green in both directions by its own plant. The
+# table is gone rather than left empty: an exemption path with no entry and no
+# plant is a branch nothing exercises, which is the shape that quietly stops
+# working.
 
 # `git` and `gh` are the shared procedure's own two commands. They are absent
 # from the lists above, and a command *rooted* at one of them is exempt from the
@@ -1046,16 +1037,6 @@ def check_no_stack_is_named_in_the_strict_set(tree: Tree) -> list[str]:
                 # the harness's own dotted root read as untracked and reddened.
                 if head and head.group(0).removeprefix("./") in tree.text:
                     continue
-                permitted = next(
-                    (
-                        argument
-                        for argument, (_why, roots) in TRANSITIONAL_PREFIXES.items()
-                        if argument in prefixed and tree.inside(path, roots)
-                    ),
-                    None,
-                )
-                if permitted:
-                    continue
                 problems.append(
                     f"{path}: the command `{region.strip()[:70]}` prefixes "
                     f"`{prefixed[:40]}` with the interpreter `{found.group(0)}`. A "
@@ -1619,11 +1600,12 @@ VIOLATIONS = [
      _plant_in_a_carrier("\nRun `python3 <ordering.command>` from the skills root.\n")),
     ("no stack is named in the strict set", "an interpreter prefixing a path nothing here holds",
      _plant_in_a_carrier("\nRun `node ./tooling/report.js` before the review.\n")),
-    # ⛔ And the transitional entry outside the roots its own entry names, which is
-    # `CITED_ARTIFACTS`' scope assertion one class over: an exemption permitted
-    # everywhere is the class reopened.
+    # ⚠️ A placeholder path prefixed with an interpreter, which is what the one
+    # permitted instance of this form used to be. The exemption is retired with
+    # the key it named, so this is now an ordinary violation of the rule above --
+    # kept because it is the exact shape that was once licensed.
     ("no stack is named in the strict set",
-     "the transitional prefix outside the roots its entry names",
+     "an interpreter prefixing a key's placeholder rather than a command stated whole",
      _plant_in_a_carrier("\nRun `python3 <day_log.script> --check` here too.\n")),
     # The same construct against rule 1's reader: `code()` pairs spans per line,
     # so a double span ahead of a command is where that pairing goes wrong.
@@ -1732,14 +1714,15 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     ("no stack is named in the strict set", "an interpreter with nothing after it",
      _plant_in_a_json_carrier(
          '{\n  "command": "python3",\n  "args": ["a-path-of-its-own"]\n}\n')),
-    # The transitional entry inside the roots its own entry names, which the live
-    # tree also exercises -- planted here so the scope is asserted in both
-    # directions rather than only in the one the real text happens to be in.
+    # ⚠️ The day-log role's own invocation, which is the text the retired
+    # transitional entry used to cover and is now an ordinary plugin-rooted
+    # command. Planted inside that role's own directory so the green side of the
+    # scope is asserted where the real text lives rather than only in general.
     ("no stack is named in the strict set",
-     "the transitional prefix inside the roots its entry names",
+     "the day-log role naming the script the plugin ships",
      _plant_in_a_named_root(
-         TRANSITIONAL_PREFIXES["<day_log.script>"][1],
-         "\nRun `python3 <day_log.script> --month YYYY-MM` for the period.\n")),
+         ["plugins/mjolnir/skills/day-report/"],
+         '\nRun `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/day_log.py" --month YYYY-MM`.\n')),
 ]
 
 

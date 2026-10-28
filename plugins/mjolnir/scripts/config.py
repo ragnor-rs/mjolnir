@@ -1713,15 +1713,18 @@ class Config:
                 "(`context_guard.result_limit_chars` is absent), so every result "
                 "reaches the window whole however long it is (§ 22)."
             )
-        # A role's own unset key. `day_log.script` is the first absence in this
-        # toolkit that is load-bearing rather than theoretical: the day-log role
-        # cannot run without it, and reporting that -- naming the key -- is what
-        # keeps an absence a configuration instead of a crash downstream.
-        if self.get("day_log.script") is None:
+        # § 9's own retired names. ⛔ Reported as a stated emptiness and never
+        # left silent: a project whose history carries a command it no longer has
+        # and states none here has every one of those turns counted as work, and
+        # the symptom is a total that is quietly **high** -- the one direction the
+        # deduction is otherwise built to avoid.
+        if not self.get("day_log.ritual_retired"):
             out.append(
-                "`day_log.script` is not set, so the day-log role cannot run "
-                "here. It names the project's evidence script, which is "
-                "transitional until the script is extracted into the plugin."
+                "No retired command is carried (`day_log.ritual_retired: []`), so "
+                "the bookkeeping deduction is the shared closed list alone and a "
+                "command this project used to have is counted as work wherever it "
+                "is still in a transcript. ⛔ Not an absence of signal: the "
+                "project states it (§ 9)."
             )
         # § 9's chat source, reported the way § 3's trackerless kind is: a stated
         # decision that one stream has no implementation here. ⛔ Reported as the
@@ -1879,6 +1882,13 @@ RETIRED = [
         "the chats carrying this project's work alongside something else are a "
         "facet of the chat source, for the reason its patterns are. See § 9. "
         "Move the value to `day_log.evidence.chat.mixed`",
+    ),
+    (
+        "day_log.script",
+        "the day log's evidence script is the plugin's, one copy, and takes every "
+        "value § 9 states from configuration. The key pointed at each project's "
+        "own copy, which was how the procedure came to be shared before the "
+        "script was; a path stated now is a sixth copy. See § 9. Delete the key",
     ),
 ]
 
@@ -6157,8 +6167,11 @@ def _load_bearing_absences(config: Config) -> list[str]:
     """Keys whose absence stops a role this project maps a carrier for."""
     carriers = config.get("carriers") or {}
     absent = []
-    if carriers.get("day_log") and config.get("day_log.script") is None:
-        absent.append("day_log.script")
+    # ⚠️ `day_log.script` was the first entry here and is retired: the evidence
+    # script is the plugin's, so there is no path a project can fail to state and
+    # the role no longer has an absence of its own that stops it. What is left is
+    # § 26's, which stops it one step later -- a day can be measured against a
+    # store with no address and simply not recorded.
     # § 26's, and conditioned on the **kind** as well as the carrier: the key
     # addresses a file store and nothing else, so a project on another kind is
     # not missing it. ⛔ Not a second rule about requiredness -- § 26 states the

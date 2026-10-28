@@ -1,0 +1,50 @@
+name: Day log
+
+# The day log's evidence script is one copy for every project, and what a gate can hold about it is
+# the half that needs no store and no history: that the bookkeeping deduction still catches every
+# form the harness and the roles inject, that it discounts no real instruction, that a delegated
+# sub-window's minutes are measured without its prompt counting as typed, that a store belonging to
+# a neighbouring project is still refused by name, and that no project's own path, archive, chat,
+# calendar or repository has been compiled back into the shared file. Each of those is a mechanism
+# that reports green the moment it quietly stops working — a renamed command, a namespaced skill, a
+# glob that matches nothing — and the suite therefore shows each one a violation it must redden on
+# before holding it.
+#
+# ⚠️ What this cannot hold is a measured day. That needs a transcript store, a commit history and a
+# store with entries in it, none of which a runner has, so the acceptance that the extracted script
+# reproduces each project's own total is answered by hand against that project's real evidence and
+# recorded with the change. The residue is stated here rather than left for a reader to assume away.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the project
+# controls its workflows, because a `host.checks` entry states one mirrored command.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The script reads a project's own transcripts, repositories and chat
+# archive, and the suite reads none of them — every fixture it builds is its own — so a run that
+# needed a credential would be a run doing something this one does not.
+permissions: {}
+
+jobs:
+  day-log:
+    name: Day log
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          # ⛔ The whole history, because the suite builds repositories of its own and the
+          # script's own earliest-day derivation reads `git log --reverse`. A shallow clone
+          # would leave that reading answering about the fetch rather than about the project.
+          fetch-depth: 0
+
+      # One step, one command, planted violations first — and the same string `host.checks`
+      # states this run mirrors. ⚠️ Held together by eye, and § 2 rules that it must be: the
+      # mapping from a run to the command it mirrors is configured and never inferred. The
+      # workflow *name* above is held mechanically, by the `Host checks drift` run.
+      - name: Assert the deduction catches every form, discounts no instruction, and names its refusals
+        run: python3 plugins/mjolnir/scripts/day_log.py --self-test

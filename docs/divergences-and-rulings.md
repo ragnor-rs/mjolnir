@@ -346,8 +346,12 @@ had already adopted the rule.
 - Name the two `deliverables` roles apart. Proposed, not settled: one for the prose session
   summary, one for the billing-period line items. Nothing turns on the names beyond not merging
   the two roles.
-- **Extract the day log's evidence script.** The procedure is shared as of now; the script is
-  still each project's own, pointed at by `day_log.script`. That is transitional by design, so a
-  project that has not been migrated keeps working — but the end state is one copy of the script
-  too, with the day boundary, the stream set, the rounding, the ritual list and the chat patterns
-  all read from configuration.
+⚠️ **The day log's evidence script is no longer among these.** It was: the procedure was shared
+while the script stayed each project's own, pointed at by `day_log.script`. One copy now ships in
+the plugin and reads the day boundary, the stream set, the rounding, the chat source and every
+other value from configuration, and the key is retired. Two things the five copies disagreed about
+turned out to be **separate settings** rather than one — `round_to` and whether a grid is asserted
+at all — and one thing none of them read was found by measuring the store rather than by reading
+them: a delegated sub-window writes its own transcript, so every copy under-measured the sessions
+that delegated most. ⛔ **A sub-window's prompt is not a typed one**, which is the defect the naive
+extension would have introduced and the reason that arm is planted.
