@@ -129,8 +129,9 @@ project took two states two.
 
 ⛔ **Every stream is narrowed before it is read, and the bound is derived rather than
 trusted.** The repository is the configured code root, the session directories are the ones git
-reports as working copies of it, the chats are `evidence.chat_patterns`, and the calendars are
-`evidence.calendars`. **The test — name the piece of this project's work the input belongs to.**
+reports as working copies of it, the chats are `evidence.chat.patterns` inside the archive
+`evidence.chat.path` names, and the calendars are `evidence.calendars`.
+**The test — name the piece of this project's work the input belongs to.**
 No name, no input; a source that cannot be narrowed to the project is not read at all.
 
 ⚠️ **A neighbouring project is the case that actually bites.** The harness names a session's
@@ -257,13 +258,16 @@ nothing happened for 15 minutes:
 - **`host_activity`** — items and pull requests opened, closed and merged, plus every item and
   review comment. Available only where the host has an API for it, and worth configuring where
   review work happens on the host and leaves no other trace.
-- **`telegram`** — the chats `evidence.chat_patterns` names.
+- **`chat`** — the chats `evidence.chat.patterns` names, read out of the archive
+  `evidence.chat.path` addresses. ⛔ **Which implementation reads it is `evidence.chat.kind`**, and
+  a project stating no chat evidence at all has this stream absent rather than empty — the reader
+  reports that absence by name, so a run that measures no chat says which of the two it was.
 - **`meetings`** — the ones you passed.
 
 Markers it prints: **`+`** on a timestamp means the small hours of the next morning, same
 working day, per §0. **`·`** on a prompt marks a bookkeeping turn whose minutes are already out
 of the total, per §2. **`~`** on a commit means somebody else authored it. **`?`** or **`~`** on
-a chat line marks a chat `evidence.mixed_chats` names. **`⛔`** under `SOURCES` marks input
+a chat line marks a chat `evidence.chat.mixed` names. **`⛔`** under `SOURCES` marks input
 refused as another project's.
 
 ## 2. Sanity-check the total
@@ -303,18 +307,18 @@ refused as another project's.
   measured.
 - **Driving the product by hand is work**, not usage. A smoke run through a dev or staging bot is
   a gate being executed, and git never sees it. A run through the *production* one is being a
-  user — configure that chat into `evidence.chat_exclude`.
-- **Watch the archive horizon** the script prints. If the chat archive ends before the day does,
-  its later messages are missing and the total is low — say so rather than silently
-  under-reporting. The horizon is the newest message actually stored, not the file's mtime, which
-  can lag its own contents by hours.
+  user — configure that chat into `evidence.chat.exclude`.
+- **Watch the archive horizon** the script prints. The archive is the one `evidence.chat.path`
+  addresses, and if it ends before the day does, its later messages are missing and the total is
+  low — say so rather than silently under-reporting. The horizon is the newest message actually
+  stored, not the file's mtime, which can lag its own contents by hours.
 - **A missing stream is announced, never silent.** If the host CLI is absent or unauthenticated
   the script prints the reason; that work is then uncounted and the total is low by however long
   it took.
 - **A rebase shows old commits under today.** Read them as "the branch was rebased", not as
   "this was written today".
 - **Blocks of 0m are single events**, not work. They still anchor a block; check they belong.
-- **A new chat needs adding** to `evidence.chat_patterns`, or its messages go uncounted. ⚠️ **Add
+- **A new chat needs adding** to `evidence.chat.patterns`, or its messages go uncounted. ⚠️ **Add
   exact names, not prefixes** — a bare surname pattern pulls in every personal chat that shares
   it.
 - ⚠️ **Sessions are read from the derived directories and no others.** A session opened in a

@@ -230,14 +230,20 @@ day_log:
   round_ties: down
   enforce_grid: true
   script: ".claude/skills/day-report/scripts/active_time.py"
-  streams: [sessions, commits, telegram, meetings]
+  streams: [sessions, commits, chat, meetings]
   attribute_to: null
   exclusions: [contractual, log_upkeep, rework, overhead]
   sections: billed_and_not_billed
   evidence:
-    chat_patterns: ["<exact chat name>"]
-    chat_exclude: []
-    mixed_chats: ["<the direct chat that carries both>"]
+    # The chat source, named by its kind rather than by its vendor, and addressed by a path this
+    # file carries as a placeholder: the archive sits on whoever keeps the log, so the value is
+    # the project's and never the surface's.
+    chat:
+      kind: telegram_export
+      path: "<the exported archive>"
+      patterns: ["<exact chat name>"]
+      exclude: []
+      mixed: ["<the direct chat that carries both>"]
     calendars: ["<the one calendar whose titles are legible>"]
   # § 26's port. ⚠️ A worklog on this tracker is **not** what this names: an entry here is one
   # day's hours and description for the whole project, and a worklog hangs off one issue. Which

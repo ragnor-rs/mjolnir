@@ -2524,16 +2524,19 @@ day_log:
   round_ties: down | up        # default: down
   enforce_grid: true           # default
   script: "<path to the evidence script>"   # null where the project has none
-  streams: [sessions, commits, telegram, meetings, host_activity]
+  streams: [sessions, commits, chat, meetings, host_activity]
   attribute_to: null           # default
   exclusions: [contractual, other_projects, log_upkeep, rework, overhead]   # default
   extra_exclusions:
     - { name: "…", rule: "…" }
   sections: billed_only | billed_and_not_billed
   evidence:
-    chat_patterns: []
-    chat_exclude: []
-    mixed_chats: []
+    chat:
+      kind: telegram_export | none    # required
+      path: "<the archive>"  # required_when: day_log.evidence.chat.kind = telegram_export
+      patterns: []
+      exclude: []
+      mixed: []
     calendars: []
 ```
 
@@ -2557,6 +2560,45 @@ always addressing, and § 26's default is that kind.
 - `host_activity` is available only where the code host has an API for it. On a project whose
   review work happens almost entirely on the host and leaves no other trace, omitting it
   under-measures the day.
+
+**The chat stream names a stream, and its source names a kind.** `streams` carries `chat`, and
+which implementation that stream reads is `evidence.chat.kind` — the division
+[§ 3](#3-tracker-port) has for the tracker, read one axis over, so the procedure names neither the
+vendor nor the file. ⛔ **And the archive's own address is a key**, `evidence.chat.path`: it is a
+path on whoever's machine keeps the log, so a role that reads an archive reads where it is from
+configuration, and no file in this repository names one.
+
+- `kind` is **required of every project**, the way [§ 3](#3-tracker-port)'s `tracker.kind` is and
+  for the same reason: a project with no chat evidence at all states `none` and is reported as
+  unavailable by name, while an unset key and a decided absence read identically.
+- `path` is required under `telegram_export` and meaningless under `none`, which is what the
+  marker's condition states. ⚠️ **One archive and not a directory of them** — the exported file
+  the stream reads, whose newest message is the horizon the role is told to watch.
+- `patterns`, `exclude` and `mixed` are facets of that one source and sit under it: the chats
+  read, the chats left out, and the chats carrying this project's work alongside something else.
+- ⛔ **`streams` and `kind` have to agree, in both directions.** `chat` in `streams` under
+  `kind: none` is a stream with no source to read, and a `kind` other than `none` with no `chat`
+  in `streams` is an archive nothing ever opens. Each is refused with a key named, because the
+  two fail in opposite directions and the first of them reads from the configuration exactly
+  like a stream being measured.
+
+```yaml
+# retired: day_log.evidence.chat_patterns
+# retired: day_log.evidence.chat_exclude
+# retired: day_log.evidence.mixed_chats
+```
+
+⛔ **Those three are retired, and a configuration still declaring one is refused with the key
+named.** They were the chat source's facets written as top-level keys of `evidence`, describing a
+source this surface never named — the stream was called after its vendor, and the archive it read
+had no key at all. The facts live at `evidence.chat.patterns`, `evidence.chat.exclude` and
+`evidence.chat.mixed`, under the `kind` that says what reads them.
+
+⚠️ **The stream's own retired name is not a key, and is refused by the list instead.** `telegram`
+was a member of `streams` and never a key anywhere, so `# retired:` — which the reader performs
+against the key paths a configuration carries — cannot reach it. What refuses it is `streams`'s
+own membership, read off the list this section shows: a member outside that list is refused with
+`streams` named and the members it allows stated.
 
 **`script` is transitional.** It points at the project's own evidence script for now, so the
 procedure can be shared before the script is. Extracting the script into the plugin is the next

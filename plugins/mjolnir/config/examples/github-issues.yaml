@@ -191,9 +191,11 @@ day_log:
   exclusions: [log_upkeep, rework, overhead]
   sections: billed_only
   evidence:
-    chat_patterns: []
-    chat_exclude: []
-    mixed_chats: []
+    # The arm the other examples do not show: a project with no chat evidence at all. The `chat`
+    # stream is absent from `streams` above rather than listed and empty, and the reader reports
+    # the absence by name instead of the role meeting a source that reads nothing.
+    chat:
+      kind: none
     calendars: []
   # § 26's port: a file under the temp root, which is the cheapest store there is and the one a
   # project has before it has anywhere else to put an entry.
