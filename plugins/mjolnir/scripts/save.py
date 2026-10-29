@@ -1924,6 +1924,23 @@ def self_test() -> int:
             any(f"{MEMORY_KEY}.carrier" in line for line in reported),
             f"reported {reported!r}",
         )
+        # ⛔ And it names the same open halves this module does, **subject by
+        # subject**. ⚠️ The arm above holds only that the key is mentioned, which
+        # is exactly what let the two reports price this carrier at two costs
+        # while the carrier already left three open: a list on one side and a
+        # sentence on the other, compared by nothing. ⚠️ The three words are
+        # written here, so what this reaches is that both reports name each
+        # subject -- whether either states it correctly is the *quoting* kind of
+        # judgement and is read.
+        derived = memory(live, ".")
+        for subject in ("lock", "renamed", "admission"):
+            check(
+                f"and `{subject}` is named by this module and by the reader alike",
+                any(subject in line for line in derived["unclosed"])
+                and any(subject in line for line in reported),
+                f"this module named {derived['unclosed']!r} and the reader "
+                f"{[line for line in reported if MEMORY_KEY in line]!r}",
+            )
     if live.get(f"{MEMORY_KEY}.write_from") == "main_tree":
         asked += 1
         check(
