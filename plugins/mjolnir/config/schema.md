@@ -748,6 +748,26 @@ title. ⛔ **An entry stating no workflow name has no key at all and is refused*
 reads this facet by that name, so entries without one collapse into a single answer and a refusal
 then names a workflow the repository does not contain.
 
+⛔ **And no name twice: a second entry keyed on a name an entry already states is refused, with
+the name in the refusal.** The rule above makes an entry carry a key; this one makes the key *a*
+key. It is the same argument one level up from the collision the key exists for — that one is two
+workflows sharing a job's name, which a workflow-keyed map really does make impossible, and this
+is the map's own name repeated, which it does not. ⚠️ **Measured on 2026-10-24, with two entries
+differing only in `mirrors`, nothing anywhere refused the shape**: the configuration loaded and
+`Config.mirrors()` returned both records; the guard ranking answers across entries resolved whichever
+sorted first, so *which workflow a refusal names* became an ordering accident; and the check
+holding this facet to the host's own definitions matched both entries against one definition and
+reported zero problems in both directions, against a measured baseline of zero. ⛔ **So two
+statements of what one run mirrors are refused where they are written** rather than tolerated by
+every consumer in a different way.
+
+⚠️ **The comparison is the name as written, and case is not folded** — unlike
+[§ 20](#20-the-sections-a-pull-request-body-must-carry)'s heading, whose own collision rule folds
+it because a body spells a heading however it likes. A workflow name is held against the host's own
+definitions character for character, so two entries differing only in case name two workflows a
+repository may really both define: folding here would refuse a facet the host and the drift check
+tell apart, which is the opposite error from the one this rule exists for.
+
 ⚠️ **An entry states one mirrored command, or the jobs that mirror several.** The second form is
 the subsection below; a second command written in a comment beside the facet is a fact the surface
 does not hold under either of them.
@@ -5460,12 +5480,17 @@ would land outside the project and a copy inside it would never be called.
 **Registration is part of installing, not a step after it.** A generated gate is a run the host
 makes, so it is an entry in [§ 2](#2-code-host)'s `checks` like every other — written beside the
 artifact, and ⛔ **an entry this surface cannot state is refused with the entry named, before
-anything is written**. ⛔ **So is one whose workflow name an entry already states**, § 2 keying the
-facet on that name: an install may not create the one shape every consumer of it would have to
-choose between, and the refusal names the name. ⚠️ **The configuration file is edited and never
-re-rendered**: a project's own comments about its own facts are part of that file, as is the
-terminator its lines are written with, and a round trip through a parser takes every one of them out
-with nothing reporting the loss.
+anything is written**. ⚠️ **That covers a workflow name the facet already states**, which
+[§ 2](#2-code-host) refuses as a key stated twice — so this step states no rule of its own about
+it, and the one thing it adds is that **an artifact's own standing entry is not a collision with
+itself**: the entry is composed from facets a project edits, so a later run writes different
+content under the same name, and a step reading that as a duplicate would refuse for ever over its
+own output. What the pre-check is asked is whether the facet can be stated *as the write would
+leave it* — the standing entry replaced, not sitting beside the new one.
+
+⚠️ **The configuration file is edited and never re-rendered**: a project's own comments about its
+own facts are part of that file, as is the terminator its lines are written with, and a round trip
+through a parser takes every one of them out with nothing reporting the loss.
 
 ⛔ **And the edit is read back, on two conditions rather than one**: a file that stops loading is
 put back, and so is a file that loads and **does not carry the change**. The second is not the

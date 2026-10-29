@@ -2224,6 +2224,13 @@ def host_runs(data: dict) -> list[dict]:
             "would hold nothing against a shape it cannot walk.",
         )
     out: list[dict] = []
+    # ⛔ The key held to being *a* key, which § 2 states one paragraph on from the
+    # rule that an entry carries one. ⚠️ Not folded, unlike § 20's heading one
+    # facet over: the name is matched against the host's own definitions character
+    # for character, so two entries differing only in case name two workflows a
+    # repository may both define, and folding would refuse a facet the drift check
+    # beside this module tells apart.
+    keyed: dict[str, int] = {}
     for index, entry in enumerate(checks):
         if not isinstance(entry, dict):
             raise ConfigError(
@@ -2232,7 +2239,20 @@ def host_runs(data: dict) -> list[dict]:
                 "`workflow` (§ 2). An entry this reader cannot walk takes "
                 "whatever it mirrors out of § 13's refusal in silence.",
             )
-        out.append(_entry_run(entry, index))
+        run = _entry_run(entry, index)
+        first = keyed.setdefault(run["workflow"], index)
+        if first != index:
+            raise ConfigError(
+                f"host.checks[{index}].workflow",
+                f"is {run['workflow']!r}, which host.checks[{first}] states as "
+                "well. § 2 keys the facet on the workflow name, so a second entry "
+                "under one name is two statements of what one run mirrors and "
+                "every consumer reading either would be right: the guard ranking "
+                "answers across entries resolves whichever sorted first, and the "
+                "check holding this facet to the host's own definitions matches "
+                "both entries against one definition and reports nothing.",
+            )
+        out.append(run)
     return out
 
 
@@ -5800,6 +5820,37 @@ def self_test() -> int:
         f"resolved {across!r}",
     )
 
+    # § 2's key uniqueness on the green side, which its two plants below cannot
+    # assert: a facet whose names are distinct loads. ⛔ And the second arm is the
+    # scope's own green side rather than a restatement of the first -- a refusal
+    # that folded case would redden *here* while both plants stayed red, which is
+    # the one way this rule can be wrong with nothing saying so. ⚠️ Two workflow
+    # names differing only in case are two definitions a repository may really
+    # both carry, and the check holding the facet to those definitions matches
+    # them character for character.
+    distinct = _a_valid_example()
+    distinct["host"]["checks"] = [
+        {"workflow": "A first planted workflow", "mirrors": "the-first-command"},
+        {"workflow": "A second planted workflow", "mirrors": "the-second-command"},
+    ]
+    broken = _refused(distinct)
+    check(
+        "two entries keyed on different workflow names load",
+        broken is None,
+        f"refused {broken!r}",
+    )
+    cased = _a_valid_example()
+    cased["host"]["checks"] = [
+        {"workflow": "A planted workflow", "mirrors": "the-first-command"},
+        {"workflow": "a PLANTED workflow", "mirrors": "the-second-command"},
+    ]
+    broken = _refused(cased)
+    check(
+        "and two whose names differ only in case load, the host telling them apart",
+        broken is None,
+        f"refused {broken!r}",
+    )
+
     # And the form a project whose workflow runs exactly one check writes, which
     # is what it wrote before this form existed: answered about by the workflow.
     plain = _mirrored_commands(
@@ -6659,6 +6710,10 @@ def _planted_violations():
          _an_entry_whose_workflow_is(None)),
         ("an entry whose workflow name is blank", "host.checks[0].workflow",
          _an_entry_whose_workflow_is("   ")),
+        ("two entries keyed on one workflow name", "host.checks[1].workflow",
+         _two_entries_keyed_on_one_workflow),
+        ("one entry stated twice, verbatim", "host.checks[1].workflow",
+         _one_entry_stated_twice),
         ("a mirrored command written with nothing after it",
          "host.checks[0].mirrors", _a_mirrors_of(None)),
         ("a `mirrors` written blank beside a job list", "host.checks[0].jobs",
@@ -7441,6 +7496,37 @@ def _a_trigger_of(triggers):
         return data
 
     return mutate
+
+
+def _two_entries_keyed_on_one_workflow(data: dict) -> dict:
+    """§ 2's key stated twice, the two entries differing in what they mirror.
+
+    ⛔ They differ in `mirrors` on purpose, which is the form measured on
+    2026-10-24: a reader deduplicating whole entries lets exactly this one
+    through, and the consumer ranking answers across entries then resolves
+    whichever sorted first -- so the refusal has to be the **name's**.
+    """
+    data.setdefault("host", {})["checks"] = [
+        {"workflow": "A planted workflow", "mirrors": "the-first-command",
+         "triggers": "pull_request -> *"},
+        {"workflow": "A planted workflow", "mirrors": "the-second-command",
+         "triggers": "pull_request -> *"},
+    ]
+    return data
+
+
+def _one_entry_stated_twice(data: dict) -> dict:
+    """The same entry written out twice, verbatim.
+
+    ⛔ The other direction of the pair above and not the same plant: this one a
+    whole-entry deduplication absorbs in silence, where the one above survives
+    it. § 2 makes the key the thing that may not repeat, so both are refused on
+    the name and neither on the content beside it.
+    """
+    entry = {"workflow": "A planted workflow", "mirrors": "a-mirrored-command",
+             "triggers": "pull_request -> *"}
+    data.setdefault("host", {})["checks"] = [entry, dict(entry)]
+    return data
 
 
 def _an_entry_whose_workflow_is(name):
