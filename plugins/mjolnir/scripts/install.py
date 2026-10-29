@@ -832,13 +832,13 @@ def refuses_entry(configuration: config.Config, entry: dict, replacing=None) -> 
     choose between the two -- that nobody can perform.
 
     ⚠️ **And it is the *idempotent* property that goes first, not the rewritten
-    entry.** Measured by dropping the argument at the one call site: six arms
-    reddened, and the ones that named it were `a second run changes nothing` and
-    `a second run reports it unchanged` -- an artifact whose entry is already
-    registered, byte-identical, re-read as a duplicate of itself. The pre-check
-    runs on every pass, before anything asks whether the entry needs writing at
-    all, so *unchanged* is the first answer a reader-side uniqueness rule takes
-    away.
+    entry.** Measured by dropping the argument at the one call site: seven arms
+    reddened, and the ones that named it were `a second run changes nothing`
+    twice and `a second run reports it unchanged` -- an artifact whose entry is
+    already registered, byte-identical, re-read as a duplicate of itself. The
+    pre-check runs on every pass, before anything asks whether the entry needs
+    writing at all, so *unchanged* is the first answer a reader-side uniqueness
+    rule takes away.
     """
     data = copy.deepcopy(configuration.data)
     data.setdefault("host", {})
