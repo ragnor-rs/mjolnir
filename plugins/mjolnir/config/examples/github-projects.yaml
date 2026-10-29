@@ -260,6 +260,17 @@ ordering:
   carrier: command
   command: "<the command that prints the board's ranked column, one item id per line>"
 
+people:
+  # § 27, and the arm that shows the inverse rule: this project carries the map and configures no
+  # `assignee_matches_role` in `readiness` above. The gate is one reader of the map rather than its
+  # purpose — what reads it here is the role that takes an item and writes an assignee, which
+  # writes the identity it resolved instead of whoever is running. ⛔ A pointer and a shape: the
+  # file this addresses holds logins and personal names, and neither may enter the toolkit.
+  carrier: file
+  source: "<the path to the file this project already keeps its role-to-person map in>"
+  # The host's own login, which is what `read_item` returns as the person on an item here.
+  key: handle
+
 environment:
   # The same host as the example next door, and the opposite decision: the credential stays in
   # the host tool's own credential store and is never exported, so no role inherits it and the

@@ -2188,3 +2188,70 @@ declares no key for one —
 ⚠️ **That is a stated bound on what may be added here rather than a hole in what is**: the file kind
 needs no secret, so nothing shipped is waiting on it, and a kind that cannot be reached without one
 is a kind this surface cannot state until private values have a home.
+
+## The role-to-person map: four stores and one pointer
+
+The readiness library carried `assignee_matches_role` with **no configured source for it to read**,
+and the gating role said so in its own text: presence and correspondence are two questions, and
+only the first was answerable. What closed it is
+[`schema.md § 27`](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map).
+
+**What the survey found was the same map in four places, in four kinds of store** — a sibling
+reference file, a project instructions file, a memory index section, and a memory fact — none of
+them aware of the others. ⛔ **And each copy carries the argument against copying, in its own
+words:**
+
+> Read this file; do not copy the table into a skill. Two gates on one route that each carry their
+> own copy will disagree about the same card, and a copy that has to be «kept in sync» is the defect
+> rather than the maintenance burden.
+
+> Two records of who owns the work that are allowed to disagree are worse than one.
+
+That is this toolkit's own founding argument, written down independently by the projects it was
+derived from and applied one level in: the thing being duplicated here is not a rule but a fact
+about people.
+
+### Why a pointer rather than a map
+
+The maps hold personal names, handles and tracker member ids. ⛔ **None of that may enter a toolkit
+several projects share**, and the reason is not the one § 14 gives for a credential: an identity is
+a fact about somebody who did not agree to be named in anybody's tooling. So what the facet carries
+is the pointer and the shape, and the lookup is the shared reader's — one implementation, which is
+the half the survey shows four projects did not have.
+
+⚠️ **The cost of the pointer form is named rather than discovered**: all four stores are prose, and
+a reader that parsed one would be guessing at a table's columns in the one facet that may not
+guess, so a project keeping the fact in a document writes a mapping beside it. The alternative
+measured against that was a command carrier, as the ordering facet has — it is what `revisit_when`
+on this facet records, and it was not taken now because one parser is cheaper than one more
+configured command for every project that keeps its map as data already.
+
+### The shortcut one copy names outright
+
+⛔ **Never resolve a role by asking who the current user is** —
+[`schema.md § 27`](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map). One of the four
+copies states it flatly, and the statement is the measurement: asking the tracker answers *who is
+running the skill*, not *who holds the role*. The two coincide exactly while one person runs
+everything — which is the state every project in the survey was in — and the check then silently
+becomes *assigned to whoever is asking*, green on every item including the ones on the wrong person.
+
+⚠️ **That failure is why the rule is held in three places rather than argued once.** The reader
+refuses `current_user` wherever a configuration writes it, the sweep over the carrier roots refuses
+the spellings that ask, and the reader's own suite writes a map with one identity in it and the
+shell with another and asserts the answer is the map's. ⛔ **The one thing none of those reaches is a
+role instructed in words to ask**, and a sweep for that is a sweep for every word: what holds it is
+§ 27 being the single statement of the rule.
+
+⚠️ **The sweep's own grammar reproduced both of its failure directions inside the change that
+introduced it**, which is worth recording because the change's subject *was* this rule: separating
+the two words on `[_-]?` refused a carrier describing the rule in English — *the current-user
+spelling* — and left `--current-user`, the one spelling that cannot be anything but code, unread
+because the lookbehind rejected the dash in front of it. ⛔ **A forbidding check about a rule is the
+one most likely to forbid the prose that states it**, and the only thing that found it was planting
+the English form and watching it redden.
+
+⚠️ **Writing an assignee is not the same act**, and keeping the two apart is what makes the rule
+meetable: recording who *took* an item is a fact about this run, so the implementation behind
+`assign` may legitimately translate the running user's own spelling. The sweep is scoped to the
+carrier roots for exactly that reason, and the exemption is asserted on the green side rather than
+left to forbearance.

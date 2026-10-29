@@ -358,13 +358,14 @@ rather than from a hand-kept list of roots.
 | 0 | No repository but this one's is named, as a URL, an install-command argument or a `repo:` value | every tracked text file | forbidding |
 | 1 | No path under a home directory | same | forbidding |
 | 2 | No address | same | forbidding |
-| 3 | No identifier that resolves on a tracker — a Jira key or Trello id **written as a value**, or either service's URL anywhere | same | forbidding |
+| 3 | No identifier that resolves on a tracker — a Jira key, a Trello id or a prefixed account id **written as a value**, or either service's URL anywhere | same | forbidding |
 | 4 | The strict set matched a file at all | the carrier roots | computed |
 | 5 | Every file under a plugin is a carrier, a configuration or a manifest — nothing else | `plugins/**` | computed |
 | 6 | No tracker is named, in the slug spelling or the prose one | the strict set | forbidding |
 | 7 | No package manager, task runner, build tool, checker, manifest or lockfile; no stack's own flag; no interpreter in front of something this repository does not ship; no directory change prefixing a command, no directory flag, no absolute path | the strict set | forbidding |
 | 8 | No value any configuration supplies | the strict set | forbidding |
 | 9 | No machine named by its address, which is the one identity shape of a *machine* with a form a pattern can hold — a hostname is any word and an alias is any word somebody chose, so those are held by the names living outside every working tree ([schema § 21 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)) rather than by this sweep | same | forbidding |
+| 10 | No role is resolved by asking who is running — the spellings that resolve the current user and nothing else, each one a form English does not also use ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)) | the strict set | forbidding |
 
 Check 5 is the one that makes the shape-matched strict set safe: a carrier in a directory the
 shapes do not reach — `plugins/other/skils/`, one letter out — would otherwise be swept by nothing
@@ -535,7 +536,31 @@ exempted the whole directory and so would have read straight past it.
 - **A person's name, a bare label, a milestone title, an assignee handle, a service name.** None
   has a stable form, and forbidding a list of them would be a list to keep in sync. This is the
   same reason projects are lettered A–F in the documentation: the convention is held by what the
-  documents *don't* contain, and the counts carry the argument instead.
+  documents *don't* contain, and the counts carry the argument instead. ⚠️ **One shape came out of
+  this bullet and into check 3** — a tracker account id in its prefixed spelling, which cannot be
+  anything else — and the first form of that grammar tried to take the bare dashed hex group with
+  it and reddened on a *session* id in this repository's own fixtures, which is nobody. ⛔ What
+  holds the rest is where the values live: the identities are in a file the project points at
+  ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)), never in the
+  toolkit, which is check 9's argument about a machine one class over.
+- **A role *instructed in words* to ask who is running.** Check 10 holds the spellings that resolve
+  the current user and nothing else, matched anywhere in a strict file rather than in code alone,
+  since what it is looking for is a role *instructed* to ask. ⛔ **So every spelling it holds has to
+  be one English does not also use, and the hyphenated modifier is not**: the first form of the
+  grammar separated the two words on `[_-]?` and refused a carrier describing this very rule, while
+  letting the one unambiguously-code spelling — the flag, with its dashes — through unread, because
+  the lookbehind written for the word rejected the dash in front of it. ⚠️ **Both failures were
+  reproduced inside the change that introduced them**, which is why the hyphenated English form now
+  passes deliberately and is asserted on the green side. ⛔ No count of the spellings is written
+  here, for the reason no count of the groups above is: the first form of this bullet said *three*
+  and the fix made it four. ⛔ What it cannot reach either way is *ask the tracker who you are*
+  written out as a sentence, and a sweep for that is a sweep for every word: what holds that half is
+  [schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map) being the single
+  statement of the rule, beside the shared reader refusing `current_user` wherever a configuration
+  writes it. ⚠️ **And the strict scope is the rule's own rather than forbearance**: the
+  implementation behind `assign` translates the running user's spelling legitimately, recording who
+  *took* an item being a fact about this run, so a tree-wide sweep would forbid the one shape § 27
+  permits — which is asserted on its green side rather than left to reading.
 - **An interpreter in front of a file this repository ships.** The class is no longer a hole —
   check 7 now reddens on an interpreter, in the one position
   [schema § 17](../plugins/mjolnir/config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)

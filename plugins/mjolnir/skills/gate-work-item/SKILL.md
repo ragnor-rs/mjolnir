@@ -183,12 +183,31 @@ and belongs to whoever wrote it. ⛔ **Never lower an estimate so that it fits t
 about to write.** That is the arithmetic running backwards, and it turns the tracker into a record
 of what was convenient.
 
-**4h. Who the item is assigned to.** ⚠️ **Presence and correspondence are two questions and only
-the first is answerable here**: whether the person on the item is the one the work is meant for
-needs a map from a role to a person, and this surface carries none. So report who holds the item,
-report correspondence as **unestablished**, and ⛔ **never read the absence of an answer as
-agreement** — [`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)'s rule,
-and the direction that costs.
+**4h. Who the item is assigned to.** ⚠️ **Presence and correspondence are two questions**, and
+which of them is answerable is the project's own fact rather than this role's:
+[`§ 27`](../../config/schema.md#27-the-role-to-person-map) carries the map from a role to a person,
+and the gate's entry names the role the item's person is compared against. One command answers it,
+and ⛔ **this role does not read the map itself** — a role parsing a project's map for itself is the
+divergence § 27 exists to close, and the reader is where the lookup lives:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --person-for "<the role the entry names>"
+```
+
+- **It answers** ⇒ compare it with who holds the item, read where § 27's `key` says the person is:
+  the assignee the tracker returns, a named field's value, or the value behind a label's prefix —
+  all three come back with the answer, so none of them is matched here for itself. A mismatch is a
+  **defect**: the item is on the wrong person, and step 5 can repair it.
+- **It stops** ⇒ report correspondence as **unestablished** and report the stop as it came back.
+  The project carries no map, the pointer did not resolve, or the map names no such role — each is a
+  fact about the configuration rather than about the item, so the item is **not** marked.
+- ⛔ **Never read the absence of an answer as agreement**
+  ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)'s rule, and the
+  direction that costs), and ⛔ **never resolve the role by asking who is running this**. Those two
+  are one failure: the second is what the first turns into the moment somebody reaches for an
+  answer. § 27 states it, and the answer it gives is *who is running the role*, never *who holds
+  it* — so the check silently becomes **assigned to whoever is asking** and passes every item, the
+  ones on the wrong person included.
 
 ## 5. The decision point — the one place this role stops to ask
 
@@ -196,15 +215,18 @@ and the direction that costs.
 
 ### First, sort the failures — some of them are not defects
 
-⛔ **4e and 4h say nothing is wrong with the item.** A dependency landing next week makes today's
-item correct and merely early; an assignee that could not be verified is a fact about what this
-surface states. Treating either as a defect sends back an item whose author has nothing to fix, and
-a mark that means *wait* is a mark that stops meaning anything.
+⛔ **4e says nothing is wrong with the item, and 4h says it twice over or not at all.** A dependency
+landing next week makes today's item correct and merely early. 4h splits: an assignee that could not
+be verified is a fact about the **configuration**, while an assignee the map contradicts is a fact
+about the **item**. Treating the first as a defect sends back an item whose author has nothing to
+fix, and a mark that means *wait* is a mark that stops meaning anything; treating the second as
+merely unverified passes an item somebody else is holding.
 
 | what failed | what happens |
 |---|---|
-| **4e or 4h alone** | ⛔ **Stop, mark nothing, write nothing.** Report what has to happen and who does it, and say plainly that the item was deliberately not marked |
-| **either alongside other failures** | the other failures decide it; ask below, and carry these into the report as things the answer cannot clear |
+| **4e, or 4h with the lookup stopped, alone** | ⛔ **Stop, mark nothing, write nothing.** Report what has to happen and who does it, and say plainly that the item was deliberately not marked |
+| **4h with the lookup answered and the person wrong** | a defect like any other: ask below, and *Repair it* writes the identity the lookup returned |
+| **either of the first two alongside other failures** | the other failures decide it; ask below, and carry these into the report as things the answer cannot clear |
 
 ### Then ask, once
 
@@ -240,6 +262,12 @@ reads as twice as broken as it is.
   either direction.
 - **A question whose answer is a product, a commercial or a scheduling decision.** Only a question
   whose answer is already recorded fact is repairable at all.
+
+**Repairing 4h writes the identity the lookup returned**, through `assign` or through its stated
+fallback — ⛔ **and never the identity this session authenticates as**, which is the resolution
+[`§ 27`](../../config/schema.md#27-the-role-to-person-map) forbids and the one a repair is most
+tempted by, standing one call away from a tracker that would answer it. Where `key` says the person
+is a field or a label rather than an assignee, the write goes through that carrier's own operation.
 
 ⚠️ **A repair rewrites the author's text, and the test is the work rather than the prose**: a
 constraint, a condition or a dependency the body already carried is still true unless the new
@@ -324,6 +352,10 @@ the person addressed this role in.
   configures no mark for it to set;
 - on a repair: **every check repaired and what was written for it**, every check that could not be,
   and that any condition this role wrote is **its reading of the item and not the author's**;
+- on 4h: **which of its three answers came back** — the person matched, the person is somebody else,
+  or the lookup stopped — and where the answer came from, naming the pointer and the key
+  ([`§ 27`](../../config/schema.md#27-the-role-to-person-map)). ⛔ **Never the identity alone**: an
+  identity with no provenance reads as one this role knew, which is the state § 27 exists to end;
 - on a pass: the estimate the item carries, the date, **which rule produced the date** and whether
   it replaced one that was already there, and the state the item is now in;
 - ⚠️ **an estimate that reads oddly against the work described** — as an observation, since 4g

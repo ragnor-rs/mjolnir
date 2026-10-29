@@ -154,7 +154,10 @@ readiness:
   - { check: field_present, field: "<estimate label>", stop: "No estimate." }
   - { check: label_absent, label: "<incomplete>", stop: "The item is marked incomplete." }
   - { check: no_open_blockers, stop: "An open blocker has to land first." }
-  - { check: assignee_matches_role, stop: "The assignee does not match the role on the item." }
+  # § 27's map is what answers this, and `role` is the key looked up in it — the surface publishes
+  # none of that map's keys, so the entry names the role rather than the gate guessing one.
+  - { check: assignee_matches_role, role: "<the role this project's cards are assigned to>",
+      stop: "The assignee does not match the role on the item." }
   - { check: queue_position, ahead_allowed: 0, on_fail: stop_quietly, stop: "Higher-priority work is ahead of this in the queue." }
   # § 4.7, and § 5 requires the entry of any project carrying that facet: the last point before a
   # claim is taken, where the two repositories above are still a question rather than a branch.
@@ -316,6 +319,22 @@ ordering:
   # and this says which card to offer. One statement of the order, read by two roles.
   carrier: command
   command: "<the command that prints the queue list top to bottom, one card id per line>"
+
+people:
+  # § 27, and the richer of the two shapes — this is the one example that configures the gate's
+  # `assignee_matches_role` above, so it is the one that has to carry a map for the check to read.
+  # ⛔ The pointer and the shape, never the values: the file this addresses holds personal names and
+  # this board's member ids, and none of that may enter the toolkit. ⚠️ Example data like the rest
+  # of this file; the absent case is two keys and is held by the reader's own suite.
+  carrier: file
+  # Relative to the skills root, like every path on the surface (§ 1). A mapping of role to
+  # identity, and the roles in it are this project's own — the surface publishes none of them.
+  source: "<the path to the file this project already keeps its role-to-person map in>"
+  # `handle` is the tracker's own account identity, which on this board is a member id and is what
+  # `read_item` returns as the person on a card. ⚠️ The axis is not `label` here even though this
+  # file's other prefixed axes are, and no count of them is written: a person *is* an assignee on
+  # this tracker, so the comparison has the account identity on both sides and needs no label.
+  key: handle
 
 environment:
   # A key and a token as a pair, which is how this tracker is addressed: one credential is two

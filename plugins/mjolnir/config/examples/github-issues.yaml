@@ -236,6 +236,18 @@ ordering:
     A second person takes work from this backlog, or the issue count passes what one person
     holds in their head.
 
+people:
+  # § 27's absent case, and the same first-day shape the ordering above has: one person, no roles
+  # to tell apart, and nowhere a map has been written down. ⛔ Which is why `readiness` above
+  # configures no `assignee_matches_role` — the reader refuses that pair and names this reason.
+  carrier: none
+  absent_reason: >-
+    One person holds every role, so a map would state one identity three times and the check
+    that reads one would pass every issue.
+  revisit_when: >-
+    A second person takes work from this backlog — the same trigger the ordering above carries,
+    and the point at which who holds a role stops being derivable from there being one of them.
+
 environment:
   # The host credential in a variable, because the one command this procedure drives against
   # the host reads it from there. ⛔ Names, never values: the value lives in the credential

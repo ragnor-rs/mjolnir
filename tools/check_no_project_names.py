@@ -205,10 +205,65 @@ MACHINE_ADDRESS = re.compile(r"(?<![\w.])\d{1,3}(?:\.\d{1,3}){3}(?!\.?\d)")
 TRACKER_IDS_IN_VALUE = [
     (re.compile(r"^[A-Z][A-Z0-9]{1,9}-\d+$"), "a Jira issue key"),
     (re.compile(r"^[0-9a-f]{24}$"), "a Trello object id"),
+    # A tracker account id in the **prefixed** spelling, which is the one
+    # person-shaped identifier here with a form that cannot be anything else.
+    # ⛔ Only the decidable end of schema.md § 27's class is held: a personal name
+    # is any word, a handle is any word somebody chose, and -- measured -- a bare
+    # dashed hex group is the shape of a *session* id this repository's own
+    # fixtures carry, which is nobody. So the first form of this entry made the
+    # bare group optional-prefixed and reddened on a suite fixture: the false red
+    # rule 2 exists against, reached from the one direction a person-shaped
+    # pattern can reach it. ⚠️ What that leaves unheld is stated rather than
+    # implied -- a login, a display name and an unprefixed account id are held by
+    # § 27 keeping the identities in a file the project points at, never by a
+    # sweep, which is `check_no_machine_is_named`'s split one class over.
+    (
+        re.compile(r"^\d+:[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$"),
+        "a tracker account id, which identifies a person",
+    ),
 ]
 TRACKER_IDS_ANYWHERE = [
     (re.compile(r"\b[A-Za-z0-9-]+\.atlassian\.net\b"), "a Jira site"),
     (re.compile(r"\btrello\.com/[bc]/\S+"), "a Trello board or card"),
+]
+
+# Asking who is running. ⛔ Each of these is a spelling that resolves *the
+# current user* and nothing else, and `schema.md § 27` forbids a role being
+# resolved that way: asking the tracker, the host or the shell who you are
+# answers who is running the role rather than who holds it, and the check that
+# reads the answer silently becomes "assigned to whoever is asking".
+#
+# ⚠️ Matched **anywhere** in a strict file and not in code regions alone, unlike
+# the stack list below. The failure here is a role *instructed* to resolve a
+# person that way, which is prose rather than a command. Measured before taking
+# it: no file in the strict set carried any of these.
+#
+# ⛔ **So every spelling here has to be one English does not also use, and the
+# hyphenated modifier is not.** The first form of this list separated the two
+# words on `[_-]?`, and reproduced both of the failures that costs at once: a
+# carrier describing this very rule — *the current-user spelling* — was refused,
+# while `--current-user`, the one spelling that cannot be anything but code, went
+# unread because the lookbehind rejected the dash in front of it. ⛔ So the
+# separator is `_` or nothing, the flag is an entry of its own with its dashes,
+# and ⚠️ **the hyphenated English form passes deliberately** — asserted on the
+# green side below rather than left to reading.
+#
+# ⚠️ What this does **not** reach is stated rather than discovered: a role could
+# write *ask the tracker who you are* in words, and a sweep for that is a sweep
+# for every word. What holds that half is § 27 being the one statement of the
+# rule, and the shared reader refusing `current_user` wherever a configuration
+# writes it -- which is a refusal with a plant of its own, one script over.
+#
+# ⛔ No count of these is written here or in the documents that describe this
+# check. The first form of all three said *three* and this change's own fix made
+# it four, green — which is the failure the group counts above already record.
+WHO_AM_I = [
+    (re.compile(r"(?<![\w.@])@me(?![\w-])"), "the code host's spelling of the current user"),
+    (re.compile(r"(?<![\w-])current_?user(?![\w-])", re.I),
+     "a query for the current user"),
+    (re.compile(r"(?<!\w)--current-user(?![\w-])", re.I),
+     "a flag naming the current user"),
+    (re.compile(r"(?<![\w-])whoami(?![\w-])"), "a shell's answer about who is running"),
 ]
 
 # A closed list, grouped by what each group is. Matched as a whole token in code
@@ -1070,6 +1125,31 @@ def check_no_stack_is_named_in_the_strict_set(tree: Tree) -> list[str]:
     return problems
 
 
+def check_no_role_is_resolved_through_the_running_user(tree: Tree) -> list[str]:
+    """No carrier resolves who holds a role by asking who is running.
+
+    `schema.md § 27` states the rule and the map a role is looked up in instead.
+    ⛔ Scoped to the strict set, and the scope is the rule's own rather than
+    forbearance: the implementation behind `assign` legitimately translates the
+    running user's spelling, because recording who *took* an item is a fact about
+    this run and is a different act from asking who *holds* the role. A sweep that
+    reddened on it would forbid the one shape § 27 permits.
+    """
+    problems = []
+    for path in tree.strict():
+        body = tree.text[path]
+        for pattern, what in WHO_AM_I:
+            for match in pattern.finditer(body):
+                line = body.count("\n", 0, match.start()) + 1
+                problems.append(
+                    f"{path}:{line}: names `{match.group(0)}`, which is {what}. A role is "
+                    "resolved by identity, looked up in the map a project points at "
+                    "(schema § 27): asking who is running answers who is running, and the "
+                    "check that reads the answer becomes `assigned to whoever is asking`."
+                )
+    return problems
+
+
 def check_no_value_is_carried_in_the_strict_set(tree: Tree) -> list[str]:
     values, problems = tree.configuration_values()
     for path in tree.strict():
@@ -1128,6 +1208,8 @@ CHECKS = [
     ("no stack is named in the strict set", check_no_stack_is_named_in_the_strict_set),
     ("no value is carried in the strict set", check_no_value_is_carried_in_the_strict_set),
     ("no machine is named", check_no_machine_is_named),
+    ("no role is resolved through the running user",
+     check_no_role_is_resolved_through_the_running_user),
 ]
 
 
@@ -1469,6 +1551,13 @@ def _plant_trello_id_as_a_value(tree: Tree) -> Tree:
     return tree
 
 
+def _plant_account_id_as_a_value(tree: Tree) -> Tree:
+    tree.text["docs/configuration-surface.md"] += (
+        "\nThe account is `712020:11abcdef-2222-3333-4444-5566778899aa`.\n"
+    )
+    return tree
+
+
 def _plant_jira_site(tree: Tree) -> Tree:
     tree.text["docs/configuration-surface.md"] += "\nIt lives on planted.atlassian.net.\n"
     return tree
@@ -1553,6 +1642,8 @@ VIOLATIONS = [
     ("no machine is named", "a machine named by its address", _plant_machine_address),
     ("no tracker identifier is named", "a Jira key written as a value", _plant_jira_key_as_a_value),
     ("no tracker identifier is named", "a Trello object id written as a value", _plant_trello_id_as_a_value),
+    ("no tracker identifier is named", "a tracker account id written as a value",
+     _plant_account_id_as_a_value),
     ("no tracker identifier is named", "a Jira site", _plant_jira_site),
     ("no tracker identifier is named", "a Trello card URL", _plant_trello_url),
     ("the strict set is swept at all", "a strict set with no files in it", _plant_empty_strict_set),
@@ -1658,6 +1749,24 @@ VIOLATIONS = [
     ("no value is carried in the strict set", "a configuration that does not parse",
      _plant_an_unreadable_configuration),
     ("no value is carried in the strict set", "configurations with no concrete value left", _plant_configurations_with_no_concrete_value),
+    # One per spelling of asking who is running, because each is a different
+    # surface a role could reach for -- the host's own flag value, a tracker
+    # query, and the shell -- and the list is closed, so a spelling with no plant
+    # is a spelling nothing asserts is read at all.
+    ("no role is resolved through the running user",
+     "the code host's current-user spelling in a carrier",
+     _plant_in_a_carrier("\nAssign it with `--add-assignee @me` once the branch is cut.\n")),
+    ("no role is resolved through the running user",
+     "a tracker query for the current user, written in prose",
+     _plant_in_a_carrier("\nCompare the assignee against currentUser rather than a map.\n")),
+    # ⛔ The flag, which the first form of this grammar let through: the dash in
+    # front of it was rejected by a lookbehind written for the word.
+    ("no role is resolved through the running user",
+     "a flag naming the current user",
+     _plant_in_a_carrier("\nRun it with `--current-user` to see the other reading.\n")),
+    ("no role is resolved through the running user",
+     "the shell asked who is running",
+     _plant_in_a_hook("# Resolve the reviewer.\nreviewer=$(whoami)\n")),
 ]
 
 
@@ -1721,6 +1830,32 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
      _plant_in_a_named_root(
          ["plugins/mjolnir/skills/day-report/"],
          '\nRun `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/day_log.py" --month YYYY-MM`.\n')),
+    # ⛔ The green side of § 27's own distinction, and the one that makes the check
+    # above the rule rather than a wider ban: an implementation behind `assign`
+    # translates the running user's spelling, because recording who *took* an item
+    # is a fact about this run. ⚠️ Verified by widening the sweep from the strict
+    # set to the whole tree and watching this plant redden -- an exemption nothing
+    # can fail is an exemption nobody checked.
+    ("no role is resolved through the running user",
+     "the host's own spelling in a script a carrier calls",
+     _plant_in_a_carrier_implementation('def assign(who: str = "@me"): ...\n')),
+    # ⛔ The hyphenated English modifier, which is the phrase a carrier
+    # describing this rule reaches for and is not a spelling that resolves
+    # anybody. ⚠️ Verified by separating the two words on `[_-]?` again and
+    # watching this plant redden — which is how the false refusal was found,
+    # inside a change whose own subject is this rule.
+    ("no role is resolved through the running user",
+     "the hyphenated English modifier in a carrier's prose",
+     _plant_in_a_carrier(
+         "\nThe host's current-user spelling is what § 27 forbids a role reaching for.\n")),
+    # ⛔ The green side of the account-id grammar, and the reason it is the
+    # prefixed spelling alone: a bare dashed hex group is a *session* id in this
+    # repository's own fixtures, which is nobody. ⚠️ Verified by making the prefix
+    # optional again and watching this plant redden -- which is how the false red
+    # was found rather than reasoned about.
+    ("no tracker identifier is named", "a session id, which is a dashed hex group and nobody",
+     lambda tree: _plant_in_a_carrier_implementation(
+         'SESSION = "aaaabbbb-0000-0000-0000-000000000000"\n')(tree)),
 ]
 
 
