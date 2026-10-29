@@ -287,6 +287,21 @@ ordering:
   carrier: command
   command: "<the command that prints the sprint's ranked issues, one key per line>"
 
+people:
+  # § 27's absent case on the tracker that has the most places to put the answer, and the reason is
+  # not capability: this project's statuses are written `writer: never` throughout because the
+  # credential authenticates as a person, and who holds a role here is decided in the sprint
+  # ceremony rather than recorded anywhere a procedure can read. ⛔ Stated rather than left unset —
+  # a map this project could write and has not is exactly what `revisit_when` is for.
+  carrier: none
+  absent_reason: >-
+    Who holds a role is settled per sprint in the planning ceremony and is written down nowhere
+    a procedure can be pointed at. The board's assignee is the record of that decision rather
+    than a map it could be checked against.
+  revisit_when: >-
+    The roles outlast a sprint, or the gate starts being asked whether an issue is on the right
+    person — which is the first reader of a map here that a person is not already.
+
 environment:
   # Two variables rather than one: this tracker authenticates as a person, so the credential
   # and the account it belongs to are separate facts and both are read. ⚠️ Which is also why

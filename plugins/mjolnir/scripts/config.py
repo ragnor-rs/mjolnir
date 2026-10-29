@@ -1284,6 +1284,94 @@ class Config:
             "roots it names is meant is not this reader's to choose.",
         )
 
+    def person_for(self, role: str) -> dict:
+        """§ 27's identity for one role, looked up in the project's own map.
+
+        Returns the identity, the role asked for, the pointer it was read out
+        of, and § 27's axis with whichever discriminator that axis needs -- so a
+        report can say where the answer came from as well as what it is, which
+        is § 1's rule that a role states what it resolved, arriving at the one
+        facet whose value this toolkit may not hold.
+
+        ⛔ **Every failure here is a stop, and not one of them falls back to the
+        identity this session authenticates as.** That is the whole of § 27's
+        *never resolve a role through who am I*: asking who is running answers a
+        different question, the two coincide only while one person runs
+        everything, and the check reading this then becomes *assigned to
+        whoever is asking* -- green on every item including the ones on the
+        wrong person. So an absent facet, an unreadable pointer, a map naming no
+        such role and an entry with nothing under `key` are four refusals rather
+        than four defaults.
+
+        ⚠️ One implementation, so two roles cannot disagree -- `root_for`'s rule
+        one facet over, and it bites harder here: the alternative is each role
+        parsing a project's map for itself, which is the divergence the survey
+        found four live instances of.
+        """
+        carrier = self.get(f"{PEOPLE_KEY}.carrier")
+        if carrier == "none":
+            stated = " ".join(str(self.get(f"{PEOPLE_KEY}.absent_reason")).split())
+            raise ConfigError(
+                f"{PEOPLE_KEY}.carrier",
+                f"is `none`, so who holds {role!r} here is **unestablished** -- never "
+                "nobody, and never whoever is running this (§ 27). The project's own "
+                f"stated reason for carrying no map is: {stated!r}.",
+            )
+        key = self.get(f"{PEOPLE_KEY}.key")
+        source = self.get(f"{PEOPLE_KEY}.source")
+        path = os.path.normpath(os.path.join(self.skills_root, str(source)))
+        try:
+            with open(path, encoding="utf-8") as handle:
+                mapping = _load_yaml(handle.read(), f"{PEOPLE_KEY}.source")
+        except OSError as error:
+            raise ConfigError(
+                f"{PEOPLE_KEY}.source",
+                f"names {source!r}, which did not open at {path!r} "
+                f"({error.__class__.__name__}). The pointer is the whole of what this "
+                "facet carries (§ 27), so one that does not resolve is reported -- the "
+                "map is not guessed at and the running user is not read instead.",
+            ) from None
+        if not isinstance(mapping, dict) or not mapping:
+            raise ConfigError(
+                f"{PEOPLE_KEY}.source",
+                f"names {source!r}, which read as {type(mapping).__name__} rather than "
+                "a mapping of role to identity (§ 27). A document is not read here: a "
+                "reader guessing at a table's columns would be guessing in the one "
+                "facet that may not, so a project keeping the fact in prose writes a "
+                "mapping beside it.",
+            )
+        if role not in mapping:
+            raise ConfigError(
+                f"{PEOPLE_KEY}.source",
+                f"names no role {role!r}. The map at {source!r} is keyed by "
+                f"{', '.join(repr(name) for name in mapping)}, and a role it does not "
+                "name is **unanswered** rather than nobody (§ 27, § 11): the "
+                "permissive reading of a missing entry is every item passing.",
+            )
+        entry = mapping[role]
+        identity = entry.get(key) if isinstance(entry, dict) else entry
+        if identity is None or (isinstance(identity, str) and not identity.strip()):
+            raise ConfigError(
+                f"{PEOPLE_KEY}.key",
+                f"is {key!r}, and the entry for {role!r} in {source!r} carries nothing "
+                "under it. `key` is how a person is identified on an item, so an entry "
+                "with no identity of that kind leaves the comparison nothing to "
+                "compare like with like (§ 27).",
+            )
+        # ⛔ Where on the item to read the person is returned beside the identity
+        # and is not left to the calling role to look up again: § 27's `key` is
+        # the axis and `field`/`label_prefix` are its discriminators, and a role
+        # that re-read them would be the second reading of one mapping this whole
+        # facet exists to delete. ⚠️ Null under the axis that needs neither.
+        return {
+            "role": role,
+            "key": key,
+            "field": self.get(f"{PEOPLE_KEY}.field"),
+            "label_prefix": self.get(f"{PEOPLE_KEY}.label_prefix"),
+            "source": source,
+            "identity": str(identity),
+        }
+
     @property
     def only_root(self) -> "Config":
         """This project's one root, or a stop naming the several it has."""
@@ -1564,6 +1652,21 @@ class Config:
                 "No ordering is carried (`ordering.carrier: none`), so a role "
                 "invoked with no item asks for one by number rather than "
                 f"choosing: {' '.join(str(reason).split())}"
+            )
+        # § 27, and reported for the reason § 15's is: a role that would have
+        # asked who holds a role learns that the project keeps no map, rather
+        # than meeting a block that is not there. ⛔ And it is reported as
+        # **unestablished** and never as the identity this session
+        # authenticates as -- that substitution is the whole of what § 27
+        # forbids, and a reader that made it here would make it everywhere.
+        if self.get(f"{PEOPLE_KEY}.carrier") == "none":
+            reason = self.get(f"{PEOPLE_KEY}.absent_reason")
+            out.append(
+                f"No role-to-person map is carried (`{PEOPLE_KEY}.carrier: "
+                "none`), so who holds a role here is **unestablished** rather "
+                "than whoever is running the role, and § 5's "
+                f"`{ASSIGNEE_CHECK}` cannot be configured: "
+                f"{' '.join(str(reason).split())}"
             )
         for where, root in roots:
             if not root.get("host.checks"):
@@ -1932,6 +2035,13 @@ COMMIT_THIRD = "commit"
 # against, and the two could legitimately diverge.
 MEMORY_THIRD = "memory"
 MEMORY_KEY = "memory"
+# § 27's block, and the one readiness check that reads it. ⛔ Two names rather
+# than one string, for the reason the pair above is two: the block's own key and
+# the check's spelling in a project's gate are different facts that may
+# legitimately diverge, and a rule reading one where it means the other is what
+# keeping them apart is for.
+PEOPLE_KEY = "people"
+ASSIGNEE_CHECK = "assignee_matches_role"
 
 CONTEXTUAL = {
     "role",
@@ -2950,6 +3060,72 @@ def validate(data: dict, facts: dict) -> None:
             f"reason for carrying no tier is: {stated!r}. Carry the facet, or drop "
             "the check.",
         )
+
+    # § 27's axis discriminators, each required under one reading of `key` and
+    # meaningless under the others -- § 4.6's pair of rules for the same two key
+    # names reaching a different fact, and rules here rather than markers for the
+    # reason `MARKED_REQUIRED_WHEN` states: a marked condition obliges an example
+    # to meet it, and these two readings are the ones no example ships under.
+    people_key = _get(data, f"{PEOPLE_KEY}.key")
+    if people_key == "label" and not _get(data, f"{PEOPLE_KEY}.label_prefix"):
+        raise ConfigError(
+            f"{PEOPLE_KEY}.label_prefix",
+            "required when `key` is `label`: the prefix is what keeps the person "
+            "apart from every other label on an item (§ 27, § 4.6), and without it "
+            "a reader matching a bare value picks up whatever else the project "
+            "happens to label with that word -- which here resolves a role to the "
+            "wrong person rather than to no person.",
+        )
+    if people_key == "field" and not _get(data, f"{PEOPLE_KEY}.field"):
+        raise ConfigError(
+            f"{PEOPLE_KEY}.field",
+            "required when `key` is `field`: there is nowhere to read the person "
+            "from, which is § 4.6's rule for the same carrier on the tier (§ 27).",
+        )
+
+    # § 27's pair of rules about the same gate, and the first is the sibling
+    # above with the facet changed: a check that reads the role-to-person map is
+    # refused where the project carries none, rather than left to report itself
+    # unanswered on every item forever. ⚠️ The reason quoted is the project's own,
+    # for the reason § 4.6's refusal quotes it -- a message of this reader's own
+    # would be a second answer to a question the configuration already answers.
+    #
+    # ⚠️ The direction is `queue_position`'s and **not** § 4.7's: a project may
+    # carry the map and configure no check, the map having readers besides the
+    # gate, so there is no inverse refusal here and § 27 states why.
+    entries = [
+        (index, entry)
+        for index, entry in enumerate(gate if isinstance(gate, list) else [])
+        if isinstance(entry, dict) and entry.get("check") == ASSIGNEE_CHECK
+    ]
+    if entries and _get(data, f"{PEOPLE_KEY}.carrier") == "none":
+        stated = " ".join(str(_get(data, f"{PEOPLE_KEY}.absent_reason")).split())
+        raise ConfigError(
+            f"{PEOPLE_KEY}.carrier",
+            f"is `none` while `readiness` configures `{ASSIGNEE_CHECK}`, which "
+            "reads § 27's map and nothing else (§ 5). The check would be asking "
+            "who holds a role with nowhere to look one up -- and the one answer "
+            "available to it then is whoever is running the gate, which § 27 "
+            "refuses outright. The facet's own stated reason for carrying no map "
+            f"is: {stated!r}. Carry the facet, or drop the check.",
+        )
+    # ⛔ And the role the check compares against, carried by the entry because
+    # the surface publishes none of the map's keys (§ 27): which roles a project
+    # distinguishes is how that project is organised. A check with no role has no
+    # question, and the only answer available to a role-less check is the running
+    # user -- so this is refused where the configuration is read rather than
+    # meeting a gate that has already admitted the item.
+    for index, entry in entries:
+        role = entry.get("role")
+        if role is None or (isinstance(role, str) and not role.strip()):
+            raise ConfigError(
+                f"readiness[{index}].role",
+                f"required on `{ASSIGNEE_CHECK}`: § 27's map is keyed by role and "
+                "this surface publishes none of those keys, so the entry names the "
+                "role the item's person is compared against. An entry naming none "
+                "leaves the check with no question, and the resolution it would "
+                "fall back to is the one § 27 forbids.",
+            )
 
     # § 10. Where a tree is created is required under the mode that creates trees
     # and meaningless under the mode that does not, which is the shape
@@ -4405,6 +4581,7 @@ MARKED_REQUIRED = [
     "live_guard.session_tools",
     "memory.carrier",
     "ordering.carrier",
+    "people.carrier",
     "readiness",
     "roots.code",
     "session",
@@ -4479,6 +4656,15 @@ MARKED_REQUIRED_WHEN = [
     ("memory.store", "memory.carrier", "path"),
     ("memory.write_from", "memory.carrier", "derived"),
     ("memory.write_from", "memory.carrier", "path"),
+    # § 27's two, each meaningless where the project keeps no map: the pointer
+    # the lookup opens, and where on an item a person is read from. ⚠️ That
+    # axis's own discriminators -- `field` and `label_prefix` -- are **not**
+    # here, and are rules of the reader instead, for § 4.6's reason on the same
+    # pair of keys: the marker's arms oblige an example to meet each condition,
+    # and the two readings those keys belong to are the ones no example ships
+    # under (§ 27).
+    ("people.key", "people.carrier", "file"),
+    ("people.source", "people.carrier", "file"),
     ("tracker.board", "tracker.kind", "trello"),
     ("tracker.project.number", "tracker.kind", "github-projects"),
     ("tracker.project.owner", "tracker.kind", "github-projects"),
@@ -4495,7 +4681,19 @@ MARKED_REQUIRED_WHEN = [
 # surface happened to say. ⛔ This one carries the whole weight of the class,
 # since the reader keeps no list of its own to compare against -- drop the clause
 # from the surface and this is what reddens.
-MARKED_PROCEDURE = ["audit_trail", "fail_open", "install", "readings", "waive_review"]
+MARKED_PROCEDURE = [
+    "audit_trail",
+    # § 27's. ⛔ The one marked key whose rule is about how a *value* is reached
+    # rather than about a rail being switched off: a project writing this would
+    # be configuring a role to be resolved by asking who is running, which is
+    # the resolution § 27 forbids and the only one available to a gate with no
+    # map to look in.
+    "current_user",
+    "fail_open",
+    "install",
+    "readings",
+    "waive_review",
+]
 
 # The ports the surface declares, as `(the kind's path, the directory its
 # implementations live in)` -- stated here for the reason the sets above are, and
@@ -4536,6 +4734,7 @@ MARKED_ABSENT_CAPABLE = [
     "executed",
     "memory",
     "ordering",
+    "people",
     "work_item.code_root",
     "work_item.due_date",
     "work_item.estimate",
@@ -5373,6 +5572,83 @@ def self_test() -> int:
             _refused(_a_valid_example()) is None,
             f"refused on {_refused(_a_valid_example())!r}",
         )
+
+    print("\n§ 27, who holds a role -- looked up, and never asked of the shell:")
+    for label, role, mapping, extra, wanted in (
+        ("an entry that is the identity itself",
+         PLANTED_ROLE, {PLANTED_ROLE: PLANTED_IDENTITY}, {},
+         f"identity {PLANTED_IDENTITY}"),
+        ("an entry that is a block, read under `key`",
+         PLANTED_ROLE,
+         {PLANTED_ROLE: {"handle": PLANTED_IDENTITY, "field": "another one entirely"}},
+         {},
+         f"identity {PLANTED_IDENTITY}"),
+        # ⛔ The two readings no example ships under, which is why they are
+        # exercised here: § 27 names the reader's own suite as what holds them,
+        # so an arm missing here leaves a reading nothing reaches at all.
+        ("the field reading, whose entry is the value expected in that field",
+         PLANTED_ROLE,
+         {PLANTED_ROLE: {"field": PLANTED_IDENTITY, "handle": "another one entirely"}},
+         {"key": "field", "field": "Owner"},
+         f"identity {PLANTED_IDENTITY}"),
+        ("the label reading, whose entry is the value behind the axis's prefix",
+         PLANTED_ROLE, {PLANTED_ROLE: PLANTED_IDENTITY},
+         {"key": "label", "label_prefix": "W:"},
+         f"identity {PLANTED_IDENTITY}"),
+        # ⛔ And the four refusals, each of which is a place a lookup could have
+        # answered with whoever is running instead. ⚠️ The key named is the one a
+        # person can act on: the facet for an absence, the pointer for a map
+        # that did not open or did not parse, and `key` for an entry carrying
+        # nothing of the kind the comparison needs.
+        ("a role the map does not name",
+         "a role nobody holds", {PLANTED_ROLE: PLANTED_IDENTITY}, {},
+         "stop people.source"),
+        ("an entry carrying nothing under `key`",
+         PLANTED_ROLE, {PLANTED_ROLE: {"field": PLANTED_IDENTITY}}, {},
+         "stop people.key"),
+        ("a map that read as prose rather than as a mapping",
+         PLANTED_ROLE, "a document with a table in it", {},
+         "stop people.source"),
+        ("a project that carries no map at all",
+         PLANTED_ROLE, {PLANTED_ROLE: PLANTED_IDENTITY}, {"carrier": "none"},
+         "stop people.carrier"),
+    ):
+        answered = _looked_up(role, mapping, **extra)
+        check(
+            f"{label} answers `{wanted}`",
+            answered == wanted,
+            f"answered {answered!r}",
+        )
+    # ⛔ The pointer that does not resolve, which is its own arm because the
+    # map is **absent** rather than malformed: § 19's absent-against-unreadable
+    # split, and the direction that costs is a missing file read as a map with
+    # nobody in it.
+    missing = _looked_up(PLANTED_ROLE, {PLANTED_ROLE: PLANTED_IDENTITY}, written=False)
+    check(
+        "a pointer that does not open is a stop naming the pointer",
+        missing == "stop people.source",
+        f"answered {missing!r}",
+    )
+    # ⛔ The one assertion the arms above cannot make between them: that the
+    # answer is the map's and not the running user's. A lookup that fell back
+    # would answer *something* for a role the map does not name, and the arm
+    # for that case reads `stop` -- but a lookup that preferred the shell would
+    # also pass it, having found an entry. So the map is written with an
+    # identity and the environment with a different one, and the answer has to
+    # be the map's.
+    shell = dict(os.environ)
+    try:
+        for name in ("USER", "LOGNAME", "GITHUB_ACTOR"):
+            os.environ[name] = "whoever-is-running-this"
+        resolved = _looked_up(PLANTED_ROLE, {PLANTED_ROLE: PLANTED_IDENTITY})
+    finally:
+        os.environ.clear()
+        os.environ.update(shell)
+    check(
+        "the identity is the map's, with the shell naming somebody else",
+        resolved == f"identity {PLANTED_IDENTITY}",
+        f"answered {resolved!r}",
+    )
 
     # § 1's two halves, in both directions. A retired key must be refused where a
     # project still writes it, *and* must be gone from the surface -- a key this
@@ -6713,6 +6989,26 @@ def _planted_violations():
                                 writer="whoever asks")),
         ("a gate reading a queue the facet does not carry",
          "work_item.priority.carrier", _gates_on_a_queue_with_no_priority),
+        # § 27's branches. ⚠️ The first two are the pair § 4.6's and § 4.7's
+        # discriminators are, reaching a person rather than a tier or a
+        # repository; the last three are the gate's own two rules and the
+        # procedure marker, each of which is a way for a role to end up resolved
+        # by asking who is running.
+        ("a label-carried person with no prefix to tell the axis by",
+         "people.label_prefix", _a_people_map_carried_as("label")),
+        ("a field-carried person with no field named",
+         "people.field", _a_people_map_carried_as("field")),
+        ("a gate asking who holds a role where no map is carried",
+         "people.carrier", _gates_on_a_role_with_no_map),
+        # ⚠️ The index is computed from the fixture's own gate rather than
+        # written, because the plant **appends**: a literal would name whichever
+        # length the example happened to have, and an example that grows an entry
+        # would redden this arm for a reason with nothing to do with the rule.
+        ("a gate asking who holds a role and naming no role",
+         f"readiness[{len(_absent_as(_a_valid_example().get('readiness'), []))}].role",
+         _gates_on_a_role_it_does_not_name),
+        ("a project configuring a role to be resolved by who is running",
+         "people.current_user", _resolves_a_role_by_asking_who_is_running),
         ("a judged set written as one tree rather than a list",
          "e2e_register.judged", _an_e2e_register_with(judged="a-judged-tree")),
         ("a judged entry that is not a tree at all",
@@ -7011,6 +7307,72 @@ def _gates_on_a_queue_with_no_priority(data: dict) -> dict:
     data["readiness"] = (gate if isinstance(gate, list) else []) + [
         {"check": "queue_position", "ahead_allowed": 0, "stop": "Higher-ranked work is ahead."}
     ]
+    return data
+
+
+def _a_people_map_carried_as(key: str, **overrides) -> dict:
+    """§ 27's facet rewritten whole, so a plant states every key it means to.
+
+    Written as a replacement for the reason `_a_priority_carried_as` is: the
+    keys `key`'s own readings owe differ per reading, so a plant that edited one
+    would leave another reading's keys standing and could pass for a reason it
+    does not name.
+    """
+
+    def mutate(data: dict) -> dict:
+        node = {"carrier": "file", "source": "a-map-this-tree-does-not-hold", "key": key}
+        node.update(overrides)
+        data[PEOPLE_KEY] = node
+        return data
+
+    return mutate
+
+
+def _gates_on_a_role_with_no_map(data: dict) -> dict:
+    """§ 27's check configured where the project carries no map.
+
+    The check is **added** to whatever gate the fixture carries rather than the
+    gate being replaced, for `_gates_on_a_queue_with_no_priority`'s reason: the
+    shape the rule is for is a project that configures the check and keeps no
+    map, which is a gate growing an entry and not a gate rewritten.
+    """
+    data[PEOPLE_KEY] = {
+        "carrier": "none",
+        "absent_reason": "one identity holds every role here",
+    }
+    gate = data.get("readiness")
+    data["readiness"] = (gate if isinstance(gate, list) else []) + [
+        {"check": ASSIGNEE_CHECK, "role": "the one the work is for",
+         "stop": "The item is on the wrong person."}
+    ]
+    return data
+
+
+def _gates_on_a_role_it_does_not_name(data: dict) -> dict:
+    """§ 27's check configured with no role to look up.
+
+    ⛔ The map is carried, so the refusal this plant must reach is the missing
+    `role` and not the missing facet one rule over: a plant that left both
+    absent would redden on whichever rule runs first and assert nothing about
+    this one.
+    """
+    _a_people_map_carried_as("handle")(data)
+    gate = data.get("readiness")
+    data["readiness"] = (gate if isinstance(gate, list) else []) + [
+        {"check": ASSIGNEE_CHECK, "stop": "The item is on the wrong person."}
+    ]
+    return data
+
+
+def _resolves_a_role_by_asking_who_is_running(data: dict) -> dict:
+    """§ 27's procedure-marked key, written where a project would write it.
+
+    ⚠️ Inside the facet's own block rather than at the top level, which is where
+    somebody configuring this would put it -- and the marker is read wherever
+    the key is, so the plant also asserts that the walk reaches a nested one.
+    """
+    _a_people_map_carried_as("handle")(data)
+    data[PEOPLE_KEY]["current_user"] = True
     return data
 
 
@@ -7674,6 +8036,53 @@ def _example_without(path: str, _loaded) -> str | None:
     return _refused(data)
 
 
+# § 27's map, written for the run rather than shipped. ⛔ The one fixture class
+# here that is built instead of found, and for the opposite reason to
+# `_a_collection_example`'s: what this facet points at is somebody's identities,
+# so a shipped fixture would be this repository holding a name -- which is the
+# whole of what § 27 forbids. The roles and the identities below are words no
+# tracker resolves, and the map lives in a directory the run deletes.
+PLANTED_ROLE = "the role the work is for"
+PLANTED_IDENTITY = "an-identity-no-tracker-resolves"
+PLANTED_MAP_FILE = "a-role-to-person-map.yaml"
+
+
+def _looked_up(role: str, mapping, *, key: str = "handle", written: bool = True,
+               carrier: str = "file", source: str = PLANTED_MAP_FILE, **keys) -> str:
+    """`identity <value>` where § 27's lookup answers, `stop <key>` where it does not.
+
+    The map is written into a directory of its own and the configuration is
+    resolved against that directory, because the pointer is relative to the
+    skills root (§ 1).
+
+    ⛔ Every arm reads the **whole** answer and not merely whether one came
+    back: the failure § 27 exists against is a lookup that answers with the
+    identity this session authenticates as, which is a successful-looking
+    answer and not an error.
+    """
+    import tempfile  # noqa: PLC0415 -- one of the arms that needs a directory
+
+    data = _a_valid_example()
+    if carrier == "none":
+        data[PEOPLE_KEY] = {
+            "carrier": "none",
+            "absent_reason": "one identity holds every role here",
+        }
+    else:
+        data[PEOPLE_KEY] = dict(carrier="file", source=source, key=key, **keys)
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    with tempfile.TemporaryDirectory() as root:
+        if written:
+            with open(os.path.join(root, source), "w", encoding="utf-8") as handle:
+                handle.write(_yaml().safe_dump(mapping, allow_unicode=True))
+        try:
+            config = _resolve(data, root, facts, False)
+            return f"identity {config.person_for(role)['identity']}"
+        except ConfigError as error:
+            return f"stop {error.key}"
+
+
 def _refuses_missing_code_root() -> str | None:
     data = _a_valid_example()
     data["roots"]["code"] = "a-directory-that-does-not-exist"
@@ -7838,6 +8247,15 @@ def main(argv: list[str]) -> int:
         "names. A root named by none of them, or by two, is a stop",
     )
     parser.add_argument(
+        "--person-for",
+        metavar="ROLE",
+        help="the role whose holder to look up in § 27's map, printed with the "
+        "pointer and the key it was read through. Every failure is a stop: a "
+        "project with no map, an unreadable pointer and a role the map does not "
+        "name are each reported, and none of them answers with whoever is "
+        "running this",
+    )
+    parser.add_argument(
         "--self-test",
         action="store_true",
         help="hold this reader to the surface and the examples",
@@ -7854,9 +8272,16 @@ def main(argv: list[str]) -> int:
             config = config.root(args.root)
         elif args.root_for:
             config = config.root_for(args.root_for)
+        # ⛔ After the root narrowing and not instead of it: § 27's map is the
+        # project's rather than a root's, so either form resolves it, and a role
+        # that has narrowed to a root still asks the same question.
+        answer = config.person_for(args.person_for) if args.person_for else None
     except ConfigError as error:
         print(str(error), file=sys.stderr)
         return 1
+    if answer is not None:
+        print(json.dumps(answer, indent=2, ensure_ascii=False, sort_keys=False))
+        return 0
     print(json.dumps(config.to_dict(), indent=2, ensure_ascii=False, sort_keys=False))
     return 0
 

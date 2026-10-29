@@ -265,6 +265,17 @@ The [authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-n
 is the single statement of what that means, why it is procedure rather than a setting, and the
 one trap in it.
 
+⛔ **Who *holds* a role is looked up, and never answered by asking who is running.** The author of a
+commit is the authenticated user by the rule above; the dev, the owner and the reviewer are not —
+they coincide only while one person runs everything, and a gate that asked the tracker *who am I*
+would quietly become *assigned to whoever is asking* and pass every item, including the ones on the
+wrong person. So you point at the map you already keep and say how to read an entry, and the toolkit
+holds **no name, no handle and no account id**: the
+[role-to-person rule](plugins/mjolnir/config/schema.md#27-the-role-to-person-map) is the single
+statement of the pointer, the shape, the absent case and the shortcut nothing may take. The survey
+behind it found the same map in four stores, each carrying the argument against copying in its own
+words — [the measurement](docs/configuration-surface.md#the-role-to-person-map-four-stores-and-one-pointer).
+
 ⛔ **A role's reply to the person running it has a fixed register** — procedure too, and for the
 same kind of reason. The
 [register rule](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) is the

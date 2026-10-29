@@ -499,6 +499,22 @@ ordering:
   carrier: command
   command: "python3 .claude/skills/close-out/scripts/plan-status.py --queue"
 
+people:
+  # § 27. One person writes every line here and nobody else takes work from this backlog, so there
+  # is no role for a map to distinguish from another: *the dev*, *the owner* and *the reviewer* are
+  # one identity, and a map stating that three times would be a map with nothing in it to disagree
+  # about. ⛔ Which is why `readiness` above configures no `assignee_matches_role` — the check would
+  # compare every item against the only identity there is and pass, which reads as coverage.
+  carrier: none
+  absent_reason: >-
+    A solo build with one identity behind every role. A map would distinguish roles nobody here
+    holds separately, and the check that reads one would pass every item for the same reason the
+    estimate facet above is ceremony.
+  revisit_when: >-
+    A second person takes work from this backlog — the same trigger the estimate and the due date
+    above carry, and the first point at which who holds a role stops being derivable from the fact
+    that there is one of them.
+
 environment:
   # ⚠️ Measured, not declared (#90), and the measurement is the argument for the key: the shell a
   # role runs in here holds forty-odd variables and the procedure reads five of them. Nothing in

@@ -942,7 +942,7 @@ def _plants_that_must_stay_green() -> list[tuple[str, str, object]]:
         # is the residue § The boundary measures rather than something this plant
         # covers.
         ("read", "a fenced configuration key spelled like a word an address uses",
-         "```yaml\nagent:\n  model: claude-opus-5\n  reviewer: renat\n```\n"),
+         "```yaml\nagent:\n  model: claude-opus-5\n  reviewer: nobody\n```\n"),
         ("read", "a mapping arrow and ordinary emphasis",
          "The **outcome** is stated: open → closed.\n"),
         ("write", "a variable reference rather than a value", "token: ${GH_TOKEN}\n"),

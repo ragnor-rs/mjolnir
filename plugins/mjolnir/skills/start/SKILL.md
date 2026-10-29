@@ -230,6 +230,21 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" take \
 says on the item what the ref already says in the branch namespace, for whoever is reading the
 item rather than the refs. ⛔ Nothing reads it as the claim.
 
+⛔ **Where the project carries a role-to-person map, the identity written is the one that map
+answers with**, looked up through the reader rather than left to whoever is running:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --person-for "<the role this work is for>"
+```
+
+[`§ 27`](../../config/schema.md#27-the-role-to-person-map) states why, and the cost of the other
+reading is one role over: the gate compares the person on an item against that same map, so an
+assignee written as *whoever took it* is an assignee the gate is configured to reject — two acts
+disagreeing about one item. ⚠️ **Where the lookup stops** — no map carried, a pointer that did not
+resolve, a map naming no such role — the write falls back to *taken* as above, and the reply says
+which of the two happened; a session that guessed instead would be making the one substitution
+§ 27 exists to forbid.
+
 ## 5. The tree, and the two things that go wrong after the cut
 
 ⛔ **Enter the tree. Cutting it is not working in it.** Under
@@ -302,6 +317,10 @@ first sentence, then the facts, with a table where the content enumerates.
 - what the shell holds that `environment.inherits` does not name, where the report named anything;
 - the branch, the tree, that the session is now in it, and the upstream check;
 - which port fallback was taken, where one was;
+- **which identity was written beside the claim and where it came from** — the map's answer with its
+  pointer and key named, or that the lookup stopped and the write carries *taken*
+  ([`§ 27`](../../config/schema.md#27-the-role-to-person-map)). ⛔ **Never the identity alone**: one
+  with no provenance reads as a fact this role held, which is what the map exists so it never does;
 - ⛔ anything that could not be established, **named rather than omitted**
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)), which has no
   quiet form;

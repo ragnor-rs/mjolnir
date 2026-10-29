@@ -180,6 +180,16 @@ ordering:
     takeable item.
   revisit_when: A tracker is configured.
 
+people:
+  # Absent for the reason everything else here is: with no tracker there is no item to carry a
+  # person, so there is nothing for a map to be compared against. ⚠️ The one mapped role writes a
+  # day's hours to a file and asks who holds no role at all.
+  carrier: none
+  absent_reason: >-
+    No tracker is configured, so no item carries a person and nothing would compare one. The
+    single mapped role asks who holds no role.
+  revisit_when: A tracker is configured.
+
 environment:
   # The empty list is a real statement and the cheapest one this facet has: the single mapped
   # role reads evidence off the machine and writes a file, so its commands need nothing the

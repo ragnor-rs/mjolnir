@@ -1879,6 +1879,7 @@ readiness:                                   # required
   - { check: ref_exists,        ref: "…",          stop: "…" }
   - { check: queue_position,    ahead_allowed: 0,  stop: "…" }   # reads work_item.priority, § 4.6
   - { check: code_root_stated,                     stop: "…" }   # reads work_item.code_root, § 4.7
+  - { check: assignee_matches_role, role: "…",     stop: "…" }   # reads people, § 27
   - { check: claim_free,                           stop: "…" }
 ```
 
@@ -1931,6 +1932,19 @@ or quiet:
   shipped implementation and `claim_free` does, but no list's own execution is anybody's
   implementation, so what keeps the two from diverging is that the mapping is read in one place and
   a role addressing the project instead of the root is refused by the reader (§ 1).
+
+- ⛔ **`assignee_matches_role` reads [`§ 27`](#27-the-role-to-person-map) and nothing else**, as the
+  two bullets above read §§ 4.6 and 4.7, and ⛔ **it carries a `role`** — the one the item's person
+  is compared against, named in the entry because the surface publishes no role vocabulary for the
+  map and a check with no role to look up has no question. An entry stating none is refused where
+  the configuration is read. ⛔ **A project configuring the check while `people.carrier` is `none` is
+  refused, naming the facet's own `absent_reason`**, which is `queue_position`'s direction and for
+  the same reason: a check with nothing to compare reports *unestablished* on every item forever,
+  and a gate is the one role that may not ask for anything. ⚠️ **The inverse is not required** —
+  § 27 states why the map has readers besides this check — so a project carrying a map and no check
+  is configured, not incomplete. ⛔ **And the role is resolved by lookup, never through *who am I***:
+  § 27 marks `current_user` procedure, so the permissive reading in which the check becomes *assigned
+  to whoever is asking* is refused at the configuration rather than left to a role's discipline.
 
 ### The mark that says an item is not ready, and the two roles that read it
 
@@ -5398,6 +5412,101 @@ entry landed; its absent case names the store **by its configuration** instead, 
 a private address out of a report that goes somewhere else. ⚠️ **A configuration is a tracked
 file**, so hours, rates and a client's identity never reach a destination key either — § 9's ban on
 writing hours into a tracked file, read against the key that says where they go.
+
+## 27. The role-to-person map
+
+```yaml
+people:
+  carrier: file | none         # required; absent_reason
+  source: "<a path, relative to the skills root>"   # required_when: people.carrier = file
+  key: handle | field | label  # required_when: people.carrier = file
+  field: "…"                   # when key is field
+  label_prefix: "who:"         # when key is label
+  absent_reason: "…"           # required when carrier is none
+  revisit_when: "…"
+# procedure: current_user
+```
+
+Who holds a role on this project — whoever writes the code, whoever orders the work, whoever reads
+a diff — so that [§ 5](#5-readiness-gate--an-ordered-predicate-list)'s `assignee_matches_role` has
+something to compare against, and so that a role writing an assignee writes a person rather than
+whoever happens to be running it.
+
+⛔ **The configuration carries a pointer and a shape, and never a value.** The maps measured hold
+personal names, handles and tracker member ids, and none of that may enter a toolkit several
+projects share: an identity is a fact about somebody who did not agree to be named in it, which is
+[§ 14](#nothing-credential-shaped-leaves-for-a-surface-outside-the-project)'s reason arriving at a
+different class of value. So `source` addresses the file the project already keeps its map in,
+`key` says how to read an entry out of it, and nothing on this surface holds a name.
+
+⚠️ **Two places a person's name legitimately appears in a toolkit, and neither of them is this
+facet.** A licence names its copyright holder and a plugin manifest names its author, both because
+the format requires it, and both name whoever wrote the toolkit rather than who holds a role in
+somebody's project. ⛔ **Everything else is this facet's**, and the test is the shape rather than
+the string: a name beside a *role* — `reviewer: <somebody>` — is the map, wherever it is written and
+whether it is live configuration or a fixture.
+
+**Four stores, one map, and each copy argues against being copied.** The survey found this fact in
+four places across the projects — a sibling reference file, a project instructions file, a memory
+index section and a memory fact — each stating its own justification: *two gates on one route that
+each carry their own copy will disagree about the same card*, and *two records of who owns the work
+that are allowed to disagree are worse than one*. That is this surface's own argument one level
+down, and it is why the facet points at the project's single copy rather than restating a map here
+([the measurement](../../../docs/configuration-surface.md#the-role-to-person-map-four-stores-and-one-pointer)).
+
+⛔ **Never resolve a role through *who am I*.** Asking the tracker, the host or the shell who the
+current user is answers *who is running the role*, never *who holds it*. The two coincide exactly
+while one person runs everything, and the check silently becomes **assigned to whoever is asking** —
+green on every item, the ones on the wrong person included. A role is a known identity, looked up,
+like every other fact a role reads. ⛔ **So `current_user` is procedure and no key turns it on**:
+the marker above refuses a configuration that writes one, wherever in the file it is written.
+
+⚠️ **Writing an assignee and comparing one are different acts, and only the second is this
+facet's.** [§ 3](#the-operations-and-what-an-absent-capability-does)'s `assign` records who *took*
+the item, which is a fact about this run and is legitimately the session's own identity where the
+project states no map. `assignee_matches_role` asks who *holds* the role, which is a lookup.
+⛔ **Where the map answers, the role that takes an item writes the identity it resolved** rather
+than the running user — otherwise the taking role writes an assignee the gate is configured to
+reject, and the two acts disagree about one item.
+
+**`key` is where the person is read from on an item**, which is what makes the comparison compare
+like with like. `handle` is the tracker's own account identity — a login, an account id, a member
+id — read through [§ 3](#the-operations-and-what-an-absent-capability-does)'s `read_item` as the
+person assigned. `field` is a named field's value and `label` a prefixed axis in a flat label
+list, which are § 4.6's two carriers reaching a different fact. ⛔ **The two of those need the
+field's name and the axis's prefix**, for § 4.6's own reason: a reader matching a bare value picks
+up whatever else the project happens to label with that word.
+
+⚠️ **The second and third readings exist because a tracker that cannot assign still has a person
+on its items.** § 3 states `assign` as an absent-capable operation, and a project whose tracker
+carries no assignee writes the person where it writes everything else. ⚠️ **No example ships under
+either**, every tracker this surface has an adapter for being one that assigns — which is
+§ 4.7's `title_prefix` situation one facet over, and the reader's own suite is what holds the two
+readings rather than a configuration nobody wrote.
+
+**The file is read as a mapping of role to identity**, an entry being either the identity itself or
+a block the identity is read out of under `key`. ⛔ **The role names in it are the project's own and
+this surface publishes none** — which roles a project distinguishes is how that project is
+organised, not a vocabulary a toolkit can supply — so the reader looks up the role it was handed
+and interprets nothing else in the file. ⛔ **A role the map does not name is *unanswered* and never
+*nobody*,** which is [§ 11](#a-report-names-what-it-could-not-establish)'s rule in the direction
+that costs: the permissive reading of a missing entry is every item passing.
+
+⚠️ **A project whose map lives in prose pays for a mapping beside it**, and that is a cost named
+rather than one anybody discovers. All four measured stores are documents, and a reader that parsed
+one would be guessing at a table's columns in the one facet that may not guess — so the pointer
+addresses a mapping, and a project keeping the fact in prose writes one. ⚠️ `revisit_when` is where
+that is recorded: a map the procedure cannot be pointed at in this shape at all is what would make
+a command carrier the answer, as [§ 12](#12-ordering) already is for the ordering.
+
+⛔ **`carrier: none` is an answer and not a stop**, and it is the one state in which
+`assignee_matches_role` may not be configured: § 5 refuses that pair and quotes this facet's own
+`absent_reason`, exactly as it refuses `queue_position` against [§ 4.6](#46-priority). ⚠️ **The
+inverse does not hold**, unlike [§ 4.7](#47-code-root)'s pair — a project may carry the map and
+configure no check, because the map answers *who holds a role* for every role that asks and the
+gate is one reader of it rather than its purpose. ⚠️ **And a project carrying no map runs every
+role that asks for no person unchanged**: what it loses is the one check, reported in the absent
+list like every other stated absence.
 
 ## What the toolkit installs into a project, and what takes it out
 
