@@ -1442,13 +1442,10 @@ class Config:
             out.append(
                 "The memory store is the harness's own (`memory.carrier: "
                 "derived`), so the procedure composes no path to it and resolves "
-                "nothing inside it: the index two sessions contend on cannot be "
-                "appended under a lock here, a checkout that is moved or renamed "
-                "derives a different store and orphans the old one silently, and "
-                "the write-time admission is unreachable -- so no entry carries a "
-                "provenance or a premise, and every recalled fact reads as "
-                "repeated and is reported unchecked. ⛔ Three rather than two, "
-                "each reported rather than closed (§ 25)."
+                "nothing inside it. ⛔ What that leaves open is reported rather "
+                "than closed (§ 25): "
+                + "; ".join(DERIVED_LEAVES_OPEN)
+                + "."
             )
         if write_from == "main_tree":
             out.append(
@@ -1935,6 +1932,32 @@ COMMIT_THIRD = "commit"
 # against, and the two could legitimately diverge.
 MEMORY_THIRD = "memory"
 MEMORY_KEY = "memory"
+
+# What `memory.carrier: derived` leaves open -- ⛔ **one list and not two**. This
+# reader reports it in `unavailable()` and § 25's own carrier hands it back to a
+# role, so a copy in either is a copy allowed to price the carrier differently:
+# which is measurably what happened, both reports and the surface itself naming
+# two while the carrier already left three open. ⛔ The remedy for a restated
+# enumeration is to delete the copy and never to synchronise it, so the save
+# carrier reads this rather than carrying its own. Found by review on the change
+# that added the third.
+#
+# ⛔ **No count is written here or in either report.** A number beside a list is
+# the restatement one level in, wrong by the next entry and green.
+#
+# ⚠️ Each entry is a fragment: the two readers that join them supply the
+# punctuation and the citation, this list carrying the fact alone.
+DERIVED_LEAVES_OPEN = [
+    "the index two sessions contend on cannot be appended under a lock, the "
+    "store's own directory being what this carrier must not guess at -- so "
+    "concurrent entries can lose each other",
+    "a checkout that is moved or renamed derives a different store and orphans "
+    "the old one, with nothing said",
+    "the write-time admission is unreachable, there being no store for the "
+    "procedure to place a fact into -- so an entry a store in this state holds "
+    "went through no admission, and a reading expects neither a provenance nor a "
+    "premise while reporting per entry what each one actually states",
+]
 
 CONTEXTUAL = {
     "role",

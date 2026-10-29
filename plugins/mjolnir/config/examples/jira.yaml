@@ -208,12 +208,10 @@ session:
 # composed here would be a second implementation of somebody else's rule — right until that rule
 # changes, and silently writing where nothing reads afterwards.
 #
-# What that costs is stated rather than discovered, and this project accepts all three: the index
-# cannot be appended under a lock, so two sessions saving at once lose each other's entries; a
-# checkout moved or renamed derives a different store and orphans the old one with nothing said;
-# and the write-time admission is unreachable, there being no directory for the procedure to place
-# a fact in — so no entry here carries a provenance or a premise, and a restoring pass reads every
-# recalled fact as *repeated* and reports it unchecked.
+# What that costs is stated rather than discovered, and this project accepts all of it — ⚠️ and this
+# comment lists none of it, because the reader prints the list for any configuration stating this
+# carrier, which is this file: a copy here is a copy allowed to price the carrier differently, and
+# that was measured happening.
 # And `main_tree` is the only value this carrier allows, which the reader refuses the other half
 # of: it is what makes the third refuse from a tree rather than write the tree's own store.
 memory:

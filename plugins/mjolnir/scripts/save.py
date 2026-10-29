@@ -436,16 +436,24 @@ def read_entry(text: str) -> tuple[dict | None, list[str]]:
 #
 # ⛔ The admission above runs at write time and is reachable only under a pinned
 # store: under `derived` the command that performs it composes no path and writes
-# nothing, so **no entry in such a store has been through it** and none of them
-# carries the two fields the rule requires. That is the third thing that carrier
-# leaves open, and this is the half that makes the store it leaves readable at
-# all.
+# nothing, so **no entry a store in that state holds went through it** and none
+# that did not carries the two fields the rule requires. That is the third thing
+# that carrier leaves open, and this is the half that makes the store it leaves
+# readable at all.
 #
 # ⛔ **Read rather than refused, and each rule failing in the direction that
 # under-claims.** A reading that refuses the whole entry tells its reader nothing
 # about what they are holding; one that recovers the fact and names the absent
 # fields leaves them with the fact and with the knowledge that it is neither
 # provenanced nor checkable.
+#
+# ⛔ **And the reading is per entry and never per carrier.** Nothing stops an
+# entry in the form from sitting in a derived store, and one that does reads back
+# whole -- so this reads the entry it was handed and the carrier's report says
+# what to *expect* rather than what every entry *is*. ⚠️ Found by review on this
+# change, reproduced: the first form of both reports claimed no entry in such a
+# store states either field, which this function falsifies for an entry somebody
+# wrote in the form by hand.
 
 # What a fact states nothing about its provenance reads as. ⛔ The whole of the
 # failing-safe direction, in one name: `measured` is a value an entry has to
@@ -454,10 +462,14 @@ def read_entry(text: str) -> tuple[dict | None, list[str]]:
 UNSTATED_READS_AS = "repeated"
 
 # The standing a recalled fact is reported under, and ⛔ three rather than two.
-# ⚠️ The spellings are **this module's** and the surface states none of them,
-# which is § 25's rule that they are the carrier's -- the same division
-# `BOUNDARIES` above carries, with the same limit: a standing added here and
-# § 25's prose fall out of step with no check reporting it.
+# ⚠️ **Unlike `BOUNDARIES` above, the surface states these words**, and the
+# difference is that § 25 spends a rule on one of them by name -- *reads as
+# `repeated` and never as `measured`*, *reported stale and never current* -- which
+# is unstatable without them. ⛔ So the two vocabularies are held to the surface
+# by an arm of the suite rather than declared the carrier's and left to drift,
+# which is the residue `BOUNDARIES` still carries and this one does not. Found by
+# review on this change: the first form of § 25 named all three while the comment
+# here said the surface named none.
 CURRENT, STALE, UNCHECKED = "current", "stale", "unchecked"
 STANDINGS = [CURRENT, STALE, UNCHECKED]
 
@@ -472,9 +484,38 @@ PREMISE_ANSWERS = {"holds": CURRENT, "broken": STALE, "unchecked": UNCHECKED}
 # is how the store a derived carrier hands over actually holds a fact.
 FENCE = "---"
 
+# A mark some editors write before the first character of a file. ⛔ Stripped
+# before the fence is looked for, because it is invisible and `str.strip()` does
+# not remove it -- so without this a correct store entry carrying one is refused
+# under a message saying it is in no shape a store holds, which is false of it.
+# Found by review on this change.
+BYTE_ORDER_MARK = "﻿"
+
+
+def _is_blank(text: str) -> bool:
+    """Whether `text` carries nothing a reader could read as a fact.
+
+    ⛔ Wider than `str.strip()`, which removes whitespace and leaves the format
+    characters -- a zero-width space, a joiner, a byte-order mark. A body of
+    those is empty to every reader and not to `strip`, so without this a fact
+    comes back holding one invisible character. Found by review on this change.
+    """
+    import unicodedata  # noqa: PLC0415 -- the one arm that needs the table
+
+    return all(
+        character.isspace() or unicodedata.category(character) in ("Cf", "Cc")
+        for character in text
+    )
+
 
 def _fenced(text: str) -> tuple[dict | None, str] | None:
     """(the leading document's keys, the prose after it), or None if unfenced.
+
+    ⛔ **One foreign shape and not any shape**, which is § 25's rule read exactly:
+    a leading document fenced off from prose, that being the shape the measured
+    store holds. Anything else comes back `None` and is **refused** -- a file with
+    no structure at all could be anything, and reading its whole text as a fact
+    is the over-claiming direction this whole half is written against.
 
     ⛔ The keys come back and are **not mined for the form's fields**: a mapping
     invented here would be the procedure guessing another tool's vocabulary, and
@@ -482,7 +523,7 @@ def _fenced(text: str) -> tuple[dict | None, str] | None:
     is not an evidence class (§ 25). They are returned so a reader can be told
     what shape the file is in, not so a field can be taken out of them.
     """
-    lines = text.splitlines()
+    lines = text.lstrip(BYTE_ORDER_MARK).splitlines()
     if not lines or lines[0].strip() != FENCE:
         return None
     for at in range(1, len(lines)):
@@ -495,6 +536,30 @@ def _fenced(text: str) -> tuple[dict | None, str] | None:
             return (keys if isinstance(keys, dict) else None,
                     "\n".join(lines[at + 1:]))
     return None
+
+
+def _no_reading(shape: str, problems: list, recovered, report: list) -> tuple[int, dict]:
+    """A refusal, and ⛔ with no reading manufactured beside it.
+
+    ⛔ **The three reading fields are null rather than defaulted**, which is the
+    whole of this function. ⚠️ Found by review on this change, reproduced: the
+    first form filled them in from the failing-safe constants, so an entry in the
+    form missing one field came back with `unstated` naming three fields its own
+    `read` held, `reads_as` saying `repeated` where the entry said `measured`,
+    and a report saying there was nothing to read a fact out of while `read`
+    carried the fact. A refused entry has no standing, and a null says so where a
+    default reads as an answer.
+    """
+    return 1, {
+        "shape": shape,
+        "holds": False,
+        "problems": problems,
+        "read": recovered,
+        "unstated": None,
+        "reads_as": None,
+        "standing": None,
+        "report": report,
+    }
 
 
 def recalled(text: str, premise: str = "unchecked") -> tuple[int, dict]:
@@ -511,11 +576,14 @@ def recalled(text: str, premise: str = "unchecked") -> tuple[int, dict]:
     *current* over an entry that states no premise is **refused**, that being the
     restatement the rule is against arriving through this very command.
 
-    ⚠️ Two fields of what comes back are narrower than they read, stated here
-    rather than left to be inferred: `shape` is the form the entry was **read
-    against** and not a claim about what the file is, and `holds` is about that
-    form alone -- a refusal of the *reader's own answer* about the premise leaves
-    it true, the entry being fine and the answer not.
+    ⚠️ What comes back is narrower than it reads in three places, stated here
+    rather than left to be inferred. `shape` is the form the entry was **read
+    against** and not a claim about what the file is. `holds` is about that form
+    alone -- a refusal of the *reader's own answer* leaves it true, the entry
+    being fine and the answer not. And ⛔ **`unstated`, `reads_as` and `standing`
+    are null wherever nothing was decided**: on an entry that holds no form, and
+    on an answer about the premise outside the three. A default there reads as an
+    answer nobody gave.
     """
     recovered, problems = read_entry(text)
     shape = "the entry form"
@@ -527,59 +595,55 @@ def recalled(text: str, premise: str = "unchecked") -> tuple[int, dict]:
         # the admission's own refusals keep every bit of their reach.
         fenced = _fenced(text)
         if fenced is None:
-            return 1, {
-                "shape": shape,
-                "holds": False,
-                "problems": problems,
-                "read": recovered,
-                # ⚠️ Sorted, like the fenced arm's: one reader meets both, and a
-                # field list whose order depends on which arm produced it is a
-                # list a caller cannot compare.
-                "unstated": sorted(name for name, _ in ENTRY_FIELDS),
-                "reads_as": UNSTATED_READS_AS,
-                "standing": UNCHECKED,
-                "report": [
+            return _no_reading(
+                shape, problems, recovered,
+                [
                     "Read against the entry form, which it does not hold, and it "
-                    "is not in the shape a store holds either -- so there is "
-                    "nothing to read a fact out of at all (§ 25)."
+                    "is not in the one shape a store holds either -- a leading "
+                    "document fenced off from prose. ⛔ So no reading is produced: "
+                    "`unstated`, `reads_as` and `standing` are null rather than "
+                    "defaulted, and what `read` carries is whatever the form could "
+                    "recover out of a file that failed it -- never a fact this "
+                    "command stands behind (§ 25)."
                 ],
-            }
+            )
         keys, body = fenced
         shape = "the store's own"
         recovered = {name: None for name, _ in ENTRY_FIELDS}
-        recovered["fact"] = body.strip() or None
+        recovered["fact"] = None if _is_blank(body) else body.strip()
         unstated = sorted(name for name, _ in ENTRY_FIELDS if recovered[name] is None)
         problems = []
         report.append(
             f"This entry is in the store's own shape rather than the entry form, "
-            f"so it never went through § 25's admission: the fields it does not "
+            f"so it went through none of § 25's admission: the fields it does not "
             f"carry are {', '.join('`' + name + '`' for name in unstated)}, and "
             "⛔ no key of its leading document is read as one of them -- the one "
             "on offer is a subject label and not an evidence class."
         )
         if keys is None:
+            # ⚠️ Three states in one arm and the sentence names all three, rather
+            # than reporting a parse that failed: a head that is empty and a head
+            # that is a list both arrive here having parsed cleanly. Found by
+            # review on this change.
             report.append(
-                "Its leading document could not be read as a block of keys, which "
-                "changes nothing about the fields above: none of them would have "
-                "been taken from it either way (§ 25)."
+                "Its leading document is not a block of keys -- it is empty, or it "
+                "is not a mapping, or it did not parse -- which changes nothing "
+                "about the fields above: none of them would have been taken out of "
+                "it either way (§ 25)."
             )
         # ⛔ A fact is the one thing a reading cannot do without, so an entry in
         # this shape with nothing under its fence is refused rather than handed
         # back as a fact that is empty.
         if recovered["fact"] is None:
-            return 1, {
-                "shape": shape,
-                "holds": False,
-                "problems": [
-                    "the entry carries nothing after its leading document, so there "
-                    "is no fact to recall out of it at all (§ 25)"
+            return _no_reading(
+                shape,
+                [
+                    "the entry carries nothing a reader could read after its "
+                    "leading document, so there is no fact to recall out of it at "
+                    "all (§ 25)"
                 ],
-                "read": recovered,
-                "unstated": unstated,
-                "reads_as": UNSTATED_READS_AS,
-                "standing": UNCHECKED,
-                "report": report,
-            }
+                recovered, report,
+            )
 
     stated = (recovered or {}).get("provenance")
     reads_as = stated if stated in PROVENANCE else UNSTATED_READS_AS
@@ -592,18 +656,25 @@ def recalled(text: str, premise: str = "unchecked") -> tuple[int, dict]:
 
     # ⛔ The reader's answer, held to the three words before it is acted on: a
     # fourth would otherwise arrive as a standing nothing names.
+    #
+    # ⛔ **And it produces no standing at all**, which is the arm apart from the
+    # two below it: nothing was decided about the fact, so `unchecked` here would
+    # report a reading nobody took. ⚠️ Unreachable through the command line,
+    # argparse holding the three; live for every in-process caller, this module's
+    # own suite included. Found by review on this change.
     if premise not in PREMISE_ANSWERS:
         return 1, {
             "shape": shape,
             "holds": True,
             "problems": [
                 f"the premise was answered {premise!r}; the three a reader may give "
-                f"are {' | '.join(sorted(PREMISE_ANSWERS))} (§ 25)"
+                f"are {' | '.join(sorted(PREMISE_ANSWERS))}, and nothing was "
+                "decided about the fact (§ 25)"
             ],
             "read": recovered,
             "unstated": unstated,
             "reads_as": reads_as,
-            "standing": UNCHECKED,
+            "standing": None,
             "report": report,
         }
     standing = PREMISE_ANSWERS[premise]
@@ -617,6 +688,13 @@ def recalled(text: str, premise: str = "unchecked") -> tuple[int, dict]:
     # truthiness test here would then refuse it as *stating none*, which is a
     # refusal whose own message is false about the entry. Found by review on this
     # change; the direction was safe and the sentence was not.
+    #
+    # ⛔ **And `broken` over the same entry is *not* refused**, which is an
+    # asymmetry and not an oversight: a reader who has found the fact wrong has
+    # found that out whatever the entry says, and `stale` under-claims where
+    # `current` over-claims. ⚠️ So the two refusals are not symmetric and § 25
+    # states the argument. Found by review on this change, which raised the
+    # asymmetry as unstated rather than as wrong.
     if standing == CURRENT and (recovered or {}).get("premise") is None:
         return 1, {
             "shape": shape,
@@ -800,25 +878,15 @@ def memory(configuration: config.Config, standing_in: str) -> dict:
             "them held apart by nobody is the same defect one level out (§ 25)."
         )
     else:
-        out["unclosed"] += [
-            "The index two sessions contend on cannot be appended under a lock "
-            "from here, the store's own directory being what this carrier must "
-            "not guess at -- so concurrent entries can lose each other (§ 25).",
-            "A checkout that is moved or renamed derives a different store and "
-            "orphans the old one, with nothing said (§ 25).",
-            # ⛔ The third, and it is a third rather than a restatement of the two
-            # above: those lose a fact or orphan it, while this one leaves every
-            # fact in the store unprovenanced and uncheckable *while reading
-            # exactly like a fact that carries both*. ⚠️ Measured on this
-            # repository, which is the only project running the memory third --
-            # the admission's own command writes nothing under this carrier, so
-            # no entry in the store has been through it.
-            "The write-time admission is unreachable here, there being no store "
-            "for `remember` to place a fact in -- so no entry carries a "
-            "provenance or a premise, every recalled fact reads as "
-            f"**{UNSTATED_READS_AS}** and is reported unchecked, and § 24's check "
-            "is not takeable through the entry at all (§ 25).",
-        ]
+        # ⛔ **Read out of the one reader and never written again here.** The
+        # configuration reader reports the same list in `unavailable()`, and a
+        # second copy is a copy allowed to price this carrier differently -- which
+        # is measurably what happened, both reports naming two while the carrier
+        # already left three open. ⚠️ Found by review on this change: its first
+        # form kept the copy and added a suite arm comparing the two subject by
+        # subject, which is synchronising a restated enumeration rather than
+        # deleting it. The arm went with the copy.
+        out["unclosed"] += [f"{line} (§ 25)." for line in config.DERIVED_LEAVES_OPEN]
         out["report"].append(
             "The store is the harness's own (`memory.carrier: derived`), so this "
             "pass composes no path to it and the third is run through whatever "
@@ -1082,7 +1150,7 @@ def _an_entry_without(field: str) -> str:
 A_STORED_FACT = "a fact somebody wrote down, in prose and in no form at all"
 
 
-def _a_stored_entry(body: str = A_STORED_FACT) -> str:
+def _a_stored_entry(body: str = A_STORED_FACT, head: str = "") -> str:
     """One entry in the shape a store whose admission never ran actually holds.
 
     ⛔ **The measured shape and not an invented one**: a leading YAML document
@@ -1091,6 +1159,11 @@ def _a_stored_entry(body: str = A_STORED_FACT) -> str:
     leading document for the form's fields -- it is the key a reader would reach
     for, and `project` is a subject rather than an evidence class, so taking it
     as a provenance would make every fact in the store measured by construction.
+
+    `head` appends to that document, for the arm that plants the form's **own**
+    field names in it. ⛔ Found by review on this change: without it the mining
+    arm reached only a mapping keyed on the subject label, so an implementation
+    that mined a top-level `provenance:` instead would have passed it.
     """
     return (
         f"{FENCE}\n"
@@ -1098,6 +1171,7 @@ def _a_stored_entry(body: str = A_STORED_FACT) -> str:
         "description: one line about it, which the index carries\n"
         "metadata:\n"
         "  type: project\n"
+        f"{head}"
         f"{FENCE}\n"
         "\n"
         f"{body}\n"
@@ -1290,6 +1364,22 @@ def _memory_arms(check) -> None:
         "can place, and the measured one turns a passed-on fact into an observed "
         "one by leaving a field out",
     )
+    # ⛔ Both vocabularies held to the surface's own text, which is the gap that
+    # otherwise stands open. ⚠️ § 25 spends a rule on these words by name -- *reads
+    # as `repeated` and never as `measured`*, *reported stale and never current*
+    # -- so unlike `BOUNDARIES` they are **not** this module's alone, and the
+    # residue `BOUNDARIES` carries is closed here rather than restated. Found by
+    # review on this change: the surface named all three standings while the
+    # comment beside them said it named none.
+    with open(config.SURFACE, encoding="utf-8") as handle:
+        surface_said = handle.read()
+    for word in STANDINGS + PROVENANCE:
+        check(
+            f"the surface names `{word}`, which this module performs",
+            word in surface_said,
+            f"`{word}` appears nowhere on the surface, so this module performs a "
+            "value no project's reader can look up and no rule states",
+        )
 
     stored = _a_stored_entry()
     status, got = recalled(stored)
@@ -1316,6 +1406,23 @@ def _memory_arms(check) -> None:
         f"recovered {got['read']!r} -- the key on offer is a subject label, so a "
         "mapping invented here makes every fact in the store measured",
     )
+    # ⛔ The same, over a leading document carrying the form's **own** field
+    # names, which is the mining an implementation would reach for second.
+    # ⚠️ Found by review on this change: the arm above reaches only a mapping
+    # keyed on the subject label, so a reader keyed on a top-level `provenance:`
+    # would have passed it.
+    _status, named = recalled(
+        _a_stored_entry(head="provenance: measured\nsource: a command somebody ran\n")
+    )
+    check(
+        "nor one carrying the form's own field names in that document",
+        (named["read"] or {}).get("provenance") is None
+        and (named["read"] or {}).get("source") is None
+        and named["reads_as"] == UNSTATED_READS_AS,
+        f"recovered {named['read']!r} reading as {named['reads_as']!r} -- a "
+        "document that happens to carry the form's fields is still read as "
+        "stating none, which is the safe direction",
+    )
     check(
         "a fact stating no provenance reads as the unstated reading",
         got["reads_as"] == UNSTATED_READS_AS,
@@ -1335,7 +1442,12 @@ def _memory_arms(check) -> None:
         "reported current",
         status == 1
         and got["standing"] == UNCHECKED
-        and any("nothing was checked" in problem for problem in got["problems"]),
+        and any("nothing was checked" in problem for problem in got["problems"])
+        # ⛔ And the entry itself still holds, which is the narrowing the
+        # docstring states: what was refused is the reader's answer and not the
+        # file. ⚠️ Found by review on this change -- the distinction was
+        # documented and asserted nowhere.
+        and got["holds"] is True,
         f"exited {status} with {got!r}",
     )
     status, got = recalled(stored, "broken")
@@ -1388,17 +1500,78 @@ def _memory_arms(check) -> None:
     )
     status, got = recalled(complete, "obviously")
     check(
-        "a premise answered outside the three is refused, not taken as one of them",
-        status == 1 and got["standing"] == UNCHECKED,
-        f"exited {status} with {got!r}",
+        "a premise answered outside the three is refused, and decides nothing "
+        "about the fact",
+        status == 1 and got["standing"] is None and got["holds"] is True,
+        f"exited {status} with {got!r} -- `unchecked` here would report a reading "
+        "nobody took, and the entry itself is fine",
     )
-    status, got = recalled(_a_stored_entry(body="   "))
+    # --- the report's own sentences, which are what a role actually carries ----
+    #
+    # ⛔ The output of this command is read by a role and copied into a reply, so
+    # a sentence is a shipped behaviour and not commentary. ⚠️ Found by review on
+    # this change: six of the seven sentences had no arm, and deleting the one
+    # that says a fact is stale left both standing arms green while the report
+    # stopped saying it.
+    #
+    # ⛔ **Positive and negative together**, which is what pins the literal: the
+    # `current` phrase is asserted present on the one standing that may carry it
+    # and absent on the two that may not, so an innocent reword reddens the
+    # positive arm rather than vacating the negative one.
+    SAYS_CURRENT = "the fact is **current**"
+    for answer, present in (("holds", True), ("broken", False), ("unchecked", False)):
+        _status, said = recalled(complete, answer)
+        check(
+            f"a premise answered {answer!r} "
+            f"{'says' if present else 'never says'} the fact is current",
+            any(SAYS_CURRENT in line for line in said["report"]) is present,
+            f"reported {said['report']!r}",
+        )
+    _status, said = recalled(complete, "broken")
     check(
-        "an entry with nothing under its fence is refused, naming the absent fact",
-        status == 1
-        and any("no fact to recall" in problem for problem in got["problems"]),
-        f"exited {status} with {got!r}",
+        "and the stale sentence names the fact stale and says it is re-measured",
+        any("**stale**" in line and "re-measured" in line
+            for line in said["report"]),
+        f"reported {said['report']!r} -- the sentence a role copies into its reply",
     )
+    _status, said = recalled(complete, "unchecked")
+    check(
+        "the unchecked sentence says this command cannot take the check",
+        any("cannot be" in line and "whoever reads the fact" in line
+            for line in said["report"]),
+        f"reported {said['report']!r}",
+    )
+    _status, said = recalled(stored)
+    check(
+        "and an unstated provenance's sentence names what the fact reads as",
+        any(f"**{UNSTATED_READS_AS}**" in line and "has to" in line
+            for line in said["report"]),
+        f"reported {said['report']!r}",
+    )
+    _status, said = recalled(complete)
+    check(
+        "while a stated one draws no such sentence",
+        not any(f"**{UNSTATED_READS_AS}**" in line for line in said["report"]),
+        f"reported {said['report']!r} -- a sentence about an unstated field on an "
+        "entry that states it is a report a role would copy and be wrong",
+    )
+    # ⛔ Every way a body carries nothing a reader could read, the invisible ones
+    # included. ⚠️ `str.strip()` removes whitespace and leaves the format
+    # characters, so without `_is_blank` a zero-width space comes back as a fact.
+    # Found by review on this change.
+    for label, body in (
+        ("nothing but spaces", "   "),
+        ("nothing at all", ""),
+        ("one zero-width space", "​"),
+        ("a byte-order mark", BYTE_ORDER_MARK),
+    ):
+        status, got = recalled(_a_stored_entry(body=body))
+        check(
+            f"an entry whose fence covers {label} is refused, naming the absent fact",
+            status == 1
+            and any("no fact to recall" in problem for problem in got["problems"]),
+            f"exited {status} with {got!r}",
+        )
     status, got = recalled(f"{FENCE}\nname: [unclosed\n{FENCE}\n\nthe fact itself\n")
     check(
         "a leading document that does not parse changes nothing about the fields",
@@ -1408,19 +1581,75 @@ def _memory_arms(check) -> None:
         f"exited {status} with {got!r} -- none of the three would have been taken "
         "out of that document either way",
     )
+    # ⛔ And the sentence that says so names all three states a head can be in,
+    # rather than reporting a parse that failed: a head that is empty and a head
+    # that is a list both arrive having parsed cleanly. ⚠️ Positive and negative
+    # together, so the literal is pinned on the side that must carry it.
+    for label, head, says_it in (
+        ("does not parse", "name: [unclosed\n", True),
+        ("is a list", "- not a mapping\n", True),
+        ("is empty", "", True),
+        ("is a block of keys", "name: a-fact\n", False),
+    ):
+        _status, head_read = recalled(
+            f"{FENCE}\n{head}{FENCE}\n\nthe fact itself\n"
+        )
+        check(
+            f"a leading document that {label} is "
+            f"{'named as no block of keys' if says_it else 'not named as one'}",
+            any("not a block of keys" in line for line in head_read["report"])
+            is says_it,
+            f"reported {head_read['report']!r}",
+        )
     status, got = recalled("just some prose, in neither shape\n")
     check(
-        "a file in neither shape has no fact to read out of it, and says that",
+        "a file in neither shape is refused, and no reading is manufactured for it",
         status == 1
         and got["read"] is None
-        and got["standing"] == UNCHECKED
-        and any("nothing to read a fact out of" in line for line in got["report"])
         and got["shape"] == "the entry form"
-        # ⚠️ And its field list is sorted like the fenced arm's: one reader meets
-        # both, so an order that depends on which arm answered is an order a
-        # caller cannot compare. Asserted against the sort rather than against a
-        # list written here, which would be this file's own spelling.
-        and got["unstated"] == sorted(name for name, _ in ENTRY_FIELDS),
+        and any("no reading is produced" in line for line in got["report"])
+        # ⛔ The three reading fields null rather than defaulted, which is the
+        # whole of the refusal's contract. ⚠️ Found by review on this change,
+        # reproduced: the first form filled them from the failing-safe constants,
+        # so an entry in the form missing one field came back claiming its own
+        # stated provenance was unstated.
+        and got["unstated"] is None
+        and got["reads_as"] is None
+        and got["standing"] is None,
+        f"exited {status} with {got!r}",
+    )
+    # ⛔ The same refusal over a file that *does* hold three of the four fields,
+    # which is the input that made the contradiction visible: `read` carries the
+    # fact and the provenance, so a manufactured reading contradicts the dict it
+    # arrives in.
+    status, got = recalled(_an_entry_without("premise"))
+    check(
+        "and a form entry missing one field gets no reading either, though `read` "
+        "carries what the form recovered",
+        status == 1
+        and (got["read"] or {}).get("provenance") == "measured"
+        and got["unstated"] is None
+        and got["reads_as"] is None
+        and got["standing"] is None,
+        f"exited {status} with {got!r} -- `reads_as: repeated` beside a stated "
+        "`measured` is the contradiction this null removes",
+    )
+    # ⛔ An unterminated fence, which is a half-written store entry: refused
+    # rather than read, or the fact becomes the entry's own YAML header. Found by
+    # review on this change.
+    status, got = recalled(f"{FENCE}\nname: a-fact\n\nthe fact itself\n")
+    check(
+        "a fence that never closes is refused rather than read as a bare body",
+        status == 1 and got["standing"] is None,
+        f"exited {status} with {got!r}",
+    )
+    # ⛔ And a correct store entry carrying a byte-order mark is read, not refused
+    # under a message saying it is in no shape a store holds -- which is false of
+    # it. Found by review on this change.
+    status, got = recalled(BYTE_ORDER_MARK + _a_stored_entry())
+    check(
+        "a byte-order mark before the fence does not hide the shape",
+        status == 0 and got["shape"] == "the store's own",
         f"exited {status} with {got!r}",
     )
 
@@ -1550,18 +1779,22 @@ def _memory_arms(check) -> None:
             harness["store"] is None and harness["index"] is None,
             f"resolved {harness['store']!r} and {harness['index']!r}",
         )
-        # ⛔ Three rather than two, and each named by the thing that makes it its
-        # own half: a count alone would pass a report that stated one of them
-        # twice. ⚠️ The admission arm is the one this project measured missing
-        # from the report while the carrier was already leaving it open -- the
-        # surface priced the derived arm at two costs when it has three.
+        # ⛔ Every half the reader's own list carries, handed back whole and in
+        # order. ⚠️ No count is written here either: a number beside the list
+        # would be the restatement the list exists to delete, wrong by the next
+        # entry and green. ⚠️ The admission entry is the one this project measured
+        # missing from both reports while the carrier was already leaving it open.
         check(
-            "and names the three halves it leaves open rather than two",
-            len(harness["unclosed"]) == 3
-            and any("lock" in line for line in harness["unclosed"])
-            and any("renamed" in line for line in harness["unclosed"])
-            and any("admission" in line for line in harness["unclosed"]),
+            "and hands back every open half the reader's own list carries",
+            harness["unclosed"]
+            == [f"{line} (§ 25)." for line in config.DERIVED_LEAVES_OPEN],
             f"named {harness['unclosed']!r}",
+        )
+        check(
+            "one of which is the admission this carrier cannot reach",
+            any("admission" in line for line in harness["unclosed"]),
+            f"named {harness['unclosed']!r} -- the half the surface and both "
+            "reports left out while the carrier was already leaving it open",
         )
         absent = memory(
             _AConfigurationStating(**{"session.parts": list(ORDER)}), checkout
@@ -1960,23 +2193,26 @@ def self_test() -> int:
             any(f"{MEMORY_KEY}.carrier" in line for line in reported),
             f"reported {reported!r}",
         )
-        # ⛔ And it names the same open halves this module does, **subject by
-        # subject**. ⚠️ The arm above holds only that the key is mentioned, which
-        # is exactly what let the two reports price this carrier at two costs
-        # while the carrier already left three open: a list on one side and a
-        # sentence on the other, compared by nothing. ⚠️ The three words are
-        # written here, so what this reaches is that both reports name each
-        # subject -- whether either states it correctly is the *quoting* kind of
-        # judgement and is read.
+        # ⛔ And what this module hands back is the reader's own list rather than
+        # a second copy of it. ⚠️ Found by review on this change: its first form
+        # kept two copies and compared them subject by subject, which synchronises
+        # a restated enumeration instead of deleting it -- and the subject words
+        # it compared on were this file's own spelling, one of them (`lock`)
+        # matching inside the word `block`, so a one-word reword of the reader's
+        # sentence would have passed it.
         derived = memory(live, ".")
-        for subject in ("lock", "renamed", "admission"):
-            check(
-                f"and `{subject}` is named by this module and by the reader alike",
-                any(subject in line for line in derived["unclosed"])
-                and any(subject in line for line in reported),
-                f"this module named {derived['unclosed']!r} and the reader "
-                f"{[line for line in reported if MEMORY_KEY in line]!r}",
-            )
+        check(
+            "the open halves this module hands back are the reader's own list",
+            len(derived["unclosed"]) == len(config.DERIVED_LEAVES_OPEN)
+            and all(
+                stated in given
+                for stated, given in zip(config.DERIVED_LEAVES_OPEN,
+                                         derived["unclosed"])
+            ),
+            f"handed back {derived['unclosed']!r} against the reader's "
+            f"{config.DERIVED_LEAVES_OPEN!r} -- a list written here again is a "
+            "list allowed to price this carrier differently",
+        )
     if live.get(f"{MEMORY_KEY}.write_from") == "main_tree":
         asked += 1
         check(

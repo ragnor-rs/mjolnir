@@ -396,8 +396,10 @@ session:
 # the checkout's alone. A save from a tree would have written where the checkout never reads, and
 # reported that it succeeded.
 #
-# What the carrier leaves open is accepted knowingly, and the reader reports each of it: the index
-# cannot be appended under a lock from here, and a checkout moved or renamed orphans the store.
+# What the carrier leaves open is accepted knowingly, and the reader reports each of it — ⚠️ which
+# is why this comment names none of them: a list here is a list allowed to disagree with the one
+# the reader prints, and it was measured doing exactly that, pricing this carrier at two costs
+# while the carrier already left three open.
 # `main_tree` is what turns the measurement above into a refusal a role has to name rather than a
 # write nobody sees — and it is the only value this carrier allows, the reader refusing the other.
 memory:

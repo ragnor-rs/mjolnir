@@ -2008,7 +2008,7 @@ statement that the harness decides and the procedure must not guess.
 What the two carriers buy is therefore different in kind rather than in degree, and the table at
 [`schema.md § 25 → The carriers`](../plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)
 is the comparison: a pinned store closes the hazard by construction and owes the project one thing
-to keep true, while a derived store closes nothing by construction and has its two open halves
+to keep true, while a derived store closes nothing by construction and has every open half it leaves
 reported instead. Neither is the better configuration in general; which one a project gets is a
 property of where its store already is.
 
@@ -2102,29 +2102,34 @@ index for it to lock. So every entry in that store is in the harness's own shape
 document carrying a name, a one-line description and a subject label, then the fact as prose — and
 not one of them has been through the rule.
 
-The consequence is a **third** cost rather than a restatement of the two the carrier already
-reports, which is why the table at
+What makes it a **third** cost rather than a restatement of the two already reported is the way it
+fails: the index's contention loses work somebody did and a moved checkout orphans it, both of which
+a reader eventually notices, while an unprovenanced fact reads exactly like a provenanced one
+forever. The table at
 [`schema.md § 25 → The carriers`](../plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)
-now names three:
-
-| what the derived arm leaves open | what it costs |
-|---|---|
-| the index's contention | work somebody did is lost, two concurrent rewrites of one file clobbering each other |
-| a moved or renamed checkout | the store is orphaned, and the old one is never read again |
-| the admission it cannot reach | every fact in it is unprovenanced and uncheckable, **while reading exactly like a fact that carries both** |
+is where the three are stated, and this document carries no second list of them — ⚠️ **which is the
+discipline this measurement is itself an instance of failing**: the first form of the change wrote
+the enumeration into this document, the decision record, the live configuration, an example and a
+role's own procedure, five copies of a list whose mis-statement was the finding.
 
 ⚠️ **The read-time check met the same wall from the other side.** A reading written for the entry
 form alone refuses a store-shaped entry as a file that is not one YAML document — true, and it tells
-its reader nothing about what they are holding. Three rules were added for the store a project in
-this position actually has, each failing in the direction that under-claims:
-[`schema.md § 25 → What a reader does with a store whose admission never ran`](../plugins/mjolnir/config/schema.md#what-a-reader-does-with-a-store-whose-admission-never-ran).
+its reader nothing about what they are holding. The rules that replaced it are at
+[`schema.md § 25 → What a reader does with a store whose admission never ran`](../plugins/mjolnir/config/schema.md#what-a-reader-does-with-a-store-whose-admission-never-ran),
+and each of them fails in the direction that under-claims.
 
-⚠️ **And the one mapping a reader would reach for is the one that must not be made.** The leading
-document's subject label says which part of the project a fact is about; a provenance is an evidence
-class. Reading the first as the second makes every fact in the store *measured* by construction,
-which is the precise failure the provenance field exists to prevent — so no key of a foreign shape
-is read as a field of the form at all, and a document that happens to carry the form's own fields
-inside such a shape is still read as stating none.
+**The layout the carrier reads, which is the measurement and not the rule.** The store this
+repository's harness keeps holds each fact as a file opening with a `---`-fenced YAML document —
+`name`, a one-line `description`, and a `metadata` block whose `type` is one of a small set of
+subject words — followed by the fact itself as prose. That is the one foreign layout the carrier
+reads, and the surface defers to it rather than describing it, a store's own layout being the
+harness's fact.
+
+⚠️ **The mapping a reader reaches for first is the one that must not be made.** `metadata.type` says
+which part of the project a fact is about; a provenance is an evidence class. Reading the first as
+the second would make every fact in the store *measured* by construction, which is precisely what
+the provenance field exists to prevent — and it is the reason the rule is written as *no key of a
+foreign shape*, rather than as a list of keys not to read.
 
 ### Reporting a fact stale rather than restating it
 
@@ -2135,15 +2140,18 @@ true** identically, and a fact whose premise has gone has no way of being report
 the prose of whoever happened to notice.
 
 [`schema.md § 25 → The standing a recalled fact is reported under`](../plugins/mjolnir/config/schema.md#the-standing-a-recalled-fact-is-reported-under)
-is where that lands: three standings, the premise's answer supplied by the reader rather than by the
-entry, and *current* over an entry stating no premise **refused** — there was nothing to check, so
-an answer that it holds is an assertion about the fact rather than a reading of it.
+is where that lands. What is worth recording beside it is the one decision in it that is **not**
+symmetric, because it reads as an oversight until the argument is written out: *current* over an
+entry stating no premise is refused and *stale* over the same entry is not. The two answers do not
+cost the same thing. A reader who has found the fact wrong has found that out whatever the entry
+says, and treating it as stale under-claims; a reader who says the premise holds when the entry
+stated none has asserted the fact, which over-claims. Refusing both would be refusing the safe
+answer for the unsafe one's reason.
 
-⚠️ **What this reaches is which of the three was reported and not whether the answer is right**,
-which is the same split the admission itself carries: a wrong reading of the premise against the
-tree is wrong here too. What it buys is that the three are told apart at all, and that the status a
-caller reads keeps a stale fact off the one a current fact gets — a stale fact sharing that status
-being the restatement the whole rule is against, read off the status alone.
+⚠️ **What the whole mechanism buys is that the three are told apart at all**, and that the exit
+status a caller reads keeps a stale fact off the one a current fact gets. Whether the reader's own
+reading of the premise against the tree is right is outside it — the same split the admission
+carries one half over.
 
 ## The day log's destination port
 

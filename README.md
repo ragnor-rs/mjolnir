@@ -351,8 +351,10 @@ the store once, or you say that the harness decides it and the toolkit must not 
 difference is what you get back: a store you pinned is written from any tree with its index appended
 **under a lock**, and a store the harness derives has the memory step **refuse** from a tree and
 name the checkout it would have run from. Either way the answer is one of two things a role has to
-say out loud rather than a write nobody sees. And what goes in carries where the fact came from and
-what it rests on, so a later pass reads a fact it can check instead of restating one. The
+say out loud rather than a write nobody sees. A pinned store also holds what goes into it to
+carrying where the fact came from and what it rests on, so a later pass reads a fact it can check
+instead of restating one — and where the harness decides the store, that admission cannot run at
+all, so the reading says what each entry is missing rather than pretending it is there. The
 [memory rule](plugins/mjolnir/config/schema.md#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)
 is the single statement of the block,
 [the carriers](plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)

@@ -294,12 +294,14 @@ states the three and what each means, and the reply carries whichever one it was
   reads as `repeated`, and a repeated fact becomes a measured one exactly by being read twice without
   the distinction being carried.
 
-⚠️ **Under a derived store none of the entries went through the admission**, so each comes back with
-its provenance and premise **unstated** — the third cost
+⚠️ **Under a derived store the admission never ran**, so expect each entry to come back with its
+provenance and premise **unstated** — the third cost
 [`§ 25`](../../config/schema.md#what-a-reader-does-with-a-store-whose-admission-never-ran) names for
-that carrier. ⛔ **Report every such fact as unchecked with its provenance unstated**, and never as
-one this store measured: step 2's report already says which carrier the project has, so this is read
-off that rather than guessed at per entry.
+that carrier, which step 2's report states once rather than this role noting per fact. ⛔ **But a
+given entry's answer is the one the command gave for it, never the one the carrier made likely**:
+nothing stops an entry in the form from sitting in such a store, and one that does reads back whole.
+A role that reported it unstated because the carrier is derived has thrown away the reading it just
+took.
 
 ⚠️ **Where the project carries no `memory` block**, step 2 reports the reading unavailable and this
 role says what it could not check — ⛔ **never that memory holds nothing**, which is the one
@@ -350,9 +352,10 @@ it — the outcome in the first sentence, then the facts, with a table where the
 - what memory claims that this pass **checked**, and what it did not — each fact with the premise
   it rests on and the **standing** it came back under, ⛔ **every one whose premise has changed named
   as stale**, and every one that reads as `repeated` reported as repeated rather than as measured
-  here; ⛔ **and where the store's entries state neither field, that they state neither** — the facts
-  are reported unchecked with their provenance unstated, which is a property of the carrier and is
-  named once rather than per fact;
+  here; ⛔ **and where an entry states neither field, that it states neither** — reported unchecked
+  with its provenance unstated, ⚠️ **per entry and never per carrier**: that the carrier makes the
+  absence likely is named once, and what a given fact is reported as is what the reading answered
+  about it;
 - the window's own reading, or that the harness handed none;
 - which port fallback was taken, where one was;
 - that the ingestion step ran over anything read from outside the procedure, and what it surfaced —
