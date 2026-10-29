@@ -809,18 +809,54 @@ def place(configuration: config.Config, artifact: Artifact) -> str | None:
 # --- the `host.checks` entry an artifact registers -------------------------
 
 
-def refuses_entry(configuration: config.Config, entry: dict) -> str | None:
+def refuses_entry(configuration: config.Config, entry: dict, replacing=None) -> str | None:
     """Why the surface cannot state this entry, or None where it can.
 
     ⛔ Asked of the **reader** rather than answered here. Every refusal § 2
-    carries -- an entry with no workflow name, `mirrors` beside `jobs`, a list
-    inside one `mirrors`, a trigger that does not parse, a path filter written
-    blank -- is in that one walk, and a second judgement here would be free to
+    carries is in that one walk, and a second judgement here would be free to
     admit a shape the project's own configuration then fails to load.
+
+    ⛔ **Which refusals those are is not listed here, and the list that was here
+    is deleted rather than extended.** It named six, where the facet's own
+    refusals counted off `config._planted_violations` at the moment it was
+    deleted were thirty -- a lossy copy of a set living one module over, with
+    nothing comparing the two. ⚠️ **The wrong remedy is the tempting one**: a
+    rule added to the reader reads as something to *synchronise* into this
+    docstring, which is how six of thirty came to look complete.
+
+    ⛔ **`replacing` is this artifact's own standing entry, and it comes out
+    before the new one goes in** -- which is the order the write itself runs in,
+    `unregister` then `register`. Asked without it, the reader is shown the two
+    entries side by side and refuses the one shape § 2 keys the facet against,
+    so the step refuses for ever over its own output while naming a remedy --
+    choose between the two -- that nobody can perform.
+
+    ⚠️ **And it is the *idempotent* property that goes first, not the rewritten
+    entry.** Measured by dropping the argument at the one call site: seven arms
+    reddened, and the ones that named it were `a second run changes nothing`
+    twice and `a second run reports it unchanged` -- an artifact whose entry is
+    already registered, byte-identical, re-read as a duplicate of itself. The
+    pre-check runs on every pass, before anything asks whether the entry needs
+    writing at all, so *unchanged* is the first answer a reader-side uniqueness
+    rule takes away.
     """
     data = copy.deepcopy(configuration.data)
     data.setdefault("host", {})
-    data["host"]["checks"] = list(data["host"].get("checks") or []) + [entry]
+    # ⚠️ `stated` and not `standing`: one entry is what `one()` calls the
+    # standing entry, and the same word for the whole list beside it is the
+    # reading this module is written against.
+    stated = list(data["host"].get("checks") or [])
+    if replacing is not None:
+        # ⛔ The first copy and not every equal one: a facet legitimately states
+        # one entry, so dropping all matches would be this step deciding what a
+        # project wrote. There can be no second copy anyway, the reader now
+        # refusing the shape -- but a pre-check that relies on that is a second
+        # statement of it.
+        for index, existing in enumerate(stated):
+            if existing == replacing:
+                del stated[index]
+                break
+    data["host"]["checks"] = stated + [entry]
     # ⛔ Every failure is an answer with the entry named, which is what this step
     # promises. ⚠️ Caught as `ConfigError` alone, an entry the reader cannot even
     # be *shown* — one carrying a value no safe dump represents — left this
@@ -1121,34 +1157,13 @@ def _written_back(
     return None
 
 
-def collides(configuration: config.Config, entry: dict, replacing=None) -> str | None:
-    """A `host.checks` entry already keyed on this one's workflow name, or None.
-
-    ⛔ The installer's own guard, and it is here because the reader does not
-    supply it. § 2 keys the facet on the workflow name, so two entries under one
-    name leave every consumer of it choosing between them — ⚠️ and the shared
-    reader **loads** that shape, measured by handing it two entries differing
-    only in `mirrors`. So refusing to *create* one is this step's, whatever the
-    surface does about a project that wrote one by hand.
-
-    ⛔ **`replacing` is this artifact's own earlier entry and is not a collision
-    with itself.** An artifact whose entry is composed from a facet the project
-    edits writes different content under the same name on the next run; read as a
-    collision, that project's install refuses for ever over the step's own
-    output, and the remedy named — choose between the two — is one nobody can
-    perform.
-    """
-    for existing in (configuration.get("host.checks") or []):
-        if replacing is not None and existing == replacing:
-            continue
-        if existing.get("workflow") == entry.get("workflow") and existing != entry:
-            return (
-                f"`host.checks` already states an entry keyed on the workflow name "
-                f"{entry.get('workflow')!r}, with different content. § 2 keys the facet "
-                "on that name, so a second entry under it leaves every consumer "
-                "choosing between the two."
-            )
-    return None
+# ⛔ No guard of this step's own on a workflow name the facet already states. It
+# had one, and it was written because the shared reader loaded that shape; the
+# reader now refuses it, so a second test here would be a second statement of one
+# rule -- free to drift from it, and the drift would show up as an install the
+# project's own file then refuses to load. What is left of it is `replacing`
+# above, which is this step's fact rather than § 2's: that an artifact's own
+# standing entry is what the write replaces.
 
 
 # --- the step --------------------------------------------------------------
@@ -1232,12 +1247,11 @@ def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dic
 
     entry = artifact.entry(configuration)
     # This artifact's own earlier entry, where it wrote one. ⛔ Read before the
-    # collision test and passed to it: the step's own output under its own key is
-    # what it replaces, not something to refuse over.
+    # pre-check and passed to it: the step's own output under its own key is what
+    # it replaces, not something the reader should be shown beside the new entry.
     standing = artifact.standing_entry(configuration) if entry is not None else None
     if entry is not None:
-        refusal = (refuses_entry(configuration, entry)
-                   or collides(configuration, entry, replacing=standing))
+        refusal = refuses_entry(configuration, entry, replacing=standing)
         if refusal is not None:
             return _state(artifact, UNSTATABLE, path, entry=entry, because=refusal)
 
@@ -2375,21 +2389,54 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         ), write=True)["artifacts"]
         check("the first is written", states[0]["answer"] == WRITTEN, str(states[0]))
         check("the second is refused", states[1]["answer"] == UNSTATABLE, str(states[1]))
-        check("the collision is named", "keyed on the workflow name" in states[1]["because"],
+        check("the collision is named, with the workflow name in it",
+              repr(AN_ENTRY["workflow"]) in states[1].get("because", ""),
               states[1].get("because", ""))
         names = [e["workflow"] for e in config.load(tmp).get("host.checks")]
         check("and the file carries the name once", len(names) == len(set(names)), str(names))
         check("the second artifact was not written", not os.path.exists(states[1]["path"]))
-    # ⚠️ Stated with the arm rather than left to read as the reader's job: the
-    # shared reader **loads** two entries keyed on one name, so this guard is
-    # the installer's own and nothing upstream supplies it.
+    # ⛔ Where that refusal comes from, asserted rather than assumed: it is the
+    # shared reader's, which is why this module carries no guard of its own on a
+    # repeated workflow name. ⚠️ The fixture builder *loads* what it writes, so
+    # the refusal arrives as the exception it raises -- which is the assertion.
     with tempfile.TemporaryDirectory() as tmp:
-        project = _a_project(tmp, checks=[
-            {"workflow": "A run", "mirrors": "one", "triggers": "pull_request -> *"},
-            {"workflow": "A run", "mirrors": "two", "triggers": "pull_request -> *"},
-        ])
-        check("the reader itself does not refuse that shape, which is why this guard exists",
-              len(project.get("host.checks")) == 2)
+        try:
+            _a_project(tmp, checks=[
+                {"workflow": "A run", "mirrors": "one", "triggers": "pull_request -> *"},
+                {"workflow": "A run", "mirrors": "two", "triggers": "pull_request -> *"},
+            ])
+            reader_refusal = None
+        except ConfigError as exc:
+            reader_refusal = str(exc)
+        check("the shared reader refuses two entries keyed on one name",
+              reader_refusal is not None
+              and "host.checks[1].workflow" in reader_refusal,
+              str(reader_refusal))
+    # ⛔ The green side of that refusal, and the reason the pre-check is asked
+    # `replacing`: an artifact rewriting its own entry under its own name is not
+    # a collision with itself. ⚠️ Measured by changing what the entry says
+    # between two runs, which is what a project editing the facet the entry is
+    # composed from does to it. ⛔ The fixture declares `registers_as`, as every
+    # shipped artifact that registers one does -- asserted of the registry by an
+    # arm below, and the reason that assertion is load-bearing: an artifact
+    # without it cannot find its own standing entry once the content has changed,
+    # so this is the by-name lookup's own green side.
+    with tempfile.TemporaryDirectory() as tmp:
+        project = _a_project(tmp)
+        first = dict(AN_ENTRY)
+        second = dict(AN_ENTRY, mirrors="a-rewritten-fixture-command")
+        gate = _a_gate(entry=lambda _c: first, registers_as=AN_ENTRY["workflow"])
+        one(project, gate, write=True)
+        project = config.load(tmp)
+        check("the first run registered the entry",
+              first in project.get("host.checks"), str(project.get("host.checks")))
+        again = one(project, _a_gate(entry=lambda _c: second,
+                                     registers_as=AN_ENTRY["workflow"]), write=True)
+        check("the second run is not refused over its own standing entry",
+              again["answer"] == WRITTEN, str(again))
+        left = config.load(tmp).get("host.checks")
+        check("the rewritten entry replaced it rather than joining it",
+              left == [second], str(left))
 
     print()
     print("removal takes out both things installing wrote")
