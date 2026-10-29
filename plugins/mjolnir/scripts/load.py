@@ -249,6 +249,21 @@ def report_for(configuration: config.Config, taken: list[dict]) -> list[str]:
                 "current (§ 24). ⛔ Not that memory holds nothing: a tree whose "
                 "surface predates § 25 reads this way too."
             )
+    elif configuration.get(f"{MEMORY_KEY}.carrier") == "derived":
+        # ⛔ The arm that was missing, and the direction it was wrong in: under a
+        # derived store the admission § 25 states never runs -- the command that
+        # performs it composes no path and writes nothing -- so no entry in the
+        # store carries either field. ⚠️ Measured on this repository, which is
+        # the only project running the memory third: the line below used to tell
+        # this project that each recalled fact carried its provenance, which is
+        # the restatement § 24 refuses stated by the report meant to prevent it.
+        lines.append(
+            f"`{MEMORY_KEY}.carrier` is `derived`, so no entry in the store went "
+            "through § 25's write-time admission and none of them states a "
+            "provenance or a premise: the reading reports each recalled fact as "
+            "**unchecked** with its provenance **unstated**, and reads it as "
+            "**repeated** -- ⛔ never as measured and never as current (§ 24)."
+        )
     else:
         # ⛔ The reading's own obligation, handed over rather than left to be
         # remembered: § 24 says a recalled fact is checked or reported unchecked,
@@ -1414,6 +1429,37 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
         "a carried store is reported with the premise a reader has to check",
         any("premise" in line for line in said),
         f"said {said!r}",
+    )
+    # ⛔ The two carriers are reported apart, and the derived arm is asserted
+    # **negatively** as well: what was wrong before was not an omission but a
+    # claim, this project being told each recalled fact carried a provenance when
+    # the admission that would have written one never ran (§ 25). ⚠️ Each arm is
+    # built rather than taken from `live`, so the pair is asked whichever carrier
+    # this repository comes to state.
+    derived_said = report_for(
+        _Stating(**{f"{MEMORY_KEY}.carrier": "derived"}),
+        readings(_Stating(**{f"{MEMORY_KEY}.carrier": "derived"}), tracker=None),
+    )
+    check(
+        "a derived store is reported as one whose entries went through no admission",
+        any("admission" in line and "unchecked" in line for line in derived_said),
+        f"said {derived_said!r}",
+    )
+    check(
+        "and never as one whose facts carry a provenance",
+        not any("fact carries its provenance" in line for line in derived_said),
+        f"said {derived_said!r} -- a store with no admission behind it has no "
+        "provenance in any entry, and a report claiming one is the restatement "
+        "§ 24 refuses said by the report meant to prevent it",
+    )
+    pinned_said = report_for(
+        _Stating(**{f"{MEMORY_KEY}.carrier": "path"}),
+        readings(_Stating(**{f"{MEMORY_KEY}.carrier": "path"}), tracker=None),
+    )
+    check(
+        "a pinned store is reported as one whose entries do carry both fields",
+        any("fact carries its provenance" in line for line in pinned_said),
+        f"said {pinned_said!r}",
     )
     absent_said = report_for(_Stating(), readings(_Stating(), tracker=None))
     check(

@@ -1443,9 +1443,12 @@ class Config:
                 "The memory store is the harness's own (`memory.carrier: "
                 "derived`), so the procedure composes no path to it and resolves "
                 "nothing inside it: the index two sessions contend on cannot be "
-                "appended under a lock here, and a checkout that is moved or "
-                "renamed derives a different store and orphans the old one "
-                "silently. Both are reported rather than closed (§ 25)."
+                "appended under a lock here, a checkout that is moved or renamed "
+                "derives a different store and orphans the old one silently, and "
+                "the write-time admission is unreachable -- so no entry carries a "
+                "provenance or a premise, and every recalled fact reads as "
+                "repeated and is reported unchecked. ⛔ Three rather than two, "
+                "each reported rather than closed (§ 25)."
             )
         if write_from == "main_tree":
             out.append(

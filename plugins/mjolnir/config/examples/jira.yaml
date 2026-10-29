@@ -214,7 +214,16 @@ session:
 # And `main_tree` is the only value this carrier allows, which the reader refuses the other half
 # of: it is what makes the third refuse from a tree rather than write the tree's own store.
 memory:
+  # The harness decides where the store is and the procedure must not guess, which is what this
+  # value says and the whole of what it says. ⛔ Three costs rather than two, each reported rather
+  # than closed: the index two sessions contend on cannot be appended under a lock, a checkout
+  # moved or renamed orphans the store silently, and the write-time admission is unreachable — so
+  # no entry here carries a provenance or a premise, every recalled fact reads as *repeated*, and a
+  # restoring pass reports each one unchecked (§ 25).
   carrier: derived
+  # The one thing the carrier above does close, and the reason it is stated rather than left out: a
+  # save standing in a tree refuses this third and names the refusal, instead of writing the tree's
+  # own derived store where the checkout will never read it.
   write_from: main_tree
 
 language:

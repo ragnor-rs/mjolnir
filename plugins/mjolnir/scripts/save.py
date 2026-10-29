@@ -32,6 +32,10 @@ this module owns is what none of its readers should perform twice:
   * **The memory entry's form, and its admission**: a fact carries where it came
     from and what it rests on, held at write time, because a store already
     carrying an unprovenanced fact cannot be read back into one that does not.
+  * **The reading of one entry out of a store whose admission never ran** (§ 25):
+    what the entry states, what it *reads as* where it states nothing, and which
+    of three standings the fact is reported under -- current, **stale**, or
+    unchecked.
   * **The locked append to the index**, which is the one file two sessions
     contend on.
 
@@ -59,8 +63,13 @@ Usage:
     save.py check --file PATH          hold a written artifact to the form, and
                                        report what a resuming pass reads out of it
     save.py entry                      the fields a memory entry carries (§ 25)
-    save.py recall --file PATH         hold a written entry to the entry form, and
-                                       hand it back with its premise unchecked
+    save.py recall --file PATH [--premise holds|broken|unchecked]
+                                       read one written entry -- in the entry form
+                                       or in the shape a store whose admission
+                                       never ran holds -- and report what it
+                                       states, what it reads as, and the standing
+                                       the reader's own answer about its premise
+                                       puts it under
     save.py memory [--skills-root DIR] [--standing-in DIR]
                                        where the store is, whether that directory
                                        may write it, and what the carrier leaves
@@ -86,6 +95,13 @@ as a role whose every save is wrong.
 refusal to write from a tree is that command working, so it exits 0 and says so;
 the 1 is reserved for the decision nobody could establish, which is § 11's rule
 again one command over.
+
+⚠️ **`recall`'s 1 covers two unlike things, and the report names which.** An entry
+that fails the form is a file to rewrite; a fact whose premise the reader reports
+broken is a **stale** fact to re-measure or delete. ⛔ Both are *it does not
+hold*, and a stale fact sharing the 0 of a current one would be the restatement
+§ 25's standing rule exists against -- a caller reading the status alone could
+not tell them apart.
 """
 
 from __future__ import annotations
@@ -414,6 +430,222 @@ def read_entry(text: str) -> tuple[dict | None, list[str]]:
     return _held(text, ENTRY_FIELDS, ENTRY_CLOSED, "the memory entry")
 
 
+# --- reading one entry out of a store whose admission never ran (§ 25) ------
+#
+# ⛔ The admission above runs at write time and is reachable only under a pinned
+# store: under `derived` the command that performs it composes no path and writes
+# nothing, so **no entry in such a store has been through it** and none of them
+# carries the two fields the rule requires. That is the third thing that carrier
+# leaves open, and this is the half that makes the store it leaves readable at
+# all.
+#
+# ⛔ **Read rather than refused, and each rule failing in the direction that
+# under-claims.** A reading that refuses the whole entry tells its reader nothing
+# about what they are holding; one that recovers the fact and names the absent
+# fields leaves them with the fact and with the knowledge that it is neither
+# provenanced nor checkable.
+
+# What a fact states nothing about its provenance reads as. ⛔ The whole of the
+# failing-safe direction, in one name: `measured` is a value an entry has to
+# state, and a store where its absence read as the better of the two is a store
+# where a repeated fact becomes a measured one by being written without a field.
+UNSTATED_READS_AS = "repeated"
+
+# The standing a recalled fact is reported under, and ⛔ three rather than two.
+# ⚠️ The spellings are **this module's** and the surface states none of them,
+# which is § 25's rule that they are the carrier's -- the same division
+# `BOUNDARIES` above carries, with the same limit: a standing added here and
+# § 25's prose fall out of step with no check reporting it.
+CURRENT, STALE, UNCHECKED = "current", "stale", "unchecked"
+STANDINGS = [CURRENT, STALE, UNCHECKED]
+
+# What a reader may answer about the premise, and what each answer puts the fact
+# under. ⛔ The answer comes from the reader and never from the entry: the premise
+# is read against the tree, which is the one part of this no command can take.
+PREMISE_ANSWERS = {"holds": CURRENT, "broken": STALE, "unchecked": UNCHECKED}
+
+# The fence a store's own entries are wrapped in where they carry one -- a
+# leading YAML document, then prose. ⚠️ Named as a shape this module **reads**
+# and never as one it writes: what `remember` admits is the entry form, and this
+# is how the store a derived carrier hands over actually holds a fact.
+FENCE = "---"
+
+
+def _fenced(text: str) -> tuple[dict | None, str] | None:
+    """(the leading document's keys, the prose after it), or None if unfenced.
+
+    ⛔ The keys come back and are **not mined for the form's fields**: a mapping
+    invented here would be the procedure guessing another tool's vocabulary, and
+    the guess actually on offer in the measured store is a subject label, which
+    is not an evidence class (§ 25). They are returned so a reader can be told
+    what shape the file is in, not so a field can be taken out of them.
+    """
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != FENCE:
+        return None
+    for at in range(1, len(lines)):
+        if lines[at].strip() == FENCE:
+            head = "\n".join(lines[1:at])
+            try:
+                keys = config._load_yaml(head, "the entry's leading document")
+            except config.ConfigError:
+                keys = None
+            return (keys if isinstance(keys, dict) else None,
+                    "\n".join(lines[at + 1:]))
+    return None
+
+
+def recalled(text: str, premise: str = "unchecked") -> tuple[int, dict]:
+    """(status, what a reader gets from one entry) -- § 25's read-time half.
+
+    ⛔ **Two answers and not one**: what the entry *states*, and what it *reads
+    as*. An entry that states no provenance reads as repeated, which is the only
+    direction that does not turn a passed-on fact into a measured one by leaving
+    a field out.
+
+    ⛔ **And the standing is reported rather than implied.** A premise the reader
+    checked and found broken makes the fact **stale**, which is § 24's rule given
+    somewhere to land; a premise nothing checked leaves it unchecked; and
+    *current* over an entry that states no premise is **refused**, that being the
+    restatement the rule is against arriving through this very command.
+    """
+    recovered, problems = read_entry(text)
+    shape = "the entry form"
+    unstated: list[str] = []
+    report: list[str] = []
+    if problems:
+        # ⛔ The store's own shape, tried only once the form has failed -- so an
+        # entry that holds the form is never read through the lenient arm, and
+        # the admission's own refusals keep every bit of their reach.
+        fenced = _fenced(text)
+        if fenced is None:
+            return 1, {
+                "shape": shape,
+                "holds": False,
+                "problems": problems,
+                "read": recovered,
+                "unstated": [name for name, _ in ENTRY_FIELDS],
+                "reads_as": UNSTATED_READS_AS,
+                "standing": UNCHECKED,
+                "report": [
+                    "This file is neither an entry in the form nor in the shape a "
+                    "store holds, so there is nothing to read a fact out of (§ 25)."
+                ],
+            }
+        keys, body = fenced
+        shape = "the store's own"
+        recovered = {name: None for name, _ in ENTRY_FIELDS}
+        recovered["fact"] = body.strip() or None
+        unstated = sorted(name for name, _ in ENTRY_FIELDS if recovered[name] is None)
+        problems = []
+        report.append(
+            f"This entry is in the store's own shape rather than the entry form, "
+            f"so it never went through § 25's admission: the fields it does not "
+            f"carry are {', '.join('`' + name + '`' for name in unstated)}, and "
+            "⛔ no key of its leading document is read as one of them -- the one "
+            "on offer is a subject label and not an evidence class."
+        )
+        if keys is None:
+            report.append(
+                "Its leading document could not be read as a block of keys, which "
+                "changes nothing about the fields above: none of them would have "
+                "been taken from it either way (§ 25)."
+            )
+        # ⛔ A fact is the one thing a reading cannot do without, so an entry in
+        # this shape with nothing under its fence is refused rather than handed
+        # back as a fact that is empty.
+        if recovered["fact"] is None:
+            return 1, {
+                "shape": shape,
+                "holds": False,
+                "problems": [
+                    "the entry carries nothing after its leading document, so there "
+                    "is no fact to recall out of it at all (§ 25)"
+                ],
+                "read": recovered,
+                "unstated": unstated,
+                "reads_as": UNSTATED_READS_AS,
+                "standing": UNCHECKED,
+                "report": report,
+            }
+
+    stated = (recovered or {}).get("provenance")
+    reads_as = stated if stated in PROVENANCE else UNSTATED_READS_AS
+    if stated not in PROVENANCE:
+        report.append(
+            f"`provenance` is unstated, so this fact reads as **{UNSTATED_READS_AS}** "
+            f"rather than as measured: ⛔ `measured` is a value an entry has to "
+            "state, and its absence is not the permissive reading of it (§ 25)."
+        )
+
+    # ⛔ The reader's answer, held to the three words before it is acted on: a
+    # fourth would otherwise arrive as a standing nothing names.
+    if premise not in PREMISE_ANSWERS:
+        return 1, {
+            "shape": shape,
+            "holds": True,
+            "problems": [
+                f"the premise was answered {premise!r}; the three a reader may give "
+                f"are {' | '.join(sorted(PREMISE_ANSWERS))} (§ 25)"
+            ],
+            "read": recovered,
+            "unstated": unstated,
+            "reads_as": reads_as,
+            "standing": UNCHECKED,
+            "report": report,
+        }
+    standing = PREMISE_ANSWERS[premise]
+    # ⛔ *Current* over an entry stating no premise is refused, which is the arm
+    # the whole standing exists for: there was nothing to check, so a reader
+    # answering that it holds has asserted the fact rather than checked it.
+    if standing == CURRENT and not (recovered or {}).get("premise"):
+        return 1, {
+            "shape": shape,
+            "holds": True,
+            "problems": [
+                "the premise was answered as holding and the entry states none, so "
+                "nothing was checked: ⛔ a fact reported current on an unstated "
+                "premise is the restatement § 24 refuses, arriving through the "
+                "command written to prevent it (§ 25)"
+            ],
+            "read": recovered,
+            "unstated": unstated,
+            "reads_as": reads_as,
+            "standing": UNCHECKED,
+            "report": report,
+        }
+    if standing == CURRENT:
+        report.append(
+            "The premise above was checked by whoever ran this and reported as "
+            "holding, so the fact is **current** -- ⛔ on that reading and not on "
+            "this command's, which checks nothing (§ 24)."
+        )
+    elif standing == STALE:
+        report.append(
+            "The premise above was checked and does not hold, so the fact is "
+            "**stale**: ⛔ reported as stale and never restated as current, and "
+            "the entry is re-measured or deleted rather than read again (§ 24, "
+            "§ 25)."
+        )
+    else:
+        report.append(
+            "The premise has not been checked by this command and cannot be: it is "
+            "read against the tree by whoever reads the fact. ⛔ Report the fact "
+            "with its premise, or report it unchecked -- never as current (§ 24, "
+            "§ 25)."
+        )
+    return (1 if standing == STALE else 0), {
+        "shape": shape,
+        "holds": True,
+        "problems": [],
+        "read": recovered,
+        "unstated": unstated,
+        "reads_as": reads_as,
+        "standing": standing,
+        "report": report,
+    }
+
+
 def _git(where: str, *args: str) -> str | None:
     """One read-only git answer from `where`, or None where git cannot give one."""
     import subprocess  # noqa: PLC0415 -- the only arm that needs a process
@@ -555,6 +787,18 @@ def memory(configuration: config.Config, standing_in: str) -> dict:
             "not guess at -- so concurrent entries can lose each other (§ 25).",
             "A checkout that is moved or renamed derives a different store and "
             "orphans the old one, with nothing said (§ 25).",
+            # ⛔ The third, and it is a third rather than a restatement of the two
+            # above: those lose a fact or orphan it, while this one leaves every
+            # fact in the store unprovenanced and uncheckable *while reading
+            # exactly like a fact that carries both*. ⚠️ Measured on this
+            # repository, which is the only project running the memory third --
+            # the admission's own command writes nothing under this carrier, so
+            # no entry in the store has been through it.
+            "The write-time admission is unreachable here, there being no store "
+            "for `remember` to place a fact in -- so no entry carries a "
+            "provenance or a premise, every recalled fact reads as "
+            f"**{UNSTATED_READS_AS}** and is reported unchecked, and § 24's check "
+            "is not takeable through the entry at all (§ 25).",
         ]
         out["report"].append(
             "The store is the harness's own (`memory.carrier: derived`), so this "
@@ -814,6 +1058,33 @@ def _an_entry_without(field: str) -> str:
     return "\n".join(f"{name}: {value}" for name, value in written.items()) + "\n"
 
 
+# The prose the fixture below puts under its fence, named so the arm asserting
+# the fact was recovered compares against one string rather than two literals.
+A_STORED_FACT = "a fact somebody wrote down, in prose and in no form at all"
+
+
+def _a_stored_entry(body: str = A_STORED_FACT) -> str:
+    """One entry in the shape a store whose admission never ran actually holds.
+
+    ⛔ **The measured shape and not an invented one**: a leading YAML document
+    carrying a name, a one-line description and a subject label, then the fact as
+    prose. ⚠️ The subject label is the whole reason § 25 forbids mining the
+    leading document for the form's fields -- it is the key a reader would reach
+    for, and `project` is a subject rather than an evidence class, so taking it
+    as a provenance would make every fact in the store measured by construction.
+    """
+    return (
+        f"{FENCE}\n"
+        "name: a-fact\n"
+        "description: one line about it, which the index carries\n"
+        "metadata:\n"
+        "  type: project\n"
+        f"{FENCE}\n"
+        "\n"
+        f"{body}\n"
+    )
+
+
 # (label, how to write it, a fragment the refusal has to name). ⛔ One per arm of
 # the admission, and the provenance arms are the ones § 25 spends the rule on: a
 # fact admitted with no provenance is the one a later pass turns into a measured
@@ -979,6 +1250,144 @@ def _memory_arms(check) -> None:
         "is in, which no reader of either can tell",
     )
 
+    # --- the read-time half, over the shape the measured store holds --------
+    #
+    # ⛔ The store a derived carrier hands over has been through no admission, so
+    # every entry in it is in this shape and none of them carries the two fields
+    # the rule requires. These arms are what makes that store readable rather
+    # than refused whole, and each of them holds the direction that under-claims.
+    check(
+        "every standing a reader's answer produces is one this module names",
+        set(PREMISE_ANSWERS.values()) == set(STANDINGS),
+        f"answers produce {sorted(set(PREMISE_ANSWERS.values()))!r} and the "
+        f"standings named are {STANDINGS!r} -- a standing nothing names is one a "
+        "reader cannot place",
+    )
+    check(
+        "the value an unstated provenance reads as is one of the two the form "
+        "states, and not the measured one",
+        UNSTATED_READS_AS in PROVENANCE and UNSTATED_READS_AS != "measured",
+        f"reads as {UNSTATED_READS_AS!r}: a value outside the set is one no reader "
+        "can place, and the measured one turns a passed-on fact into an observed "
+        "one by leaving a field out",
+    )
+
+    stored = _a_stored_entry()
+    status, got = recalled(stored)
+    check(
+        "an entry in the store's own shape is read rather than refused",
+        status == 0 and got["holds"] is True and got["shape"] == "the store's own",
+        f"exited {status} with {got!r} -- a reading that refuses the whole entry "
+        "tells its reader nothing about what they are holding",
+    )
+    check(
+        "and its fact is recovered from the prose under the fence",
+        (got["read"] or {}).get("fact") == A_STORED_FACT,
+        f"recovered {got['read']!r}",
+    )
+    check(
+        "while the fields it does not carry come back named as unstated",
+        got["unstated"] == ["premise", "provenance", "source"],
+        f"named {got['unstated']!r}",
+    )
+    check(
+        "and no key of its leading document is read as one of them",
+        (got["read"] or {}).get("provenance") is None
+        and (got["read"] or {}).get("source") is None,
+        f"recovered {got['read']!r} -- the key on offer is a subject label, so a "
+        "mapping invented here makes every fact in the store measured",
+    )
+    check(
+        "a fact stating no provenance reads as the unstated reading",
+        got["reads_as"] == UNSTATED_READS_AS,
+        f"reads as {got['reads_as']!r}",
+    )
+    check(
+        "and nothing checked leaves it unchecked rather than current",
+        got["standing"] == UNCHECKED,
+        f"stands as {got['standing']!r}",
+    )
+    # ⛔ The arm the whole standing exists for, and the one a permissive reading
+    # would pass: there was no premise to check, so an answer that it holds is an
+    # assertion about the fact rather than a reading of it.
+    status, got = recalled(stored, "holds")
+    check(
+        "`holds` over an entry stating no premise is refused, and the fact is not "
+        "reported current",
+        status == 1
+        and got["standing"] == UNCHECKED
+        and any("nothing was checked" in problem for problem in got["problems"]),
+        f"exited {status} with {got!r}",
+    )
+    status, got = recalled(stored, "broken")
+    check(
+        "a premise the reader found broken makes even an unprovenanced fact stale",
+        status == 1 and got["standing"] == STALE,
+        f"exited {status} with {got!r}",
+    )
+    # ⛔ And the admission keeps every bit of its reach: an entry *in the form*
+    # with a field missing is refused, never read through the lenient arm. ⚠️ The
+    # direction that matters -- a lenient reader that swallowed the form's own
+    # refusals would have retired the admission by adding a second way in.
+    status, got = recalled(_an_entry_without("provenance"))
+    check(
+        "an entry in the form with a field missing is still refused, not read "
+        "leniently",
+        status == 1
+        and got["shape"] == "the entry form"
+        and any("`provenance` is missing" in problem for problem in got["problems"]),
+        f"exited {status} with {got!r}",
+    )
+    for answer, expected, expected_status in (
+        ("holds", CURRENT, 0),
+        ("broken", STALE, 1),
+        ("unchecked", UNCHECKED, 0),
+    ):
+        status, got = recalled(complete, answer)
+        check(
+            f"a complete entry whose premise is answered {answer!r} stands as "
+            f"{expected!r} and exits {expected_status}",
+            status == expected_status and got["standing"] == expected,
+            f"exited {status} with {got!r}",
+        )
+    status, got = recalled(complete)
+    check(
+        "and a stated provenance is read as the entry states it",
+        got["reads_as"] == "measured" and got["unstated"] == [],
+        f"reads as {got['reads_as']!r} with {got['unstated']!r} unstated",
+    )
+    status, got = recalled(complete, "obviously")
+    check(
+        "a premise answered outside the three is refused, not taken as one of them",
+        status == 1 and got["standing"] == UNCHECKED,
+        f"exited {status} with {got!r}",
+    )
+    status, got = recalled(_a_stored_entry(body="   "))
+    check(
+        "an entry with nothing under its fence is refused, naming the absent fact",
+        status == 1
+        and any("no fact to recall" in problem for problem in got["problems"]),
+        f"exited {status} with {got!r}",
+    )
+    status, got = recalled(f"{FENCE}\nname: [unclosed\n{FENCE}\n\nthe fact itself\n")
+    check(
+        "a leading document that does not parse changes nothing about the fields",
+        status == 0
+        and (got["read"] or {}).get("fact") == "the fact itself"
+        and got["unstated"] == ["premise", "provenance", "source"],
+        f"exited {status} with {got!r} -- none of the three would have been taken "
+        "out of that document either way",
+    )
+    status, got = recalled("just some prose, in neither shape\n")
+    check(
+        "a file in neither shape has no fact to read out of it, and says that",
+        status == 1
+        and got["read"] is None
+        and got["standing"] == UNCHECKED
+        and any("nothing to read a fact out of" in line for line in got["report"]),
+        f"exited {status} with {got!r}",
+    )
+
     with tempfile.TemporaryDirectory() as root:
         checkout, tree = _a_checkout_and_a_tree(root)
 
@@ -1105,11 +1514,17 @@ def _memory_arms(check) -> None:
             harness["store"] is None and harness["index"] is None,
             f"resolved {harness['store']!r} and {harness['index']!r}",
         )
+        # ⛔ Three rather than two, and each named by the thing that makes it its
+        # own half: a count alone would pass a report that stated one of them
+        # twice. ⚠️ The admission arm is the one this project measured missing
+        # from the report while the carrier was already leaving it open -- the
+        # surface priced the derived arm at two costs when it has three.
         check(
-            "and names the two halves it leaves open rather than one",
-            len(harness["unclosed"]) == 2
+            "and names the three halves it leaves open rather than two",
+            len(harness["unclosed"]) == 3
             and any("lock" in line for line in harness["unclosed"])
-            and any("renamed" in line for line in harness["unclosed"]),
+            and any("renamed" in line for line in harness["unclosed"])
+            and any("admission" in line for line in harness["unclosed"]),
             f"named {harness['unclosed']!r}",
         )
         absent = memory(
@@ -1189,6 +1604,21 @@ def _memory_arms(check) -> None:
             and not os.path.exists(placed["index"]),
             f"exited {status} with {answer!r}, and the index "
             f"{'exists' if os.path.exists(placed['index']) else 'does not'}",
+        )
+        # ⛔ Read leniently, admitted strictly, and the two halves are held apart
+        # here: the shape `recalled` above reads rather than refuses is still
+        # refused at the point of writing, because a store that accepted it would
+        # be a store carrying an unprovenanced fact by the one route the
+        # admission exists to close.
+        stored_path = os.path.join(root, "a-stored-entry.md")
+        with open(stored_path, "w", encoding="utf-8") as handle:
+            handle.write(_a_stored_entry())
+        status, answer = remember(pinned_any, tree, stored_path, "a-fact.md", "- a line")
+        check(
+            "an entry in the store's own shape is refused at write time, read or not",
+            status == 1 and answer["wrote"] is False,
+            f"exited {status} with {answer!r} -- the lenient reading is for a store "
+            "whose entries are already there, never a second way into one",
         )
         status, answer = remember(strict_config, tree, entry_path, "a-fact.md", "- a line")
         check(
@@ -1555,6 +1985,30 @@ def self_test() -> int:
         with open(entry, "w", encoding="utf-8") as handle:
             handle.write(_an_entry())
         check("an entry that holds exits zero", main(["recall", "--file", entry]) == 0)
+        # ⛔ The two unlike things the `1` covers, each asserted on the path that
+        # produces it: a form that failed, and a fact the reader reported stale.
+        # ⚠️ A stale fact sharing the `0` of a current one is the restatement
+        # § 25's standing rule exists against, read off the status alone.
+        check(
+            "and the same entry whose premise the reader found broken exits one",
+            main(["recall", "--file", entry, "--premise", "broken"]) == 1,
+        )
+        check(
+            "while one whose premise they found holding exits zero",
+            main(["recall", "--file", entry, "--premise", "holds"]) == 0,
+        )
+        stored_file = os.path.join(root, "a-stored-entry.md")
+        with open(stored_file, "w", encoding="utf-8") as handle:
+            handle.write(_a_stored_entry())
+        check(
+            "an entry in the store's own shape exits zero rather than failing a "
+            "form it is not in",
+            main(["recall", "--file", stored_file]) == 0,
+        )
+        check(
+            "and claiming its unstated premise holds exits one",
+            main(["recall", "--file", stored_file, "--premise", "holds"]) == 1,
+        )
         with open(entry, "w", encoding="utf-8") as handle:
             handle.write(_an_entry_without("premise"))
         check(
@@ -1636,9 +2090,17 @@ def main(argv: list[str] | None = None) -> int:
     reading.add_argument("--file", required=True)
 
     recalling = sub.add_parser(
-        "recall", help="hold a written memory entry to the entry form (§ 25)"
+        "recall", help="read one written memory entry, and its standing (§ 25)"
     )
     recalling.add_argument("--file", required=True)
+    # ⛔ The reader's own answer about the premise, defaulting to the one that
+    # claims nothing: a default of `holds` would make *current* the value a
+    # caller gets by not answering, which is the restatement § 24 refuses written
+    # as a flag nobody passes.
+    recalling.add_argument(
+        "--premise", choices=sorted(PREMISE_ANSWERS), default="unchecked",
+        help="what the reader found when they read the premise against the tree",
+    )
 
     # ⛔ These two do read the configuration, and both take the working directory
     # explicitly rather than reading `os.getcwd()`: the decision they answer is
@@ -1680,21 +2142,17 @@ def main(argv: list[str] | None = None) -> int:
         except OSError as exc:
             print(exc, file=sys.stderr)
             return 2
-        recovered, problems = (
-            read(text) if args.what == "check" else read_entry(text)
-        )
+        # ⛔ A recalled entry is never handed back as a fact that is current:
+        # § 24 obliges the reading role to check one, and a carrier that returned
+        # the fact alone would have made the restatement the easier of the two
+        # paths. What `recalled` adds over the form is where it says so -- the
+        # standing, and what an entry stating no provenance reads as.
+        if args.what == "recall":
+            status, answer = recalled(text, args.premise)
+            print(json.dumps(answer, indent=2, ensure_ascii=False))
+            return status
+        recovered, problems = read(text)
         answer = {"holds": not problems, "problems": problems, "read": recovered}
-        # ⛔ A recalled entry is handed back with its premise named as unchecked,
-        # never as a fact that is current: § 24 obliges the reading role to check
-        # one, and a carrier that returned the fact alone would have made the
-        # restatement the easier of the two paths.
-        if args.what == "recall" and not problems:
-            answer["unchecked"] = (
-                "The premise above has not been checked by this command and "
-                "cannot be: it is read against the tree by whoever reads the "
-                "fact. ⛔ Report the fact with its premise, or report it "
-                "unchecked -- never as current (§ 24, § 25)."
-            )
         print(json.dumps(answer, indent=2, ensure_ascii=False))
         return 0 if not problems else 1
 

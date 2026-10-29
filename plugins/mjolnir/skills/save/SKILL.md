@@ -165,9 +165,16 @@ one a report turns into a permission by accident:
 | **no block is carried** | the project states no store, so there is nothing to refresh and the reply says that — ⚠️ **never that memory holds nothing**, a tree whose surface predates § 25 reading the same way |
 
 ⛔ **What the carrier also hands back is what it could not close, and that goes in the reply as
-given.** Under the carrier that leaves the store to the harness it is two things — the index two
-sessions contend on, and a checkout that may have moved — and both are the project's stated cost
-rather than this pass's failure.
+given.** Under the carrier that leaves the store to the harness it is **three** things — the index
+two sessions contend on, a checkout that may have moved, and the write-time admission below left
+unreachable — and each is the project's stated cost rather than this pass's failure.
+
+⚠️ **The third of those decides whether the rest of this step runs at all.** Where the admission is
+unreachable the command that performs it writes nothing, so this role refreshes the store through
+whatever the harness itself offers and ⛔ **says in the reply that the entries it wrote carry no
+provenance and no premise** — the restoring role reads them as `repeated` and unchecked, which
+[`§ 25`](../../config/schema.md#what-a-reader-does-with-a-store-whose-admission-never-ran) states and
+this role does not get to improve on.
 
 **Each fact goes in as an entry, and the form is the carrier's**
 ([`§ 25`](../../config/schema.md#what-may-enter-the-store-and-what-a-reader-does-with-what-is-in-it)):

@@ -2092,6 +2092,59 @@ premise still holds is read against the tree by whoever reads the fact. `asof` w
 the form and left out for that reason — a date says when a fact was written, not whether it is still
 true, so it would answer staleness with a number that reads like an answer.
 
+### What the admission costs a store it cannot reach
+
+⚠️ **Measured in this repository, which is the only project here that runs the memory third and the
+copy the `derived` arm was written from.** The admission is held by the one command that places a
+fact in the store, and under a derived carrier that command composes no path and writes nothing:
+handed a complete entry it answers that there is no directory for it to write a fact into and no
+index for it to lock. So every entry in that store is in the harness's own shape — a leading YAML
+document carrying a name, a one-line description and a subject label, then the fact as prose — and
+not one of them has been through the rule.
+
+The consequence is a **third** cost rather than a restatement of the two the carrier already
+reports, which is why the table at
+[`schema.md § 25 → The carriers`](../plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)
+now names three:
+
+| what the derived arm leaves open | what it costs |
+|---|---|
+| the index's contention | work somebody did is lost, two concurrent rewrites of one file clobbering each other |
+| a moved or renamed checkout | the store is orphaned, and the old one is never read again |
+| the admission it cannot reach | every fact in it is unprovenanced and uncheckable, **while reading exactly like a fact that carries both** |
+
+⚠️ **The read-time check met the same wall from the other side.** A reading written for the entry
+form alone refuses a store-shaped entry as a file that is not one YAML document — true, and it tells
+its reader nothing about what they are holding. Three rules were added for the store a project in
+this position actually has, each failing in the direction that under-claims:
+[`schema.md § 25 → What a reader does with a store whose admission never ran`](../plugins/mjolnir/config/schema.md#what-a-reader-does-with-a-store-whose-admission-never-ran).
+
+⚠️ **And the one mapping a reader would reach for is the one that must not be made.** The leading
+document's subject label says which part of the project a fact is about; a provenance is an evidence
+class. Reading the first as the second makes every fact in the store *measured* by construction,
+which is the precise failure the provenance field exists to prevent — so no key of a foreign shape
+is read as a field of the form at all, and a document that happens to carry the form's own fields
+inside such a shape is still read as stating none.
+
+### Reporting a fact stale rather than restating it
+
+The read-time half [`schema.md § 24`](../plugins/mjolnir/config/schema.md#24-session-restore--the-readings-a-pass-is-resumed-from)
+already stated — a recalled fact is checked or reported unchecked — had nowhere to put the answer. A
+reading that can only ever say *unchecked* renders **nothing checked it** and **checked, and still
+true** identically, and a fact whose premise has gone has no way of being reported at all except in
+the prose of whoever happened to notice.
+
+[`schema.md § 25 → The standing a recalled fact is reported under`](../plugins/mjolnir/config/schema.md#the-standing-a-recalled-fact-is-reported-under)
+is where that lands: three standings, the premise's answer supplied by the reader rather than by the
+entry, and *current* over an entry stating no premise **refused** — there was nothing to check, so
+an answer that it holds is an assertion about the fact rather than a reading of it.
+
+⚠️ **What this reaches is which of the three was reported and not whether the answer is right**,
+which is the same split the admission itself carries: a wrong reading of the premise against the
+tree is wrong here too. What it buys is that the three are told apart at all, and that the status a
+caller reads keeps a stale fact off the one a current fact gets — a stale fact sharing that status
+being the restatement the whole rule is against, read off the status alone.
+
 ## The day log's destination port
 
 The destination was on this surface from the start, and as one key: a directory, in the section

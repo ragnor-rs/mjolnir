@@ -3262,6 +3262,14 @@ What it holds, each being a derivation rather than a verdict about a project:
   anything is written. One function holds both forms, so neither can come to be held to less than
   the other — and the suite asserts the two are not interchangeable in both directions, an artifact
   failing the entry form and an entry failing the artifact's.
+- **One entry read out of a store whose admission never ran, and the standing it is reported
+  under.** Both are
+  [schema § 25](../plugins/mjolnir/config/schema.md#what-a-reader-does-with-a-store-whose-admission-never-ran)'s.
+  The suite asserts the lenient reading over the shape the measured store actually holds and asserts
+  the strict one beside it: an entry in the form with a field missing is still refused, and the same
+  store-shaped entry a reading accepts is still refused at the point of **writing**. ⚠️ That pair is
+  the one that matters, a lenient reader which swallowed the admission's own refusals having retired
+  the admission by adding a second way in.
 
 ⚠️ **The fields are keys and the prose beside them is the project's own.** A form demanding English
 headings would ship one project's vocabulary to every project, which
@@ -3305,6 +3313,15 @@ provenance and its premise is decidable and is asserted field by field; whether 
 holds is read against the tree by whoever reads the fact, which is the *quoting* kind of judgement
 one half over from the round trip above.
 
+⚠️ **The reading's own arms reach which of three standings was reported and not whether the reader
+was right.** The premise is read against the tree by a person or a role, so the suite asserts the
+mapping from the reader's answer to the standing, the refusal of *current* over an entry that states
+no premise, and that a fact an unstated provenance leaves unplaced reads as **repeated** — never as
+measured. ⚠️ **The failing-safe value is held inside the form's own set** rather than against a
+literal written in the suite, a constant mistyped into a word no reader can place being the way that
+arm would otherwise pass over nothing. What no arm reaches is whether the reader's reading of the
+premise is correct, which is the same residue the admission carries one half over.
+
 ### What this check deliberately does not hold
 
 - **Whether a save happened at all.** Nothing fires when a window is compacted — the event is one
@@ -3320,7 +3337,15 @@ one half over from the round trip above.
 - **Whether a recalled fact is still true.** The entry states its premise and the admission holds
   that it does; the premise itself is read against the tree by the restoring role
   ([schema § 24](../plugins/mjolnir/config/schema.md#24-session-restore--the-readings-a-pass-is-resumed-from)),
-  and no suite can take that reading for a store on somebody's machine.
+  and no suite can take that reading for a store on somebody's machine. ⚠️ **The standing is the
+  answer handed over and never one taken here**, which is the same boundary one step out: what the
+  suite holds is that *current* and **stale** are told apart and that a premise nothing checked
+  cannot arrive as either.
+- **Whether a store's entries are in the shape the store's own tooling writes.** The lenient reading
+  is held over the shape this repository measured, and whether another project's harness writes that
+  shape is a fact about a machine outside the run — the same thing
+  [schema § 25](../plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)'s table
+  names as what a pinned carrier owes and nobody holds.
 - **Whether the artifact is where § 11 says.** The store's path and whether it is committed are the
   configuration reader's, refused there; this reads a file it is handed by path.
 - **Whether the boundary names match the occasions the surface states.** The four names are the
