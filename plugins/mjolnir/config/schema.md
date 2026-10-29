@@ -752,14 +752,21 @@ then names a workflow the repository does not contain.
 the name in the refusal.** The rule above makes an entry carry a key; this one makes the key *a*
 key. It is the same argument one level up from the collision the key exists for — that one is two
 workflows sharing a job's name, which a workflow-keyed map really does make impossible, and this
-is the map's own name repeated, which it does not. ⚠️ **Measured on 2026-10-24, with two entries
-differing only in `mirrors`, nothing anywhere refused the shape**: the configuration loaded and
-`Config.mirrors()` returned both records; the guard ranking answers across entries resolved whichever
-sorted first, so *which workflow a refusal names* became an ordering accident; and the check
-holding this facet to the host's own definitions matched both entries against one definition and
-reported zero problems in both directions, against a measured baseline of zero. ⛔ **So two
-statements of what one run mirrors are refused where they are written** rather than tolerated by
-every consumer in a different way.
+is the map's own name repeated, which it does not. ⚠️ **Measured with two entries differing only
+in `mirrors`, nothing anywhere refused the shape**: the configuration loaded and `Config.mirrors()`
+returned two records both naming the workflow, so every consumer that resolves by that name got
+one answer for two entries — each command mapping to *the `A run` workflow*, which sends a reader
+to a name the facet states twice without saying which entry answers for it. ⚠️ **And the check
+holding this facet to the host's own definitions reported zero problems in both directions**,
+against a measured baseline of zero: two entries naming one definition each find a match, so
+neither direction sees the repeat. ⛔ **So two statements of what one run mirrors are refused where
+they are written** rather than tolerated by every consumer in a different way.
+
+⚠️ **One command mirrored by two entries is a different shape and this rule does not reach it** —
+measured, the per-command map resolves it to whichever entry comes **first in the file**, document
+order and not sorted order, so a second entry's name is simply never reported. That one is
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s question from the other
+end, and conflating the two would have this rule refusing a facet whose keys are all distinct.
 
 ⚠️ **The comparison is the name as written, and case is not folded** — unlike
 [§ 20](#20-the-sections-a-pull-request-body-must-carry)'s heading, whose own collision rule folds

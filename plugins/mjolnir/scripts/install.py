@@ -813,11 +813,16 @@ def refuses_entry(configuration: config.Config, entry: dict, replacing=None) -> 
     """Why the surface cannot state this entry, or None where it can.
 
     ⛔ Asked of the **reader** rather than answered here. Every refusal § 2
-    carries -- an entry with no workflow name, a workflow name an entry already
-    states, `mirrors` beside `jobs`, a list inside one `mirrors`, a trigger that
-    does not parse, a path filter written blank -- is in that one walk, and a
-    second judgement here would be free to admit a shape the project's own
-    configuration then fails to load.
+    carries is in that one walk, and a second judgement here would be free to
+    admit a shape the project's own configuration then fails to load.
+
+    ⛔ **Which refusals those are is not listed here, and the list that was here
+    is deleted rather than extended.** It named six, where the facet's own
+    refusals counted off `config._planted_violations` at the moment it was
+    deleted were thirty -- a lossy copy of a set living one module over, with
+    nothing comparing the two. ⚠️ **The wrong remedy is the tempting one**: a
+    rule added to the reader reads as something to *synchronise* into this
+    docstring, which is how six of thirty came to look complete.
 
     ⛔ **`replacing` is this artifact's own standing entry, and it comes out
     before the new one goes in** -- which is the order the write itself runs in,
@@ -837,18 +842,21 @@ def refuses_entry(configuration: config.Config, entry: dict, replacing=None) -> 
     """
     data = copy.deepcopy(configuration.data)
     data.setdefault("host", {})
-    standing = list(data["host"].get("checks") or [])
+    # ⚠️ `stated` and not `standing`: one entry is what `one()` calls the
+    # standing entry, and the same word for the whole list beside it is the
+    # reading this module is written against.
+    stated = list(data["host"].get("checks") or [])
     if replacing is not None:
         # ⛔ The first copy and not every equal one: a facet legitimately states
         # one entry, so dropping all matches would be this step deciding what a
         # project wrote. There can be no second copy anyway, the reader now
         # refusing the shape -- but a pre-check that relies on that is a second
         # statement of it.
-        for index, existing in enumerate(standing):
+        for index, existing in enumerate(stated):
             if existing == replacing:
-                del standing[index]
+                del stated[index]
                 break
-    data["host"]["checks"] = standing + [entry]
+    data["host"]["checks"] = stated + [entry]
     # ⛔ Every failure is an answer with the entry named, which is what this step
     # promises. ⚠️ Caught as `ConfigError` alone, an entry the reader cannot even
     # be *shown* — one carrying a value no safe dump represents — left this

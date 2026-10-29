@@ -2247,10 +2247,11 @@ def host_runs(data: dict) -> list[dict]:
                 f"is {run['workflow']!r}, which host.checks[{first}] states as "
                 "well. § 2 keys the facet on the workflow name, so a second entry "
                 "under one name is two statements of what one run mirrors and "
-                "every consumer reading either would be right: the guard ranking "
-                "answers across entries resolves whichever sorted first, and the "
-                "check holding this facet to the host's own definitions matches "
-                "both entries against one definition and reports nothing.",
+                "every consumer reading either would be right: a consumer "
+                "resolving by that name answers for both entries without saying "
+                "which one it read, and the check holding this facet to the "
+                "host's own definitions matches both against one definition and "
+                "reports nothing.",
             )
         out.append(run)
     return out
@@ -5851,6 +5852,27 @@ def self_test() -> int:
         f"refused {broken!r}",
     )
 
+    # ⛔ And the refusal **names** the repeated name, which the plants below
+    # cannot see: they assert the key a refusal is raised on, and a message with
+    # the name taken out of it carries that key unchanged. ⚠️ Measured by taking
+    # it out: this suite stayed green and only the installer's own arm reddened,
+    # which left § 2's rule asserted in another module's suite -- a guarantee of
+    # the reader's held by a file that could stop asking for it without this one
+    # noticing. ⛔ Read off the plant rather than spelled here, so the two cannot
+    # drift into asserting a name no plant writes.
+    repeated = _two_entries_keyed_on_one_workflow(_a_valid_example())
+    name = repeated["host"]["checks"][1]["workflow"]
+    try:
+        host_runs(repeated)
+        said = None
+    except ConfigError as error:
+        said = str(error)
+    check(
+        "and the refusal names the repeated workflow name, and where it was first stated",
+        said is not None and name in said and "host.checks[0]" in said,
+        f"said {said!r}",
+    )
+
     # And the form a project whose workflow runs exactly one check writes, which
     # is what it wrote before this form existed: answered about by the workflow.
     plain = _mirrored_commands(
@@ -7501,10 +7523,13 @@ def _a_trigger_of(triggers):
 def _two_entries_keyed_on_one_workflow(data: dict) -> dict:
     """§ 2's key stated twice, the two entries differing in what they mirror.
 
-    ⛔ They differ in `mirrors` on purpose, which is the form measured on
-    2026-10-24: a reader deduplicating whole entries lets exactly this one
-    through, and the consumer ranking answers across entries then resolves
-    whichever sorted first -- so the refusal has to be the **name's**.
+    ⛔ They differ in `mirrors` on purpose: a reader deduplicating whole entries
+    lets exactly this one through, and measured on the reader before this rule
+    the per-command map answered *the `A run` workflow* for **both** commands --
+    one name for two entries, with nothing saying which answered. ⚠️ So the
+    refusal has to be the **name's** and never the content's, and it is not an
+    ordering defect: ordering decides a different shape, one command mirrored by
+    two entries, which this rule does not reach.
     """
     data.setdefault("host", {})["checks"] = [
         {"workflow": "A planted workflow", "mirrors": "the-first-command",
