@@ -96,12 +96,14 @@ refusal to write from a tree is that command working, so it exits 0 and says so;
 the 1 is reserved for the decision nobody could establish, which is § 11's rule
 again one command over.
 
-⚠️ **`recall`'s 1 covers two unlike things, and the report names which.** An entry
+⚠️ **`recall`'s 1 covers two unlike things, and `standing` is which.** An entry
 that fails the form is a file to rewrite; a fact whose premise the reader reports
-broken is a **stale** fact to re-measure or delete. ⛔ Both are *it does not
-hold*, and a stale fact sharing the 0 of a current one would be the restatement
-§ 25's standing rule exists against -- a caller reading the status alone could
-not tell them apart.
+broken is a **stale** fact to re-measure or delete, and that one comes back with
+`holds` **true** and no problems at all -- the entry being fine and the fact not.
+⛔ So the 1 there reads *not a fact to use as current* rather than *it does not
+hold*, and it is a 1 rather than a 0 because a stale fact sharing a current one's
+status is the restatement § 25's standing rule exists against, read off the
+status alone.
 """
 
 from __future__ import annotations
@@ -530,7 +532,10 @@ def recalled(text: str, premise: str = "unchecked") -> tuple[int, dict]:
                 "holds": False,
                 "problems": problems,
                 "read": recovered,
-                "unstated": [name for name, _ in ENTRY_FIELDS],
+                # ⚠️ Sorted, like the fenced arm's: one reader meets both, and a
+                # field list whose order depends on which arm produced it is a
+                # list a caller cannot compare.
+                "unstated": sorted(name for name, _ in ENTRY_FIELDS),
                 "reads_as": UNSTATED_READS_AS,
                 "standing": UNCHECKED,
                 "report": [
@@ -605,7 +610,14 @@ def recalled(text: str, premise: str = "unchecked") -> tuple[int, dict]:
     # ⛔ *Current* over an entry stating no premise is refused, which is the arm
     # the whole standing exists for: there was nothing to check, so a reader
     # answering that it holds has asserted the fact rather than checked it.
-    if standing == CURRENT and not (recovered or {}).get("premise"):
+    #
+    # ⛔ **Absent and never falsy**, which is the one test that agrees with the
+    # form above. `_held` accepts `premise: 0` -- a number being how an identifier
+    # arrives, so the arm that refuses a boolean lets a zero through -- and a
+    # truthiness test here would then refuse it as *stating none*, which is a
+    # refusal whose own message is false about the entry. Found by review on this
+    # change; the direction was safe and the sentence was not.
+    if standing == CURRENT and (recovered or {}).get("premise") is None:
         return 1, {
             "shape": shape,
             "holds": True,
@@ -1357,6 +1369,17 @@ def _memory_arms(check) -> None:
             status == expected_status and got["standing"] == expected,
             f"exited {status} with {got!r}",
         )
+    # ⛔ A premise the form accepts and a truthiness test would not: `_held` lets
+    # a number through, an identifier being one, so a falsy-but-present premise
+    # has to read as *stated* here or the refusal's own message is false about
+    # the entry. Found by review on this change -- the direction was safe and the
+    # sentence was not.
+    status, got = recalled(_an_entry(premise=0), "holds")
+    check(
+        "a premise the form accepts and that is falsy is still a premise stated",
+        status == 0 and got["standing"] == CURRENT and not got["problems"],
+        f"exited {status} with {got!r}",
+    )
     status, got = recalled(complete)
     check(
         "and a stated provenance is read as the entry states it",
@@ -1392,7 +1415,12 @@ def _memory_arms(check) -> None:
         and got["read"] is None
         and got["standing"] == UNCHECKED
         and any("nothing to read a fact out of" in line for line in got["report"])
-        and got["shape"] == "the entry form",
+        and got["shape"] == "the entry form"
+        # ⚠️ And its field list is sorted like the fenced arm's: one reader meets
+        # both, so an order that depends on which arm answered is an order a
+        # caller cannot compare. Asserted against the sort rather than against a
+        # list written here, which would be this file's own spelling.
+        and got["unstated"] == sorted(name for name, _ in ENTRY_FIELDS),
         f"exited {status} with {got!r}",
     )
 

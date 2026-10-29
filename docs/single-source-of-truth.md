@@ -3317,10 +3317,12 @@ one half over from the round trip above.
 was right.** The premise is read against the tree by a person or a role, so the suite asserts the
 mapping from the reader's answer to the standing, the refusal of *current* over an entry that states
 no premise, and that a fact an unstated provenance leaves unplaced reads as **repeated** — never as
-measured. ⚠️ **The failing-safe value is held inside the form's own set** rather than against a
-literal written in the suite, a constant mistyped into a word no reader can place being the way that
-arm would otherwise pass over nothing. What no arm reaches is whether the reader's reading of the
-premise is correct, which is the same residue the admission carries one half over.
+measured. ⚠️ **That last arm is half a behaviour and half this suite's own spelling**, said exactly
+rather than overstated: it holds the failing-safe value inside the form's own provenance set, which
+catches a constant mistyped into a word no reader can place, and it also compares that value against
+the literal `measured`, which is a string written in the suite. What no arm reaches is whether the
+reader's reading of the premise is correct, which is the same residue the admission carries one half
+over.
 
 ### What this check deliberately does not hold
 
