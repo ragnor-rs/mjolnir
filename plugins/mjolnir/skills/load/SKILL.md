@@ -270,22 +270,38 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/save.py" memory --skills-root <skills-roo
 ```
 
 ⛔ **An entry states the premise it rests on, and that is what makes the check takeable** rather
-than something this role has to invent. Hand each one back through the carrier, which returns the
-fact with its premise and ⛔ **names that premise as unchecked**:
+than something this role has to invent. Hand each one back through the carrier, which reads it —
+in the entry form, or in the shape a store whose admission never ran holds — and reports what it
+states, what it **reads as**, and which fields it does not carry:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/save.py" recall --file <the entry>
 ```
 
-- **The premise still holds** ⇒ report the fact, with the check that was taken.
-- **It does not** ⇒ ⛔ **report the fact as stale and never restate it as current.** A fact whose
-  premise has changed is the cheapest way a wrong premise becomes this session's.
-- **The check could not be taken** ⇒ report it unchecked, which is
-  [`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)'s shape and not a
-  verdict.
-- ⛔ **A fact whose provenance is `repeated` is reported as that**, never as something this store
-  measured: a repeated fact becomes a measured one exactly by being read twice without the
-  distinction being carried.
+⛔ **Then read the premise against the tree yourself and hand the answer back**, which is the one
+part of this no command can take: `--premise holds` where it still does, `--premise broken` where it
+does not, and the default where nothing checked it. What comes back is the **standing** —
+[`§ 25 → The standing a recalled fact is reported under`](../../config/schema.md#the-standing-a-recalled-fact-is-reported-under)
+states the three and what each means, and the reply carries whichever one it was:
+
+- ⛔ **`stale` is reported as stale and the fact is never restated as current.** A fact whose premise
+  has changed is the cheapest way a wrong premise becomes this session's.
+- ⛔ **`holds` is refused over an entry that states no premise**, and the refusal is the answer: there
+  was nothing to check, so the fact comes back unchecked rather than current.
+- **`unchecked`** is [`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)'s
+  shape and not a verdict — reported, with what could not be read named.
+- ⛔ **What a fact `reads_as` is reported and never improved on**: an entry stating no provenance
+  reads as `repeated`, and a repeated fact becomes a measured one exactly by being read twice without
+  the distinction being carried.
+
+⚠️ **Under a derived store the admission never ran**, so expect each entry to come back with its
+provenance and premise **unstated** — the third cost
+[`§ 25`](../../config/schema.md#what-a-reader-does-with-a-store-whose-admission-never-ran) names for
+that carrier, which step 2's report states once rather than this role noting per fact. ⛔ **But a
+given entry's answer is the one the command gave for it, never the one the carrier made likely**:
+nothing stops an entry in the form from sitting in such a store, and one that does reads back whole.
+A role that reported it unstated because the carrier is derived has thrown away the reading it just
+took.
 
 ⚠️ **Where the project carries no `memory` block**, step 2 reports the reading unavailable and this
 role says what it could not check — ⛔ **never that memory holds nothing**, which is the one
@@ -334,8 +350,12 @@ it — the outcome in the first sentence, then the facts, with a table where the
 - the environment, as the project's own script answers it — or that this pass could not take the
   reading;
 - what memory claims that this pass **checked**, and what it did not — each fact with the premise
-  it rests on, ⛔ **every one whose premise has changed named as stale**, and every `repeated` one
-  reported as repeated rather than as measured here;
+  it rests on and the **standing** it came back under, ⛔ **every one whose premise has changed named
+  as stale**, and every one that reads as `repeated` reported as repeated rather than as measured
+  here; ⛔ **and where an entry states neither field, that it states neither** — reported unchecked
+  with its provenance unstated, ⚠️ **per entry and never per carrier**: that the carrier makes the
+  absence likely is named once, and what a given fact is reported as is what the reading answered
+  about it;
 - the window's own reading, or that the harness handed none;
 - which port fallback was taken, where one was;
 - that the ingestion step ran over anything read from outside the procedure, and what it surfaced —

@@ -2008,7 +2008,7 @@ statement that the harness decides and the procedure must not guess.
 What the two carriers buy is therefore different in kind rather than in degree, and the table at
 [`schema.md § 25 → The carriers`](../plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)
 is the comparison: a pinned store closes the hazard by construction and owes the project one thing
-to keep true, while a derived store closes nothing by construction and has its two open halves
+to keep true, while a derived store closes nothing by construction and has every open half it leaves
 reported instead. Neither is the better configuration in general; which one a project gets is a
 property of where its store already is.
 
@@ -2091,6 +2091,67 @@ than implied: that a fact carries its provenance and its premise is decidable, a
 premise still holds is read against the tree by whoever reads the fact. `asof` was considered for
 the form and left out for that reason — a date says when a fact was written, not whether it is still
 true, so it would answer staleness with a number that reads like an answer.
+
+### What the admission costs a store it cannot reach
+
+⚠️ **Measured in this repository, which is the only project here that runs the memory third and the
+copy the `derived` arm was written from.** The admission is held by the one command that places a
+fact in the store, and under a derived carrier that command composes no path and writes nothing:
+handed a complete entry it answers that there is no directory for it to write a fact into and no
+index for it to lock. So every entry in that store is in the harness's own shape — a leading YAML
+document carrying a name, a one-line description and a subject label, then the fact as prose — and
+not one of them has been through the rule.
+
+What makes it a **third** cost rather than a restatement of the two already reported is the way it
+fails: the index's contention loses work somebody did and a moved checkout orphans it, both of which
+a reader eventually notices, while an unprovenanced fact reads exactly like a provenanced one
+forever. The table at
+[`schema.md § 25 → The carriers`](../plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)
+is where the three are stated, and this document carries no second list of them — ⚠️ **which is the
+discipline this measurement is itself an instance of failing**: the first form of the change wrote
+the enumeration into this document, the decision record, the live configuration, an example and a
+role's own procedure, five copies of a list whose mis-statement was the finding.
+
+⚠️ **The read-time check met the same wall from the other side.** A reading written for the entry
+form alone refuses a store-shaped entry as a file that is not one YAML document — true, and it tells
+its reader nothing about what they are holding. The rules that replaced it are at
+[`schema.md § 25 → What a reader does with a store whose admission never ran`](../plugins/mjolnir/config/schema.md#what-a-reader-does-with-a-store-whose-admission-never-ran),
+and each of them fails in the direction that under-claims.
+
+**The layout the carrier reads, which is the measurement and not the rule.** The store this
+repository's harness keeps holds each fact as a file opening with a `---`-fenced YAML document —
+`name`, a one-line `description`, and a `metadata` block whose `type` is one of a small set of
+subject words — followed by the fact itself as prose. That is the one foreign layout the carrier
+reads, and the surface defers to it rather than describing it, a store's own layout being the
+harness's fact.
+
+⚠️ **The mapping a reader reaches for first is the one that must not be made.** `metadata.type` says
+which part of the project a fact is about; a provenance is an evidence class. Reading the first as
+the second would make every fact in the store *measured* by construction, which is precisely what
+the provenance field exists to prevent — and it is the reason the rule is written as *no key of a
+foreign shape*, rather than as a list of keys not to read.
+
+### Reporting a fact stale rather than restating it
+
+The read-time half [`schema.md § 24`](../plugins/mjolnir/config/schema.md#24-session-restore--the-readings-a-pass-is-resumed-from)
+already stated — a recalled fact is checked or reported unchecked — had nowhere to put the answer. A
+reading that can only ever say *unchecked* renders **nothing checked it** and **checked, and still
+true** identically, and a fact whose premise has gone has no way of being reported at all except in
+the prose of whoever happened to notice.
+
+[`schema.md § 25 → The standing a recalled fact is reported under`](../plugins/mjolnir/config/schema.md#the-standing-a-recalled-fact-is-reported-under)
+is where that lands. What is worth recording beside it is the one decision in it that is **not**
+symmetric, because it reads as an oversight until the argument is written out: *current* over an
+entry stating no premise is refused and *stale* over the same entry is not. The two answers do not
+cost the same thing. A reader who has found the fact wrong has found that out whatever the entry
+says, and treating it as stale under-claims; a reader who says the premise holds when the entry
+stated none has asserted the fact, which over-claims. Refusing both would be refusing the safe
+answer for the unsafe one's reason.
+
+⚠️ **What the whole mechanism buys is that the three are told apart at all**, and that the exit
+status a caller reads keeps a stale fact off the one a current fact gets. Whether the reader's own
+reading of the premise against the tree is right is outside it — the same split the admission
+carries one half over.
 
 ## The day log's destination port
 

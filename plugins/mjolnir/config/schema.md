@@ -5166,7 +5166,7 @@ project. The measurements are in
 | `carrier` | what the procedure does | what that closes | what it leaves open |
 |---|---|---|---|
 | `path` | resolves `store`, writes the fact as a file under it, and appends the index line under a lock | one store from every tree, whatever the working directory would have derived; and an index that keeps concurrent entries | that the store the project states is the store the harness writes. ⛔ Two stores held apart by nobody is the same defect one level out |
-| `derived` | composes no path at all, and names the store as the harness's | nothing by construction. ⚠️ The refusal `write_from` carries below is the whole of what is closed here | the index's contention and the moved checkout, each **reported** rather than closed |
+| `derived` | composes no path at all, and names the store as the harness's | nothing by construction. ⚠️ The refusal `write_from` carries below is the whole of what is closed here | the index's contention, the moved checkout, and the admission below left **unreachable** — three rather than two, each **reported** rather than closed |
 | `none` | nothing: the memory third does not run, which `session.parts` states as well | the question. ⚠️ Not a hazard closed but one the project does not have | what a later pass has to re-derive, which is the cost § 23 already prices for a project running fewer thirds |
 
 ⛔ **`derived` is not an absence and is never reported as one.** The facet is carried — by the
@@ -5231,6 +5231,78 @@ reachable:
 ⛔ **The contents stay in the project.** A memory store holds hosts, names and operational facts,
 and none of that crosses into the toolkit: this facet carries a pointer and a shape, which is the
 same boundary § 1 draws for a project's code and § 9 for its evidence.
+
+### What a reader does with a store whose admission never ran
+
+⛔ **Under `carrier: derived` the admission is unreachable, and that is the third thing this carrier
+leaves open.** The write-time rule above is held by the one command that places a fact in the store,
+and under a derived carrier that command composes no path and writes nothing — so **an entry such a
+store holds went through none of the admission**, and nothing required of it the two fields the rule
+exists to ask for. ⚠️ **Not a restatement of the other two**: the index's contention loses work
+somebody did and a moved checkout orphans it, while this one leaves a fact in the store
+unprovenanced and uncheckable **while reading exactly like a fact that carries both**.
+
+⛔ **An expectation, and never a claim about every entry in the store.** Nothing stops an entry in
+the form from being placed in such a store by hand, and one that is reads back whole — so what the
+carrier's report states is what to *expect*, and ⛔ **the reading answers per entry what that entry
+actually states.** ⚠️ A report asserting that no entry states either field is falsified by the
+reading itself, which is the failure direction this section is pointed at arriving one level out.
+
+So the read-time half is written for the store a project in that position actually has, and each of
+its three rules fails in the direction that under-claims:
+
+- ⛔ **A fact stating no provenance reads as `repeated` and never as `measured`.** *Measured* is a
+  value an entry has to state, and its absence is not the permissive reading of it. A reader
+  therefore gets two answers rather than one — what the entry **states**, and what it **reads as** —
+  and the second is never better than the first.
+- ⛔ **A fact stating no premise is unchecked and is never reported current.** There is nothing to
+  read against the tree, so the check § 24 obliges is not takeable through the entry at all, and
+  what the reading reports is that the premise is **unstated**.
+- ⛔ **The one foreign shape the carrier reads is read rather than refused, and whatever it does not
+  carry is named.** A reading that refuses such an entry whole has told its reader nothing about
+  what they are holding; one that recovers the fact and names the absent fields leaves them with the
+  fact **and** with the knowledge that it is neither provenanced nor checkable. ⚠️ **Which shape it
+  is, is the carrier's and not this section's** — a store's own layout is the harness's fact, and
+  the one measured here is recorded in
+  [`docs/configuration-surface.md`](../../../docs/configuration-surface.md#what-the-admission-costs-a-store-it-cannot-reach).
+  ⛔ **Anything outside it is refused**, which is the under-claiming direction: a file with no
+  structure at all could be anything, and reading its whole text as a fact asserts a fact nobody
+  wrote. ⚠️ So a project whose store writes some other layout gets its entries refused rather than
+  misread, and the reply says they were.
+- ⛔ **And no key of a foreign shape is read as one of these fields** — a mapping invented at read
+  time would be the procedure guessing another tool's vocabulary, and the guess actually on offer is
+  a subject label, which is not an evidence class. A document carrying the form's own fields inside
+  such a shape is therefore still read as stating none, which is the safe direction.
+
+### The standing a recalled fact is reported under
+
+⛔ **Three standings and never two, and the premise's answer comes from the reader rather than from
+the entry**: *current* where the premise was checked and holds, **stale** where it was checked and
+does not, and *unchecked* where nothing checked it. A fact whose premise has gone is reported
+**stale** and ⛔ **never restated as current**, which is
+[§ 24](#24-session-restore--the-readings-a-pass-is-resumed-from)'s rule given somewhere to land
+rather than left to be remembered.
+
+⛔ **And *current* over an entry that states no premise is refused.** There was nothing to check, so
+a reader answering that it holds has asserted the fact rather than checked it — the restatement the
+rule is against, arriving through the one command written to prevent it.
+
+⛔ **The other half of that is deliberately *not* symmetric: stale over an entry stating no premise
+stands.** A reader who has found the fact wrong has found that out whatever the entry says, and the
+two answers are not alike in what they cost — ⚠️ **`stale` under-claims where `current`
+over-claims**, so refusing both would be refusing the safe one for the unsafe one's reason. ⛔ **The
+asymmetry is stated here rather than left to be discovered in a carrier**, which is where it was
+found: measured and unstated, read as an oversight until the argument was written down.
+
+⚠️ **What this reaches is which of the three was reported and not whether the answer is right.** The
+premise is read against the tree by a person or a role, and a wrong reading there is wrong here too.
+⛔ **These words are this section's and not only the carrier's**, which is the division
+[§ 23](#the-artifacts-form-is-the-carriers-not-the-roles) draws the *other* way for a save artifact's
+boundary set — the difference being that the rules above spend themselves on two of these names
+outright, and a rule reading *never as the measured one* cannot be stated without the word. ⚠️ **So
+the residue § 23's set carries is closed here rather than restated**: the carrier holds every one of
+its own spellings to this section's text, and a value it performs and this prose does not name is a
+failure of its own suite rather than a drift nothing reports.
 
 ### The index is the one file two sessions contend on
 

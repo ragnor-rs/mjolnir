@@ -91,6 +91,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import claim as carrier  # noqa: E402 -- the one derivation of git's own answers
 import config  # noqa: E402 -- the one reader, not a second parser
+# ⛔ § 25's own carrier, for the one word this role would otherwise spell again:
+# what a fact stating no provenance reads as is that module's value, and a copy
+# here is a copy allowed to tell this role one thing while `recall` tells it
+# another. Found by review on the change that added the read-time half.
+import save  # noqa: E402 -- the memory entry's vocabulary, read and not restated
 
 # --- the readings ----------------------------------------------------------
 #
@@ -249,6 +254,37 @@ def report_for(configuration: config.Config, taken: list[dict]) -> list[str]:
                 "current (§ 24). ⛔ Not that memory holds nothing: a tree whose "
                 "surface predates § 25 reads this way too."
             )
+    elif configuration.get(f"{MEMORY_KEY}.carrier") == "derived":
+        # ⛔ The arm that was missing, and the direction it was wrong in: under a
+        # derived store the admission § 25 states never runs -- the command that
+        # performs it composes no path and writes nothing -- so an entry such a
+        # store holds went through none of it. ⚠️ Measured on this repository,
+        # which is the only project running the memory third: the line below used
+        # to tell this project that each recalled fact carried its provenance,
+        # which is the restatement § 24 refuses stated by the report meant to
+        # prevent it.
+        #
+        # ⛔ **An expectation and never a claim about every entry**, which is the
+        # second thing it got wrong: nothing stops an entry *in the form* from
+        # sitting in a derived store, and `save.py recall` reads one back whole --
+        # so a line asserting none of them states either field is falsified by the
+        # command this role runs on them. ⚠️ Found by review on this change. The
+        # per-entry answer is the carrier's and this names what to expect.
+        #
+        # ⛔ **And the value a fact with no provenance reads as is read out of the
+        # carrier that owns it**, never spelled again here: § 25 gives that word
+        # to `save.py`, and a second copy is a copy allowed to tell this role one
+        # thing while the command tells it another.
+        lines.append(
+            f"`{MEMORY_KEY}.carrier` is `derived`, so an entry this store holds "
+            "went through none of § 25's write-time admission: expect neither a "
+            "provenance nor a premise, ⛔ report each recalled fact **unchecked** "
+            "with its provenance **unstated**, and read it as "
+            f"**{save.UNSTATED_READS_AS}** -- never as measured and never as "
+            "current (§ 24). ⚠️ Per entry and not per carrier: an entry that does "
+            "state them reads back whole, so what `recall` answers about one is "
+            "the answer for it."
+        )
     else:
         # ⛔ The reading's own obligation, handed over rather than left to be
         # remembered: § 24 says a recalled fact is checked or reported unchecked,
@@ -1410,10 +1446,85 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
     # carried, and it is the premise rather than the store that has to be named:
     # a report naming where memory is leaves the role to invent the check, which
     # is the restatement § 24 forbids.
+    #
+    # ⚠️ Labelled for what it checks and no more. It is green off whichever arm
+    # this project's own carrier reaches, and under `derived` that is the sentence
+    # saying a premise is **not** to be expected -- so the arm holds that the word
+    # is in the report and not that the report says the entry carries one. Which
+    # arm says what is the pair below. Found by review on the change that added
+    # the derived arm: the label read as a content claim it had stopped making.
     check(
-        "a carried store is reported with the premise a reader has to check",
+        "this project's own carrier, whichever it is, is reported with a word "
+        "about the premise rather than about where the store is",
         any("premise" in line for line in said),
         f"said {said!r}",
+    )
+    # ⛔ The two carriers are reported apart, and the derived arm is asserted
+    # **negatively** as well: what was wrong before was not an omission but a
+    # claim, this project being told each recalled fact carried a provenance when
+    # the admission that would have written one never ran (§ 25). ⚠️ Each arm is
+    # built rather than taken from `live`, so the pair is asked whichever carrier
+    # this repository comes to state.
+    derived_said = report_for(
+        _Stating(**{f"{MEMORY_KEY}.carrier": "derived"}),
+        readings(_Stating(**{f"{MEMORY_KEY}.carrier": "derived"}), tracker=None),
+    )
+    check(
+        "a derived store is reported as one whose entries went through no admission",
+        any("admission" in line and "unchecked" in line for line in derived_said),
+        f"said {derived_said!r}",
+    )
+    check(
+        "and never as one whose facts carry a provenance",
+        not any("fact carries its provenance" in line for line in derived_said),
+        f"said {derived_said!r} -- a store with no admission behind it has no "
+        "provenance in any entry it did not get elsewhere, and a report claiming "
+        "one is the restatement § 24 refuses said by the report meant to prevent "
+        "it",
+    )
+    # ⛔ The value a fact with no provenance reads as is in the line, and is the
+    # carrier's own rather than a word spelled here: a copy would let this role
+    # be told one thing while `recall` answers another. ⚠️ Found by review on this
+    # change -- the claim was in the report and in no assertion.
+    check(
+        "the derived line names what such a fact reads as, out of the carrier "
+        "that owns the word",
+        any(f"**{save.UNSTATED_READS_AS}**" in line for line in derived_said),
+        f"said {derived_said!r} against {save.UNSTATED_READS_AS!r}",
+    )
+    # ⛔ And it is an expectation rather than a claim about every entry, which is
+    # the half the first form of this line got wrong: nothing stops an entry in
+    # the form from sitting in a derived store, and `recall` reads one back whole.
+    # ⚠️ Found by review on this change, reproduced against `save.recalled`.
+    check(
+        "and it says to expect neither field rather than that no entry states them",
+        any("expect neither" in line for line in derived_said)
+        and not any("none of them states" in line for line in derived_said),
+        f"said {derived_said!r} -- an absolute here is falsified by the command "
+        "this role runs on the entries",
+    )
+    _status, in_the_form = save.recalled(
+        "fact: a fact in the form, in a store whose carrier is derived\n"
+        "provenance: measured\n"
+        "source: a command somebody ran\n"
+        "premise: the command stops answering that way\n",
+        "holds",
+    )
+    check(
+        "which the carrier's own reading of such an entry is what falsifies",
+        in_the_form["reads_as"] == "measured"
+        and in_the_form["standing"] == save.CURRENT,
+        f"the carrier read {in_the_form!r} -- if this came back unstated the "
+        "absolute would have been true and the line above over-careful",
+    )
+    pinned_said = report_for(
+        _Stating(**{f"{MEMORY_KEY}.carrier": "path"}),
+        readings(_Stating(**{f"{MEMORY_KEY}.carrier": "path"}), tracker=None),
+    )
+    check(
+        "a pinned store is reported as one whose entries do carry both fields",
+        any("fact carries its provenance" in line for line in pinned_said),
+        f"said {pinned_said!r}",
     )
     absent_said = report_for(_Stating(), readings(_Stating(), tracker=None))
     check(
