@@ -508,6 +508,12 @@ def recalled(text: str, premise: str = "unchecked") -> tuple[int, dict]:
     somewhere to land; a premise nothing checked leaves it unchecked; and
     *current* over an entry that states no premise is **refused**, that being the
     restatement the rule is against arriving through this very command.
+
+    ⚠️ Two fields of what comes back are narrower than they read, stated here
+    rather than left to be inferred: `shape` is the form the entry was **read
+    against** and not a claim about what the file is, and `holds` is about that
+    form alone -- a refusal of the *reader's own answer* about the premise leaves
+    it true, the entry being fine and the answer not.
     """
     recovered, problems = read_entry(text)
     shape = "the entry form"
@@ -528,8 +534,9 @@ def recalled(text: str, premise: str = "unchecked") -> tuple[int, dict]:
                 "reads_as": UNSTATED_READS_AS,
                 "standing": UNCHECKED,
                 "report": [
-                    "This file is neither an entry in the form nor in the shape a "
-                    "store holds, so there is nothing to read a fact out of (§ 25)."
+                    "Read against the entry form, which it does not hold, and it "
+                    "is not in the shape a store holds either -- so there is "
+                    "nothing to read a fact out of at all (§ 25)."
                 ],
             }
         keys, body = fenced
@@ -1384,7 +1391,8 @@ def _memory_arms(check) -> None:
         status == 1
         and got["read"] is None
         and got["standing"] == UNCHECKED
-        and any("nothing to read a fact out of" in line for line in got["report"]),
+        and any("nothing to read a fact out of" in line for line in got["report"])
+        and got["shape"] == "the entry form",
         f"exited {status} with {got!r}",
     )
 
