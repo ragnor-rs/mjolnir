@@ -2237,10 +2237,18 @@ becomes *assigned to whoever is asking*, green on every item including the ones 
 
 ⚠️ **That failure is why the rule is held in three places rather than argued once.** The reader
 refuses `current_user` wherever a configuration writes it, the sweep over the carrier roots refuses
-the three spellings that ask, and the reader's own suite writes a map with one identity in it and
-the shell with another and asserts the answer is the map's. ⛔ **The one thing none of those reaches
-is a role instructed in words to ask**, and a sweep for that is a sweep for every word: what holds
-it is § 27 being the single statement of the rule.
+the spellings that ask, and the reader's own suite writes a map with one identity in it and the
+shell with another and asserts the answer is the map's. ⛔ **The one thing none of those reaches is a
+role instructed in words to ask**, and a sweep for that is a sweep for every word: what holds it is
+§ 27 being the single statement of the rule.
+
+⚠️ **The sweep's own grammar reproduced both of its failure directions inside the change that
+introduced it**, which is worth recording because the change's subject *was* this rule: separating
+the two words on `[_-]?` refused a carrier describing the rule in English — *the current-user
+spelling* — and left `--current-user`, the one spelling that cannot be anything but code, unread
+because the lookbehind rejected the dash in front of it. ⛔ **A forbidding check about a rule is the
+one most likely to forbid the prose that states it**, and the only thing that found it was planting
+the English form and watching it redden.
 
 ⚠️ **Writing an assignee is not the same act**, and keeping the two apart is what makes the rule
 meetable: recording who *took* an item is a fact about this run, so the implementation behind

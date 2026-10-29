@@ -235,19 +235,34 @@ TRACKER_IDS_ANYWHERE = [
 #
 # ⚠️ Matched **anywhere** in a strict file and not in code regions alone, unlike
 # the stack list below. The failure here is a role *instructed* to resolve a
-# person that way, which is prose; and none of these three is an ordinary English
-# word, so the false-red direction rule 1 exists for is not open. Measured before
-# taking it: no file in the strict set carried any of them.
+# person that way, which is prose rather than a command. Measured before taking
+# it: no file in the strict set carried any of these.
+#
+# ⛔ **So every spelling here has to be one English does not also use, and the
+# hyphenated modifier is not.** The first form of this list separated the two
+# words on `[_-]?`, and reproduced both of the failures that costs at once: a
+# carrier describing this very rule — *the current-user spelling* — was refused,
+# while `--current-user`, the one spelling that cannot be anything but code, went
+# unread because the lookbehind rejected the dash in front of it. ⛔ So the
+# separator is `_` or nothing, the flag is an entry of its own with its dashes,
+# and ⚠️ **the hyphenated English form passes deliberately** — asserted on the
+# green side below rather than left to reading.
 #
 # ⚠️ What this does **not** reach is stated rather than discovered: a role could
 # write *ask the tracker who you are* in words, and a sweep for that is a sweep
 # for every word. What holds that half is § 27 being the one statement of the
 # rule, and the shared reader refusing `current_user` wherever a configuration
 # writes it -- which is a refusal with a plant of its own, one script over.
+#
+# ⛔ No count of these is written here or in the documents that describe this
+# check. The first form of all three said *three* and this change's own fix made
+# it four, green — which is the failure the group counts above already record.
 WHO_AM_I = [
     (re.compile(r"(?<![\w.@])@me(?![\w-])"), "the code host's spelling of the current user"),
-    (re.compile(r"(?<![\w-])current[_-]?[Uu]ser(?![\w-])", re.I),
+    (re.compile(r"(?<![\w-])current_?user(?![\w-])", re.I),
      "a query for the current user"),
+    (re.compile(r"(?<!\w)--current-user(?![\w-])", re.I),
+     "a flag naming the current user"),
     (re.compile(r"(?<![\w-])whoami(?![\w-])"), "a shell's answer about who is running"),
 ]
 
@@ -1744,6 +1759,11 @@ VIOLATIONS = [
     ("no role is resolved through the running user",
      "a tracker query for the current user, written in prose",
      _plant_in_a_carrier("\nCompare the assignee against currentUser rather than a map.\n")),
+    # ⛔ The flag, which the first form of this grammar let through: the dash in
+    # front of it was rejected by a lookbehind written for the word.
+    ("no role is resolved through the running user",
+     "a flag naming the current user",
+     _plant_in_a_carrier("\nRun it with `--current-user` to see the other reading.\n")),
     ("no role is resolved through the running user",
      "the shell asked who is running",
      _plant_in_a_hook("# Resolve the reviewer.\nreviewer=$(whoami)\n")),
@@ -1817,8 +1837,17 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     # set to the whole tree and watching this plant redden -- an exemption nothing
     # can fail is an exemption nobody checked.
     ("no role is resolved through the running user",
-     "the current-user spelling in a script a carrier calls",
+     "the host's own spelling in a script a carrier calls",
      _plant_in_a_carrier_implementation('def assign(who: str = "@me"): ...\n')),
+    # ⛔ The hyphenated English modifier, which is the phrase a carrier
+    # describing this rule reaches for and is not a spelling that resolves
+    # anybody. ⚠️ Verified by separating the two words on `[_-]?` again and
+    # watching this plant redden — which is how the false refusal was found,
+    # inside a change whose own subject is this rule.
+    ("no role is resolved through the running user",
+     "the hyphenated English modifier in a carrier's prose",
+     _plant_in_a_carrier(
+         "\nThe host's current-user spelling is what § 27 forbids a role reaching for.\n")),
     # ⛔ The green side of the account-id grammar, and the reason it is the
     # prefixed spelling alone: a bare dashed hex group is a *session* id in this
     # repository's own fixtures, which is nobody. ⚠️ Verified by making the prefix

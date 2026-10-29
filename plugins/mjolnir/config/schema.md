@@ -5492,6 +5492,14 @@ and interprets nothing else in the file. ⛔ **A role the map does not name is *
 *nobody*,** which is [§ 11](#a-report-names-what-it-could-not-establish)'s rule in the direction
 that costs: the permissive reading of a missing entry is every item passing.
 
+⛔ **One identity per role, and a collection is a stop rather than the text of one** —
+[§ 4.7](#47-code-root)'s rule for a carrier an item holds one of, arriving one facet over and
+failing the same way. A role two people hold is two roles as far as this facet is concerned, or a
+map this surface cannot resolve: ⚠️ **the permissive reading renders the collection as its own
+text**, which matches nobody on any tracker, so the comparison answers *the person is somebody
+else* about a map that may have named exactly the right people — a wrong verdict where a refusal
+belonged.
+
 ⚠️ **A project whose map lives in prose pays for a mapping beside it**, and that is a cost named
 rather than one anybody discovers. All four measured stores are documents, and a reader that parsed
 one would be guessing at a table's columns in the one facet that may not guess — so the pointer

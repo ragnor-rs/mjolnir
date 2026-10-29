@@ -1350,6 +1350,24 @@ class Config:
             )
         entry = mapping[role]
         identity = entry.get(key) if isinstance(entry, dict) else entry
+        # ⛔ One identity, and a collection is a stop rather than the text of
+        # one. § 4.7's rule for a carrier an item holds one of, arriving one
+        # facet over and failing the same way: the permissive reading renders a
+        # list or a block as its own repr, which matches nobody on any tracker --
+        # so the comparison answers *the person is somebody else* about a map
+        # that may well have named the right people. ⚠️ Reproduced on this
+        # change: a role held by two people answered `['one', 'another']`, a
+        # plausible-looking identity and a wrong verdict rather than a refusal.
+        if isinstance(identity, (list, tuple, dict)):
+            raise ConfigError(
+                f"{PEOPLE_KEY}.source",
+                f"gives {type(identity).__name__} for {role!r} in {source!r}, and § 27 "
+                "states an entry as the identity itself or a block one is read out of "
+                "under `key` -- one identity either way. A collection is a stop and "
+                "never its own text: the rendering matches nobody, and the comparison "
+                "then reports the wrong person rather than no answer. A role two people "
+                "hold is two roles, or a map this reader cannot resolve.",
+            )
         if identity is None or (isinstance(identity, str) and not identity.strip()):
             raise ConfigError(
                 f"{PEOPLE_KEY}.key",
@@ -5606,6 +5624,18 @@ def self_test() -> int:
         ("an entry carrying nothing under `key`",
          PLANTED_ROLE, {PLANTED_ROLE: {"field": PLANTED_IDENTITY}}, {},
          "stop people.key"),
+        # ⛔ Both collection shapes, because they reach the stop by different
+        # routes -- one is the entry itself, the other sits under `key` -- and
+        # the reading that answers for either of them answers with its own repr.
+        # ⚠️ Found by probing this change rather than by reading it: a role two
+        # people hold answered `['one', 'another']`, which is a plausible
+        # identity and a wrong verdict rather than a refusal.
+        ("an entry that is a list of identities",
+         PLANTED_ROLE, {PLANTED_ROLE: [PLANTED_IDENTITY, "another one entirely"]}, {},
+         "stop people.source"),
+        ("an entry whose `key` holds a block rather than an identity",
+         PLANTED_ROLE, {PLANTED_ROLE: {"handle": {"login": PLANTED_IDENTITY}}}, {},
+         "stop people.source"),
         ("a map that read as prose rather than as a mapping",
          PLANTED_ROLE, "a document with a table in it", {},
          "stop people.source"),

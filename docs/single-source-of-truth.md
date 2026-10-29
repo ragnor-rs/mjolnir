@@ -365,7 +365,7 @@ rather than from a hand-kept list of roots.
 | 7 | No package manager, task runner, build tool, checker, manifest or lockfile; no stack's own flag; no interpreter in front of something this repository does not ship; no directory change prefixing a command, no directory flag, no absolute path | the strict set | forbidding |
 | 8 | No value any configuration supplies | the strict set | forbidding |
 | 9 | No machine named by its address, which is the one identity shape of a *machine* with a form a pattern can hold — a hostname is any word and an alias is any word somebody chose, so those are held by the names living outside every working tree ([schema § 21 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)) rather than by this sweep | same | forbidding |
-| 10 | No role is resolved by asking who is running — the host's current-user spelling, a tracker query for the current user, and the shell's own answer ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)) | the strict set | forbidding |
+| 10 | No role is resolved by asking who is running — the spellings that resolve the current user and nothing else, each one a form English does not also use ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)) | the strict set | forbidding |
 
 Check 5 is the one that makes the shape-matched strict set safe: a carrier in a directory the
 shapes do not reach — `plugins/other/skils/`, one letter out — would otherwise be swept by nothing
@@ -543,11 +543,18 @@ exempted the whole directory and so would have read straight past it.
   holds the rest is where the values live: the identities are in a file the project points at
   ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)), never in the
   toolkit, which is check 9's argument about a machine one class over.
-- **A role *instructed in words* to ask who is running.** Check 10 holds the three spellings that
-  resolve the current user and nothing else, matched anywhere in a strict file rather than in code
-  alone — none of the three is ordinary English, so prose carries no false-red risk here. ⛔ What
-  it cannot reach is *ask the tracker who you are* written out as a sentence, and a sweep for that
-  is a sweep for every word: what holds that half is
+- **A role *instructed in words* to ask who is running.** Check 10 holds the spellings that resolve
+  the current user and nothing else, matched anywhere in a strict file rather than in code alone,
+  since what it is looking for is a role *instructed* to ask. ⛔ **So every spelling it holds has to
+  be one English does not also use, and the hyphenated modifier is not**: the first form of the
+  grammar separated the two words on `[_-]?` and refused a carrier describing this very rule, while
+  letting the one unambiguously-code spelling — the flag, with its dashes — through unread, because
+  the lookbehind written for the word rejected the dash in front of it. ⚠️ **Both failures were
+  reproduced inside the change that introduced them**, which is why the hyphenated English form now
+  passes deliberately and is asserted on the green side. ⛔ No count of the spellings is written
+  here, for the reason no count of the groups above is: the first form of this bullet said *three*
+  and the fix made it four. ⛔ What it cannot reach either way is *ask the tracker who you are*
+  written out as a sentence, and a sweep for that is a sweep for every word: what holds that half is
   [schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map) being the single
   statement of the rule, beside the shared reader refusing `current_user` wherever a configuration
   writes it. ⚠️ **And the strict scope is the rule's own rather than forbearance**: the
