@@ -4491,6 +4491,15 @@ def why_refused(skills_root: str = ".") -> str:
     ⚠️ It loads a second time, on a path that has already failed. The cost is one
     parse of one small file, against a caller holding the error object open
     through arms that have no use for it.
+
+    ⚠️ Not bounded, and that is measured rather than assumed. The caller answers
+    once per call, so a stop carrying a whole file would be the wrong thing to
+    repeat all day -- but a `ConfigError` is authored prose, and the parser
+    truncates its own quoted snippet before raising. The longest reached over
+    the planted shapes below and five live configurations was 239 characters, so
+    a cut here would only ever remove the tail of a sentence that was written to
+    be read. A bound whose plant cannot reach it is a check that passes without
+    asserting anything.
     """
     try:
         load(skills_root, check_paths=False)
@@ -4914,6 +4923,39 @@ def self_test() -> int:
 
     paths = _examples()
     check("the examples directory holds configurations", bool(paths))
+
+    # ⛔ What a guard says when it cannot read a configuration. The answer is the
+    # repair, so it is asserted here rather than left to the four callers: each
+    # of them appends what this returns to a message it sends once per call.
+    import tempfile  # noqa: PLC0415 -- one of the arms that needs a directory
+
+    with tempfile.TemporaryDirectory() as directory:
+        stated = os.path.join(directory, CONFIG_PATH)
+        os.makedirs(os.path.dirname(stated))
+        with open(stated, "w", encoding="utf-8") as handle:
+            handle.write("roots: [this is not a mapping]\n")
+        refused = why_refused(directory)
+        check("a configuration that does not resolve is explained by its first stop",
+              "required" in refused and "§" in refused, refused[:160])
+        # ⚠️ The other failure kind, because the two reach the message by
+        # different arms: a stop this reader authored, and an exception from
+        # under it that it never wrote.
+        with open(stated, "w", encoding="utf-8") as handle:
+            handle.write("roots: [this is not a mapping\n: :\n")
+        check("a failure from under the reader is explained in one line as well",
+              "YAML" in why_refused(directory)
+              and "\n" not in why_refused(directory),
+              why_refused(directory)[:160])
+        # ⛔ The green side asserted, and not left to the two reddening arms
+        # above: a function that answered with a stop for every root would pass
+        # both of them, and every guard would then append one to a message in a
+        # project whose configuration resolves.
+        with open(paths[0], encoding="utf-8") as handle:
+            shipped = handle.read()
+        with open(stated, "w", encoding="utf-8") as handle:
+            handle.write(shipped)
+        check("while a configuration that resolves is explained by nothing at all",
+              why_refused(directory) == "", repr(why_refused(directory))[:160])
 
     loaded: dict[str, Config] = {}
     for path in paths:
