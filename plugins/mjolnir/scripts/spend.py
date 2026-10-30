@@ -617,10 +617,14 @@ def guard_answer(payload: dict, *, config=None) -> dict:
         # all: what a broken configuration cannot say is whether this call is one
         # of the denied ones, so the refusing arm would refuse every call in the
         # project — the edit that repairs the configuration included (§ 19).
-        return {"systemMessage": (
+        said = (
             "Spend guard: the project's configuration could not be read, so this command was "
             f"held to nothing. ({FACET_CITATION})"
-        )}
+        )
+        stop = _stop(payload.get("cwd"))
+        if stop:
+            said += f" What the reader refused it for, which is the repair: {stop}"
+        return {"systemMessage": said}
     return spend_guard(loaded, command)
 
 
@@ -706,6 +710,22 @@ def _config(cwd: str | None):
         return reader.load(cwd or ".", check_paths=False)
     except Exception:  # noqa: BLE001 -- any failure is reported by the caller
         return None
+
+
+def _stop(cwd: str | None) -> str:
+    """Why the reader refused it, for the message — empty where it resolves.
+
+    ⛔ Asked through the shared reader, for `_config`'s own reason, and because
+    the stop names the missing key: a message that reports *could not be read*
+    without it is noise once per call, where the same message carrying it is the
+    repair.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set one line up
+        return reader.why_refused(cwd or ".")
+    except Exception:  # noqa: BLE001 -- an unreachable reader explains nothing
+        return ""
 
 
 # --- holding this file to the surface and to its carrier --------------------
@@ -1402,6 +1422,13 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("and the person is told which guard held nothing",
               "held to nothing" in str(answered.get("systemMessage")),
               str(answered.get("systemMessage"))[:160])
+        # ⛔ The message is the repair or it is noise once per call: measured, a
+        # required key added to the surface held every command in five live
+        # projects to nothing for a day, under a message naming no key.
+        check("and it carries the reader's own stop, which names the key to write",
+              "the repair:" in str(answered.get("systemMessage"))
+              and "required" in str(answered.get("systemMessage")),
+              str(answered.get("systemMessage"))[:220])
         check("the price arm stays silent there, having no bar it could read",
               price_answer(_resume(figure=99.0) | {"cwd": broken}) == {})
 

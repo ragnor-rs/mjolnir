@@ -4433,11 +4433,19 @@ def surface_for(skills_root: str = ".") -> str:
     statement the branch is making -- the mirror of the failure above, and the
     reason the skills root is still the only place a configuration is looked for.
 
-    ⚠️ An adopter is unaffected, and that is a property of the test rather than a
-    case handled: a project that consumes the plugin carries no surface, so there
-    is nothing for this to find and the installed copy is read. The two answers
-    coincide for the shipping project's own primary checkout as well, that root
-    and the installed path being the same directory.
+    ⛔ An adopter is the same failure with nothing to fall back to, and reading
+    this test as an exemption for one is how that was missed. A project that
+    consumes the plugin carries no surface, so there is nothing for this to find
+    and the installed copy is read -- at whatever commit that checkout stands on.
+    Carrying no surface is therefore the exposure and not the exemption:
+    marking one key required made every adopter's configuration unreadable the
+    instant the commit landed, with no install step run and no session restarted,
+    and the guards held every command in all of them to nothing. ⚠️ What a change
+    marking a key required owes those configurations is stated by § 1's *The
+    surface is resolved beside the configuration*, since no check in this
+    repository can reach a file in another one.
+    The two answers coincide for the shipping project's own primary checkout,
+    that root and the installed path being the same directory.
     """
     own = os.path.join(skills_root or ".", PLUGIN_IN_REPO, "config", "schema.md")
     return own if os.path.isfile(own) else SURFACE
@@ -4460,6 +4468,37 @@ def configured(skills_root: str = ".") -> bool:
     act on a parent project's facts in a directory that states none.
     """
     return os.path.isfile(os.path.join(skills_root or ".", CONFIG_PATH))
+
+
+def why_refused(skills_root: str = ".") -> str:
+    """Why this project's configuration did not resolve, in the reader's words.
+
+    What a carrier that cannot read a configuration tells whoever is reading. A
+    guard holds the call to nothing either way, and the difference between a
+    message that is noise and one that is a repair is whether it names the key:
+    the guard has just called this reader, which knows, and threw the answer
+    away.
+
+    ⛔ Measured, and it is the reason this exists rather than a nicety: a key
+    newly marked `# required` made five live configurations unreadable at once,
+    and the guards said *could not be read* once per call for a day without any
+    of them naming `people.carrier` -- which was the whole of the repair.
+
+    ⚠️ The empty string is *not* an error. It means the configuration resolves,
+    so a caller phrasing a message around it is asking a question whose answer
+    is that there is nothing to report.
+
+    ⚠️ It loads a second time, on a path that has already failed. The cost is one
+    parse of one small file, against a caller holding the error object open
+    through arms that have no use for it.
+    """
+    try:
+        load(skills_root, check_paths=False)
+    except ConfigError as error:
+        return " ".join(str(error).split())
+    except Exception as error:  # noqa: BLE001 -- any failure is the answer here
+        return f"{error.__class__.__name__}: {' '.join(str(error).split())}"
+    return ""
 
 
 def load(skills_root: str = ".", *, check_paths: bool = True) -> Config:

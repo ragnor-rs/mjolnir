@@ -696,6 +696,23 @@ made the configuration unreadable in every tree cut before the marker landed, an
 nothing, in a project that had configured them. A guard saying it cannot read a configuration and a
 project that never wrote one are the same silence to whoever is reading.
 
+⛔ **An adopter is that same failure with nothing to fall back to, and the paragraph above was read
+as covering it when it does not.** A project that only consumes this surface carries no copy of its
+own, so it is held to the installed one at whatever commit that checkout stands on — which makes
+carrying no surface the exposure rather than the exemption it reads as. ⚠️ **Measured again, against
+live projects this time**: marking one key required made every configuration written before it
+unreadable at the instant the commit landed, with no install step run and no session restarted, and
+the guards above held every command in all of them to nothing until somebody read the messages
+([the measurement](../../../docs/configuration-surface.md#the-same-failure-in-an-adopter-which-the-rule-above-does-not-reach)).
+
+⛔ **So a change marking a key `# required` owes the configurations it invalidates, and no check in
+this repository can reach them.** They are files in other repositories, while the check holding a
+key set equal to this surface's sees the shipped examples and this project's own file alone. What a
+change can do is state the key's absent form in the same commit and name the adopters it breaks in
+the record it lands with. ⚠️ **What meets whoever is working in one of them is the guards' own
+message**, which carries the reader's stop for exactly this reason: a guard that cannot read a
+configuration has just called the reader that knows which key is missing.
+
 ⛔ **A shape rule may not answer whether a key is written**, for the same reason. Requiredness is
 the marker's question, checked before any shape rule runs; what a stated value has to *be* is the
 rule's. A rule refusing absence as well states the marker's fact a second time, and the second

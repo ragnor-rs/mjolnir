@@ -1865,6 +1865,43 @@ reported the version skew as a skew. The rule removes the state, and naming the 
 among what a role reports is what makes the remaining case visible at the moment it happens —
 [`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration).
 
+### The same failure in an adopter, which the rule above does not reach
+
+The paragraph above says the rule removes the state. It removes it for a **tree**. An adopting
+project carries no surface of its own, so the reader finds nothing in its skills root and reads the
+installed copy — at whatever commit the primary checkout stands on. Measured 2026-10-30, a day
+after § 27 landed:
+
+| | |
+|---|---|
+| The change | `e1430aa`, 2026-10-29 20:18:05 +0400, marking `people.carrier` as `# required` |
+| What it updated | the five shipped examples and this project's own configuration — every file the key-set check can see |
+| What it invalidated | five live configurations in five other repositories, four of them last written 2026-10-28 |
+| What each one needed | one key: `people.carrier: none`, with the `absent_reason` that marker demands |
+| How it was noticed | three parallel sessions, each reporting the same stop out of its own project |
+| How the other two were found | sweeping every configuration on the machine; nobody was standing in them |
+
+⛔ **No install step ran and no session was restarted.** The surface those files are held to moved
+under them, which is the asymmetry the section above states working in the direction it was not
+measured in —
+[`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration).
+One of the five was itself edited three hours after the break, and the session editing it was never
+told the file it was writing no longer resolved.
+
+**What the window cost is narrower than the message rate suggests.** Each of the four guards that
+read a configuration reported once per call — five messages per command, the context guard
+answering on both the call and its result — for about twenty-two hours. All five projects state
+`spend_guard.deny: []`, `live_guard.session_tools: []` and `context_guard.unbounded: []`, so those
+three held nothing either way. What was actually unheld: the enforcement gate,
+`context_guard.reread: refuse`, the per-invocation approval arm, and every role and every reading
+that routes through the reader.
+
+⚠️ **The message named no key for the whole window, and the reader it had just called knew which
+one.** Carrying the reader's own stop is what the guards do now, and it is the only half of this a
+check here can hold — the configurations are files in other repositories, and the gate that holds a
+key set equal to this surface's sees the examples and this project's own file
+([`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration)).
+
 ## The bookkeeping role: three copies that are a third of it, and two keys that came out of it
 
 This role divided in two directions at once, and this is the one place the copies are counted.
