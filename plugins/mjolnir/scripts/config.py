@@ -4470,44 +4470,77 @@ def configured(skills_root: str = ".") -> bool:
     return os.path.isfile(os.path.join(skills_root or ".", CONFIG_PATH))
 
 
+STOP_LIMIT = 400
+"""How much of a refusal an answer that repeats per call carries (§ 19)."""
+
+REFUSAL_PREFACE = "What the reader stopped on first:"
+"""How a guard introduces `refusal_text` in the answer it sends (§ 19)."""
+
+
 def why_refused(skills_root: str = ".") -> str:
-    """Why this project's configuration did not resolve, in the reader's words.
+    """The reader's own first stop on this project's configuration, or nothing.
 
-    What a carrier that cannot read a configuration tells whoever is reading. A
-    guard holds the call to nothing either way, and the difference between a
-    message that is noise and one that is a repair is whether it names the key:
-    the guard has just called this reader, which knows, and threw the answer
-    away.
+    What a carrier that cannot read a configuration tells whoever is reading.
+    The guard holds the call to nothing either way, and the difference between
+    a message that is noise and one somebody can act on is whether it names the
+    key: the guard has just asked this reader, which knows, and the answer was
+    thrown away. The measurement is § 1's, at *The surface is resolved beside
+    the configuration*, and is not restated here.
 
-    ⛔ Measured, and it is the reason this exists rather than a nicety: a key
-    newly marked `# required` made five live configurations unreadable at once,
-    and the guards said *could not be read* once per call for a day without any
-    of them naming `people.carrier` -- which was the whole of the repair.
+    ⛔ **The first stop, and not a diagnosis.** `validate` walks in its own
+    order, so a configuration with more than one fault answers with whichever
+    the walk reached first: a stub stating `roots` as a list answers about a
+    required key nobody wrote. A caller may present this as the reader's stop
+    and never as *the* repair.
 
-    ⚠️ The empty string is *not* an error. It means the configuration resolves,
-    so a caller phrasing a message around it is asking a question whose answer
-    is that there is nothing to report.
-
-    ⚠️ It loads a second time, on a path that has already failed. The cost is one
-    parse of one small file, against a caller holding the error object open
-    through arms that have no use for it.
-
-    ⚠️ Not bounded, and that is measured rather than assumed. The caller answers
-    once per call, so a stop carrying a whole file would be the wrong thing to
-    repeat all day -- but a `ConfigError` is authored prose, and the parser
-    truncates its own quoted snippet before raising. The longest reached over
-    the planted shapes below and five live configurations was 239 characters, so
-    a cut here would only ever remove the tail of a sentence that was written to
-    be read. A bound whose plant cannot reach it is a check that passes without
-    asserting anything.
+    ⚠️ The empty string means there is nothing to report -- the configuration
+    resolves, or the project states none at all. ⛔ The second of those is asked
+    here rather than inferred from a non-empty answer: a root that never adopted
+    the toolkit refuses with a *not found* of its own, and a caller phrasing
+    that as a fault would report one against a project that configured nothing.
     """
+    return read_or_why(skills_root)[1]
+
+
+def read_or_why(skills_root: str = ".") -> tuple[Config | None, str]:
+    """The configuration, or the reader's first stop on it -- one load either way.
+
+    ⛔ What a guard calls, and the reason it is a pair rather than two
+    questions: a caller that asked `load` and then asked `why_refused` would
+    resolve the whole surface twice. Measured on this repository's own surface,
+    four hundred kilobytes of it, at tens of milliseconds a load -- in each of
+    the hook processes one command starts. The arm that needs the answer is the
+    arm that already holds the exception.
+    """
+    root = skills_root or "."
+    if not configured(root):
+        return None, ""
     try:
-        load(skills_root, check_paths=False)
+        return load(root, check_paths=False), ""
     except ConfigError as error:
-        return " ".join(str(error).split())
+        return None, refusal_text(error)
     except Exception as error:  # noqa: BLE001 -- any failure is the answer here
-        return f"{error.__class__.__name__}: {' '.join(str(error).split())}"
-    return ""
+        return None, refusal_text(error)
+
+
+def refusal_text(error: BaseException) -> str:
+    """One refusal, as an answer that repeats once per call may carry it.
+
+    ⛔ Cut, and the bound is what a first pass got wrong by measuring too
+    narrowly. A `ConfigError` is authored prose and the YAML parser truncates
+    its own snippet -- but dozens of this reader's refusals interpolate the
+    project's stated value verbatim, so one mistyped long scalar answers with
+    that scalar, measured at fifty thousand characters, times the messages a
+    guard set sends per command. ⚠️ The key is at the head of every stop, so a
+    cut takes the explanation and never the name.
+
+    ⛔ One implementation, because the four guards that send such a message
+    would otherwise each carry the cut and the class prefix, and four copies of
+    a rule disagree the first time one of them is reworded.
+    """
+    flat = " ".join(str(error).split())
+    said = flat if isinstance(error, ConfigError) else f"{error.__class__.__name__}: {flat}"
+    return said if len(said) <= STOP_LIMIT else said[:STOP_LIMIT].rstrip() + " […]"
 
 
 def load(skills_root: str = ".", *, check_paths: bool = True) -> Config:
@@ -4924,38 +4957,88 @@ def self_test() -> int:
     paths = _examples()
     check("the examples directory holds configurations", bool(paths))
 
-    # ⛔ What a guard says when it cannot read a configuration. The answer is the
-    # repair, so it is asserted here rather than left to the four callers: each
-    # of them appends what this returns to a message it sends once per call.
+    # ⛔ What a guard's answer carries about a configuration that did not
+    # resolve (§ 19), asserted here rather than left to the four callers.
     import tempfile  # noqa: PLC0415 -- one of the arms that needs a directory
 
     with tempfile.TemporaryDirectory() as directory:
         stated = os.path.join(directory, CONFIG_PATH)
         os.makedirs(os.path.dirname(stated))
+        with open(paths[0], encoding="utf-8") as handle:
+            shipped = handle.read()
+
+        # ⛔ The shape the facet was measured on: a whole configuration missing
+        # one newly required key. The assertion is the key's own name, because
+        # naming it is the entire difference between an answer and a notice --
+        # and the required-key wording carries the words `required` and `§` with
+        # the name stripped out, so matching on those asserts nothing. Measured:
+        # a stop with the key cut off passed four checks written that way.
+        dropped, skipping = [], False
+        for line in shipped.splitlines(True):
+            if line.startswith("people:"):
+                skipping = True
+                continue
+            if skipping and (not line.strip() or line.startswith((" ", "#"))):
+                continue
+            skipping = False
+            dropped.append(line)
+        with open(stated, "w", encoding="utf-8") as handle:
+            handle.write("".join(dropped))
+        check("a configuration missing one required key is explained by that key's name",
+              why_refused(directory).startswith("people.carrier"),
+              why_refused(directory)[:160])
+
+        # ⚠️ A second stop, holding that the answer is the reader's first
+        # refusal rather than a diagnosis of the file: the fault planted here is
+        # `roots`, and the answer names a required key nobody wrote.
         with open(stated, "w", encoding="utf-8") as handle:
             handle.write("roots: [this is not a mapping]\n")
         refused = why_refused(directory)
-        check("a configuration that does not resolve is explained by its first stop",
-              "required" in refused and "§" in refused, refused[:160])
-        # ⚠️ The other failure kind, because the two reach the message by
-        # different arms: a stop this reader authored, and an exception from
-        # under it that it never wrote.
+        check("a stub answers with whichever stop the walk reached first, not the fault planted",
+              refused.startswith("already_run.never_guard") and "roots" not in refused,
+              refused[:160])
+
+        # ⛔ The arm from under the reader, which nothing reached before: a
+        # surface that is not there raises `OSError` rather than `ConfigError`,
+        # and the class name is what tells the two apart in an answer.
+        surface, kept = SURFACE, PLUGIN_IN_REPO
+        try:
+            globals()["SURFACE"] = os.path.join(directory, "no-such-surface.md")
+            globals()["PLUGIN_IN_REPO"] = os.path.join("no", "such", "plugin")
+            check("a failure from under the reader is explained, named by its class",
+                  why_refused(directory).startswith("FileNotFoundError:"),
+                  why_refused(directory)[:120])
+        finally:
+            globals()["SURFACE"], globals()["PLUGIN_IN_REPO"] = surface, kept
+
+        # ⛔ The cut, planted at a value long enough to reach it. A refusal
+        # interpolates the project's own stated value, which is the arm that
+        # makes the bound reachable at all -- the authored prose of a
+        # required-key stop never comes close, and measuring that arm alone is
+        # how a first pass concluded no bound was needed.
+        scalar = "x" * (STOP_LIMIT * 20)
         with open(stated, "w", encoding="utf-8") as handle:
-            handle.write("roots: [this is not a mapping\n: :\n")
-        check("a failure from under the reader is explained in one line as well",
-              "YAML" in why_refused(directory)
-              and "\n" not in why_refused(directory),
-              why_refused(directory)[:160])
-        # ⛔ The green side asserted, and not left to the two reddening arms
-        # above: a function that answered with a stop for every root would pass
-        # both of them, and every guard would then append one to a message in a
-        # project whose configuration resolves.
-        with open(paths[0], encoding="utf-8") as handle:
-            shipped = handle.read()
+            handle.write(shipped.replace("  reread: refuse", f"  reread: {scalar}"))
+        cut = why_refused(directory)
+        check("a stop carrying the project's own long value is cut, and says it was",
+              len(cut) <= STOP_LIMIT + 6 and cut.endswith("[…]") and scalar not in cut,
+              f"{len(cut)} chars")
+        check("and the cut keeps the key, which is at the head of every stop",
+              cut.startswith("context_guard.reread"), cut[:80])
+
+        # ⛔ The green side asserted, and not left to the reddening arms above: a
+        # function answering with a stop for every root would pass all of them,
+        # and every guard would then append one in a project that resolves.
         with open(stated, "w", encoding="utf-8") as handle:
             handle.write(shipped)
         check("while a configuration that resolves is explained by nothing at all",
               why_refused(directory) == "", repr(why_refused(directory))[:160])
+        # ⚠️ And a root that states no configuration is not a refusal either:
+        # the question presupposes a stated configuration, so a project that
+        # never adopted the toolkit answers with nothing rather than a fault.
+        check("and a root that states none answers with nothing rather than a fault",
+              why_refused(os.path.join(directory, "states-nothing")) == "",
+              repr(why_refused(os.path.join(directory, "states-nothing")))[:160])
 
     loaded: dict[str, Config] = {}
     for path in paths:

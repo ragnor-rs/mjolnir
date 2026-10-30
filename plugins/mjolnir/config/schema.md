@@ -690,28 +690,24 @@ integration branch; a role runs in a tree whose branch is somewhere else. Under 
 model those are two commits of one repository, and holding the tree's configuration to the
 installed branch's surface refuses it for every key the branch has not caught up to yet.
 
-⛔ **What that costs is not a message.** Measured on this repository: a key newly marked as required
-made the configuration unreadable in every tree cut before the marker landed, and the guards of
-§§ 18–21 — each of which reads a configuration to decide what to hold — held every command to
-nothing, in a project that had configured them. A guard saying it cannot read a configuration and a
-project that never wrote one are the same silence to whoever is reading.
+⛔ **What that costs is not a message, and it costs it in two places.** Measured on this repository:
+a key newly marked as required made the configuration unreadable in every tree cut before the marker
+landed, and each guard that reads a configuration to decide what to hold held every command to
+nothing, in a project that had configured them. ⛔ **Measured again in a project that only consumes
+this surface, where the rule above has nothing to prefer**: such a project carries no copy of its
+own, so it is held to the commit the install serves, and a key marked required there invalidates
+every configuration written before it at the instant that commit lands — no install step run, no
+session restarted
+([the measurement](../../../docs/configuration-surface.md#the-same-failure-in-an-adopter-which-no-resolution-rule-reaches)).
+A guard saying it cannot read a configuration and a project that never wrote one are the same
+silence to whoever is reading.
 
-⛔ **An adopter is that same failure with nothing to fall back to, and the paragraph above was read
-as covering it when it does not.** A project that only consumes this surface carries no copy of its
-own, so it is held to the installed one at whatever commit that checkout stands on — which makes
-carrying no surface the exposure rather than the exemption it reads as. ⚠️ **Measured again, against
-live projects this time**: marking one key required made every configuration written before it
-unreadable at the instant the commit landed, with no install step run and no session restarted, and
-the guards above held every command in all of them to nothing until somebody read the messages
-([the measurement](../../../docs/configuration-surface.md#the-same-failure-in-an-adopter-which-the-rule-above-does-not-reach)).
-
-⛔ **So a change marking a key `# required` owes the configurations it invalidates, and no check in
-this repository can reach them.** They are files in other repositories, while the check holding a
-key set equal to this surface's sees the shipped examples and this project's own file alone. What a
-change can do is state the key's absent form in the same commit and name the adopters it breaks in
-the record it lands with. ⚠️ **What meets whoever is working in one of them is the guards' own
-message**, which carries the reader's stop for exactly this reason: a guard that cannot read a
-configuration has just called the reader that knows which key is missing.
+⛔ **So a change marking a key `# required` owes the configurations it invalidates, and no check
+here can reach them**, they being files in repositories this one cannot open. What a change can do
+is state the key's absent form in the same commit, and say in the record it lands with that
+configurations outside this repository are now refused. ⚠️ **Which projects those are is not written
+down here**, and no rule of this surface is what stops it: a repository this one names is a fact
+about somebody else's work, and the convention against it is held by a check rather than by a facet.
 
 ⛔ **A shape rule may not answer whether a key is written**, for the same reason. Requiredness is
 the marker's question, checked before any shape rule runs; what a stated value has to *be* is the
@@ -4386,6 +4382,15 @@ cannot say is whether this call is a spend at all — and the refusing arm would
 in the project, the edit that repairs the configuration included. ⚠️ **A configuration that is
 absent is silent instead**, by [§ 7](#a-hook-in-a-project-that-states-no-configuration), which keeps
 the two answers apart for the reason that section states.
+
+⛔ **And the answer carries the reader's own stop, which is what makes it an answer rather than a
+notice.** The guard has just asked the reader and the reader named the key; a message repeating
+*could not be read* once per call, with the one fact that repairs it discarded, is what
+[§ 1](#the-surface-is-resolved-beside-the-configuration) measured costing a day. ⚠️ **It is the
+first refusal and not a diagnosis** — a configuration with several faults answers with whichever was
+reached first — so the answer carries it as the reader's stop and never as *the* repair. ⛔ **And it
+is cut to a length**, because a refusal interpolates the project's own stated value: an answer that
+repeats per call may not carry a mistyped scalar whole.
 
 ### What an approval is per, and the one price stated before a turn runs
 

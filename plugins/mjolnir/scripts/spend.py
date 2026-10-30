@@ -610,21 +610,17 @@ def guard_answer(payload: dict, *, config=None) -> dict:
         # branch below, which is a configuration that *is* stated and does not
         # resolve.
         return {}
-    loaded = config if config is not None else _config(payload.get("cwd"))
+    loaded, stop = (config, "") if config is not None else _read(payload.get("cwd"))
     if loaded is None:
         # ⛔ Reported, and the call proceeds. § 7's table settles this by whether
         # the act can be undone, and the act here is not known to be a spend at
         # all: what a broken configuration cannot say is whether this call is one
         # of the denied ones, so the refusing arm would refuse every call in the
         # project — the edit that repairs the configuration included (§ 19).
-        said = (
+        return {"systemMessage": (
             "Spend guard: the project's configuration could not be read, so this command was "
-            f"held to nothing. ({FACET_CITATION})"
-        )
-        stop = _stop(payload.get("cwd"))
-        if stop:
-            said += f" What the reader refused it for, which is the repair: {stop}"
-        return {"systemMessage": said}
+            f"held to nothing. ({FACET_CITATION}){stop}"
+        )}
     return spend_guard(loaded, command)
 
 
@@ -712,20 +708,24 @@ def _config(cwd: str | None):
         return None
 
 
-def _stop(cwd: str | None) -> str:
-    """Why the reader refused it, for the message — empty where it resolves.
+def _read(cwd: str | None):
+    """The configuration, and what the answer adds where it refused (§ 19).
 
-    ⛔ Asked through the shared reader, for `_config`'s own reason, and because
-    the stop names the missing key: a message that reports *could not be read*
-    without it is noise once per call, where the same message carrying it is the
-    repair.
+    ⛔ One load for both, which is why the message arm calls this rather than
+    `_config` and then a second question: resolving asks the whole surface, and
+    a hook that asked twice would pay for it in every process a command starts.
+
+    ⛔ Asked through the shared reader, for `_config`'s own reason: the sentence
+    and the stop inside it are both the reader's, so a guard holding a copy of
+    either would drift from the three beside it.
     """
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     try:
         import config as reader  # noqa: PLC0415 -- the path is set one line up
-        return reader.why_refused(cwd or ".")
+        loaded, stop = reader.read_or_why(cwd or ".")
+        return loaded, (f" {reader.REFUSAL_PREFACE} {stop}" if stop else "")
     except Exception:  # noqa: BLE001 -- an unreachable reader explains nothing
-        return ""
+        return None, ""
 
 
 # --- holding this file to the surface and to its carrier --------------------
@@ -1422,13 +1422,16 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("and the person is told which guard held nothing",
               "held to nothing" in str(answered.get("systemMessage")),
               str(answered.get("systemMessage"))[:160])
-        # ⛔ The message is the repair or it is noise once per call: measured, a
-        # required key added to the surface held every command in five live
-        # projects to nothing for a day, under a message naming no key.
-        check("and it carries the reader's own stop, which names the key to write",
-              "the repair:" in str(answered.get("systemMessage"))
-              and "required" in str(answered.get("systemMessage")),
-              str(answered.get("systemMessage"))[:220])
+        # ⛔ Held against the reader's own answer and never a substring of it
+        # (§ 19). Measured: a first pass asserted that the message carried the
+        # word `required`, which the required-key wording keeps with the key's
+        # name stripped out -- so a stop that had stopped naming the key passed.
+        import config as reader  # noqa: PLC0415 -- the path is set at import time
+
+        stop = reader.why_refused(broken)
+        check("and it carries the reader's own stop, whole, so the key is in the message",
+              bool(stop) and stop in str(answered.get("systemMessage")),
+              f"stop={stop[:70]!r} said={str(answered.get('systemMessage'))[:130]!r}")
         check("the price arm stays silent there, having no bar it could read",
               price_answer(_resume(figure=99.0) | {"cwd": broken}) == {})
 
