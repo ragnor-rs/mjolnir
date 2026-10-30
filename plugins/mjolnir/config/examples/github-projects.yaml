@@ -99,6 +99,27 @@ work_item:
     # `orderer`: the column is set by whoever ordered the work, so the procedure reads the
     # tier and reports the one it would have suggested rather than writing it (§ 4.2).
     writer: orderer
+  # § 4.8 in its single form, which is what a project with one grouping writes: a board holds a
+  # time-box column, so the fact lives in a field exactly as the tier above does. ⛔ No name on
+  # this block — the reader resolves it to one entry and a name here would spell a key the
+  # configuration already states.
+  grouping:
+    carrier: field
+    kind: iteration
+    field: "Iteration"
+    # The column carries dates, so which one is running is a fact a role reads off the board
+    # rather than one it has to be handed.
+    current: discoverable
+    # A column holds a name and nothing else: there is nowhere on it for a criterion to hang,
+    # so the bar is each item's own.
+    has_own_acceptance: false
+    # The column rolling over does not close the cards in it — unfinished work carries into the
+    # next one — which is the whole reason this is a second question rather than implied by the
+    # closer below.
+    closes_items: false
+    # `orderer`, for the reason the tier above carries it: deciding a time box is finished is
+    # whoever ordered the work, and the dates rolling over are not that decision (§ 4.2).
+    closed_by: orderer
 
 statuses:
   - { name: "Todo",        role: initial,     writer: procedure }

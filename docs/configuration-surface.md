@@ -782,12 +782,14 @@ Issue type ([`schema.md § 4.1`](../plugins/mjolnir/config/schema.md#41-type)), 
 ([`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)),
 estimate ([`§ 4.3`](../plugins/mjolnir/config/schema.md#43-estimate)), template
 ([`§ 4.4`](../plugins/mjolnir/config/schema.md#44-template)), priority
-([`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority)) and code root
-([`§ 4.7`](../plugins/mjolnir/config/schema.md#47-code-root)) are each per-project,
-and each was carried by a different mechanism depending on the project. Each but status has a
-real absent case of its own — which is where the schema's absence-is-a-configuration rule comes
-from: a procedure that treats absence as an unset value fails on a project that is correctly
-configured.
+([`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority)), code root
+([`§ 4.7`](../plugins/mjolnir/config/schema.md#47-code-root)) and the grouping a set of items is
+planned into
+([`§ 4.8`](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into))
+are each per-project, and each was carried by a different mechanism depending on the project.
+Each but status has a real absent case of its own — which is where the schema's
+absence-is-a-configuration rule comes from: a procedure that treats absence as an unset value
+fails on a project that is correctly configured.
 
 - **Type** — five carriers observed: a native field; a label convention, because a user-owned
   repository on one host has no type field at all; a bare label whose absence means the other
@@ -836,6 +838,58 @@ configured.
   is neither carried nor derivable there. That is the absent case with no loop around it: the
   carriers a tracker could hold it in are a label, a field, a component or a title prefix, and
   nothing was found holding it in any of them.
+
+- **Grouping** — read in three places, and the richest of them is the project with **no tracker**,
+  whose plan for a set of items is a document of its own. ⚠️ **Measured directly from that
+  project's specification tree on 2026-10-30**, rather than from a role copy, because the grouping
+  there is not a role's input at all — it is a document a person maintains, which is what makes it
+  the one reading that shows what a grouping *is* rather than what a gate asks about one. The
+  shape, item by item:
+
+  | What was asked | What the tree shows |
+  |---|---|
+  | what a grouping is | a numbered plan document, one per grouping, the active one beside the specification and the finished ones moved into an archive directory. The items are grouped **into** it: the document carries the list, and each item names the grouping in its own front matter |
+  | how an item says which one it is in | a named field in the item's front matter, holding the grouping's number. ⛔ Not a label, not a path, not the directory the item sits in — the directory says only whether it is archived |
+  | how the current one is found | a status field on the grouping itself, with exactly one marked active. ⚠️ **Discoverable**, then — and the whole reason that is a key is the measured contrast: on the tracker in the next bullet several of the equivalent are open at once with no such mark |
+  | what lifecycle it has | four fields in the grouping's front matter: the status, the time it was archived, the branch its kickoff cut, and the time it was frozen. A kickoff, a freeze and an archive, each with a slot to record it in |
+  | whether it carries its own acceptance | **yes, and the document says so in those words** — an acceptance-criteria list labelled milestone-level, beside a gate command. ⛔ So the bar a change is judged by is not on the item at all, and a role reading the item alone would be holding the work to a standard nobody wrote there |
+  | whether closing it closes its items | **yes, and the timestamps are the evidence.** Every one of the twelve archived items names the grouping that closed; nine carry the grouping's own archive time to the second, and three carry earlier, distinct times of their own. So the close swept what was still open in it, and an item may also close on its own first |
+  | who closes it | a person, in the pass that cuts the release. There is no automation in that tree and no role on this surface drives it |
+  | whether a version runs beside it | **not established.** Nothing in that tree carries a version at all, so the one grouping is both the time box and the release scope, and the lockstep reading — a version tracking an iteration one for one — is *not* what this project shows |
+
+  ⛔ **And its carrier is the one thing that does not generalise**, which is why no key was added
+  for it: the grouping is a file in a tree, and a tree is the tracker
+  [`schema.md § 3`](../plugins/mjolnir/config/schema.md#the-trackerless-adapter-and-a-kind-with-no-implementation)
+  declines to grow an adapter for. What the measurement supplies is every key *except* the
+  carrier — the kind, how the current one is found, the acceptance, the closer, and whether the
+  close reaches the items — and the carrier arrives when those items move onto a real tracker.
+
+  **The other two readings are gates rather than documents, and between them they forced the
+  collection.** One tracker's copy of the starting role refuses an item with no sprint, then one
+  with no fix version, then one whose release branch for that fix version is missing from the
+  remote — ⛔ **two groupings in one project**, two fields, two checks, and the third check a ref
+  named after the second one's value. A board's copy adds a missing iteration to its gate and has
+  no dependency check at all (both are in the readiness-gate section above). ⚠️ **Neither gate
+  carries anything else about its grouping** — not which one is current, not who closes it, not
+  what it is judged by — so what those two copies establish is the *number* of groupings a project
+  has and the questions a gate asks, and the document above establishes what a grouping holds.
+
+  ⛔ **Both gates carry the project's own word for the grouping inside a `field_present` entry**,
+  which is the finding that made this a facet rather than two more predicates: the check states a
+  field and nothing else, so the sprint and the fix version are spelled in the gate and no second
+  project can adopt that gate without renaming its own fields. That is the indirection
+  [`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer) was
+  built to keep out of the procedure, one layer up — and
+  [`§ 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list) now
+  refuses that exact pair with the field named.
+
+  ⚠️ **The absent case is this repository's own and is not the exceptional one.** A flat backlog
+  ordered by its blockers and a tier plans nothing into anything — this repository's configuration
+  says so, and the shipped examples carry `none` with a reason wherever the tracker has nowhere to
+  put one. ⛔ **And the evidence is thin for a facet this size**, which is stated rather than
+  glossed over: two gates and one document, against five keys. That is why every key traces to a
+  row of the table above rather than to a shape that seemed likely, and why the ref carrier the
+  document shows was left off the surface instead of generalised from one project.
 
 **What priority needed that the other facets did not: a statement of how two items compare.** The
 others answer a question about one item — what type it is, what it is worth, which template it

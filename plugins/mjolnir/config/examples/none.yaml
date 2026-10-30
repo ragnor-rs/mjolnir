@@ -59,6 +59,14 @@ work_item:
     revisit_when: >-
       A tracker is configured at all, which is the first moment there is a set of items for one
       to be more important than another.
+  grouping:
+    carrier: none
+    absent_reason: >-
+      There is no item to put into a grouping and no tracker to hold one. What a set of items
+      is planned into cannot be stated where no set of items exists.
+    revisit_when: >-
+      A tracker is configured at all, which is the same trigger the tier above carries and the
+      first moment there is anything for a grouping to group.
 
 statuses: []
 # An empty status list is legitimate. Every role is absent, so the procedure never asks the
