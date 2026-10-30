@@ -137,6 +137,20 @@ work_item:
       site: "<the label this board puts on a card whose code is the site's>"
     # ⛔ No `writer` key: § 4.7 carries none, and § 4.6's rules reach this value as written —
     # no role derives it, and a value already on the card is never rewritten.
+  grouping:
+    # § 4.8's absent case, on the tracker that has the most room for one: a board holds lists,
+    # and this project's lists are its statuses above. ⛔ A fifth prefixed label axis is what a
+    # grouping would have to be here, and that is a shape nobody chose rather than one nothing
+    # can hold — which is exactly what `revisit_when` is for.
+    carrier: none
+    absent_reason: >-
+      The lists on this board are the statuses above, and nothing else here groups cards: the
+      queue is read top to bottom and what commits this project is the order rather than a
+      plan a set of cards sits inside.
+    revisit_when: >-
+      The board starts carrying more work than one queue can be read in order, or somebody
+      outside the build asks which cards are in the next release — the first reader of a
+      grouping here that the queue is not already.
 
 statuses:
   - { name: "<backlog>",     role: initial,     writer: procedure }

@@ -76,12 +76,12 @@ work_item:
     # A project with a ladder wants the ladder validated, which is a different configuration
     # from "a number field" — hence `values` beside the unit.
     values: [1, 2, 4, 8, 24]
-    # ⚠️ What the sprint carries is the GATE's business and not this facet's: the readiness
-    # list below checks the sprint and the fix version, so an item with no estimate still
-    # starts. That is a statement about the gate, and a configuration that reads it as the
-    # carrier being absent claims a project sizes nothing while its own board sizes nearly
-    # every item. Who writes it is § 4.3's question rather than this file's; no role here
-    # writes one, so the value arrives by hand.
+    # ⚠️ What the grouping carries is the GATE's business and not this facet's: the readiness
+    # list below checks both groupings (§ 4.8), so an item with no estimate still starts.
+    # That is a statement about the gate, and a configuration that reads it as the carrier
+    # being absent claims a project sizes nothing while its own board sizes nearly every
+    # item. Who writes it is § 4.3's question rather than this file's; no role here writes
+    # one, so the value arrives by hand.
   template:
     carrier: file
     dir: ".claude/templates"
@@ -95,8 +95,8 @@ work_item:
   due_date:
     carrier: none
     absent_reason: >-
-      The sprint and the fix version carry the dates here, as they carry the sizing above;
-      a date per item would be a second commitment beside the one the sprint already states.
+      Both groupings carry the dates here, as they carry the sizing above; a date per item
+      would be a second commitment beside the one the grouping already states.
   priority:
     carrier: native             # a built-in field on this tracker, as the type above is
     # ⚠️ Stated and ordered even though the tracker owns the field: what the tracker holds is
@@ -106,6 +106,43 @@ work_item:
     # `never`, for the reason every status below carries it: the credential is a person's own
     # account. The tier is read for the gate and written by nobody here.
     writer: never
+  # § 4.8 in its collection form, which is the shape this tracker forced: a time box and a
+  # release scope, two separate fields with a lifecycle and a closer each, and the readiness
+  # list below checks both. ⛔ Two entries and not one with two values — a role asked for the
+  # release scope must not be handed the time box because it was written first.
+  grouping:
+    time_box:
+      kind: iteration
+      carrier: field
+      field: "<the field the time box is held in>"
+      # The tracker marks one of these open and dated, so a role reads which one is current
+      # rather than being told. ⚠️ The sibling below is the other arm, and that is the whole
+      # reason this is a key: the two are the same tracker, one field apart.
+      current: discoverable
+      # The dates and the sizing hang here (`due_date` above says so), and nothing a change
+      # is judged by does — the bar is each item's own.
+      has_own_acceptance: false
+      # Closing the time box does not close what is still open in it: unfinished items move
+      # to the next one, which is why this is a question of its own rather than implied by
+      # the closer below.
+      closes_items: false
+      # `never` throughout, for the reason every status above carries it: the credential is a
+      # person's own account, so the procedure reports the close it would have made.
+      closed_by: never
+    release_scope:
+      kind: version
+      carrier: field
+      field: "<the field the release scope is held in>"
+      # Several are open at once here and which one an item goes into is a decision, so no
+      # role may read *the current* one — it arrives on the invocation instead.
+      current: stated
+      has_own_acceptance: false
+      closes_items: false
+      closed_by: never
+      # The branch a release is cut from is named after the scope's own value, which is what
+      # `grouping_ref_exists` below reads. ⛔ The prefix and never the whole ref: a ref spelled
+      # out here would be one release's and the gate would pass every item after it.
+      ref_prefix: "release/"
 
 statuses:
   - { name: "<not started>", role: initial,     writer: never }
@@ -116,10 +153,14 @@ statuses:
 # writer: never throughout — the credential acts as a person's own account, so every write
 # reads as that person speaking. The procedure reports the move it would have made instead.
 
+# § 4.8's two checks, and each names which grouping it asks about because this project carries
+# two (§ 5). ⛔ None of the three entries carries the project's own word for a grouping: that is
+# what the facet above exists for, and `field_present` naming either of those fields is refused
+# by the reader rather than left as a second way to ask the same question.
 readiness:
-  - { check: field_present, field: "<sprint>", stop: "The item is in no sprint." }
-  - { check: field_present, field: "<fix version>", stop: "The item has no fix version." }
-  - { check: ref_exists, ref: "<the release branch for that fix version>", stop: "The release branch is missing from the remote." }
+  - { check: in_grouping, grouping: time_box, stop: "The item is in no time box." }
+  - { check: in_grouping, grouping: release_scope, stop: "The item is in no release scope." }
+  - { check: grouping_ref_exists, grouping: release_scope, stop: "The release branch is missing from the remote." }
   - { check: state_is, roles: [initial, ready], on_fail: flag, stop: "Already started or finished." }
 
 # ⛔ The same "a green gate is not done" rule as github-projects.yaml, split in two because
@@ -286,22 +327,22 @@ ordering:
   # judgement either way; what this key settles is where the procedure reads it rather than
   # whether a procedure may compute it.
   carrier: command
-  command: "<the command that prints the sprint's ranked issues, one key per line>"
+  command: "<the command that prints the current time box's ranked issues, one key per line>"
 
 people:
   # § 27's absent case on the tracker that has the most places to put the answer, and the reason is
   # not capability: this project's statuses are written `writer: never` throughout because the
-  # credential authenticates as a person, and who holds a role here is decided in the sprint
-  # ceremony rather than recorded anywhere a procedure can read. ⛔ Stated rather than left unset —
-  # a map this project could write and has not is exactly what `revisit_when` is for.
+  # credential authenticates as a person, and who holds a role here is decided when the time box
+  # above is planned rather than recorded anywhere a procedure can read. ⛔ Stated rather than left
+  # unset — a map this project could write and has not is exactly what `revisit_when` is for.
   carrier: none
   absent_reason: >-
-    Who holds a role is settled per sprint in the planning ceremony and is written down nowhere
-    a procedure can be pointed at. The board's assignee is the record of that decision rather
-    than a map it could be checked against.
+    Who holds a role is settled per time box in the planning ceremony and is written down
+    nowhere a procedure can be pointed at. The board's assignee is the record of that decision
+    rather than a map it could be checked against.
   revisit_when: >-
-    The roles outlast a sprint, or the gate starts being asked whether an issue is on the right
-    person — which is the first reader of a map here that a person is not already.
+    The roles outlast a time box, or the gate starts being asked whether an issue is on the
+    right person — which is the first reader of a map here that a person is not already.
 
 environment:
   # Two variables rather than one: this tracker authenticates as a person, so the credential
