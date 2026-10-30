@@ -2025,7 +2025,10 @@ rather than a `# required` marker.** The marker answers *must this key be writte
 whose absence is refused differs between the two forms, so a marker on either one would refuse the
 other. It is [`§ 4.7`](#47-code-root)'s reason for the same choice, with the number of forms in
 place of the number of roots: the refusal names `carrier` and says a block of named groupings
-answers it too.
+answers it too. ⚠️ **The cost is a configuration written before this facet existed stopping to
+load**, which is [§ 6](#6-commit-behaviour)'s staging ruling paying the same price and is stated
+here for the same reason: the refusal names the key and the remedy is one block, so a project
+meets it once rather than discovering it inside a role.
 
 ⚠️ **`carrier: none` with a stated reason is a first-class setting, on § 4.3's terms rather than on
 a second statement of them.** A flat backlog ordered by its blockers is as legitimate as one
