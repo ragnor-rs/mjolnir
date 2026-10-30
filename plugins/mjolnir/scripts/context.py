@@ -859,7 +859,7 @@ def _loaded(payload: dict, config):
         # read in every project the install reaches, and a project that states no
         # configuration has agreed to no rule this guard could hold (§ 7).
         return None, {}
-    loaded = _config(payload.get("cwd"))
+    loaded, stop = _read(payload.get("cwd"))
     if loaded is None:
         # ⛔ Reported, and the call proceeds. § 22 settles this one case by
         # pointing at § 19's: what a broken configuration cannot say is whether
@@ -867,7 +867,7 @@ def _loaded(payload: dict, config):
         # in the project -- the edit that repairs the configuration included.
         return None, {"systemMessage": (
             "Context guard: the project's configuration could not be read, so this call was held "
-            f"to nothing. ({FACET_CITATION})"
+            f"to nothing. ({FACET_CITATION}){stop}"
         )}
     return loaded, {}
 
@@ -901,6 +901,25 @@ def _config(cwd: str | None):
         return reader.load(cwd or ".", check_paths=False)
     except Exception:  # noqa: BLE001 -- any failure is reported by the caller
         return None
+
+
+def _read(cwd: str | None):
+    """The configuration, and what the answer adds where it refused (§ 19).
+
+    ⛔ One load for both, which is why the arm above calls this rather than
+    `_config` and then a second question: resolving asks the whole surface, and
+    a hook that asked twice would pay for it in every process a call starts.
+
+    ⛔ Asked through the shared reader, for `_config`'s own reason: the sentence
+    and the stop inside it are both the reader's, so a guard holding a copy of
+    either would drift from the three beside it.
+    """
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set at import time
+        loaded, stop = reader.read_or_why(cwd or ".")
+        return loaded, (f" {reader.REFUSAL_PREFACE} {stop}" if stop else "")
+    except Exception:  # noqa: BLE001 -- an unreachable reader explains nothing
+        return None, ""
 
 
 # --- holding this file to the surface and to its carrier --------------------
@@ -1708,6 +1727,16 @@ def self_test() -> int:  # noqa: PLR0912, PLR0915 -- one assertion per rule, rea
         check("and the person is told which guard held nothing",
               "held to nothing" in str(answered.get("systemMessage")),
               str(answered.get("systemMessage"))[:160])
+        # ⛔ Held against the reader's own answer and never a substring of it
+        # (§ 19). Measured: a first pass asserted that the message carried the
+        # word `required`, which the required-key wording keeps with the key's
+        # name stripped out -- so a stop that had stopped naming the key passed.
+        import config as reader  # noqa: PLC0415 -- the path is set at import time
+
+        stop = reader.why_refused(broken)
+        check("and it carries the reader's own stop, whole, so the key is in the message",
+              bool(stop) and stop in str(answered.get("systemMessage")),
+              f"stop={stop[:70]!r} said={str(answered.get('systemMessage'))[:130]!r}")
         check("the result arm says the same thing",
               "held to nothing" in str(result_answer(
                   {**_came_back("a-free-command", long_result), "cwd": broken}

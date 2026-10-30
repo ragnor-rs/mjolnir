@@ -1831,15 +1831,17 @@ reader derives the two facts apart, and a refusal names which of them is missing
 performs differently reproduces it, and nothing compares the two copies: the installed reader's
 version is not a fact this repository's gates can see. The remedy that generalises is the one above
 applied as a habit — a new surface statement that an older reader will *not* read beats one it will
-read wrongly — and the cost of getting it wrong is bounded to a branch's own work tree, since an
-adopter has no second copy of the surface at all.
+read wrongly.
 
-⚠️ **An adopter is unaffected, and that is a property of the test rather than a case handled.** A
-project that consumes the plugin carries no copy of this surface, so there is nothing for the
-resolution to find and the installed copy is read — the behaviour that existed before the rule. The
-two answers also coincide for the shipping project's own primary checkout, that root and the
-installed path being one directory, which is why the suite's assertion about this repository holds
-the resolution's *report* rather than a difference it cannot produce here.
+⛔ **An adopter carries no second copy of the surface, and that is the exposure rather than an
+exemption.** A project that consumes the plugin has nothing for the resolution to find, so the
+installed copy is read — at whatever commit the checkout serving it stands on, which is the one
+state the rule at
+[`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration)
+cannot reach. The subsection at the end of this section is that case measured.
+⚠️ **The two answers do coincide for the shipping project's own primary checkout**, that root and
+the installed path being one directory, which is why the suite's assertion about this repository
+holds the resolution's *report* rather than a difference it cannot produce here.
 
 **What the rule found once it was enforced: ten shape rules answering a question that was not
 theirs.** With the surface resolved from the tree, the measured configuration still would not load —
@@ -1861,9 +1863,49 @@ the day the surface marks it.
 that cannot read a configuration fails closed and says so, which is right. But *held to nothing* and
 *this project configured nothing* are the same two lines to whoever is reading them, and three of
 the four guards produced the first while the project had written every one of their keys. Nothing
-reported the version skew as a skew. The rule removes the state, and naming the resolved surface
-among what a role reports is what makes the remaining case visible at the moment it happens —
+reported the version skew as a skew. The rule removes the state **for a tree**, and naming the
+resolved surface among what a role reports is what makes the remaining case visible at the moment it
+happens —
 [`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration).
+⛔ **For an adopter the state stands**, which is the subsection below, and the answer a guard sends
+is where it was made visible instead.
+
+### The same failure in an adopter, which no resolution rule reaches
+
+An adopting project carries no surface of its own, so the reader finds nothing in its skills root
+and reads the installed copy — at whatever commit the primary checkout serving it stands on.
+Measured 2026-10-30, a day after the role-to-person facet landed:
+
+| | |
+|---|---|
+| The change | `e1430aa`, 2026-10-29 20:18:05 +0400, marking `people.carrier` as `# required` |
+| What it updated | every configuration this repository tracks, which is every one its gates can reach |
+| What it invalidated | five live configurations, in repositories outside this one, four last written 2026-10-28 |
+| What each one needed | one key: `people.carrier: none`, with the `absent_reason` that marker demands |
+| How it was noticed | three parallel sessions, each reporting the same stop out of its own project |
+| How the rest were found | sweeping every configuration on the machine; nobody was standing in them |
+| What the window cost | the enforcement gate, `context_guard.reread`, the approval arm, and every role that routes through the reader — the deny lists were empty in all five, so those arms held nothing either way |
+
+⛔ **No install step ran and no session was restarted.** The surface those files are held to moved
+under them, which is this section's asymmetry reaching the one case no resolution rule can fix:
+there is no second copy to prefer, so a project that consumes the surface is always held to the
+commit the install serves
+([`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration)).
+One of the five was itself edited hours after the break, and the session editing it was never told
+that the file it was writing no longer resolved.
+
+⚠️ **The answer named no key for the whole window, and the reader it had just called knew which
+one.** That is why a guard's answer now carries the reader's own stop
+([`schema.md § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)),
+and it is the only half of this a check here can hold: the configurations are files no check in this
+repository can open.
+
+⚠️ **The stop is the reader's first refusal and not a diagnosis.** A configuration with more than
+one fault answers with whichever `validate` reached first — a stub stating `roots` as a list answers
+about a required key nobody wrote — so the answer carries it as the reader's stop rather than as the
+repair. ⛔ **And it is cut**, because the reader's refusals interpolate the project's own stated
+value: one long mistyped scalar answered with 50,063 characters of itself, which is the figure a
+first pass at this missed by measuring the required-key arm alone.
 
 ## The bookkeeping role: three copies that are a third of it, and two keys that came out of it
 
