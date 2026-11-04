@@ -234,6 +234,12 @@ host:
   landing:
     method: squash
     delete_branch: procedure
+  # § 29's port, and the kind that answers for it is the same host the keys above address — which
+  # is why the key is stated rather than derived: it says who can be *asked about a run*, and the
+  # key above says who holds the code. ⚠️ All four operations are reachable here, and the dispatch
+  # is the reviewing role's re-dispatch once a resolved thread needs the gate read again.
+  runs:
+    kind: github
 
 tracker:
   # Plain GitHub issues with no project board — the cheapest real configuration. The gap was
@@ -533,13 +539,26 @@ people:
     above carry, and the first point at which who holds a role stops being derivable from the fact
     that there is one of them.
 
+private:
+  # § 28. This repository is the toolkit itself and is public, so the one thing it may not hold is
+  # the class of value this facet names — and it holds none, for the reason below. ⛔ Which is a
+  # measurement of this file rather than a policy: the gate beside it sweeps every tracked
+  # configuration for a value under a `# private` key, and this one is what it sweeps.
+  carrier: none
+  absent_reason: >-
+    Every value this project states may be committed, and is: the day is measured from its own
+    sessions and commits, no chat archive and no calendar is read, and nobody is named anywhere.
+  revisit_when: >-
+    A chat archive or a calendar becomes evidence here, which is the first value this repository
+    would be unable to carry.
+
 loop_exempt:
-  # § 28, and the empty form is this repository's own measured convention rather than caution:
+  # § 30, and the empty form is this repository's own measured convention rather than caution:
   # measured over the whole integration branch at 9062f45 — 120 commits, of which 113 are squash
   # merges carrying a pull request number and 7 are not, every one of those 7 predating the loop.
   # Documentation changes, comment changes and one-line corrections are all among the 113. ⛔ So a
   # class here would state an exemption the history does not take, which is the inverse of the
-  # defect § 28 was written for. ⚠️ The window is named rather than left as *the recent history*,
+  # defect § 30 was written for. ⚠️ The window is named rather than left as *the recent history*,
   # which grows under its own claim — the first form of this said *the last two hundred commits*
   # of a branch that had 120.
   #

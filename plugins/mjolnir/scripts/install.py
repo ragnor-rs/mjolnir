@@ -2839,8 +2839,8 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         )
         check(
             "while the facet still states the run, which the drift check reads",
-            TITLE_GATE_WORKFLOW in [r["workflow"] for r in standing.host_runs()],
-            repr(standing.host_runs()),
+            TITLE_GATE_WORKFLOW in [r["workflow"] for r in standing.defined_runs()],
+            repr(standing.defined_runs()),
         )
         again = one(standing, gate, write=True)
         check("a second run reports it unchanged", again["answer"] == UNCHANGED, str(again))

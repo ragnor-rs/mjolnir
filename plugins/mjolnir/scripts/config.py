@@ -240,6 +240,28 @@ REQUIRED_WHEN_NEAR_MISS = re.compile(r"^(?:required[_ ]when\s*:|required_when\b)
 # of which absences are deliberate -- and a sixth facet invisible to both rules.
 ABSENT_REASON_CLAUSE = re.compile(r"^absent_reason$")
 
+# `# private` beside a key declares its *value* as one a repository may not be
+# able to hold, so § 28's facet may list the key and resolve it from the file
+# that facet points at. The mark is the whole of what makes a key eligible, and
+# the alternative was a list of eligible paths in this module -- which is the
+# second statement of the surface every marker here exists to delete.
+#
+# ⛔ Refused on a `carrier` and on a `kind`, and on § 28's own block. ⚠️ The
+# reason is that section's and is not copied here; what is local to this module
+# is that refusing at the *mark* rather than at the list is what keeps a surface
+# from reading as offering something no configuration may use.
+PRIVATE_CLAUSE = re.compile(r"^private$")
+
+# The keys a private mark may not sit on, by their last segment, and the facet's
+# own block. ⛔ Spelled here rather than at the point of refusal because the
+# refusal and § 28's prose have to name the same three things.
+PRIVATE_FORBIDDEN_ON = ("carrier", "kind")
+PRIVATE_KEY = "private"
+PRIVATE_SOURCE_PATH = f"{PRIVATE_KEY}.source"
+PRIVATE_KEYS_PATH = f"{PRIVATE_KEY}.keys"
+PRIVATE_FILE = "file"
+PRIVATE_NONE = "none"
+
 # `# port: <directory>` beside a `kind` declares that key as a port's kind, and
 # the clause's value as the directory the implementations behind it live in. The
 # section the marked block sits under is the third fact it carries, and it is not
@@ -293,6 +315,14 @@ DESTINATION_BLOCK = "day_log.destination"
 OUT_DIR_KEY = "out_dir"
 OUT_DIR_PATH = f"{DESTINATION_BLOCK}.{OUT_DIR_KEY}"
 DESTINATION_KIND_PATH = f"{DESTINATION_BLOCK}.kind"
+
+# § 29's run port, read for the one thing this reader may say about it: that a
+# configuration states a host whose runs nothing here can be asked about. ⛔ The
+# word is the shared one above and is deliberately not spelled a second time --
+# `none` means *addresses nothing* for every port the surface declares, and two
+# spellings of it would be free to disagree about which kind is the absent one.
+RUNS_BLOCK = "host.runs"
+RUNS_KIND_PATH = f"{RUNS_BLOCK}.kind"
 
 # § 9's chat source, spelled once here for the reason the destination's keys
 # above are: the stream's name in `day_log.streams`, the kind that says what
@@ -403,6 +433,7 @@ def surface_facts(surface_text: str) -> dict:
     required: dict[str, str] = {}
     required_when: dict[tuple[str, str, str], str] = {}
     absent_reason: dict[str, str] = {}
+    private: dict[str, str] = {}
     procedure: dict[str, str] = {}
     ports: dict[str, tuple[str, str]] = {}
     declared: set[str] = set()
@@ -516,6 +547,22 @@ def surface_facts(surface_text: str) -> dict:
                             "facet's `carrier` line or delete it.",
                         )
                     absent_reason.setdefault(path[: -len(".carrier")], heading)
+                if PRIVATE_CLAUSE.match(clause):
+                    # ⛔ Refused rather than ignored where it sits on a rule,
+                    # which is the marker's own rule above and § 28's reason.
+                    leaf = path.rpartition(".")[2]
+                    if leaf in PRIVATE_FORBIDDEN_ON or path.split(".")[0] == PRIVATE_KEY:
+                        raise ConfigError(
+                            path,
+                            "carries `# private`, which marks a value a repository "
+                            f"may not hold. A `{'`/`'.join(PRIVATE_FORBIDDEN_ON)}` and "
+                            f"`{PRIVATE_KEY}`'s own keys are a project's rules rather "
+                            "than its values, and a configuration whose rules could "
+                            "move into an untracked file is one nobody reviews (§ 28). "
+                            "Move the marker to the key carrying the value, or delete "
+                            "it.",
+                        )
+                    private.setdefault(path, heading)
 
             # A closed set, written either as the value or as a comment beside
             # it -- `key: a | b | c` is the first shape, and a line whose value
@@ -645,6 +692,10 @@ def surface_facts(surface_text: str) -> dict:
         "required": required,
         "required_when": required_when,
         "absent_reason": absent_reason,
+        # ⚠️ Deliberately **not** in the `missing` refusal above, for the reason
+        # `lists` and `per_root` are not: a surface marking nothing empties this,
+        # and what follows is closed rather than silent.
+        "private": private,
         "procedure": procedure,
         # `the kind's dotted path -> (the section its operation list is under,
         # the directory its implementations live in)`. Read by the contract beside
@@ -931,9 +982,9 @@ def _opens_with(text: str, value: str) -> bool:
 
 
 def _matches(path: str, glob: str) -> bool:
-    """Whether one changed path is inside one of § 28's globs.
+    """Whether one changed path is inside one of § 30's globs.
 
-    ⛔ `fnmatch` and not a path match, because § 28 states that `*` crosses a
+    ⛔ `fnmatch` and not a path match, because § 30 states that `*` crosses a
     directory separator here: `docs/*` covers that subtree whole, which is the
     one rule a project writing a class has to know. The form that would mean
     otherwise is refused where the configuration is read rather than reinterpreted
@@ -1486,6 +1537,17 @@ class Config:
         # installed plugin's and a shipping project's own tree -- so which one
         # ruled is a fact about the resolution rather than a constant.
         self.surface = surface or SURFACE
+        # § 28's two reads, each held after the first: the list is already
+        # validated by `validate`, and a role reading several of one project's
+        # private values reads the file once rather than once per value.
+        # ⚠️ **Per object and not per project**, which is stated rather than
+        # implied: § 1's collection builds a view per code root beside the
+        # project-level object, so a project with named roots may open the layer
+        # once per view. None of the marked keys sits in a per-root block, so
+        # every consumer reads them through one object today -- and a marked key
+        # that did would want the cache moved rather than this comment.
+        self._private_listed: list[str] | None = None
+        self._private_read: dict | None = None
 
     # -- the roots. The skills root is where the role ran (§ 1); the code root is
     # read from the file found there and is never inferred.
@@ -1793,7 +1855,7 @@ class Config:
         }
 
     def exempt_for(self, paths: list[str], kind: str | None = None) -> dict:
-        """§ 28's verdict on one change: does it go through the loop or not.
+        """§ 30's verdict on one change: does it go through the loop or not.
 
         `paths` is the change's own files, repository-relative. `kind` is what
         the change **is**, for a class that states one -- absent where nobody has
@@ -1801,11 +1863,11 @@ class Config:
 
         Returns the verdict, every class that matched, the destination branch an
         exempt change is committed to, and the paths that fell outside every
-        class -- so the run report § 28 requires can say *which class and why*
+        class -- so the run report § 30 requires can say *which class and why*
         without the calling role re-deriving any of it.
 
         ⛔ **No count of anything reaches this method.** Not the number of
-        changed paths, not a diff size, not a line total: § 28's axis is what a
+        changed paths, not a diff size, not a line total: § 30's axis is what a
         change is, and the measured failure of the other axis is a release whose
         unticketed tooling work was *larger* than the ticketed product changes
         beside it. So a change wholly inside a class is exempt at one line and at
@@ -1829,9 +1891,9 @@ class Config:
                     f"was handed {path!r} as changed path {position}, which is not a "
                     "path. ⛔ Not dropped from the list: a change described wrongly "
                     "in part would be answered about in part, and the part that "
-                    "survives is the part that gets exempted (§ 28, § 11).",
+                    "survives is the part that gets exempted (§ 30, § 11).",
                 )
-            # ⛔ § 28 states the glob is matched against the **repository-relative**
+            # ⛔ § 30 states the glob is matched against the **repository-relative**
             # path, and that precondition is performed here or by nothing. Measured
             # by review: under the shipped `*.md` glob, an absolute path outside the
             # repository and `../outside/thing.md` each answered `exempt` -- an
@@ -1839,7 +1901,7 @@ class Config:
             if os.path.isabs(path) or path.split("/")[0] == os.pardir:
                 raise ConfigError(
                     EXEMPT_CLASSES_PATH,
-                    f"was handed {path!r}, which is not repository-relative. § 28 "
+                    f"was handed {path!r}, which is not repository-relative. § 30 "
                     "matches a class's globs against the path as the repository "
                     "holds it, so an absolute path or one climbing out of the tree "
                     "is a path no class can be asked about -- and the answer it "
@@ -1860,9 +1922,9 @@ class Config:
                 "was handed no changed path, so there is nothing to hold against a "
                 "class. ⛔ Not answered as exempt: a class's `paths` are matched "
                 "against every changed path, and an empty list meets that vacuously "
-                "-- which would exempt whatever a caller failed to describe (§ 28).",
+                "-- which would exempt whatever a caller failed to describe (§ 30).",
             )
-        # ⛔ The kind is held to § 28's closed set here as well as in `validate`,
+        # ⛔ The kind is held to § 30's closed set here as well as in `validate`,
         # and for a different reason: a configuration's kinds are checked where it
         # is read, while *this* value arrives from a role at decision time. A
         # misspelling answered `through_the_loop` -- which is safe and silent, and
@@ -1873,7 +1935,7 @@ class Config:
         if kind is not None and kind not in published:
             raise ConfigError(
                 EXEMPT_KINDS_PATH,
-                f"was handed {kind!r}, which § 28 does not publish: "
+                f"was handed {kind!r}, which § 30 does not publish: "
                 f"{' | '.join(published)}. ⛔ Not answered as *not exempt*: that is "
                 "the safe-looking reading, and what it does is drop the exemption "
                 "the project configured without saying a word.",
@@ -1893,7 +1955,7 @@ class Config:
         if not classes:
             answer["why"] = (
                 f"`{EXEMPT_CLASSES_PATH}` is empty, so every change this project "
-                "makes goes through the loop (§ 28)."
+                "makes goes through the loop (§ 30)."
             )
             return answer
 
@@ -1914,7 +1976,7 @@ class Config:
                 inside = {p for p in held if any(_matches(p, g) for g in globs)}
                 covered |= inside
                 # ⛔ `every` and not `any`: a change touching an exempt path and
-                # a non-exempt one is not exempt, which is the case § 28 names as
+                # a non-exempt one is not exempt, which is the case § 30 names as
                 # the one that waves code through under cover of a documentation
                 # edit. ⚠️ **What the duplicate case turns on is the dedup above
                 # and not this line**: the first form measured a set's size
@@ -1950,7 +2012,7 @@ class Config:
                 why="the change is wholly inside "
                 + ", ".join(repr(n) for n in sorted(matched))
                 + (f" and its kind is {kind!r}" if kind else "")
-                + " (§ 28).",
+                + " (§ 30).",
             )
             return answer
         if pending:
@@ -1986,7 +2048,7 @@ class Config:
                     if outside
                     else ""
                 )
-                + " (§ 28).",
+                + " (§ 30).",
             )
             return answer
         # ⛔ Three reasons and not two, because *covered between them* is its own
@@ -2011,7 +2073,7 @@ class Config:
                     else "no class covers this change"
                 )
             )
-        ) + " (§ 28)."
+        ) + " (§ 30)."
         return answer
 
     @property
@@ -2056,6 +2118,99 @@ class Config:
             or crossed.startswith(f"{path}.")
         )
 
+    @property
+    def private_keys(self) -> list[str]:
+        """§ 28's listed keys, or none. Held to the surface's marks at load."""
+        if self._private_listed is None:
+            self._private_listed = _private(self.data, self.facts)
+        return self._private_listed
+
+    def _private_layer(self) -> dict:
+        """The private file, read once and held. Every failure is a stop.
+
+        ⛔ **Resolved here and not at load**, which is § 27's shape one facet
+        over: the file is outside the repository, so a configuration that merely
+        validates -- an example, a project read on another machine -- must load
+        without it, and a value is read when something actually needs it.
+
+        ⛔ **And not one failure falls back to an empty value.** A missing layer
+        resolving to nothing is a day measured from no chats, which under-reports
+        the work and reports success, so an unopenable pointer, a file that is
+        not a mapping, a listed key the file omits and a key the list does not
+        name are four refusals (§ 28).
+        """
+        if self._private_read is not None:
+            return self._private_read
+        listed = self.private_keys
+        source = self.get(PRIVATE_SOURCE_PATH)
+        path = os.path.normpath(os.path.join(self.skills_root, str(source)))
+        try:
+            with open(path, encoding="utf-8") as handle:
+                values = _load_yaml(handle.read(), PRIVATE_SOURCE_PATH)
+        except OSError as error:
+            raise ConfigError(
+                PRIVATE_SOURCE_PATH,
+                f"names {source!r}, which did not open at {path!r} "
+                f"({error.__class__.__name__}). It was to supply "
+                f"{', '.join(listed)} (§ 28), and a layer that is not there is "
+                "reported by name rather than resolved to nothing -- a value "
+                "measured from an absent file looks exactly like one measured "
+                "from an empty project.",
+            ) from None
+        if not isinstance(values, dict) or not values:
+            # ⚠️ The empty mapping is named as empty rather than as the wrong
+            # type: *read as dict rather than a mapping* is a sentence about a
+            # dict, which reads as a bug in the reader to whoever gets it.
+            held = "nothing at all" if isinstance(values, dict) else type(values).__name__
+            raise ConfigError(
+                PRIVATE_SOURCE_PATH,
+                f"names {source!r}, which read as {held} rather than a mapping of "
+                f"dotted key path to value (§ 28) -- and it was to supply "
+                f"{', '.join(listed)}. Nested blocks are not read and a document is "
+                "not parsed: a second resolver of this surface is free to disagree "
+                "with the one that validated the list.",
+            )
+        for key in listed:
+            if key not in values:
+                raise ConfigError(
+                    PRIVATE_SOURCE_PATH,
+                    f"names {source!r}, which carries no {key!r} -- a key "
+                    f"`{PRIVATE_KEYS_PATH}` says it supplies (§ 28). The paths are "
+                    "written absolutely, from the top of the configuration, and the "
+                    "two halves are compared as written.",
+                )
+            # ⛔ And carrying the key is not answering it. A listed key is the
+            # project's statement that the layer answers that path, so a null or
+            # an empty value there is the layer failing to answer while looking
+            # like an answer -- which is the fall-back to nothing this facet
+            # exists to refuse, reached through the one gate that was asking
+            # about presence instead. ⚠️ The test is `_valued`, the same one the
+            # tracked half is held to, so the two halves cannot disagree about
+            # what counts as an answer. A project wanting the key unanswered
+            # does not list it.
+            if not _valued(values[key]):
+                raise ConfigError(
+                    PRIVATE_SOURCE_PATH,
+                    f"names {source!r}, which carries {key!r} with nothing under it "
+                    f"({values[key]!r}). A key named in `{PRIVATE_KEYS_PATH}` is the "
+                    "project's statement that this file answers it, so an empty "
+                    "value here is a layer that did not answer (§ 28) -- and the "
+                    "permissive reading is a day measured from no chats, or every "
+                    "committer read as the log's owner. A key meant to be "
+                    "unanswered is left off the list.",
+                )
+        extra = sorted(set(values) - set(listed))
+        if extra:
+            raise ConfigError(
+                PRIVATE_KEYS_PATH,
+                f"does not name {extra[0]!r}, which {source!r} carries (§ 28). The "
+                "list is the bound on what may be resolved privately: a key the "
+                "tracked file does not name is one that could move a rule out of "
+                "review, which is the reading § 28 rejects.",
+            )
+        self._private_read = values
+        return values
+
     def get(self, path: str, default=None):
         crossed = self.per_root(path)
         if crossed:
@@ -2065,6 +2220,28 @@ class Config:
                 f"read is the project's. {len(self.views)} roots carry it -- "
                 f"{', '.join(repr(k) for k in self.views)} -- so there is no one "
                 "answer to give and the first of them is not it (§ 1).",
+            )
+        # § 28, before the tracked file is read: a listed key's value is in the
+        # private layer, and what the tracked file carries for it is at most the
+        # key's shape -- so reading here first is what keeps every consumer of
+        # this accessor unchanged by the facet.
+        if path in self.private_keys:
+            return self._private_layer()[path]
+        # ⛔ And a read of a *block* holding one of those keys is refused rather
+        # than answered from the tracked shape alone, which is the per-root
+        # refusal above arriving one axis over: a block read is idiomatic here --
+        # `carriers`, `statuses`, `day_log.evidence` -- and answering one would
+        # hand back every listed key under it resolved to nothing, with no stop.
+        # ⚠️ The leaves are what the layer answers, so the remedy is to read
+        # them, which the refusal names.
+        under = [key for key in self.private_keys if key.startswith(f"{path}.")]
+        if under:
+            raise ConfigError(
+                path,
+                f"holds {', '.join(under)}, which `{PRIVATE_KEYS_PATH}` resolves from "
+                f"`{PRIVATE_SOURCE_PATH}` (§ 28). A block read here would answer with "
+                "the tracked file's shape, so every one of those keys would come back "
+                "empty with nothing saying so. Read the keys themselves.",
             )
         return _get(self.data, path, default)
 
@@ -2087,7 +2264,7 @@ class Config:
         self.get("host.checks")
         return mirrored_runs(self.data)
 
-    def host_runs(self) -> list[dict]:
+    def defined_runs(self) -> list[dict]:
         """§ 2's `host.checks` as one record per entry, the run rather than the command.
 
         The accessor beside `mirrors()` and the same single walk behind both.
@@ -2098,7 +2275,7 @@ class Config:
         legitimately drops.
         """
         self.get("host.checks")
-        return host_runs(self.data)
+        return defined_runs(self.data)
 
     def runner(self) -> dict | None:
         """§ 2's `host.runner`, or `None` where this project states none.
@@ -2306,6 +2483,20 @@ class Config:
                 "pass has no store to check a recalled fact against: "
                 f"{' '.join(str(reason).split())}"
             )
+        # § 28, and reported for the reason § 15's is: a role learns that every
+        # value this project states is in the tracked file, rather than meeting a
+        # facet that is not there. ⛔ And the complement is not reported here: a
+        # project that carries the layer has a pointer and a list, which `to_dict`
+        # names beside the configuration -- an absence is what this report is for,
+        # and a value's address is not an absence.
+        if self.get(f"{PRIVATE_KEY}.carrier") == PRIVATE_NONE:
+            reason = self.get(f"{PRIVATE_KEY}.absent_reason")
+            out.append(
+                f"No private layer is carried (`{PRIVATE_KEY}.carrier: "
+                f"{PRIVATE_NONE}`), so every value this project states is in the "
+                "tracked configuration and no key is resolved from outside the "
+                f"repository: {' '.join(str(reason).split())}"
+            )
         if self.get("ordering.carrier") == "none":
             reason = self.get("ordering.absent_reason")
             out.append(
@@ -2328,7 +2519,7 @@ class Config:
                 f"`{ASSIGNEE_CHECK}` cannot be configured: "
                 f"{' '.join(str(reason).split())}"
             )
-        # § 28, and the stated absence of a list rather than of a carrier: every
+        # § 30, and the stated absence of a list rather than of a carrier: every
         # change goes through the loop whatever this says, so what `[]` buys is
         # the difference between a project that decided none of its changes
         # bypasses the loop and one that never asked. ⛔ Reported as no change
@@ -2341,7 +2532,7 @@ class Config:
                 "so every change here is filed, gated, started, finished and "
                 "reviewed. ⛔ Not an absence of signal: the project states it, and "
                 "an unstated class is never an exemption a role grants itself "
-                "(§ 28)."
+                "(§ 30)."
             )
             # ⚠️ The destination reported the way § 25's `write_from` is under a
             # branch model that cuts no tree: a stated key rather than an inert
@@ -2353,7 +2544,7 @@ class Config:
             if self.get(EXEMPT_DESTINATION_PATH) is not None:
                 out.append(
                     f"With no exempt class, `{EXEMPT_DESTINATION_PATH}` decides "
-                    "nothing: there is no change for it to route (§ 28)."
+                    "nothing: there is no change for it to route (§ 30)."
                 )
         for where, root in roots:
             if not root.get("host.checks"):
@@ -2550,6 +2741,19 @@ class Config:
                 "is not required -- a project that maps no `day_log` carrier needs "
                 "no store -- so it is reported here rather than refused."
             )
+        # § 29's kind that addresses nothing, reported the same way. ⛔ Not read as
+        # a second statement of `checks: []`, which this reader reports nowhere and
+        # § 29 holds apart from it: one says the host defines no run this surface
+        # states, the other that no run here can be listed, read or started.
+        if self.get(RUNS_KIND_PATH) == NO_DESTINATION:
+            out.append(
+                f"No host run operations are configured (`{RUNS_KIND_PATH}: "
+                f"{NO_DESTINATION}`), so no run here can be listed, read or "
+                "started through the port: a role reports § 2's preconditions "
+                "unanswered rather than green, and names what an operator must "
+                "run by hand instead of dispatching. What that leaves each of "
+                "§ 29's operations doing is the port's to report."
+            )
 
         for role, status in (
             (s.get("role"), s) for s in (self.get("statuses") or [])
@@ -2594,6 +2798,32 @@ class Config:
         out["groupings"] = {
             key: dict(block) for key, block in sorted(self.groupings.items())
         }
+        # § 28: each listed key is named **where it sits**, and ⛔ **never
+        # valued**. A report goes somewhere this configuration does not, which is
+        # § 26's rule for a store's address arriving at the values themselves --
+        # so what a reader of this output learns is that the key is answered
+        # elsewhere, and a role that needs the value reads it when it needs it.
+        #
+        # ⛔ The marker goes where the key sits because the
+        # tracked file carries at most the key's shape, so a dump of it alone
+        # shows a listed key as null or as an empty list -- which is the silent
+        # empty value this facet exists to prevent, arriving in the report
+        # instead of in the reader. A marker there cannot be read as a value
+        # either: it replaces the whole of one, so a consumer that mistook it
+        # would be handed a string where it expects a list.
+        #
+        # ⛔ **And the pointer and the list are not emitted a second time beside
+        # the configuration.** The block the project wrote is already in this
+        # output, so a summary of it here would be two statements of one fact in
+        # one document -- free to disagree, and measured disagreeing: the summary
+        # carried the reader's stripped spelling of each path while the block
+        # carried the project's, so a list entry written with a trailing space
+        # came back both ways in one report.
+        if self.private_keys:
+            shown = copy.deepcopy(self.data)
+            for key in self.private_keys:
+                _place_marker(shown, key, f"<private: {PRIVATE_SOURCE_PATH}>")
+            out["config"] = shown
         out["unavailable"] = self.unavailable()
         return out
 
@@ -2762,7 +2992,7 @@ GROUPING_ENTRY_KEY = "grouping"
 FIELD_ENTRY_KEY = "field"
 FIELD_PRESENT_CHECK = "field_present"
 
-# § 28's block and the three keys under it. ⛔ The two facets a class is built out
+# § 30's block and the three keys under it. ⛔ The two facets a class is built out
 # of are named here because a class entry's keys are **not** walked off the
 # surface: `_walk_keys` reads a key line, and an entry's first key sits behind a
 # `- ` that the walk cannot see. So the rules below are hand-written, as every
@@ -2778,7 +3008,7 @@ EXEMPT_DESTINATION_PATH = f"{LOOP_EXEMPT_KEY}.destination"
 # other arm is *whatever is not this*, so a second constant would be a second
 # place for the pair to disagree about which is which.
 BORDERLINE_ASKS = "ask"
-# ⛔ The glob form § 28 refuses, matched as a substring of a stated glob. The
+# ⛔ The glob form § 30 refuses, matched as a substring of a stated glob. The
 # rule is that `*` already crosses a directory separator here, so this form means
 # nothing different and reads as a second rule -- which is a refusal rather than
 # a silent narrowing, the direction a reader cannot report on.
@@ -2786,7 +3016,7 @@ CROSSING_GLOB = "**"
 # The three outcomes `exempt_for` answers with. ⛔ Three and not two: a class
 # whose `kinds` the changed paths do not settle is **unanswered** until somebody
 # answers it, and folding that into either verdict is the permissive reading in
-# one direction and a refused commit in the other (§ 11, § 28).
+# one direction and a refused commit in the other (§ 11, § 30).
 #
 # ⚠️ `ASK` and `BORDERLINE_ASKS` above are the same string and are not the same
 # fact -- the pattern `MEMORY_THIRD` and `MEMORY_KEY` already have: one is a
@@ -3071,7 +3301,7 @@ def mirrored_runs(data: dict) -> list[dict]:
     both consumers of it report an absence where the project stated a run.
     """
     out: list[dict] = []
-    for run in host_runs(data):
+    for run in defined_runs(data):
         for mirrored in run["commands"]:
             out.append(
                 {
@@ -3087,7 +3317,7 @@ def mirrored_runs(data: dict) -> list[dict]:
     return out
 
 
-def host_runs(data: dict) -> list[dict]:
+def defined_runs(data: dict) -> list[dict]:
     """§ 2's `host.checks` as one record per **entry**, walked once.
 
     The facet keyed by the one key it has, with every refusal the facet carries
@@ -3193,7 +3423,7 @@ def _entry_commands(entry: dict, index: int):
 
     The two forms § 2 states, read in one place so that neither can grow a
     refusal the other does not have. An entry stating neither yields nothing,
-    which is a run the host makes with no local counterpart -- `host_runs`
+    which is a run the host makes with no local counterpart -- `defined_runs`
     above is the walk that still carries it.
 
     Each record carries the command as written, its normalised form, the phrase
@@ -3597,6 +3827,121 @@ def _memory(data: dict, parts: list) -> None:
         )
 
 
+def _place_marker(data: dict, path: str, marker: str) -> None:
+    """Write `marker` at `path`, making the blocks above it where they are absent.
+
+    Used by the report alone. ⚠️ A listed key's parents may be missing entirely
+    -- a project that moved every chat facet out writes no `chat:` block -- so
+    the marker is placed rather than assigned, and a parent that is some other
+    kind of value is left alone: this is a report, and refusing inside one would
+    replace a project's statement with a traceback.
+    """
+    parts = path.split(".")
+    node = data
+    for part in parts[:-1]:
+        child = node.get(part)
+        if child is None:
+            child = {}
+            node[part] = child
+        elif not isinstance(child, dict):
+            return
+        node = child
+    node[parts[-1]] = marker
+
+
+def _valued(value) -> bool:
+    """Whether a resolved value is an answer rather than a shape.
+
+    ⛔ Null, an empty list and an empty string state nothing, and § 28 turns on
+    that distinction rather than on a key's presence: a project that moves a
+    value out leaves the key behind, and a marked default lands on it whether
+    the project wrote one or not.
+    """
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple, dict)):
+        return bool(value)
+    # ⚠️ A number or a boolean is a value, zero and false included: what this
+    # asks is whether the key was answered, not whether the answer is truthy.
+    return True
+
+
+def _private(data: dict, facts: dict) -> list[str]:
+    """§ 28's listed keys, held to the surface's marks. Returns what it supplies.
+
+    ⛔ Read before requiredness is enforced, and that order is the rule rather
+    than an implementation detail: a key the private layer supplies is *stated*,
+    so the other order refuses every project that moves a conditionally required
+    value out of its tracked file -- § 9's archive address being exactly that
+    key.
+
+    ⚠️ What is **not** here is the resolution. The values are read where they are
+    read (`Config.get`), because the file is outside the repository and may be
+    absent on a machine that only validates -- the examples load on every
+    machine this suite runs on, and each one of them would otherwise need a
+    private file shipped beside it, which is the value this facet exists to keep
+    out of the tree.
+    """
+    marked = facts.get("private") or {}
+    carrier = _get(data, f"{PRIVATE_KEY}.carrier")
+    listed = _get(data, PRIVATE_KEYS_PATH)
+    if carrier != PRIVATE_FILE:
+        if _valued(listed):
+            raise ConfigError(
+                PRIVATE_KEYS_PATH,
+                f"names {len(listed)} key(s) under `{PRIVATE_KEY}.carrier: "
+                f"{carrier}`, so the list is a set of keys nothing answers (§ 28). "
+                f"The pointer and the list are halves of one statement: carry "
+                f"`{PRIVATE_FILE}` and address the file, or delete the list.",
+            )
+        return []
+    if not isinstance(listed, list) or not listed:
+        raise ConfigError(
+            PRIVATE_KEYS_PATH,
+            f"is empty under `{PRIVATE_KEY}.carrier: {PRIVATE_FILE}`, so the "
+            "pointer addresses a file nothing is read out of (§ 28). Every path "
+            "resolved privately is named here, which is what makes a missing "
+            "layer a named absence rather than a silent empty value.",
+        )
+    if not str(_get(data, PRIVATE_SOURCE_PATH) or "").strip():
+        raise ConfigError(
+            PRIVATE_SOURCE_PATH,
+            f"is blank under `{PRIVATE_KEY}.carrier: {PRIVATE_FILE}` (§ 28). The "
+            "pointer is the whole of what the tracked file carries about these "
+            "values, so one that addresses nothing is reported here rather than "
+            "at the first read.",
+        )
+    supplied: list[str] = []
+    for entry in listed:
+        path = str(entry).strip()
+        if path in supplied:
+            raise ConfigError(
+                PRIVATE_KEYS_PATH,
+                f"names {path!r} twice (§ 28). One statement per key: a path listed "
+                "twice reads as two facts the private file answers once.",
+            )
+        if path not in marked:
+            raise ConfigError(
+                PRIVATE_KEYS_PATH,
+                f"names {path!r}, which the surface marks `# private` nowhere "
+                "(§ 28). The mark is what makes a key eligible, and that section "
+                "states why an unmarked key may not be listed.",
+            )
+        if _valued(_get(data, path)):
+            raise ConfigError(
+                path,
+                f"carries a value and is named in `{PRIVATE_KEYS_PATH}` (§ 28). Two "
+                "statements of one fact are free to disagree, and this pair "
+                "disagrees in the direction that matters: the tracked half is the "
+                "one in review. The key may keep its shape -- null, or an empty "
+                "list -- and the value belongs in the private file alone.",
+            )
+        supplied.append(path)
+    return supplied
+
+
 def validate(data: dict, facts: dict) -> None:
     # ⛔ Walked rather than looked up by path, because a retired key may sit
     # inside a list: `_get` descends a dict and returns the default the moment it
@@ -3624,8 +3969,15 @@ def validate(data: dict, facts: dict) -> None:
                     "Delete the key.",
                 )
 
+    # § 28's list, read before the two requiredness loops below for the reason
+    # `_private` states: a listed key is stated, and the enforcement moves to
+    # the layer, where a key the private file omits is refused by name.
+    supplied = _private(data, facts)
+
     for path, section in sorted(facts["required"].items()):
         where = f"marked `# required` under § {section}"
+        if path in supplied:
+            continue
         if not _has(data, path):
             raise ConfigError(path, f"required -- {where}.")
         # Present and empty is not present. YAML reads a key with nothing after
@@ -3641,7 +3993,7 @@ def validate(data: dict, facts: dict) -> None:
     # correct and its presence is somebody else's business (§ 3's blocks are the
     # case this is for -- `board` addresses a Trello board and nothing else).
     for (path, on, value), section in sorted(facts["required_when"].items()):
-        if _get(data, on) != value:
+        if _get(data, on) != value or path in supplied:
             continue
         where = f"marked `# required_when: {on} = {value}` under § {section}"
         if not _has(data, path):
@@ -3927,7 +4279,7 @@ def validate(data: dict, facts: dict) -> None:
                 "fall back to is the one § 27 forbids.",
             )
 
-    # § 28's classes, checked entry by entry. ⛔ Hand-written rather than marked,
+    # § 30's classes, checked entry by entry. ⛔ Hand-written rather than marked,
     # for a mechanical reason rather than a preference: an entry's keys sit behind
     # a `- ` that `_walk_keys` cannot see, so the surface declares `paths` and
     # `kinds` and declares `name` nowhere -- and a marker on a key the walk misses
@@ -3936,7 +4288,7 @@ def validate(data: dict, facts: dict) -> None:
     if classes is not None and not isinstance(classes, list):
         raise ConfigError(
             EXEMPT_CLASSES_PATH,
-            f"is {type(classes).__name__} and § 28 states a list of classes. `[]` is "
+            f"is {type(classes).__name__} and § 30 states a list of classes. `[]` is "
             "the empty form -- a project stating that every change it makes goes "
             "through the loop.",
         )
@@ -3946,14 +4298,14 @@ def validate(data: dict, facts: dict) -> None:
         if not isinstance(entry, dict):
             raise ConfigError(
                 at,
-                f"is {type(entry).__name__} and § 28 states each class as a block "
+                f"is {type(entry).__name__} and § 30 states each class as a block "
                 "carrying a name and at least one of `paths` and `kinds`.",
             )
         name = entry.get("name")
         if not isinstance(name, str) or not name.strip():
             raise ConfigError(
                 f"{at}.name",
-                "required on every class: § 28 has the run report name the class an "
+                "required on every class: § 30 has the run report name the class an "
                 "exempt change was committed under, and a class with no name leaves "
                 "that report saying a change bypassed the loop without saying which "
                 "stated decision let it.",
@@ -3968,7 +4320,7 @@ def validate(data: dict, facts: dict) -> None:
             raise ConfigError(
                 f"{at}.name",
                 f"is {name!r}, which carries surrounding whitespace. ⛔ Not trimmed: "
-                "the name is what a run report identifies the exemption by (§ 28), "
+                "the name is what a run report identifies the exemption by (§ 30), "
                 "so a value this reader silently changed would be a report naming "
                 "something the configuration does not say -- and two names "
                 "differing only in a space read as one class in that report.",
@@ -3977,7 +4329,7 @@ def validate(data: dict, facts: dict) -> None:
             raise ConfigError(
                 f"{at}.name",
                 f"is {name!r}, which another class already carries. ⛔ A name is what "
-                "a run report identifies the exemption by (§ 28), so two classes "
+                "a run report identifies the exemption by (§ 30), so two classes "
                 "under one name leave a reader unable to tell which decision was "
                 "applied -- and the two may state different paths and different "
                 "kinds.",
@@ -3993,7 +4345,7 @@ def validate(data: dict, facts: dict) -> None:
                 at,
                 f"carries neither `paths` nor `kinds`. ⛔ A class with no facet "
                 "matches every change this project makes, which is the whole loop "
-                "switched off by a block that reads like a narrowing (§ 28).",
+                "switched off by a block that reads like a narrowing (§ 30).",
             )
         for key, value in (("paths", globs), ("kinds", kinds)):
             if value is None:
@@ -4001,7 +4353,7 @@ def validate(data: dict, facts: dict) -> None:
             if not isinstance(value, list) or not value:
                 raise ConfigError(
                     f"{at}.{key}",
-                    f"is {value!r} and § 28 states a non-empty list. ⛔ An empty one "
+                    f"is {value!r} and § 30 states a non-empty list. ⛔ An empty one "
                     "is not the absent case: a facet a project does not state is "
                     "left out, while an empty list reads as a facet that constrains "
                     "nothing.",
@@ -4010,9 +4362,9 @@ def validate(data: dict, facts: dict) -> None:
             if not isinstance(glob, str) or not glob.strip():
                 raise ConfigError(
                     f"{at}.paths[{position}]",
-                    f"is {glob!r} and a glob is a non-empty string (§ 28).",
+                    f"is {glob!r} and a glob is a non-empty string (§ 30).",
                 )
-            # ⛔ Refused rather than read, which § 28 states and this performs: `*`
+            # ⛔ Refused rather than read, which § 30 states and this performs: `*`
             # already crosses a directory separator here, so this form means
             # nothing different -- and a glob quietly matching less than its author
             # meant is one spelling read two ways, with nothing reporting the
@@ -4028,14 +4380,14 @@ def validate(data: dict, facts: dict) -> None:
                 raise ConfigError(
                     f"{at}.paths[{position}]",
                     f"is {glob!r}, which matches every path this project has: `*` "
-                    "crosses a directory separator here (§ 28), so this class "
+                    "crosses a directory separator here (§ 30), so this class "
                     "exempts every change rather than narrowing anything -- the "
                     "whole loop switched off by a block that reads like a class.",
                 )
             if CROSSING_GLOB in glob:
                 raise ConfigError(
                     f"{at}.paths[{position}]",
-                    f"is {glob!r}, and `{CROSSING_GLOB}` is refused: § 28 matches a "
+                    f"is {glob!r}, and `{CROSSING_GLOB}` is refused: § 30 matches a "
                     "glob against the repository-relative path with `*` already "
                     "crossing a directory separator, so `docs/*` covers that subtree "
                     "whole and this form states a rule nothing here performs.",
@@ -4053,9 +4405,9 @@ def validate(data: dict, facts: dict) -> None:
             if member not in published:
                 raise ConfigError(
                     f"{at}.kinds[{position}]",
-                    f"is {member!r}, and § 28 states a closed set: "
+                    f"is {member!r}, and § 30 states a closed set: "
                     f"{' | '.join(published)}. ⛔ Behavioural change is not among "
-                    "them and no class may name it -- which is § 28's own statement "
+                    "them and no class may name it -- which is § 30's own statement "
                     "of where the review pass earns its keep, cited rather than "
                     "listed again here.",
                 )
@@ -4065,7 +4417,7 @@ def validate(data: dict, facts: dict) -> None:
     ):
         raise ConfigError(
             EXEMPT_DESTINATION_PATH,
-            f"is {destination!r} and § 28 states a branch name. ⚠️ Null is the answer "
+            f"is {destination!r} and § 30 states a branch name. ⚠️ Null is the answer "
             "for a project whose exempt changes go to the integration branch, which "
             "is derived rather than named on this surface -- so an empty string is a "
             "value that resolves to no branch rather than to that default.",
@@ -4772,7 +5124,6 @@ def validate(data: dict, facts: dict) -> None:
             "state `[]`.",
         )
 
-
     # ⛔ Read through `_absent_as` for the reason § 23's block above is: an absent
     # block falls to the per-role requirement below, which names the role rather
     # than the block.
@@ -5288,11 +5639,11 @@ def validate(data: dict, facts: dict) -> None:
             "result the window has lost and nothing can recover.",
         )
 
-    # § 28 against § 23, and ⛔ **last of every rule here, rather than beside
-    # § 28's own**: this is the only rule that reads two facets each of which has
+    # § 30 against § 23, and ⛔ **last of every rule here, rather than beside
+    # § 30's own**: this is the only rule that reads two facets each of which has
     # rules of its own, so a configuration that is malformed in either has to be
     # refused on *that* key first. Measured by review on this change -- placed
-    # beside § 28's block it reported itself instead of three of this file's own
+    # beside § 30's block it reported itself instead of three of this file's own
     # plants, two about `session.parts` and one about `commit.staging`.
     #
     # ⚠️ The direction is `queue_position`'s and not § 4.7's: the pair is refused,
@@ -5305,7 +5656,7 @@ def validate(data: dict, facts: dict) -> None:
         raise ConfigError(
             EXEMPT_CLASSES_PATH,
             f"states a class while `session.parts` runs no `{COMMIT_THIRD}` third. "
-            "§ 28 makes that third the one role an exempt change runs at all, so "
+            "§ 30 makes that third the one role an exempt change runs at all, so "
             "this pair exempts a change from every role in the loop and leaves "
             "nothing to commit it. Run the third, or state no class.",
         )
@@ -5631,6 +5982,7 @@ MARKED_REQUIRED = [
     "host.landing.delete_branch",
     "host.landing.method",
     "host.repo",
+    "host.runs.kind",
     "language.repo",
     "language.work_item",
     "live_guard.session_tools",
@@ -5638,6 +5990,7 @@ MARKED_REQUIRED = [
     "memory.carrier",
     "ordering.carrier",
     "people.carrier",
+    f"{PRIVATE_KEY}.carrier",
     "readiness",
     "roots.code",
     "session",
@@ -5721,6 +6074,13 @@ MARKED_REQUIRED_WHEN = [
     # under (§ 27).
     ("people.key", "people.carrier", "file"),
     ("people.source", "people.carrier", "file"),
+    # § 28's two, and they are halves of one statement rather than two keys that
+    # happen to share a condition: a pointer with no list is an overlay free to
+    # supply anything, and a list with no pointer is a set of keys nothing
+    # answers. ⚠️ The reader refuses each of those arms on its own as well, since
+    # a key written empty satisfies a presence test.
+    (PRIVATE_KEYS_PATH, f"{PRIVATE_KEY}.carrier", PRIVATE_FILE),
+    (PRIVATE_SOURCE_PATH, f"{PRIVATE_KEY}.carrier", PRIVATE_FILE),
     ("tracker.board", "tracker.kind", "trello"),
     ("tracker.project.number", "tracker.kind", "github-projects"),
     ("tracker.project.owner", "tracker.kind", "github-projects"),
@@ -5747,7 +6107,7 @@ MARKED_PROCEDURE = [
     "current_user",
     "fail_open",
     "install",
-    # § 28's two, and ⛔ the one marked class where the *rule* is wider than the
+    # § 30's two, and ⛔ the one marked class where the *rule* is wider than the
     # markers: these are the two spellings a project would reach for to key the
     # exemption on the diff, and a third nobody thought of would get past them.
     # What holds the rule is that nothing on that route is handed a count at all
@@ -5768,6 +6128,7 @@ MARKED_PROCEDURE = [
 # -- which is the one thing the marker was chosen over a section number to avoid.
 MARKED_PORTS = [
     ("day_log.destination.kind", "destinations"),
+    ("host.runs.kind", "runs"),
     ("tracker.kind", "adapters"),
 ]
 
@@ -5788,7 +6149,7 @@ PLANTED_PORT = next(
 # illustrate a project's own values, and holding those would be an inventory of
 # the fence instead of one of what is enforced.
 SHOWN_LISTS = {
-    # § 28's closed set of change kinds, read by the rule that refuses a class
+    # § 30's closed set of change kinds, read by the rule that refuses a class
     # naming anything outside it. ⚠️ The sibling `paths` list the same fence shows
     # is deliberately absent: those are a project's own globs illustrated, not a
     # vocabulary, and holding them would be an inventory of the fence.
@@ -5803,6 +6164,22 @@ SHOWN_LISTS = {
     STREAMS_PATH: ["sessions", "commits", CHAT_STREAM, "meetings", "host_activity"],
 }
 
+# The keys the surface marks `# private`, stated here for the reason the sets
+# above are -- and carrying the whole weight of the class, since this reader
+# keeps no list of eligible paths of its own: drop a mark from the surface and
+# this is what reddens, where the only other symptom would be a project's own
+# list quietly becoming unwritable. ⚠️ Which keys the class does not reach, and
+# why, is § 28's; what this list is for is that the surface and this suite agree
+# about the set.
+MARKED_PRIVATE = [
+    "day_log.attribute_to",
+    "day_log.evidence.calendars",
+    f"{CHAT_BLOCK}.exclude",
+    f"{CHAT_BLOCK}.mixed",
+    f"{CHAT_BLOCK}.path",
+    f"{CHAT_BLOCK}.patterns",
+]
+
 MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
     "e2e_register",
@@ -5810,6 +6187,7 @@ MARKED_ABSENT_CAPABLE = [
     "memory",
     "ordering",
     "people",
+    PRIVATE_KEY,
     "work_item.code_root",
     "work_item.due_date",
     "work_item.estimate",
@@ -6040,6 +6418,12 @@ def self_test() -> int:
             set(MARKED_REQUIRED_WHEN),
         ),
         ("absent-capable", set(surface["absent_reason"]), set(MARKED_ABSENT_CAPABLE)),
+        # ⛔ § 28's class, and the one comparison that is also the statement of
+        # what the class does not reach: a mark added to a `carrier` or a `kind`
+        # is refused by the reader, so what this catches is a mark added to some
+        # other rule-shaped key -- and a mark dropped, which would leave a
+        # project's own list refusing a key it legitimately resolves privately.
+        ("private", set(surface["private"]), set(MARKED_PRIVATE)),
         ("procedure-only", set(surface["procedure"]), set(MARKED_PROCEDURE)),
         # ⛔ The kind and its directory together, which is what the clause states:
         # comparing the kinds alone would leave the directory -- the half a
@@ -7224,7 +7608,187 @@ def self_test() -> int:
         f"answered {resolved!r}",
     )
 
-    print("\n§ 28, which changes never go through the loop -- and never by size:")
+    # § 28's layer. ⛔ The answering arm first, and it reads the value: every
+    # refusal below is sound only if the facet resolves at all, and a reader that
+    # resolved nothing would pass each of them while leaving a project unable to
+    # measure a day.
+    one = MARKED_PRIVATE[0]
+    for label, listed, values, extra, wanted in (
+        ("a listed key answered by the layer", [one], {one: PLANTED_PRIVATE_VALUE}, {},
+         f"value {PLANTED_PRIVATE_VALUE!r}"),
+        # ⛔ Several keys at once, read one at a time, and ⛔ **each given a value
+        # of its own**: the file is opened once and held, so this is the arm that
+        # catches a read answering from whatever was asked for first. ⚠️ Written
+        # with one value for both at first, where it caught nothing -- an answer
+        # for the wrong key was byte-identical to an answer for the right one,
+        # and returning `self.private_keys[0]`'s value for every key survived
+        # the whole suite.
+        ("a second listed key answered with its own value from the same file",
+         MARKED_PRIVATE[:2],
+         {path: f"{PLANTED_PRIVATE_VALUE}-{index}"
+          for index, path in enumerate(MARKED_PRIVATE[:2])},
+         {"read": MARKED_PRIVATE[1]}, f"value {PLANTED_PRIVATE_VALUE + '-1'!r}"),
+        # ⛔ And the refusals, each a place the read could have answered with
+        # nothing instead. ⚠️ The key named is the one a person can act on: the
+        # pointer where the file is the problem, the list where the statement in
+        # the tracked file is, and the colliding key itself.
+        ("a layer that does not open", [one], {one: PLANTED_PRIVATE_VALUE},
+         {"written": False}, f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a layer that read as prose rather than as a mapping", [one],
+         "a document with a table in it", {}, f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a layer omitting a key the list says it supplies", [one],
+         {"a.path.this.surface.declares.nowhere": PLANTED_PRIVATE_VALUE}, {},
+         f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a layer carrying a key the list does not name", [one],
+         {one: PLANTED_PRIVATE_VALUE, MARKED_PRIVATE[1]: PLANTED_PRIVATE_VALUE}, {},
+         f"stop {PRIVATE_KEYS_PATH}"),
+        ("a listed key the surface marks nowhere", ["host.repo"],
+         {"host.repo": PLANTED_PRIVATE_VALUE}, {}, f"stop {PRIVATE_KEYS_PATH}"),
+        ("a listed key named twice", [one, one], {one: PLANTED_PRIVATE_VALUE}, {},
+         f"stop {PRIVATE_KEYS_PATH}"),
+        ("a listed key carrying a value in the tracked file as well", [one],
+         {one: PLANTED_PRIVATE_VALUE}, {"valued": {one: "a value left in review"}},
+         f"stop {one}"),
+        # ⛔ The two shapes § 28 forbids the layer itself, each refused by the
+        # missing-key arm rather than by a reader that merges trees: a layer
+        # written as blocks states none of the paths the list names, and a
+        # prefix of one states a different key.
+        ("a layer written as nested blocks rather than dotted paths", [one],
+         {one.split(".")[0]: {one.split(".", 1)[1]: PLANTED_PRIVATE_VALUE}}, {},
+         f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a layer carrying a prefix of a listed key", [one],
+         {one.rpartition(".")[0]: {}}, {}, f"stop {PRIVATE_SOURCE_PATH}"),
+        # ⛔ The arm the first review of this facet produced: carrying a listed
+        # key is not answering it, so a layer holding one with nothing under it
+        # is refused rather than resolved to that nothing. ⚠️ Both shapes of
+        # nothing, because the gate that was missing asked about presence and
+        # either would have passed it -- and `day_log.attribute_to` answered
+        # null is every committer read as the log's owner.
+        ("a listed key the layer carries with null under it", [one], {one: None}, {},
+         f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a listed key the layer carries as an empty list", [one], {one: []}, {},
+         f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a layer that read as an empty mapping", [one], {}, {},
+         f"stop {PRIVATE_SOURCE_PATH}"),
+    ):
+        answered = _resolved_privately(listed, values, **extra)
+        check(f"{label} answers `{wanted}`", answered == wanted, f"answered {answered!r}")
+
+    # ⛔ A read of a block holding a listed key, which is the one shape `get`'s
+    # own interception cannot answer: the tracked file's block comes back with
+    # every listed key under it empty, and nothing says so. ⚠️ Reproduced on the
+    # shipped example before the refusal existed -- `day_log.evidence` answered
+    # six keys resolved to nothing.
+    block = MARKED_PRIVATE[0].rpartition(".")[0]
+    blocked = _resolved_privately(
+        [MARKED_PRIVATE[0]], {MARKED_PRIVATE[0]: PLANTED_PRIVATE_VALUE},
+        read=block,
+    )
+    check(
+        f"a read of `{block}`, which holds a listed key, is refused naming the block",
+        blocked == f"stop {block}",
+        f"answered {blocked!r}",
+    )
+
+    # ⛔ And what the report says about a project carrying the layer: the key
+    # named where it sits, no value anywhere, and the pointer stated once. ⚠️ The
+    # second statement is what this arm is for -- a summary beside the
+    # configuration carried the reader's spelling of each path while the block
+    # carried the project's.
+    reported = _reported_privately([MARKED_PRIVATE[0]])
+    for label, held in (
+        ("names the listed key where it sits", reported["marked"]),
+        ("puts no value in the report", not reported["valued"]),
+        ("states the pointer once, in the project's own block", reported["once"]),
+    ):
+        check(f"a report of a project carrying the layer {label}", held, f"{reported!r}")
+
+    # ⛔ The two halves of the statement, each refused on its own: a key written
+    # empty satisfies the conditional marker's presence test, so neither arm is
+    # the marker's and both are the reader's.
+    for label, broken, at in (
+        ("a pointer with no list", {"carrier": PRIVATE_FILE, "source": PLANTED_PRIVATE_FILE},
+         PRIVATE_KEYS_PATH),
+        # ⛔ The list written **empty**, which is a different arm from the list
+        # absent and from the list null: those two are refused by the conditional
+        # marker's presence test, and this one is the reader's own. ⚠️ Measured
+        # missing: dropping `or not listed` from the rule left the whole suite
+        # green with a pointer supplying nothing.
+        ("a list written as an empty list",
+         {"carrier": PRIVATE_FILE, "source": PLANTED_PRIVATE_FILE, "keys": []},
+         PRIVATE_KEYS_PATH),
+        ("a list with no pointer",
+         {"carrier": PRIVATE_FILE, "source": "   ", "keys": [MARKED_PRIVATE[0]]},
+         PRIVATE_SOURCE_PATH),
+        ("a list carried beside a stated absence",
+         {"carrier": PRIVATE_NONE, "absent_reason": "nothing here is private",
+          "keys": [MARKED_PRIVATE[0]]},
+         PRIVATE_KEYS_PATH),
+    ):
+        data = _a_valid_example()
+        _with(data, MARKED_PRIVATE[0], None)
+        data[PRIVATE_KEY] = broken
+        reported = _refused(data)
+        check(
+            f"{label} is refused, naming `{at}`",
+            reported == at,
+            f"reported {reported!r}",
+        )
+
+    # ⛔ A conditionally required key resolved privately, which is the one arm
+    # that proves the list is read *before* requiredness: § 9's archive address
+    # is required under the kind that reads an archive, and a project moving it
+    # out writes it nowhere the tracked file can be refused for.
+    archived = _example_meeting(CHAT_KIND_PATH, "telegram_export")
+    check(
+        "an example reads an archive, so the conditional key is exercised",
+        archived is not None,
+    )
+    if archived is not None:
+        address = f"{CHAT_BLOCK}.path"
+        _without(archived, address)
+        archived[PRIVATE_KEY] = {
+            "carrier": PRIVATE_FILE,
+            "source": PLANTED_PRIVATE_FILE,
+            "keys": [address],
+        }
+        reported = _refused(archived)
+        check(
+            "a conditionally required key named in the list is not refused as missing",
+            reported is None,
+            f"reported {reported!r}",
+        )
+
+    # ⛔ The marker refused where it would mark a rule rather than a value, which
+    # is the arm that keeps § 28's list from being the route by which a carrier,
+    # a kind or the facet's own pointer leaves review. ⚠️ Planted as a fence
+    # appended to the real surface rather than as an edit to a line of it: the
+    # refusal has to fire on the mark and not on a surface that lost a marker
+    # class, and a synthesised surface of its own would be refused for the
+    # second reason while looking like the first.
+    for label, fence, key in (
+        ("a carrier", "a_facet:\n  carrier: a-kind | none  # private", "a_facet.carrier"),
+        ("a kind", "a_facet:\n  kind: a-kind | none  # private", "a_facet.kind"),
+        (
+            "this facet's own pointer",
+            f'{PRIVATE_KEY}:\n  source: "a-path"  # private',
+            PRIVATE_SOURCE_PATH,
+        ),
+    ):
+        with open(SURFACE, encoding="utf-8") as handle:
+            marked = f"{handle.read()}\n```yaml\n{fence}\n```\n"
+        try:
+            surface_facts(marked)
+            reported = None
+        except ConfigError as error:
+            reported = error.key
+        check(
+            f"`# private` on {label} is refused, naming `{key}`",
+            reported == key,
+            f"reported {reported!r}",
+        )
+
+    print("\n§ 30, which changes never go through the loop -- and never by size:")
     # ⛔ One fixture shape per arm rather than the mixed list throughout, and that
     # is not tidiness: with a kinds-only class in the fixture, every change whose
     # kind nobody has stated answers `ask` -- correctly, since that class could
@@ -7238,7 +7802,7 @@ def self_test() -> int:
         ("a change wholly inside a paths-only class",
          ["docs/one.md", "README.md"], None, by_path,
          f"{EXEMPT} {EXEMPT_BY_PATH}"),
-        # ⛔ § 28's `every` rule and the case the facet exists against: a
+        # ⛔ § 30's `every` rule and the case the facet exists against: a
         # documentation edit carrying one line of code reads as documentation to
         # every rule that asks *does this touch the docs*.
         ("a change touching an exempt path and a non-exempt one",
@@ -7247,7 +7811,7 @@ def self_test() -> int:
         ("a change wholly outside every class",
          [NON_EXEMPT_PATH], None, by_path,
          f"{THROUGH_THE_LOOP} outside {NON_EXEMPT_PATH}"),
-        # ⛔ A paths-only class reaches neither `borderline` arm, which § 28
+        # ⛔ A paths-only class reaches neither `borderline` arm, which § 30
         # states: the verdict is the same under either value.
         ("the same paths-only class under `session`",
          ["docs/one.md"], None, {**by_path, "borderline": "session"},
@@ -7318,7 +7882,7 @@ def self_test() -> int:
          ["docs/one.md", "   "], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
         ("a decision handed something that is not a path at all",
          ["docs/one.md", 17], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
-        # ⛔ § 28 states the glob is matched against the repository-relative path,
+        # ⛔ § 30 states the glob is matched against the repository-relative path,
         # and this is where that precondition is performed. Found by review: under
         # the shipped `*.md` glob an absolute path outside the repository, and one
         # climbing out of it, each answered `exempt`.
@@ -7332,7 +7896,7 @@ def self_test() -> int:
         # exemption the project configured. Found by review.
         ("a decision handed a kind the surface does not publish",
          ["docs/one.md"], "behavioural", by_kind, f"stop {EXEMPT_KINDS_PATH}"),
-        # § 28's destination, carried on the verdict rather than looked up again
+        # § 30's destination, carried on the verdict rather than looked up again
         # by the role that commits -- and in both directions, or an arm that
         # always reported one would pass while reporting the wrong thing.
         ("an exempt change where the project names a branch",
@@ -7418,7 +7982,7 @@ def self_test() -> int:
     # ⛔ The size axis, asserted on behaviour rather than on the two refused
     # spellings. The procedure markers above hold `max_lines` and
     # `lines_changed`, and a third spelling nobody thought of would get past
-    # them -- so what holds § 28's rule is that the same class answers the same
+    # them -- so what holds § 30's rule is that the same class answers the same
     # way for a one-file change and for a two-hundred-file one. ⚠️ The measured
     # failure of the other axis is a release whose unticketed tooling work was
     # *larger* than the ticketed product changes beside it, so this is the
@@ -7467,7 +8031,7 @@ def self_test() -> int:
             f"and {failed.getvalue()[:120]!r}",
         )
 
-    # ⛔ The glob rule § 28 states, asserted because `fnmatch` is what performs
+    # ⛔ The glob rule § 30 states, asserted because `fnmatch` is what performs
     # it: `*` crosses a directory separator here, so a class written `docs/*`
     # covers that subtree whole. A reader that used a path match instead would
     # send every nested file through the loop while this facet reported it exempt
@@ -7478,7 +8042,6 @@ def self_test() -> int:
         nested == f"{EXEMPT} {EXEMPT_BY_PATH}",
         f"answered {nested!r}",
     )
-
     # § 1's two halves, in both directions. A retired key must be refused where a
     # project still writes it, *and* must be gone from the surface -- a key this
     # reader refuses while the surface still asks for it would make every
@@ -7947,7 +8510,7 @@ def self_test() -> int:
     repeated = _two_entries_keyed_on_one_workflow(_a_valid_example())
     name = repeated["host"]["checks"][1]["workflow"]
     try:
-        host_runs(repeated)
+        defined_runs(repeated)
         said = None
     except ConfigError as error:
         said = str(error)
@@ -8183,7 +8746,7 @@ def self_test() -> int:
                         any(named in line for line in reported),
                         f"reported {reported!r}",
                     )
-            # § 28's two arms, in both directions apiece. ⛔ The negative is what
+            # § 30's two arms, in both directions apiece. ⛔ The negative is what
             # makes the positive above worth asserting -- a branch that printed
             # its line for every project would satisfy a one-directional check
             # while saying nothing -- and the second arm is one **no shipped
@@ -8931,7 +9494,7 @@ def _planted_violations():
          _gates_on_a_role_it_does_not_name),
         ("a project configuring a role to be resolved by who is running",
          "people.current_user", _resolves_a_role_by_asking_who_is_running),
-        # § 28's branches. ⛔ Each writes `classes` whole rather than editing the
+        # § 30's branches. ⛔ Each writes `classes` whole rather than editing the
         # fixture's own entry, for § 4.6's reason one facet over: a class's keys
         # differ per class, and a plant that left another entry standing could
         # pass on a rule it did not name. ⚠️ The entry index is `[0]` throughout
@@ -8967,7 +9530,7 @@ def _planted_violations():
         ("an exempt glob that is blank, and so matches nothing",
          "loop_exempt.classes[0].paths[1]",
          _an_exempt_class_of({"name": "prose", "paths": ["docs/*", "  "]})),
-        # ⛔ § 28's own refusal rather than a tolerance: `*` already crosses a
+        # ⛔ § 30's own refusal rather than a tolerance: `*` already crosses a
         # directory separator here, so this form is one spelling read two ways.
         ("an exempt glob written with the crossing form the rule does not have",
          "loop_exempt.classes[0].paths[0]",
@@ -8997,7 +9560,7 @@ def _planted_violations():
         ("an exempt class name carrying surrounding whitespace",
          "loop_exempt.classes[0].name",
          _an_exempt_class_of({"name": "prose ", "paths": ["docs/*"]})),
-        # ⛔ § 28's facet against § 23's third, which is the one pair that exempts
+        # ⛔ § 30's facet against § 23's third, which is the one pair that exempts
         # a change from every role and leaves nothing to commit it. Found by
         # review, which loaded it and got an `exempt` verdict for such a change.
         ("a project exempting a class while running no commit third",
@@ -9331,7 +9894,7 @@ def _a_people_map_carried_as(key: str, **overrides) -> dict:
     return mutate
 
 
-# § 28's fixture classes, one per shape the facet has: decided by the paths
+# § 30's fixture classes, one per shape the facet has: decided by the paths
 # alone, decided by the kind alone, and decided by both. ⛔ Written here rather
 # than taken from an example, for the reason § 27's planted map is: an example is
 # a project's own illustration and free to change, while what these arms assert is
@@ -9344,14 +9907,14 @@ PLANTED_CLASSES = [
     {"name": EXEMPT_BY_KIND, "kinds": ["tooling"]},
     {"name": EXEMPT_BY_BOTH, "paths": ["tools/*"], "kinds": ["tooling"]},
 ]
-# A path no fixture class covers, which is the second half of § 28's `every` rule
+# A path no fixture class covers, which is the second half of § 30's `every` rule
 # and the one the facet exists against.
 NON_EXEMPT_PATH = "app/main.py"
 
 
 def _answer_on(paths, kind=None, *, classes=None, borderline=None,
                destination=None):
-    """§ 28's whole answer for one change, or the `ConfigError` it refused with.
+    """§ 30's whole answer for one change, or the `ConfigError` it refused with.
 
     ⛔ The dict rather than a rendering, because the rendering below reads five of
     its nine fields: `why`, `paths` and `kind` were each replaceable by a constant
@@ -9369,7 +9932,7 @@ def _answer_on(paths, kind=None, *, classes=None, borderline=None,
 
 
 def _verdict_on(paths, kind=None, **overrides) -> str:
-    """§ 28's verdict on one change, rendered for comparison, or the stop.
+    """§ 30's verdict on one change, rendered for comparison, or the stop.
 
     Rendered as a string rather than compared as a dict so an arm states what it
     is asserting: the verdict, the classes that matched, and whatever else that
@@ -9391,7 +9954,7 @@ def _verdict_on(paths, kind=None, **overrides) -> str:
 
 
 def _an_exempt_class_of(*entries) -> dict:
-    """§ 28's class list rewritten whole, so a plant states every key it means to.
+    """§ 30's class list rewritten whole, so a plant states every key it means to.
 
     Written as a replacement for `_a_people_map_carried_as`'s reason: a class's
     keys differ per class, so a plant that edited one entry of whatever the
@@ -9410,7 +9973,7 @@ def _an_exempt_class_of(*entries) -> dict:
 
 
 def _exempts_with_nothing_to_commit(data: dict) -> dict:
-    """§ 28's class list kept, and § 23's commit third taken out from under it.
+    """§ 30's class list kept, and § 23's commit third taken out from under it.
 
     ⛔ The staging entry goes with the third rather than being left standing: § 6
     refuses an entry for a third that does not run, and that refusal fires before
@@ -10214,6 +10777,91 @@ def _looked_up(role: str, mapping, *, key: str = "handle", written: bool = True,
             return f"stop {error.key}"
 
 
+# § 28's layer, written for the run rather than shipped, and for the reason
+# § 27's map is: what the pointer addresses is the class of value this repository
+# may not hold, so a shipped fixture would be the tree holding one. ⛔ The value
+# below is a word no project uses, and the file lives in a directory the run
+# deletes.
+PLANTED_PRIVATE_FILE = "a-private-layer.yaml"
+PLANTED_PRIVATE_VALUE = "a-value-this-repository-may-not-hold"
+
+
+def _resolved_privately(listed, values, *, written: bool = True, read: str | None = None,
+                        source: str = PLANTED_PRIVATE_FILE, carrier: str = PRIVATE_FILE,
+                        valued: dict | None = None) -> str:
+    """`value <v>` where § 28's read answers, `stop <key>` where it does not.
+
+    The listed keys are cleared from the tracked configuration first, which is
+    what a project moving its values out of review actually leaves behind;
+    `valued` is how an arm writes one back, that being the collision the facet
+    refuses.
+
+    ⛔ Every arm reads the **value** and not merely whether a read succeeded. The
+    failure § 28 exists against is a layer that resolves to nothing -- an empty
+    list is a successful-looking answer, and a day measured from no chats at all
+    is what it buys.
+    """
+    import tempfile  # noqa: PLC0415 -- the layer needs a directory of its own
+
+    data = _a_valid_example()
+    for path in listed:
+        _with(data, path, None)
+    for path, value in (valued or {}).items():
+        _with(data, path, value)
+    if carrier == PRIVATE_NONE:
+        data[PRIVATE_KEY] = {
+            "carrier": PRIVATE_NONE,
+            "absent_reason": "every value this project states may be committed",
+        }
+    else:
+        data[PRIVATE_KEY] = {
+            "carrier": carrier,
+            "source": source,
+            "keys": list(listed),
+        }
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    with tempfile.TemporaryDirectory() as root:
+        if written:
+            with open(os.path.join(root, source), "w", encoding="utf-8") as handle:
+                handle.write(_yaml().safe_dump(values, allow_unicode=True))
+        try:
+            configuration = _resolve(data, root, facts, False)
+            return f"value {configuration.get(read or listed[0])!r}"
+        except ConfigError as error:
+            return f"stop {error.key}"
+
+
+def _reported_privately(listed) -> dict:
+    """What `to_dict` says about a project carrying § 28's layer.
+
+    ⛔ Read off the report rather than asserted about the code: what this holds
+    is that the key is named where it sits, that no value is anywhere in the
+    output, and that the pointer and the list are stated once -- and the last of
+    those is a property of the whole document rather than of any one key.
+    """
+    data = _a_valid_example()
+    for path in listed:
+        _with(data, path, None)
+    data[PRIVATE_KEY] = {
+        "carrier": PRIVATE_FILE,
+        "source": PLANTED_PRIVATE_FILE,
+        "keys": list(listed),
+    }
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    report = _resolve(data, EXAMPLES, facts, False).to_dict()
+    rendered = json.dumps(report)
+    return {
+        "marked": all(
+            str(_get(report["config"], path) or "").startswith("<private:")
+            for path in listed
+        ),
+        "valued": PLANTED_PRIVATE_VALUE in rendered,
+        "once": rendered.count(PLANTED_PRIVATE_FILE) == 1,
+    }
+
+
 def _refuses_missing_code_root() -> str | None:
     data = _a_valid_example()
     data["roots"]["code"] = "a-directory-that-does-not-exist"
@@ -10451,7 +11099,7 @@ def main(argv: list[str]) -> int:
         "--exempt-for",
         nargs="+",
         metavar="PATH",
-        help="the change's own files, repository-relative, held against § 28's "
+        help="the change's own files, repository-relative, held against § 30's "
         "classes. Prints the verdict, every class that matched, the branch an "
         "exempt change is committed to and the paths that fell outside every "
         "class. ⛔ No count of anything is read: a change wholly inside a class "
@@ -10460,7 +11108,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--of-kind",
         metavar="KIND",
-        help="what the change is, for a § 28 class that states `kinds`. Omitted, "
+        help="what the change is, for a § 30 class that states `kinds`. Omitted, "
         "a class that states them is left unanswered rather than defaulted either "
         "way, and `loop_exempt.borderline` says who answers it",
     )
@@ -10487,7 +11135,7 @@ def main(argv: list[str]) -> int:
         answer = config.person_for(args.person_for) if args.person_for else None
         # ⛔ After the root narrowing for § 27's reason, and ⚠️ **the kind is
         # read whether or not it was given**: a run that passed paths and no
-        # kind is asking the question § 28's third verdict answers, so dropping
+        # kind is asking the question § 30's third verdict answers, so dropping
         # the argument would turn an unanswered class into a silent *not
         # exempt* -- the safe-looking reading that drops the exemption a project
         # configured.
@@ -10496,7 +11144,7 @@ def main(argv: list[str]) -> int:
         elif args.of_kind:
             raise ConfigError(
                 EXEMPT_CLASSES_PATH,
-                "cannot be asked about a kind with no changed path: § 28 holds a "
+                "cannot be asked about a kind with no changed path: § 30 holds a "
                 "class's `paths` against every file a change touches, so `--of-kind` "
                 "alone would answer about a change this run cannot see. Pass "
                 "`--exempt-for` with the change's files.",

@@ -227,7 +227,7 @@ message mechanism, the style, the authorship rule, and what holds under either s
   choosing a mode.
 
 ⛔ **This is the one role that acts on an exempt change**
-([`§ 28`](../../config/schema.md#where-an-exempt-change-goes-and-the-one-role-it-runs)), so the
+([`§ 30`](../../config/schema.md#where-an-exempt-change-goes-and-the-one-role-it-runs)), so the
 verdict is read here rather than assumed — ⛔ **and only where step 3 established that there is no
 work item in hand.**
 
@@ -245,15 +245,15 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --exempt-for <the staged paths
 ```
 
 - ⛔ **The paths handed over are the staged ones**, quoted, repository-relative, and ⛔ **not a
-  count of them**: § 28's axis is what a change is, and this role reads the verdict rather than
+  count of them**: § 30's axis is what a change is, and this role reads the verdict rather than
   deciding it.
 - **`exempt`** ⇒ the change is committed to the branch the verdict names, and ⛔ **the reply states
   which class and why**, which is what makes the bypass auditable instead of indistinguishable
   from a missed item. ⚠️ **A null destination is the integration branch and is not a missing
-  value** — § 28 states it is derived, and the derivation is the claim carrier's:
+  value** — § 30 states it is derived, and the derivation is the claim carrier's:
   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" integration-branch --repo-root <code-root>`.
 - **`through_the_loop`** ⇒ nothing changes here, and ⛔ **the reason is read rather than assumed**:
-  the verdict names which of § 28's three it is — paths outside every class, a kind no class
+  the verdict names which of § 30's three it is — paths outside every class, a kind no class
   covers, or paths covered between classes and by none of them.
 - **`ask`** ⇒ ⛔ **the question is asked, with the class and the kinds it would accept named**, and
   `asked_of` says who answers: a person, or this session where the project configured that. ⚠️

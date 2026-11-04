@@ -2737,7 +2737,7 @@ def self_test() -> int:
     print("\nthe branch a claim is cut from, as a role reaches it:")
 
     # ⛔ The `integration-branch` subcommand's own wiring, asserted through `main` rather than
-    # through the function beside it: what § 10 and § 28 hand a role is the command line, and the
+    # through the function beside it: what § 10 and § 30 hand a role is the command line, and the
     # derivation was already covered while the only route to it was covered by nothing — the
     # parser and the dispatch were each deletable with this suite green. Found by review on the
     # change that needed the value, whose `destination: null` means this branch.
@@ -2817,14 +2817,14 @@ def main(argv: list[str]) -> int:
     namer.add_argument("--item", required=True, help="the item's own identifier")
     namer.add_argument("--title", required=True, help="the title the slug derives from (§ 8)")
 
-    # ⛔ The derivation on its own, for the reason `name` above is one: § 28's
+    # ⛔ The derivation on its own, for the reason `name` above is one: § 30's
     # `destination: null` means *the integration branch*, and this surface carries no key naming
     # it — so a role told to commit there had the value derivable by this module and reachable by
     # nothing. Found by review on the change that added that facet. ⚠️ Printed rather than
     # returned, because the role that needs it is a shell step.
     integration = sub.add_parser(
         "integration-branch",
-        help="the branch a claim is cut from and an exempt change is committed to (§ 10, § 28)",
+        help="the branch a claim is cut from and an exempt change is committed to (§ 10, § 30)",
     )
     integration.add_argument(
         "--repo-root", required=True, help="the code root, stated and never inherited"

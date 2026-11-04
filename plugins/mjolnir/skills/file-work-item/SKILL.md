@@ -92,12 +92,12 @@ to estimate, to review and to deduplicate, and one broad item hides duplicates i
 stalls.
 
 ⛔ **A unit whose change this project exempts from the loop is not an item**
-([`§ 28`](../../config/schema.md#where-an-exempt-change-goes-and-the-one-role-it-runs)), and that is
+([`§ 30`](../../config/schema.md#where-an-exempt-change-goes-and-the-one-role-it-runs)), and that is
 asked of the configuration rather than judged here — a project stating no class exempts nothing,
 which is every unit filed as before. ⛔ **Asked while the split is still a proposal and before it
 is put for confirmation**, because this is the one place the question can be asked early enough to
 be worth asking: an item filed for an exempt change is one the loop then runs whole, which is the
-cost § 28 measures.
+cost § 30 measures.
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --exempt-for <the paths the unit would touch> \

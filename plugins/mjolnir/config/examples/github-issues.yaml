@@ -26,6 +26,12 @@ host:
   landing:
     method: squash
     delete_branch: host
+  # § 29's port: who can be asked about a run and start one. The same system as `kind` above here,
+  # and stated anyway — that key says who holds the code, this one says who answers about a run,
+  # and a project whose continuous integration is somewhere else writes `none` with `kind: github`
+  # unchanged.
+  runs:
+    kind: github
 
 tracker:
   # ⛔ The kind and nothing else: no board to address, no status field to resolve and no
@@ -264,13 +270,25 @@ people:
     A second person takes work from this backlog — the same trigger the ordering above carries,
     and the point at which who holds a role stops being derivable from there being one of them.
 
+private:
+  # § 28's absent case, and the cheapest one there is: there is nothing of the class here to keep
+  # out of the repository, which is what the reason below states. ⛔ Stated rather than omitted —
+  # a project with values it may not commit and a project with none read identically otherwise.
+  carrier: none
+  absent_reason: >-
+    Every value this project states may be committed: the day is measured from sessions and
+    commits alone, `evidence.chat.kind` is `none` and no calendar is read.
+  revisit_when: >-
+    The `chat` or `meetings` stream is added, which is the point at which a thread name or a
+    calendar's own name becomes one of this project's values.
+
 loop_exempt:
-  # § 28, and the measured case in its simplest shape: one class decided by the changed paths
+  # § 30, and the measured case in its simplest shape: one class decided by the changed paths
   # alone, so nothing here reaches `borderline` and nobody is asked anything. ⛔ `every` changed
   # path has to be inside the globs — a documentation edit carrying one line of code is not
   # exempt, which is the case the facet exists against.
   #
-  # ⛔ The narrowest globs this project can write, which is § 28's rule and not tidiness: `*`
+  # ⛔ The narrowest globs this project can write, which is § 30's rule and not tidiness: `*`
   # crosses a directory separator, so `docs/*` already covers that subtree whole whatever is in
   # it — and a bare `*.md` beside it would have reached every such file in the repository,
   # including the ones that are this project's own behaviour rather than its prose. A

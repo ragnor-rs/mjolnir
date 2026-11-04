@@ -23,6 +23,13 @@ host:
   landing:
     method: squash
     delete_branch: never
+  # § 29's port with the kind that addresses nothing — the one example that states it, and the
+  # pair with `checks: []` above is deliberate: the two are not one fact. That key says the host
+  # defines no run this surface states; this one says no run here can be listed, read or started
+  # at all. Every operation takes its stated fallback, and what each of them leaves a role doing is
+  # the port's own report rather than a sentence here.
+  runs:
+    kind: none
 
 tracker:
   kind: none
@@ -201,8 +208,20 @@ people:
     single mapped role asks who holds no role.
   revisit_when: A tracker is configured.
 
+private:
+  # Absent, and for the same reason the chat source above is. ⛔ The repository being this person's
+  # own is **not** that reason — a repository can change hands, and what this facet turns on is the
+  # class of value rather than who holds the remote.
+  carrier: none
+  absent_reason: >-
+    Every value here is measured from this project's own transcripts and commits. No chat is
+    read, no calendar is read, and `attribute_to` names nobody.
+  revisit_when: >-
+    A chat archive or a calendar becomes evidence, or this repository is pushed anywhere a
+    second person can read it.
+
 loop_exempt:
-  # § 28's empty form, and here it is the only form available: with no tracker and one mapped role
+  # § 30's empty form, and here it is the only form available: with no tracker and one mapped role
   # there is no loop for a change to be exempt from. ⛔ Still stated — the facet asks which of a
   # project's changes bypass the loop, and *none of them, because there is none* is an answer a
   # reader can act on where an unset key is not.

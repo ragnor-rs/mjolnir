@@ -59,6 +59,12 @@ host:
   landing:
     method: rebase
     delete_branch: procedure
+  # § 29's port, and the third fact both inner repositories share rather than one either holds:
+  # which runs each makes is per root above, and who can be *asked about* a run is the host kind,
+  # which is one answer for both. ⚠️ Read by each root where its own entry says nothing, exactly
+  # as `kind` above is.
+  runs:
+    kind: github
 
 tracker:
   kind: trello
@@ -350,8 +356,20 @@ people:
   # this tracker, so the comparison has the account identity on both sides and needs no label.
   key: handle
 
+private:
+  # § 28's absent case under a project that carries values of the class in every shape the facet
+  # names — the arm that shows the facet is a decision rather than a consequence of having such
+  # values. ⛔ The reason is who may read this repository, not what is in it.
+  carrier: none
+  absent_reason: >-
+    The two people who work on this repository are the two the chats and the calendars belong
+    to, so every value it states is already reviewable by everyone who can read the file.
+  revisit_when: >-
+    A third person is given access, or the archive moves to a machine whose path names somebody
+    else's home directory.
+
 loop_exempt:
-  # § 28's second measured case, which is the one no path glob can express: an entire release's
+  # § 30's second measured case, which is the one no path glob can express: an entire release's
   # tooling work goes direct here — process scripts, measurement harnesses and the documentation
   # beside them — while every product change in the same release goes through the loop. ⛔ The axis
   # is *does a user see this*, and it does not line up with the file tree: the tooling lives beside
