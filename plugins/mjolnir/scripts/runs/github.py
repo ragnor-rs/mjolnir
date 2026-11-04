@@ -53,6 +53,15 @@ What it implements, and the decisions that are this kind's rather than § 29's:
   * ⛔ **A log is returned as a tail with both counts beside it.** A whole run log
     is unbounded and a truncated one that did not say so reads as a whole one, so
     the answer carries how many lines came back and how many there were.
+  * ⛔ **And every listing is walked to its end, for that same reason one call
+    out.** This host caps a page at `PAGE`, so the three reads that list -- a
+    commit's runs, a run's jobs, and the runs of one workflow for one commit --
+    each answered with the first page and said nothing about it. ⚠️ **The worse
+    of the two measured outcomes is the count rather than the list**: a listing
+    cut short reports § 2's precondition 2 unmet for a run that exists, while a
+    job list cut short answers precondition **3** with a number that is simply
+    wrong -- the one direction `_steps` keeps `None` to avoid. A page shorter
+    than the cap ends the walk, and a host that never ends one is a failed call.
   * ⛔ **A dispatch takes a branch or a tag and a listing takes a commit**, which
     is this host's own shape rather than an inconsistency: its dispatch endpoint
     rejects a commit, and precondition 2 asks about a commit and not about
@@ -127,6 +136,15 @@ READ_METHODS = {"GET", "HEAD"}
 # separator: a slashed ref and a dotted version are one token each, while the
 # prose around them is not part of any of them.
 TOKEN = re.compile(r"[A-Za-z0-9_./-]+")
+
+# How many entries this host puts in one page of a listing, and how many pages
+# are walked before the walk gives up. ⛔ The cap is the host's and the backstop is
+# this kind's: a listing is walked to its end because the first page answers
+# *every run for this commit* with the first hundred, and the walk stops
+# somewhere because a host answering full pages forever is a call that does not
+# come back rather than a listing.
+PAGE = 100
+PAGES = 50
 
 # How much of a log comes back by default, and ⚠️ **a tail rather than a head**:
 # what a reader of a failed run needs is where it stopped. The number is this
@@ -390,6 +408,54 @@ def _host(
     )
 
 
+def _paged(path: str, key: str, what: str, unestablished: str) -> list | None:
+    """Every entry of a paginated listing, or `None` where the key is not a list.
+
+    ⛔ **Walked to its end rather than read off the first page.** This host caps a
+    page, so one call answers *every run the host made for this commit* with the
+    first hundred and nothing in the answer says which it was -- the same defect
+    `log` beside it refuses to commit, a listing returned in part and reported as
+    a listing reading as the whole of it. ⚠️ **Measured on this port before the
+    walk existed**: a commit the host stated 137 runs for came back as 100 with
+    three keys and no count beside them, and a run of 150 jobs counted 200
+    executed steps where there were 300 -- which is § 2's precondition 3 answered
+    **wrongly** rather than withheld, the one direction `_steps` reserves `None`
+    to avoid. ⚠️ The second is the reachable one: a matrix expands to a job per
+    combination, so one workflow exceeds a page without a repository being large.
+
+    ⛔ **A short page ends the walk and the backstop is a failed call**, never a
+    listing reported whole: a reader that stopped at the host's own cap and said
+    nothing is what this walk replaces, so stopping at a cap of its own and
+    saying nothing would reinstate it one page further out.
+
+    ⚠️ **`total_count` is deliberately not the test.** The host states it beside
+    every page and it moves while the walk runs -- a run created between page one
+    and page two changes it -- so holding the collected count against it would
+    make a correct walk fail on a busy repository. A page shorter than the cap is
+    the host's own statement that there is no page after it.
+    """
+    collected: list = []
+    joiner = "&" if "?" in path else "?"
+    for page in range(1, PAGES + 1):
+        answer = _body(
+            _host(["api", f"{path}{joiner}per_page={PAGE}&page={page}"]),
+            unestablished,
+            what,
+        )
+        listed = answer.get(key)
+        if not isinstance(listed, list):
+            return None
+        collected += listed
+        if len(listed) < PAGE:
+            return collected
+    raise port.HostUnavailable(
+        f"{what} answered a full page of {PAGE} for {PAGES} pages running, so "
+        f"{unestablished} is unestablished. The walk stops rather than following "
+        "a host that does not end a listing, and stopping is reported rather "
+        "than the pages that did come back being reported as all of them"
+    )
+
+
 # --- the operations ---------------------------------------------------------
 #
 # Each takes what a role already has and returns what a role can carry onward.
@@ -426,13 +492,14 @@ def runs_for_ref(ref: str) -> dict:
             "commit the host made no run for (§ 29).",
         )
     repo = _repo()
-    answer = _host([
-        "api",
-        f"repos/{repo}/actions/runs?head_sha={commit}&per_page=100",
-    ])
     what = f"the run listing for `{commit}` in `{repo}`"
-    found = _body(answer, "which runs exist for this commit", what).get("workflow_runs")
-    if not isinstance(found, list):
+    found = _paged(
+        f"repos/{repo}/actions/runs?head_sha={commit}",
+        "workflow_runs",
+        what,
+        "which runs exist for this commit",
+    )
+    if found is None:
         raise port.HostUnavailable(
             f"{what} came back without a run list in it, so which runs exist for "
             "this commit is unestablished"
@@ -754,19 +821,19 @@ def _steps(repo: str, run: str) -> int | None:
     it is the one conclusion excluded by name.
     """
     what = f"the jobs of run `{run}` in `{repo}`"
-    answer = _body(
-        _host(["api", f"repos/{repo}/actions/runs/{run}/jobs?per_page=100"]),
-        "how many steps the run's jobs executed",
+    jobs = _paged(
+        f"repos/{repo}/actions/runs/{run}/jobs",
+        "jobs",
         what,
+        "how many steps the run's jobs executed",
     )
-    jobs = answer.get("jobs")
-    if isinstance(jobs, list) and not jobs:
-        return None
-    if not isinstance(jobs, list):
+    if jobs is None:
         raise port.HostUnavailable(
             f"{what} came back with something other than a job list in it, so "
             "how many steps the run's jobs executed is unestablished"
         )
+    if not jobs:
+        return None
     executed = 0
     for job in jobs:
         # ⛔ A shape this reader cannot walk is a **failed call**, while a list
@@ -834,17 +901,13 @@ def _superseded_by(repo: str, record: dict) -> str | None:
     if not commit or not workflow or not created:
         return None
     what = f"the runs of workflow `{workflow}` for `{commit}` in `{repo}`"
-    answer = _body(
-        _host([
-            "api",
-            f"repos/{repo}/actions/workflows/{workflow}/runs"
-            f"?head_sha={commit}&per_page=100",
-        ]),
-        "whether a newer run retired this one",
+    listed = _paged(
+        f"repos/{repo}/actions/workflows/{workflow}/runs?head_sha={commit}",
+        "workflow_runs",
         what,
+        "whether a newer run retired this one",
     )
-    listed = answer.get("workflow_runs")
-    if not isinstance(listed, list):
+    if listed is None:
         return None
     newer = [
         run

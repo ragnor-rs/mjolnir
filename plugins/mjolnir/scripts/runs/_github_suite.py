@@ -204,6 +204,38 @@ def _step(conclusion: str | None, status: str | None = None) -> dict:
 WORKFLOW_RUNS = f"actions/workflows/{A_WORKFLOW_ID}/runs"
 
 
+def _pages(path: str, *bodies: dict) -> dict:
+    """One answer per page of a listing, keyed as the walk asks for each.
+
+    ⛔ **Keyed on the page the call carries and never on the path alone.** A
+    fixture keyed on the path answers every page with the same body, so the first
+    page is short, the walk ends there, and an arm counting what came back passes
+    whatever the walk did -- which is a suite over a paginated read asserting
+    nothing. ⚠️ These keys are longer than the bare path `_answers` carries for
+    the same endpoint, and that ordering is what makes them win.
+    """
+    # ⛔ The joiner is the walk's own, not a `&` written here: a path that already
+    # carries a query takes one and a bare path takes a `?`, and a key spelled the
+    # other way matches nothing — so the bare path in `_answers` answers every
+    # page, the first one is short, and the arm passes reading one step of 150.
+    # Measured while writing the arm below.
+    joiner = "&" if "?" in path else "?"
+    key = f"{path}{joiner}per_page={implementation.PAGE}&page="
+    return {f"{key}{number}": body for number, body in enumerate(bodies, start=1)}
+
+
+def _a_full_page(start: int) -> list[dict]:
+    """A page of exactly the host's cap, each entry named and numbered.
+
+    ⛔ Distinct ids and names: the listing refuses an entry the host numbered or
+    named nothing for, so a page of copies would redden the wrong arm.
+    """
+    return [
+        _run_record(id=start + n, name=f"Workflow {start + n}")
+        for n in range(implementation.PAGE)
+    ]
+
+
 def _answers(**over) -> dict:
     """An answer for each endpoint a read makes, keyed by what identifies it.
 
@@ -355,6 +387,49 @@ def self_test() -> int:
             "a listing with no run list in it is a failed call and not an empty answer",
             broken.failed and not broken.performed,
             f"got {str(broken)!r}",
+        )
+
+        # --- a listing longer than one page ----------------------------------
+        #
+        # ⛔ This host caps a page, so the read that answers *every run the host
+        # made for this commit* answered with the first hundred and said nothing
+        # about it — three keys back and no count among them, where the `log`
+        # operation beside it carries both. Measured on this port: a commit the
+        # host stated 137 runs for came back as 100, which reports § 2's
+        # precondition 2 unmet for a run that exists.
+        paged = _Host(_answers(**_pages(
+            f"actions/runs?head_sha={A_COMMIT}",
+            {"total_count": 137, "workflow_runs": _a_full_page(9000)},
+            {"total_count": 137, "workflow_runs": _a_full_page(9100)[:37]},
+        )))
+        whole = _port(paged).invoke("runs_for_ref", A_COMMIT)
+        check(
+            "a listing longer than one page comes back whole",
+            whole.performed and len(answer(whole).get("runs", [])) == 137,
+            f"got {len(answer(whole).get('runs', []))} of 137",
+        )
+        check(
+            "and the page after the first one was asked for",
+            position(paged.asked, "page=2") >= 0,
+            f"asked {paged.asked!r}",
+        )
+        # ⛔ And the walk stops rather than following a host that never ends a
+        # listing — reported as a failed call, never as the pages that did come
+        # back. A cap of its own reported quietly would reinstate the defect
+        # above one page count further out.
+        endless = _Host(_answers(**{
+            f"actions/runs?head_sha={A_COMMIT}": {"workflow_runs": _a_full_page(9000)},
+        }))
+        forever = _port(endless).invoke("runs_for_ref", A_COMMIT)
+        check(
+            "a host that never ends a listing is a failed call, not the pages that came back",
+            forever.failed and not forever.performed,
+            f"got {str(forever)!r}",
+        )
+        check(
+            "and the walk is bounded, so it stops rather than not coming back",
+            len(endless.asked) == implementation.PAGES,
+            f"walked {len(endless.asked)} of {implementation.PAGES}",
         )
 
         # --- how one concluded ---------------------------------------------
@@ -848,6 +923,23 @@ def self_test() -> int:
             and answer(queued)["reading"] == host_checks.NEVER_STARTED,
             f"read {answer(queued)!r}",
         )
+        # ⛔ And the count is over **every** job, not over the first page of them.
+        # This is the worse half of the paging defect above: a listing cut short
+        # reports precondition 2 unmet for a run that exists, while a job list cut
+        # short answers precondition **3** with a number that is simply wrong —
+        # the one direction `_steps` keeps `None` to avoid. ⚠️ And it is the
+        # reachable half: a matrix expands to a job per combination, so one
+        # workflow passes the cap without the repository being large.
+        across = _port(_Host(_answers(**_pages(
+            f"actions/runs/{A_RUN}/jobs",
+            _jobs(*([_step(PASSED)] for _ in range(implementation.PAGE))),
+            _jobs(*([_step(PASSED)] for _ in range(50))),
+        ), **{f"actions/runs/{A_RUN}": _run_record()}))).invoke("conclusion", A_RUN)
+        check(
+            "the step count is over every job and not over the first page of them",
+            answer(across)["steps"] == implementation.PAGE + 50,
+            f"read {answer(across).get('steps')!r} of {implementation.PAGE + 50}",
+        )
 
         # --- the successor, at the two edges the timestamp cannot decide -----
         #
@@ -888,6 +980,32 @@ def self_test() -> int:
             answer(unnumbered)["reading"] == host_checks.FAILED
             and answer(unnumbered)["read_instead"] is None,
             f"read {answer(unnumbered)!r}",
+        )
+        # ⛔ And a successor on a page after the first is still the successor. The
+        # miss this closes is the one the docstring above names the cost of: a
+        # retired run read as `failed` sends a reviewer to spend a fix cycle on a
+        # run a newer one already replaced, and a workflow re-run often enough for
+        # one commit is exactly the case a supersession group is configured for.
+        later_page = _port(
+            _Host(_answers(**_pages(
+                f"actions/workflows/{A_WORKFLOW_ID}/runs?head_sha={A_COMMIT}",
+                {"workflow_runs": [
+                    _run_record(id=6000 + n, created_at="2026-03-04T09:00:00Z")
+                    for n in range(implementation.PAGE)
+                ]},
+                {"workflow_runs": [
+                    _run_record(id=int(A_SUCCESSOR), created_at="2026-03-04T11:00:00Z"),
+                ]},
+            ), **{
+                f"actions/runs/{A_RUN}": _run_record(conclusion=FAILED),
+            })),
+            _runner(),
+        ).invoke("conclusion", A_RUN)
+        check(
+            "a successor on a page after the first is still the successor",
+            answer(later_page)["reading"] == host_checks.SUPERSEDED
+            and answer(later_page)["read_instead"] == A_SUCCESSOR,
+            f"read {answer(later_page)!r}",
         )
         # ⛔ A runner block stating no group looks nothing up either, which is the
         # arm between *no block* and *a group*: § 2 makes the omission of
