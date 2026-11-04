@@ -851,7 +851,7 @@ fails on a project that is correctly configured.
   | what a grouping is | a numbered plan document, one per grouping, the active one beside the specification and the finished ones moved into an archive directory. The items are grouped **into** it: the document carries the list, and each item names the grouping in its own front matter |
   | how an item says which one it is in | a named field in the item's front matter, holding the grouping's number. ⛔ Not a label, not a path, not the directory the item sits in — the directory says only whether it is archived |
   | how the current one is found | a status field on the grouping itself, with exactly one marked active. ⚠️ **Discoverable**, then — and the whole reason that is a key is the measured contrast: on the tracker in the next bullet several of the equivalent are open at once with no such mark |
-  | what lifecycle it has | four fields in the grouping's front matter: the status, the time it was archived, the branch its kickoff cut, and the time it was frozen. A kickoff, a freeze and an archive, each with a slot to record it in |
+  | what lifecycle it has | fields in the grouping's front matter: the status, the time it was archived, the branch its kickoff cut, and the time it was frozen. A kickoff, a freeze and an archive, each with a slot to record it in |
   | whether it carries its own acceptance | **yes, and the document says so in those words** — an acceptance-criteria list labelled milestone-level, beside a gate command. ⛔ So the bar a change is judged by is not on the item at all, and a role reading the item alone would be holding the work to a standard nobody wrote there |
   | whether closing it closes its items | **yes, and the timestamps are the evidence.** Every one of the twelve archived items names the grouping that closed; nine carry the grouping's own archive time to the second, and three carry earlier, distinct times of their own. So the close swept what was still open in it, and an item may also close on its own first |
   | who closes it | a person, in the pass that cuts the release. There is no automation in that tree and no role on this surface drives it |
@@ -868,8 +868,8 @@ fails on a project that is correctly configured.
   collection.** One tracker's copy of the starting role refuses an item with no sprint, then one
   with no fix version, then one whose release branch for that fix version is missing from the
   remote — ⛔ **two groupings in one project**, two fields, two checks, and the third check a ref
-  named after the second one's value. A board's copy adds a missing iteration to its gate and has
-  no dependency check at all (both are in the readiness-gate section above). ⚠️ **Neither gate
+  named after the second one's value. A board's copy gates on a grouping instead, and both copies
+  are stated as they stand in the readiness-gate section above. ⚠️ **Neither gate
   carries anything else about its grouping** — not which one is current, not who closes it, not
   what it is judged by — so what those two copies establish is the *number* of groupings a project
   has and the questions a gate asks, and the document above establishes what a grouping holds.
@@ -883,13 +883,15 @@ fails on a project that is correctly configured.
   [`§ 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list) now
   refuses that exact pair with the field named.
 
-  ⚠️ **The absent case is this repository's own and is not the exceptional one.** A flat backlog
-  ordered by its blockers and a tier plans nothing into anything — this repository's configuration
-  says so, and the shipped examples carry `none` with a reason wherever the tracker has nowhere to
-  put one. ⛔ **And the evidence is thin for a facet this size**, which is stated rather than
-  glossed over: two gates and one document, against five keys. That is why every key traces to a
-  row of the table above rather than to a shape that seemed likely, and why the ref carrier the
-  document shows was left off the surface instead of generalised from one project.
+  ⚠️ **The absent case is not the exceptional one.** A flat backlog ordered by its blockers and a
+  tier plans nothing into anything, and the shipped examples carry `none` with a reason wherever
+  the tracker has nowhere to put one. ⚠️ **That this repository is itself such a project is
+  load-bearing rather than illustrative**, which is
+  [`building-itself.md`](building-itself.md#the-absent-facets-this-repository-depends-on)'s subject
+  and is stated there. ⛔ **And the evidence is thin for a facet this size**, which is stated rather
+  than glossed over: two gates and one document. That is why every key traces to a row of the table
+  above rather than to a shape that seemed likely, and why the ref carrier the document shows was
+  left off the surface instead of generalised from one project.
 
 **What priority needed that the other facets did not: a statement of how two items compare.** The
 others answer a question about one item — what type it is, what it is worth, which template it
@@ -1590,6 +1592,7 @@ records.
 | `dbf4ef1` (#142) — § 14, what the shell inherits | added a required `environment.inherits`, `[]` again a decision rather than an omission | stayed `1` |
 | `b9e8fd7` (#147) — § 4.5, the date the gating role owns | added a required `work_item.due_date.carrier`, absent-capable, so a configuration written before it is refused with the key named and states its decision through `absent_reason` | stayed `1` |
 | `9bfa447` (#145) — § 3, the keys a tracker kind requires | added `# required_when`, so a tracker block that was complete before it is **refused** for keys that depend on a `kind` the configuration already declared | stayed `1` |
+| § 4.8, the grouping above a work item | required `work_item.grouping.carrier` by a **rule of the reader** rather than by a marker, the key whose absence is refused differing between the facet's two forms — so every configuration written before it is **refused**, this repository's included until it stated the absent case. ⚠️ The first row whose requiredness no marker carries, which is why § 1's obligation names both routes | no key to move: the revision was already retired (ruling 12) |
 
 ⚠️ **The rows kept arriving while this change was open**, and each was added by merging `main` into
 it rather than by anyone revisiting the question. A revision that moved on every required key would

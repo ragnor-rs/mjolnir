@@ -702,12 +702,16 @@ session restarted
 A guard saying it cannot read a configuration and a project that never wrote one are the same
 silence to whoever is reading.
 
-⛔ **So a change marking a key `# required` owes the configurations it invalidates, and no check
+⛔ **So a change that makes a key required owes the configurations it invalidates, and no check
 here can reach them**, they being files in repositories this one cannot open. What a change can do
 is state the key's absent form in the same commit, and say in the record it lands with that
-configurations outside this repository are now refused. ⚠️ **Which projects those are is not written
-down here**, and no rule of this surface is what stops it: a repository this one names is a fact
-about somebody else's work, and the convention against it is held by a check rather than by a facet.
+configurations outside this repository are now refused. ⚠️ **By a marker or by a rule of the
+reader, and the two are named together on purpose**: § 4.8 makes `carrier` required without a
+`# required` marker, for a reason that section states, and a trigger naming only the marker would
+have left the facet with this obligation's harm and none of its duty. ⚠️ **Which projects those
+are is not written down here**, and no rule of this surface is what stops it: a repository this one
+names is a fact about somebody else's work, and the convention against it is held by a check rather
+than by a facet.
 
 ⛔ **A shape rule may not answer whether a key is written**, for the same reason. Requiredness is
 the marker's question, checked before any shape rule runs; what a stated value has to *be* is the
@@ -1914,13 +1918,13 @@ anybody pays it rather than one anybody has.
 work_item:
   grouping:
     carrier: native_milestone | field | label | none   # absent_reason
-    kind: iteration | version | milestone    # what the grouping is, where one is carried
+    kind: iteration | version | milestone    # required when a grouping is carried
     field: "…"                   # when carrier is field
-    label_prefix: "G: "          # when carrier is label
-    current: discoverable | stated           # how the one in flight is identified
-    has_own_acceptance: false    # whether a criterion hangs on it rather than on its items
-    closes_items: false          # whether closing it closes what is still open in it
-    closed_by: orderer           # one of § 4.2's writers
+    label_prefix: "G:"           # when carrier is label
+    current: discoverable | stated           # required when a grouping is carried
+    has_own_acceptance: false    # required when a grouping is carried
+    closes_items: false          # required when a grouping is carried
+    closed_by: orderer           # required when a grouping is carried; one of § 4.2's writers
     ref_prefix: "release/"       # when a ref is named after the grouping's own value
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
@@ -1928,25 +1932,24 @@ work_item:
 
 The thing a set of items is planned *into* — an iteration, a release scope, a milestone.
 ⛔ **Every other facet in this section describes one item and this one does not**, which is why it
-is the item's facet and still carries keys about the grouping: a type, an estimate, a template, a
-date, a tier and a root are each read off an item, while this is read off the item *and* off the
-thing the item names.
+is the item's facet and still carries keys about the grouping: the facets above are each read off
+an item, while this is read off the item *and* off the thing the item names.
 
-**Four carriers, and `native_milestone` is the one no other facet has.** A tracker whose items
-carry a milestone of their own holds the fact there; `field` is a named field, `label` a prefixed
-axis in a flat label list, and `none` is the project that plans in no grouping at all. ⛔ **No
-operation is added to [§ 3](#the-operations-and-what-an-absent-capability-does) for it**, on
+**`native_milestone` is the carrier no other facet has**: a tracker whose items carry a milestone
+of their own holds the fact there. ⛔ **No operation is added to
+[§ 3](#the-operations-and-what-an-absent-capability-does) for it**, on
 [§ 4.6](#46-priority)'s terms rather than on a second statement of them: a milestone and a field
 each ride `read_item` and `set_field`, and a label rides `read_item` and `set_labels`.
 
-⛔ **`field_present` carrying the project's own field name is not this facet, and a project
-writing both is refused with the field named.** That check states a field and nothing else, so a
-gate asking *is this item in the current iteration* through it puts the project's own word for the
-grouping inside a readiness entry — which is the indirection
-[§ 4.2](#42-status--an-ordered-set-of-name-role-writer) exists to keep out of the procedure, back
-one layer up. What asks that question instead is
-[§ 5](#5-readiness-gate--an-ordered-predicate-list)'s `in_grouping`, which names a grouping of
-this facet's and never a field.
+⛔ **A grouping's name is the project's own, and a name spelled like one of the keys above is
+refused by construction rather than by a rule.** The set a named grouping may carry is derived
+from this section's own single-form fence, so a grouping named after a key deletes that key from
+the set and then refuses every configuration carrying it — with nothing reporting the
+contradiction, because both halves are reading the same fence correctly. ⚠️ **Measured on `field`**:
+naming an illustration grouping `field` drops `field` from the derived set, and a `carrier: field`
+grouping is then refused for naming a key no grouping carries. ⛔ **Which is why the collection
+fence below names its groupings in the placeholder form** rather than with a word a project might
+really use — the same reason its `field:` values are placeholders.
 
 ⛔ **`current` is the key a procedure may not do without, and neither value is derivable from the
 other.** A grouping the tracker itself marks as the open or dated one is `discoverable`, and a
@@ -1979,14 +1982,16 @@ mapping a subset is § 4.2's legitimate case, and there is then no status for th
 item means.** Where a grouping carries criteria of its own it is a work item with children rather
 than a word on a label, so an item in it does not carry what the whole grouping is judged by — and
 a role reading the item alone is then holding a change to a bar nobody wrote there. Where it is
-false the grouping is a name and the bar is each item's own. ⚠️ **Measured true on one project and
-false on the other two**, which is what makes it a key rather than an assumption: the one that
-carries it says *milestone-level* in the document itself, beside a gate command of its own.
+false the grouping is a name and the bar is each item's own. ⚠️ **Measured true on one project, and
+the other two readings carry nothing about it at all** — which is what makes it a key rather than
+an assumption, and ⛔ **not a measurement of `false`**: the project that carries it says
+*milestone-level* in the document itself, beside a gate command of its own, while a gate that says
+nothing is [§ 2](#2-code-host)'s absence of signal rather than an answer.
 
-**`ref_prefix` is what makes a ref named after a grouping readable without naming the grouping.**
-The ref is the prefix joined onto the grouping's own value, which is the shape
-[§ 4.6](#46-priority)'s `label_prefix` already has, and
-[§ 5](#5-readiness-gate--an-ordered-predicate-list)'s `grouping_ref_exists` is what reads it.
+**`ref_prefix` is what makes a ref named after a grouping readable without naming the grouping**,
+in the shape [§ 4.6](#46-priority)'s `label_prefix` already has. What the prefix composes, and the
+check that reads it, are [§ 5](#5-readiness-gate--an-ordered-predicate-list)'s
+`grouping_ref_exists`, stated there.
 ⚠️ **A grouping carrying a ref as a value of its own was measured and is deliberately not a
 carrier here**: the one project found holding one keeps it in the grouping's own record, and that
 record is a file in a tree rather than anything a tracker holds, so a key for it would serve the
@@ -1996,18 +2001,18 @@ adapter for. `revisit_when` is where a project records needing it.
 ```yaml
 work_item:
   grouping:                      # one block, as above, or a block of named groupings
-    iteration:
+    "<the time box>":
       kind: iteration
       carrier: field
-      field: "<the field the iteration is held in>"
+      field: "<the field the time box is held in>"
       current: discoverable
       has_own_acceptance: true
       closes_items: true
       closed_by: orderer
-    release:
+    "<the release scope>":
       kind: version
       carrier: field
-      field: "<the field the version is held in>"
+      field: "<the field the release scope is held in>"
       current: stated
       has_own_acceptance: false
       closes_items: false
@@ -2027,42 +2032,39 @@ one for one, is two entries whose values happen to agree rather than a rule.
 [§ 1](#a-projects-code-is-not-always-one-repository)'s rule for the roots collection: a project
 with one grouping writes the block above and the reader resolves it to one entry under the key
 `grouping`, which is what a report names it by. ⚠️ **A `carrier` at the top is what tells the two
-forms apart**, so a named grouping may not be called `carrier`; and ⛔ **a role asking about one
-grouping where the project carries several is handed a stop and never the first of them** — § 1's
-rule that a fact some entry states is refused at the project level, which is
-[§ 2](#2-code-host)'s absence-of-signal rule in the direction where a plausible answer is
-available and wrong.
+forms apart**, so a named grouping may not be called `carrier`. What a role asking about one of
+several is handed is [§ 5](#5-readiness-gate--an-ordered-predicate-list)'s, stated beside the
+checks that are handed it.
 
 ⛔ **The facet is stated by every project, and which form it is written in is a rule of the reader
 rather than a `# required` marker.** The marker answers *must this key be written*, and the key
 whose absence is refused differs between the two forms, so a marker on either one would refuse the
 other. It is [`§ 4.7`](#47-code-root)'s reason for the same choice, with the number of forms in
 place of the number of roots: the refusal names `carrier` and says a block of named groupings
-answers it too. ⚠️ **The cost is a configuration written before this facet existed stopping to
-load**, which is [§ 6](#6-commit-behaviour)'s staging ruling paying the same price and is stated
-here for the same reason: the refusal names the key and the remedy is one block, so a project
-meets it once rather than discovering it inside a role.
+answers it too. ⚠️ **So a configuration written before this facet existed stops loading**, which is
+[§ 1](#the-surface-is-resolved-beside-the-configuration)'s rule for a change that makes a key
+required and owes the configurations it invalidates — the cost, who it falls on and what discharges
+it are stated there rather than a second time here.
 
-⚠️ **`carrier: none` with a stated reason is a first-class setting, on § 4.3's terms rather than on
-a second statement of them.** A flat backlog ordered by its blockers is as legitimate as one
-planned in iterations, and the project that keeps no grouping states that rather than omitting the
-key; `revisit_when` carries the trigger that would give it one. ⛔ **An unset carrier is a
-misconfiguration**, which is the whole reason the absent case is written down: a project with no
-grouping and a project that has not thought about one read identically otherwise.
+⚠️ **`carrier: none` with a stated reason is [§ 4.3](#43-estimate)'s first-class setting.** A flat
+backlog ordered by its blockers is as legitimate as one planned in iterations, and `revisit_when`
+carries the trigger that would give it one. ⛔ **An unset carrier is a misconfiguration**, which is
+what the absent case is written down to tell apart: a project with no grouping and a project that
+has not thought about one read identically otherwise. ⚠️ **In the collection form that holds per
+entry** — a named grouping carried by nothing states its own reason, and is reported as that
+absence rather than resolving to silence.
 
-⚠️ **Which of these keys has a reader today, stated rather than left to be discovered.** § 1's
+⚠️ **Which of these keys has no reader yet, stated rather than left to be discovered.** § 1's
 rule that a key nothing reads is worse than no key reaches this facet while the roles that need a
-grouping are being written, so the division is named here instead of being found later. `carrier`,
-`kind`, `field`, `label_prefix`, `closed_by`, `closes_items` and `ref_prefix` are each read where
-the configuration is read — the carrier's own discriminators, one `kind` per grouping, the writer
-against § 4.2's vocabulary, the close against the terminal status's writer, and the prefix against
-the gate entry that composes a ref from it. ⛔ **`current` and `has_own_acceptance` are required
-and held to their vocabularies and are read by nothing else yet**, which is a statement about this
-surface's own progress rather than about the keys: each is the answer to a question a role has to
-ask before it files an item or closes a grouping, and neither is derivable from the rest of the
-block. ⚠️ **The trigger is the role, not a date** — the filing role putting a new item somewhere
-and the release role closing a grouping are where both are read — and a key still unread when
-those roles are written is § 1's retirement argument with a project's own answer behind it.
+grouping are being written, so the division is named here instead of being found later.
+⛔ **`current` and `has_own_acceptance` are required and held to their vocabularies and are read by
+nothing else yet** — every other key in the fence is read where the configuration is read. That is
+a statement about this surface's own progress rather than about the keys: each is the answer to a
+question a role has to ask before it files an item or closes a grouping, and neither is derivable
+from the rest of the block. ⚠️ **The trigger is the role, not a date** — the filing role putting a
+new item somewhere, and whichever role comes to close a grouping, are where both are read — and a
+key still unread when those roles are written is § 1's retirement argument with a project's own
+answer behind it.
 
 ## 5. Readiness gate — an ordered predicate list
 
@@ -2132,7 +2134,7 @@ or quiet:
   a role addressing the project instead of the root is refused by the reader (§ 1).
 
 - ⛔ **`in_grouping` and `grouping_ref_exists` read [`§ 4.8`](#48-grouping--what-a-set-of-items-is-planned-into)
-  and nothing else**, as the two bullets above read §§ 4.6 and 4.7. The first passes an item that
+  and nothing else**, as the bullets above each read one facet. The first passes an item that
   names a grouping the facet carries; the second passes where the ref `ref_prefix` joined onto that
   grouping's own value exists on the remote. ⛔ **Each carries a `grouping` where the project
   carries several and omits it where the project carries one** — § 4.8 resolves the single form to
@@ -2155,7 +2157,7 @@ or quiet:
   surface's — so `field_present` keeps every other use it has, a missing weight among them.
 
 - ⛔ **`assignee_matches_role` reads [`§ 27`](#27-the-role-to-person-map) and nothing else**, as the
-  two bullets above read §§ 4.6 and 4.7, and ⛔ **it carries a `role`** — the one the item's person
+  bullets above each read one facet, and ⛔ **it carries a `role`** — the one the item's person
   is compared against, named in the entry because the surface publishes no role vocabulary for the
   map and a check with no role to look up has no question. An entry stating none is refused where
   the configuration is read. ⛔ **A project configuring the check while `people.carrier` is `none` is

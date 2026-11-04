@@ -107,9 +107,9 @@ work_item:
     # account. The tier is read for the gate and written by nobody here.
     writer: never
   # § 4.8 in its collection form, which is the shape this tracker forced: a time box and a
-  # release scope, two separate fields with a lifecycle and a closer each, and the readiness
-  # list below checks both. ⛔ Two entries and not one with two values — a role asked for the
-  # release scope must not be handed the time box because it was written first.
+  # release scope, separate fields with a lifecycle and a closer each, and the readiness list
+  # below checks both. ⛔ An entry each, and not one entry with two values — a role asked for
+  # the release scope must not be handed the time box because it was written first.
   grouping:
     time_box:
       kind: iteration
@@ -153,10 +153,10 @@ statuses:
 # writer: never throughout — the credential acts as a person's own account, so every write
 # reads as that person speaking. The procedure reports the move it would have made instead.
 
-# § 4.8's two checks, and each names which grouping it asks about because this project carries
-# two (§ 5). ⛔ None of the three entries carries the project's own word for a grouping: that is
-# what the facet above exists for, and `field_present` naming either of those fields is refused
-# by the reader rather than left as a second way to ask the same question.
+# § 4.8's grouping checks, and each names which grouping it asks about because this project
+# carries more than one (§ 5). ⛔ No entry below carries the project's own word for a grouping:
+# that is what the facet above exists for, and `field_present` naming either of those fields is
+# refused by the reader rather than left as a second way to ask the same question.
 readiness:
   - { check: in_grouping, grouping: time_box, stop: "The item is in no time box." }
   - { check: in_grouping, grouping: release_scope, stop: "The item is in no release scope." }

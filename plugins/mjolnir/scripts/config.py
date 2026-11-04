@@ -1162,24 +1162,13 @@ def _groupings(data: dict, facts: dict) -> tuple[dict[str, dict], bool]:
             )
         groupings[name] = entry
 
-    # ⛔ No two groupings may carry the same `kind`, refused here rather than
-    # left to produce a plausible answer later. Two entries of one kind is the
-    # ambiguity the `kind` value exists to remove: a role asked for *the
-    # iteration* would be choosing between them, which is the pick § 1 refuses
-    # for two roots answering to one label.
-    seen: dict[object, str] = {}
-    for name, entry in groupings.items():
-        kind = entry.get("kind")
-        if kind is None:
-            continue
-        first = seen.setdefault(kind, name)
-        if first != name:
-            raise ConfigError(
-                f"{GROUPING_KEY}.{name}.kind",
-                f"is {kind!r}, which `{GROUPING_KEY}.{first}` carries as well. A "
-                "role asked for a grouping of that kind would be choosing between "
-                "two, and the configuration chose neither (§ 4.8).",
-            )
+    # ⛔ Two groupings of one `kind` are accepted, and that is § 4.8's own
+    # argument rather than a gap here: a project with two versions is the case
+    # `kind`-as-a-value exists to hold, and refusing it would make the single
+    # reason the surface gives for the shape false. ⚠️ Nothing addresses a
+    # grouping by kind -- `grouping()` takes a name and refuses an unnamed ask
+    # where several are carried -- so there is no lookup for a uniqueness rule
+    # to protect.
     return groupings, True
 
 
@@ -1245,9 +1234,22 @@ def _grouping_facet(data: dict, facts: dict) -> dict[str, dict]:
                 f"is {carrier!r}; the surface allows {' | '.join(carriers)}.",
             )
         if carrier == "none":
-            # The absent case, whose own reason is `validate`'s rule above. ⛔ No
-            # key beside it is required or refused: the facet is not read at all
-            # under this carrier, and refusing a leftover key would be this
+            # ⛔ The absent case states its own reason here, and `validate`'s
+            # `# absent_reason` rule does **not** reach it: that rule compares
+            # the one absolute path `work_item.grouping.carrier`, which the
+            # collection form does not have. ⚠️ Measured accepting a reasonless
+            # `none` on a named grouping while the single form refused it — so
+            # an unset carrier and a stated absence read identically in exactly
+            # the form § 4.8 wrote the absent case down to tell apart.
+            if not str(entry.get("absent_reason") or "").strip():
+                raise ConfigError(
+                    f"{at}.absent_reason",
+                    "required when the carrier is `none`. A deliberately absent "
+                    "grouping states its reason; an unset one is a "
+                    "misconfiguration, and the two read identically without it.",
+                )
+            # ⛔ No key beside it is required or refused: the facet is not read at
+            # all under this carrier, and refusing a leftover key would be this
             # reader editing a configuration rather than reading one.
             continue
         carried[name] = entry
@@ -1986,6 +1988,24 @@ class Config:
             if path.startswith("work_item.") and self.get(f"{path}.carrier") == "none":
                 reason = self.get(f"{path}.absent_reason")
                 out.append(f"No {facet} is carried: {' '.join(str(reason).split())}")
+        # ⛔ The collection form's absent entries, which the loop above cannot
+        # reach: it compares the one absolute path `work_item.grouping.carrier`,
+        # and the collection form's distinguishing feature is not having it. ⚠️
+        # Measured reporting **nothing** for a collection whose every entry was
+        # `none` — the facet absent and the report silent, which is the reading
+        # § 4.8's absent case exists to prevent one level down.
+        written = self.get(GROUPING_KEY)
+        if isinstance(written, dict) and "carrier" not in written:
+            for name in sorted(written):
+                entry = written[name]
+                if not isinstance(entry, dict) or entry.get("carrier") != "none":
+                    continue
+                reason = " ".join(str(entry.get("absent_reason")).split())
+                out.append(
+                    f"The grouping named {name!r} is carried by nothing "
+                    f"(`{GROUPING_KEY}.{name}.carrier: none`), so no item is "
+                    f"planned into it and no role reads it: {reason}"
+                )
         if self.get("context.artifacts.carrier") == "none":
             reason = self.get("context.artifacts.absent_reason")
             out.append(
@@ -6285,10 +6305,6 @@ def self_test() -> int:
              lambda data: _get(data, f"{GROUPING_KEY}.{named[0]}").__setitem__(
                  "a-key-no-grouping-carries", "x"),
              f"{GROUPING_KEY}.{named[0]}.a-key-no-grouping-carries"),
-            ("two groupings of one kind",
-             lambda data: _get(data, f"{GROUPING_KEY}.{named[-1]}").__setitem__(
-                 "kind", _get(data, f"{GROUPING_KEY}.{named[0]}.kind")),
-             f"{GROUPING_KEY}.{named[-1]}.kind"),
             ("a named grouping with no carrier",
              lambda data: _get(data, f"{GROUPING_KEY}.{named[0]}").pop("carrier"),
              f"{GROUPING_KEY}.{named[0]}.carrier"),
@@ -6315,6 +6331,30 @@ def self_test() -> int:
              lambda data: _get(data, f"{GROUPING_KEY}.{named[0]}").update(
                  closed_by="whoever happens to be about"),
              f"{GROUPING_KEY}.{named[0]}.closed_by"),
+            # ⛔ The three vocabularies a *named* grouping is held to, each
+            # planted with a value outside its alternation rather than with the
+            # key popped. ⚠️ Popping reaches the absent arm above and leaves the
+            # out-of-vocabulary refusal unexecuted, which is what these were
+            # measured doing: the suite was green with each of them never run.
+            ("a per-grouping carrier outside the surface's alternation",
+             lambda data: _get(data, f"{GROUPING_KEY}.{named[0]}").update(
+                 carrier="a carrier no tracker has"),
+             f"{GROUPING_KEY}.{named[0]}.carrier"),
+            ("a grouping that is a kind the surface does not publish",
+             lambda data: _get(data, f"{GROUPING_KEY}.{named[0]}").update(
+                 kind="quarter"),
+             f"{GROUPING_KEY}.{named[0]}.kind"),
+            ("a current-grouping reading outside its alternation",
+             lambda data: _get(data, f"{GROUPING_KEY}.{named[0]}").update(
+                 current="guessed"),
+             f"{GROUPING_KEY}.{named[0]}.current"),
+            # ⛔ A named grouping with `carrier: none` and no reason. The single
+            # form is held to this and the collection was not, which is the
+            # whole failure § 4.8 says the absent case is written down for.
+            ("a named grouping absent with no reason given",
+             lambda data: _get(data, GROUPING_KEY).__setitem__(
+                 named[0], {"carrier": "none"}),
+             f"{GROUPING_KEY}.{named[0]}.absent_reason"),
         ):
             data = _a_grouping_collection()
             mutate(data)
@@ -6324,6 +6364,62 @@ def self_test() -> int:
                 broken == expected,
                 f"reported {broken!r}, expected {expected!r}",
             )
+
+        # ⛔ The green side of the two readings the refusals above do **not**
+        # cover, asserted rather than assumed. ⚠️ An exemption nothing can fail
+        # is one nobody checked, which is the rule the writer argument below is
+        # already written to.
+        for label, mutate in (
+            # § 4.8's own argument for `kind` being a value: a project with two
+            # versions is the case the shape exists to hold.
+            ("two groupings of one kind load",
+             lambda data: _get(data, f"{GROUPING_KEY}.{named[-1]}").__setitem__(
+                 "kind", _get(data, f"{GROUPING_KEY}.{named[0]}.kind"))),
+            # A named grouping may be absent, with its reason stated, beside a
+            # sibling the project does plan in. ⚠️ The gate entries naming it go
+            # with it: a check naming a grouping the facet no longer carries is
+            # refused by its own rule below, which is correct and is not what
+            # this arm is asserting.
+            ("one named grouping absent with a reason loads",
+             lambda data: (
+                 _get(data, GROUPING_KEY).__setitem__(
+                     named[0],
+                     {"carrier": "none", "absent_reason": "this half is not planned."}),
+                 _get(data, "readiness").__setitem__(
+                     slice(None),
+                     [entry for entry in _get(data, "readiness")
+                      if entry.get(GROUPING_ENTRY_KEY) != named[0]]),
+             )),
+        ):
+            data = _a_grouping_collection()
+            mutate(data)
+            broken = _refused(data)
+            check(f"{label}", broken is None, f"refused {broken!r}")
+
+        # ⛔ § 5's "named where several, omitted where one" rule, on the **single**
+        # form — the half no shipped file reaches. ⚠️ The collection's half is
+        # planted above; the single form's two arms were measured never executed,
+        # because the only example configuring these checks is the collection and
+        # the only shipped single form configures neither.
+        def _with_grouping_gate(entry: dict) -> dict:
+            data = _a_carried_grouping()
+            gate = _get(data, "readiness")
+            gate.append({"check": IN_GROUPING_CHECK, **entry, "stop": "…"})
+            return data
+
+        named_under_one = _with_grouping_gate({GROUPING_ENTRY_KEY: ONE_GROUPING})
+        broken = _refused(named_under_one)
+        check(
+            "a gate naming a grouping where the project writes one block is "
+            "refused, with the entry named",
+            broken == f"readiness[{len(_get(named_under_one, 'readiness')) - 1}]",
+            f"reported {broken!r}",
+        )
+        check(
+            "a gate omitting the grouping where the project writes one block loads",
+            _refused(_with_grouping_gate({})) is None,
+            f"refused {_refused(_with_grouping_gate({}))!r}",
+        )
 
         # ⛔ § 4.2's writer argument across the two levels it now spans, which no
         # example reaches: a close that also closes the items writes the terminal
