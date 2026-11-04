@@ -183,6 +183,16 @@ accepted only with a reason stated beside it, and the facet is named in what a r
 unavailable. Several markers on one line are separated by `;`, in any order, and prose may sit
 among them: `# stated, never inherited from the working directory; required`.
 
+**A key whose value a repository may not hold is marked `# private`.** The key stays declared where
+it is, and a project still states its shape in the tracked file; what the marker adds is that the
+project may name the key in [§ 28](#28-a-configured-value-a-repository-may-not-hold)'s list and
+supply its value from the file that facet points at. ⛔ **It marks a value and never a rule**, so it
+is refused on a `carrier`, on a `kind` and on § 28's own keys: a configuration whose carriers and
+kinds could move into an untracked file is a configuration nobody reviews, which is the one option
+§ 28 rejects outright. ⚠️ **A surface marking no key at all is not refused**, unlike the markers a
+dropped mark would silence — every list entry is then refused with the key named, which is loud
+rather than quiet, and is why this marker is absent from the reader's own completeness refusal.
+
 **A closed set of values is written as an alternation** — `a | b | c` — either as the key's value
 or as a comment beside it. The reader accepts what the alternation states and nothing else, so a
 value added here is accepted without the reader changing.
@@ -2761,7 +2771,7 @@ day_log:
   round_ties: down | up        # default: down
   enforce_grid: true           # default
   streams: [sessions, commits, chat, meetings, host_activity]
-  attribute_to: null           # default
+  attribute_to: null           # default; private
   ritual_retired: []           # default
   exclusions: [contractual, other_projects, log_upkeep, rework, overhead]   # default
   extra_exclusions:
@@ -2770,11 +2780,11 @@ day_log:
   evidence:
     chat:
       kind: telegram_export | none    # required
-      path: "<the archive>"  # required_when: day_log.evidence.chat.kind = telegram_export
-      patterns: []
-      exclude: []
-      mixed: []
-    calendars: []
+      path: "<the archive>"  # required_when: day_log.evidence.chat.kind = telegram_export; private
+      patterns: []           # private
+      exclude: []            # private
+      mixed: []              # private
+    calendars: []            # private
 ```
 
 ⛔ **Where the entry lands is not a key here.** This section states how a day is measured and what
@@ -2818,6 +2828,17 @@ configuration, and no file in this repository names one.
   in `streams` is an archive nothing ever opens. Each is refused with a key named, because the
   two fail in opposite directions and the first of them reads from the configuration exactly
   like a stream being measured.
+
+⛔ **Some of this section's values are the ones a repository may not be able to hold**, and each is
+marked `# private` above rather than counted here: the archive's address is a path on somebody's
+machine, the chat facets are thread names, `calendars` is a calendar's own name and `attribute_to`
+is a person.
+[§ 28](#28-a-configured-value-a-repository-may-not-hold) is the mechanism and states all of it —
+⛔ **what this section states is which keys carry that class of value**, the marker being the whole
+of the statement. ⚠️ **The stream's `kind`, and `streams` itself, are deliberately not marked**:
+they are this project's rules rather than its values, they are what the agreement rule above is
+read from, and a configuration whose rules could move out of the tracked file is the thing § 28
+exists to prevent.
 
 ```yaml
 # retired: day_log.evidence.chat_patterns
@@ -5819,6 +5840,113 @@ configure no check, because the map answers *who holds a role* for every role th
 gate is one reader of it rather than its purpose. ⚠️ **And a project carrying no map runs every
 role that asks for no person unchanged**: what it loses is the one check, reported in the absent
 list like every other stated absence.
+
+## 28. A configured value a repository may not hold
+
+```yaml
+private:
+  carrier: file | none         # required; absent_reason
+  source: "<a path, relative to the skills root>"   # required_when: private.carrier = file
+  keys: []                     # required_when: private.carrier = file
+  absent_reason: "…"           # required when carrier is none
+  revisit_when: "…"
+```
+
+**The payoff of stating a project's facts in one file is that the file is committed** — that is how
+a procedure several projects copied becomes one they share and review. ⛔ **For some projects part
+of that file cannot be committed.** [§ 9](#9-day-log)'s evidence names chat threads, calendars and
+a person, in repositories whose rules forbid those names or whose second collaborator may not read
+them; the measured projects git-ignore their whole copy of that procedure for exactly that reason,
+which is the cost extraction exists to remove. ⚠️ **A tracked file carrying the same values inverts
+the payoff rather than collecting it**: the *procedure* becomes shareable and the *values* become
+public, and the privacy reason has moved one file sideways.
+
+**So a value of that class is written in a file the project does not track, and the tracked file
+states which keys it supplies.** Two statements, each the whole of its own half: `source` addresses
+the file, `keys` names every path resolved from it, and nothing on this surface or in the tracked
+configuration holds the value itself. ⛔ **Both halves are required together** — a pointer with no
+list is an overlay free to supply anything, and a list with no pointer is a set of keys nothing
+answers.
+
+⛔ **A key may be listed only where this surface marks it `# private`.** The marker is declared
+under [§ The file itself](#the-file-itself) and the mark is the whole of what makes a key eligible;
+a listed key carrying no mark is refused with the key named. ⚠️ **That bound is the difference
+between this facet and the option it replaced.** An overlay merged over the tracked file with no
+list and no marks would let `host.checks`, a status vocabulary or a readiness list move out of
+review one key at a time — the *declare the whole configuration private* reading, which is rejected
+outright because it un-reviews the procedure to protect the values. What is marked is a value
+somebody did not agree to be named in; what is never marked is a rule.
+
+**The file is a mapping of dotted path to value, and carries nothing else:**
+
+```yaml
+# the project's own untracked file, addressed by `private.source`
+day_log.evidence.chat.path: "…"
+day_log.evidence.chat.patterns: ["…"]
+```
+
+⛔ **Written absolutely, from the top of the configuration**, so the list in the tracked file and
+the keys in the private one are compared as written rather than through a second shape that may
+disagree. ⚠️ **Nested blocks are not read**: a reader merging two trees would be a second resolver
+of this surface, and the one thing this facet may not do is guess.
+
+⛔ **Every way this resolves wrongly is a stop, and not one of them falls back to an empty
+value** — [§ 11](#a-report-names-what-it-could-not-establish)'s rule arriving where the permissive
+reading is a day measured from no chats at all, which under-reports the work and looks like it
+worked:
+
+| what is wrong | what the reader does |
+|---|---|
+| `source` does not open | refuses, naming the path and the keys it was to supply |
+| it reads as anything but a mapping | refuses; a document is not parsed here, for § 27's reason one facet over |
+| a listed key is absent from it | refuses, naming the key — ⛔ **never an empty list and never a default** |
+| it carries a key the list does not name | refuses, naming the key; the list is the bound and an unlisted key defeats it |
+| a listed key is marked by no `# private` | refuses, naming the key |
+| a listed key carries a value in the tracked file as well | refuses; two statements of one fact are free to disagree |
+| `keys` is empty under `carrier: file`, or carries one under any other carrier | refuses; a pointer supplying nothing, and a list nothing answers, are each half a statement |
+
+⚠️ **The collision is a *value* and not the key's presence**, which is stated rather than left to
+be discovered: a key sitting at null or at an empty list states nothing, and is what a project
+migrating its values out leaves behind — as is a marked default, which lands on the key whether the
+project wrote it or not. So the tracked file may still carry the key's shape, and what it may not
+carry is an answer.
+
+**A listed key is *stated*, so it satisfies requiredness.** A key marked `# required` or
+`# required_when` and named in `keys` is not refused for being absent from the tracked file — that
+absence is the point — and the refusal moves to the layer, where a key the private file omits is
+reported by name. ⚠️ **Which is why the list is read before requiredness is enforced**: the other
+order refuses every project that moves a conditionally required value out, and § 9's archive
+address is exactly that key.
+
+⛔ **What is reported is the pointer and the list, never a value.** A report goes somewhere this
+configuration does not, so [§ 26](#the-stores-address-and-what-may-not-be-written-beside-it)'s rule
+for an address arrives here for the values themselves: a role says which keys its project resolves
+privately and from which file, and a value a role actually needs is read when it is needed rather
+than printed into the report that names it.
+
+⚠️ **One file per project and not a pointer per facet**, which is the other shape
+[§ 27](#27-the-role-to-person-map) could have been read as recommending. Every marked key would
+then carry its own carrier, its own path and its own absent case — one fact stated once per key, and
+⛔ **no count of those keys is written here or anywhere else**: a project moving a further value out
+would be a surface change rather than a line in a list, and the number is the marks' to answer.
+⚠️ **§ 27 itself needs no entry here**: its carrier is already a pointer at a file of values, which
+is this facet one facet early, and the two are the same rule rather than two mechanisms.
+
+⚠️ **What this facet does not reach is stated rather than discovered.** A credential is held out of
+every configured value by [§ 14](#nothing-credential-shaped-leaves-for-a-surface-outside-the-project)
+and is not a private value to be relocated; § 26's `out_dir` is an address the role's own command
+expands and carries no mark, so a project whose store sits somewhere it may not name is a mark this
+surface would have to add rather than a list entry it already allows. ⛔ **And a reader older than
+a mark reads the tracked file alone**: the keys resolve absent, which is the one direction here
+that fails quietly, and what closes it is the plugin and the surface travelling together rather
+than anything a configuration can say. ⚠️ **The day-log role holds its own half of that** — a
+`chat` stream whose patterns resolve to nothing is refused rather than measured as no chats.
+
+⛔ **`carrier: none` is an answer and not a stop**, as every facet with a stated absence: a project
+all of whose values may be committed carries no private file, states why, and is reported in the
+absent list. ⚠️ **It is not the same statement as having no values of that class** — a project may
+hold chat names it is simply free to commit — so `revisit_when` is where the condition that would
+change it is written, a client's organisation or a second collaborator being the two measured.
 
 ## What the toolkit installs into a project, and what takes it out
 

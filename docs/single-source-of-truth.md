@@ -366,6 +366,7 @@ rather than from a hand-kept list of roots.
 | 8 | No value any configuration supplies | the strict set | forbidding |
 | 9 | No machine named by its address, which is the one identity shape of a *machine* with a form a pattern can hold — a hostname is any word and an alias is any word somebody chose, so those are held by the names living outside every working tree ([schema § 21 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)) rather than by this sweep | same | forbidding |
 | 10 | No role is resolved by asking who is running — the spellings that resolve the current user and nothing else, each one a form English does not also use ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)) | the strict set | forbidding |
+| 11 | No tracked configuration carries a value under a key the surface marks `# private` — a chat thread's name, a calendar's own name, a person, a path on somebody's machine ([schema § 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)) | every tracked configuration | forbidding |
 
 Check 5 is the one that makes the shape-matched strict set safe: a carrier in a directory the
 shapes do not reach — `plugins/other/skils/`, one letter out — would otherwise be swept by nothing
@@ -471,6 +472,17 @@ well**, because no workflow in this repository filters by path: read from the li
 would raise rather than assert, and the first adopter whose workflows do filter would be the first
 to find out. ⚠️ Each half alone was measured green and the two together red, so the plant reddens
 by the glob it was written for and not by the configuration having been rewritten to carry it.
+
+⚠️ **A fourth subtraction is every dotted key path the surface declares**, and what forced it is a
+false refusal rather than a hole. [§ 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)
+gives a project a list of the keys it resolves from outside the repository, so those list members
+are **key paths** — and read as values of the project's own they forbade a role from naming the key
+it reads. Measured: the day-log role cites `day_log.attribute_to`, which is the key it reads
+`attribute_to` from, and the sweep reddened on it against an example's `private.keys`. ⛔ **The
+subtraction is the sweep's own test applied one shape further**: the surface states those strings,
+so a configuration writing one is choosing the surface's word. Its green side is a plant like the
+other two, verified by dropping the declared paths from the published set and watching the role
+redden again.
 
 What stops the derived set shrinking to nothing is three reported arms rather than an assertion
 that each key is still in use, there being no key list left to go stale: a surface whose published

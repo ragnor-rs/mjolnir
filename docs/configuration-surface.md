@@ -2415,3 +2415,64 @@ meetable: recording who *took* an item is a fact about this run, so the implemen
 `assign` may legitimately translate the running user's own spelling. The sweep is scoped to the
 carrier roots for exactly that reason, and the exemption is asserted on the green side rather than
 left to forbearance.
+
+## The half of a configuration two projects could not commit
+
+The whole payoff of a configuration file is that it is **committed**: five projects each kept their
+own copy of the day-log procedure, and extraction was worth doing because the copy became one
+shared, reviewable statement. ⚠️ **Two of those five git-ignored their copy**, and the measurement
+is the reason each gave: one repository sits in a client's organisation whose rules forbid the chat
+names, the private-source references and the hours; the other has a second collaborator, and its
+ignore entry says so in as many words — the collaborator, not the hours. Extraction was the only
+route by which either project got a reviewable copy of that procedure at all.
+
+⛔ **A tracked file carrying the same values would have inverted that**, which is the whole of what
+[`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)
+exists for: the *procedure* becomes shareable and the *values* become public, and the privacy reason
+has moved one file sideways. The acceptance item for the migration already said the end state out
+loud — *only their chat patterns, calendars and exclusions local* — and there was no mechanism for
+«local».
+
+### Three shapes, and why the one that shipped is neither of the first two
+
+**Declaring the whole configuration private was rejected on sight.** It un-reviews the procedure to
+protect the values, which is the opposite of what the migration was for.
+
+**An overlay file merged over the tracked one** — the obvious shape, and the one the item named
+first — fails for a reason that only shows up when you ask what a *missing* overlay looks like. With
+no list of what the overlay supplies, a layer that is absent is indistinguishable from a layer with
+nothing in it: a day log then quietly measures no chats, under-reports the day and reports success.
+⚠️ And an overlay free to supply any key is the rejected shape arriving one key at a time — nothing
+stops `host.checks` or a readiness list moving out of review.
+
+**A pointer per private facet**, as the role-to-person map above has, fails the other way: several
+keys carry the class in § 9 alone, so each would need its own carrier, its own path and its own
+absent case — one fact stated once per key, and a project moving a further value out would be a
+surface change rather than a line in a list.
+
+⛔ **What shipped is the overlay with both of the pointer form's disciplines** — the project names
+the keys, and the surface marks which keys may be named
+([`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)).
+Each half closes one of the two failures above, and neither is decoration: without the list a
+missing layer is silent, and without the marks the list is the rejected shape with extra steps.
+
+### What the two halves cost, and the one direction still open
+
+**The list is read before requiredness**, which is the only non-obvious consequence: a key the
+layer supplies is *stated*, so § 9's archive address — required under the kind that reads an
+archive — is not refused for being absent from the tracked file. The other order refuses every
+project the facet was written for, and the suite plants exactly that.
+
+⚠️ **The collision rule is about a value rather than a key's presence.** A project that moves its
+values out leaves the keys behind, and a marked default lands on one whether the project wrote it
+or not, so refusing on presence would refuse the shape every migrated file actually has. What is
+refused is a key answered in both places, which is this repository's own rule about two statements
+of one fact.
+
+⛔ **And the direction that is not closed is stated rather than discovered**
+([`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)):
+a reader older than a mark reads the tracked file alone, resolves those keys as absent, and measures
+a day from nothing — the one quiet failure left. What closes it is the plugin and the surface
+travelling together, not anything a configuration can say; the day-log role holds the half it can,
+refusing a `chat` stream whose patterns resolve to nothing rather than measuring a day with no chats
+in it.

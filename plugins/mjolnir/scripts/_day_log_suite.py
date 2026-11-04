@@ -255,6 +255,37 @@ def _yaml(**day_log_keys) -> str:
         return handle.read()
 
 
+def _privately(path: str, attribute: str, value, *, written: bool = True) -> object:
+    """What this script reads for `path` when § 28's layer is what answers it.
+
+    ⛔ The whole consumer path and not the reader alone: the acceptance this
+    covers is that a project whose evidence values cannot be committed *runs
+    this role* with every other key in its tracked file, so the assertion goes
+    through `Settings` -- which is the one place a key resolved from outside the
+    repository could have arrived as an empty list instead.
+
+    The layer is written into a directory of its own and the configuration is
+    resolved against it, the pointer being relative to the skills root (§ 1).
+    """
+    parser = config._yaml()  # noqa: SLF001 -- the dependency the reader states
+    document = parser.safe_load(_yaml())
+    node, parts = document, path.split(".")
+    for part in parts[:-1]:
+        node = node.setdefault(part, {})
+    node[parts[-1]] = None
+    document["private"] = {
+        "carrier": "file",
+        "source": "a-private-layer.yaml",
+        "keys": [path],
+    }
+    with tempfile.TemporaryDirectory() as root:
+        if written:
+            with open(os.path.join(root, "a-private-layer.yaml"), "w", encoding="utf-8") as handle:
+                handle.write(parser.safe_dump({path: value}, allow_unicode=True))
+        configuration = config.load_text(parser.safe_dump(document), root)
+        return getattr(day_log.Settings(configuration), attribute)
+
+
 def _settings(**overrides) -> day_log.Settings:
     """Settings over a real example, with the keys this assertion is about set."""
     configuration = config.load_text(_yaml(), config.EXAMPLES)
@@ -864,6 +895,49 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             day_log__streams=["sessions", "chat"],
             day_log__evidence={"chat": {"kind": "telegram_export"}, "calendars": []},
         ).chat_reader()),
+    )
+    suite.ok(
+        "⛔ and patterns resolving to nothing is refused, not a day measured from no chats",
+        _refuses(lambda: _settings(
+            day_log__streams=["sessions", "chat"],
+            day_log__evidence={
+                "chat": {
+                    "kind": "telegram_export",
+                    "path": os.path.join(tempfile.gettempdir(), "no-such-archive.db"),
+                    "patterns": [],
+                },
+                "calendars": [],
+            },
+        ).chat_reader()),
+    )
+    suite.ok(
+        "⛔ while the same settings with a pattern are read, so the arm above is the patterns",
+        mixed.chat_reader() is reader,
+    )
+    # § 28, through the whole consumer path: a project whose evidence values
+    # cannot be committed runs this role with every other key in its tracked
+    # file, and these are the keys that would otherwise arrive empty.
+    patterns = _privately(
+        "day_log.evidence.chat.patterns", "chat_patterns", ["A Private Group%"]
+    )
+    suite.ok(
+        "a chat pattern resolved from a private layer arrives here, not an empty list",
+        patterns == ["A Private Group%"],
+        f"{patterns!r}",
+    )
+    attributed = _privately(
+        "day_log.attribute_to", "attribute_to", "a-committer-no-repository-here-names"
+    )
+    suite.ok(
+        "⛔ and so does the person the commits are attributed to",
+        attributed == "a-committer-no-repository-here-names",
+        f"{attributed!r}",
+    )
+    suite.ok(
+        "⛔ while a layer that is missing is a stop rather than a day measured from nothing",
+        _refuses(lambda: _privately(
+            "day_log.evidence.chat.patterns", "chat_patterns", ["A Private Group%"],
+            written=False)),
     )
 
     # --- the blocks ----------------------------------------------------------

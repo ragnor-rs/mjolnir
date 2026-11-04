@@ -350,6 +350,19 @@ people:
   # this tracker, so the comparison has the account identity on both sides and needs no label.
   key: handle
 
+private:
+  # § 28's absent case under the project with the most values of the class — two calendars, two
+  # chat facets and an archive path — and the arm that shows the facet is a decision rather than
+  # a consequence of having such values. ⛔ The reason is who may read this repository, not what
+  # is in it: one collaborator, and both of them read the names already.
+  carrier: none
+  absent_reason: >-
+    The two people who work on this repository are the two the chats and the calendars belong
+    to, so every value it states is already reviewable by everyone who can read the file.
+  revisit_when: >-
+    A third person is given access, or the archive moves to a machine whose path names somebody
+    else's home directory.
+
 environment:
   # A key and a token as a pair, which is how this tracker is addressed: one credential is two
   # variables here, and a list that named only the token would read as complete. ⚠️ The project

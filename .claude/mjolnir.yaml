@@ -533,6 +533,20 @@ people:
     above carry, and the first point at which who holds a role stops being derivable from the fact
     that there is one of them.
 
+private:
+  # § 28. This repository is the toolkit itself and is public, so the one thing it may not hold is
+  # the class of value this facet names — and it holds none: the day is measured from sessions and
+  # commits, `evidence.chat.kind` is `none`, no calendar is read and `attribute_to` names nobody.
+  # ⛔ Which is a measurement of this file rather than a policy: the gate beside it sweeps every
+  # tracked configuration for a value under a `# private` key, and this one is what it sweeps.
+  carrier: none
+  absent_reason: >-
+    Every value this project states may be committed, and is: the day is measured from its own
+    sessions and commits, no chat archive and no calendar is read, and nobody is named anywhere.
+  revisit_when: >-
+    A chat archive or a calendar becomes evidence here, which is the first value this repository
+    would be unable to carry.
+
 environment:
   # ⚠️ Measured, not declared (#90), and the measurement is the argument for the key: the shell a
   # role runs in here holds forty-odd variables and the procedure reads five of them. Nothing in
