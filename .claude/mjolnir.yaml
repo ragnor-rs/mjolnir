@@ -301,6 +301,22 @@ work_item:
     # about those projects rather than about this one. No role derives it, and the procedure
     # reports the tier it would have suggested instead of writing one.
     writer: orderer
+  grouping:
+    # § 4.8's absent case, and this repository is the project the facet's flat-backlog arm was
+    # written for rather than merely its author: a plain issue here sits in no iteration, no
+    # release scope and no milestone, and the ordering document is what this build commits to.
+    # ⛔ Stated rather than omitted — the whole point of the facet is that a project planning
+    # in no grouping and a project that has not thought about one read identically otherwise.
+    carrier: none
+    absent_reason: >-
+      Nothing groups these issues. What is takeable next is the dependency graph and the tier
+      above, read by the ordering command below, and that is a statement about one item at a
+      time rather than a set of them planned together. There is no release either: what ships
+      is the plugin in the tree, continuously.
+    revisit_when: >-
+      Work here starts being committed to in sets — a batch an adopter is waiting on, or a
+      version this plugin is published under — which is the first moment a grouping would
+      carry anything the ordering document does not.
 
 statuses:
   # Two states, and that is the whole vocabulary: a plain issue is open or closed.
