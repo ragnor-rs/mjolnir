@@ -176,6 +176,14 @@ theoretical, which is a different kind of evidence than an example configuration
   is a property the toolkit's own repository runs on, and
   [`schema.md § 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)
   is where the roles are stated.
+- **Nothing here groups work into anything**, so this repository is the project the grouping
+  facet's flat-backlog arm was written for rather than merely its author. What is takeable next is
+  the dependency graph and the tier above it, read one item at a time; and there is no release
+  either, what ships being the plugin in the tree, continuously. ⚠️ **Which is the evidence an
+  example cannot give**: every role in the loop runs here against a facet whose carrier is `none`,
+  so *a project that plans in no grouping* is a shape the toolkit is exercised on rather than one
+  it merely permits. The key is
+  [`schema.md § 4.8`](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s.
 
 ## What the loop carries here, derived
 

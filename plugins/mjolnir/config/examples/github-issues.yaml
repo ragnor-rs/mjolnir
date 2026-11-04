@@ -81,6 +81,22 @@ work_item:
     # The filing role writes the tier it was handed and never one it worked out, which is
     # what `procedure` means on this facet.
     writer: procedure
+  # § 4.8's one carrier no other facet has: this tracker holds a grouping of its own on an
+  # issue, so nothing is repurposed and no field is named.
+  grouping:
+    carrier: native_milestone
+    kind: milestone
+    # ⛔ `stated`, which is the arm that costs a key: this tracker holds several of these open
+    # at once with no dates on them, so there is no *current* one to read and a procedure that
+    # guessed would file work into whichever it picked. It arrives on the invocation instead.
+    current: stated
+    # It carries a title and a description and nothing a change is judged by.
+    has_own_acceptance: false
+    # Closing one here does not close the issues in it — they are closed by the merge below,
+    # which is why `closed_by` and the terminal writer differ and that is not a contradiction.
+    closes_items: false
+    # Whoever ordered the work decides a grouping is finished; no role in the loop does.
+    closed_by: orderer
 
 # ⛔ Two statuses, because an issue has two states and there is no field to carry a third.
 # No `in_flight` role at all: nothing on this tracker can hold "someone is working on it",

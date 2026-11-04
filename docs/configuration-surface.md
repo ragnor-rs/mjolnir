@@ -782,12 +782,14 @@ Issue type ([`schema.md § 4.1`](../plugins/mjolnir/config/schema.md#41-type)), 
 ([`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)),
 estimate ([`§ 4.3`](../plugins/mjolnir/config/schema.md#43-estimate)), template
 ([`§ 4.4`](../plugins/mjolnir/config/schema.md#44-template)), priority
-([`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority)) and code root
-([`§ 4.7`](../plugins/mjolnir/config/schema.md#47-code-root)) are each per-project,
-and each was carried by a different mechanism depending on the project. Each but status has a
-real absent case of its own — which is where the schema's absence-is-a-configuration rule comes
-from: a procedure that treats absence as an unset value fails on a project that is correctly
-configured.
+([`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority)), code root
+([`§ 4.7`](../plugins/mjolnir/config/schema.md#47-code-root)) and the grouping a set of items is
+planned into
+([`§ 4.8`](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into))
+are each per-project, and each was carried by a different mechanism depending on the project.
+Each but status has a real absent case of its own — which is where the schema's
+absence-is-a-configuration rule comes from: a procedure that treats absence as an unset value
+fails on a project that is correctly configured.
 
 - **Type** — five carriers observed: a native field; a label convention, because a user-owned
   repository on one host has no type field at all; a bare label whose absence means the other
@@ -836,6 +838,60 @@ configured.
   is neither carried nor derivable there. That is the absent case with no loop around it: the
   carriers a tracker could hold it in are a label, a field, a component or a title prefix, and
   nothing was found holding it in any of them.
+
+- **Grouping** — read in three places, and the richest of them is the project with **no tracker**,
+  whose plan for a set of items is a document of its own. ⚠️ **Measured directly from that
+  project's specification tree on 2026-10-30**, rather than from a role copy, because the grouping
+  there is not a role's input at all — it is a document a person maintains, which is what makes it
+  the one reading that shows what a grouping *is* rather than what a gate asks about one. The
+  shape, item by item:
+
+  | What was asked | What the tree shows |
+  |---|---|
+  | what a grouping is | a numbered plan document, one per grouping, the active one beside the specification and the finished ones moved into an archive directory. The items are grouped **into** it: the document carries the list, and each item names the grouping in its own front matter |
+  | how an item says which one it is in | a named field in the item's front matter, holding the grouping's number. ⛔ Not a label, not a path, not the directory the item sits in — the directory says only whether it is archived |
+  | how the current one is found | a status field on the grouping itself, with exactly one marked active. ⚠️ **Discoverable**, then — and the whole reason that is a key is the measured contrast: on the tracker in the next bullet several of the equivalent are open at once with no such mark |
+  | what lifecycle it has | fields in the grouping's front matter: the status, the time it was archived, the branch its kickoff cut, and the time it was frozen. A kickoff, a freeze and an archive, each with a slot to record it in |
+  | whether it carries its own acceptance | **yes, and the document says so in those words** — an acceptance-criteria list labelled milestone-level, beside a gate command. ⛔ So the bar a change is judged by is not on the item at all, and a role reading the item alone would be holding the work to a standard nobody wrote there |
+  | whether closing it closes its items | **yes, and the timestamps are the evidence.** Every one of the twelve archived items names the grouping that closed; nine carry the grouping's own archive time to the second, and three carry earlier, distinct times of their own. So the close swept what was still open in it, and an item may also close on its own first |
+  | who closes it | a person, in the pass that cuts the release. There is no automation in that tree and no role on this surface drives it |
+  | whether a version runs beside it | **not established.** Nothing in that tree carries a version at all, so the one grouping is both the time box and the release scope, and the lockstep reading — a version tracking an iteration one for one — is *not* what this project shows |
+
+  ⛔ **And its carrier is the one thing that does not generalise**, which is why no key was added
+  for it: the grouping is a file in a tree, and a tree is the tracker
+  [`schema.md § 3`](../plugins/mjolnir/config/schema.md#the-trackerless-adapter-and-a-kind-with-no-implementation)
+  declines to grow an adapter for. What the measurement supplies is every key *except* the
+  carrier — the kind, how the current one is found, the acceptance, the closer, and whether the
+  close reaches the items — and the carrier arrives when those items move onto a real tracker.
+
+  **The other two readings are gates rather than documents, and between them they forced the
+  collection.** One tracker's copy of the starting role refuses an item with no sprint, then one
+  with no fix version, then one whose release branch for that fix version is missing from the
+  remote — ⛔ **two groupings in one project**, two fields, two checks, and the third check a ref
+  named after the second one's value. A board's copy gates on a grouping instead, and both copies
+  are stated as they stand in the readiness-gate section above. ⚠️ **Neither gate
+  carries anything else about its grouping** — not which one is current, not who closes it, not
+  what it is judged by — so what those two copies establish is the *number* of groupings a project
+  has and the questions a gate asks, and the document above establishes what a grouping holds.
+
+  ⛔ **Both gates carry the project's own word for the grouping inside a `field_present` entry**,
+  which is the finding that made this a facet rather than two more predicates: the check states a
+  field and nothing else, so the sprint and the fix version are spelled in the gate and no second
+  project can adopt that gate without renaming its own fields. That is the indirection
+  [`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer) was
+  built to keep out of the procedure, one layer up — and
+  [`§ 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list) now
+  refuses that exact pair with the field named.
+
+  ⚠️ **The absent case is not the exceptional one.** A flat backlog ordered by its blockers and a
+  tier plans nothing into anything, and the shipped examples carry `none` with a reason wherever
+  the tracker has nowhere to put one. ⚠️ **That this repository is itself such a project is
+  load-bearing rather than illustrative**, which is
+  [`building-itself.md`](building-itself.md#the-absent-facets-this-repository-depends-on)'s subject
+  and is stated there. ⛔ **And the evidence is thin for a facet this size**, which is stated rather
+  than glossed over: two gates and one document. That is why every key traces to a row of the table
+  above rather than to a shape that seemed likely, and why the ref carrier the document shows was
+  left off the surface instead of generalised from one project.
 
 **What priority needed that the other facets did not: a statement of how two items compare.** The
 others answer a question about one item — what type it is, what it is worth, which template it
@@ -1536,6 +1592,7 @@ records.
 | `dbf4ef1` (#142) — § 14, what the shell inherits | added a required `environment.inherits`, `[]` again a decision rather than an omission | stayed `1` |
 | `b9e8fd7` (#147) — § 4.5, the date the gating role owns | added a required `work_item.due_date.carrier`, absent-capable, so a configuration written before it is refused with the key named and states its decision through `absent_reason` | stayed `1` |
 | `9bfa447` (#145) — § 3, the keys a tracker kind requires | added `# required_when`, so a tracker block that was complete before it is **refused** for keys that depend on a `kind` the configuration already declared | stayed `1` |
+| § 4.8, the grouping above a work item | required `work_item.grouping.carrier` by a **rule of the reader** rather than by a marker, the key whose absence is refused differing between the facet's two forms — so every configuration written before it is **refused**, this repository's included until it stated the absent case. ⚠️ The first row whose requiredness no marker carries, which is why § 1's obligation names both routes | no key to move: the revision was already retired (ruling 12) |
 
 ⚠️ **The rows kept arriving while this change was open**, and each was added by merging `main` into
 it rather than by anyone revisiting the question. A revision that moved on every required key would
@@ -1831,15 +1888,17 @@ reader derives the two facts apart, and a refusal names which of them is missing
 performs differently reproduces it, and nothing compares the two copies: the installed reader's
 version is not a fact this repository's gates can see. The remedy that generalises is the one above
 applied as a habit — a new surface statement that an older reader will *not* read beats one it will
-read wrongly — and the cost of getting it wrong is bounded to a branch's own work tree, since an
-adopter has no second copy of the surface at all.
+read wrongly.
 
-⚠️ **An adopter is unaffected, and that is a property of the test rather than a case handled.** A
-project that consumes the plugin carries no copy of this surface, so there is nothing for the
-resolution to find and the installed copy is read — the behaviour that existed before the rule. The
-two answers also coincide for the shipping project's own primary checkout, that root and the
-installed path being one directory, which is why the suite's assertion about this repository holds
-the resolution's *report* rather than a difference it cannot produce here.
+⛔ **An adopter carries no second copy of the surface, and that is the exposure rather than an
+exemption.** A project that consumes the plugin has nothing for the resolution to find, so the
+installed copy is read — at whatever commit the checkout serving it stands on, which is the one
+state the rule at
+[`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration)
+cannot reach. The subsection at the end of this section is that case measured.
+⚠️ **The two answers do coincide for the shipping project's own primary checkout**, that root and
+the installed path being one directory, which is why the suite's assertion about this repository
+holds the resolution's *report* rather than a difference it cannot produce here.
 
 **What the rule found once it was enforced: ten shape rules answering a question that was not
 theirs.** With the surface resolved from the tree, the measured configuration still would not load —
@@ -1861,9 +1920,49 @@ the day the surface marks it.
 that cannot read a configuration fails closed and says so, which is right. But *held to nothing* and
 *this project configured nothing* are the same two lines to whoever is reading them, and three of
 the four guards produced the first while the project had written every one of their keys. Nothing
-reported the version skew as a skew. The rule removes the state, and naming the resolved surface
-among what a role reports is what makes the remaining case visible at the moment it happens —
+reported the version skew as a skew. The rule removes the state **for a tree**, and naming the
+resolved surface among what a role reports is what makes the remaining case visible at the moment it
+happens —
 [`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration).
+⛔ **For an adopter the state stands**, which is the subsection below, and the answer a guard sends
+is where it was made visible instead.
+
+### The same failure in an adopter, which no resolution rule reaches
+
+An adopting project carries no surface of its own, so the reader finds nothing in its skills root
+and reads the installed copy — at whatever commit the primary checkout serving it stands on.
+Measured 2026-10-30, a day after the role-to-person facet landed:
+
+| | |
+|---|---|
+| The change | `e1430aa`, 2026-10-29 20:18:05 +0400, marking `people.carrier` as `# required` |
+| What it updated | every configuration this repository tracks, which is every one its gates can reach |
+| What it invalidated | five live configurations, in repositories outside this one, four last written 2026-10-28 |
+| What each one needed | one key: `people.carrier: none`, with the `absent_reason` that marker demands |
+| How it was noticed | three parallel sessions, each reporting the same stop out of its own project |
+| How the rest were found | sweeping every configuration on the machine; nobody was standing in them |
+| What the window cost | the enforcement gate, `context_guard.reread`, the approval arm, and every role that routes through the reader — the deny lists were empty in all five, so those arms held nothing either way |
+
+⛔ **No install step ran and no session was restarted.** The surface those files are held to moved
+under them, which is this section's asymmetry reaching the one case no resolution rule can fix:
+there is no second copy to prefer, so a project that consumes the surface is always held to the
+commit the install serves
+([`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration)).
+One of the five was itself edited hours after the break, and the session editing it was never told
+that the file it was writing no longer resolved.
+
+⚠️ **The answer named no key for the whole window, and the reader it had just called knew which
+one.** That is why a guard's answer now carries the reader's own stop
+([`schema.md § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)),
+and it is the only half of this a check here can hold: the configurations are files no check in this
+repository can open.
+
+⚠️ **The stop is the reader's first refusal and not a diagnosis.** A configuration with more than
+one fault answers with whichever `validate` reached first — a stub stating `roots` as a list answers
+about a required key nobody wrote — so the answer carries it as the reader's stop rather than as the
+repair. ⛔ **And it is cut**, because the reader's refusals interpolate the project's own stated
+value: one long mistyped scalar answered with 50,063 characters of itself, which is the figure a
+first pass at this missed by measuring the required-key arm alone.
 
 ## The bookkeeping role: three copies that are a third of it, and two keys that came out of it
 
