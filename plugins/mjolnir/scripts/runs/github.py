@@ -483,6 +483,17 @@ def conclusion(run, wait: str = "no") -> dict:
     the same event to this operation -- and reported as precondition 4 the second
     tells the caller to ask for the wait they just asked for, which is a loop for
     a role and nonsense for a person.
+
+    ⚠️ **What this answers about is the run, and the host keeps a second record
+    that lags it.** Measured on this repository: a run reported `completed` with
+    its conclusion set while the job behind it was still `in_progress` with no
+    conclusion of its own, and the pull request's own check view -- which reads
+    that second record -- showed the check pending for the same commit at the
+    same moment. ⛔ **Neither record is wrong and this operation does not
+    reconcile them**: § 2's preconditions are about a run, so a run is what is
+    read, and whether a *change* may merge is the host's own merge state, which
+    the finishing role reads separately. A consumer told green here and refused
+    by the host is meeting that lag rather than a disagreement about the run.
     """
     identifier = str(run).strip()
     if not identifier:

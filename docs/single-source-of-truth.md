@@ -2707,6 +2707,13 @@ What it deliberately does not check:
 - **A supersession group keyed on anything but the workflow and the commit.** The concurrency
   expression lives in the workflow file and the host publishes no *retired by* field. A supersession
   this misses reads as never-started rather than as green — the wrong remedy, and not coverage.
+- **Which of the host's two records a reader is looking at.** ⚠️ Measured while this change's own
+  gate ran: a run reported `completed` with its conclusion set while the job behind it was still
+  `in_progress` with none, and the pull request's own check view — which reads that second record —
+  showed the check pending for the same commit at the same moment. The operation answers about the
+  **run**, § 2's preconditions being about one, and ⛔ **it reconciles nothing**: whether a change
+  may merge is the host's own merge state, which the finishing role reads separately, so a consumer
+  told green here and refused by the host is meeting that lag rather than a disagreement.
 
 ## The spend half: a call put to somebody, and the one price stated beforehand
 
