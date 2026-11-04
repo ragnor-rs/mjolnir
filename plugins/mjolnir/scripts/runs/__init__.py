@@ -16,11 +16,12 @@ Three things true of this directory and stated nowhere else:
     is the exemption that makes those two keepable -- and it is the exemption the
     sweep in `tools/` was taught to leave alone while forbidding the same call
     under `skills/` and in a hook.
-  * ⛔ **Three of the four operations write nothing on the host, and that is held
-    here rather than asserted on the surface.** § 28 states the property; a module
-    in this package routes every call through one place that says whether it
-    writes, and its own suite asserts that a listing, a conclusion and a log make
-    no writing call. An implementation is where that can be shown at all.
+  * ⛔ **§ 28 states that every operation but the dispatch writes nothing, and
+    this package is where that is held.** A module here routes every call through
+    one place that says whether it writes, and its own suite asserts that a
+    listing, a conclusion and a log make no writing call while the dispatch makes
+    one. An implementation is where a property of what a call declares about
+    itself can be shown at all.
   * ⚠️ **Which port a module answers for is which directory it sits in**, and
     there is deliberately no `PORT` name in a module here -- the sibling packages'
     rule, for the reason they state: a declaration would be a second statement of

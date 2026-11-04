@@ -271,6 +271,14 @@ def runs_for_ref(ref: str) -> dict:
     ⚠️ An empty list is an answer and not an absence. The capability is present,
     so what it means -- precondition 2 unmet, which on this host is most often a
     conflicted change producing no run at all -- is the caller's reading.
+
+    ⚠️ **A commit this host does not have comes back the same way**, measured: the
+    listing filter simply matches nothing, so an unpushed or unknown object name
+    is indistinguishable here from a commit the host made no run for. ⛔ That is
+    § 2's precondition **1** rather than a reading this operation can supply --
+    nothing committed is unpushed, asked before precondition 2 and by the role --
+    and telling the two apart would cost a second call to establish a fact the
+    caller already had to have.
     """
     commit = str(ref).strip()
     if not COMMIT.match(commit):
