@@ -347,9 +347,12 @@ stands or falls on whether the thing forbidden has a stable form; the two comput
 stop the rest holding nothing. ⛔ No count of either group is carried here or in the script: the
 first form of both sentences carried one, and the check the sweep grew next made it wrong.
 
-Two scopes. The repository-wide one looks for what identifies someone else's project; the strict
-one — the carrier roots, never the whole tree — looks for a value, a tracker or a stack in text
-that is supposed to be procedure. A carrier is a skill, a command or a hook (schema § 7), so the
+Three scopes, and no count of the checks in each. The repository-wide one looks for what identifies
+someone else's project; the strict one — the carrier roots, never the whole tree — looks for a
+value, a tracker or a stack in text that is supposed to be procedure; and the third is **every
+tracked configuration**, this project's own and the examples, which is where a value of
+[§ 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)'s class
+would be checked in. A carrier is a skill, a command or a hook (schema § 7), so the
 strict set is matched by *shape* — `plugins/*/skills/`, `commands/`, `.claude/hooks/` and so on —
 rather than from a hand-kept list of roots.
 
@@ -508,6 +511,12 @@ and the fourth entry landed under it, green.
 - **This repository's own slug**, derived rather than listed. Removing `host.repo` from the
   configuration reddens the build rather than quietly permitting every slug, which is one of the
   planted violations.
+- **A placeholder under a `# private` key**, for the third scope above. The examples write
+  `<the exported archive>` where a project writes an archive, so the exemption is the
+  **placeholder's own form** rather than the file it sits in: a concrete chat name, calendar or
+  path in an example trips the check exactly as one in this project's own configuration does, and
+  both directions are planted. ⚠️ Narrower than the `config/examples/` entry above, which is a
+  scope; this is a shape, and it is what keeps the two from being the same exemption read twice.
 - ⚠️ **Every entry under this heading is permanent**, and the one that was not is no longer an
   entry: an interpreter in front of a *configured* path had a table of its own, scoped to the roots
   it held in, for as long as one role read its script's location out of configuration. No role

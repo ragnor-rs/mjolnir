@@ -202,10 +202,9 @@ people:
   revisit_when: A tracker is configured.
 
 private:
-  # Absent, and for the same reason the chat source above is: this project's day is measured from
-  # its own transcripts and commits, so no value it states is one somebody else owns. ⛔ The
-  # repository being this person's own is **not** the reason — a repository can change hands, and
-  # what this facet turns on is the class of value rather than who holds the remote.
+  # Absent, and for the same reason the chat source above is. ⛔ The repository being this person's
+  # own is **not** that reason — a repository can change hands, and what this facet turns on is the
+  # class of value rather than who holds the remote.
   carrier: none
   absent_reason: >-
     Every value here is measured from this project's own transcripts and commits. No chat is

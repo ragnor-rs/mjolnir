@@ -535,10 +535,9 @@ people:
 
 private:
   # § 28. This repository is the toolkit itself and is public, so the one thing it may not hold is
-  # the class of value this facet names — and it holds none: the day is measured from sessions and
-  # commits, `evidence.chat.kind` is `none`, no calendar is read and `attribute_to` names nobody.
-  # ⛔ Which is a measurement of this file rather than a policy: the gate beside it sweeps every
-  # tracked configuration for a value under a `# private` key, and this one is what it sweeps.
+  # the class of value this facet names — and it holds none, for the reason below. ⛔ Which is a
+  # measurement of this file rather than a policy: the gate beside it sweeps every tracked
+  # configuration for a value under a `# private` key, and this one is what it sweeps.
   carrier: none
   absent_reason: >-
     Every value this project states may be committed, and is: the day is measured from its own

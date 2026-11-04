@@ -351,10 +351,9 @@ people:
   key: handle
 
 private:
-  # § 28's absent case under the project with the most values of the class — two calendars, two
-  # chat facets and an archive path — and the arm that shows the facet is a decision rather than
-  # a consequence of having such values. ⛔ The reason is who may read this repository, not what
-  # is in it: one collaborator, and both of them read the names already.
+  # § 28's absent case under a project that carries values of the class in every shape the facet
+  # names — the arm that shows the facet is a decision rather than a consequence of having such
+  # values. ⛔ The reason is who may read this repository, not what is in it.
   carrier: none
   absent_reason: >-
     The two people who work on this repository are the two the chats and the calendars belong

@@ -293,10 +293,9 @@ people:
   key: handle
 
 private:
-  # § 28's absent case under a project that *does* have values of the class: the chat names and
-  # the calendar below are this team's own, and this repository is one they may be written in.
-  # ⛔ Which is the distinction the facet turns on — having no private values and being free to
-  # commit the ones you have are different statements, and only the second is this.
+  # § 28's absent case under a project that *does* have values of the class, which is the arm the
+  # example next door does not show: the distinction the facet turns on is the reason below rather
+  # than the presence of such values.
   carrier: none
   absent_reason: >-
     The chat names and the calendar this project reads are the team's own and the repository is

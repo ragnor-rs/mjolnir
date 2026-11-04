@@ -896,9 +896,13 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             day_log__evidence={"chat": {"kind": "telegram_export"}, "calendars": []},
         ).chat_reader()),
     )
+    # ⛔ Named rather than merely refused: `_refuses` answers True for any
+    # exception, so a typo in the fixture or a refusal about some other key
+    # would pass an arm that only asked whether something was raised.
     suite.ok(
-        "⛔ and patterns resolving to nothing is refused, not a day measured from no chats",
-        _refuses(lambda: _settings(
+        "⛔ and patterns resolving to nothing is refused by name, not a day measured from"
+        " no chats",
+        "patterns" in _refusal(lambda: _settings(
             day_log__streams=["sessions", "chat"],
             day_log__evidence={
                 "chat": {
@@ -910,9 +914,27 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             },
         ).chat_reader()),
     )
+    # ⛔ The control arm, and it is built fresh rather than read back off
+    # `mixed`: `chat_reader` memoises, so an identity check on an object already
+    # resolved re-enters nothing and holds the refusal's *predicate* not at all.
+    # ⚠️ Measured on the first form of this arm -- `if len(patterns) < 2` and
+    # `if len(patterns) != 2` both survived it, and the first of those refuses
+    # every project configuring one chat pattern, which is the common case.
+    one_pattern = _refusal(lambda: _settings(
+        day_log__streams=["sessions", "chat"],
+        day_log__evidence={
+            "chat": {
+                "kind": "telegram_export",
+                "path": os.path.join(tempfile.gettempdir(), "no-such-archive.db"),
+                "patterns": ["A Single Group%"],
+            },
+            "calendars": [],
+        },
+    ).chat_reader())
     suite.ok(
-        "⛔ while the same settings with a pattern are read, so the arm above is the patterns",
-        mixed.chat_reader() is reader,
+        "⛔ while one pattern is read, so the arm above is emptiness and not a count",
+        one_pattern == "answered",
+        one_pattern,
     )
     # § 28, through the whole consumer path: a project whose evidence values
     # cannot be committed runs this role with every other key in its tracked
@@ -934,8 +956,9 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         f"{attributed!r}",
     )
     suite.ok(
-        "⛔ while a layer that is missing is a stop rather than a day measured from nothing",
-        _refuses(lambda: _privately(
+        "⛔ while a layer that is missing is a stop naming the pointer, not a day measured"
+        " from nothing",
+        "private.source" in _refusal(lambda: _privately(
             "day_log.evidence.chat.patterns", "chat_patterns", ["A Private Group%"],
             written=False)),
     )
@@ -1093,6 +1116,21 @@ def _store_refuses_with_no_home() -> bool:
         for name, value in held.items():
             if value is not None:
                 os.environ[name] = value
+
+
+def _refusal(call) -> str:
+    """The refusal's own text, or `answered` where the call answered.
+
+    ⛔ Beside `_refuses` rather than instead of it: that one asks whether a call
+    refused at all, which is the right question where a pair of arms isolates
+    the cause. Where one arm stands alone the key it named is the question, and a
+    `TypeError` out of a mistyped fixture satisfies *something was raised*.
+    """
+    try:
+        call()
+    except Exception as error:  # noqa: BLE001 -- the text is what is read
+        return f"{error.__class__.__name__}: {error}"
+    return "answered"
 
 
 def _refuses(call, error=None) -> bool:

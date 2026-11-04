@@ -819,17 +819,26 @@ class Tree:
         pool = {member for members in facts["enums"].values() for member in map(str, members)}
         for value in facts["defaults"].values():
             pool.update(_scalars(value))
-        # ⛔ And every dotted key path the surface declares, which is published
+        # ⛔ And the key paths the surface marks `# private`, which is published
         # vocabulary by this method's own test: the surface states those strings,
         # so a configuration writing one is choosing the surface's word rather
         # than inventing its own. ⚠️ What forced it is § 28's list -- a project
         # names the keys it resolves privately, and those members are key paths.
         # Read as this project's values they forbade a role from naming the key
-        # it reads, which is the exact failure direction the subtraction above
-        # exists for: `day_log.attribute_to` in a carrier is the procedure
-        # naming a key, and the sweep reddened on the day-log role for citing
-        # the surface.
-        pool.update(facts["declared"])
+        # it reads: `day_log.attribute_to` in a carrier is the procedure naming a
+        # key, and the sweep reddened on the day-log role for citing the surface.
+        #
+        # ⛔ **The marked paths and not every path the surface declares**, which
+        # is the bound rather than a preference, and it was measured in both
+        # shapes. Subtracting the whole declared set exempted its 32
+        # single-segment members -- `done`, `role`, `check`, `writer` among them,
+        # which are words a project configures as a status, a label or a verdict
+        # -- and one of them is live here: `role` is a configured label of this
+        # project's, so a carrier naming it passed. Narrowing to dotted paths
+        # recovered that and still exempted 200-odd strings no arm holds. The
+        # marked set is the whole of what § 28's list can contain, the reader
+        # refusing any other entry, so it is the whole of what this needs.
+        pool.update(facts["private"])
         lists: dict[str, set[str]] = {}
         for _heading, block in reader._fences(text):
             for path, rest in reader._walk_keys(block):
@@ -1230,9 +1239,8 @@ def check_no_private_value_is_committed(tree: Tree) -> list[str]:
                 continue
             problems.append(
                 f"{path}: carries `{value}` under `{dotted}`, which the surface marks "
-                "`# private` — a chat name, a calendar, a person or a path on somebody's "
-                "machine. A tracked configuration states the key's shape and the value is "
-                "resolved through `private.source` (schema § 28)."
+                "`# private`. A tracked configuration states the key's shape and the "
+                "value is resolved through `private.source` (schema § 28)."
             )
     return problems
 
@@ -1724,6 +1732,31 @@ def _plant_a_surface_publishing_nothing(tree: Tree) -> Tree:
     return tree
 
 
+def _plant_a_status_colliding_with_a_key_name(tree: Tree) -> Tree:
+    """A status word that is also one of the surface's own top-level key names.
+
+    ⛔ The arm that holds the subtraction above to the **marked** paths. Where it
+    subtracted every path the surface declares, a project whose status is `done`
+    -- a key of this surface as well as a word every tracker uses -- had that
+    value pass under a carrier root. ⚠️ Reproduced before the bound was
+    narrowed: planted here and in a carrier, the check reported nothing.
+
+    The word is read off the surface rather than written here, so the plant
+    follows a renamed key instead of asserting its own text.
+    """
+    facts = reader.surface_facts(tree.text.get(SURFACE, ""))
+    bare = sorted(path for path in facts["declared"] if "." not in path)
+    if not bare:
+        raise AssertionError(
+            "the surface declares no single-segment key, so this plant asserts nothing"
+        )
+    word = bare[0]
+    tree.text[OWN_CONFIG] += (
+        f'\nstatuses:\n  - {{ name: "{word}", role: terminal, writer: automation }}\n'
+    )
+    return _plant_in_a_carrier(f"\nMove the item to `{word}` first.\n")(tree)
+
+
 def _a_private_key(tree: Tree) -> str:
     """One key the surface marks `# private`, read off the surface itself.
 
@@ -1896,6 +1929,9 @@ VIOLATIONS = [
     ("no value is carried in the strict set", "a configuration that does not parse",
      _plant_an_unreadable_configuration),
     ("no value is carried in the strict set", "configurations with no concrete value left", _plant_configurations_with_no_concrete_value),
+    ("no value is carried in the strict set",
+     "a status word that is also one of the surface's own key names",
+     _plant_a_status_colliding_with_a_key_name),
     # § 28's class, one plant per way it reaches a tracked file: in this project's
     # own configuration, and in an example — where the placeholder exemption lives,
     # so a concrete value there is the arm that proves the exemption is the
