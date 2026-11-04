@@ -6588,6 +6588,39 @@ def self_test() -> int:
                 no_answer is not None and "nowhere to put it" in no_answer,
                 str(no_answer),
             )
+        # ⛔ The same absence in the **collection** form, which the arm above does
+        # not reach: `unavailable()`'s facet loop compares the one absolute path
+        # `work_item.grouping.carrier`, and the collection form's distinguishing
+        # feature is not having it. ⚠️ Measured reporting nothing at all for a
+        # collection whose every entry was absent — the facet gone from the
+        # report while the configuration stated it, which is the reading a
+        # stated absence exists to be told apart from.
+        all_absent = _a_grouping_collection()
+        absent_names = list(_get(all_absent, GROUPING_KEY) or {})
+        for name in absent_names:
+            _get(all_absent, GROUPING_KEY)[name] = {
+                "carrier": "none",
+                "absent_reason": f"nothing is planned into {name} here.",
+            }
+        _get(all_absent, "readiness")[:] = [
+            entry for entry in _get(all_absent, "readiness")
+            if entry.get("check") not in (IN_GROUPING_CHECK, GROUPING_REF_CHECK)
+        ]
+        refused_all_absent = _refused(all_absent)
+        check(
+            "a collection whose every grouping is absent is a configuration, not a refusal",
+            refused_all_absent is None,
+            f"refused on {refused_all_absent!r}",
+        )
+        if refused_all_absent is None:
+            with open(SURFACE, encoding="utf-8") as handle:
+                shape = surface_facts(handle.read())
+            told = _resolve(all_absent, EXAMPLES, shape, False).unavailable()
+            check(
+                "and every absent grouping is named in the report, not left as silence",
+                all(any(repr(name) in line for line in told) for name in absent_names),
+                str([line for line in told if "grouping" in line]),
+            )
         # ⛔ The facet unset at all, which is the misconfiguration the absent case
         # exists to be told apart from -- refused naming the carrier, since that
         # is the key an adopter writes.
