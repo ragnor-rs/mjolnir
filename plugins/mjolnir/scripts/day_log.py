@@ -34,7 +34,12 @@ What comes from configuration, and the key each value is read from:
 
 ⛔ **The configuration is read through the shared reader and never parsed here.**
 A script that read the file itself would be a second set of defaults, and two
-sets drift apart with nothing noticing.
+sets drift apart with nothing noticing. ⚠️ **Some of the keys above may be
+resolved from outside the repository** -- the archive's address, the chat
+facets, the calendars and `attribute_to` are § 28's class of value -- and that
+changes nothing here: the reader answers them from the layer a project points
+at, so this script reads every key the same way and a layer that is missing is
+its refusal rather than this one's empty list.
 
 ⛔ **The input is this project and nothing else.** Every stream is narrowed where
 it is read and the bound is *derived*: the repositories are § 1's roots, the
@@ -336,6 +341,22 @@ class Settings:
             raise Unavailable(
                 "`day_log.evidence.chat.path` is not set, so the `chat` stream "
                 f"has no archive to read under `kind: {self.chat_kind}` (§ 9)."
+            )
+        # ⛔ A stream whose patterns resolve to nothing is refused rather than
+        # measured as a day with no chats in it. The queries below select on the
+        # patterns, so an empty list reads every chat out of the archive as none
+        # of this project's -- a total that is too low and a run that reports
+        # success, which is the half of § 28's named absence that lands here
+        # rather than in the reader: the values may be resolved from a private
+        # layer, and a layer that answers with an empty list is answering.
+        if not self.chat_patterns:
+            raise Unavailable(
+                "`day_log.evidence.chat.patterns` resolves to nothing while the "
+                f"`chat` stream is read under `kind: {self.chat_kind}`, so every "
+                "chat in the archive would be read as belonging to some other "
+                "project and the day would be measured from none of them (§ 9). "
+                "Where the value is resolved privately, the layer named in "
+                "`private.source` is what carries it (§ 28)."
             )
         return reader
 

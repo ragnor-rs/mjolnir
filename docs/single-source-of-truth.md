@@ -347,9 +347,12 @@ stands or falls on whether the thing forbidden has a stable form; the two comput
 stop the rest holding nothing. ⛔ No count of either group is carried here or in the script: the
 first form of both sentences carried one, and the check the sweep grew next made it wrong.
 
-Two scopes. The repository-wide one looks for what identifies someone else's project; the strict
-one — the carrier roots, never the whole tree — looks for a value, a tracker or a stack in text
-that is supposed to be procedure. A carrier is a skill, a command or a hook (schema § 7), so the
+Three scopes, and no count of the checks in each. The repository-wide one looks for what identifies
+someone else's project; the strict one — the carrier roots, never the whole tree — looks for a
+value, a tracker or a stack in text that is supposed to be procedure; and the third is **every
+tracked configuration**, this project's own and the examples, which is where a value of
+[§ 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)'s class
+would be checked in. A carrier is a skill, a command or a hook (schema § 7), so the
 strict set is matched by *shape* — `plugins/*/skills/`, `commands/`, `.claude/hooks/` and so on —
 rather than from a hand-kept list of roots.
 
@@ -366,6 +369,7 @@ rather than from a hand-kept list of roots.
 | 8 | No value any configuration supplies | the strict set | forbidding |
 | 9 | No machine named by its address, which is the one identity shape of a *machine* with a form a pattern can hold — a hostname is any word and an alias is any word somebody chose, so those are held by the names living outside every working tree ([schema § 21 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)) rather than by this sweep | same | forbidding |
 | 10 | No role is resolved by asking who is running — the spellings that resolve the current user and nothing else, each one a form English does not also use ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)) | the strict set | forbidding |
+| 11 | No tracked configuration carries a value under a key the surface marks `# private` — a chat thread's name, a calendar's own name, a person, a path on somebody's machine ([schema § 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)) | every tracked configuration | forbidding |
 
 Check 5 is the one that makes the shape-matched strict set safe: a carrier in a directory the
 shapes do not reach — `plugins/other/skils/`, one letter out — would otherwise be swept by nothing
@@ -472,6 +476,17 @@ would raise rather than assert, and the first adopter whose workflows do filter 
 to find out. ⚠️ Each half alone was measured green and the two together red, so the plant reddens
 by the glob it was written for and not by the configuration having been rewritten to carry it.
 
+⚠️ **A fourth subtraction is every dotted key path the surface declares**, and what forced it is a
+false refusal rather than a hole. [§ 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)
+gives a project a list of the keys it resolves from outside the repository, so those list members
+are **key paths** — and read as values of the project's own they forbade a role from naming the key
+it reads. Measured: the day-log role cites `day_log.attribute_to`, which is the key it reads
+`attribute_to` from, and the sweep reddened on it against an example's `private.keys`. ⛔ **The
+subtraction is the sweep's own test applied one shape further**: the surface states those strings,
+so a configuration writing one is choosing the surface's word. Its green side is a plant like the
+other two, verified by dropping the declared paths from the published set and watching the role
+redden again.
+
 What stops the derived set shrinking to nothing is three reported arms rather than an assertion
 that each key is still in use, there being no key list left to go stale: a surface whose published
 vocabulary cannot be read, a configuration that does not parse, and a configuration that states no
@@ -496,6 +511,12 @@ and the fourth entry landed under it, green.
 - **This repository's own slug**, derived rather than listed. Removing `host.repo` from the
   configuration reddens the build rather than quietly permitting every slug, which is one of the
   planted violations.
+- **A placeholder under a `# private` key**, for the third scope above. The examples write
+  `<the exported archive>` where a project writes an archive, so the exemption is the
+  **placeholder's own form** rather than the file it sits in: a concrete chat name, calendar or
+  path in an example trips the check exactly as one in this project's own configuration does, and
+  both directions are planted. ⚠️ Narrower than the `config/examples/` entry above, which is a
+  scope; this is a shape, and it is what keeps the two from being the same exemption read twice.
 - ⚠️ **Every entry under this heading is permanent**, and the one that was not is no longer an
   entry: an interpreter in front of a *configured* path had a table of its own, scoped to the roots
   it held in, for as long as one role read its script's location out of configuration. No role

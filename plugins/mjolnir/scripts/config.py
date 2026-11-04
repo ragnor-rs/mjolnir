@@ -237,6 +237,28 @@ REQUIRED_WHEN_NEAR_MISS = re.compile(r"^(?:required[_ ]when\s*:|required_when\b)
 # of which absences are deliberate -- and a sixth facet invisible to both rules.
 ABSENT_REASON_CLAUSE = re.compile(r"^absent_reason$")
 
+# `# private` beside a key declares its *value* as one a repository may not be
+# able to hold, so § 28's facet may list the key and resolve it from the file
+# that facet points at. The mark is the whole of what makes a key eligible, and
+# the alternative was a list of eligible paths in this module -- which is the
+# second statement of the surface every marker here exists to delete.
+#
+# ⛔ Refused on a `carrier` and on a `kind`, and on § 28's own block. ⚠️ The
+# reason is that section's and is not copied here; what is local to this module
+# is that refusing at the *mark* rather than at the list is what keeps a surface
+# from reading as offering something no configuration may use.
+PRIVATE_CLAUSE = re.compile(r"^private$")
+
+# The keys a private mark may not sit on, by their last segment, and the facet's
+# own block. ⛔ Spelled here rather than at the point of refusal because the
+# refusal and § 28's prose have to name the same three things.
+PRIVATE_FORBIDDEN_ON = ("carrier", "kind")
+PRIVATE_KEY = "private"
+PRIVATE_SOURCE_PATH = f"{PRIVATE_KEY}.source"
+PRIVATE_KEYS_PATH = f"{PRIVATE_KEY}.keys"
+PRIVATE_FILE = "file"
+PRIVATE_NONE = "none"
+
 # `# port: <directory>` beside a `kind` declares that key as a port's kind, and
 # the clause's value as the directory the implementations behind it live in. The
 # section the marked block sits under is the third fact it carries, and it is not
@@ -400,6 +422,7 @@ def surface_facts(surface_text: str) -> dict:
     required: dict[str, str] = {}
     required_when: dict[tuple[str, str, str], str] = {}
     absent_reason: dict[str, str] = {}
+    private: dict[str, str] = {}
     procedure: dict[str, str] = {}
     ports: dict[str, tuple[str, str]] = {}
     declared: set[str] = set()
@@ -513,6 +536,22 @@ def surface_facts(surface_text: str) -> dict:
                             "facet's `carrier` line or delete it.",
                         )
                     absent_reason.setdefault(path[: -len(".carrier")], heading)
+                if PRIVATE_CLAUSE.match(clause):
+                    # ⛔ Refused rather than ignored where it sits on a rule,
+                    # which is the marker's own rule above and § 28's reason.
+                    leaf = path.rpartition(".")[2]
+                    if leaf in PRIVATE_FORBIDDEN_ON or path.split(".")[0] == PRIVATE_KEY:
+                        raise ConfigError(
+                            path,
+                            "carries `# private`, which marks a value a repository "
+                            f"may not hold. A `{'`/`'.join(PRIVATE_FORBIDDEN_ON)}` and "
+                            f"`{PRIVATE_KEY}`'s own keys are a project's rules rather "
+                            "than its values, and a configuration whose rules could "
+                            "move into an untracked file is one nobody reviews (§ 28). "
+                            "Move the marker to the key carrying the value, or delete "
+                            "it.",
+                        )
+                    private.setdefault(path, heading)
 
             # A closed set, written either as the value or as a comment beside
             # it -- `key: a | b | c` is the first shape, and a line whose value
@@ -642,6 +681,10 @@ def surface_facts(surface_text: str) -> dict:
         "required": required,
         "required_when": required_when,
         "absent_reason": absent_reason,
+        # ⚠️ Deliberately **not** in the `missing` refusal above, for the reason
+        # `lists` and `per_root` are not: a surface marking nothing empties this,
+        # and what follows is closed rather than silent.
+        "private": private,
         "procedure": procedure,
         # `the kind's dotted path -> (the section its operation list is under,
         # the directory its implementations live in)`. Read by the contract beside
@@ -1471,6 +1514,17 @@ class Config:
         # installed plugin's and a shipping project's own tree -- so which one
         # ruled is a fact about the resolution rather than a constant.
         self.surface = surface or SURFACE
+        # § 28's two reads, each held after the first: the list is already
+        # validated by `validate`, and a role reading several of one project's
+        # private values reads the file once rather than once per value.
+        # ⚠️ **Per object and not per project**, which is stated rather than
+        # implied: § 1's collection builds a view per code root beside the
+        # project-level object, so a project with named roots may open the layer
+        # once per view. None of the marked keys sits in a per-root block, so
+        # every consumer reads them through one object today -- and a marked key
+        # that did would want the cache moved rather than this comment.
+        self._private_listed: list[str] | None = None
+        self._private_read: dict | None = None
 
     # -- the roots. The skills root is where the role ran (§ 1); the code root is
     # read from the file found there and is never inferred.
@@ -1819,6 +1873,99 @@ class Config:
             or crossed.startswith(f"{path}.")
         )
 
+    @property
+    def private_keys(self) -> list[str]:
+        """§ 28's listed keys, or none. Held to the surface's marks at load."""
+        if self._private_listed is None:
+            self._private_listed = _private(self.data, self.facts)
+        return self._private_listed
+
+    def _private_layer(self) -> dict:
+        """The private file, read once and held. Every failure is a stop.
+
+        ⛔ **Resolved here and not at load**, which is § 27's shape one facet
+        over: the file is outside the repository, so a configuration that merely
+        validates -- an example, a project read on another machine -- must load
+        without it, and a value is read when something actually needs it.
+
+        ⛔ **And not one failure falls back to an empty value.** A missing layer
+        resolving to nothing is a day measured from no chats, which under-reports
+        the work and reports success, so an unopenable pointer, a file that is
+        not a mapping, a listed key the file omits and a key the list does not
+        name are four refusals (§ 28).
+        """
+        if self._private_read is not None:
+            return self._private_read
+        listed = self.private_keys
+        source = self.get(PRIVATE_SOURCE_PATH)
+        path = os.path.normpath(os.path.join(self.skills_root, str(source)))
+        try:
+            with open(path, encoding="utf-8") as handle:
+                values = _load_yaml(handle.read(), PRIVATE_SOURCE_PATH)
+        except OSError as error:
+            raise ConfigError(
+                PRIVATE_SOURCE_PATH,
+                f"names {source!r}, which did not open at {path!r} "
+                f"({error.__class__.__name__}). It was to supply "
+                f"{', '.join(listed)} (§ 28), and a layer that is not there is "
+                "reported by name rather than resolved to nothing -- a value "
+                "measured from an absent file looks exactly like one measured "
+                "from an empty project.",
+            ) from None
+        if not isinstance(values, dict) or not values:
+            # ⚠️ The empty mapping is named as empty rather than as the wrong
+            # type: *read as dict rather than a mapping* is a sentence about a
+            # dict, which reads as a bug in the reader to whoever gets it.
+            held = "nothing at all" if isinstance(values, dict) else type(values).__name__
+            raise ConfigError(
+                PRIVATE_SOURCE_PATH,
+                f"names {source!r}, which read as {held} rather than a mapping of "
+                f"dotted key path to value (§ 28) -- and it was to supply "
+                f"{', '.join(listed)}. Nested blocks are not read and a document is "
+                "not parsed: a second resolver of this surface is free to disagree "
+                "with the one that validated the list.",
+            )
+        for key in listed:
+            if key not in values:
+                raise ConfigError(
+                    PRIVATE_SOURCE_PATH,
+                    f"names {source!r}, which carries no {key!r} -- a key "
+                    f"`{PRIVATE_KEYS_PATH}` says it supplies (§ 28). The paths are "
+                    "written absolutely, from the top of the configuration, and the "
+                    "two halves are compared as written.",
+                )
+            # ⛔ And carrying the key is not answering it. A listed key is the
+            # project's statement that the layer answers that path, so a null or
+            # an empty value there is the layer failing to answer while looking
+            # like an answer -- which is the fall-back to nothing this facet
+            # exists to refuse, reached through the one gate that was asking
+            # about presence instead. ⚠️ The test is `_valued`, the same one the
+            # tracked half is held to, so the two halves cannot disagree about
+            # what counts as an answer. A project wanting the key unanswered
+            # does not list it.
+            if not _valued(values[key]):
+                raise ConfigError(
+                    PRIVATE_SOURCE_PATH,
+                    f"names {source!r}, which carries {key!r} with nothing under it "
+                    f"({values[key]!r}). A key named in `{PRIVATE_KEYS_PATH}` is the "
+                    "project's statement that this file answers it, so an empty "
+                    "value here is a layer that did not answer (§ 28) -- and the "
+                    "permissive reading is a day measured from no chats, or every "
+                    "committer read as the log's owner. A key meant to be "
+                    "unanswered is left off the list.",
+                )
+        extra = sorted(set(values) - set(listed))
+        if extra:
+            raise ConfigError(
+                PRIVATE_KEYS_PATH,
+                f"does not name {extra[0]!r}, which {source!r} carries (§ 28). The "
+                "list is the bound on what may be resolved privately: a key the "
+                "tracked file does not name is one that could move a rule out of "
+                "review, which is the reading § 28 rejects.",
+            )
+        self._private_read = values
+        return values
+
     def get(self, path: str, default=None):
         crossed = self.per_root(path)
         if crossed:
@@ -1828,6 +1975,28 @@ class Config:
                 f"read is the project's. {len(self.views)} roots carry it -- "
                 f"{', '.join(repr(k) for k in self.views)} -- so there is no one "
                 "answer to give and the first of them is not it (§ 1).",
+            )
+        # § 28, before the tracked file is read: a listed key's value is in the
+        # private layer, and what the tracked file carries for it is at most the
+        # key's shape -- so reading here first is what keeps every consumer of
+        # this accessor unchanged by the facet.
+        if path in self.private_keys:
+            return self._private_layer()[path]
+        # ⛔ And a read of a *block* holding one of those keys is refused rather
+        # than answered from the tracked shape alone, which is the per-root
+        # refusal above arriving one axis over: a block read is idiomatic here --
+        # `carriers`, `statuses`, `day_log.evidence` -- and answering one would
+        # hand back every listed key under it resolved to nothing, with no stop.
+        # ⚠️ The leaves are what the layer answers, so the remedy is to read
+        # them, which the refusal names.
+        under = [key for key in self.private_keys if key.startswith(f"{path}.")]
+        if under:
+            raise ConfigError(
+                path,
+                f"holds {', '.join(under)}, which `{PRIVATE_KEYS_PATH}` resolves from "
+                f"`{PRIVATE_SOURCE_PATH}` (§ 28). A block read here would answer with "
+                "the tracked file's shape, so every one of those keys would come back "
+                "empty with nothing saying so. Read the keys themselves.",
             )
         return _get(self.data, path, default)
 
@@ -2068,6 +2237,20 @@ class Config:
                 "bookkeeping role's memory third does not run and a restoring "
                 "pass has no store to check a recalled fact against: "
                 f"{' '.join(str(reason).split())}"
+            )
+        # § 28, and reported for the reason § 15's is: a role learns that every
+        # value this project states is in the tracked file, rather than meeting a
+        # facet that is not there. ⛔ And the complement is not reported here: a
+        # project that carries the layer has a pointer and a list, which `to_dict`
+        # names beside the configuration -- an absence is what this report is for,
+        # and a value's address is not an absence.
+        if self.get(f"{PRIVATE_KEY}.carrier") == PRIVATE_NONE:
+            reason = self.get(f"{PRIVATE_KEY}.absent_reason")
+            out.append(
+                f"No private layer is carried (`{PRIVATE_KEY}.carrier: "
+                f"{PRIVATE_NONE}`), so every value this project states is in the "
+                "tracked configuration and no key is resolved from outside the "
+                f"repository: {' '.join(str(reason).split())}"
             )
         if self.get("ordering.carrier") == "none":
             reason = self.get("ordering.absent_reason")
@@ -2330,6 +2513,32 @@ class Config:
         out["groupings"] = {
             key: dict(block) for key, block in sorted(self.groupings.items())
         }
+        # § 28: each listed key is named **where it sits**, and ⛔ **never
+        # valued**. A report goes somewhere this configuration does not, which is
+        # § 26's rule for a store's address arriving at the values themselves --
+        # so what a reader of this output learns is that the key is answered
+        # elsewhere, and a role that needs the value reads it when it needs it.
+        #
+        # ⛔ The marker goes where the key sits because the
+        # tracked file carries at most the key's shape, so a dump of it alone
+        # shows a listed key as null or as an empty list -- which is the silent
+        # empty value this facet exists to prevent, arriving in the report
+        # instead of in the reader. A marker there cannot be read as a value
+        # either: it replaces the whole of one, so a consumer that mistook it
+        # would be handed a string where it expects a list.
+        #
+        # ⛔ **And the pointer and the list are not emitted a second time beside
+        # the configuration.** The block the project wrote is already in this
+        # output, so a summary of it here would be two statements of one fact in
+        # one document -- free to disagree, and measured disagreeing: the summary
+        # carried the reader's stripped spelling of each path while the block
+        # carried the project's, so a list entry written with a trailing space
+        # came back both ways in one report.
+        if self.private_keys:
+            shown = copy.deepcopy(self.data)
+            for key in self.private_keys:
+                _place_marker(shown, key, f"<private: {PRIVATE_SOURCE_PATH}>")
+            out["config"] = shown
         out["unavailable"] = self.unavailable()
         return out
 
@@ -3299,6 +3508,121 @@ def _memory(data: dict, parts: list) -> None:
         )
 
 
+def _place_marker(data: dict, path: str, marker: str) -> None:
+    """Write `marker` at `path`, making the blocks above it where they are absent.
+
+    Used by the report alone. ⚠️ A listed key's parents may be missing entirely
+    -- a project that moved every chat facet out writes no `chat:` block -- so
+    the marker is placed rather than assigned, and a parent that is some other
+    kind of value is left alone: this is a report, and refusing inside one would
+    replace a project's statement with a traceback.
+    """
+    parts = path.split(".")
+    node = data
+    for part in parts[:-1]:
+        child = node.get(part)
+        if child is None:
+            child = {}
+            node[part] = child
+        elif not isinstance(child, dict):
+            return
+        node = child
+    node[parts[-1]] = marker
+
+
+def _valued(value) -> bool:
+    """Whether a resolved value is an answer rather than a shape.
+
+    ⛔ Null, an empty list and an empty string state nothing, and § 28 turns on
+    that distinction rather than on a key's presence: a project that moves a
+    value out leaves the key behind, and a marked default lands on it whether
+    the project wrote one or not.
+    """
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple, dict)):
+        return bool(value)
+    # ⚠️ A number or a boolean is a value, zero and false included: what this
+    # asks is whether the key was answered, not whether the answer is truthy.
+    return True
+
+
+def _private(data: dict, facts: dict) -> list[str]:
+    """§ 28's listed keys, held to the surface's marks. Returns what it supplies.
+
+    ⛔ Read before requiredness is enforced, and that order is the rule rather
+    than an implementation detail: a key the private layer supplies is *stated*,
+    so the other order refuses every project that moves a conditionally required
+    value out of its tracked file -- § 9's archive address being exactly that
+    key.
+
+    ⚠️ What is **not** here is the resolution. The values are read where they are
+    read (`Config.get`), because the file is outside the repository and may be
+    absent on a machine that only validates -- the examples load on every
+    machine this suite runs on, and each one of them would otherwise need a
+    private file shipped beside it, which is the value this facet exists to keep
+    out of the tree.
+    """
+    marked = facts.get("private") or {}
+    carrier = _get(data, f"{PRIVATE_KEY}.carrier")
+    listed = _get(data, PRIVATE_KEYS_PATH)
+    if carrier != PRIVATE_FILE:
+        if _valued(listed):
+            raise ConfigError(
+                PRIVATE_KEYS_PATH,
+                f"names {len(listed)} key(s) under `{PRIVATE_KEY}.carrier: "
+                f"{carrier}`, so the list is a set of keys nothing answers (§ 28). "
+                f"The pointer and the list are halves of one statement: carry "
+                f"`{PRIVATE_FILE}` and address the file, or delete the list.",
+            )
+        return []
+    if not isinstance(listed, list) or not listed:
+        raise ConfigError(
+            PRIVATE_KEYS_PATH,
+            f"is empty under `{PRIVATE_KEY}.carrier: {PRIVATE_FILE}`, so the "
+            "pointer addresses a file nothing is read out of (§ 28). Every path "
+            "resolved privately is named here, which is what makes a missing "
+            "layer a named absence rather than a silent empty value.",
+        )
+    if not str(_get(data, PRIVATE_SOURCE_PATH) or "").strip():
+        raise ConfigError(
+            PRIVATE_SOURCE_PATH,
+            f"is blank under `{PRIVATE_KEY}.carrier: {PRIVATE_FILE}` (§ 28). The "
+            "pointer is the whole of what the tracked file carries about these "
+            "values, so one that addresses nothing is reported here rather than "
+            "at the first read.",
+        )
+    supplied: list[str] = []
+    for entry in listed:
+        path = str(entry).strip()
+        if path in supplied:
+            raise ConfigError(
+                PRIVATE_KEYS_PATH,
+                f"names {path!r} twice (§ 28). One statement per key: a path listed "
+                "twice reads as two facts the private file answers once.",
+            )
+        if path not in marked:
+            raise ConfigError(
+                PRIVATE_KEYS_PATH,
+                f"names {path!r}, which the surface marks `# private` nowhere "
+                "(§ 28). The mark is what makes a key eligible, and that section "
+                "states why an unmarked key may not be listed.",
+            )
+        if _valued(_get(data, path)):
+            raise ConfigError(
+                path,
+                f"carries a value and is named in `{PRIVATE_KEYS_PATH}` (§ 28). Two "
+                "statements of one fact are free to disagree, and this pair "
+                "disagrees in the direction that matters: the tracked half is the "
+                "one in review. The key may keep its shape -- null, or an empty "
+                "list -- and the value belongs in the private file alone.",
+            )
+        supplied.append(path)
+    return supplied
+
+
 def validate(data: dict, facts: dict) -> None:
     # ⛔ Walked rather than looked up by path, because a retired key may sit
     # inside a list: `_get` descends a dict and returns the default the moment it
@@ -3326,8 +3650,15 @@ def validate(data: dict, facts: dict) -> None:
                     "Delete the key.",
                 )
 
+    # § 28's list, read before the two requiredness loops below for the reason
+    # `_private` states: a listed key is stated, and the enforcement moves to
+    # the layer, where a key the private file omits is refused by name.
+    supplied = _private(data, facts)
+
     for path, section in sorted(facts["required"].items()):
         where = f"marked `# required` under § {section}"
+        if path in supplied:
+            continue
         if not _has(data, path):
             raise ConfigError(path, f"required -- {where}.")
         # Present and empty is not present. YAML reads a key with nothing after
@@ -3343,7 +3674,7 @@ def validate(data: dict, facts: dict) -> None:
     # correct and its presence is somebody else's business (§ 3's blocks are the
     # case this is for -- `board` addresses a Trello board and nothing else).
     for (path, on, value), section in sorted(facts["required_when"].items()):
-        if _get(data, on) != value:
+        if _get(data, on) != value or path in supplied:
             continue
         where = f"marked `# required_when: {on} = {value}` under § {section}"
         if not _has(data, path):
@@ -5172,6 +5503,7 @@ MARKED_REQUIRED = [
     "memory.carrier",
     "ordering.carrier",
     "people.carrier",
+    f"{PRIVATE_KEY}.carrier",
     "readiness",
     "roots.code",
     "session",
@@ -5255,6 +5587,13 @@ MARKED_REQUIRED_WHEN = [
     # under (§ 27).
     ("people.key", "people.carrier", "file"),
     ("people.source", "people.carrier", "file"),
+    # § 28's two, and they are halves of one statement rather than two keys that
+    # happen to share a condition: a pointer with no list is an overlay free to
+    # supply anything, and a list with no pointer is a set of keys nothing
+    # answers. ⚠️ The reader refuses each of those arms on its own as well, since
+    # a key written empty satisfies a presence test.
+    (PRIVATE_KEYS_PATH, f"{PRIVATE_KEY}.carrier", PRIVATE_FILE),
+    (PRIVATE_SOURCE_PATH, f"{PRIVATE_KEY}.carrier", PRIVATE_FILE),
     ("tracker.board", "tracker.kind", "trello"),
     ("tracker.project.number", "tracker.kind", "github-projects"),
     ("tracker.project.owner", "tracker.kind", "github-projects"),
@@ -5318,6 +5657,22 @@ SHOWN_LISTS = {
     STREAMS_PATH: ["sessions", "commits", CHAT_STREAM, "meetings", "host_activity"],
 }
 
+# The keys the surface marks `# private`, stated here for the reason the sets
+# above are -- and carrying the whole weight of the class, since this reader
+# keeps no list of eligible paths of its own: drop a mark from the surface and
+# this is what reddens, where the only other symptom would be a project's own
+# list quietly becoming unwritable. ⚠️ Which keys the class does not reach, and
+# why, is § 28's; what this list is for is that the surface and this suite agree
+# about the set.
+MARKED_PRIVATE = [
+    "day_log.attribute_to",
+    "day_log.evidence.calendars",
+    f"{CHAT_BLOCK}.exclude",
+    f"{CHAT_BLOCK}.mixed",
+    f"{CHAT_BLOCK}.path",
+    f"{CHAT_BLOCK}.patterns",
+]
+
 MARKED_ABSENT_CAPABLE = [
     "context.artifacts",
     "e2e_register",
@@ -5325,6 +5680,7 @@ MARKED_ABSENT_CAPABLE = [
     "memory",
     "ordering",
     "people",
+    PRIVATE_KEY,
     "work_item.code_root",
     "work_item.due_date",
     "work_item.estimate",
@@ -5555,6 +5911,12 @@ def self_test() -> int:
             set(MARKED_REQUIRED_WHEN),
         ),
         ("absent-capable", set(surface["absent_reason"]), set(MARKED_ABSENT_CAPABLE)),
+        # ⛔ § 28's class, and the one comparison that is also the statement of
+        # what the class does not reach: a mark added to a `carrier` or a `kind`
+        # is refused by the reader, so what this catches is a mark added to some
+        # other rule-shaped key -- and a mark dropped, which would leave a
+        # project's own list refusing a key it legitimately resolves privately.
+        ("private", set(surface["private"]), set(MARKED_PRIVATE)),
         ("procedure-only", set(surface["procedure"]), set(MARKED_PROCEDURE)),
         # ⛔ The kind and its directory together, which is what the clause states:
         # comparing the kinds alone would leave the directory -- the half a
@@ -6738,6 +7100,186 @@ def self_test() -> int:
         resolved == f"identity {PLANTED_IDENTITY}",
         f"answered {resolved!r}",
     )
+
+    # § 28's layer. ⛔ The answering arm first, and it reads the value: every
+    # refusal below is sound only if the facet resolves at all, and a reader that
+    # resolved nothing would pass each of them while leaving a project unable to
+    # measure a day.
+    one = MARKED_PRIVATE[0]
+    for label, listed, values, extra, wanted in (
+        ("a listed key answered by the layer", [one], {one: PLANTED_PRIVATE_VALUE}, {},
+         f"value {PLANTED_PRIVATE_VALUE!r}"),
+        # ⛔ Several keys at once, read one at a time, and ⛔ **each given a value
+        # of its own**: the file is opened once and held, so this is the arm that
+        # catches a read answering from whatever was asked for first. ⚠️ Written
+        # with one value for both at first, where it caught nothing -- an answer
+        # for the wrong key was byte-identical to an answer for the right one,
+        # and returning `self.private_keys[0]`'s value for every key survived
+        # the whole suite.
+        ("a second listed key answered with its own value from the same file",
+         MARKED_PRIVATE[:2],
+         {path: f"{PLANTED_PRIVATE_VALUE}-{index}"
+          for index, path in enumerate(MARKED_PRIVATE[:2])},
+         {"read": MARKED_PRIVATE[1]}, f"value {PLANTED_PRIVATE_VALUE + '-1'!r}"),
+        # ⛔ And the refusals, each a place the read could have answered with
+        # nothing instead. ⚠️ The key named is the one a person can act on: the
+        # pointer where the file is the problem, the list where the statement in
+        # the tracked file is, and the colliding key itself.
+        ("a layer that does not open", [one], {one: PLANTED_PRIVATE_VALUE},
+         {"written": False}, f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a layer that read as prose rather than as a mapping", [one],
+         "a document with a table in it", {}, f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a layer omitting a key the list says it supplies", [one],
+         {"a.path.this.surface.declares.nowhere": PLANTED_PRIVATE_VALUE}, {},
+         f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a layer carrying a key the list does not name", [one],
+         {one: PLANTED_PRIVATE_VALUE, MARKED_PRIVATE[1]: PLANTED_PRIVATE_VALUE}, {},
+         f"stop {PRIVATE_KEYS_PATH}"),
+        ("a listed key the surface marks nowhere", ["host.repo"],
+         {"host.repo": PLANTED_PRIVATE_VALUE}, {}, f"stop {PRIVATE_KEYS_PATH}"),
+        ("a listed key named twice", [one, one], {one: PLANTED_PRIVATE_VALUE}, {},
+         f"stop {PRIVATE_KEYS_PATH}"),
+        ("a listed key carrying a value in the tracked file as well", [one],
+         {one: PLANTED_PRIVATE_VALUE}, {"valued": {one: "a value left in review"}},
+         f"stop {one}"),
+        # ⛔ The two shapes § 28 forbids the layer itself, each refused by the
+        # missing-key arm rather than by a reader that merges trees: a layer
+        # written as blocks states none of the paths the list names, and a
+        # prefix of one states a different key.
+        ("a layer written as nested blocks rather than dotted paths", [one],
+         {one.split(".")[0]: {one.split(".", 1)[1]: PLANTED_PRIVATE_VALUE}}, {},
+         f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a layer carrying a prefix of a listed key", [one],
+         {one.rpartition(".")[0]: {}}, {}, f"stop {PRIVATE_SOURCE_PATH}"),
+        # ⛔ The arm the first review of this facet produced: carrying a listed
+        # key is not answering it, so a layer holding one with nothing under it
+        # is refused rather than resolved to that nothing. ⚠️ Both shapes of
+        # nothing, because the gate that was missing asked about presence and
+        # either would have passed it -- and `day_log.attribute_to` answered
+        # null is every committer read as the log's owner.
+        ("a listed key the layer carries with null under it", [one], {one: None}, {},
+         f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a listed key the layer carries as an empty list", [one], {one: []}, {},
+         f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a layer that read as an empty mapping", [one], {}, {},
+         f"stop {PRIVATE_SOURCE_PATH}"),
+    ):
+        answered = _resolved_privately(listed, values, **extra)
+        check(f"{label} answers `{wanted}`", answered == wanted, f"answered {answered!r}")
+
+    # ⛔ A read of a block holding a listed key, which is the one shape `get`'s
+    # own interception cannot answer: the tracked file's block comes back with
+    # every listed key under it empty, and nothing says so. ⚠️ Reproduced on the
+    # shipped example before the refusal existed -- `day_log.evidence` answered
+    # six keys resolved to nothing.
+    block = MARKED_PRIVATE[0].rpartition(".")[0]
+    blocked = _resolved_privately(
+        [MARKED_PRIVATE[0]], {MARKED_PRIVATE[0]: PLANTED_PRIVATE_VALUE},
+        read=block,
+    )
+    check(
+        f"a read of `{block}`, which holds a listed key, is refused naming the block",
+        blocked == f"stop {block}",
+        f"answered {blocked!r}",
+    )
+
+    # ⛔ And what the report says about a project carrying the layer: the key
+    # named where it sits, no value anywhere, and the pointer stated once. ⚠️ The
+    # second statement is what this arm is for -- a summary beside the
+    # configuration carried the reader's spelling of each path while the block
+    # carried the project's.
+    reported = _reported_privately([MARKED_PRIVATE[0]])
+    for label, held in (
+        ("names the listed key where it sits", reported["marked"]),
+        ("puts no value in the report", not reported["valued"]),
+        ("states the pointer once, in the project's own block", reported["once"]),
+    ):
+        check(f"a report of a project carrying the layer {label}", held, f"{reported!r}")
+
+    # ⛔ The two halves of the statement, each refused on its own: a key written
+    # empty satisfies the conditional marker's presence test, so neither arm is
+    # the marker's and both are the reader's.
+    for label, broken, at in (
+        ("a pointer with no list", {"carrier": PRIVATE_FILE, "source": PLANTED_PRIVATE_FILE},
+         PRIVATE_KEYS_PATH),
+        # ⛔ The list written **empty**, which is a different arm from the list
+        # absent and from the list null: those two are refused by the conditional
+        # marker's presence test, and this one is the reader's own. ⚠️ Measured
+        # missing: dropping `or not listed` from the rule left the whole suite
+        # green with a pointer supplying nothing.
+        ("a list written as an empty list",
+         {"carrier": PRIVATE_FILE, "source": PLANTED_PRIVATE_FILE, "keys": []},
+         PRIVATE_KEYS_PATH),
+        ("a list with no pointer",
+         {"carrier": PRIVATE_FILE, "source": "   ", "keys": [MARKED_PRIVATE[0]]},
+         PRIVATE_SOURCE_PATH),
+        ("a list carried beside a stated absence",
+         {"carrier": PRIVATE_NONE, "absent_reason": "nothing here is private",
+          "keys": [MARKED_PRIVATE[0]]},
+         PRIVATE_KEYS_PATH),
+    ):
+        data = _a_valid_example()
+        _with(data, MARKED_PRIVATE[0], None)
+        data[PRIVATE_KEY] = broken
+        reported = _refused(data)
+        check(
+            f"{label} is refused, naming `{at}`",
+            reported == at,
+            f"reported {reported!r}",
+        )
+
+    # ⛔ A conditionally required key resolved privately, which is the one arm
+    # that proves the list is read *before* requiredness: § 9's archive address
+    # is required under the kind that reads an archive, and a project moving it
+    # out writes it nowhere the tracked file can be refused for.
+    archived = _example_meeting(CHAT_KIND_PATH, "telegram_export")
+    check(
+        "an example reads an archive, so the conditional key is exercised",
+        archived is not None,
+    )
+    if archived is not None:
+        address = f"{CHAT_BLOCK}.path"
+        _without(archived, address)
+        archived[PRIVATE_KEY] = {
+            "carrier": PRIVATE_FILE,
+            "source": PLANTED_PRIVATE_FILE,
+            "keys": [address],
+        }
+        reported = _refused(archived)
+        check(
+            "a conditionally required key named in the list is not refused as missing",
+            reported is None,
+            f"reported {reported!r}",
+        )
+
+    # ⛔ The marker refused where it would mark a rule rather than a value, which
+    # is the arm that keeps § 28's list from being the route by which a carrier,
+    # a kind or the facet's own pointer leaves review. ⚠️ Planted as a fence
+    # appended to the real surface rather than as an edit to a line of it: the
+    # refusal has to fire on the mark and not on a surface that lost a marker
+    # class, and a synthesised surface of its own would be refused for the
+    # second reason while looking like the first.
+    for label, fence, key in (
+        ("a carrier", "a_facet:\n  carrier: a-kind | none  # private", "a_facet.carrier"),
+        ("a kind", "a_facet:\n  kind: a-kind | none  # private", "a_facet.kind"),
+        (
+            "this facet's own pointer",
+            f'{PRIVATE_KEY}:\n  source: "a-path"  # private',
+            PRIVATE_SOURCE_PATH,
+        ),
+    ):
+        with open(SURFACE, encoding="utf-8") as handle:
+            marked = f"{handle.read()}\n```yaml\n{fence}\n```\n"
+        try:
+            surface_facts(marked)
+            reported = None
+        except ConfigError as error:
+            reported = error.key
+        check(
+            f"`# private` on {label} is refused, naming `{key}`",
+            reported == key,
+            f"reported {reported!r}",
+        )
 
     # § 1's two halves, in both directions. A retired key must be refused where a
     # project still writes it, *and* must be gone from the surface -- a key this
@@ -9260,6 +9802,91 @@ def _looked_up(role: str, mapping, *, key: str = "handle", written: bool = True,
             return f"identity {config.person_for(role)['identity']}"
         except ConfigError as error:
             return f"stop {error.key}"
+
+
+# § 28's layer, written for the run rather than shipped, and for the reason
+# § 27's map is: what the pointer addresses is the class of value this repository
+# may not hold, so a shipped fixture would be the tree holding one. ⛔ The value
+# below is a word no project uses, and the file lives in a directory the run
+# deletes.
+PLANTED_PRIVATE_FILE = "a-private-layer.yaml"
+PLANTED_PRIVATE_VALUE = "a-value-this-repository-may-not-hold"
+
+
+def _resolved_privately(listed, values, *, written: bool = True, read: str | None = None,
+                        source: str = PLANTED_PRIVATE_FILE, carrier: str = PRIVATE_FILE,
+                        valued: dict | None = None) -> str:
+    """`value <v>` where § 28's read answers, `stop <key>` where it does not.
+
+    The listed keys are cleared from the tracked configuration first, which is
+    what a project moving its values out of review actually leaves behind;
+    `valued` is how an arm writes one back, that being the collision the facet
+    refuses.
+
+    ⛔ Every arm reads the **value** and not merely whether a read succeeded. The
+    failure § 28 exists against is a layer that resolves to nothing -- an empty
+    list is a successful-looking answer, and a day measured from no chats at all
+    is what it buys.
+    """
+    import tempfile  # noqa: PLC0415 -- the layer needs a directory of its own
+
+    data = _a_valid_example()
+    for path in listed:
+        _with(data, path, None)
+    for path, value in (valued or {}).items():
+        _with(data, path, value)
+    if carrier == PRIVATE_NONE:
+        data[PRIVATE_KEY] = {
+            "carrier": PRIVATE_NONE,
+            "absent_reason": "every value this project states may be committed",
+        }
+    else:
+        data[PRIVATE_KEY] = {
+            "carrier": carrier,
+            "source": source,
+            "keys": list(listed),
+        }
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    with tempfile.TemporaryDirectory() as root:
+        if written:
+            with open(os.path.join(root, source), "w", encoding="utf-8") as handle:
+                handle.write(_yaml().safe_dump(values, allow_unicode=True))
+        try:
+            configuration = _resolve(data, root, facts, False)
+            return f"value {configuration.get(read or listed[0])!r}"
+        except ConfigError as error:
+            return f"stop {error.key}"
+
+
+def _reported_privately(listed) -> dict:
+    """What `to_dict` says about a project carrying § 28's layer.
+
+    ⛔ Read off the report rather than asserted about the code: what this holds
+    is that the key is named where it sits, that no value is anywhere in the
+    output, and that the pointer and the list are stated once -- and the last of
+    those is a property of the whole document rather than of any one key.
+    """
+    data = _a_valid_example()
+    for path in listed:
+        _with(data, path, None)
+    data[PRIVATE_KEY] = {
+        "carrier": PRIVATE_FILE,
+        "source": PLANTED_PRIVATE_FILE,
+        "keys": list(listed),
+    }
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    report = _resolve(data, EXAMPLES, facts, False).to_dict()
+    rendered = json.dumps(report)
+    return {
+        "marked": all(
+            str(_get(report["config"], path) or "").startswith("<private:")
+            for path in listed
+        ),
+        "valued": PLANTED_PRIVATE_VALUE in rendered,
+        "once": rendered.count(PLANTED_PRIVATE_FILE) == 1,
+    }
 
 
 def _refuses_missing_code_root() -> str | None:

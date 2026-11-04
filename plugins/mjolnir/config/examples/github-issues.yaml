@@ -264,6 +264,18 @@ people:
     A second person takes work from this backlog — the same trigger the ordering above carries,
     and the point at which who holds a role stops being derivable from there being one of them.
 
+private:
+  # § 28's absent case, and the cheapest one there is: there is nothing of the class here to keep
+  # out of the repository, which is what the reason below states. ⛔ Stated rather than omitted —
+  # a project with values it may not commit and a project with none read identically otherwise.
+  carrier: none
+  absent_reason: >-
+    Every value this project states may be committed: the day is measured from sessions and
+    commits alone, `evidence.chat.kind` is `none` and no calendar is read.
+  revisit_when: >-
+    The `chat` or `meetings` stream is added, which is the point at which a thread name or a
+    calendar's own name becomes one of this project's values.
+
 environment:
   # The host credential in a variable, because the one command this procedure drives against
   # the host reads it from there. ⛔ Names, never values: the value lives in the credential

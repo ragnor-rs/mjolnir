@@ -292,6 +292,18 @@ people:
   # The host's own login, which is what `read_item` returns as the person on an item here.
   key: handle
 
+private:
+  # § 28's absent case under a project that *does* have values of the class, which is the arm the
+  # example next door does not show: the distinction the facet turns on is the reason below rather
+  # than the presence of such values.
+  carrier: none
+  absent_reason: >-
+    The chat names and the calendar this project reads are the team's own and the repository is
+    theirs, so the values are reviewable where they are and nothing is resolved from outside it.
+  revisit_when: >-
+    A client's organisation hosts this repository, or somebody who may not read those names is
+    given access to it.
+
 environment:
   # The same host as the example next door, and the opposite decision: the credential stays in
   # the host tool's own credential store and is never exported, so no role inherits it and the

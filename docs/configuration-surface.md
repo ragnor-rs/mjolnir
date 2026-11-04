@@ -2415,3 +2415,77 @@ meetable: recording who *took* an item is a fact about this run, so the implemen
 `assign` may legitimately translate the running user's own spelling. The sweep is scoped to the
 carrier roots for exactly that reason, and the exemption is asserted on the green side rather than
 left to forbearance.
+
+## The half of a configuration no project could commit
+
+The whole payoff of a configuration file is that it is **committed**: five projects each kept their
+own copy of the day-log procedure, and extraction was worth doing because the copy became one
+shared, reviewable statement. ⚠️ **All five git-ignored their copy**, and the reasons are in
+[the decision record](divergences-and-rulings.md) rather than restated here: two had organisational
+reasons of their own — a client's organisation, a second collaborator — and **all five** had the
+archive, every copy reading one private source on the machine the log is kept on. ⚠️ **The
+two-project framing is the narrow one and it was the one this change started from**: the item's own
+text says *two of its five copies*, which is the reason that reaches two rather than the reason that
+reaches every project, and the record was explicit about that distinction before this change
+misread it.
+
+The end state the migration's acceptance item named — *only their chat patterns, calendars and
+exclusions local* — had no mechanism behind it, and
+[`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)
+is now that mechanism. What it rules, and why a tracked file carrying those values would have
+inverted the payoff rather than collecting it, is stated there.
+
+### Three shapes, and why the one that shipped is neither of the first two
+
+**Declaring the whole configuration private was rejected on sight.** It un-reviews the procedure to
+protect the values, which is the opposite of what the migration was for.
+
+**An overlay file merged over the tracked one** — the obvious shape, and the one the item named
+first — fails for a reason that only shows up when you ask what a *missing* overlay looks like. With
+no list of what the overlay supplies, a layer that is absent is indistinguishable from a layer with
+nothing in it: a day log then quietly measures no chats, under-reports the day and reports success.
+⚠️ And an overlay free to supply any key is the rejected shape arriving one key at a time — nothing
+stops `host.checks` or a readiness list moving out of review.
+
+**A pointer per private facet**, as the role-to-person map above has, fails the other way: several
+keys carry the class in § 9 alone, so each would need its own carrier, its own path and its own
+absent case — one fact stated once per key, and a project moving a further value out would be a
+surface change rather than a line in a list.
+
+⛔ **What shipped is the overlay with both of the pointer form's disciplines** — the project names
+the keys, and the surface marks which keys may be named
+([`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)).
+Each half closes one of the two failures above, and neither is decoration: without the list a
+missing layer is silent, and without the marks the list is the rejected shape with extra steps.
+
+### What was measured while the facet was built
+
+**Three of its rules are ordering or shape decisions that look arbitrary until they are met**, and
+all three were met on this change rather than reasoned about. What each of them *is* is
+[`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)'s;
+what is recorded here is the measurement behind it.
+
+- **Requiredness against the list.** Enforcing requiredness before reading the list refused the
+  migrated example outright, on the archive address it had legitimately moved out — the facet's own
+  shipped shape rejected by the facet.
+- **Presence against value.** A gate that asked whether the private file *carried* a listed key
+  passed a layer holding it with null under it, and the day log then counted every committer as the
+  log's owner. The same question asked of the tracked half had always been about the value; the two
+  halves now read one test, and the asymmetry was the whole of the defect.
+- **A block read.** `day_log.evidence` answered with the tracked file's shape — six keys resolved to
+  nothing, no stop — while the leaf reads every consumer actually makes were correct. The report
+  path had already been defended against the same shape by hand, which is the evidence that the
+  accessor path was simply not looked at.
+
+⛔ **And the direction that is not closed is stated rather than discovered**
+([`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)):
+a reader older than a mark reads the tracked file alone — and that splits by requiredness rather
+than failing one way, which was measured on the change itself rather than reasoned about. The
+installed reader, one commit behind, **refused** the migrated example outright — *is empty*, against
+the conditional marker on `day_log.evidence.chat.path` — the archive address being a key it requires
+and the list being something it cannot see. So a listed key carrying a requiredness marker
+fails loudly there, which is § 1's obligation arriving from the other side, and only a key carrying
+neither resolves absent and measures a day from nothing. What closes that half is the plugin and the
+surface travelling together, not anything a configuration can say; the day-log role holds the part
+that lands in a day, refusing a `chat` stream whose patterns resolve to nothing rather than
+measuring a day with no chats in it.
