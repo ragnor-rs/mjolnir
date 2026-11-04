@@ -35,7 +35,7 @@ roles:
 # How a carrier's own name maps to a role. Keyed by the carrier's basename — a skill directory,
 # a command file without its extension, a hook script.
 #
-# `role:` is one of the nine above. `class:` is for a carrier that is not one of them:
+# `role:` is one of the ten above. `class:` is for a carrier that is not one of them:
 #   beside   — a role that travels beside the loop without being part of it
 #   utility  — project-local tooling the loop does not contain
 #   guard    — a hook enforcing the loop rather than carrying a role (§ 7, #16)
@@ -62,6 +62,9 @@ carriers:
   deploy-prod:    { role: deploy }
   deploy-staging: { role: deploy }
   deploy-stand:   { role: deploy }
+  release:        { role: deploy }      # a deploy to production, where `deploy-stand` above is
+                                        # the same role's deploy to staging under another name —
+                                        # one role under two carriers, split by environment (#13)
   day-report:     { role: day_log }
   save:           { role: session }
   ship:           { role: session, partial: "commit third only — the shape #12 names" }

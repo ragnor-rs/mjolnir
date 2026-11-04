@@ -103,7 +103,7 @@ Across six stacks the shapes are:
 | the **wrong root** | A, where only the host's invocation reproduces the finding | the root, as above |
 | the **wrong tree** | A, whose runner derives the container name per checkout, because a constant sends every exec to whichever stack holds the default name — the linters then report on another branch and exit zero | [`schema § 10 → Which tree a verdict belongs to`](../plugins/mjolnir/config/schema.md#which-tree-a-verdict-belongs-to) |
 | a command that **repairs what it judges** | C in both roots (`--fix`, `--write`), A in three targets, and C's host workflow runs the rewriting form and reports the diff | nothing in the facet today |
-| a **deploy** that replays | A: a named volume over the content directory is seeded from the image only while it is empty, so every stand deploy pulled a new image and served the old code until an entrypoint was made to copy it in on each start | emptying the volume — a state to destroy, not a form of a command |
+| a **deploy** that replays | A: a named volume over the content directory is seeded from the image only while it is empty, so every staging deploy pulled a new image and served the old code until an entrypoint was made to copy it in on each start | emptying the volume — a state to destroy, not a form of a command |
 
 **The last row is why a form of the command cannot be what defeats staleness.** Two of the six
 measured staleness defeats are not forms of anything: a volume that has to be removed first, and a
@@ -135,7 +135,7 @@ each class **is** decides whether that description holds:
 | a generated source tree | C, whose message catalogue is compiled in the step before the type check | yes |
 | an environment file | E, whose image build step copies the example into place first | yes |
 | an environment variable read at collection | B (the gate on four suites), F (the suite's own refusal to run anywhere but one target) | yes |
-| a credential | B (a user-account session for the bot suite, and a model quota), F (an account and a model credential), A (one password for every path on the stand) | only as presence, never as validity |
+| a credential | B (a user-account session for the bot suite, and a model quota), F (an account and a model credential), A (one password for every path on staging) | only as presence, never as validity |
 | a browser on the machine | A, whose acceptance run is deliberately not a container target | yes |
 
 **A missing precondition is already reported as a third value in two projects.** A's runner records
@@ -339,7 +339,7 @@ expects a script. Measured, the shapes are three:
 
 | | the deploy | the targets, and which are live |
 |---|---|---|
-| A | a dispatch of the host's own workflow — two of them, one per stand kind, plus a manual release procedure in a runbook, and a workflow of its own in the second repository that refuses a commit its checks have not passed | a stand and production; plus one older shared box serving two stands, one of which is being retired |
+| A | one workflow of the host's with a job per environment: staging by dispatch with typed inputs, production by a version-tag push and by nothing else, with a runbook beside the pipeline for what the pipeline deliberately leaves out; plus a workflow of its own in the second repository that refuses a commit its checks have not passed | staging and production; plus one older shared box serving two staging environments, one of which is being retired |
 | B | one script with a required environment argument | five, of which three are production hosts with different roles; one target **builds and creates** two services and deliberately does not start them, and a sixth target is refused by name because it was retired |
 | C | three hosted build configurations — both halves together, or either half alone — and no script at all | two, by substitution |
 | D, E | one script each, plus a host provisioning script beside it | one live target each |
@@ -349,11 +349,11 @@ expects a script. Measured, the shapes are three:
 take the environment as a required argument and resolve the host from a library beside them, so the
 root they resolve against is a **target** rather than a directory; D's and E's resolve one target
 each; C's substitutions are supplied by whoever triggers the hosted build. ⚠️ **A's resolves against
-a ref, and the default is the wrong one**: the dispatch's `ref` input defaults to the integration
-branch, so publishing the stand's branch has to name it explicitly, and the branch chooses which
-image tag is published — one tag per stand kind, because one tag for both delivered a build to a
-stand nobody had deployed to. So a deploy facet that assumed a directory would be wrong in six cases
-out of six.
+a ref, and the default is the wrong one**: the dispatch's `ref` input defaults to the branch
+production serves, so publishing the staging branch has to name it explicitly, and the branch
+chooses which image tag is published — one tag per staging kind, because one tag for both delivered
+a build to a staging environment nobody had deployed to. So a deploy facet that assumed a directory
+would be wrong in six cases out of six.
 
 **So "a project whose deploy is one script keeps that script" describes four of six.** C has no
 script to keep — its deploy is a configuration file a hosted service executes — and A's is a
