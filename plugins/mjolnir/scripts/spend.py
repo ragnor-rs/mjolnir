@@ -610,7 +610,7 @@ def guard_answer(payload: dict, *, config=None) -> dict:
         # branch below, which is a configuration that *is* stated and does not
         # resolve.
         return {}
-    loaded = config if config is not None else _config(payload.get("cwd"))
+    loaded, stop = (config, "") if config is not None else _read(payload.get("cwd"))
     if loaded is None:
         # ⛔ Reported, and the call proceeds. § 7's table settles this by whether
         # the act can be undone, and the act here is not known to be a spend at
@@ -619,7 +619,7 @@ def guard_answer(payload: dict, *, config=None) -> dict:
         # project — the edit that repairs the configuration included (§ 19).
         return {"systemMessage": (
             "Spend guard: the project's configuration could not be read, so this command was "
-            f"held to nothing. ({FACET_CITATION})"
+            f"held to nothing. ({FACET_CITATION}){stop}"
         )}
     return spend_guard(loaded, command)
 
@@ -706,6 +706,26 @@ def _config(cwd: str | None):
         return reader.load(cwd or ".", check_paths=False)
     except Exception:  # noqa: BLE001 -- any failure is reported by the caller
         return None
+
+
+def _read(cwd: str | None):
+    """The configuration, and what the answer adds where it refused (§ 19).
+
+    ⛔ One load for both, which is why the message arm calls this rather than
+    `_config` and then a second question: resolving asks the whole surface, and
+    a hook that asked twice would pay for it in every process a command starts.
+
+    ⛔ Asked through the shared reader, for `_config`'s own reason: the sentence
+    and the stop inside it are both the reader's, so a guard holding a copy of
+    either would drift from the three beside it.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set one line up
+        loaded, stop = reader.read_or_why(cwd or ".")
+        return loaded, (f" {reader.REFUSAL_PREFACE} {stop}" if stop else "")
+    except Exception:  # noqa: BLE001 -- an unreachable reader explains nothing
+        return None, ""
 
 
 # --- holding this file to the surface and to its carrier --------------------
@@ -1402,6 +1422,16 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("and the person is told which guard held nothing",
               "held to nothing" in str(answered.get("systemMessage")),
               str(answered.get("systemMessage"))[:160])
+        # ⛔ Held against the reader's own answer and never a substring of it
+        # (§ 19). Measured: a first pass asserted that the message carried the
+        # word `required`, which the required-key wording keeps with the key's
+        # name stripped out -- so a stop that had stopped naming the key passed.
+        import config as reader  # noqa: PLC0415 -- the path is set at import time
+
+        stop = reader.why_refused(broken)
+        check("and it carries the reader's own stop, whole, so the key is in the message",
+              bool(stop) and stop in str(answered.get("systemMessage")),
+              f"stop={stop[:70]!r} said={str(answered.get('systemMessage'))[:130]!r}")
         check("the price arm stays silent there, having no bar it could read",
               price_answer(_resume(figure=99.0) | {"cwd": broken}) == {})
 
