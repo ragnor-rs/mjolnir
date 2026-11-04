@@ -258,7 +258,7 @@ other three each read as *run it here*, and ⛔ **none of them as covered**, whi
 an empty or unreadable facet has to err in.
 
 ⛔ **Which runs the host actually made, and what each concluded, are
-[`§ 28`](../../config/schema.md#28-the-hosts-run-operations)'s operations — never a host client
+[`§ 29`](../../config/schema.md#29-the-hosts-run-operations)'s operations — never a host client
 invoked here.** Precondition 2 is the first of them, asked about the **commit** and never about the
 branch:
 
@@ -288,7 +288,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --port host.runs.kind \
 ```
 
 ⚠️ **The host's own conclusion word never reaches this role**, by
-[`§ 28`](../../config/schema.md#the-run-operations-and-what-each-absence-does): one word arrives on
+[`§ 29`](../../config/schema.md#the-run-operations-and-what-each-absence-does): one word arrives on
 two of the four readings. ⛔ **And a reading the operation withheld is a precondition reported
 unanswered** — a step count the host does not state is precondition 3, and a run it has not
 concluded is precondition 4.

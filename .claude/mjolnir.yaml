@@ -234,7 +234,7 @@ host:
   landing:
     method: squash
     delete_branch: procedure
-  # § 28's port, and the kind that answers for it is the same host the keys above address — which
+  # § 29's port, and the kind that answers for it is the same host the keys above address — which
   # is why the key is stated rather than derived: it says who can be *asked about a run*, and the
   # key above says who holds the code. ⚠️ All four operations are reachable here, and the dispatch
   # is the reviewing role's re-dispatch once a resolved thread needs the gate read again.
@@ -538,6 +538,19 @@ people:
     A second person takes work from this backlog — the same trigger the estimate and the due date
     above carry, and the first point at which who holds a role stops being derivable from the fact
     that there is one of them.
+
+private:
+  # § 29. This repository is the toolkit itself and is public, so the one thing it may not hold is
+  # the class of value this facet names — and it holds none, for the reason below. ⛔ Which is a
+  # measurement of this file rather than a policy: the gate beside it sweeps every tracked
+  # configuration for a value under a `# private` key, and this one is what it sweeps.
+  carrier: none
+  absent_reason: >-
+    Every value this project states may be committed, and is: the day is measured from its own
+    sessions and commits, no chat archive and no calendar is read, and nobody is named anywhere.
+  revisit_when: >-
+    A chat archive or a calendar becomes evidence here, which is the first value this repository
+    would be unable to carry.
 
 environment:
   # ⚠️ Measured, not declared (#90), and the measurement is the argument for the key: the shell a

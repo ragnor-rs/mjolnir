@@ -1036,7 +1036,7 @@ def load(
     defaults to § 3's, that being the port every role but § 9's asks for.
 
     ⛔ `root` is one of § 1's named code roots, and it exists because a port's
-    kind may sit inside a **per-root** block: § 28's does, `host` being one of
+    kind may sit inside a **per-root** block: § 29's does, `host` being one of
     the two blocks § 1 lets a root narrow. A project that states such a kind per
     root has no project-level answer at all -- the reader refuses one, naming the
     roots -- so without this the port was unreachable for exactly the project the

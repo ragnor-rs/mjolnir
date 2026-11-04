@@ -41,7 +41,7 @@ host:
   landing:
     method: squash
     delete_branch: procedure
-  # § 28's port. This project's runs are the host's own, so a role lists them, reads how one
+  # § 29's port. This project's runs are the host's own, so a role lists them, reads how one
   # concluded and reads a log through the operations rather than through a client of its own.
   runs:
     kind: github
@@ -295,6 +295,18 @@ people:
   source: "<the path to the file this project already keeps its role-to-person map in>"
   # The host's own login, which is what `read_item` returns as the person on an item here.
   key: handle
+
+private:
+  # § 29's absent case under a project that *does* have values of the class, which is the arm the
+  # example next door does not show: the distinction the facet turns on is the reason below rather
+  # than the presence of such values.
+  carrier: none
+  absent_reason: >-
+    The chat names and the calendar this project reads are the team's own and the repository is
+    theirs, so the values are reviewable where they are and nothing is resolved from outside it.
+  revisit_when: >-
+    A client's organisation hosts this repository, or somebody who may not read those names is
+    given access to it.
 
 environment:
   # The same host as the example next door, and the opposite decision: the credential stays in

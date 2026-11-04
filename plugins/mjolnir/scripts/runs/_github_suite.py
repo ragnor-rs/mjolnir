@@ -87,7 +87,7 @@ class _Host:
     ⛔ **And it records the timeout**, for the same reason: deleting the watch's
     own long timeout changed nothing a suite reading only the arguments could see.
 
-    ⛔ Every call's `writes` is recorded, which is what makes § 28's read-only
+    ⛔ Every call's `writes` is recorded, which is what makes § 29's read-only
     property an assertion rather than a claim.
     """
 
@@ -300,7 +300,7 @@ def self_test() -> int:
         spec = port.port_spec(PORT)
         operations = f"{spec.prefix}.operations"
 
-        # Every operation § 28 states is implemented, asserted as a **relation**
+        # Every operation § 29 states is implemented, asserted as a **relation**
         # against the surface's own list rather than as a count or a list of
         # names: a number here would be wrong the next time the section grows.
         host = _Host(_answers())
@@ -558,7 +558,7 @@ def self_test() -> int:
 
         # --- the read-only property ----------------------------------------
         #
-        # ⛔ Asserted as a relation over every read this suite made: § 28 states
+        # ⛔ Asserted as a relation over every read this suite made: § 29 states
         # the property and this is where it can fail. A call that started writing
         # would redden here rather than in whatever it wrote.
         reading_only = _Host(_answers(**{"run view": printed}))

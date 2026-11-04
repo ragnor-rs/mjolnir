@@ -23,7 +23,7 @@ host:
   landing:
     method: squash
     delete_branch: never
-  # § 28's port with the kind that addresses nothing — the one example that states it, and the
+  # § 29's port with the kind that addresses nothing — the one example that states it, and the
   # pair with `checks: []` above is deliberate: the two are not one fact. That key says the host
   # defines no run this surface states; this one says no run here can be listed, read or started
   # at all. Every operation takes its stated fallback, and what each of them leaves a role doing is
@@ -207,6 +207,18 @@ people:
     No tracker is configured, so no item carries a person and nothing would compare one. The
     single mapped role asks who holds no role.
   revisit_when: A tracker is configured.
+
+private:
+  # Absent, and for the same reason the chat source above is. ⛔ The repository being this person's
+  # own is **not** that reason — a repository can change hands, and what this facet turns on is the
+  # class of value rather than who holds the remote.
+  carrier: none
+  absent_reason: >-
+    Every value here is measured from this project's own transcripts and commits. No chat is
+    read, no calendar is read, and `attribute_to` names nobody.
+  revisit_when: >-
+    A chat archive or a calendar becomes evidence, or this repository is pushed anywhere a
+    second person can read it.
 
 environment:
   # The empty list is a real statement and the cheapest one this facet has: the single mapped

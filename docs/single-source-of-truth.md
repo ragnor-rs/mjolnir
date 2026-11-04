@@ -347,9 +347,12 @@ stands or falls on whether the thing forbidden has a stable form; the two comput
 stop the rest holding nothing. ⛔ No count of either group is carried here or in the script: the
 first form of both sentences carried one, and the check the sweep grew next made it wrong.
 
-Two scopes. The repository-wide one looks for what identifies someone else's project; the strict
-one — the carrier roots, never the whole tree — looks for a value, a tracker or a stack in text
-that is supposed to be procedure. A carrier is a skill, a command or a hook (schema § 7), so the
+Three scopes, and no count of the checks in each. The repository-wide one looks for what identifies
+someone else's project; the strict one — the carrier roots, never the whole tree — looks for a
+value, a tracker or a stack in text that is supposed to be procedure; and the third is **every
+tracked configuration**, this project's own and the examples, which is where a value of
+[§ 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)'s class
+would be checked in. A carrier is a skill, a command or a hook (schema § 7), so the
 strict set is matched by *shape* — `plugins/*/skills/`, `commands/`, `.claude/hooks/` and so on —
 rather than from a hand-kept list of roots.
 
@@ -364,14 +367,15 @@ rather than from a hand-kept list of roots.
 | 6 | No tracker is named, in the slug spelling or the prose one | the strict set | forbidding |
 | 7 | No package manager, task runner, build tool, checker, manifest or lockfile; no stack's own flag; no interpreter in front of something this repository does not ship; no directory change prefixing a command, no directory flag, no absolute path | the strict set | forbidding |
 | 8 | No value any configuration supplies | the strict set | forbidding |
-| 9 | No invocation of the host client **for a run** — its own `run` subcommand, a dispatch, a pull request's runs, and the endpoints behind all three, in a command line or in a list of quoted words. The client itself stays permitted, being how a pull request is opened, read and merged ([schema § 28](../plugins/mjolnir/config/schema.md#28-the-hosts-run-operations)) | the strict set | forbidding |
-| 10 | No machine named by its address, which is the one identity shape of a *machine* with a form a pattern can hold — a hostname is any word and an alias is any word somebody chose, so those are held by the names living outside every working tree ([schema § 21 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)) rather than by this sweep | same | forbidding |
-| 11 | No role is resolved by asking who is running — the spellings that resolve the current user and nothing else, each one a form English does not also use ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)) | the strict set | forbidding |
+| 9 | No machine named by its address, which is the one identity shape of a *machine* with a form a pattern can hold — a hostname is any word and an alias is any word somebody chose, so those are held by the names living outside every working tree ([schema § 21 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)) rather than by this sweep | same | forbidding |
+| 10 | No role is resolved by asking who is running — the spellings that resolve the current user and nothing else, each one a form English does not also use ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)) | the strict set | forbidding |
+| 11 | No tracked configuration carries a value under a key the surface marks `# private` — a chat thread's name, a calendar's own name, a person, a path on somebody's machine ([schema § 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)) | every tracked configuration | forbidding |
+| 12 | No invocation of the host client **for a run** — its own `run` subcommand, a dispatch, a pull request's runs, and the endpoints behind all three, in a command line, in a list of quoted words, or split across a continuation. The client itself stays permitted, being how a pull request is opened, read and merged ([schema § 29](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)) | the strict set | forbidding |
 
-⚠️ **The numbers are this table's own ordering and not positions in the script.** Read as positions
-they were already wrong: the check this sweep grew next was inserted in the middle of the list, and
-the two rows after it went on naming the checks that had moved. What a reader resolves a row by is
-what it says.
+⚠️ **A row takes the next number and never one already in the table.** The first form of the row
+above was inserted in the middle, which left the two rows after it naming checks that had moved —
+read as positions in the script the numbers were then wrong, and silently. ⛔ **What a reader
+resolves a row by is what it says**, and the number is this table's own ordering.
 
 Check 5 is the one that makes the shape-matched strict set safe: a carrier in a directory the
 shapes do not reach — `plugins/other/skils/`, one letter out — would otherwise be swept by nothing
@@ -478,6 +482,17 @@ would raise rather than assert, and the first adopter whose workflows do filter 
 to find out. ⚠️ Each half alone was measured green and the two together red, so the plant reddens
 by the glob it was written for and not by the configuration having been rewritten to carry it.
 
+⚠️ **A fourth subtraction is every dotted key path the surface declares**, and what forced it is a
+false refusal rather than a hole. [§ 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)
+gives a project a list of the keys it resolves from outside the repository, so those list members
+are **key paths** — and read as values of the project's own they forbade a role from naming the key
+it reads. Measured: the day-log role cites `day_log.attribute_to`, which is the key it reads
+`attribute_to` from, and the sweep reddened on it against an example's `private.keys`. ⛔ **The
+subtraction is the sweep's own test applied one shape further**: the surface states those strings,
+so a configuration writing one is choosing the surface's word. Its green side is a plant like the
+other two, verified by dropping the declared paths from the published set and watching the role
+redden again.
+
 What stops the derived set shrinking to nothing is three reported arms rather than an assertion
 that each key is still in use, there being no key list left to go stale: a surface whose published
 vocabulary cannot be read, a configuration that does not parse, and a configuration that states no
@@ -502,6 +517,12 @@ and the fourth entry landed under it, green.
 - **This repository's own slug**, derived rather than listed. Removing `host.repo` from the
   configuration reddens the build rather than quietly permitting every slug, which is one of the
   planted violations.
+- **A placeholder under a `# private` key**, for the third scope above. The examples write
+  `<the exported archive>` where a project writes an archive, so the exemption is the
+  **placeholder's own form** rather than the file it sits in: a concrete chat name, calendar or
+  path in an example trips the check exactly as one in this project's own configuration does, and
+  both directions are planted. ⚠️ Narrower than the `config/examples/` entry above, which is a
+  scope; this is a shape, and it is what keeps the two from being the same exemption read twice.
 - ⚠️ **Every entry under this heading is permanent**, and the one that was not is no longer an
   entry: an interpreter in front of a *configured* path had a table of its own, scoped to the roots
   it held in, for as long as one role read its script's location out of configuration. No role
@@ -2470,11 +2491,11 @@ reading, and the two roles that drive the host's runs call it rather than descri
 commit, whether one executed steps and how it concluded are
 [§ 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)'s four
 preconditions, answered from live state — by
-[§ 28](../plugins/mjolnir/config/schema.md#28-the-hosts-run-operations)'s port, which is the section
+[§ 29](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)'s port, which is the section
 below. So ⛔ **`reached` is never *green*** — it names the run whose conclusion is worth reading, and
 a consumer that read it as a verdict would report a pass for a run nobody looked at.
 
-⚠️ **The reading is now reached through § 28's port and no longer by a role**, so the function is
+⚠️ **The reading is now reached through § 29's port and no longer by a role**, so the function is
 the port's implementation's to call and ⛔ **the subcommand beside it is a reader's affordance
 rather than a step of any role** — stated because a subcommand no route invokes reads as one that
 was forgotten.
@@ -2599,7 +2620,7 @@ What it deliberately does not check:
 - **What else bounds a run the host scopes by no ref.** A schedule's cron expression and a
   dispatch's inputs are facts **§ 2** states nowhere, so `-> *` is the whole of what this module can
   read about such a run. ⚠️ The inputs are stated one section on, as a thing an operation is handed
-  ([§ 28](../plugins/mjolnir/config/schema.md#the-run-operations-and-what-each-absence-does)) — which
+  ([§ 29](../plugins/mjolnir/config/schema.md#the-run-operations-and-what-each-absence-does)) — which
   is not a fact about which runs exist and does not reach this module.
 - **Whether `paths` is the filter the workflow really carries.** Both levels are read as written.
   This repository filters nothing, so the arm holds nothing here on its own facts; what asserts it
@@ -2612,7 +2633,7 @@ What it deliberately does not check:
 ## Beside that consumer: the host's run operations behind a port
 
 `plugins/mjolnir/scripts/runs/` holds the implementations of
-[schema § 28](../plugins/mjolnir/config/schema.md#28-the-hosts-run-operations)'s port, and the
+[schema § 29](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)'s port, and the
 `Adapter suites` workflow runs each one's suite — ⛔ **with no gate entry of its own**, the runner
 asking the surface which ports there are and sweeping each one's package. What is recorded here is
 why the port exists and what it leaves alone.
@@ -2632,13 +2653,13 @@ run are each a host kind's shape rather than a universal.
 duplication.** A port's kind set carries the word for *addresses nothing*, and `host.kind: none`
 would be a project with no code host — which `repo`, `checks` and `landing` each contradict by being
 required of every project. So `host.kind` says who holds the code and `host.runs.kind` says who can
-be asked about a run, and § 28 states the pair with `checks: []` that is legitimate in both
+be asked about a run, and § 29 states the pair with `checks: []` that is legitimate in both
 directions.
 
 What the implementation holds, and the suite beside it is where each can fail:
 
 - ⛔ **Three of the four operations write nothing**
-  ([§ 28](../plugins/mjolnir/config/schema.md#the-run-operations-and-what-each-absence-does)),
+  ([§ 29](../plugins/mjolnir/config/schema.md#the-run-operations-and-what-each-absence-does)),
   asserted over the calls a read actually made rather than claimed in prose: every host call
   declares whether it writes, and the listing, the conclusion and the log are held to making none
   that does. ⚠️ The dispatch is asserted to be the one that does, so the relation is held in both
@@ -2703,7 +2724,7 @@ What it deliberately does not check:
   live — configured and never inferred from a name — which is #13's and no facet's yet.
 - **A go replayed against a byte-identical dispatch.** The workflow, the ref and the inputs are the
   whole of what either side can name, so two dispatches identical in all three are one dispatch to
-  this rail. § 28 states that limit rather than leaving it to read as closed.
+  this rail. § 29 states that limit rather than leaving it to read as closed.
 - **A supersession group keyed on anything but the workflow and the commit.** The concurrency
   expression lives in the workflow file and the host publishes no *retired by* field. A supersession
   this misses reads as never-started rather than as green — the wrong remedy, and not coverage.

@@ -7,16 +7,16 @@ problem. Every call goes through `gh`, which holds the credential and the host's
 base URL, so an enterprise host needs no key here. The configuration arrives
 from the port through `bind`; nothing here resolves a project for itself.
 
-What it implements, and the decisions that are this kind's rather than § 28's:
+What it implements, and the decisions that are this kind's rather than § 29's:
 
-  * **Every operation § 28 states.** None of them is a capability this host
+  * **Every operation § 29 states.** None of them is a capability this host
     lacks. ⛔ No count of them is carried: the list is closed and stated once, in
-    § 28, and a number here would be wrong the next time it grows.
+    § 29, and a number here would be wrong the next time it grows.
   * ⛔ **Only the dispatch writes, and that is held rather than claimed.** Every
     host call goes through `_host`, which reads off the call itself whether it
     writes and refuses a disagreement with what the operation declared -- so the
     property is about the command and not about a keyword somebody remembered.
-    § 28 states it; this is where it can fail.
+    § 29 states it; this is where it can fail.
   * ⛔ **`conclusion` hands the facts to the one reading and keeps none of its
     own.** How many steps the run's jobs executed, whether the host calls it a
     pass, and the id of any run that retired it are read here -- the host's
@@ -272,7 +272,7 @@ def _client(args: list[str], *, parse: bool, timeout: int, tolerate_exit: bool, 
     every message, so a failure is reproducible by hand.
 
     ⚠️ `writes` is taken and not read here. It is declared at the call so that
-    something can hold § 28's read-only property, and the transport the suite
+    something can hold § 29's read-only property, and the transport the suite
     stands in for is what reads it; branching on it here would make the real
     client the second reader of a fact the call already states.
     """
@@ -352,7 +352,7 @@ def _host(
 ):
     """One host call, holding what it writes to what the call itself says.
 
-    ⛔ `writes` is what makes § 28's read-only property checkable rather than
+    ⛔ `writes` is what makes § 29's read-only property checkable rather than
     claimed, and ⛔ **it is checked here against the call** rather than carried:
     the reads must never pass it and must never make a call that writes, and a
     disagreement between the two is this module's own mistake and is refused
@@ -365,7 +365,7 @@ def _host(
             f"was about to run `gh {' '.join(args)}`, which this reader cannot "
             "classify as a read or a write: a mutation and a query reach the "
             "query interface through the same subcommand and the same request "
-            "method. § 28 states every operation but the dispatch as read-only, "
+            "method. § 29 states every operation but the dispatch as read-only, "
             "and a call nothing can place on that line is refused where it is "
             "made rather than assumed to be the harmless one.",
         )
@@ -376,7 +376,7 @@ def _host(
             + ("writes on the host" if derived else "is a read")
             + ", declared as "
             + ("a write" if writes else "a read")
-            + ". § 28 states every operation but the dispatch as read-only, so "
+            + ". § 29 states every operation but the dispatch as read-only, so "
             "the two have to agree: a read that writes is a defect here and a "
             "write declared as a read is the property going unheld.",
         )
@@ -399,7 +399,7 @@ def _host(
 def runs_for_ref(ref: str) -> dict:
     """Every run the host made for one commit.
 
-    ⛔ Keyed on the commit and never on a branch (§ 28): a branch names whatever
+    ⛔ Keyed on the commit and never on a branch (§ 29): a branch names whatever
     is newest when it is read, and § 2's precondition 2 asks whether a run exists
     for *this* commit.
 
@@ -423,7 +423,7 @@ def runs_for_ref(ref: str) -> dict:
             "keyed on: a full 40-character object name. A branch names whatever "
             "is newest at the moment it is read, and an abbreviated name comes "
             "back as a listing with nothing in it -- which reads exactly like a "
-            "commit the host made no run for (§ 28).",
+            "commit the host made no run for (§ 29).",
         )
     repo = _repo()
     answer = _host([
@@ -471,7 +471,7 @@ def conclusion(run, wait: str = "no") -> dict:
     """Which of § 2's four readings one run concluded in.
 
     The three facts are read here and the reading is the consumer's, so that the
-    turning of one into the other happens once for every caller (§ 28).
+    turning of one into the other happens once for every caller (§ 29).
 
     ⛔ Two answers withhold the reading rather than inventing one, each naming the
     precondition it could not answer: a run the host has not concluded, where the
@@ -621,10 +621,10 @@ def log(run, lines: int = LOG_LINES) -> dict:
 def dispatch(workflow: str, ref: str, go: str, *inputs: str) -> dict:
     """Start one run by hand, refused without a go that names this dispatch.
 
-    ⛔ The refusal is the port's and not each role's (§ 28), and what the go must
+    ⛔ The refusal is the port's and not each role's (§ 29), and what the go must
     name is the workflow, the ref and every input this call sends -- so an
     approval given for another ref or another input does not clear this call.
-    ⚠️ **What it cannot catch is stated in § 28 rather than here**: a go replayed
+    ⚠️ **What it cannot catch is stated in § 29 rather than here**: a go replayed
     against a byte-identical dispatch, and that a person gave the go at all.
 
     ⛔ The ref is a branch or a tag, this host's dispatch endpoint rejecting a
@@ -645,7 +645,7 @@ def dispatch(workflow: str, ref: str, go: str, *inputs: str) -> dict:
             f"{_operations()}.dispatch",
             f"was given the commit {at!r} as its ref. This host's dispatch takes "
             "a branch or a tag and rejects a commit, which is the opposite form "
-            "from the run listing's and is the host's own shape (§ 28). Name the "
+            "from the run listing's and is the host's own shape (§ 29). Name the "
             "branch or tag the run is against.",
         )
     values = []
@@ -654,7 +654,7 @@ def dispatch(workflow: str, ref: str, go: str, *inputs: str) -> dict:
         if not separator or not name.strip():
             raise port.ConfigError(
                 f"{_operations()}.dispatch",
-                f"was given {stated!r} as an input. § 28 states a dispatch's "
+                f"was given {stated!r} as an input. § 29 states a dispatch's "
                 "inputs as typed, so each one is written `name=value`; a bare "
                 "word names no input and would be sent as a value with no key.",
             )
@@ -713,7 +713,7 @@ def _hold_the_go(go, workflow: str, ref: str, values: list[tuple[str, str]]) -> 
     if not stated:
         raise port.ConfigError(
             f"{_operations()}.dispatch",
-            "was asked to start a run with no go for this dispatch. § 28 makes "
+            "was asked to start a run with no go for this dispatch. § 29 makes "
             "the confirmation the one rail between a routine command and a "
             "production write, and it is per dispatch: ask, and pass what was "
             "approved -- it has to name this workflow, this ref and every input "
@@ -732,7 +732,7 @@ def _hold_the_go(go, workflow: str, ref: str, values: list[tuple[str, str]]) -> 
         raise port.ConfigError(
             f"{_operations()}.dispatch",
             f"was given a go that does not name {', '.join(missing)}, so it is "
-            "not an approval of this dispatch. § 28 binds a go to the workflow, "
+            "not an approval of this dispatch. § 29 binds a go to the workflow, "
             "the ref and the inputs it was given for: an approval obtained for "
             "another ref or another input does not clear this call, and that is "
             "what *per dispatch* means mechanically.",

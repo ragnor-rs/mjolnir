@@ -3,7 +3,7 @@
 One module per `host.runs.kind`. A module here states a `KIND` and an `ADAPTER`
 and **is** an install; the rule and its reasoning are
 [`schema.md § 3`](../../config/schema.md#the-trackerless-adapter-and-a-kind-with-no-implementation),
-which [`§ 28`](../../config/schema.md#28-the-hosts-run-operations) holds this port
+which [`§ 29`](../../config/schema.md#29-the-hosts-run-operations) holds this port
 to rather than restating -- and this package points at rather than copying.
 
 Three things true of this directory and stated nowhere else:
@@ -16,7 +16,7 @@ Three things true of this directory and stated nowhere else:
     is the exemption that makes those two keepable -- and it is the exemption the
     sweep in `tools/` was taught to leave alone while forbidding the same call
     under `skills/` and in a hook.
-  * ⛔ **§ 28 states that every operation but the dispatch writes nothing, and
+  * ⛔ **§ 29 states that every operation but the dispatch writes nothing, and
     this package is where that is held.** A module here routes every call through
     one place that says whether it writes, and its own suite asserts that a
     listing, a conclusion and a log make no writing call while the dispatch makes

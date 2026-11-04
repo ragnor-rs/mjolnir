@@ -409,7 +409,7 @@ resolved afterwards re-runs nothing and the stale verdict stands — ⛔ **so th
 the run once the resolution is in**, and reports the re-run rather than a check that went green
 locally. A pass that asks and leaves is a pass whose last recorded verdict is wrong.
 
-⛔ **The re-dispatch is [`§ 28`](../../config/schema.md#a-dispatch-is-the-only-write-and-it-carries-its-own-go)'s
+⛔ **The re-dispatch is [`§ 29`](../../config/schema.md#a-dispatch-is-the-only-write-and-it-carries-its-own-go)'s
 operation, and it does not happen without a go for *that* dispatch** — the ask above is where that
 go is obtained, and an approval given for an earlier ref does not clear this one. ⚠️ **The ref is a
 branch or a tag**, which is the opposite form from the commit a listing is keyed on:
@@ -436,7 +436,7 @@ failure arrives looking exactly like a finding, and spending a fix cycle on one 
 exhausts its cap without ever having read the change.
 
 ⛔ **The runs are listed, waited for and read through
-[`§ 28`](../../config/schema.md#28-the-hosts-run-operations)'s operations, never through a host
+[`§ 29`](../../config/schema.md#29-the-hosts-run-operations)'s operations, never through a host
 client invoked here** — the same calls the finishing role makes, and the reading comes back from the
 operation rather than being made in either file. ⚠️ **Where § 1's collection carries several code
 roots, every call below names the one step 2 resolved** — `--root <that root's name>` — this port's

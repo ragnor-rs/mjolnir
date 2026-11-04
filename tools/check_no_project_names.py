@@ -376,7 +376,7 @@ PROCEDURE_COMMANDS = {"git", "gh"}
 # The host client, by name, and the shapes of it that are about a **run**. ⛔ The
 # narrowing is the whole of this rule: `gh` stays a command a carrier may invoke
 # -- it opens a pull request, reads one and merges it -- while what a role does
-# with a run is `schema.md § 28`'s operations, behind a port with one
+# with a run is `schema.md § 29`'s operations, behind a port with one
 # implementation per host kind. A carrier that invoked the client for one of
 # those would be another copy of a call the port exists to hold once, and the
 # host-kind assumption § 2 already refuses to make about a workflow definition.
@@ -409,11 +409,11 @@ def _client_call(*words: str) -> re.Pattern[str]:
 
 HOST_RUN_CALLS = [
     (_client_call("run"),
-     "the host's own run commands, which are § 28's `runs_for_ref`, `conclusion` and `log`"),
+     "the host's own run commands, which are § 29's `runs_for_ref`, `conclusion` and `log`"),
     (_client_call("workflow", "run"),
-     "a manual dispatch, which is § 28's `dispatch` and carries its own approval"),
+     "a manual dispatch, which is § 29's `dispatch` and carries its own approval"),
     (_client_call("pr", "checks"),
-     "a pull request's runs, which are § 28's `runs_for_ref` and `conclusion`"),
+     "a pull request's runs, which are § 29's `runs_for_ref` and `conclusion`"),
 ]
 
 # The endpoints behind those commands, ⛔ matched in a **file** that names the
@@ -425,13 +425,13 @@ HOST_RUN_CALLS = [
 # ⛔ Three names and not one: this host reaches a commit's runs through its
 # actions namespace, through a commit's check runs, and through the check suites
 # of its query interface. An arm knowing only the first is green over two of the
-# four readings § 28 states.
+# four readings § 29 states.
 HOST_RUN_ENDPOINTS = (
     re.compile(r"/actions/(?:runs|workflows|jobs)\b"),
     re.compile(r"/check-runs\b"),
     re.compile(r"\bcheckSuites\b"),
 )
-HOST_ENDPOINT_REASON = "the host's run endpoints, which are § 28's operations"
+HOST_ENDPOINT_REASON = "the host's run endpoints, which are § 29's operations"
 HOST_CLIENT_NAMED = re.compile(_CLIENT)
 
 # A directory reaching a command, in the two forms the standing correction
@@ -880,6 +880,26 @@ class Tree:
         pool = {member for members in facts["enums"].values() for member in map(str, members)}
         for value in facts["defaults"].values():
             pool.update(_scalars(value))
+        # ⛔ And the key paths the surface marks `# private`, which is published
+        # vocabulary by this method's own test: the surface states those strings,
+        # so a configuration writing one is choosing the surface's word rather
+        # than inventing its own. ⚠️ What forced it is § 29's list -- a project
+        # names the keys it resolves privately, and those members are key paths.
+        # Read as this project's values they forbade a role from naming the key
+        # it reads: `day_log.attribute_to` in a carrier is the procedure naming a
+        # key, and the sweep reddened on the day-log role for citing the surface.
+        #
+        # ⛔ **The marked paths and not every path the surface declares**, which
+        # is the bound rather than a preference, and it was measured in both
+        # shapes. Subtracting the whole declared set exempted its 32
+        # single-segment members -- `done`, `role`, `check`, `writer` among them,
+        # which are words a project configures as a status, a label or a verdict
+        # -- and one of them is live here: `role` is a configured label of this
+        # project's, so a carrier naming it passed. Narrowing to dotted paths
+        # recovered that and still exempted 200-odd strings no arm holds. The
+        # marked set is the whole of what § 29's list can contain, the reader
+        # refusing any other entry, so it is the whole of what this needs.
+        pool.update(facts["private"])
         lists: dict[str, set[str]] = {}
         for _heading, block in reader._fences(text):
             for path, rest in reader._walk_keys(block):
@@ -1215,7 +1235,7 @@ def _continued(regions: list[str]) -> list[str]:
 def check_no_host_run_call_in_the_strict_set(tree: Tree) -> list[str]:
     """No carrier invokes the host client for a run.
 
-    `schema.md § 28` makes what a role does with a run the operations of a port
+    `schema.md § 29` makes what a role does with a run the operations of a port
     with one implementation per host kind -- so a carrier that invoked the client
     for any of them would be a copy of a call stated once, and a host-kind shape
     written into a role. ⛔ Which operations those are is stated there and not
@@ -1245,7 +1265,7 @@ def check_no_host_run_call_in_the_strict_set(tree: Tree) -> list[str]:
                 f"{where}: the command `{region.strip()[:70]}` invokes the host "
                 f"client for {what} (`{found.group(0)}`). A role names the "
                 "port and never a client: the operations are read through "
-                "`port.py --port host.runs.kind` (schema § 28)."
+                "`port.py --port host.runs.kind` (schema § 29)."
             )
 
     for path in tree.strict():
@@ -1303,6 +1323,67 @@ def check_no_value_is_carried_in_the_strict_set(tree: Tree) -> list[str]:
     return problems
 
 
+def check_no_private_value_is_committed(tree: Tree) -> list[str]:
+    """No tracked configuration carries a value under a `# private` key.
+
+    `schema.md § 29` names the class: a chat thread's name, a calendar's own
+    name, a person, and a path on somebody's machine. Those are values a
+    repository may not be able to hold, and the facet exists so a project can
+    state every rule in its tracked file and resolve those from one it does not
+    track.
+
+    ⛔ **Which keys carry the class is read off the surface's marks**, through the
+    surface's own reader, rather than listed here: a second list would be free to
+    disagree with the marks, and the one it disagreed with would be the one
+    nobody updated.
+
+    ⚠️ **Telling a committed configuration from an un-committed one costs nothing
+    here**, which is worth stating because it reads like the hard half: `Tree`
+    holds what `git ls-files` lists, so a project's private layer is not in the
+    sweep at all. What is in the sweep is the tracked half, and this is what
+    holds it.
+
+    ⚠️ **A placeholder is not a value**, by the same exception `config/examples/`
+    already has: the examples are shapes, and they write `<the exported archive>`
+    where a project writes an archive. ⛔ The exemption is the placeholder's own
+    form and not the file's, so a concrete value in an example is caught exactly
+    as one in this project's own configuration is.
+    """
+    problems = []
+    try:
+        marked = reader.surface_facts(tree.text.get(SURFACE, ""))["private"]
+    except (reader.ConfigError, yaml.YAMLError) as exc:
+        return [
+            f"{SURFACE}: the surface's own reader cannot read which keys it marks "
+            f"`# private` — {exc}. This check reads the marks rather than carrying a "
+            "list of its own, so with none read it holds nothing."
+        ]
+    if not marked:
+        return [
+            f"{SURFACE}: marks no key `# private`, so this check has nothing to look "
+            "for and reports green while holding nothing (§ 29). A surface that stopped "
+            "marking the class would take this check's whole scope with it."
+        ]
+    for path in tree.configs():
+        try:
+            document = yaml.safe_load(tree.text.get(path, "")) or {}
+        except yaml.YAMLError:
+            continue  # reported by `configuration_values`, which parses the same file
+        for keys, value in _leaves(document):
+            dotted = ".".join(keys)
+            if dotted not in marked or not isinstance(value, str):
+                continue
+            value = value.strip()
+            if not value or PLACEHOLDER.match(value):
+                continue
+            problems.append(
+                f"{path}: carries `{value}` under `{dotted}`, which the surface marks "
+                "`# private`. A tracked configuration states the key's shape and the "
+                "value is resolved through `private.source` (schema § 29)."
+            )
+    return problems
+
+
 def check_the_strict_set_is_swept(tree: Tree) -> list[str]:
     if not tree.strict():
         return [
@@ -1346,6 +1427,7 @@ CHECKS = [
     ("no tracker is named in the strict set", check_no_tracker_is_named_in_the_strict_set),
     ("no stack is named in the strict set", check_no_stack_is_named_in_the_strict_set),
     ("no value is carried in the strict set", check_no_value_is_carried_in_the_strict_set),
+    ("no private value is committed", check_no_private_value_is_committed),
     ("no host run call is in the strict set", check_no_host_run_call_in_the_strict_set),
     ("no machine is named", check_no_machine_is_named),
     ("no role is resolved through the running user",
@@ -1599,6 +1681,27 @@ def _a_published_list_member(tree: Tree) -> str:
     )
 
 
+def _a_declared_key_path(tree: Tree) -> str:
+    """A dotted key path some configuration states as a value, read off that list.
+
+    ⛔ Read out of a configuration rather than written here, for the reason every
+    fixture in this file is: the exemption's claim is that a project writing one
+    of the surface's own key paths is not naming a value, so the string has to be
+    one a shipped configuration actually states. § 29's list is where that
+    happens.
+    """
+    marked = reader.surface_facts(tree.text.get(SURFACE, ""))["private"]
+    for path in tree.configs():
+        document = yaml.safe_load(tree.text.get(path, "")) or {}
+        for _keys, value in _leaves(document):
+            if isinstance(value, str) and value.strip() in marked:
+                return value.strip()
+    raise AssertionError(
+        "no configuration states one of the surface's own key paths as a value, so this "
+        "exemption asserts nothing"
+    )
+
+
 def _plant_an_inline_list_member(tree: Tree) -> Tree:
     """A value a configuration states as one member of an inline list.
 
@@ -1769,6 +1872,83 @@ def _plant_a_surface_publishing_nothing(tree: Tree) -> Tree:
     return tree
 
 
+def _plant_a_status_colliding_with_a_key_name(tree: Tree) -> Tree:
+    """A status word that is also one of the surface's own top-level key names.
+
+    ⛔ The arm that holds the subtraction above to the **marked** paths. Where it
+    subtracted every path the surface declares, a project whose status is `done`
+    -- a key of this surface as well as a word every tracker uses -- had that
+    value pass under a carrier root. ⚠️ Reproduced before the bound was
+    narrowed: planted here and in a carrier, the check reported nothing.
+
+    The word is read off the surface rather than written here, so the plant
+    follows a renamed key instead of asserting its own text.
+    """
+    facts = reader.surface_facts(tree.text.get(SURFACE, ""))
+    bare = sorted(path for path in facts["declared"] if "." not in path)
+    if not bare:
+        raise AssertionError(
+            "the surface declares no single-segment key, so this plant asserts nothing"
+        )
+    word = bare[0]
+    tree.text[OWN_CONFIG] += (
+        f'\nstatuses:\n  - {{ name: "{word}", role: terminal, writer: automation }}\n'
+    )
+    return _plant_in_a_carrier(f"\nMove the item to `{word}` first.\n")(tree)
+
+
+def _a_private_key(tree: Tree) -> str:
+    """One key the surface marks `# private`, read off the surface itself.
+
+    ⛔ Never a path written here. The plants below are about a value landing
+    under a marked key, so a hardcoded key would keep reddening after the mark
+    moved -- proving the plant rather than the check.
+    """
+    marked = reader.surface_facts(tree.text.get(SURFACE, ""))["private"]
+    return sorted(marked)[0]
+
+
+def _plant_a_private_value_in_the_own_config(tree: Tree) -> Tree:
+    """A value of § 29's class in the tracked configuration of this project."""
+    key = _a_private_key(tree)
+    block = "".join(f"{'  ' * depth}{part}:\n" for depth, part in enumerate(key.split(".")[:-1]))
+    leaf = key.rsplit(".", 1)[1]
+    indent = "  " * (len(key.split(".")) - 1)
+    tree.text[OWN_CONFIG] += f"\n{block}{indent}{leaf}: \"A Planted Chat Name\"\n"
+    return tree
+
+
+def _plant_a_private_value_in_an_example(tree: Tree) -> Tree:
+    """The same, in an example -- where the placeholder exemption lives.
+
+    ⛔ `config/examples/` is data by the exception the strict set already has, so
+    this is the arm that holds the exemption to the *placeholder's* form: an
+    example writing `<the exported archive>` stays green, and one writing a value
+    is caught exactly as this project's own configuration is.
+    """
+    key = _a_private_key(tree)
+    target = next(iter(sorted(p for p in tree.text if p.startswith(EXAMPLES))), None)
+    if target is None:
+        return tree
+    block = "".join(f"{'  ' * depth}{part}:\n" for depth, part in enumerate(key.split(".")[:-1]))
+    leaf = key.rsplit(".", 1)[1]
+    indent = "  " * (len(key.split(".")) - 1)
+    tree.text[target] += f"\n{block}{indent}{leaf}: \"A Planted Chat Name\"\n"
+    return tree
+
+
+def _plant_a_surface_marking_nothing_private(tree: Tree) -> Tree:
+    """A surface with the private marks stripped off every key that carries one.
+
+    ⛔ What this asserts is that the class is read **from the marks**: a sweep
+    carrying its own list of eligible keys would not notice, and would go on
+    reporting green about a surface that no longer names the class at all.
+    """
+    body = tree.text.get(SURFACE, "")
+    tree.text[SURFACE] = re.sub(r";?\s*#?\s*\bprivate\b(?=\s*$)", "", body, flags=re.M)
+    return tree
+
+
 VIOLATIONS = [
     ("no other repository is named", "a foreign slug in a URL", _plant_foreign_slug_as_url),
     ("no other repository is named", "a foreign slug in the install command", _plant_foreign_slug_in_install_command),
@@ -1889,6 +2069,23 @@ VIOLATIONS = [
     ("no value is carried in the strict set", "a configuration that does not parse",
      _plant_an_unreadable_configuration),
     ("no value is carried in the strict set", "configurations with no concrete value left", _plant_configurations_with_no_concrete_value),
+    ("no value is carried in the strict set",
+     "a status word that is also one of the surface's own key names",
+     _plant_a_status_colliding_with_a_key_name),
+    # § 29's class, one plant per way it reaches a tracked file: in this project's
+    # own configuration, and in an example — where the placeholder exemption lives,
+    # so a concrete value there is the arm that proves the exemption is the
+    # placeholder's form rather than the file's. ⛔ And the two ways the check can
+    # hold nothing: a surface whose marks it cannot read, and one that marks
+    # nothing at all.
+    ("no private value is committed", "a chat name in this project's own configuration",
+     _plant_a_private_value_in_the_own_config),
+    ("no private value is committed", "a concrete value under a private key in an example",
+     _plant_a_private_value_in_an_example),
+    ("no private value is committed", "a surface whose private marks cannot be read",
+     _plant_a_surface_publishing_nothing),
+    ("no private value is committed", "a surface that marks no private key",
+     _plant_a_surface_marking_nothing_private),
     # One per spelling of asking who is running, because each is a different
     # surface a role could reach for -- the host's own flag value, a tracker
     # query, and the shell -- and the list is closed, so a spelling with no plant
@@ -1908,7 +2105,7 @@ VIOLATIONS = [
      "the shell asked who is running",
      _plant_in_a_hook("# Resolve the reviewer.\nreviewer=$(whoami)\n")),
     # One per form the host client is invoked for a run in, because each is a
-    # separate operation § 28 states and each reaches the client by a different
+    # separate operation § 29 states and each reaches the client by a different
     # token -- a subcommand of its own, a subcommand of a subcommand, a pull
     # request's own view of the runs, and the endpoint behind all three. A form
     # with no plant is a form nothing asserts is forbidden at all.
@@ -1940,7 +2137,7 @@ VIOLATIONS = [
     ("no host run call is in the strict set", "a subcommand on a line of its own",
      _plant_in_a_carrier("\nThen:\n\n```sh\ngh \\\n  run view <id> --log\n```\n")),
     # ⛔ And the two endpoints that name a commit's runs without the actions
-    # namespace at all -- two of § 28's readings, reachable with every other arm
+    # namespace at all -- two of § 29's readings, reachable with every other arm
     # green.
     ("no host run call is in the strict set", "a commit's check runs",
      _plant_in_a_carrier("\nRead `gh api repos/<slug>/commits/<sha>/check-runs` instead.\n")),
@@ -1979,6 +2176,17 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     ("no value is carried in the strict set", "a member of a closed list the surface publishes",
      lambda tree: _plant_in_a_carrier(
          f"\nThe stream is `{_a_published_list_member(tree)}`.\n")(tree)),
+    # ⛔ The third shape, and the one § 29 forced: a key path the surface declares
+    # is the surface's word, and a project's own list may be a list of them. A
+    # sweep reading those as this project's values forbids a role from naming the
+    # key it reads -- measured on the day-log role, which cites
+    # `day_log.attribute_to` and reddened against an example's `private.keys`.
+    # ⚠️ Verified by dropping the declared paths from the published set and
+    # watching this plant redden -- an exemption nothing can fail is an exemption
+    # nobody checked.
+    ("no value is carried in the strict set", "a key path the surface declares, in a carrier",
+     lambda tree: _plant_in_a_carrier(
+         f"\nThe value is read from `{_a_declared_key_path(tree)}`.\n")(tree)),
     # And the narrowest of the four exceptions one format over: in JSON a key is
     # quoted by construction, so rule 2 reads every key of a hook carrier as a
     # value. The value beside it is swept, which is a planted violation above.
@@ -2036,7 +2244,7 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     ("no tracker identifier is named", "a session id, which is a dashed hex group and nobody",
      lambda tree: _plant_in_a_carrier_implementation(
          'SESSION = "aaaabbbb-0000-0000-0000-000000000000"\n')(tree)),
-    # ⛔ The green side of § 28's narrowing, and the reason that check names the
+    # ⛔ The green side of § 29's narrowing, and the reason that check names the
     # client's subcommands rather than the client: a carrier legitimately opens a
     # pull request, reads one and merges it, and none of those is a run.
     #
@@ -2058,7 +2266,7 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
      _plant_in_a_carrier('\nAsk `gh pr comment <number> --body "run it locally"` first.\n')),
     # ⛔ And the implementation side, which is where the client's own vocabulary
     # belongs: the port's adapter is a script under the plugin, and a sweep that
-    # reddened on it would forbid the one place § 28's operations can be built.
+    # reddened on it would forbid the one place § 29's operations can be built.
     # ⚠️ Verified by emptying `CARRIER_IMPLEMENTATION` and watching this plant
     # redden -- the grammar widening above does not reach it, so its own scope
     # needed its own disabling.
