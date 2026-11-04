@@ -21,6 +21,8 @@ named as unestablished rather than guessed, so the absence is a fixture rather t
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
 import os
 import re
@@ -2732,6 +2734,29 @@ def self_test() -> int:
         suite.ok("and a second start is refused by git itself",
                  _refuses(solo, "feature/local", str(Path(tmp) / "lt2")))
 
+    print("\nthe branch a claim is cut from, as a role reaches it:")
+
+    # ⛔ The `integration-branch` subcommand's own wiring, asserted through `main` rather than
+    # through the function beside it: what § 10 and § 30 hand a role is the command line, and the
+    # derivation was already covered while the only route to it was covered by nothing — the
+    # parser and the dispatch were each deletable with this suite green. Found by review on the
+    # change that needed the value, whose `destination: null` means this branch.
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⚠️ The stack is held in a name rather than passed inline: `_bare_world` takes the
+        # directory *object*, so an inline one is collected -- and its tree removed -- before the
+        # call below runs. Measured here as an exit 1 with nothing printed.
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, with_remote, _ = _bare_world(stack)
+        printed = io.StringIO()
+        with contextlib.redirect_stdout(printed):
+            code = main(["integration-branch", "--repo-root", str(with_remote)])
+        suite.ok(
+            "the invocation prints the branch a claim is cut from",
+            code == 0
+            and printed.getvalue().strip() == integration_branch(with_remote, "origin"),
+            f"exited {code} having printed {printed.getvalue()!r}",
+        )
+
     print()
     if suite.failures:
         print(f"{suite.failures} check(s) failed.")
@@ -2791,6 +2816,20 @@ def main(argv: list[str]) -> int:
     namer.add_argument("--branch-prefix", required=True, help="a function of the item's type (§ 4.1)")
     namer.add_argument("--item", required=True, help="the item's own identifier")
     namer.add_argument("--title", required=True, help="the title the slug derives from (§ 8)")
+
+    # ⛔ The derivation on its own, for the reason `name` above is one: § 30's
+    # `destination: null` means *the integration branch*, and this surface carries no key naming
+    # it — so a role told to commit there had the value derivable by this module and reachable by
+    # nothing. Found by review on the change that added that facet. ⚠️ Printed rather than
+    # returned, because the role that needs it is a shell step.
+    integration = sub.add_parser(
+        "integration-branch",
+        help="the branch a claim is cut from and an exempt change is committed to (§ 10, § 30)",
+    )
+    integration.add_argument(
+        "--repo-root", required=True, help="the code root, stated and never inherited"
+    )
+    integration.add_argument("--remote", default="origin")
 
     for name, help_text in (
         ("take", "claim the item: publish the ref, then cut the tree"),
@@ -2857,6 +2896,8 @@ def main(argv: list[str]) -> int:
     try:
         if args.command == "name":
             print(branch_for(args.branch_prefix, args.item, args.title))
+        elif args.command == "integration-branch":
+            print(integration_branch(args.repo_root, args.remote))
         elif args.command == "take":
             print(
                 take(

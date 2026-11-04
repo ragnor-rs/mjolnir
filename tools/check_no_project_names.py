@@ -883,7 +883,7 @@ class Tree:
         # ⛔ And the key paths the surface marks `# private`, which is published
         # vocabulary by this method's own test: the surface states those strings,
         # so a configuration writing one is choosing the surface's word rather
-        # than inventing its own. ⚠️ What forced it is § 29's list -- a project
+        # than inventing its own. ⚠️ What forced it is § 28's list -- a project
         # names the keys it resolves privately, and those members are key paths.
         # Read as this project's values they forbade a role from naming the key
         # it reads: `day_log.attribute_to` in a carrier is the procedure naming a
@@ -897,7 +897,7 @@ class Tree:
         # -- and one of them is live here: `role` is a configured label of this
         # project's, so a carrier naming it passed. Narrowing to dotted paths
         # recovered that and still exempted 200-odd strings no arm holds. The
-        # marked set is the whole of what § 29's list can contain, the reader
+        # marked set is the whole of what § 28's list can contain, the reader
         # refusing any other entry, so it is the whole of what this needs.
         pool.update(facts["private"])
         lists: dict[str, set[str]] = {}
@@ -1326,7 +1326,7 @@ def check_no_value_is_carried_in_the_strict_set(tree: Tree) -> list[str]:
 def check_no_private_value_is_committed(tree: Tree) -> list[str]:
     """No tracked configuration carries a value under a `# private` key.
 
-    `schema.md § 29` names the class: a chat thread's name, a calendar's own
+    `schema.md § 28` names the class: a chat thread's name, a calendar's own
     name, a person, and a path on somebody's machine. Those are values a
     repository may not be able to hold, and the facet exists so a project can
     state every rule in its tracked file and resolve those from one it does not
@@ -1361,7 +1361,7 @@ def check_no_private_value_is_committed(tree: Tree) -> list[str]:
     if not marked:
         return [
             f"{SURFACE}: marks no key `# private`, so this check has nothing to look "
-            "for and reports green while holding nothing (§ 29). A surface that stopped "
+            "for and reports green while holding nothing (§ 28). A surface that stopped "
             "marking the class would take this check's whole scope with it."
         ]
     for path in tree.configs():
@@ -1379,7 +1379,7 @@ def check_no_private_value_is_committed(tree: Tree) -> list[str]:
             problems.append(
                 f"{path}: carries `{value}` under `{dotted}`, which the surface marks "
                 "`# private`. A tracked configuration states the key's shape and the "
-                "value is resolved through `private.source` (schema § 29)."
+                "value is resolved through `private.source` (schema § 28)."
             )
     return problems
 
@@ -1687,7 +1687,7 @@ def _a_declared_key_path(tree: Tree) -> str:
     ⛔ Read out of a configuration rather than written here, for the reason every
     fixture in this file is: the exemption's claim is that a project writing one
     of the surface's own key paths is not naming a value, so the string has to be
-    one a shipped configuration actually states. § 29's list is where that
+    one a shipped configuration actually states. § 28's list is where that
     happens.
     """
     marked = reader.surface_facts(tree.text.get(SURFACE, ""))["private"]
@@ -1909,7 +1909,7 @@ def _a_private_key(tree: Tree) -> str:
 
 
 def _plant_a_private_value_in_the_own_config(tree: Tree) -> Tree:
-    """A value of § 29's class in the tracked configuration of this project."""
+    """A value of § 28's class in the tracked configuration of this project."""
     key = _a_private_key(tree)
     block = "".join(f"{'  ' * depth}{part}:\n" for depth, part in enumerate(key.split(".")[:-1]))
     leaf = key.rsplit(".", 1)[1]
@@ -2072,7 +2072,7 @@ VIOLATIONS = [
     ("no value is carried in the strict set",
      "a status word that is also one of the surface's own key names",
      _plant_a_status_colliding_with_a_key_name),
-    # § 29's class, one plant per way it reaches a tracked file: in this project's
+    # § 28's class, one plant per way it reaches a tracked file: in this project's
     # own configuration, and in an example — where the placeholder exemption lives,
     # so a concrete value there is the arm that proves the exemption is the
     # placeholder's form rather than the file's. ⛔ And the two ways the check can
@@ -2176,7 +2176,7 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     ("no value is carried in the strict set", "a member of a closed list the surface publishes",
      lambda tree: _plant_in_a_carrier(
          f"\nThe stream is `{_a_published_list_member(tree)}`.\n")(tree)),
-    # ⛔ The third shape, and the one § 29 forced: a key path the surface declares
+    # ⛔ The third shape, and the one § 28 forced: a key path the surface declares
     # is the surface's word, and a project's own list may be a list of them. A
     # sweep reading those as this project's values forbids a role from naming the
     # key it reads -- measured on the day-log role, which cites

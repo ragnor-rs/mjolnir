@@ -540,7 +540,7 @@ people:
     that there is one of them.
 
 private:
-  # § 29. This repository is the toolkit itself and is public, so the one thing it may not hold is
+  # § 28. This repository is the toolkit itself and is public, so the one thing it may not hold is
   # the class of value this facet names — and it holds none, for the reason below. ⛔ Which is a
   # measurement of this file rather than a policy: the gate beside it sweeps every tracked
   # configuration for a value under a `# private` key, and this one is what it sweeps.
@@ -551,6 +551,24 @@ private:
   revisit_when: >-
     A chat archive or a calendar becomes evidence here, which is the first value this repository
     would be unable to carry.
+
+loop_exempt:
+  # § 30, and the empty form is this repository's own measured convention rather than caution:
+  # measured over the whole integration branch at 9062f45 — 120 commits, of which 113 are squash
+  # merges carrying a pull request number and 7 are not, every one of those 7 predating the loop.
+  # Documentation changes, comment changes and one-line corrections are all among the 113. ⛔ So a
+  # class here would state an exemption the history does not take, which is the inverse of the
+  # defect § 30 was written for. ⚠️ The window is named rather than left as *the recent history*,
+  # which grows under its own claim — the first form of this said *the last two hundred commits*
+  # of a branch that had 120.
+  #
+  # ⚠️ And the reason the convention holds is that this repository's own content *is* its
+  # behaviour: the surface, the skills and the documents beside them are what every consuming
+  # project runs on, so a prose edit here is a behavioural change to six projects and has nothing
+  # in common with the documentation edit the measured case exempted.
+  classes: []
+  borderline: ask
+  destination: null
 
 environment:
   # ⚠️ Measured, not declared (#90), and the measurement is the argument for the key: the shell a

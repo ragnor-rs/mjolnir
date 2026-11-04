@@ -308,6 +308,12 @@ lost is every check the skipped role owns. Measured on this repository, in
 Filing and gating are entered by a person, and so is whatever a project puts after a merge; the
 route was measured broken between starting and merging, and that is what it states.
 
+⛔ **And which changes enter the first leg at all is
+[§ 30](#30-the-changes-that-do-not-go-through-the-loop)**, which is a project's configured fact
+rather than a reading any leg here takes for itself. A change inside a class that section states has
+no item to be started on, so it enters none of these legs; a project stating no class sends every
+change through all of them, which is this table unchanged.
+
 ⚠️ **A role carried by a hook is entered by its event and not by the leg before it**, §7's
 invocation rule leaving nothing for a leg to address. The leg before it hands over by producing the
 record the hook reads.
@@ -2967,6 +2973,13 @@ rather than being left to whoever reads it:
 is the rule the one project that had already extracted this mechanism states about its own
 reference file, and it is why the routing is stated once here rather than in a paragraph inside
 each role that reads it.
+
+⛔ **What this key routes is an item's work, and `never` is scoped to that.** A change
+[§ 30](#30-the-changes-that-do-not-go-through-the-loop) exempts has no item, no claim and no tree
+cut for it, so it is committed where its destination branch is checked out — the shared checkout in
+the ordinary case, and ⚠️ **that is not this key being routed around**: the hazard `never` was
+switched on for is a shared checkout moved off a branch another session is mid-flight on, which
+needs a branch to switch to.
 
 ### Where a tree is created, and how the session comes to be in it
 
@@ -6141,6 +6154,175 @@ case reports a delivery **unverified** rather than falling back to the conclusio
 [§ 21](#21-a-command-that-could-open-a-session-on-a-live-machine)'s each read a command a session
 is about to run; a dispatch performed inside the port is no such call, and a reader expecting
 either guard to have seen it would be reading a rail that never fired.
+
+## 30. The changes that do not go through the loop
+
+```yaml
+loop_exempt:
+  classes:                        # [] where every change goes through the loop; required
+    - name: "…"                   # what a run report names the class by
+      paths: ["docs/*", "*.md"]   # every changed path matches one of these globs
+      kinds: [documentation, comment, ignore_file, factual_correction, tooling]
+  borderline: ask | session       # default: ask
+  destination: "<the branch an exempt change is committed to>"   # null — § 10's integration branch
+# procedure: max_lines
+# procedure: lines_changed
+```
+
+Which changes never enter [§ The loop](#the-loop--ten-roles) at all — no work item, no gate, no
+branch of their own, no change opened and no review — and which branch the ones that skip it are
+committed to instead.
+
+⛔ **The absence is a configuration and it is today's behaviour.** `classes: []` is a project
+stating that every change it makes goes through the loop, which is what every project this toolkit
+reached was doing at the time the facet was written. ⛔ **And an unstated class is never an
+exemption a role grants itself**: the one thing this facet may not become is a rail a session can
+reason its way past, which is why the decision below is a lookup against stated classes rather than
+a judgement with a configured hint.
+
+⚠️ **Two projects were measured and neither stated the fact**, which is what the facet is written
+against: a commit with no work item is otherwise indistinguishable from one that skipped the process
+by accident, so the gate in each of them cannot tell a deliberate bypass from a missed item. ⛔ **The
+measurement itself is
+[`docs/configuration-surface.md`](../../../docs/configuration-surface.md#the-changes-that-never-entered-the-loop-and-the-rule-nobody-had-written)'s
+and is not restated here** — the four-word refusal, the convention a repository's own log already
+carried, the cost of a branch for a one-line fix, and the release whose unticketed work was the
+larger half — by [§ 6](#the-pull-request-title-and-body)'s rule that every measurement on this
+surface lives there rather than beside the rule it forced.
+
+### Why the axis is kind and never size
+
+⛔ **Size is not a property this facet reads, and no key states one.** *Small* is not a measurable
+property of a change, both measured projects' own tests are about what a change **is**, and the
+measurement records the release where keying on the diff would have exempted the wrong half of it.
+
+⚠️ **The two markers above hold two spellings and not the rule.** `max_lines` and `lines_changed`
+are refused wherever a configuration writes them, and a third spelling nobody thought of would get
+past them. What holds the rule itself is that **nothing on this route is ever handed a count**: the
+decision takes the changed paths and a kind, so a change wholly inside a class is exempt at one line
+and at two hundred files alike, and a change outside one is not exempt at either size.
+
+### What a class is, and the conjunction that makes it one
+
+A class is a **name** and at least one of two facets. ⛔ **The name is required, carries no
+surrounding whitespace and is unique across the classes**, because it is what a run report
+identifies the exemption by: two classes a report cannot tell apart leave a reader unable to say
+which stated decision let a change past. ⛔ **A class stating neither facet is refused** — it would
+exempt every change this project ever makes.
+
+| facet | what it holds | answered by |
+|---|---|---|
+| `paths` | the globs the change's files are held to | the changed-path list alone |
+| `kinds` | which of the published kinds this class covers | `borderline` below |
+
+⛔ **Where a class states both, a change is exempt only where both hold.** The two measured projects
+divided the same question differently — one by the files a change touches, the other by whether a
+user sees the result — so neither division is this surface's ruling, and a project states whichever
+of them it can decide. ⚠️ **A project stating both facets on one class has narrowed it and not
+widened it**, which is the direction a conjunction fails in and the reason it is this way round.
+
+⛔ **A change touching an exempt path and a non-exempt one is not exempt**, and the paths that fell
+outside every class are named. That is the case the facet exists against: a documentation edit with
+one line of code in it reads as documentation to every rule that asks *does this change touch the
+docs*, and waves the code through under cover of it. ⚠️ **So the test is `every` changed path and
+never `any`**, which is the whole of that sentence. ⚠️ **And `every` is over the files and not over
+the mentions of them** — a path named twice is one file, which is why the decision deduplicates
+before it compares.
+
+⛔ **A `paths`-only class is the project asserting that those paths carry no behavioural change**,
+and it is the widest thing this facet can be asked to say. Nothing holds a glob to that assertion,
+because what a given directory contains is the project's own fact — so ⚠️ **the glob is wider than
+it reads.** A glob is matched against the **repository-relative** path with `*` **crossing a
+directory separator**, so `docs/*` covers that subtree whole whatever is in it, and `*.md` reaches
+every such file in the repository including the ones that *are* its behaviour. ⚠️ **A project whose
+prose is its product states the narrowest globs it can**, or states `kinds` beside them.
+
+⛔ **Three glob forms are refused rather than read.** A glob of nothing but stars, because `*`
+already crosses a separator and a class so written exempts every change — the stating-neither-facet
+refusal above wearing a facet. The two-star form, because it is the habit every other tool teaches,
+would mean nothing different here, and a glob quietly matching less than its author meant sends a
+change through the loop that should not have been in it. And a blank one, which matches nothing.
+⛔ **A path handed to the decision is refused on the same rule**: one that is absolute or climbs out
+of the tree is a path no class can be asked about, and the answer it would otherwise be given is
+*exempt*.
+
+**The kinds are a closed set, published in the fence above and nowhere else on this surface.**
+⚠️ **Unlike [§ 27](#27-the-role-to-person-map)'s role names, they are publishable** — which roles a
+project distinguishes is how that project is organised, while what a change *is* was answered the
+same way by both projects measured. ⛔ **Behavioural change is not among them and no class may name
+it**: code, configuration defaults, prompts and schema migrations are where the review pass earns
+its keep, and the test the first project offered for a hard case is *could a reviewer disagree about
+correctness* — a factual correction has nothing to disagree with. ⛔ **A kind handed to the decision
+is held to the same set**, and a spelling outside it is refused rather than answered *not exempt* —
+that reading is the safe-looking one, and what it does is drop the exemption the project configured
+with nothing said.
+
+### Who decides a case the paths do not settle
+
+`borderline` is the one facet about the decision rather than about the classes, and it carries two
+values because the two measured projects would answer it differently.
+
+| `borderline` | a class whose `kinds` the changed paths do not settle |
+|---|---|
+| `ask` | the question goes to a person, with the class and the kinds it would accept named |
+| `session` | the session answers it, and the run report states the kind it read |
+
+⛔ **`ask` is the default and silence under it is not a yes** —
+[§ Nothing is deferred](#nothing-is-deferred)'s rule arriving where the act being licensed is a
+commit that skipped every check the loop owns. ⚠️ **A class stating `paths` alone reaches neither
+arm**: its question is answered by the changed-path list, so `borderline` decides nothing for a
+project whose classes are all of that shape.
+
+⛔ **The decision answers one of three things, and the third is why `borderline` exists at all:**
+
+| | |
+|---|---|
+| **exempt** | one class covers the whole change; the report names which, and the branch it is committed to |
+| **through the loop** | no class does, and the report names why — the paths that fell outside every class, the kind no class covers, or that the paths are covered *between* classes and by none of them |
+| **unanswered** | a class's `kinds` are not settled by the changed paths and nobody has stated the kind; `borderline` says who answers |
+
+⛔ **The third is not folded into either of the others**, and the direction that costs is the
+safe-looking one: read as *through the loop* it drops the exemption the project configured with
+nothing said, and read as *exempt* it commits a change nobody classified. ⚠️ **So a project carrying
+a `kinds`-only class is asked about changes a `paths` class would have settled silently** — the
+cost of an axis no file tree expresses, and the reason `borderline: session` exists beside `ask`.
+
+⛔ **Every answer names the class and why in the run report**, which is the whole of what makes an
+exempt commit auditable: the day log and the deliverables roles read commits, and the reason to
+configure the bypass rather than take it ad hoc is that a reader can then tell the two apart.
+
+### Where an exempt change goes, and the one role it runs
+
+`destination` is the branch an exempt change is committed to. ⚠️ **Null is an answer and the common
+one**: the integration branch, derived the way [§ 10](#the-claim-on-a-work-item) derives the branch
+a claim is cut from — this surface carries no key naming it, so it is read from what the remote
+advertises as its default. A project states a value where that is not where its exempt changes go,
+which is the second measured case: a release branch carrying a release's tooling work.
+
+⛔ **It is a branch and never a working directory.** Which working directory an exempt change is
+committed in is [§ 10 → Where the work happens](#where-the-work-happens)'s, stated there beside the
+key it bounds and ⛔ **not restated here**.
+
+⛔ **One role *acts on* an exempt change, and it is
+[§ 23](#23-session-bookkeeping--which-thirds-a-project-runs)'s commit third.** Nothing is filed, no
+gate runs, no claim is taken and no change is opened, so the roles that own those acts have nothing
+to act on — and a route that entered any of them would be the loop the change was exempted from.
+⚠️ **The tracker third is unaffected**: it brings current whatever the tracker already holds, and an
+exempt change adds nothing to it.
+
+⚠️ **Reading this facet is a different act from acting on the change, and two roles do it.** The
+filing role asks before an item exists — a unit it would have filed and this facet exempts is a unit
+it does not file — and ⛔ **that is the one place the question can be asked early enough to be worth
+asking**, since an item filed for an exempt change is one the loop then runs whole. The commit third
+asks about a change already in hand. ⚠️ **No other role reads it**, and ⛔ **a role holding a work
+item does not read it at all**: the change is in the loop by the item's existence, so a verdict
+asked there would answer about work this facet has nothing to say about — and the answer it would
+give is a branch to divert that work onto.
+
+⚠️ **Nothing here moves the change after the commit.** Whether the destination branch is pushed and
+what the host does with it are stated already — [§ 2](#how-a-pull-request-lands) for a change that
+lands as a pull request, § 10 for the refs a role may publish — and this facet adds no mechanism of
+its own.
 
 ## What the toolkit installs into a project, and what takes it out
 

@@ -278,6 +278,19 @@ statement of the pointer, the shape, the absent case and the shortcut nothing ma
 behind it found the same map in four stores, each carrying the argument against copying in its own
 words — [the measurement](docs/configuration-surface.md#the-role-to-person-map-four-stores-and-one-pointer).
 
+⛔ **Which of your changes skip the loop entirely is yours to state, and nothing infers it.** A
+one-line documentation fix does not need a branch, three gate jobs, a merge commit and a branch
+deletion while the document stays wrong — and a project that never says so either pays for all of
+that or bypasses the loop ad hoc, undocumented and differently each time. So you name the classes:
+path globs, change kinds, or both as a conjunction, with the branch they are committed to and who
+decides a case the paths do not settle. The
+[exemption rule](plugins/mjolnir/config/schema.md#30-the-changes-that-do-not-go-through-the-loop) is
+the single statement of it, and ⛔ **the axis is what a change is and never how big it is** — in one
+measured release the unticketed tooling work was *larger* than the ticketed product changes beside
+it, so the decision is handed no count at all. Stating nothing is the default and sends everything
+through the loop —
+[the measurement](docs/configuration-surface.md#the-changes-that-never-entered-the-loop-and-the-rule-nobody-had-written).
+
 ⛔ **A role's reply to the person running it has a fixed register** — procedure too, and for the
 same kind of reason. The
 [register rule](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) is the

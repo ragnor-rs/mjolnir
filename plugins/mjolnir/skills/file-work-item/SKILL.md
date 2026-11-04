@@ -91,10 +91,34 @@ work. Then split it into the **smallest independently-shippable units**: granula
 to estimate, to review and to deduplicate, and one broad item hides duplicates inside itself and
 stalls.
 
-⛔ **Present the split and have it confirmed before anything is written.** Skip the question only
-where the request is unambiguously one item. Without this step one request silently becomes one
-item, which is the failure that makes every later duplicate check useless — the duplicate is inside
-the item nobody split.
+⛔ **A unit whose change this project exempts from the loop is not an item**
+([`§ 30`](../../config/schema.md#where-an-exempt-change-goes-and-the-one-role-it-runs)), and that is
+asked of the configuration rather than judged here — a project stating no class exempts nothing,
+which is every unit filed as before. ⛔ **Asked while the split is still a proposal and before it
+is put for confirmation**, because this is the one place the question can be asked early enough to
+be worth asking: an item filed for an exempt change is one the loop then runs whole, which is the
+cost § 30 measures.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --exempt-for <the paths the unit would touch> \
+  [--of-kind <kind>]
+```
+
+- ⛔ **Only where the paths are already known.** A request that does not say which files it touches
+  is not run through this and is filed — a guess at the paths would be this role deciding the
+  facet's question, and the permissive direction there is work that never gets tracked.
+- **`exempt`** ⇒ the unit is dropped from the split, and ⛔ **the report says which class and why**;
+  it belongs to the bookkeeping role's commit third instead.
+- **`through_the_loop`** ⇒ the unit stays in the split and is filed, which is every unit's answer
+  under a project that states no class.
+- **`ask`** ⇒ the question goes into the same confirmation the split does, with the class and its
+  kinds named. ⛔ **Not resolved by filing anyway**, and ⛔ **not resolved by dropping the unit
+  either** — both decide the facet's question on a person's behalf, in opposite directions.
+
+⛔ **Present the split — whatever the facet above left in it — and have it confirmed before
+anything is written.** Skip the question only where the request is unambiguously one item. Without
+this step one request silently becomes one item, which is the failure that makes every later
+duplicate check useless — the duplicate is inside the item nobody split.
 
 Sections 2–6 then run **once per confirmed item**. Report them together at the end.
 

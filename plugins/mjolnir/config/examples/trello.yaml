@@ -357,7 +357,7 @@ people:
   key: handle
 
 private:
-  # § 29's absent case under a project that carries values of the class in every shape the facet
+  # § 28's absent case under a project that carries values of the class in every shape the facet
   # names — the arm that shows the facet is a decision rather than a consequence of having such
   # values. ⛔ The reason is who may read this repository, not what is in it.
   carrier: none
@@ -367,6 +367,24 @@ private:
   revisit_when: >-
     A third person is given access, or the archive moves to a machine whose path names somebody
     else's home directory.
+
+loop_exempt:
+  # § 30's second measured case, which is the one no path glob can express: an entire release's
+  # tooling work goes direct here — process scripts, measurement harnesses and the documentation
+  # beside them — while every product change in the same release goes through the loop. ⛔ The axis
+  # is *does a user see this*, and it does not line up with the file tree: the tooling lives beside
+  # the product code, so this class states kinds and no paths.
+  classes:
+    - name: release tooling
+      kinds: [tooling, documentation, factual_correction]
+  # ⛔ The arm this project needs, and the reason it is configuration rather than procedure: a
+  # class with no `paths` is decided entirely by what the change is, so under `ask` every one of
+  # these commits would stop for a person — which is the round trip the measured history shows
+  # nobody takes. The session answers, and the run report states the kind it read.
+  borderline: session
+  # The second measured destination: these commits land on the release branch rather than on the
+  # integration branch, which is why this facet exists as a key instead of being derived.
+  destination: "release/current"
 
 environment:
   # A key and a token as a pair, which is how this tracker is addressed: one credential is two

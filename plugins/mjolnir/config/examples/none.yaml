@@ -220,6 +220,15 @@ private:
     A chat archive or a calendar becomes evidence, or this repository is pushed anywhere a
     second person can read it.
 
+loop_exempt:
+  # § 30's empty form, and here it is the only form available: with no tracker and one mapped role
+  # there is no loop for a change to be exempt from. ⛔ Still stated — the facet asks which of a
+  # project's changes bypass the loop, and *none of them, because there is none* is an answer a
+  # reader can act on where an unset key is not.
+  classes: []
+  borderline: ask
+  destination: null
+
 environment:
   # The empty list is a real statement and the cheapest one this facet has: the single mapped
   # role reads evidence off the machine and writes a file, so its commands need nothing the

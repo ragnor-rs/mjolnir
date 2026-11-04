@@ -226,6 +226,44 @@ message mechanism, the style, the authorship rule, and what holds under either s
   refuses that configuration, so meeting it here means the entry was never read; say so rather than
   choosing a mode.
 
+⛔ **This is the one role that acts on an exempt change**
+([`§ 30`](../../config/schema.md#where-an-exempt-change-goes-and-the-one-role-it-runs)), so the
+verdict is read here rather than assumed — ⛔ **and only where step 3 established that there is no
+work item in hand.**
+
+⛔ **A session holding an item does not ask.** That change is in the loop because the item exists,
+so the facet has nothing to say about it — and what it would answer instead is a branch to commit
+the item's own work onto, off the branch the claim was taken on. ⚠️ **Measured on this change
+rather than reasoned about**: under a project carrying a documentation class with a stated
+destination, two `docs/` paths staged mid-item answered `exempt` onto that branch. ⛔ **So the
+question for this step is step 3's first row, and not the diff.**
+
+Where there is no item, once the staged paths are known and before the commit:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --exempt-for <the staged paths> [--of-kind <kind>]
+```
+
+- ⛔ **The paths handed over are the staged ones**, quoted, repository-relative, and ⛔ **not a
+  count of them**: § 30's axis is what a change is, and this role reads the verdict rather than
+  deciding it.
+- **`exempt`** ⇒ the change is committed to the branch the verdict names, and ⛔ **the reply states
+  which class and why**, which is what makes the bypass auditable instead of indistinguishable
+  from a missed item. ⚠️ **A null destination is the integration branch and is not a missing
+  value** — § 30 states it is derived, and the derivation is the claim carrier's:
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" integration-branch --repo-root <code-root>`.
+- **`through_the_loop`** ⇒ nothing changes here, and ⛔ **the reason is read rather than assumed**:
+  the verdict names which of § 30's three it is — paths outside every class, a kind no class
+  covers, or paths covered between classes and by none of them.
+- **`ask`** ⇒ ⛔ **the question is asked, with the class and the kinds it would accept named**, and
+  `asked_of` says who answers: a person, or this session where the project configured that. ⚠️
+  Silence is not a yes — [`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)
+  arriving where the act being licensed is a commit that skipped every check the loop owns.
+- ⛔ **A refusal is a stop and never an exemption.** A run handed no path, a path that is not
+  repository-relative, or a kind the surface does not publish each refuses rather than answering —
+  and a role that read any of those as *not exempt* would have decided the facet's question for
+  itself.
+
 ## 7. The artifact, and the boundary it names
 
 ⛔ **Keep the artifact current as the work goes, so that one exists whichever boundary arrives.**

@@ -353,7 +353,7 @@ people:
     right person — which is the first reader of a map here that a person is not already.
 
 private:
-  # § 29, and the arm it was written for: this repository sits in a client's organisation whose
+  # § 28, and the arm it was written for: this repository sits in a client's organisation whose
   # rules forbid the chat names, the calendar and the archive's path on whoever keeps the log —
   # and before this facet existed, the whole of that procedure was git-ignored here for exactly
   # that reason, which is the cost extraction was meant to remove.
@@ -371,6 +371,20 @@ private:
     - day_log.evidence.chat.mixed
     - day_log.evidence.chat.path
     - day_log.evidence.chat.patterns
+
+loop_exempt:
+  # § 30's empty form, which is a statement and not an omission: every change this project makes
+  # is filed, gated, started, finished and reviewed, documentation included. ⛔ The reason is this
+  # file's own — the statuses are `writer: never` throughout because the credential authenticates
+  # as a person, so an item is the only record of what happened, and a commit with no item would
+  # be a change nobody can account for at the end of a sprint.
+  classes: []
+  borderline: ask
+  # ⚠️ Null, which is the only value that says nothing here: a branch stated beside an empty class
+  # list would be a value nothing routes, and the reader's absent list names that pair where it
+  # finds one. With both empty there is nothing to name, which is why this file gets the one line
+  # about the class list and no second one about the destination.
+  destination: null
 
 environment:
   # Two variables rather than one: this tracker authenticates as a person, so the credential
