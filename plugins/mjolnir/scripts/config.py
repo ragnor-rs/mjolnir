@@ -70,8 +70,10 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import copy
 import fnmatch
+import io
 import json
 import os
 import re
@@ -1814,7 +1816,40 @@ class Config:
         and `person_for`'s rule arriving at the facet where the permissive
         reading is a commit that skipped every check the loop owns.
         """
-        held = [p for p in paths if isinstance(p, str) and p.strip()]
+        # ⛔ **Refused rather than filtered**, and that is the reproduction rather
+        # than a preference: a list filtered down to its well-formed members
+        # answers about a *different change* than the one the caller described,
+        # and the answer it gives is `exempt`. Measured by review on this change
+        # -- `['docs/a.md', 123, None, {'app/main.py': 1}]` answered exempt with
+        # the dict dropped, which is the permissive direction § 11 names.
+        for position, path in enumerate(paths):
+            if not isinstance(path, str) or not path.strip():
+                raise ConfigError(
+                    EXEMPT_CLASSES_PATH,
+                    f"was handed {path!r} as changed path {position}, which is not a "
+                    "path. ⛔ Not dropped from the list: a change described wrongly "
+                    "in part would be answered about in part, and the part that "
+                    "survives is the part that gets exempted (§ 28, § 11).",
+                )
+            # ⛔ § 28 states the glob is matched against the **repository-relative**
+            # path, and that precondition is performed here or by nothing. Measured
+            # by review: under the shipped `*.md` glob, an absolute path outside the
+            # repository and `../outside/thing.md` each answered `exempt` -- an
+            # exemption granted over a file the repository does not contain.
+            if os.path.isabs(path) or path.split("/")[0] == os.pardir:
+                raise ConfigError(
+                    EXEMPT_CLASSES_PATH,
+                    f"was handed {path!r}, which is not repository-relative. § 28 "
+                    "matches a class's globs against the path as the repository "
+                    "holds it, so an absolute path or one climbing out of the tree "
+                    "is a path no class can be asked about -- and the answer it "
+                    "would otherwise get is `exempt`.",
+                )
+        # ⛔ Deduplicated, because the *wholly inside* test below compares what the
+        # class covers against what the change touches, and a path named twice is
+        # one file. Measured by review: the comparison was a set's size against a
+        # list's, so one repeated path turned an exemption into a question.
+        held = list(dict.fromkeys(p for p in paths if isinstance(p, str)))
         # ⛔ A decision with no changed path is a stop and never *exempt*: the
         # permissive reading of an empty list is a class whose `paths` are
         # vacuously all matched, which exempts every change a caller forgets to
@@ -1826,6 +1861,22 @@ class Config:
                 "class. ⛔ Not answered as exempt: a class's `paths` are matched "
                 "against every changed path, and an empty list meets that vacuously "
                 "-- which would exempt whatever a caller failed to describe (§ 28).",
+            )
+        # ⛔ The kind is held to § 28's closed set here as well as in `validate`,
+        # and for a different reason: a configuration's kinds are checked where it
+        # is read, while *this* value arrives from a role at decision time. A
+        # misspelling answered `through_the_loop` -- which is safe and silent, and
+        # drops the exemption the project configured with nothing said.
+        published = vocabulary_list(
+            self.facts, EXEMPT_KINDS_PATH, "a change kind handed to a decision"
+        )
+        if kind is not None and kind not in published:
+            raise ConfigError(
+                EXEMPT_KINDS_PATH,
+                f"was handed {kind!r}, which § 28 does not publish: "
+                f"{' | '.join(published)}. ⛔ Not answered as *not exempt*: that is "
+                "the safe-looking reading, and what it does is drop the exemption "
+                "the project configured without saying a word.",
             )
         classes = _absent_as(self.get(EXEMPT_CLASSES_PATH), [])
         destination = self.get(EXEMPT_DESTINATION_PATH)
@@ -1865,8 +1916,13 @@ class Config:
                 # ⛔ `every` and not `any`: a change touching an exempt path and
                 # a non-exempt one is not exempt, which is the case § 28 names as
                 # the one that waves code through under cover of a documentation
-                # edit.
-                if len(inside) != len(held):
+                # edit. ⚠️ **What the duplicate case turns on is the dedup above
+                # and not this line**: the first form measured a set's size
+                # against the list's, so one path named twice read as one path
+                # missing -- and with `held` deduplicated the two forms agree.
+                # Sets either side anyway, as the direct expression of *every
+                # changed path is inside*, and the suite holds the dedup.
+                if inside != set(held):
                     continue
             if kinds:
                 if kind is None:
@@ -1919,9 +1975,25 @@ class Config:
                     for name, kinds in sorted(pending)
                 )
                 + f", and the change's kind is not stated. `{BORDERLINE_PATH}` is "
-                + f"{self.get(BORDERLINE_PATH)!r} (§ 28).",
+                + f"{self.get(BORDERLINE_PATH)!r}"
+                # ⛔ The residue named rather than left to contradict `outside`:
+                # the paths below fell outside every class that states any, and a
+                # report carrying that list beside a sentence saying the paths
+                # exclude nothing said two opposite things. Found by review.
+                + (
+                    "; these changed paths are outside every class that states "
+                    "paths: " + ", ".join(repr(p) for p in outside)
+                    if outside
+                    else ""
+                )
+                + " (§ 28).",
             )
             return answer
+        # ⛔ Three reasons and not two, because *covered between them* is its own
+        # case: exemption needs **one** class to cover every changed path, so a
+        # change whose paths are split across two classes is outside none of them
+        # and inside none of them either. Found by review, where it reported an
+        # empty `outside` and blamed a kind that had decided nothing.
         answer["why"] = (
             (
                 "these changed paths are outside every class: "
@@ -1929,9 +2001,15 @@ class Config:
             )
             if outside
             else (
-                f"no class covers a change of kind {kind!r}"
-                if kind
-                else "no class covers this change"
+                "no single class covers every changed path -- "
+                + ", ".join(repr(p) for p in held)
+                + " are covered between the classes rather than by one of them"
+                if held_to_paths and covered >= set(held)
+                else (
+                    f"no class covers a change of kind {kind!r}"
+                    if kind
+                    else "no class covers this change"
+                )
             )
         ) + " (§ 28)."
         return answer
@@ -3880,6 +3958,21 @@ def validate(data: dict, facts: dict) -> None:
                 "that report saying a change bypassed the loop without saying which "
                 "stated decision let it.",
             )
+        # ⛔ **Refused rather than stripped**, because the name is what a run
+        # report prints: normalising it here would leave the configuration saying
+        # one thing and the report another, which is this facet's own defect one
+        # level down. Found by review -- the blankness test above already strips,
+        # so `"prose"` and `"prose "` passed as two names and arrived in one
+        # report as the same word twice.
+        if name != name.strip():
+            raise ConfigError(
+                f"{at}.name",
+                f"is {name!r}, which carries surrounding whitespace. ⛔ Not trimmed: "
+                "the name is what a run report identifies the exemption by (§ 28), "
+                "so a value this reader silently changed would be a report naming "
+                "something the configuration does not say -- and two names "
+                "differing only in a space read as one class in that report.",
+            )
         if name in seen_names:
             raise ConfigError(
                 f"{at}.name",
@@ -3924,6 +4017,21 @@ def validate(data: dict, facts: dict) -> None:
             # nothing different -- and a glob quietly matching less than its author
             # meant is one spelling read two ways, with nothing reporting the
             # difference.
+            # ⛔ And the glob that matches every path, which is the same refusal as
+            # the stating-neither-facet one above wearing a facet: `*` crosses a
+            # directory separator here, so a class whose only glob is a bare star
+            # exempts this project's every change. Found by review, which measured
+            # the three spellings of *exempt everything* and found two refused and
+            # the shortest accepted -- while the `**` refusal's own message coaches
+            # an author toward it. ⚠️ § 15's `cases` carries the same refusal.
+            if set(glob.strip()) <= set("*"):
+                raise ConfigError(
+                    f"{at}.paths[{position}]",
+                    f"is {glob!r}, which matches every path this project has: `*` "
+                    "crosses a directory separator here (§ 28), so this class "
+                    "exempts every change rather than narrowing anything -- the "
+                    "whole loop switched off by a block that reads like a class.",
+                )
             if CROSSING_GLOB in glob:
                 raise ConfigError(
                     f"{at}.paths[{position}]",
@@ -3932,18 +4040,24 @@ def validate(data: dict, facts: dict) -> None:
                     "crossing a directory separator, so `docs/*` covers that subtree "
                     "whole and this form states a rule nothing here performs.",
                 )
-        published = vocabulary_list(
-            facts, EXEMPT_KINDS_PATH, "a class's change kinds would be unchecked"
-        )
+        # ⛔ Asked only of a class that states `kinds`, and ⚠️ **the phrase is a
+        # noun phrase** -- `vocabulary_list` supplies *would be unchecked* itself,
+        # so the first form of this read "unchecked would be unchecked". Both found
+        # by review: the gate also refused a `paths`-only configuration over a
+        # vocabulary it never consults, which is `session.parts`' own `if parts:`
+        # one facet over.
         for position, member in enumerate(kinds or []):
+            published = vocabulary_list(
+                facts, EXEMPT_KINDS_PATH, "a class's change kinds"
+            )
             if member not in published:
                 raise ConfigError(
                     f"{at}.kinds[{position}]",
                     f"is {member!r}, and § 28 states a closed set: "
                     f"{' | '.join(published)}. ⛔ Behavioural change is not among "
-                    "them and no class may name it -- code, configuration defaults, "
-                    "prompts and schema migrations are where the review pass earns "
-                    "its keep.",
+                    "them and no class may name it -- which is § 28's own statement "
+                    "of where the review pass earns its keep, cited rather than "
+                    "listed again here.",
                 )
     destination = _get(data, EXEMPT_DESTINATION_PATH)
     if destination is not None and (
@@ -4658,6 +4772,7 @@ def validate(data: dict, facts: dict) -> None:
             "state `[]`.",
         )
 
+
     # ⛔ Read through `_absent_as` for the reason § 23's block above is: an absent
     # block falls to the per-role requirement below, which names the role rather
     # than the block.
@@ -5171,6 +5286,28 @@ def validate(data: dict, facts: dict) -> None:
             "the directory a replaced result's full text is written to, outside "
             "every working tree. With nowhere to write it, a replacement is a "
             "result the window has lost and nothing can recover.",
+        )
+
+    # § 28 against § 23, and ⛔ **last of every rule here, rather than beside
+    # § 28's own**: this is the only rule that reads two facets each of which has
+    # rules of its own, so a configuration that is malformed in either has to be
+    # refused on *that* key first. Measured by review on this change -- placed
+    # beside § 28's block it reported itself instead of three of this file's own
+    # plants, two about `session.parts` and one about `commit.staging`.
+    #
+    # ⚠️ The direction is `queue_position`'s and not § 4.7's: the pair is refused,
+    # while a commit third with no exempt class is the ordinary configuration and
+    # no finding. Found by review, which loaded the pair and got an `exempt`
+    # verdict for a change no role could then commit.
+    if _get(data, EXEMPT_CLASSES_PATH) and COMMIT_THIRD not in _absent_as(
+        _get(data, "session.parts"), []
+    ):
+        raise ConfigError(
+            EXEMPT_CLASSES_PATH,
+            f"states a class while `session.parts` runs no `{COMMIT_THIRD}` third. "
+            "§ 28 makes that third the one role an exempt change runs at all, so "
+            "this pair exempts a change from every role in the loop and leaves "
+            "nothing to commit it. Run the third, or state no class.",
         )
 
 
@@ -7160,13 +7297,41 @@ def self_test() -> int:
         ("a project stating no class at all",
          ["docs/one.md"], None, {"classes": []},
          THROUGH_THE_LOOP),
+        # ⛔ One path named twice is one file, and the first form of this measured
+        # a set's size against the list's -- so a duplicate read as a path missing
+        # and turned an exemption into a question put to a person. Found by review.
+        ("a change naming one exempt path twice",
+         ["docs/one.md", "docs/one.md"], None, by_path,
+         f"{EXEMPT} {EXEMPT_BY_PATH}"),
+        ("and the duplicate is not reported back as two paths",
+         ["docs/one.md", NON_EXEMPT_PATH, NON_EXEMPT_PATH], None, by_path,
+         f"{THROUGH_THE_LOOP} outside {NON_EXEMPT_PATH}"),
         # ⛔ The stop, which is the one answer an empty list may not get: a
         # class's `paths` are matched against every changed path and meet that
         # vacuously when there is nothing to match.
         ("a decision handed no changed path",
          [], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
-        ("a decision handed nothing but blanks",
-         ["", "   "], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
+        # ⛔ Refused rather than filtered down to the well-formed members, which
+        # answers about a different change than the caller described -- and
+        # answers `exempt`. Found by review on this change.
+        ("a decision handed a blank among real paths",
+         ["docs/one.md", "   "], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
+        ("a decision handed something that is not a path at all",
+         ["docs/one.md", 17], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
+        # ⛔ § 28 states the glob is matched against the repository-relative path,
+        # and this is where that precondition is performed. Found by review: under
+        # the shipped `*.md` glob an absolute path outside the repository, and one
+        # climbing out of it, each answered `exempt`.
+        ("a decision handed an absolute path",
+         ["/elsewhere/notes.md"], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
+        ("a decision handed a path climbing out of the tree",
+         ["../outside/thing.md"], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
+        # ⛔ And the kind held to the published set at decision time, which is a
+        # different act from holding a configuration's kinds: a misspelling
+        # answered `through_the_loop`, which is safe, silent, and drops the
+        # exemption the project configured. Found by review.
+        ("a decision handed a kind the surface does not publish",
+         ["docs/one.md"], "behavioural", by_kind, f"stop {EXEMPT_KINDS_PATH}"),
         # § 28's destination, carried on the verdict rather than looked up again
         # by the role that commits -- and in both directions, or an arm that
         # always reported one would pass while reporting the wrong thing.
@@ -7183,6 +7348,73 @@ def self_test() -> int:
             answered == wanted,
             f"answered {answered!r}",
         )
+    # ⛔ Covered between two classes and inside neither, which is its own reason
+    # and was reported as neither: `outside` came back empty and `why` blamed the
+    # kind, which had decided nothing. Found by review, and firing for the first
+    # configuration anybody writes past one class.
+    split = [
+        {"name": EXEMPT_BY_PATH, "paths": ["docs/*"]},
+        {"name": "tooling paths", "paths": ["tools/*"]},
+    ]
+    between = _answer_on(["docs/one.md", "tools/measure.py"], classes=split)
+    check(
+        "a change covered between two classes and inside neither is not exempt",
+        between["verdict"] == THROUGH_THE_LOOP and not between["outside"],
+        f"answered {between['verdict']!r} outside {between['outside']!r}",
+    )
+    check(
+        "and the reason names the split rather than a facet that decided nothing",
+        "no single class covers every changed path" in between["why"],
+        f"the reason given was {between['why']!r}",
+    )
+    # ⛔ `outside` cleared on an exemption, which needed a class list mixing the
+    # two shapes to reach at all: exempt by a kinds-only class while a sibling
+    # class states paths the change falls outside. Found by review as a path
+    # nothing asserted, and the comment beside it argues the case in detail.
+    residue = _answer_on([NON_EXEMPT_PATH], "tooling")
+    check(
+        "an exemption carries no residue, with a sibling class stating paths",
+        residue["verdict"] == EXEMPT and residue["outside"] == [],
+        f"answered {residue['verdict']!r} outside {residue['outside']!r}",
+    )
+    # ⛔ The destination on an `ask`, which is trello's own shape -- a kinds-only
+    # class, a stated branch and `borderline: session` -- and which no arm reached:
+    # the field was replaceable by `None` with the suite green. Found by review.
+    pending = _answer_on(
+        ["tools/measure.py"], classes=by_kind["classes"],
+        borderline="session", destination="release/current",
+    )
+    check(
+        "an unanswered class carries the branch an exemption would be committed to",
+        pending["verdict"] == ASK and pending["destination"] == "release/current",
+        f"answered {pending['verdict']!r} onto {pending['destination']!r}",
+    )
+    # ⛔ The three fields the rendering above does not read, each of which was
+    # replaceable by a constant with the whole suite green. ⚠️ `why` is held on the
+    # wording its own comments argue for, because two of those comments record a
+    # previous wording that was wrong about which test had run.
+    for label, answer, wanted in (
+        ("an exemption says the change is wholly inside the class",
+         _answer_on(["docs/one.md"], **by_path), "wholly inside"),
+        ("an empty class list says every change goes through the loop",
+         _answer_on(["docs/one.md"], classes=[]), "goes through the loop"),
+        ("a path outside every class is named as the reason",
+         _answer_on([NON_EXEMPT_PATH], **by_path), "outside every class"),
+        ("an unanswered kind says the paths exclude the class rather than fit it",
+         _answer_on(["tools/measure.py"], **by_both), "exclude none of"),
+    ):
+        check(
+            label,
+            wanted in answer["why"],
+            f"the reason given was {answer['why']!r}",
+        )
+    carried = _answer_on(["docs/one.md", NON_EXEMPT_PATH], "documentation", **by_path)
+    check(
+        "the answer carries back the change it was asked about, paths and kind",
+        carried["paths"] == ["docs/one.md", NON_EXEMPT_PATH]
+        and carried["kind"] == "documentation",
+        f"carried {carried['paths']!r} and {carried['kind']!r}",
+    )
     # ⛔ The size axis, asserted on behaviour rather than on the two refused
     # spellings. The procedure markers above hold `max_lines` and
     # `lines_changed`, and a third spelling nobody thought of would get past
@@ -7211,6 +7443,30 @@ def self_test() -> int:
         big_but_outside == f"{THROUGH_THE_LOOP} outside {NON_EXEMPT_PATH}",
         f"answered {big_but_outside!r}",
     )
+    # ⛔ The invocation itself, which is the one route both new role files
+    # instruct a session to take and which **nothing reached**: the dispatch and
+    # the no-path refusal were each deletable with the whole suite green. Found by
+    # review. ⚠️ Asserted through `main` rather than through the accessor, because
+    # what the role files name is the command line.
+    for label, argv, wanted in (
+        ("the invocation prints a verdict for the paths it was handed",
+         ["--skills-root", REPO_ROOT, "--no-check-paths", "--exempt-for", "docs/a.md"],
+         (0, THROUGH_THE_LOOP)),
+        ("a kind with no path to hold it against is refused, not answered",
+         ["--skills-root", REPO_ROOT, "--no-check-paths", "--of-kind", "tooling"],
+         (1, "")),
+    ):
+        buffer, failed = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(failed):
+            code = main(argv)
+        printed = buffer.getvalue()
+        check(
+            label,
+            code == wanted[0] and wanted[1] in printed,
+            f"exited {code} having printed {printed[:120]!r} "
+            f"and {failed.getvalue()[:120]!r}",
+        )
+
     # ⛔ The glob rule § 28 states, asserted because `fnmatch` is what performs
     # it: `*` crosses a directory separator here, so a class written `docs/*`
     # covers that subtree whole. A reader that used a path match instead would
@@ -8724,6 +8980,28 @@ def _planted_violations():
          _an_exempt_class_of(
              {"name": "prose", "kinds": ["documentation", "behavioural"]}
          )),
+        # ⛔ The glob that matches every path, which is the stating-neither-facet
+        # refusal above wearing a facet. Found by review: of the three spellings
+        # of *exempt everything*, two were refused and the shortest one was not --
+        # while the `**` refusal's own message coaches an author toward it.
+        ("an exempt glob that is a bare star, so the class exempts everything",
+         "loop_exempt.classes[0].paths[0]",
+         _an_exempt_class_of({"name": "everything", "paths": ["*"]})),
+        ("and a bare star among real globs, which is the same class",
+         "loop_exempt.classes[0].paths[1]",
+         _an_exempt_class_of({"name": "prose", "paths": ["docs/*", " * "]})),
+        # ⛔ A name this reader would otherwise have had to trim, which it may not:
+        # the name is what a run report prints. Found by review -- the blankness
+        # test strips, so two names differing only in a space passed it and
+        # arrived in one report as the same word twice.
+        ("an exempt class name carrying surrounding whitespace",
+         "loop_exempt.classes[0].name",
+         _an_exempt_class_of({"name": "prose ", "paths": ["docs/*"]})),
+        # ⛔ § 28's facet against § 23's third, which is the one pair that exempts
+        # a change from every role and leaves nothing to commit it. Found by
+        # review, which loaded it and got an `exempt` verdict for such a change.
+        ("a project exempting a class while running no commit third",
+         "loop_exempt.classes", _exempts_with_nothing_to_commit),
         ("an exempt destination written empty rather than left null",
          "loop_exempt.destination", at("loop_exempt.destination", "   ")),
         # ⛔ The procedure markers, one plant each: these are the two spellings a
@@ -9071,14 +9349,14 @@ PLANTED_CLASSES = [
 NON_EXEMPT_PATH = "app/main.py"
 
 
-def _verdict_on(paths, kind=None, *, classes=None, borderline=None,
-                destination=None) -> str:
-    """§ 28's verdict on one change, rendered for comparison, or the stop.
+def _answer_on(paths, kind=None, *, classes=None, borderline=None,
+               destination=None):
+    """§ 28's whole answer for one change, or the `ConfigError` it refused with.
 
-    Rendered as a string rather than compared as a dict so an arm states what it
-    is asserting: the verdict, the classes that matched, and whatever else that
-    verdict is supposed to carry. ⚠️ A refusal comes back as `stop <key>`, the way
-    `_looked_up` renders § 27's.
+    ⛔ The dict rather than a rendering, because the rendering below reads five of
+    its nine fields: `why`, `paths` and `kind` were each replaceable by a constant
+    with the whole suite green, found by review. The arms that hold those read
+    this.
     """
     data = _a_valid_example()
     node = data.setdefault(LOOP_EXEMPT_KEY, {})
@@ -9087,8 +9365,19 @@ def _verdict_on(paths, kind=None, *, classes=None, borderline=None,
     node["destination"] = destination
     with open(SURFACE, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
+    return _resolve(data, EXAMPLES, facts, False).exempt_for(paths, kind)
+
+
+def _verdict_on(paths, kind=None, **overrides) -> str:
+    """§ 28's verdict on one change, rendered for comparison, or the stop.
+
+    Rendered as a string rather than compared as a dict so an arm states what it
+    is asserting: the verdict, the classes that matched, and whatever else that
+    verdict is supposed to carry. ⚠️ A refusal comes back as `stop <key>`, the way
+    `_looked_up` renders § 27's.
+    """
     try:
-        answer = _resolve(data, EXAMPLES, facts, False).exempt_for(paths, kind)
+        answer = _answer_on(paths, kind, **overrides)
     except ConfigError as error:
         return f"stop {error.key}"
     shown = f"{answer['verdict']} {','.join(answer['classes'])}".strip()
@@ -9118,6 +9407,22 @@ def _an_exempt_class_of(*entries) -> dict:
         return data
 
     return mutate
+
+
+def _exempts_with_nothing_to_commit(data: dict) -> dict:
+    """§ 28's class list kept, and § 23's commit third taken out from under it.
+
+    ⛔ The staging entry goes with the third rather than being left standing: § 6
+    refuses an entry for a third that does not run, and that refusal fires before
+    this one -- so a fixture that dropped only the third would assert § 6's rule
+    and leave this one unasserted. Measured on this change, where exactly that
+    happened to three of this file's own plants.
+    """
+    parts = [third for third in _absent_as(_get(data, "session.parts"), [])
+             if third != COMMIT_THIRD]
+    data.setdefault("session", {})["parts"] = parts
+    _absent_as(_get(data, "commit.staging"), {}).pop(SESSION_ROLE, None)
+    return data
 
 
 def _gates_on_a_role_with_no_map(data: dict) -> dict:

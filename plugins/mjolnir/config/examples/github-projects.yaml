@@ -302,9 +302,14 @@ loop_exempt:
     - name: prose
       paths: ["docs/*", "*.md"]
       kinds: [documentation, factual_correction]
-    - name: comments and ignore files
+    # ⛔ `ignore_file` alone, and the name says only that: pairing `comment` with these globs
+    # would have been a class whose second kind can never fire — a comment change lives in a code
+    # file, no code path is in the globs, and the conjunction then refuses it every time. ⚠️ The
+    # kind a project cannot pair with a path is one it states on a `kinds`-only class instead,
+    # which is what the file next door does.
+    - name: ignore files
       paths: ["*.gitignore", "*.dockerignore"]
-      kinds: [ignore_file, comment]
+      kinds: [ignore_file]
   # ⛔ The default and the reason this project keeps it: both classes above state `kinds`, so a
   # change whose paths are inside one still needs somebody to say what the change *is* — and here
   # that somebody is a person, named, with the class and the kinds it accepts.

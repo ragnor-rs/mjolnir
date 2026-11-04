@@ -2429,8 +2429,8 @@ written down afterwards split behavioural change — code, configuration default
 migrations — from documentation, comments, ignore files and typo or accuracy fixes, and offered one
 test for a hard case: *could a reviewer disagree about correctness*.
 
-⛔ **Two things make that a configured fact rather than somebody's preference** —
-[`schema.md § 28 → Measured in one project`](../plugins/mjolnir/config/schema.md#measured-in-one-project-the-day-it-cost-something).
+⛔ **Two things make that a configured fact rather than somebody's preference**, and the rule they
+forced is [`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-the-changes-that-do-not-go-through-the-loop).
 The first is that **the repository's own history already did it that way** before the rule existed:
 the convention was visible in the log, and the session followed a generic branch-first instruction
 over it. That is precisely the failure a stated fact removes — a convention readable by a person and
@@ -2446,7 +2446,7 @@ through the loop. That project also keeps one-line-fix commits on release branch
 all.
 
 ⛔ **So the gate there cannot tell a deliberate bypass from a missed item** —
-[`schema.md § 28 → Measured in one project`](../plugins/mjolnir/config/schema.md#measured-in-one-project-the-day-it-cost-something)
+[`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-the-changes-that-do-not-go-through-the-loop)
 — which is the whole cost: a commit with no work item is otherwise indistinguishable from one that
 skipped the process by accident, and the day log and the deliverables roles both read commits.
 

@@ -352,9 +352,10 @@ loop_exempt:
   # be a change nobody can account for at the end of a sprint.
   classes: []
   borderline: ask
-  # ⚠️ Null rather than a branch, and the reader says so: with no class above, a destination would
-  # be a value nothing routes. The report names that rather than leaving the pair to read as a
-  # half-written configuration.
+  # ⚠️ Null, which is the only value that says nothing here: a branch stated beside an empty class
+  # list would be a value nothing routes, and the reader's absent list names that pair where it
+  # finds one. With both empty there is nothing to name, which is why this file gets the one line
+  # about the class list and no second one about the destination.
   destination: null
 
 environment:

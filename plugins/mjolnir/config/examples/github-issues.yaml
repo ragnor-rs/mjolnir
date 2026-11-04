@@ -269,9 +269,16 @@ loop_exempt:
   # alone, so nothing here reaches `borderline` and nobody is asked anything. ⛔ `every` changed
   # path has to be inside the globs — a documentation edit carrying one line of code is not
   # exempt, which is the case the facet exists against.
+  #
+  # ⛔ The narrowest globs this project can write, which is § 28's rule and not tidiness: `*`
+  # crosses a directory separator, so `docs/*` already covers that subtree whole whatever is in
+  # it — and a bare `*.md` beside it would have reached every such file in the repository,
+  # including the ones that are this project's own behaviour rather than its prose. A
+  # `paths`-only class is the project asserting those paths carry no behavioural change, and
+  # that assertion is only true of paths it has actually looked at.
   classes:
     - name: documentation
-      paths: ["docs/*", "*.md"]
+      paths: ["docs/*", "README.md", "CHANGELOG.md"]
   # The default, written out because this project has no class that could reach it: every class
   # above states `paths` and no `kinds`, so the question never arises. ⚠️ Stated anyway, since a
   # class added later would land on whichever value is here.
