@@ -1967,6 +1967,14 @@ class Config:
         # suite beside this, where a kind-excluded change reported every one of
         # its paths as the cause.
         held_to_paths = False
+        # ⛔ Whether one single class covered **every** changed path, which is a
+        # different fact from the union of the classes covering them and is what
+        # separates the last two reasons below. Found by review on this change:
+        # the *covered between the classes* reason was keyed on the union, so a
+        # change whose paths one class covers whole and whose **kind** that class
+        # excludes was reported as a split -- naming the paths, which were not the
+        # reason, and inverting the defect the reason was added to fix.
+        wholly = False
         for entry in classes:
             name = entry.get("name")
             globs = entry.get("paths")
@@ -1986,6 +1994,7 @@ class Config:
                 # changed path is inside*, and the suite holds the dedup.
                 if inside != set(held):
                     continue
+                wholly = True
             if kinds:
                 if kind is None:
                     pending.append((name, kinds))
@@ -2056,6 +2065,15 @@ class Config:
         # change whose paths are split across two classes is outside none of them
         # and inside none of them either. Found by review, where it reported an
         # empty `outside` and blamed a kind that had decided nothing.
+        #
+        # ⛔ And the split is read from `wholly` rather than from the union, which
+        # is the second review's finding on the same three lines: keyed on the
+        # union alone this arm fired wherever the classes *jointly* covered the
+        # change, so a class covering every path and excluding the **kind** was
+        # reported as a split -- naming the paths that were not the reason, and
+        # for a single changed path naming a split that cannot exist. ⚠️ With
+        # `wholly` in it the arm needs two paths to reach at all, since one path
+        # the union covers is one some single class covers.
         answer["why"] = (
             (
                 "these changed paths are outside every class: "
@@ -2066,7 +2084,7 @@ class Config:
                 "no single class covers every changed path -- "
                 + ", ".join(repr(p) for p in held)
                 + " are covered between the classes rather than by one of them"
-                if held_to_paths and covered >= set(held)
+                if held_to_paths and covered >= set(held) and not wholly
                 else (
                     f"no class covers a change of kind {kind!r}"
                     if kind
@@ -7928,6 +7946,34 @@ def self_test() -> int:
     )
     check(
         "and the reason names the split rather than a facet that decided nothing",
+        "no single class covers every changed path" in between["why"],
+        f"the reason given was {between['why']!r}",
+    )
+    # ⛔ The other side of that reason, found by the **second** review of this
+    # change and absent from the arms the first one left: the split was read off
+    # the union of the classes, so a class covering every changed path while its
+    # `kinds` excluded the change was reported as a split too -- naming the paths,
+    # which were not the reason. ⚠️ Reproduced against a shipped example before
+    # the fixture below, `github-projects.yaml`'s `prose` class answering a
+    # `tooling` change to `docs/guide.md` that way.
+    for label, paths in (
+        ("one class covering every changed path", ["tools/measure.py"]),
+        ("the same over two paths inside that one class",
+         ["tools/a.py", "tools/b.py"]),
+    ):
+        excluded = _answer_on(paths, "documentation", **by_both)
+        check(
+            f"with {label}, the kind that excluded the change is the reason",
+            excluded["verdict"] == THROUGH_THE_LOOP
+            and "no class covers a change of kind 'documentation'" in excluded["why"],
+            f"answered {excluded['verdict']!r} because {excluded['why']!r}",
+        )
+    # ⚠️ And the arm that keeps the fix from being a deletion: the split reason
+    # still has to fire for the shape it was written for, which the two arms
+    # above and this one only hold together -- a condition narrowed to nothing
+    # would pass both of those while saying the split never happens.
+    check(
+        "and a genuine split is still reported as one, with the fix in place",
         "no single class covers every changed path" in between["why"],
         f"the reason given was {between['why']!r}",
     )
