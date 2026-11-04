@@ -41,6 +41,10 @@ host:
   landing:
     method: squash
     delete_branch: procedure
+  # § 28's port. This project's runs are the host's own, so a role lists them, reads how one
+  # concluded and reads a log through the operations rather than through a client of its own.
+  runs:
+    kind: github
 
 tracker:
   kind: github-projects

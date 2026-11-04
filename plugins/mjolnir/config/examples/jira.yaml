@@ -39,6 +39,12 @@ host:
   landing:
     method: merge_commit
     delete_branch: never
+  # § 28's port, and the account above is why it matters here: on a single-runner account a run
+  # cancelled in the queue and a run that failed share one conclusion word, so `conclusion` is
+  # the operation that tells them apart and no consumer reads the word. ⚠️ The `supersedes` group
+  # stated above is also what makes the superseded reading reachable at all.
+  runs:
+    kind: github
 
 tracker:
   kind: jira

@@ -59,6 +59,12 @@ host:
   landing:
     method: rebase
     delete_branch: procedure
+  # § 28's port, and the third fact both inner repositories share rather than one either holds:
+  # which runs each makes is per root above, and who can be *asked about* a run is the host kind,
+  # which is one answer for both. ⚠️ Read by each root where its own entry says nothing, exactly
+  # as `kind` above is.
+  runs:
+    kind: github
 
 tracker:
   kind: trello

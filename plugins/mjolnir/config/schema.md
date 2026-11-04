@@ -5615,6 +5615,133 @@ gate is one reader of it rather than its purpose. ⚠️ **And a project carryin
 role that asks for no person unchanged**: what it loses is the one check, reported in the absent
 list like every other stated absence.
 
+## 28. The host's run operations
+
+```yaml
+host:
+  runs:
+    kind: github | none        # required; port: runs
+```
+
+**[§ 2](#2-code-host) states which runs exist and how one is read; this section states what a role
+*does* with them.** Four acts, and no fifth: list the runs a commit has, read how one of them
+concluded, read what one printed, and **start** one that nothing started by itself. ⛔ **No role
+and no hook invokes a host client for any of the four.** That is the half of § 2 which was left
+with each reader — the mapping became a consumer and the reading became a function of it, while the
+calls themselves stayed written out in each role that makes one. ⚠️ **Two roles carried the same
+client invocation and two more are specified to need it**: the finishing role waiting for a pull
+request's runs and reading a failed one's log, the reviewing role doing both and re-dispatching
+once a resolution is in, a deploying role dispatching with typed inputs and verifying a delivery
+from the log rather than from a conclusion, and a guard asking whether the host's checks are
+answering at all. ⛔ **One call written once per reader is the drift the role copies already paid
+for**, and the second half of that count is the half it is cheapest to fix before it exists.
+
+⛔ **The second defect is the one [§ 2](#the-facet-against-the-hosts-own-definitions) already
+refuses one key over.** A manual dispatch with typed inputs, a run listing keyed on a commit, a
+log retrieval and an environment gate on a run are each a **host kind's** shape rather than a
+universal, exactly as a workflow definition is — so they are implementations behind a port and not
+a client every consumer spells out.
+
+⛔ **Everything [§ 3](#3-tracker-port) states about *being* a port holds here and is not restated.**
+What a capability is and who declares one ([§ 3](#who-declares-a-capability)), what an absence does
+([§ 3](#the-operations-and-what-an-absent-capability-does)), and how a kind of `none`, a kind with
+no implementation and a host that does not answer read apart from one another
+([§ 3](#the-trackerless-adapter-and-a-kind-with-no-implementation)) are stated there and cited
+here. ⚠️ **What this section adds is what those rules are parameterised by**, and the marker that
+declares the port at all is [§ 26](#which-section-a-ports-operation-list-is-read-from)'s.
+
+⛔ **The kind is a second key inside the host block and is deliberately not [§ 2](#2-code-host)'s
+own `kind`.** A port's kind set carries the word for *addresses nothing*
+([§ 3](#the-trackerless-adapter-and-a-kind-with-no-implementation)), and `host.kind: none` would be
+a project with no code host at all — which this surface's own `host` block contradicts in three
+places, `repo`, `checks` and [`landing`](#how-a-pull-request-lands) each being required of every
+project. ⚠️ **So the two keys answer two questions**: `host.kind` says who holds the code and
+answers about a pull request, and this one says who can be asked about a *run*. A host that holds
+code and whose runs nothing here can reach is the configuration the second word exists for.
+
+⚠️ **It is not a second statement of `checks: []` either, and the pair is legitimate in both
+directions.** `checks: []` says the host defines no run that mirrors a local command, which is a
+fact about this project's workflows; `kind: none` says no run here can be listed, read or started
+through a port at all, which is a fact about the host. A project whose continuous integration is a
+service its code host knows nothing about states both; a project whose host defines nothing today
+states `checks: []` with a kind that answers, and `runs_for_ref` legitimately comes back with
+nothing. ⛔ **Neither is derived from the other**, and a reader that derived one would answer about
+a host on the strength of a workflow list.
+
+### The run operations, and what each absence does
+
+| Operation | What the procedure asks for | When the capability is absent |
+|---|---|---|
+| `runs_for_ref` | every run the host made **for one commit**, each named by the workflow [§ 2](#2-code-host)'s `checks` is keyed on | the role has **no answer** about which runs exist, so [§ 2](#reading-a-runs-answer-and-what-a-failure-is)'s precondition 2 is reported unanswered — never as *no run exists*, which is the same absence rule one key over |
+| `conclusion` | one run's own answer, as one of [§ 2](#reading-a-runs-answer-and-what-a-failure-is)'s four readings and never as the host's conclusion word | preconditions 3 and 4 are reported unanswered and the run is reported **unread**: not green, not failed, and not something to wait for |
+| `log` | the text one run printed, for the reading a conclusion cannot carry — ⛔ and **how much of it came back out of how much there was**, since a log returned in part and reported as a log reads as the whole of what the run printed | the role has no log, so a failure stays undivided between an environment failure and a finding, and anything a log would have verified is reported **unverified** rather than taken off a conclusion |
+| `dispatch` | one run started by hand: the workflow, the ref it is against, and the typed inputs it takes | nothing is started, and the role **names what the operator must run by hand** — the workflow, the ref and every input — and reports no run made. ⛔ A deploy is never reported as performed |
+
+⛔ **`conclusion` carries the reading and not a status for each caller to interpret.** Which of the
+four a run is in is [§ 2](#reading-a-runs-answer-and-what-a-failure-is)'s, and the three facts it
+is read from are the host's own; what this port settles is that the turning of those facts into a
+reading happens **once**, behind the operation, rather than in every consumer that meets a run.
+⚠️ **The host's conclusion word is not an input and does not reach a caller**, for the reason that
+subsection states: one word arrives on two of the four readings.
+
+⛔ **A step count the host does not state is reported unanswered, never as zero.** An empty step
+list is a fact the host declined to give and zero steps is the never-started reading, so an
+operation that read the first as the second would report *the queue ate this run* about a run that
+may have executed everything. That is precondition 3 reported as the step it was, and it is the
+one place this port's reading stops short of an answer.
+
+⛔ **The three reads are read-only, and that is a property of the port rather than a habit of its
+callers.** An implementation whose listing, conclusion or log makes a call that writes anything on
+the host is a defect in that implementation and not a capability somebody configured — so the
+property is held beside the implementation rather than asserted here.
+
+⚠️ **`runs_for_ref` is keyed on a commit and a branch is not one.** A branch names whatever is
+newest at the moment it is read, and precondition 2 asks about *this* commit, so an operation
+answering for a branch would report a run that exists against a change nobody pushed yet.
+
+### A dispatch is the only write, and it carries its own go
+
+⛔ **A dispatch does not happen without an explicit go for that dispatch, and the refusal is the
+port's rather than each role's.** The confirmation before a live environment is the one rail
+between a routine command and a production write, and it is the part every surveyed copy of the
+deploying role had — so it sits on the operation that performs the act, where there is one of it,
+instead of in each role that reaches the act.
+
+⛔ **The go names the dispatch it was given for** — the workflow, the ref and the inputs — and a go
+that does not is refused, naming which of the three it failed to name. ⚠️ **And never composing the
+sentence that would satisfy it**: a refusal that handed the words back would be a form to fill in
+rather than an approval to have obtained. What that binding buys is
+[§ 19](#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs)'s *per invocation*
+standard met by something rather than kept by convention: an approval obtained for last week's ref
+does not clear this week's, and one for a staging input does not clear the production one.
+
+⚠️ **What it cannot catch is stated rather than discovered: a go replayed against a byte-identical
+dispatch.** The workflow, the ref and the inputs are the whole of what either side can name, so two
+dispatches identical in all three are indistinguishable to this rail, and what stops the second is
+the role asking per dispatch. ⛔ **It is stated because the alternative reads as closed** — a rail
+whose limit is unwritten is one a reader assumes covers the case it does not.
+
+⛔ **Every dispatch carries a go here, and the narrowing to a live target alone is not this
+section's.** Which targets are live is **configured and never inferred from a name**, and no facet
+on this surface states it yet; until one does, the strict reading is the one that holds — a guard
+that asked only where this surface could already tell would be silent on precisely the project that
+names its deploy after an environment. ⚠️ **That is [§ 7](#which-direction-a-guard-fails-in)'s
+direction and [§ 21](#the-machines-named-are-the-ones-that-are-not-live)'s inversion**: what is
+named is what is *not* live, and nothing is named here, so everything asks.
+
+⛔ **A dispatch that went through is not a delivery, and what a run delivered is read from its
+log.** A green conclusion says the job ended, which is a fact about the run rather than about the
+thing arriving — so a role that reported a delivery off a conclusion would be reporting the one
+reading [§ 2](#reading-a-runs-answer-and-what-a-failure-is) says a conclusion cannot carry.
+⚠️ **And the operation that returns a log is where that is read**, which is also why `log`'s absent
+case reports a delivery **unverified** rather than falling back to the conclusion beside it.
+
+⛔ **The go is not the approval a harness collects for a shell call.**
+[§ 19](#19-a-command-that-spends-and-the-supervision-it-is-refused-without)'s rail and
+[§ 21](#21-a-command-that-could-open-a-session-on-a-live-machine)'s each read a command a session
+is about to run; a dispatch performed inside the port is no such call, and a reader expecting
+either guard to have seen it would be reading a rail that never fired.
+
 ## What the toolkit installs into a project, and what takes it out
 
 **Adoption costs one file a project writes, and a short list of files the toolkit writes.** The

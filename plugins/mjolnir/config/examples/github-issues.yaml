@@ -26,6 +26,12 @@ host:
   landing:
     method: squash
     delete_branch: host
+  # § 28's port: who can be asked about a run and start one. The same system as `kind` above here,
+  # and stated anyway — that key says who holds the code, this one says who answers about a run,
+  # and a project whose continuous integration is somewhere else writes `none` with `kind: github`
+  # unchanged.
+  runs:
+    kind: github
 
 tracker:
   # ⛔ The kind and nothing else: no board to address, no status field to resolve and no

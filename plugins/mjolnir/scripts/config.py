@@ -291,6 +291,14 @@ OUT_DIR_KEY = "out_dir"
 OUT_DIR_PATH = f"{DESTINATION_BLOCK}.{OUT_DIR_KEY}"
 DESTINATION_KIND_PATH = f"{DESTINATION_BLOCK}.kind"
 
+# § 28's run port, read for the one thing this reader may say about it: that a
+# configuration states a host whose runs nothing here can be asked about. ⛔ The
+# word is the shared one above and is deliberately not spelled a second time --
+# `none` means *addresses nothing* for every port the surface declares, and two
+# spellings of it would be free to disagree about which kind is the absent one.
+RUNS_BLOCK = "host.runs"
+RUNS_KIND_PATH = f"{RUNS_BLOCK}.kind"
+
 # § 9's chat source, spelled once here for the reason the destination's keys
 # above are: the stream's name in `day_log.streams`, the kind that says what
 # implements it, and the one kind word meaning there is no chat evidence at all.
@@ -1880,6 +1888,19 @@ class Config:
                 "log has no directory to write an entry into. § 26 states the key "
                 "is not required -- a project that maps no `day_log` carrier needs "
                 "no store -- so it is reported here rather than refused."
+            )
+        # § 28's kind that addresses nothing, reported the same way. ⛔ Not read as
+        # a second statement of `checks: []`, which this reader reports nowhere and
+        # § 28 holds apart from it: one says the host defines no run mirroring a
+        # local command, the other that no run here can be listed, read or started.
+        if self.get(RUNS_KIND_PATH) == NO_DESTINATION:
+            out.append(
+                f"No host run operations are configured (`{RUNS_KIND_PATH}: "
+                f"{NO_DESTINATION}`), so no run here can be listed, read or "
+                "started through the port: a role reports § 2's preconditions "
+                "unanswered rather than green, and names what an operator must "
+                "run by hand instead of dispatching. What that leaves each of "
+                "§ 28's operations doing is the port's to report."
             )
 
         for role, status in (
@@ -4641,6 +4662,7 @@ MARKED_REQUIRED = [
     "host.landing.delete_branch",
     "host.landing.method",
     "host.repo",
+    "host.runs.kind",
     "language.repo",
     "language.work_item",
     "live_guard.session_tools",
@@ -4769,6 +4791,7 @@ MARKED_PROCEDURE = [
 # -- which is the one thing the marker was chosen over a section number to avoid.
 MARKED_PORTS = [
     ("day_log.destination.kind", "destinations"),
+    ("host.runs.kind", "runs"),
     ("tracker.kind", "adapters"),
 ]
 

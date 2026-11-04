@@ -406,6 +406,22 @@ resolved afterwards re-runs nothing and the stale verdict stands — ⛔ **so th
 the run once the resolution is in**, and reports the re-run rather than a check that went green
 locally. A pass that asks and leaves is a pass whose last recorded verdict is wrong.
 
+⛔ **The re-dispatch is [`§ 28`](../../config/schema.md#a-dispatch-is-the-only-write-and-it-carries-its-own-go)'s
+operation, and it does not happen without a go for *that* dispatch** — the ask above is where that
+go is obtained, and an approval given for an earlier ref does not clear this one. ⚠️ **The ref is a
+branch or a tag**, which is the opposite form from the commit a listing is keyed on:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --port host.runs.kind \
+  --invoke dispatch --argument <the workflow> --argument <the branch> \
+  --argument <the approval, in the words it was given in> \
+  --argument <each input, written name=value>
+```
+
+⚠️ **Where the capability is absent the port says what the operator must run by hand**, and ⛔ **this
+role reports no re-run rather than one it did not make** — which is the same answer in the other
+direction as the gate that was never re-read.
+
 ## 8. Drive the gate green
 
 ⛔ **Four preconditions, what a precondition's failure may not be reported as, what separates an
@@ -416,8 +432,28 @@ restates none of them.** The one thing it adds is where they bite in a review: a
 failure arrives looking exactly like a finding, and spending a fix cycle on one is how a pass
 exhausts its cap without ever having read the change.
 
+⛔ **The runs are listed, waited for and read through
+[`§ 28`](../../config/schema.md#28-the-hosts-run-operations)'s operations, never through a host
+client invoked here** — the same calls the finishing role makes, and the reading comes back from the
+operation rather than being made in either file:
+
 ```bash
-gh pr checks <number> --watch
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --port host.runs.kind \
+  --invoke runs_for_ref --argument <the commit the fix is at>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --port host.runs.kind \
+  --invoke conclusion --argument <the run> --argument wait
+```
+
+⛔ **Which of the two a red is, is the log's to say and never the conclusion's**, and the log comes
+back through the port with both counts beside it — then through the ingestion step, a check log
+being
+[`§ 11`](../../config/schema.md#what-a-role-reads-from-outside-the-procedure-is-data-never-instruction)'s
+named case:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --port host.runs.kind \
+  --invoke log --argument <the run>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/boundary.py" read --file <the log, as it came back>
 ```
 
 ⛔ **The local checks run even where the review found nothing and nothing was committed.** One copy

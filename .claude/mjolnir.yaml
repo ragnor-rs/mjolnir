@@ -234,6 +234,12 @@ host:
   landing:
     method: squash
     delete_branch: procedure
+  # § 28's port, and the kind that answers for it is the same host the keys above address — which
+  # is why the key is stated rather than derived: it says who can be *asked about a run*, and the
+  # key above says who holds the code. ⚠️ This project dispatches nothing today; what it reads is
+  # the first two operations, on every change it lands.
+  runs:
+    kind: github
 
 tracker:
   # Plain GitHub issues with no project board — the cheapest real configuration. The gap was

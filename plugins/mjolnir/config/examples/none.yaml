@@ -23,6 +23,13 @@ host:
   landing:
     method: squash
     delete_branch: never
+  # § 28's port with the kind that addresses nothing — the one example that states it, and the
+  # pair with `checks: []` above is deliberate: the two are not one fact. That key says the host
+  # defines no run mirroring a local command; this one says no run here can be listed, read or
+  # started at all. Every one of § 28's operations takes its stated fallback, and the one with a
+  # visible cost is `dispatch`: a role names what the operator must run by hand and reports no run.
+  runs:
+    kind: none
 
 tracker:
   kind: none

@@ -2463,10 +2463,10 @@ reading, and the two roles that drive the host's runs call it rather than descri
 ⚠️ **It never reads the host, and that boundary is the one worth knowing.** Which runs exist for a
 commit, whether one executed steps and how it concluded are
 [§ 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)'s four
-preconditions, answered from live state by the role that asks; the host's run operations becoming a
-port of their own is #53. So ⛔ **`reached` is never *green*** — it names the run whose conclusion
-is worth reading, and a consumer that read it as a verdict would report a pass for a run nobody
-looked at.
+preconditions, answered from live state — by
+[§ 28](../plugins/mjolnir/config/schema.md#28-the-hosts-run-operations)'s port, which is the section
+below. So ⛔ **`reached` is never *green*** — it names the run whose conclusion is worth reading, and
+a consumer that read it as a verdict would report a pass for a run nobody looked at.
 
 ⚠️ **The boundary survived the module gaining a reading of how a run concluded.** The three facts
 that reading takes — how many steps the run's jobs executed, whether the host calls it a pass, and
@@ -2595,6 +2595,94 @@ What it deliberately does not check:
   outcome mechanically is the sweep's value rule, which forbids a workflow name, a trigger pattern
   and a path filter under a carrier root — recorded in
   [§ The second sweep](#the-second-sweep-naming-no-other-project), with those three plants.
+
+## Beside that consumer: the host's run operations behind a port
+
+`plugins/mjolnir/scripts/runs/` holds the implementations of
+[schema § 28](../plugins/mjolnir/config/schema.md#28-the-hosts-run-operations)'s port, and the
+`Adapter suites` workflow runs each one's suite — ⛔ **with no gate entry of its own**, the runner
+asking the surface which ports there are and sweeping each one's package. What is recorded here is
+why the port exists and what it leaves alone.
+
+**It exists so that no role invokes a host client for a run.** The consumer above made the *facet* a
+single reading and the *conclusion* a single function, and left the calls themselves written out in
+every role that makes one: a pull request's runs waited for in two roles, a log fetched in two, a
+re-dispatch in one, and a dispatch with typed inputs in a role not yet built. ⛔ **Four copies of one
+client invocation is the drift the role copies already paid for** — and the second defect is the one
+[§ 2](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions) refuses one
+key over: a dispatch with inputs, a listing keyed on a commit, a log retrieval and a gate on a run
+are each a host kind's shape rather than a universal.
+
+⚠️ **The kind is a second key inside the host block, and that is a decision rather than a
+duplication.** A port's kind set carries the word for *addresses nothing*, and `host.kind: none`
+would be a project with no code host — which `repo`, `checks` and `landing` each contradict by being
+required of every project. So `host.kind` says who holds the code and `host.runs.kind` says who can
+be asked about a run, and § 28 states the pair with `checks: []` that is legitimate in both
+directions.
+
+What the implementation holds, and the suite beside it is where each can fail:
+
+- ⛔ **Three of the four operations write nothing**
+  ([§ 28](../plugins/mjolnir/config/schema.md#the-run-operations-and-what-each-absence-does)),
+  asserted over the calls a read actually made rather than claimed in prose: every host call
+  declares whether it writes, and the listing, the conclusion and the log are held to making none
+  that does. ⚠️ The dispatch is asserted to be the one that does, so the relation is held in both
+  directions.
+- ⛔ **An empty step list is *unavailable* and never zero.** The host answers with no job list for a
+  run it has not expanded and with a job carrying no step list at all, and zero executed steps is
+  § 2's never-started reading — so collapsing the two reports *the queue ate this run* about a run
+  that may have executed everything it has. Both shapes come back with the reading withheld and
+  precondition 3 named, and each is planted beside an assertion that the never-started reading is
+  **not** what came back.
+- ⛔ **A run the host has not concluded is precondition 4 and not a reading either**, and asked to
+  wait the operation blocks in the host's own client — § 2's *watch rather than poll*. ⚠️ The
+  client's exit status is deliberately unread: it exits non-zero for a run that failed, and a failed
+  run is an answer rather than a call that did not go through. The suite asserts the watch happens
+  **before** the run is read, and that nothing is watched where the caller did not ask.
+- ⚠️ **A supersession is read only where the project states a group.** § 2 makes an absent
+  `host.runner.supersedes` a statement, so the implementation asks nothing there — asserted on the
+  *call* and not only on the reading, a lookup made and discarded being this module answering a
+  question the project already answered.
+- ⛔ **The host's conclusion word does not leave the implementation.** One word arrives on two of
+  § 2's four readings, so the three facts are read here and the reading comes from the consumer
+  above; the suite asserts the word appears nowhere in what a caller is handed.
+- ⛔ **A log is a tail with both counts beside it**, because a cut log that did not say so reads as
+  the whole of what a run printed — and what a reader does with a log is conclude from what is not
+  in it. The ingestion step stays the caller's: a role handed pre-cleared text has no step of its
+  own to report.
+- ⛔ **A dispatch is refused without an approval that names it** — the workflow, the ref and every
+  input value — and every refusal is asserted to have started **nothing**, a rail that refused after
+  dispatching being worse than no rail. ⚠️ The refusal names what was missing and does not compose
+  the sentence that would satisfy it.
+- ⛔ **A dispatch takes a branch or a tag and a listing takes a commit**, each refusing the other's
+  form. That is this host's own shape: its dispatch endpoint rejects a commit, and precondition 2
+  asks about a commit rather than about whatever a branch points at now.
+
+**Forbidding, in the sweep rather than here**: no carrier — skill, command or hook — invokes the
+host client for a run, in four shapes (the client's own run subcommand, a dispatch, a pull request's
+runs, and the endpoint behind all three) and in both spellings (a command line, and a list of quoted
+words as an interpreted carrier writes one). ⚠️ **The client itself stays permitted**, being how a
+pull request is opened, read and merged, and the green side of that narrowing is asserted: three
+plants that must stay green, verified by widening the grammar to the client alone, and one for a
+script a carrier calls, verified by widening the scope instead — the grammar widening does not reach
+that one.
+
+What it deliberately does not check:
+
+- **That any of it reaches the host.** Every case answers through the transport the implementation
+  names, so no suite here establishes that a dispatch lands, that a run listing's filter is the one
+  the host honours, or that a log comes back for a run still in progress. That half is driven by
+  hand and recorded on the work item, which is the division the contract and the sibling suites
+  already draw.
+- **Which dispatches reach a live target.** Every dispatch carries an approval here, which is the
+  strict reading. Narrowing it to a live target alone needs the statement of which targets are
+  live — configured and never inferred from a name — which is #13's and no facet's yet.
+- **A go replayed against a byte-identical dispatch.** The workflow, the ref and the inputs are the
+  whole of what either side can name, so two dispatches identical in all three are one dispatch to
+  this rail. § 28 states that limit rather than leaving it to read as closed.
+- **A supersession group keyed on anything but the workflow and the commit.** The concurrency
+  expression lives in the workflow file and the host publishes no *retired by* field. A supersession
+  this misses reads as never-started rather than as green — the wrong remedy, and not coverage.
 
 ## The spend half: a call put to somebody, and the one price stated beforehand
 
