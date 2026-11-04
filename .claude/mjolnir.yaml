@@ -234,6 +234,12 @@ host:
   landing:
     method: squash
     delete_branch: procedure
+  # § 29's port, and the kind that answers for it is the same host the keys above address — which
+  # is why the key is stated rather than derived: it says who can be *asked about a run*, and the
+  # key above says who holds the code. ⚠️ All four operations are reachable here, and the dispatch
+  # is the reviewing role's re-dispatch once a resolved thread needs the gate read again.
+  runs:
+    kind: github
 
 tracker:
   # Plain GitHub issues with no project board — the cheapest real configuration. The gap was
@@ -534,7 +540,7 @@ people:
     that there is one of them.
 
 private:
-  # § 28. This repository is the toolkit itself and is public, so the one thing it may not hold is
+  # § 29. This repository is the toolkit itself and is public, so the one thing it may not hold is
   # the class of value this facet names — and it holds none, for the reason below. ⛔ Which is a
   # measurement of this file rather than a policy: the gate beside it sweeps every tracked
   # configuration for a value under a `# private` key, and this one is what it sweeps.

@@ -313,6 +313,14 @@ OUT_DIR_KEY = "out_dir"
 OUT_DIR_PATH = f"{DESTINATION_BLOCK}.{OUT_DIR_KEY}"
 DESTINATION_KIND_PATH = f"{DESTINATION_BLOCK}.kind"
 
+# § 29's run port, read for the one thing this reader may say about it: that a
+# configuration states a host whose runs nothing here can be asked about. ⛔ The
+# word is the shared one above and is deliberately not spelled a second time --
+# `none` means *addresses nothing* for every port the surface declares, and two
+# spellings of it would be free to disagree about which kind is the absent one.
+RUNS_BLOCK = "host.runs"
+RUNS_KIND_PATH = f"{RUNS_BLOCK}.kind"
+
 # § 9's chat source, spelled once here for the reason the destination's keys
 # above are: the stream's name in `day_log.streams`, the kind that says what
 # implements it, and the one kind word meaning there is no chat evidence at all.
@@ -2019,7 +2027,7 @@ class Config:
         self.get("host.checks")
         return mirrored_runs(self.data)
 
-    def host_runs(self) -> list[dict]:
+    def defined_runs(self) -> list[dict]:
         """§ 2's `host.checks` as one record per entry, the run rather than the command.
 
         The accessor beside `mirrors()` and the same single walk behind both.
@@ -2030,7 +2038,7 @@ class Config:
         legitimately drops.
         """
         self.get("host.checks")
-        return host_runs(self.data)
+        return defined_runs(self.data)
 
     def runner(self) -> dict | None:
         """§ 2's `host.runner`, or `None` where this project states none.
@@ -2468,6 +2476,19 @@ class Config:
                 "log has no directory to write an entry into. § 26 states the key "
                 "is not required -- a project that maps no `day_log` carrier needs "
                 "no store -- so it is reported here rather than refused."
+            )
+        # § 29's kind that addresses nothing, reported the same way. ⛔ Not read as
+        # a second statement of `checks: []`, which this reader reports nowhere and
+        # § 29 holds apart from it: one says the host defines no run this surface
+        # states, the other that no run here can be listed, read or started.
+        if self.get(RUNS_KIND_PATH) == NO_DESTINATION:
+            out.append(
+                f"No host run operations are configured (`{RUNS_KIND_PATH}: "
+                f"{NO_DESTINATION}`), so no run here can be listed, read or "
+                "started through the port: a role reports § 2's preconditions "
+                "unanswered rather than green, and names what an operator must "
+                "run by hand instead of dispatching. What that leaves each of "
+                "§ 29's operations doing is the port's to report."
             )
 
         for role, status in (
@@ -2982,7 +3003,7 @@ def mirrored_runs(data: dict) -> list[dict]:
     both consumers of it report an absence where the project stated a run.
     """
     out: list[dict] = []
-    for run in host_runs(data):
+    for run in defined_runs(data):
         for mirrored in run["commands"]:
             out.append(
                 {
@@ -2998,7 +3019,7 @@ def mirrored_runs(data: dict) -> list[dict]:
     return out
 
 
-def host_runs(data: dict) -> list[dict]:
+def defined_runs(data: dict) -> list[dict]:
     """§ 2's `host.checks` as one record per **entry**, walked once.
 
     The facet keyed by the one key it has, with every refusal the facet carries
@@ -3104,7 +3125,7 @@ def _entry_commands(entry: dict, index: int):
 
     The two forms § 2 states, read in one place so that neither can grow a
     refusal the other does not have. An entry stating neither yields nothing,
-    which is a run the host makes with no local counterpart -- `host_runs`
+    which is a run the host makes with no local counterpart -- `defined_runs`
     above is the walk that still carries it.
 
     Each record carries the command as written, its normalised form, the phrase
@@ -5497,6 +5518,7 @@ MARKED_REQUIRED = [
     "host.landing.delete_branch",
     "host.landing.method",
     "host.repo",
+    "host.runs.kind",
     "language.repo",
     "language.work_item",
     "live_guard.session_tools",
@@ -5633,6 +5655,7 @@ MARKED_PROCEDURE = [
 # -- which is the one thing the marker was chosen over a section number to avoid.
 MARKED_PORTS = [
     ("day_log.destination.kind", "destinations"),
+    ("host.runs.kind", "runs"),
     ("tracker.kind", "adapters"),
 ]
 
@@ -7749,7 +7772,7 @@ def self_test() -> int:
     repeated = _two_entries_keyed_on_one_workflow(_a_valid_example())
     name = repeated["host"]["checks"][1]["workflow"]
     try:
-        host_runs(repeated)
+        defined_runs(repeated)
         said = None
     except ConfigError as error:
         said = str(error)

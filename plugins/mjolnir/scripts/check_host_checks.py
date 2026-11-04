@@ -529,7 +529,7 @@ class Subject:
     def checks(self) -> list[dict]:
         """One record per entry, through the reader's own walk of the facet.
 
-        ⛔ `config.host_runs` and never a walk of the entries here: § 2 makes
+        ⛔ `config.defined_runs` and never a walk of the entries here: § 2 makes
         this facet one statement, and a second reading of it in this file would
         be allowed to disagree with the one every other consumer reads. ⚠️ It is
         the per-**entry** accessor rather than the per-command one, because an
@@ -537,7 +537,7 @@ class Subject:
         second direction is about runs no entry names.
         """
         if self._checks is None:
-            self._checks = reader.host_runs({"host": {"checks": self.entries}})
+            self._checks = reader.defined_runs({"host": {"checks": self.entries}})
         return self._checks
 
     @property

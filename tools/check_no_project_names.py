@@ -373,6 +373,67 @@ PATH_LIKE = re.compile(r"[\w./-]+")
 # way to be correct: `cd <root> && git …` is forbidden too, and rightly.
 PROCEDURE_COMMANDS = {"git", "gh"}
 
+# The host client, by name, and the shapes of it that are about a **run**. ⛔ The
+# narrowing is the whole of this rule: `gh` stays a command a carrier may invoke
+# -- it opens a pull request, reads one and merges it -- while what a role does
+# with a run is `schema.md § 29`'s operations, behind a port with one
+# implementation per host kind. A carrier that invoked the client for one of
+# those would be another copy of a call the port exists to hold once, and the
+# host-kind assumption § 2 already refuses to make about a workflow definition.
+#
+# ⚠️ **This file names the client's own subcommands, and that is the same licence
+# `PROCEDURE_COMMANDS` above already takes**: the client is named there, so
+# naming which of its invocations are a run is one level deeper into a fact this
+# sweep already carries, rather than a new class of value entering it.
+#
+# ⛔ Anchored at the client and not matched loosely. The forms are the client's
+# own grammar -- a subcommand comes first and its flags follow -- so a lazy
+# wildcard between the two would read a word in a `--body` as a subcommand, and
+# a sweep with false positives is a sweep somebody turns off.
+HOST_CLIENT = "gh"
+_CLIENT = rf"(?<![\w./-]){HOST_CLIENT}(?![\w-])"
+
+# What stands between the client and its subcommand, and between two subcommand
+# words. ⛔ Quotes and a comma as well as whitespace: a carrier written in a shell
+# spells a call `gh run view`, and one written in anything else spells the same
+# call as a list of quoted words. Reading only the shell form left every
+# interpreted carrier unswept while the check reported green -- measured, against
+# a plant in the list form.
+_GAP = r"['\"]?[\s,]+['\"]?"
+
+
+def _client_call(*words: str) -> re.Pattern[str]:
+    """The host client followed by these subcommand words, however quoted."""
+    return re.compile(_CLIENT + _GAP + _GAP.join(map(re.escape, words)) + r"(?![\w-])")
+
+
+HOST_RUN_CALLS = [
+    (_client_call("run"),
+     "the host's own run commands, which are § 29's `runs_for_ref`, `conclusion` and `log`"),
+    (_client_call("workflow", "run"),
+     "a manual dispatch, which is § 29's `dispatch` and carries its own approval"),
+    (_client_call("pr", "checks"),
+     "a pull request's runs, which are § 29's `runs_for_ref` and `conclusion`"),
+]
+
+# The endpoints behind those commands, ⛔ matched in a **file** that names the
+# client rather than in a line that does. A region is one line, and a call split
+# across a continuation left the endpoint in a region of its own with the client
+# in the line above -- so the whole arm was green over the ordinary spelling of a
+# long call. Measured.
+#
+# ⛔ Three names and not one: this host reaches a commit's runs through its
+# actions namespace, through a commit's check runs, and through the check suites
+# of its query interface. An arm knowing only the first is green over two of the
+# four readings § 29 states.
+HOST_RUN_ENDPOINTS = (
+    re.compile(r"/actions/(?:runs|workflows|jobs)\b"),
+    re.compile(r"/check-runs\b"),
+    re.compile(r"\bcheckSuites\b"),
+)
+HOST_ENDPOINT_REASON = "the host's run endpoints, which are § 29's operations"
+HOST_CLIENT_NAMED = re.compile(_CLIENT)
+
 # A directory reaching a command, in the two forms the standing correction
 # forbids outright: a change of directory prefixing it, and a flag carrying one.
 # `-w` is not here: it is `gh`'s `--web` and git's ignore-whitespace, not a root.
@@ -822,7 +883,7 @@ class Tree:
         # ⛔ And the key paths the surface marks `# private`, which is published
         # vocabulary by this method's own test: the surface states those strings,
         # so a configuration writing one is choosing the surface's word rather
-        # than inventing its own. ⚠️ What forced it is § 28's list -- a project
+        # than inventing its own. ⚠️ What forced it is § 29's list -- a project
         # names the keys it resolves privately, and those members are key paths.
         # Read as this project's values they forbade a role from naming the key
         # it reads: `day_log.attribute_to` in a carrier is the procedure naming a
@@ -836,7 +897,7 @@ class Tree:
         # -- and one of them is live here: `role` is a configured label of this
         # project's, so a carrier naming it passed. Narrowing to dotted paths
         # recovered that and still exempted 200-odd strings no arm holds. The
-        # marked set is the whole of what § 28's list can contain, the reader
+        # marked set is the whole of what § 29's list can contain, the reader
         # refusing any other entry, so it is the whole of what this needs.
         pool.update(facts["private"])
         lists: dict[str, set[str]] = {}
@@ -1145,6 +1206,84 @@ def check_no_stack_is_named_in_the_strict_set(tree: Tree) -> list[str]:
     return problems
 
 
+def _continued(regions: list[str]) -> list[str]:
+    """The regions with a continued command joined back into one.
+
+    ⛔ A region is one line, and a long call is written across several with a
+    trailing `\\` -- so the client ends one region and its subcommand opens the
+    next, and an arm anchored at the client is green on the ordinary spelling of
+    a long call. Measured, against a plant that split `gh` from `run view`.
+
+    ⚠️ Joining is the fix rather than un-anchoring the arms: the anchor is what
+    keeps the word `run` in a sentence from reddening, which is the false
+    positive this check must not have.
+    """
+    joined: list[str] = []
+    carry = ""
+    for region in regions:
+        stripped = region.rstrip()
+        if stripped.endswith("\\"):
+            carry += stripped[:-1].rstrip() + " "
+            continue
+        joined.append(carry + region.strip() if carry else region)
+        carry = ""
+    if carry:
+        joined.append(carry.strip())
+    return joined
+
+
+def check_no_host_run_call_in_the_strict_set(tree: Tree) -> list[str]:
+    """No carrier invokes the host client for a run.
+
+    `schema.md § 29` makes what a role does with a run the operations of a port
+    with one implementation per host kind -- so a carrier that invoked the client
+    for any of them would be a copy of a call stated once, and a host-kind shape
+    written into a role. ⛔ Which operations those are is stated there and not
+    enumerated here.
+
+    ⛔ Scoped to the strict set, and the scope is the rule's own rather than
+    forbearance: the implementation **behind** the port is where the client's
+    vocabulary belongs, and `docs/` quotes measurements that have to keep naming
+    the call they were taken from. A sweep that reddened on either would forbid
+    the one place the shape is allowed to live and the evidence for why.
+
+    ⚠️ What stays green is every other invocation of the client. It opens a pull
+    request, reads one and merges it, and none of that is a run.
+
+    ⚠️ **What it does not reach is recorded with the sweep's own limits** rather
+    than left reading as covered: the client reached through an alias it set
+    earlier, and the client's name held in a variable. Both are one indirection
+    away from every arm here, and a grammar chasing them would be reading the
+    shell rather than the call.
+    """
+    problems = []
+
+    def found_in(where: str, region: str, pattern, what: str) -> None:
+        found = pattern.search(region)
+        if found:
+            problems.append(
+                f"{where}: the command `{region.strip()[:70]}` invokes the host "
+                f"client for {what} (`{found.group(0)}`). A role names the "
+                "port and never a client: the operations are read through "
+                "`port.py --port host.runs.kind` (schema § 29)."
+            )
+
+    for path in tree.strict():
+        regions = _continued(tree.code(path))
+        # ⛔ The endpoint arms are read against the **file's** own regions rather
+        # than line by line: a call split across a continuation puts the client
+        # and its endpoint in two regions, and either arm alone is green on both.
+        names_the_client = any(HOST_CLIENT_NAMED.search(region) for region in regions)
+        for region in regions:
+            if HOST_CLIENT_NAMED.search(region):
+                for pattern, what in HOST_RUN_CALLS:
+                    found_in(path, region, pattern, what)
+            if names_the_client:
+                for pattern in HOST_RUN_ENDPOINTS:
+                    found_in(path, region, pattern, HOST_ENDPOINT_REASON)
+    return problems
+
+
 def check_no_role_is_resolved_through_the_running_user(tree: Tree) -> list[str]:
     """No carrier resolves who holds a role by asking who is running.
 
@@ -1187,7 +1326,7 @@ def check_no_value_is_carried_in_the_strict_set(tree: Tree) -> list[str]:
 def check_no_private_value_is_committed(tree: Tree) -> list[str]:
     """No tracked configuration carries a value under a `# private` key.
 
-    `schema.md § 28` names the class: a chat thread's name, a calendar's own
+    `schema.md § 29` names the class: a chat thread's name, a calendar's own
     name, a person, and a path on somebody's machine. Those are values a
     repository may not be able to hold, and the facet exists so a project can
     state every rule in its tracked file and resolve those from one it does not
@@ -1222,7 +1361,7 @@ def check_no_private_value_is_committed(tree: Tree) -> list[str]:
     if not marked:
         return [
             f"{SURFACE}: marks no key `# private`, so this check has nothing to look "
-            "for and reports green while holding nothing (§ 28). A surface that stopped "
+            "for and reports green while holding nothing (§ 29). A surface that stopped "
             "marking the class would take this check's whole scope with it."
         ]
     for path in tree.configs():
@@ -1240,7 +1379,7 @@ def check_no_private_value_is_committed(tree: Tree) -> list[str]:
             problems.append(
                 f"{path}: carries `{value}` under `{dotted}`, which the surface marks "
                 "`# private`. A tracked configuration states the key's shape and the "
-                "value is resolved through `private.source` (schema § 28)."
+                "value is resolved through `private.source` (schema § 29)."
             )
     return problems
 
@@ -1289,6 +1428,7 @@ CHECKS = [
     ("no stack is named in the strict set", check_no_stack_is_named_in_the_strict_set),
     ("no value is carried in the strict set", check_no_value_is_carried_in_the_strict_set),
     ("no private value is committed", check_no_private_value_is_committed),
+    ("no host run call is in the strict set", check_no_host_run_call_in_the_strict_set),
     ("no machine is named", check_no_machine_is_named),
     ("no role is resolved through the running user",
      check_no_role_is_resolved_through_the_running_user),
@@ -1547,7 +1687,7 @@ def _a_declared_key_path(tree: Tree) -> str:
     ⛔ Read out of a configuration rather than written here, for the reason every
     fixture in this file is: the exemption's claim is that a project writing one
     of the surface's own key paths is not naming a value, so the string has to be
-    one a shipped configuration actually states. § 28's list is where that
+    one a shipped configuration actually states. § 29's list is where that
     happens.
     """
     marked = reader.surface_facts(tree.text.get(SURFACE, ""))["private"]
@@ -1769,7 +1909,7 @@ def _a_private_key(tree: Tree) -> str:
 
 
 def _plant_a_private_value_in_the_own_config(tree: Tree) -> Tree:
-    """A value of § 28's class in the tracked configuration of this project."""
+    """A value of § 29's class in the tracked configuration of this project."""
     key = _a_private_key(tree)
     block = "".join(f"{'  ' * depth}{part}:\n" for depth, part in enumerate(key.split(".")[:-1]))
     leaf = key.rsplit(".", 1)[1]
@@ -1932,7 +2072,7 @@ VIOLATIONS = [
     ("no value is carried in the strict set",
      "a status word that is also one of the surface's own key names",
      _plant_a_status_colliding_with_a_key_name),
-    # § 28's class, one plant per way it reaches a tracked file: in this project's
+    # § 29's class, one plant per way it reaches a tracked file: in this project's
     # own configuration, and in an example — where the placeholder exemption lives,
     # so a concrete value there is the arm that proves the exemption is the
     # placeholder's form rather than the file's. ⛔ And the two ways the check can
@@ -1964,6 +2104,46 @@ VIOLATIONS = [
     ("no role is resolved through the running user",
      "the shell asked who is running",
      _plant_in_a_hook("# Resolve the reviewer.\nreviewer=$(whoami)\n")),
+    # One per form the host client is invoked for a run in, because each is a
+    # separate operation § 29 states and each reaches the client by a different
+    # token -- a subcommand of its own, a subcommand of a subcommand, a pull
+    # request's own view of the runs, and the endpoint behind all three. A form
+    # with no plant is a form nothing asserts is forbidden at all.
+    ("no host run call is in the strict set", "the client's own run subcommand",
+     _plant_in_a_carrier("\nRead the log with `gh run view <id> --log` first.\n")),
+    ("no host run call is in the strict set", "a manual dispatch",
+     _plant_in_a_carrier("\nStart it with `gh workflow run Deploy --ref main`.\n")),
+    ("no host run call is in the strict set", "a pull request's runs, watched",
+     _plant_in_a_carrier("\nWait with `gh pr checks <number> --watch`.\n")),
+    ("no host run call is in the strict set", "the run endpoint behind the client",
+     _plant_in_a_carrier("\nAsk `gh api repos/<slug>/actions/runs?head_sha=<commit>`.\n")),
+    ("no host run call is in the strict set", "the endpoint with a flag between it and the client",
+     _plant_in_a_carrier(
+         "\nRe-run it with `gh api --method POST repos/<slug>/actions/runs/<id>/rerun`.\n")),
+    ("no host run call is in the strict set", "a run watched from a hook",
+     _plant_in_a_hook("# Wait for the gate.\ngh run watch \"$RUN\"\n")),
+    # ⛔ The same call in the shape an interpreted carrier spells it: a list of
+    # quoted words rather than a command line. A hook is the carrier, so it is
+    # swept -- and read for the shell form alone this arm was green over every
+    # hook that is not a shell script.
+    ("no host run call is in the strict set", "a run call written as a list of quoted words",
+     _plant_in_a_hook('import subprocess\nsubprocess.run(["gh", "run", "watch", run])\n')),
+    # ⛔ The two spellings a line-by-line reading was green over, each measured: a
+    # call split at a continuation, where the client and its endpoint land in
+    # separate regions.
+    ("no host run call is in the strict set", "an endpoint on a line of its own",
+     _plant_in_a_carrier(
+         "\nAsk:\n\n```sh\ngh api \\\n  repos/<slug>/actions/runs?head_sha=<commit>\n```\n")),
+    ("no host run call is in the strict set", "a subcommand on a line of its own",
+     _plant_in_a_carrier("\nThen:\n\n```sh\ngh \\\n  run view <id> --log\n```\n")),
+    # ⛔ And the two endpoints that name a commit's runs without the actions
+    # namespace at all -- two of § 29's readings, reachable with every other arm
+    # green.
+    ("no host run call is in the strict set", "a commit's check runs",
+     _plant_in_a_carrier("\nRead `gh api repos/<slug>/commits/<sha>/check-runs` instead.\n")),
+    ("no host run call is in the strict set", "the check suites of the query interface",
+     _plant_in_a_carrier(
+         '\nAsk `gh api graphql -f query="{ checkSuites { nodes { conclusion } } }"`.\n')),
 ]
 
 
@@ -1996,7 +2176,7 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     ("no value is carried in the strict set", "a member of a closed list the surface publishes",
      lambda tree: _plant_in_a_carrier(
          f"\nThe stream is `{_a_published_list_member(tree)}`.\n")(tree)),
-    # ⛔ The third shape, and the one § 28 forced: a key path the surface declares
+    # ⛔ The third shape, and the one § 29 forced: a key path the surface declares
     # is the surface's word, and a project's own list may be a list of them. A
     # sweep reading those as this project's values forbids a role from naming the
     # key it reads -- measured on the day-log role, which cites
@@ -2064,6 +2244,34 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     ("no tracker identifier is named", "a session id, which is a dashed hex group and nobody",
      lambda tree: _plant_in_a_carrier_implementation(
          'SESSION = "aaaabbbb-0000-0000-0000-000000000000"\n')(tree)),
+    # ⛔ The green side of § 29's narrowing, and the reason that check names the
+    # client's subcommands rather than the client: a carrier legitimately opens a
+    # pull request, reads one and merges it, and none of those is a run.
+    #
+    # ⚠️ **Verified by planting each into a copy and comparing the problem set
+    # with and against it**, which is the only form that isolates a plant here:
+    # widening the grammar reddens the *unplanted* tree, because a shipped carrier
+    # legitimately carries `gh pr view` -- so the whole-tree form cannot tell a
+    # plant that was swept from a plant that contributed no region at all, and one
+    # of these was green for exactly that reason while reading as held.
+    ("no host run call is in the strict set", "the client reading a pull request",
+     _plant_in_a_carrier(
+         "\nRead it back with `gh pr view <number> --json state,mergedAt`.\n")),
+    ("no host run call is in the strict set", "the client writing on an item",
+     _plant_in_a_carrier("\nAssign it with `gh issue edit <number> --add-assignee <who>`.\n")),
+    # ⛔ A **swept region** carrying the word, and not a prose sentence: a line
+    # with no code span in it contributes nothing to `code()`, so the first form
+    # of this plant asserted nothing while printing green.
+    ("no host run call is in the strict set", "the word the client's subcommand shares with prose",
+     _plant_in_a_carrier('\nAsk `gh pr comment <number> --body "run it locally"` first.\n')),
+    # ⛔ And the implementation side, which is where the client's own vocabulary
+    # belongs: the port's adapter is a script under the plugin, and a sweep that
+    # reddened on it would forbid the one place § 29's operations can be built.
+    # ⚠️ Verified by emptying `CARRIER_IMPLEMENTATION` and watching this plant
+    # redden -- the grammar widening above does not reach it, so its own scope
+    # needed its own disabling.
+    ("no host run call is in the strict set", "a run call in a script a carrier calls",
+     _plant_in_a_carrier_implementation('shown = "gh run view " + run + " --log"\n')),
 ]
 
 

@@ -26,6 +26,12 @@ host:
   landing:
     method: squash
     delete_branch: host
+  # § 29's port: who can be asked about a run and start one. The same system as `kind` above here,
+  # and stated anyway — that key says who holds the code, this one says who answers about a run,
+  # and a project whose continuous integration is somewhere else writes `none` with `kind: github`
+  # unchanged.
+  runs:
+    kind: github
 
 tracker:
   # ⛔ The kind and nothing else: no board to address, no status field to resolve and no
@@ -265,7 +271,7 @@ people:
     and the point at which who holds a role stops being derivable from there being one of them.
 
 private:
-  # § 28's absent case, and the cheapest one there is: there is nothing of the class here to keep
+  # § 29's absent case, and the cheapest one there is: there is nothing of the class here to keep
   # out of the repository, which is what the reason below states. ⛔ Stated rather than omitted —
   # a project with values it may not commit and a project with none read identically otherwise.
   carrier: none

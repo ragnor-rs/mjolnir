@@ -370,6 +370,12 @@ rather than from a hand-kept list of roots.
 | 9 | No machine named by its address, which is the one identity shape of a *machine* with a form a pattern can hold — a hostname is any word and an alias is any word somebody chose, so those are held by the names living outside every working tree ([schema § 21 → The machines named](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)) rather than by this sweep | same | forbidding |
 | 10 | No role is resolved by asking who is running — the spellings that resolve the current user and nothing else, each one a form English does not also use ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)) | the strict set | forbidding |
 | 11 | No tracked configuration carries a value under a key the surface marks `# private` — a chat thread's name, a calendar's own name, a person, a path on somebody's machine ([schema § 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)) | every tracked configuration | forbidding |
+| 12 | No invocation of the host client **for a run** — its own `run` subcommand, a dispatch, a pull request's runs, and the endpoints behind all three, in a command line, in a list of quoted words, or split across a continuation. The client itself stays permitted, being how a pull request is opened, read and merged ([schema § 29](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)) | the strict set | forbidding |
+
+⚠️ **A row takes the next number and never one already in the table.** The first form of the row
+above was inserted in the middle, which left the two rows after it naming checks that had moved —
+read as positions in the script the numbers were then wrong, and silently. ⛔ **What a reader
+resolves a row by is what it says**, and the number is this table's own ordering.
 
 Check 5 is the one that makes the shape-matched strict set safe: a carrier in a directory the
 shapes do not reach — `plugins/other/skils/`, one letter out — would otherwise be swept by nothing
@@ -2101,7 +2107,7 @@ plant of its own below rather than an inference from the baseline.
 
 ⛔ **Nothing about the facet is read in this check's own file**
 ([schema § 2](../plugins/mjolnir/config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref)).
-The entries come from `config.host_runs()`, every refusal § 2 carries living in that one walk, and
+The entries come from `config.defined_runs()`, every refusal § 2 carries living in that one walk, and
 the parse of `<event>(<types>) -> <ref>` is `config.parse_trigger` — a second spelling of either
 being the two-vocabularies defect this surface refuses one facet over, arriving as behaviour
 instead of as text.
@@ -2484,10 +2490,15 @@ reading, and the two roles that drive the host's runs call it rather than descri
 ⚠️ **It never reads the host, and that boundary is the one worth knowing.** Which runs exist for a
 commit, whether one executed steps and how it concluded are
 [§ 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)'s four
-preconditions, answered from live state by the role that asks; the host's run operations becoming a
-port of their own is #53. So ⛔ **`reached` is never *green*** — it names the run whose conclusion
-is worth reading, and a consumer that read it as a verdict would report a pass for a run nobody
-looked at.
+preconditions, answered from live state — by
+[§ 29](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)'s port, which is the section
+below. So ⛔ **`reached` is never *green*** — it names the run whose conclusion is worth reading, and
+a consumer that read it as a verdict would report a pass for a run nobody looked at.
+
+⚠️ **The reading is now reached through § 29's port and no longer by a role**, so the function is
+the port's implementation's to call and ⛔ **the subcommand beside it is a reader's affordance
+rather than a step of any role** — stated because a subcommand no route invokes reads as one that
+was forgotten.
 
 ⚠️ **The boundary survived the module gaining a reading of how a run concluded.** The three facts
 that reading takes — how many steps the run's jobs executed, whether the host calls it a pass, and
@@ -2601,14 +2612,16 @@ What it deliberately does not check:
   written. That comparison is the `Host checks drift` gate's
   ([schema § 2](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions)),
   recorded above, and the two read the facet through **one** walk of it —
-  `config.mirrors()` here, per command, and `config.host_runs()` there, per entry.
+  `config.mirrors()` here, per command, and `config.defined_runs()` there, per entry.
 - **Whether a trigger is one the host would honour.** The module parses § 2's form; a pattern
   inside it naming an event no workflow may listen to, or a ref nothing matches, is a
   configuration nobody here can falsify. § 2 states why the facet carries no event list to check
   one against.
 - **What else bounds a run the host scopes by no ref.** A schedule's cron expression and a
-  dispatch's inputs are facts § 2 states nowhere, so `-> *` is the whole of what this module can
-  read about such a run.
+  dispatch's inputs are facts **§ 2** states nowhere, so `-> *` is the whole of what this module can
+  read about such a run. ⚠️ The inputs are stated one section on, as a thing an operation is handed
+  ([§ 29](../plugins/mjolnir/config/schema.md#the-run-operations-and-what-each-absence-does)) — which
+  is not a fact about which runs exist and does not reach this module.
 - **Whether `paths` is the filter the workflow really carries.** Both levels are read as written.
   This repository filters nothing, so the arm holds nothing here on its own facts; what asserts it
   is a plant that states a filter *and* names it in a carrier, in the sweep below.
@@ -2616,6 +2629,112 @@ What it deliberately does not check:
   outcome mechanically is the sweep's value rule, which forbids a workflow name, a trigger pattern
   and a path filter under a carrier root — recorded in
   [§ The second sweep](#the-second-sweep-naming-no-other-project), with those three plants.
+
+## Beside that consumer: the host's run operations behind a port
+
+`plugins/mjolnir/scripts/runs/` holds the implementations of
+[schema § 29](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)'s port, and the
+`Adapter suites` workflow runs each one's suite — ⛔ **with no gate entry of its own**, the runner
+asking the surface which ports there are and sweeping each one's package. What is recorded here is
+why the port exists and what it leaves alone.
+
+**It exists so that no role invokes a host client for a run.** The consumer above made the *facet* a
+single reading and the *conclusion* a single function, and left the calls themselves with each
+reader. ⚠️ **What the tree actually held was one call written twice** — `gh pr checks <number>
+--watch`, in the finishing role and in the reviewing role, which `git grep` over the base commit is
+the whole of the measurement — ⛔ **and the readers that do not exist yet are what makes the pattern
+rather than the pair**: a deploying role that dispatches and verifies from a log, and a guard asking
+whether the host's checks answer at all, would each have written it again. The second defect is the
+one [§ 2](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions) refuses
+one key over: a dispatch with inputs, a listing keyed on a commit, a log retrieval and a gate on a
+run are each a host kind's shape rather than a universal.
+
+⚠️ **The kind is a second key inside the host block, and that is a decision rather than a
+duplication.** A port's kind set carries the word for *addresses nothing*, and `host.kind: none`
+would be a project with no code host — which `repo`, `checks` and `landing` each contradict by being
+required of every project. So `host.kind` says who holds the code and `host.runs.kind` says who can
+be asked about a run, and § 29 states the pair with `checks: []` that is legitimate in both
+directions.
+
+What the implementation holds, and the suite beside it is where each can fail:
+
+- ⛔ **Three of the four operations write nothing**
+  ([§ 29](../plugins/mjolnir/config/schema.md#the-run-operations-and-what-each-absence-does)),
+  asserted over the calls a read actually made rather than claimed in prose: every host call
+  declares whether it writes, and the listing, the conclusion and the log are held to making none
+  that does. ⚠️ The dispatch is asserted to be the one that does, so the relation is held in both
+  directions.
+- ⛔ **An empty step list is *unavailable* and never zero.** The host answers with no job list for a
+  run it has not expanded and with a job carrying no step list at all, and zero executed steps is
+  § 2's never-started reading — so collapsing the two reports *the queue ate this run* about a run
+  that may have executed everything it has. Both shapes come back with the reading withheld and
+  precondition 3 named, and each is planted beside an assertion that the never-started reading is
+  **not** what came back.
+- ⛔ **A run the host has not concluded is precondition 4 and not a reading either**, and asked to
+  wait the operation blocks in the host's own client — § 2's *watch rather than poll*. ⚠️ The
+  client's exit status is deliberately unread: it exits non-zero for a run that failed, and a failed
+  run is an answer rather than a call that did not go through. The suite asserts the watch happens
+  **before** the run is read, and that nothing is watched where the caller did not ask.
+- ⚠️ **A supersession is read only where the project states a group.** § 2 makes an absent
+  `host.runner.supersedes` a statement, so the implementation asks nothing there — asserted on the
+  *call* and not only on the reading, a lookup made and discarded being this module answering a
+  question the project already answered.
+- ⛔ **The host's conclusion word does not leave the implementation.** One word arrives on two of
+  § 2's four readings, so the three facts are read here and the reading comes from the consumer
+  above; the suite asserts the word appears nowhere in what a caller is handed.
+- ⛔ **A log is a tail with both counts beside it**, because a cut log that did not say so reads as
+  the whole of what a run printed — and what a reader does with a log is conclude from what is not
+  in it. The ingestion step stays the caller's: a role handed pre-cleared text has no step of its
+  own to report.
+- ⛔ **A dispatch is refused without an approval that names it** — the workflow, the ref and every
+  input value — and every refusal is asserted to have started **nothing**, a rail that refused after
+  dispatching being worse than no rail. ⚠️ The refusal names what was missing and does not compose
+  the sentence that would satisfy it.
+- ⛔ **A dispatch takes a branch or a tag and a listing takes a commit**, each refusing the other's
+  form. That is this host's own shape: its dispatch endpoint rejects a commit, and precondition 2
+  asks about a commit rather than about whatever a branch points at now.
+
+**Forbidding, in the sweep rather than here**: no carrier — skill, command or hook — invokes the
+host client for a run, in four shapes (the client's own run subcommand, a dispatch, a pull request's
+runs, and the endpoint behind all three) and in both spellings (a command line, and a list of quoted
+words as an interpreted carrier writes one). ⚠️ **The client itself stays permitted**, being how a
+pull request is opened, read and merged, and the green side of that narrowing is asserted: three
+plants that must stay green, verified by widening the grammar to the client alone, and one for a
+script a carrier calls, verified by widening the scope instead — the grammar widening does not reach
+that one.
+
+What it deliberately does not check:
+
+- **That any of it reaches the host.** Every case answers through the transport the implementation
+  names, so no suite here establishes that a dispatch lands, that a run listing's filter is the one
+  the host honours, or that a log comes back for a run still in progress. That half is driven by
+  hand and recorded on the work item, which is the division the contract and the sibling suites
+  already draw.
+- **The client reached through an indirection.** The sweep's arms are anchored at the client's own
+  name, so an alias the carrier set earlier and the client's name held in a variable are each one
+  step out of reach. ⚠️ Stated rather than left reading as covered: a grammar chasing either would
+  be reading the shell rather than the call, which is the false-positive direction this sweep may
+  not err in.
+- **A role naming the forbidden call in order to forbid it.** That reddens, which is the one false
+  positive this check has and the reason both edited roles describe the call rather than quoting it.
+  ⚠️ The cost is the prose, and the alternative — an exemption keyed on a marker in the same line —
+  is a hole in the shape most likely to be written by somebody arguing for the call.
+- **Which dispatches reach a live target.** Every dispatch carries an approval here, which is the
+  strict reading. Narrowing it to a live target alone needs the statement of which targets are
+  live — configured and never inferred from a name — which is #13's and no facet's yet.
+- **A go replayed against a byte-identical dispatch.** The workflow, the ref and the inputs are the
+  whole of what either side can name, so two dispatches identical in all three are one dispatch to
+  this rail. § 29 states that limit rather than leaving it to read as closed.
+- **A supersession group keyed on anything but the workflow and the commit.** The concurrency
+  expression lives in the workflow file and the host publishes no *retired by* field. A supersession
+  this misses reads as never-started rather than as green — the wrong remedy, and not coverage.
+- **Which of the host's two records a reader is looking at.** ⚠️ Measured while this change's own
+  gate ran: a run reported `completed` with its conclusion set while the job behind it was still
+  `in_progress` with none, and the pull request's own check view — which reads that second record —
+  showed the check pending for the same commit at the same moment. The operation answers about the
+  **run**, § 2's preconditions being about one, and ⛔ **it reconciles nothing**: whether a change
+  may merge is the host's own merge state, which the finishing role reads separately, so a consumer
+  told green here and refused by the host is meeting that lag rather than a disagreement.
 
 ## The spend half: a call put to somebody, and the one price stated beforehand
 

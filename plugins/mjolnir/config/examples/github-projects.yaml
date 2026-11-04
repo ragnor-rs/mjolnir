@@ -41,6 +41,10 @@ host:
   landing:
     method: squash
     delete_branch: procedure
+  # § 29's port. This project's runs are the host's own, so a role lists them, reads how one
+  # concluded and reads a log through the operations rather than through a client of its own.
+  runs:
+    kind: github
 
 tracker:
   kind: github-projects
@@ -293,7 +297,7 @@ people:
   key: handle
 
 private:
-  # § 28's absent case under a project that *does* have values of the class, which is the arm the
+  # § 29's absent case under a project that *does* have values of the class, which is the arm the
   # example next door does not show: the distinction the facet turns on is the reason below rather
   # than the presence of such values.
   carrier: none

@@ -39,6 +39,12 @@ host:
   landing:
     method: merge_commit
     delete_branch: never
+  # § 29's port, and the account above is why it matters here: on a single-runner account a run
+  # cancelled in the queue and a run that failed share one conclusion word, so `conclusion` is
+  # the operation that tells them apart and no consumer reads the word. ⚠️ The `supersedes` group
+  # stated above is also what makes the superseded reading reachable at all.
+  runs:
+    kind: github
 
 tracker:
   kind: jira
@@ -347,7 +353,7 @@ people:
     right person — which is the first reader of a map here that a person is not already.
 
 private:
-  # § 28, and the arm it was written for: this repository sits in a client's organisation whose
+  # § 29, and the arm it was written for: this repository sits in a client's organisation whose
   # rules forbid the chat names, the calendar and the archive's path on whoever keeps the log —
   # and before this facet existed, the whole of that procedure was git-ignored here for exactly
   # that reason, which is the cost extraction was meant to remove.
