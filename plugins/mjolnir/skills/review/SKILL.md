@@ -231,10 +231,13 @@ experience:
   that state its behaviour, a change whose behaviour no longer matches one of them is a finding
   against *this* change, and the document moves on this branch rather than in a later item. The
   test is three-way — whether the change **contradicts, extends or invalidates** what a document
-  states. ⚠️ **Which documents those are, and the ref they are read at, is the project's own fact
-  and the surface carries no key for it**, so ⛔ **the role states which ref it read them at**
-  rather than defaulting to the work tree: one copy read them off the release its item was grouped
-  under, where the work tree would have answered about unreleased behaviour.
+  states. ⚠️ **Which documents those are is the project's own fact and the surface carries no key
+  for it**, so ⛔ **the role states which ref it read them at** rather than defaulting to the tree:
+  one copy read them off the grouping its item was planned into, where the work tree would have
+  answered about unreleased behaviour. ⚠️ **The ref half does have a key** —
+  [`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s `ref_prefix`
+  joined onto the grouping's own value, where the project carries a grouping of that kind — so the
+  role reads it there rather than asking, and asks only where the facet names no prefix.
 - **A layering or boundary rule the change crosses.** One copy names these as the findings most
   likely to be waved through, because each looks local and reads as style. ⚠️ **The tier most
   likely to break on a review fix is the one the finding never mentioned** — a type moved between

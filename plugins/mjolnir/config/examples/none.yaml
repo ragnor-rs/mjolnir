@@ -66,6 +66,17 @@ work_item:
     revisit_when: >-
       A tracker is configured at all, which is the first moment there is a set of items for one
       to be more important than another.
+  grouping:
+    carrier: none
+    absent_reason: >-
+      A project this shape does plan its items into something — the measured one keeps a
+      numbered plan document per grouping, with a kickoff, a freeze and an acceptance list of
+      its own — but that record is a file in a tree rather than anything a tracker holds, and
+      § 3 declines to grow a fourth adapter for it. So the carrier is `none` because no carrier
+      on this surface reaches it, which `revisit_when` below is the trigger for.
+    revisit_when: >-
+      Those items move onto a tracker that holds the grouping itself, which is the first moment
+      one of § 4.8's carriers can name where it lives.
 
 statuses: []
 # An empty status list is legitimate. Every role is absent, so the procedure never asks the
