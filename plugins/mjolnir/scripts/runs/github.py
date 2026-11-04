@@ -306,8 +306,8 @@ def _client(args: list[str], *, parse: bool, timeout: int, tolerate_exit: bool, 
         ) from None
 
 
-def _writes(args: list[str]) -> bool:
-    """Whether this call writes, read off the call itself.
+def _writes(args: list[str]) -> bool | None:
+    """Whether this call writes, read off the call itself, or `None` for neither.
 
     ⛔ **Derived and then compared against what the caller declared**, rather
     than taken on the caller's word. A flag defaulting to *this is a read* is a
@@ -315,10 +315,20 @@ def _writes(args: list[str]) -> bool:
     is not a property at all: measured, a `run rerun` and an `api --method
     DELETE` added to a read were recorded as reads and the read-only assertion
     stayed green.
+
+    ⛔ **`None` is *this call cannot be classified*, and the one call in that
+    state is the query interface's**: a mutation and a query reach it through the
+    same subcommand and the same request method, so nothing in the call says
+    which it is. Read as a read it would be the hole this derivation exists to
+    close; read as a write it would make every future query declare one. So it
+    is refused where it is made, which is the direction § 7's table puts an
+    unestablished fact for an act that cannot be undone.
     """
     words = [word for word in args if word]
     if not words:
         return False
+    if words[:2] == ["api", "graphql"]:
+        return None
     if words[0] == "api":
         method = ""
         for index, word in enumerate(words):
@@ -349,6 +359,16 @@ def _host(
     before the call goes out.
     """
     derived = _writes(args)
+    if derived is None:
+        raise port.ConfigError(
+            f"{_operations()}",
+            f"was about to run `gh {' '.join(args)}`, which this reader cannot "
+            "classify as a read or a write: a mutation and a query reach the "
+            "query interface through the same subcommand and the same request "
+            "method. § 28 states every operation but the dispatch as read-only, "
+            "and a call nothing can place on that line is refused where it is "
+            "made rather than assumed to be the harmless one.",
+        )
     if derived != writes:
         raise port.ConfigError(
             f"{_operations()}",

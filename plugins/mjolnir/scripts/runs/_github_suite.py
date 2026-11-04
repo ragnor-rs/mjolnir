@@ -930,6 +930,21 @@ def self_test() -> int:
             implementation._writes(["workflow", "run", A_WORKFLOW])
             and not implementation._writes(["api", "repos/o/r/actions/runs"]),
         )
+        # ⛔ And the one call this derivation cannot place is refused rather than
+        # assumed harmless: a mutation and a query reach the query interface the
+        # same way, so nothing in the call says which it is.
+        _port(_Host(_answers()))
+        unclassifiable = refused(
+            lambda: implementation._host(
+                ["api", "graphql", "-f", "query={ checkSuites { nodes { conclusion } } }"],
+                parse=False,
+            )
+        )
+        check(
+            "a query-interface call is refused as unclassifiable, naming the operation list",
+            unclassifiable == operations,
+            f"reported {unclassifiable!r}",
+        )
 
         # --- the log's two refusals, which are two and not one ---------------
         check(
