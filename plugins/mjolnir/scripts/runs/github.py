@@ -9,21 +9,21 @@ from the port through `bind`; nothing here resolves a project for itself.
 
 What it implements, and the decisions that are this kind's rather than § 28's:
 
-  * **All four operations § 28 states.** None of them is a capability this host
+  * **Every operation § 28 states.** None of them is a capability this host
     lacks. ⛔ No count of them is carried: the list is closed and stated once, in
     § 28, and a number here would be wrong the next time it grows.
-  * ⛔ **Three of the four write nothing, and that is held rather than claimed.**
-    Every host call goes through `_host`, which is told whether it writes, and
-    the suite beside this file asserts that a listing, a conclusion and a log
-    make no writing call. § 28 states the property; this is where it can fail.
-  * ⛔ **`conclusion` hands the three facts to the one reading and keeps none of
-    its own.** How many steps the run's jobs executed, whether the host calls it
-    a pass, and the id of any run that retired it are read here -- the host's
+  * ⛔ **Only the dispatch writes, and that is held rather than claimed.** Every
+    host call goes through `_host`, which reads off the call itself whether it
+    writes and refuses a disagreement with what the operation declared -- so the
+    property is about the command and not about a keyword somebody remembered.
+    § 28 states it; this is where it can fail.
+  * ⛔ **`conclusion` hands the facts to the one reading and keeps none of its
+    own.** How many steps the run's jobs executed, whether the host calls it a
+    pass, and the id of any run that retired it are read here -- the host's
     vocabulary belongs in this package -- and which of § 2's four readings they
     make is the consumer beside this package's. ⚠️ **The host's conclusion word
-    does not leave this file**: `cancelled` arrives on two of those readings, so
-    a caller handed the word would have to make the distinction this port exists
-    to make once.
+    does not leave this file**, for the reason that consumer states rather than
+    one restated here.
   * ⛔ **An empty step list is *unavailable* and never zero.** The host returns
     no jobs for a run it has not expanded yet and a job with no step list at all,
     and zero executed steps is § 2's never-started reading -- so reading the
@@ -37,7 +37,10 @@ What it implements, and the decisions that are this kind's rather than § 28's:
     not to, an unconcluded run comes back with precondition 4 named. ⚠️ **The
     watch's exit status is deliberately not read**: the client exits non-zero for
     a run that failed, and a failed run is an answer rather than a call that did
-    not go through.
+    not go through. ⛔ **Which is why a wait that returned on a run still
+    unconcluded is a failed call**: those two events are one to this operation,
+    and reported as precondition 4 the second tells a caller to ask for the wait
+    they just asked for.
   * ⚠️ **A supersession is read only where the project states a group.** § 2
     makes the omission of `host.runner.supersedes` a statement -- no run of this
     project's retires another -- so this kind asks nothing where it is absent.
@@ -54,6 +57,15 @@ What it implements, and the decisions that are this kind's rather than § 28's:
     is this host's own shape rather than an inconsistency: its dispatch endpoint
     rejects a commit, and precondition 2 asks about a commit and not about
     whatever a branch points at now. Each operation refuses the other's form.
+  * ⛔ **A body the host answered with and this reader cannot walk is a failed
+    call**, member by member and not only at the envelope. The envelope was
+    guarded and the members were not, so an unexpected shape -- a proxy's, an
+    enterprise host's, a redirected path's -- reached a role as a raw
+    `AttributeError`, which is the traceback this package exists not to hand one.
+  * ⛔ **The bound configuration is given back after every operation**, so a
+    direct call that bypassed the port is refused in a process that has already
+    invoked something. It used to be sticky for the life of the process, which
+    made that refusal reachable only before the first call.
 """
 
 from __future__ import annotations
@@ -86,11 +98,35 @@ PASSED = "success"
 # it is not part of the count § 2's precondition 3 asks for.
 SKIPPED = "skipped"
 
+# What this host's status word says about a step that carries no conclusion: one
+# that is running has executed, and one still queued has not. ⛔ Read because the
+# conclusion alone counted a run cut off mid-step as having executed nothing,
+# which is the never-started reading about a run that reached a runner.
+STARTED = {"in_progress"}
+
 # A commit, as this host's run listing is keyed on it. ⛔ Full length and nothing
 # shorter: the listing filter takes a whole object name, and an abbreviated one
 # comes back as a listing with nothing in it -- which reads exactly like a commit
 # the host made no run for.
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
+
+# Which of this client's calls write on the host, as the subcommand pair that
+# stands at the head of one, and which request methods read. ⛔ The host's own
+# vocabulary, which is what this package exists to be the one place for -- and
+# what `_writes` below holds a caller's declaration against.
+WRITING_CALLS = {
+    ("workflow", "run"),
+    ("run", "rerun"),
+    ("run", "cancel"),
+    ("run", "delete"),
+}
+READ_METHODS = {"GET", "HEAD"}
+
+# One word of a go, and of a thing a go has to name. ⛔ The characters a ref, a
+# workflow name and an input value are **made of**, so everything else is a
+# separator: a slashed ref and a dotted version are one token each, while the
+# prose around them is not part of any of them.
+TOKEN = re.compile(r"[A-Za-z0-9_./-]+")
 
 # How much of a log comes back by default, and ⚠️ **a tail rather than a head**:
 # what a reader of a failed run needs is where it stopped. The number is this
@@ -129,6 +165,46 @@ def bind(configuration) -> None:
     """
     global _bound
     _bound = configuration
+
+
+def _through_the_port(operation):
+    """One operation, with the bound configuration given back afterwards.
+
+    ⛔ **Given back, so that a direct call is refused in a process that has
+    already invoked something.** `bind` is per call, but the value it set used to
+    outlive the call: measured, one legitimate invocation left the configuration
+    sticky for the life of the process, so a later direct call answered -- about
+    whichever project happened to be last. The refusal that exists for that case
+    was reachable only in a process that had never invoked anything.
+    """
+    def performed(*args, **kwargs):
+        global _bound
+        try:
+            return operation(*args, **kwargs)
+        finally:
+            _bound = None
+
+    performed.__name__ = operation.__name__
+    performed.__doc__ = operation.__doc__
+    return performed
+
+
+def _body(answer, key: str, what: str):
+    """A host body this reader can walk, or a failed call saying it could not.
+
+    ⛔ Every member read below goes through this or its own `isinstance`: the
+    envelope was guarded and the members were not, so a body the host answered
+    200 with in an unexpected shape -- a proxy's, an enterprise host's, a
+    redirected path's -- reached a role as a raw `AttributeError`. That is the
+    traceback this package refuses to hand a role, and `Port.invoke` converts
+    only `HostUnavailable`.
+    """
+    if not isinstance(answer, dict):
+        raise port.HostUnavailable(
+            f"{what} came back as something other than a body this reader can "
+            f"walk, so {key} is unestablished"
+        )
+    return answer
 
 
 # The directory this module sits in, which is the whole of what declares which
@@ -230,6 +306,32 @@ def _client(args: list[str], *, parse: bool, timeout: int, tolerate_exit: bool, 
         ) from None
 
 
+def _writes(args: list[str]) -> bool:
+    """Whether this call writes, read off the call itself.
+
+    ⛔ **Derived and then compared against what the caller declared**, rather
+    than taken on the caller's word. A flag defaulting to *this is a read* is a
+    property held against an author who remembers to mark their own write, which
+    is not a property at all: measured, a `run rerun` and an `api --method
+    DELETE` added to a read were recorded as reads and the read-only assertion
+    stayed green.
+    """
+    words = [word for word in args if word]
+    if not words:
+        return False
+    if words[0] == "api":
+        method = ""
+        for index, word in enumerate(words):
+            if word == "--method" and index + 1 < len(words):
+                method = words[index + 1].upper()
+            elif word.startswith("--method="):
+                method = word.partition("=")[2].upper()
+            elif word in ("-X",) and index + 1 < len(words):
+                method = words[index + 1].upper()
+        return bool(method) and method not in READ_METHODS
+    return tuple(words[:2]) in WRITING_CALLS
+
+
 def _host(
     args: list[str],
     *,
@@ -238,13 +340,26 @@ def _host(
     timeout: int = CALL_SECONDS,
     tolerate_exit: bool = False,
 ):
-    """One host call, declaring whether it writes.
+    """One host call, holding what it writes to what the call itself says.
 
     ⛔ `writes` is what makes § 28's read-only property checkable rather than
-    claimed: three of the four operations must never pass it, and the suite
-    beside this file asserts exactly that. Nothing here branches on it -- it is
-    carried so that something can.
+    claimed, and ⛔ **it is checked here against the call** rather than carried:
+    the reads must never pass it and must never make a call that writes, and a
+    disagreement between the two is this module's own mistake and is refused
+    before the call goes out.
     """
+    derived = _writes(args)
+    if derived != writes:
+        raise port.ConfigError(
+            f"{_operations()}",
+            f"was about to run `gh {' '.join(args)}`, which "
+            + ("writes on the host" if derived else "is a read")
+            + ", declared as "
+            + ("a write" if writes else "a read")
+            + ". § 28 states every operation but the dispatch as read-only, so "
+            "the two have to agree: a read that writes is a defect here and a "
+            "write declared as a read is the property going unheld.",
+        )
     transport = TRANSPORT if TRANSPORT is not None else _client
     return transport(
         args,
@@ -295,12 +410,23 @@ def runs_for_ref(ref: str) -> dict:
         "api",
         f"repos/{repo}/actions/runs?head_sha={commit}&per_page=100",
     ])
-    found = answer.get("workflow_runs") if isinstance(answer, dict) else None
-    if found is None:
+    what = f"the run listing for `{commit}` in `{repo}`"
+    found = _body(answer, "which runs exist for this commit", what).get("workflow_runs")
+    if not isinstance(found, list):
         raise port.HostUnavailable(
-            f"the run listing for `{commit}` in `{repo}` came back without a run "
-            "list in it, so which runs exist for this commit is unestablished"
+            f"{what} came back without a run list in it, so which runs exist for "
+            "this commit is unestablished"
         )
+    # ⛔ Every entry walked rather than the envelope alone. A listed run with no
+    # id and no workflow name came back as an answer -- and the name is the key
+    # § 2's `checks` is read by, so a `None` there matches nothing while reading
+    # as a run that exists.
+    for run in found:
+        if not isinstance(run, dict) or not run.get("id") or not run.get("name"):
+            raise port.HostUnavailable(
+                f"{what} lists a run the host named or numbered nothing for, so "
+                "which runs exist for this commit is unestablished"
+            )
     return {
         "repo": repo,
         "commit": commit,
@@ -309,7 +435,10 @@ def runs_for_ref(ref: str) -> dict:
                 # The workflow's **name**, which is the key § 2's `checks` is read
                 # by -- never the file path or the job's name.
                 "workflow": run.get("name"),
-                "run": run.get("id"),
+                # ⚠️ As text, which is the form every other operation's answer
+                # carries a run in: a consumer comparing an id from the listing
+                # against one from a reading would otherwise never match.
+                "run": str(run.get("id")),
                 "attempt": run.get("run_attempt"),
                 "created_at": run.get("created_at"),
             }
@@ -327,6 +456,13 @@ def conclusion(run, wait: str = "no") -> dict:
     ⛔ Two answers withhold the reading rather than inventing one, each naming the
     precondition it could not answer: a run the host has not concluded, where the
     caller did not ask to wait, and a step count the host does not state.
+
+    ⛔ **A wait that returned on a run the host still has not concluded is a
+    failed call and not an unanswered precondition.** The client's exit status is
+    not read here, so a run that failed and a watch that could not follow one are
+    the same event to this operation -- and reported as precondition 4 the second
+    tells the caller to ask for the wait they just asked for, which is a loop for
+    a role and nonsense for a person.
     """
     identifier = str(run).strip()
     if not identifier:
@@ -337,7 +473,8 @@ def conclusion(run, wait: str = "no") -> dict:
             "a commit nobody asked about.",
         )
     repo = _repo()
-    if str(wait).strip().lower() in YES:
+    waited = str(wait).strip().lower() in YES
+    if waited:
         # ⛔ The host's own blocking client, and its exit status discarded: § 2
         # forbids a sleep and a poll alike, and a non-zero exit here is a run that
         # failed rather than a call that did not go through.
@@ -347,7 +484,11 @@ def conclusion(run, wait: str = "no") -> dict:
             timeout=WATCH_SECONDS,
             tolerate_exit=True,
         )
-    record = _host(["api", f"repos/{repo}/actions/runs/{identifier}"])
+    record = _body(
+        _host(["api", f"repos/{repo}/actions/runs/{identifier}"]),
+        f"how run `{identifier}` concluded",
+        f"the record of run `{identifier}` in `{repo}`",
+    )
     workflow = record.get("name")
     read = {
         "repo": repo,
@@ -356,6 +497,13 @@ def conclusion(run, wait: str = "no") -> dict:
         "commit": record.get("head_sha"),
     }
     if not record.get("conclusion"):
+        if waited:
+            raise port.HostUnavailable(
+                f"the wait on run `{identifier}` returned and the host still has "
+                "not concluded it, so the watch did not follow the run to its end "
+                "-- which is a call that did not go through rather than a "
+                "precondition nothing could answer"
+            )
         return dict(
             read,
             reading=None,
@@ -405,10 +553,19 @@ def log(run, lines: int = LOG_LINES) -> dict:
             "was given no run to read. A log belongs to one run, and a blank "
             "identifier would address the repository's newest.",
         )
+    # ⛔ Two refusals and not one. Reading a count this reader cannot parse as
+    # *zero or less* told a caller who asked for `3.9` lines that they had asked
+    # for none, which sends them to fix the wrong thing.
     try:
         wanted = int(lines)
     except (TypeError, ValueError):
-        wanted = -1
+        raise port.ConfigError(
+            f"{_operations()}.log",
+            f"was asked for {lines!r} lines, which is not a whole number of "
+            "them. A tail is a count of lines, and every argument reaching an "
+            "operation through the port is text -- so a count is written as "
+            "digits.",
+        ) from None
     if wanted < 1:
         raise port.ConfigError(
             f"{_operations()}.log",
@@ -434,11 +591,10 @@ def dispatch(workflow: str, ref: str, go: str, *inputs: str) -> dict:
     """Start one run by hand, refused without a go that names this dispatch.
 
     ⛔ The refusal is the port's and not each role's (§ 28), and what the go must
-    name is the workflow, the ref and every input value -- so an approval given
-    for another ref or another input does not clear this call. ⚠️ **What it
-    cannot catch is a go replayed against a byte-identical dispatch**, which § 28
-    states as the limit it is: those three are the whole of what either side can
-    name, and what stops the second one is the role asking per dispatch.
+    name is the workflow, the ref and every input this call sends -- so an
+    approval given for another ref or another input does not clear this call.
+    ⚠️ **What it cannot catch is stated in § 28 rather than here**: a go replayed
+    against a byte-identical dispatch, and that a person gave the go at all.
 
     ⛔ The ref is a branch or a tag, this host's dispatch endpoint rejecting a
     commit -- the opposite form from the listing above, which is that host's own
@@ -492,12 +648,35 @@ def dispatch(workflow: str, ref: str, go: str, *inputs: str) -> dict:
     }
 
 
+def _tokens(text: str) -> set[str]:
+    """What a go names, as whole tokens and never as a run of characters.
+
+    ⛔ Split rather than searched. A substring test is what this rail shipped as
+    and it is defeated by the ordinary spellings of the things it holds:
+    measured, a go for `release/next-week` cleared a dispatch against
+    `release/next`, a go naming *the maintenance branch* cleared `main`, and an
+    input value of `loy` was cleared by the letters inside `Deploy`. Each of
+    those is an approval obtained for one dispatch clearing another, which is the
+    whole of what this rail is for.
+
+    ⚠️ The separators are everything a ref, a workflow name and an input value do
+    **not** contain, so a slashed ref and a dotted version stay one token each.
+    """
+    return {word.lower() for word in TOKEN.findall(str(text)) if word}
+
+
 def _hold_the_go(go, workflow: str, ref: str, values: list[tuple[str, str]]) -> None:
     """Refuse a dispatch whose go does not name it.
 
     ⛔ The refusal names what was missing and does not compose the string that
     would satisfy it. A refusal that handed back the sentence to repeat would be
     a form to fill in rather than an approval to have obtained.
+
+    ⛔ **An input is held by its name whenever it is sent, whatever its value.**
+    An input stated with an empty value is not a no-op on this host -- it
+    overrides whatever default the workflow declares for it, so an empty boolean
+    is a false one -- and exempting it let an approval for one dispatch clear a
+    dispatch that flipped every defaulted input. Measured.
     """
     stated = "" if go is None else str(go).strip()
     if not stated:
@@ -506,14 +685,17 @@ def _hold_the_go(go, workflow: str, ref: str, values: list[tuple[str, str]]) -> 
             "was asked to start a run with no go for this dispatch. § 28 makes "
             "the confirmation the one rail between a routine command and a "
             "production write, and it is per dispatch: ask, and pass what was "
-            "approved -- it has to name this workflow, this ref and each input "
-            "value.",
+            "approved -- it has to name this workflow, this ref and every input "
+            "this call sends.",
         )
+    named = _tokens(stated)
+    wanted: list[tuple[str, str]] = [("the workflow", workflow), ("the ref", ref)]
+    for name, value in values:
+        wanted.append((f"the `{name}` input", name))
+        if value:
+            wanted.append((f"the `{name}` input's value", value))
     missing = [
-        label
-        for label, token in [("the workflow", workflow), ("the ref", ref)]
-        + [(f"the `{name}` input's value", value) for name, value in values if value]
-        if token.lower() not in stated.lower()
+        label for label, token in wanted if not _tokens(token) <= named
     ]
     if missing:
         raise port.ConfigError(
@@ -533,21 +715,56 @@ def _steps(repo: str, run: str) -> int | None:
     for a run it has not expanded, and with a job carrying no step list at all;
     zero executed steps is § 2's never-started reading, so collapsing the two
     would report the queue about a run that executed everything it has.
+
+    ⛔ **A step that started counts, whether or not it concluded.** Reading the
+    conclusion alone counted a run cut off mid-step as having executed nothing --
+    the never-started reading, which is *the queue ate this run* about a run that
+    reached a runner and ran. ⚠️ A **skipped** step concluded and ran nothing, so
+    it is the one conclusion excluded by name.
     """
-    answer = _host([
-        "api", f"repos/{repo}/actions/runs/{run}/jobs?per_page=100"
-    ])
-    jobs = answer.get("jobs") if isinstance(answer, dict) else None
-    if not jobs:
+    what = f"the jobs of run `{run}` in `{repo}`"
+    answer = _body(
+        _host(["api", f"repos/{repo}/actions/runs/{run}/jobs?per_page=100"]),
+        "how many steps the run's jobs executed",
+        what,
+    )
+    jobs = answer.get("jobs")
+    if isinstance(jobs, list) and not jobs:
         return None
+    if not isinstance(jobs, list):
+        raise port.HostUnavailable(
+            f"{what} came back with something other than a job list in it, so "
+            "how many steps the run's jobs executed is unestablished"
+        )
     executed = 0
     for job in jobs:
+        # ⛔ A shape this reader cannot walk is a **failed call**, while a list
+        # the host stated empty is the count being unavailable. Returning `None`
+        # for both would report precondition 3 unanswered about a body that was
+        # garbage, which is a decision nobody made rather than one the host made.
+        if not isinstance(job, dict):
+            raise port.HostUnavailable(
+                f"{what} lists a job this reader cannot walk, so how many steps "
+                "the run's jobs executed is unestablished"
+            )
         steps = job.get("steps")
-        if not steps:
+        if isinstance(steps, list) and not steps:
             return None
+        if not isinstance(steps, list):
+            raise port.HostUnavailable(
+                f"{what} states a job's steps as something other than a list, so "
+                "how many steps the run's jobs executed is unestablished"
+            )
         for step in steps:
+            if not isinstance(step, dict):
+                raise port.HostUnavailable(
+                    f"{what} states a step this reader cannot walk, so how many "
+                    "steps the run's jobs executed is unestablished"
+                )
             concluded = step.get("conclusion")
-            if concluded and concluded != SKIPPED:
+            if concluded:
+                executed += 1 if concluded != SKIPPED else 0
+            elif step.get("status") in STARTED:
                 executed += 1
     return executed
 
@@ -562,8 +779,21 @@ def _superseded_by(repo: str, record: dict) -> str | None:
     ⛔ And the successor is the newest run of the same workflow for the same
     commit, which is the whole of what this host publishes: the concurrency
     expression lives in the workflow file and there is no *retired by* field. A
-    group keyed on anything else is a supersession this misses, which reads as
-    never-started rather than as green -- the wrong remedy and not coverage.
+    group keyed on anything else is a supersession this misses, and ⚠️ **what a
+    miss reads as is the reading the run would have had without it** -- which for
+    a run that failed is `failed`, the one of § 2's four that is about the change,
+    so a reviewer spends a fix cycle on a run a successor already retired.
+
+    ⛔ **The tie is broken on the run's own id and never left to the timestamp
+    alone.** This host states a run's creation to the second, so two runs of one
+    workflow for one commit landing in the same second compared equal and the
+    successor was missed -- measured. Ids are issued in order here, which is what
+    makes them the second key.
+
+    ⛔ **A candidate the host numbered nothing for is skipped rather than named.**
+    Composing one anyway sent a reader to a run called `None`: the string is
+    truthy, so it passes the blank-successor refusal one module over and the
+    reading says *read the newer run* about a run nobody can open.
     """
     stated = host_checks.runner(_configuration())
     if not stated["stated"] or not stated["runner"].get("supersedes"):
@@ -572,26 +802,54 @@ def _superseded_by(repo: str, record: dict) -> str | None:
     created, mine = record.get("created_at"), record.get("id")
     if not commit or not workflow or not created:
         return None
-    answer = _host([
-        "api",
-        f"repos/{repo}/actions/workflows/{workflow}/runs"
-        f"?head_sha={commit}&per_page=100",
-    ])
+    what = f"the runs of workflow `{workflow}` for `{commit}` in `{repo}`"
+    answer = _body(
+        _host([
+            "api",
+            f"repos/{repo}/actions/workflows/{workflow}/runs"
+            f"?head_sha={commit}&per_page=100",
+        ]),
+        "whether a newer run retired this one",
+        what,
+    )
+    listed = answer.get("workflow_runs")
+    if not isinstance(listed, list):
+        return None
     newer = [
         run
-        for run in (answer.get("workflow_runs") or [])
-        if run.get("id") != mine and (run.get("created_at") or "") > created
+        for run in listed
+        if isinstance(run, dict)
+        and run.get("id")
+        and run.get("id") != mine
+        and _later(run, created, mine)
     ]
     if not newer:
         return None
-    return str(max(newer, key=lambda run: run.get("created_at") or "").get("id"))
+    return str(max(newer, key=lambda run: (run.get("created_at") or "", run["id"]))["id"])
+
+
+def _later(run: dict, created: str, mine) -> bool:
+    """Whether this run was created after the one being read.
+
+    ⛔ Second-resolution timestamps, so an equal one falls through to the id.
+    """
+    when = run.get("created_at") or ""
+    if when != created:
+        return when > created
+    try:
+        return int(run["id"]) > int(mine)
+    except (TypeError, ValueError):
+        return False
 
 
 ADAPTER = port.Adapter(binder=bind, operations={
-    "runs_for_ref": runs_for_ref,
-    "conclusion": conclusion,
-    "log": log,
-    "dispatch": dispatch,
+    name: _through_the_port(operation)
+    for name, operation in {
+        "runs_for_ref": runs_for_ref,
+        "conclusion": conclusion,
+        "log": log,
+        "dispatch": dispatch,
+    }.items()
 })
 
 

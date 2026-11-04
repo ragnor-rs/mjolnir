@@ -1027,13 +1027,26 @@ def refusal_report(name: str, operation: str, error: ConfigError) -> dict:
     }
 
 
-def load(skills_root: str = ".", name: str = TRACKER, **kwargs) -> Port:
+def load(
+    skills_root: str = ".", name: str = TRACKER, *, root: str | None = None, **kwargs
+) -> Port:
     """One port over the configuration at `skills_root`, read through #1's reader.
 
     `name` is the key carrying the kind, which is the port's name (§ 26). It
     defaults to § 3's, that being the port every role but § 9's asks for.
+
+    ⛔ `root` is one of § 1's named code roots, and it exists because a port's
+    kind may sit inside a **per-root** block: § 28's does, `host` being one of
+    the two blocks § 1 lets a root narrow. A project that states such a kind per
+    root has no project-level answer at all -- the reader refuses one, naming the
+    roots -- so without this the port was unreachable for exactly the project the
+    surface invites to state it that way. ⚠️ A tracker is one per project and its
+    port takes no root, which is why this is a parameter rather than a rule.
     """
-    return Port(config.load(skills_root, **kwargs), port_spec(name))
+    configuration = config.load(skills_root, **kwargs)
+    return Port(
+        configuration if root is None else configuration.root(root), port_spec(name)
+    )
 
 
 def load_every(skills_root: str = ".", **kwargs) -> dict[str, Port]:
@@ -2086,6 +2099,12 @@ def main(argv: list[str]) -> int:
         help="report every port the surface declares rather than one",
     )
     parser.add_argument(
+        "--root",
+        help="which of § 1's named code roots to resolve the kind under, where "
+        "this port's kind sits in a block a root may narrow and the project "
+        "states it per root. Omitted, the project's own statement answers",
+    )
+    parser.add_argument(
         "--invoke",
         metavar="OPERATION",
         help="perform one of this port's operations rather than reporting it, and "
@@ -2133,7 +2152,10 @@ def main(argv: list[str]) -> int:
             return 2
         try:
             answering = load(
-                args.skills_root, args.port, check_paths=not args.no_check_paths
+                args.skills_root,
+                args.port,
+                root=args.root,
+                check_paths=not args.no_check_paths,
             )
             outcome = answering.invoke(args.invoke, *args.argument)
         except ConfigError as error:
@@ -2169,7 +2191,10 @@ def main(argv: list[str]) -> int:
             out = {"ports": {name: port.to_dict() for name, port in every.items()}}
         else:
             out = load(
-                args.skills_root, args.port, check_paths=not args.no_check_paths
+                args.skills_root,
+                args.port,
+                root=args.root,
+                check_paths=not args.no_check_paths,
             ).to_dict()
     except ConfigError as error:
         print(str(error), file=sys.stderr)

@@ -1858,7 +1858,7 @@ class Config:
         self.get("host.checks")
         return mirrored_runs(self.data)
 
-    def host_runs(self) -> list[dict]:
+    def defined_runs(self) -> list[dict]:
         """§ 2's `host.checks` as one record per entry, the run rather than the command.
 
         The accessor beside `mirrors()` and the same single walk behind both.
@@ -1869,7 +1869,7 @@ class Config:
         legitimately drops.
         """
         self.get("host.checks")
-        return host_runs(self.data)
+        return defined_runs(self.data)
 
     def runner(self) -> dict | None:
         """§ 2's `host.runner`, or `None` where this project states none.
@@ -2794,7 +2794,7 @@ def mirrored_runs(data: dict) -> list[dict]:
     both consumers of it report an absence where the project stated a run.
     """
     out: list[dict] = []
-    for run in host_runs(data):
+    for run in defined_runs(data):
         for mirrored in run["commands"]:
             out.append(
                 {
@@ -2810,7 +2810,7 @@ def mirrored_runs(data: dict) -> list[dict]:
     return out
 
 
-def host_runs(data: dict) -> list[dict]:
+def defined_runs(data: dict) -> list[dict]:
     """§ 2's `host.checks` as one record per **entry**, walked once.
 
     The facet keyed by the one key it has, with every refusal the facet carries
@@ -2916,7 +2916,7 @@ def _entry_commands(entry: dict, index: int):
 
     The two forms § 2 states, read in one place so that neither can grow a
     refusal the other does not have. An entry stating neither yields nothing,
-    which is a run the host makes with no local counterpart -- `host_runs`
+    which is a run the host makes with no local counterpart -- `defined_runs`
     above is the walk that still carries it.
 
     Each record carries the command as written, its normalised form, the phrase
@@ -7230,7 +7230,7 @@ def self_test() -> int:
     repeated = _two_entries_keyed_on_one_workflow(_a_valid_example())
     name = repeated["host"]["checks"][1]["workflow"]
     try:
-        host_runs(repeated)
+        defined_runs(repeated)
         said = None
     except ConfigError as error:
         said = str(error)

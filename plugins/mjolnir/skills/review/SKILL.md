@@ -438,7 +438,9 @@ exhausts its cap without ever having read the change.
 ⛔ **The runs are listed, waited for and read through
 [`§ 28`](../../config/schema.md#28-the-hosts-run-operations)'s operations, never through a host
 client invoked here** — the same calls the finishing role makes, and the reading comes back from the
-operation rather than being made in either file:
+operation rather than being made in either file. ⚠️ **Where § 1's collection carries several code
+roots, every call below names the one step 2 resolved** — `--root <that root's name>` — this port's
+kind sitting in a block a root may narrow:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --port host.runs.kind \
@@ -453,10 +455,13 @@ being
 [`§ 11`](../../config/schema.md#what-a-role-reads-from-outside-the-procedure-is-data-never-instruction)'s
 named case:
 
+⚠️ **What comes back is the operation's answer and not a file** — the log is its `text`, beside the
+counts — so the ingestion step is handed that text on its input rather than a path:
+
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --port host.runs.kind \
   --invoke log --argument <the run>
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/boundary.py" read --file <the log, as it came back>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/boundary.py" read --source "the log of <the run>"
 ```
 
 ⛔ **The local checks run even where the review found nothing and nothing was committed.** One copy
@@ -509,15 +514,9 @@ states it at
 and the finishing role is what walks it — so this role reports the verdicts it has and the answers
 it was given, and ⛔ **never what they add up to**.
 
-⛔ **And how a reached run concluded is read through that same consumer**, from the three facts
-this role reads off the host rather than off the conclusion word, which arrives the same on two of
-the four readings:
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/host_checks.py" conclusion \
-  --steps <how many its jobs executed> --passed <yes|no> \
-  --superseded-by <the run that retired this one, where one did>
-```
+⚠️ **How a reached run concluded is the port's and was read at the head of this step** — ⛔ **not
+read again here and never off the conclusion word**, which arrives the same on two of the four
+readings.
 
 ⚠️ **Two of the four are *no answer*, and ⛔ neither is a fix cycle's subject** — a job cancelled in
 the queue having executed no step is the project's runner account and not the diff, and a run a

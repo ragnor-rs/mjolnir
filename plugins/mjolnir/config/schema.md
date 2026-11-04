@@ -5891,6 +5891,15 @@ looked would be indistinguishable from one that decided its runs are unreachable
 [§ 21](#21-a-command-that-could-open-a-session-on-a-live-machine) makes for requiring its own list
 and accepting an empty one.
 
+⚠️ **And it is the first port whose kind sits in a block a code root may narrow**, `host` being one
+of the two [§ 1](#a-projects-code-is-not-always-one-repository) lets an entry state over — so a
+project with several roots may state this kind per root, and then there is no project-level answer
+at all. ⛔ **A reader asked for one refuses, naming the roots that carry it**, and a consumer of the
+port names the root instead: which repository's runs are being asked about is the same question
+§ 4.7 already has a role answer off the item. ⚠️ **The tracker port takes no root for the opposite
+reason** — one tracker answers for every root of a project — so this is a property of which block a
+kind sits in rather than a rule about ports.
+
 ⛔ **So this key invalidates every configuration written before it**, and
 [§ 1](#the-surface-is-resolved-beside-the-configuration) states what a change doing that owes: the
 absent form is stated in the same commit — `none`, with the whole block's own example carrying it —
