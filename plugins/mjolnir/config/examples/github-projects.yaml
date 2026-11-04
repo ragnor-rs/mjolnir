@@ -271,6 +271,25 @@ people:
   # The host's own login, which is what `read_item` returns as the person on an item here.
   key: handle
 
+loop_exempt:
+  # § 28, and the conjunction both facets together make: a change is exempt here only where every
+  # changed path is inside the globs **and** the change is one of the kinds the class covers. ⛔
+  # Narrower than either facet alone, which is the direction a conjunction fails in — a code file
+  # that happens to sit under a documentation path is still not exempt, because no kind here
+  # covers it.
+  classes:
+    - name: prose
+      paths: ["docs/*", "*.md"]
+      kinds: [documentation, factual_correction]
+    - name: comments and ignore files
+      paths: ["*.gitignore", "*.dockerignore"]
+      kinds: [ignore_file, comment]
+  # ⛔ The default and the reason this project keeps it: both classes above state `kinds`, so a
+  # change whose paths are inside one still needs somebody to say what the change *is* — and here
+  # that somebody is a person, named, with the class and the kinds it accepts.
+  borderline: ask
+  destination: null
+
 environment:
   # The same host as the example next door, and the opposite decision: the credential stays in
   # the host tool's own credential store and is never exported, so no role inherits it and the

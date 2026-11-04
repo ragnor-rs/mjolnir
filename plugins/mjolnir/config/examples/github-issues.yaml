@@ -248,6 +248,22 @@ people:
     A second person takes work from this backlog — the same trigger the ordering above carries,
     and the point at which who holds a role stops being derivable from there being one of them.
 
+loop_exempt:
+  # § 28, and the measured case in its simplest shape: one class decided by the changed paths
+  # alone, so nothing here reaches `borderline` and nobody is asked anything. ⛔ `every` changed
+  # path has to be inside the globs — a documentation edit carrying one line of code is not
+  # exempt, which is the case the facet exists against.
+  classes:
+    - name: documentation
+      paths: ["docs/*", "*.md"]
+  # The default, written out because this project has no class that could reach it: every class
+  # above states `paths` and no `kinds`, so the question never arises. ⚠️ Stated anyway, since a
+  # class added later would land on whichever value is here.
+  borderline: ask
+  # Null — these go to the integration branch, which § 10 derives from what the remote advertises
+  # as its default rather than from a key on this surface.
+  destination: null
+
 environment:
   # The host credential in a variable, because the one command this procedure drives against
   # the host reads it from there. ⛔ Names, never values: the value lives in the credential

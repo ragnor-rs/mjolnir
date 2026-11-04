@@ -303,6 +303,19 @@ people:
     The roles outlast a sprint, or the gate starts being asked whether an issue is on the right
     person — which is the first reader of a map here that a person is not already.
 
+loop_exempt:
+  # § 28's empty form, which is a statement and not an omission: every change this project makes
+  # is filed, gated, started, finished and reviewed, documentation included. ⛔ The reason is this
+  # file's own — the statuses are `writer: never` throughout because the credential authenticates
+  # as a person, so an item is the only record of what happened, and a commit with no item would
+  # be a change nobody can account for at the end of a sprint.
+  classes: []
+  borderline: ask
+  # ⚠️ Null rather than a branch, and the reader says so: with no class above, a destination would
+  # be a value nothing routes. The report names that rather than leaving the pair to read as a
+  # half-written configuration.
+  destination: null
+
 environment:
   # Two variables rather than one: this tracker authenticates as a person, so the credential
   # and the account it belongs to are separate facts and both are read. ⚠️ Which is also why

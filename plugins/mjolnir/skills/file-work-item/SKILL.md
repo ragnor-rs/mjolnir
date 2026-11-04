@@ -96,6 +96,25 @@ where the request is unambiguously one item. Without this step one request silen
 item, which is the failure that makes every later duplicate check useless — the duplicate is inside
 the item nobody split.
 
+⛔ **A unit whose change this project exempts from the loop is not an item**
+([`§ 28`](../../config/schema.md#28-the-changes-that-do-not-go-through-the-loop)), and that is asked
+of the configuration rather than judged here — a project stating no class exempts nothing, which is
+every unit filed as before:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --exempt-for <the paths the unit would touch> \
+  [--of-kind <kind>]
+```
+
+- ⛔ **Only where the paths are already known.** A request that does not say which files it touches
+  is not run through this and is filed — a guess at the paths would be this role deciding the
+  facet's question, and the permissive direction there is work that never gets tracked.
+- **`exempt`** ⇒ nothing is filed for that unit, and ⛔ **the report says which class and why**,
+  with the branch the change goes to; it belongs to the bookkeeping role's commit third instead.
+- **`ask`** ⇒ the question is asked with the class and its kinds named, before the split is
+  confirmed. ⛔ **Not resolved by filing anyway** — an item filed for an exempt change is one the
+  loop then runs whole, which is the cost § 28 measures.
+
 Sections 2–6 then run **once per confirmed item**. Report them together at the end.
 
 ## 2. The duplicate check — three layers, then a gate

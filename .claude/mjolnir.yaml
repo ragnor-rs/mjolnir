@@ -517,6 +517,21 @@ people:
     above carry, and the first point at which who holds a role stops being derivable from the fact
     that there is one of them.
 
+loop_exempt:
+  # § 28, and the empty form is this repository's own measured convention rather than caution: of
+  # the last two hundred commits on the integration branch, every one but the seven that predate
+  # the loop is a squash merge carrying a pull request number — documentation changes, comment
+  # changes and one-line corrections included. ⛔ So a class here would state an exemption the
+  # history does not take, which is the inverse of the defect § 28 was written for.
+  #
+  # ⚠️ And the reason the convention holds is that this repository's own content *is* its
+  # behaviour: the surface, the skills and the documents beside them are what every consuming
+  # project runs on, so a prose edit here is a behavioural change to six projects and has nothing
+  # in common with the documentation edit the measured case exempted.
+  classes: []
+  borderline: ask
+  destination: null
+
 environment:
   # ⚠️ Measured, not declared (#90), and the measurement is the argument for the key: the shell a
   # role runs in here holds forty-odd variables and the procedure reads five of them. Nothing in

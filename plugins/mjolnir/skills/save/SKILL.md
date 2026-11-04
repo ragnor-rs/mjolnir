@@ -226,6 +226,29 @@ message mechanism, the style, the authorship rule, and what holds under either s
   refuses that configuration, so meeting it here means the entry was never read; say so rather than
   choosing a mode.
 
+⛔ **This is the one role an exempt change runs at all**
+([`§ 28`](../../config/schema.md#28-the-changes-that-do-not-go-through-the-loop)), so the verdict is
+read here rather than assumed — once the staged paths are known and before the commit:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --exempt-for <the staged paths> [--of-kind <kind>]
+```
+
+- ⛔ **The paths handed over are the staged ones**, quoted, and ⛔ **not a count of them**: § 28's
+  axis is what a change is, and this role reads the verdict rather than deciding it.
+- **`exempt`** ⇒ the change is committed to the branch the verdict names — null meaning the
+  integration branch — and ⛔ **the reply states which class and why**, which is what makes the
+  bypass auditable instead of indistinguishable from a missed item.
+- **`through_the_loop`** ⇒ nothing changes here; the change belongs to an item, and the paths the
+  verdict names as outside every class are why.
+- **`ask`** ⇒ ⛔ **the question is asked, with the class and the kinds it would accept named**, and
+  `asked_of` says who answers: a person, or this session where the project configured that. ⚠️
+  Silence is not a yes — [`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)
+  arriving where the act being licensed is a commit that skipped every check the loop owns.
+- ⛔ **A refusal is a stop and never an exemption.** A run handed no path refuses rather than
+  answering, and a role that read that as *not exempt* would have decided the facet's question for
+  itself.
+
 ## 7. The artifact, and the boundary it names
 
 ⛔ **Keep the artifact current as the work goes, so that one exists whichever boundary arrives.**

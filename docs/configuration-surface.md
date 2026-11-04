@@ -2316,3 +2316,94 @@ meetable: recording who *took* an item is a fact about this run, so the implemen
 `assign` may legitimately translate the running user's own spelling. The sweep is scoped to the
 carrier roots for exactly that reason, and the exemption is asserted on the green side rather than
 left to forbearance.
+
+## The changes that never entered the loop, and the rule nobody had written
+
+Every entry point on this surface assumed an item exists. **Nothing said what a project does with
+the changes that should never have one** — and both projects measured were already doing it, neither
+of them from a stated fact. What closed it is
+[`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-the-changes-that-do-not-go-through-the-loop).
+
+**The day it cost something.** A pull request was opened for a one-line correction to a
+documentation file and refused in four words: *this is a change too small for a pr*. The rule
+written down afterwards split behavioural change — code, configuration defaults, prompts, schema
+migrations — from documentation, comments, ignore files and typo or accuracy fixes, and offered one
+test for a hard case: *could a reviewer disagree about correctness*.
+
+⛔ **Two things make that a configured fact rather than somebody's preference** —
+[`schema.md § 28 → Measured in one project`](../plugins/mjolnir/config/schema.md#measured-in-one-project-the-day-it-cost-something).
+The first is that **the repository's own history already did it that way** before the rule existed:
+the convention was visible in the log, and the session followed a generic branch-first instruction
+over it. That is precisely the failure a stated fact removes — a convention readable by a person and
+by nothing shipped, which is the same shape `tree_dir` was extracted for one section over. The
+second is the cost: a branch, three gate jobs, a merge commit and a branch deletion for a one-line
+fix, during which the document stays wrong.
+
+### The axis is what a change is, and the measurement rules out the obvious alternative
+
+In a second project an entire release's tooling work went direct and unticketed — process scripts,
+measurement harnesses and documentation — while every product change in that same release went
+through the loop. That project also keeps one-line-fix commits on release branches with no item at
+all.
+
+⛔ **So the gate there cannot tell a deliberate bypass from a missed item** —
+[`schema.md § 28 → Measured in one project`](../plugins/mjolnir/config/schema.md#measured-in-one-project-the-day-it-cost-something)
+— which is the whole cost: a commit with no work item is otherwise indistinguishable from one that
+skipped the process by accident, and the day log and the deliverables roles both read commits.
+
+⚠️ **And the axis that separated the two in practice was not size and not risk.** Some of the
+unticketed tooling work was **larger** than the ticketed product changes beside it, so a
+size-derived rule — *under N lines* — would have exempted the wrong half of that release. ⛔ **Which
+is why no key states a size and why the decision is handed no count at all** —
+[`schema.md § 28 → Why the axis is kind`](../plugins/mjolnir/config/schema.md#why-the-axis-is-kind-and-never-size):
+the reader takes the changed paths and a kind, so a change wholly inside a class answers the same
+way at one line and at two hundred files. The two spellings a project would reach for are refused by
+name beside that, and a third nobody thought of would get past them — the signature is what holds
+the rule and the markers hold the habit.
+
+### Why the two projects' tests are both kept
+
+They divided the same question differently: one by the files a change touches, the other by whether
+a user sees the result, and ⚠️ **the two do not line up** — the second project's tooling lives
+beside its product code, so no path glob expresses its rule. ⛔ **So neither division is the
+surface's** —
+[`schema.md § 28 → What a class is`](../plugins/mjolnir/config/schema.md#what-a-class-is-and-the-conjunction-that-makes-it-one):
+a class carries path globs, change kinds, or both, and a project states whichever of them it can
+decide. Where it states both, the two are a **conjunction** — narrower than either alone, which is
+the direction a conjunction fails in and the reason it is that way round.
+
+⛔ **The case that argues for the whole facet is a change that touches one exempt path and one that
+is not** —
+[`schema.md § 28 → What a class is`](../plugins/mjolnir/config/schema.md#what-a-class-is-and-the-conjunction-that-makes-it-one).
+It reads as documentation to every rule that asks *does this change touch the docs*, and waves the
+code through under cover of the documentation edit. The test is therefore *every* changed path and
+never *any*, which is the single word the acceptance check for this turned on.
+
+⚠️ **A glob crosses a directory separator here**, which is one rule a project writing a class has to
+know, and the two-star form every other tool teaches is **refused** rather than reinterpreted — a
+glob quietly matching less than its author meant sends a change through the loop that should not
+have been in it, which is the harmless direction and still one spelling read two ways.
+
+### Who answers a case the paths cannot, and where the change then goes
+
+⚠️ **A class decided by its kind leaves a question the changed paths cannot settle**, and the two
+projects would answer it differently: the first would put a hard case to a person, while the second
+takes that round trip on no commit in its measured history. So who answers is configuration —
+[`schema.md § 28 → Who decides`](../plugins/mjolnir/config/schema.md#who-decides-a-case-the-paths-do-not-settle)
+— asking is the default, and ⚠️ **a class stating paths alone reaches neither arm**, its question
+being answered by the changed-path list.
+
+⚠️ **One consequence worth stating, because it was found by running the decision rather than by
+reading it:** under a project that carries a kind-decided class, a change whose kind nobody has
+stated is **unanswered** rather than not-exempt. The safe-looking reading is the wrong one there —
+it silently drops the exemption the project configured — which is why there are three verdicts and
+not two.
+
+The first project commits an exempt change to the integration branch, which this surface already
+derives rather than names: `§ 10` reads it from what the remote advertises as its default. ⚠️ **The
+second project does not** — a release's tooling work goes to that release's branch. So the key
+exists for the second case and is null for the first, and ⛔ **it names a branch and never a working
+directory** —
+[`schema.md § 28 → Where an exempt change goes`](../plugins/mjolnir/config/schema.md#where-an-exempt-change-goes-and-the-one-role-it-runs):
+`work_in_shared_checkout` routes the work of an *item*, and an exempt change has no item, no claim
+and no tree cut for it.
