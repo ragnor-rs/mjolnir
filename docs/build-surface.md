@@ -339,7 +339,7 @@ expects a script. Measured, the shapes are three:
 
 | | the deploy | the targets, and which are live |
 |---|---|---|
-| A | a dispatch of the host's own workflow — two of them, one per staging kind, plus a manual release procedure in a runbook, and a workflow of its own in the second repository that refuses a commit its checks have not passed | staging and production; plus one older shared box serving two staging environments, one of which is being retired |
+| A | one workflow of the host's with a job per environment: staging by dispatch with typed inputs, production by a version-tag push and by nothing else, with a runbook beside the pipeline for what the pipeline deliberately leaves out; plus a workflow of its own in the second repository that refuses a commit its checks have not passed | staging and production; plus one older shared box serving two staging environments, one of which is being retired |
 | B | one script with a required environment argument | five, of which three are production hosts with different roles; one target **builds and creates** two services and deliberately does not start them, and a sixth target is refused by name because it was retired |
 | C | three hosted build configurations — both halves together, or either half alone — and no script at all | two, by substitution |
 | D, E | one script each, plus a host provisioning script beside it | one live target each |
@@ -349,11 +349,11 @@ expects a script. Measured, the shapes are three:
 take the environment as a required argument and resolve the host from a library beside them, so the
 root they resolve against is a **target** rather than a directory; D's and E's resolve one target
 each; C's substitutions are supplied by whoever triggers the hosted build. ⚠️ **A's resolves against
-a ref, and the default is the wrong one**: the dispatch's `ref` input defaults to the integration
-branch, so publishing the staging branch has to name it explicitly, and the branch chooses which
-image tag is published — one tag per staging kind, because one tag for both delivered a build to a
-staging environment nobody had deployed to. So a deploy facet that assumed a directory would be
-wrong in six cases out of six.
+a ref, and the default is the wrong one**: the dispatch's `ref` input defaults to the branch
+production serves, so publishing the staging branch has to name it explicitly, and the branch
+chooses which image tag is published — one tag per staging kind, because one tag for both delivered
+a build to a staging environment nobody had deployed to. So a deploy facet that assumed a directory
+would be wrong in six cases out of six.
 
 **So "a project whose deploy is one script keeps that script" describes four of six.** C has no
 script to keep — its deploy is a configuration file a hosted service executes — and A's is a
