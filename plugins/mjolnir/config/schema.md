@@ -2379,7 +2379,10 @@ beside it makes routine rather than exotic.
 that is there and does not resolve is the project's own statement, badly written — so a carrier
 that reads values out of one reports that, by the subsection on which direction a guard fails in,
 and the two cases must not collapse into one: a project whose file has a typo in it would otherwise
-be invited to write the file it has already written.
+be invited to write the file it has already written. ⚠️ **What the two answers do share is this
+one's cadence** — that report is sent once for the session as well, by
+[§ 19 → How often a configuration that does not resolve is reported](#how-often-a-configuration-that-does-not-resolve-is-reported),
+and for the reason stated here.
 
 ⚠️ **What the common case gets is therefore the invitation and nothing else**, and the install is
 complete anyway: a hook silent for want of a configuration and a hook absent are the same thing to
@@ -4598,13 +4601,46 @@ absent is silent instead**, by [§ 7](#a-hook-in-a-project-that-states-no-config
 the two answers apart for the reason that section states.
 
 ⛔ **And the answer carries the reader's own stop, which is what makes it an answer rather than a
-notice.** The guard has just asked the reader and the reader named the key; a message repeating
-*could not be read* once per call, with the one fact that repairs it discarded, is what
+notice.** The guard has just asked the reader and the reader named the key; a message saying *could
+not be read* with the one fact that repairs it discarded is what
 [§ 1](#the-surface-is-resolved-beside-the-configuration) measured costing a day. ⚠️ **It is the
 first refusal and not a diagnosis** — a configuration with several faults answers with whichever was
 reached first — so the answer carries it as the reader's stop and never as *the* repair. ⛔ **And it
-is cut to a length**, because a refusal interpolates the project's own stated value: an answer that
-repeats per call may not carry a mistyped scalar whole.
+is cut to a length**, because a refusal interpolates the project's own stated value: one mistyped
+long scalar is not a message, whatever the cadence, and the cut takes the explanation rather than
+the key at the head of it. ⚠️ **How often that answer is sent is the subsection below**, and it is
+not *every call*.
+
+### How often a configuration that does not resolve is reported
+
+⛔ **The answer above is sent once for the session, and not again on the next call.** What the
+subsection above and [§ 11](#a-report-names-what-it-could-not-establish) require is that the answer
+*says so*; neither states a cadence, and a reader who has been told cannot be un-told by the absence
+of a repeat. ⚠️ **It is the cadence [§ 7](#a-hook-in-a-project-that-states-no-configuration) already
+gives the neighbouring state** — one message, as the session opens, for a project that states no
+configuration at all — and it is the same reason in both: a message on every call is a message
+somebody stops reading, and the fact that would have repaired the configuration is then the one that
+was drowned.
+
+⛔ **One answer for every guard that reads the configuration, and it names that set rather than
+listing it.** All of them stop on the same key, so a message each is four near-identical sentences
+for one fact — and four sentences also leave a reader to work out that they add up to *all of them*,
+which one sentence does by saying it. ⚠️ **Named and never enumerated**: a list of guards written
+here is a list the next guard is missing from, with nothing to report the omission.
+
+⛔ **What makes it one is a claim on a per-session store, taken by whichever arm speaks**, rather
+than each guard deciding for itself that it is first: one hook process runs per call and the guards
+on one event run concurrently, so nothing inside one of them can see what the others answered.
+⚠️ **A store that cannot be written to is spoken past rather than silently obeyed**, which is the
+direction every other unestablished fact in this facet takes.
+
+⛔ **A different stop later in the same session is a different fact, and it is sent.** A required key
+written and the reader then stopping on the *next* one is news rather than a repeat — so what is
+said once is each stop, and never the first stop only.
+
+⚠️ **An event carrying no session is not silenced either**, there being nothing to key the claim on.
+It is the same direction as the store above, and it is why this is a property of the session and not
+of the process.
 
 ### What an approval is per, and the one price stated before a turn runs
 

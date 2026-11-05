@@ -5742,10 +5742,13 @@ def configured(skills_root: str = ".") -> bool:
 
 
 STOP_LIMIT = 400
-"""How much of a refusal an answer that repeats per call carries (§ 19)."""
+"""How much of a refusal the answer a guard sends carries (§ 19)."""
 
 REFUSAL_PREFACE = "What the reader stopped on first:"
 """How a guard introduces `refusal_text` in the answer it sends (§ 19)."""
+
+INERT_CITATION = "schema § 19 → How often a configuration that does not resolve is reported"
+"""The subsection `inert_report` cites, and the one that states its cadence."""
 
 
 def why_refused(skills_root: str = ".") -> str:
@@ -5795,15 +5798,17 @@ def read_or_why(skills_root: str = ".") -> tuple[Config | None, str]:
 
 
 def refusal_text(error: BaseException) -> str:
-    """One refusal, as an answer that repeats once per call may carry it.
+    """One refusal, as the answer a guard sends may carry it.
 
     ⛔ Cut, and the bound is what a first pass got wrong by measuring too
     narrowly. A `ConfigError` is authored prose and the YAML parser truncates
     its own snippet -- but dozens of this reader's refusals interpolate the
     project's stated value verbatim, so one mistyped long scalar answers with
-    that scalar, measured at fifty thousand characters, times the messages a
-    guard set sends per command. ⚠️ The key is at the head of every stop, so a
-    cut takes the explanation and never the name.
+    that scalar, measured at fifty thousand characters. ⚠️ Which is not a
+    message at any cadence, so the cut stands on that scalar alone and not on
+    how often the answer carrying it is sent -- which `inert_report` below makes
+    once a session. ⚠️ The key is at the head of every stop, so a cut takes the
+    explanation and never the name.
 
     ⛔ One implementation, because the four guards that send such a message
     would otherwise each carry the cut and the class prefix, and four copies of
@@ -5812,6 +5817,108 @@ def refusal_text(error: BaseException) -> str:
     flat = " ".join(str(error).split())
     said = flat if isinstance(error, ConfigError) else f"{error.__class__.__name__}: {flat}"
     return said if len(said) <= STOP_LIMIT else said[:STOP_LIMIT].rstrip() + " […]"
+
+
+def session_store(what: str) -> str:
+    """Where this machine keeps one kind of per-session state, by name.
+
+    ⛔ Derived, never configured, and derived in one place: § 22's re-read ledger
+    and § 19's one-answer-per-session claim are two names under one store, and a
+    second copy of *where this machine keeps per-session state* drifts the first
+    time either moves.
+
+    ⚠️ Under the harness's own store for this plugin where it hands one over, and
+    a temp directory otherwise -- which does not survive a reboot, and for state
+    scoped to a session that is the wanted behaviour rather than a cost, a
+    session not surviving one either.
+    """
+    import tempfile  # noqa: PLC0415 -- deliberately not at module load, per `_yaml`
+
+    stated = os.environ.get("CLAUDE_PLUGIN_DATA")
+    if isinstance(stated, str) and stated.strip():
+        return os.path.join(stated.strip(), what)
+    return os.path.join(tempfile.gettempdir(), f"mjolnir-{what}-{os.getuid()}")
+
+
+def said_once(session: str, fact: str) -> bool:
+    """Whether to say `fact` to this session -- true exactly once per pair (§ 19).
+
+    ⛔ **A claim taken by creating a file that must not already exist**, never a
+    read followed by a write: the guards on one event run concurrently, each in
+    a process of its own, so a reader-then-writer has all of them find nothing
+    and each decide it is first. That is the four messages this exists to
+    replace, arriving on the first call rather than on every one.
+
+    ⚠️ **Keyed on the fact and not on the session alone.** A key written and the
+    reader then stopping on the *next* one is news, so what is said once is each
+    stop rather than the first stop only.
+
+    ⛔ **Both ways of not knowing answer yes.** An event naming no session has
+    nothing to key a claim on, and a store this cannot write to has nowhere to
+    keep one; saying it twice is the direction this facet fails in everywhere
+    else, and silence is the one answer a guard may not produce.
+
+    ⛔ **Which is why the store is created in a step of its own**, rather than
+    in the same arm as the claim: *the file is already there* is the one
+    `OSError` that means *said*, and `makedirs` raises exactly it where the
+    store's own path is taken by a file — so one arm over both calls read a
+    store nobody can create as a fact already stated, and silenced the session
+    for good. ⚠️ Found by review on this change, reproduced with a file written
+    at the store's path.
+
+    ⚠️ **Nothing prunes it, which is a property of what it holds** rather than an
+    omission: one empty file per session that had an unresolvable configuration,
+    against the re-read ledger's one per file a session reads.
+    """
+    if not session.strip():
+        return True
+    import hashlib  # noqa: PLC0415 -- deliberately not at module load, per `_yaml`
+
+    where = session_store("said")
+    keyed = hashlib.sha256(f"{session.strip()}\x00{fact}".encode("utf-8")).hexdigest()[:24]
+    try:
+        os.makedirs(where, exist_ok=True)
+    except OSError:
+        return True
+    try:
+        claim = os.open(
+            os.path.join(where, f"{keyed}.said"),
+            os.O_CREAT | os.O_EXCL | os.O_WRONLY,
+            0o600,
+        )
+    except FileExistsError:
+        return False
+    except OSError:
+        return True
+    os.close(claim)
+    return True
+
+
+def inert_report(session: str, stop: str) -> dict:
+    """The one answer a session gets where its configuration does not resolve.
+
+    ⛔ **One sentence for every guard that reads the configuration**, which is
+    `refusal_text`'s reason one level up: the four composed their own, each
+    carrying a prefix and a citation of its own and one of them carrying no
+    citation at all, and four near-identical sentences for one fact also leave
+    whoever reads them to work out that they add up to all of them.
+    ⛔ **It names that set and does not list it** -- a list written here is a
+    list the next guard is missing from, with nothing to report the omission.
+
+    ⛔ **And one answer per session rather than per call** (§ 19). `stop` is the
+    tail the caller's own reader composed, the preface and the reader's first
+    refusal, so the message is the whole of what is said once and the claim is
+    keyed on all of it.
+
+    ⚠️ The empty answer means *already said* and never *nothing to say*: the
+    guard returning it lets the call through exactly as the speaking arm does.
+    """
+    said = (
+        "The project's configuration could not be read, so every guard that reads it is "
+        "inert: each call here is held to nothing and proceeds unguarded. Said once for this "
+        f"session rather than on every call. ({INERT_CITATION}){stop}"
+    )
+    return {"systemMessage": said} if said_once(session, said) else {}
 
 
 def load(skills_root: str = ".", *, check_paths: bool = True) -> Config:
@@ -6365,6 +6472,109 @@ def self_test() -> int:
         check("and a root that states none answers with nothing rather than a fault",
               why_refused(os.path.join(directory, "states-nothing")) == "",
               repr(why_refused(os.path.join(directory, "states-nothing")))[:160])
+
+    # ⛔ How often that answer is sent, and that it is one answer for the four
+    # arms rather than one each (§ 19 -> How often). Asserted here because the
+    # sentence and the cadence are this module's; what each guard's own suite
+    # asserts is that its arm sends whatever this answers and composes none of
+    # it, which is the half a suite inside one guard can reach.
+    with tempfile.TemporaryDirectory() as directory:
+        held = os.environ.get("CLAUDE_PLUGIN_DATA")
+        try:
+            os.environ["CLAUDE_PLUGIN_DATA"] = os.path.join(directory, "a-plugin-store")
+
+            # ⛔ The citation held to the surface, so a reworded heading reddens
+            # here rather than shipping a message that cites a section nobody
+            # can resolve. ⛔ Against the heading's **text**, which the citation
+            # carries verbatim -- never against an anchor derived here: four
+            # carriers already derive that, and a fifth derivation is the
+            # restated-fact class this change is otherwise about. The anchor half
+            # is each carrier's own `ARM_ANCHORS` check.
+            titled = INERT_CITATION.split("→")[-1].strip()
+            with open(surface_for("."), encoding="utf-8") as handle:
+                surface = handle.read()
+            check("the answer cites a heading the surface still carries",
+                  f"\n### {titled}\n" in surface, f"no `### {titled}` on the surface")
+
+            check("a fact is said to a session once and not twice",
+                  said_once("a-session", "a-fact") and not said_once("a-session", "a-fact"))
+            check("a different fact in the same session is said",
+                  said_once("a-session", "another-fact"))
+            check("the same fact in another session is said",
+                  said_once("another-session", "a-fact"))
+            check("an event naming no session is never silenced",
+                  all(said_once("", "a-fact") for _ in range(3)))
+            check("and neither is one whose session is blank rather than absent",
+                  all(said_once("   ", "a-fact") for _ in range(3)))
+
+            # ⛔ A store that cannot be written to speaks rather than falling
+            # silent, which is the direction every unestablished fact in this
+            # facet takes. ⛔ **Both shapes, because they raise different
+            # errors and only one of them is the error that means *said*:** a
+            # store under a *file*, which cannot be created at all, and the
+            # store's own path taken by a file, whose `FileExistsError` one arm
+            # over both calls read as the claim already standing. ⚠️ The second
+            # is the plant for a defect this review reproduced.
+            blocked = os.path.join(directory, "not-a-directory")
+            with open(blocked, "w", encoding="utf-8") as handle:
+                handle.write("")
+            os.environ["CLAUDE_PLUGIN_DATA"] = os.path.join(blocked, "a-store")
+            check("a store that cannot be created is spoken past, never obeyed",
+                  all(said_once("a-session", "a-fact") for _ in range(3)))
+            taken = os.path.join(directory, "a-store-whose-path-is-a-file")
+            os.makedirs(taken)
+            with open(os.path.join(taken, "said"), "w", encoding="utf-8") as handle:
+                handle.write("")
+            os.environ["CLAUDE_PLUGIN_DATA"] = taken
+            check("and a store whose own path is a file is spoken past too",
+                  all(said_once("a-session", "a-fact") for _ in range(3)))
+            os.environ["CLAUDE_PLUGIN_DATA"] = os.path.join(directory, "a-plugin-store")
+
+            # ⛔ The four arms driven in one session, which is the claim no
+            # suite inside one of them can make: four answers to one call were
+            # the defect, and each of those suites would stay green with the
+            # three beside it still speaking.
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import context as bounded  # noqa: PLC0415 -- the path is set one line up
+            import enforce as record  # noqa: PLC0415 -- the same
+            import live as reaches  # noqa: PLC0415 -- the same
+            import spend as spends  # noqa: PLC0415 -- the same
+
+            broken = os.path.join(directory, "states-nonsense")
+            os.makedirs(os.path.join(broken, os.path.dirname(CONFIG_PATH)), exist_ok=True)
+            with open(os.path.join(broken, CONFIG_PATH), "w", encoding="utf-8") as handle:
+                handle.write("roots: [this is not a mapping]\n")
+            one_call = {
+                "tool_name": "Bash",
+                "cwd": broken,
+                "session_id": "a-session-of-four-guards",
+                "tool_input": {"command": "a-command-nothing-states"},
+            }
+            spoke = [
+                name
+                for name, answered in (
+                    ("spend", spends.guard_answer(dict(one_call))),
+                    ("live", reaches.guard_answer(dict(one_call))),
+                    ("enforce", record.guard_answer(dict(one_call))),
+                    ("context", bounded.guard_answer(dict(one_call))),
+                    ("context result", bounded.result_answer(
+                        dict(one_call, hook_event_name="PostToolUse",
+                             tool_response={"type": "text", "text": "a-result"}))),
+                )
+                if answered.get("systemMessage")
+            ]
+            check("the four arms and the result arm answer one call with one message",
+                  len(spoke) == 1, f"spoke: {spoke}")
+            check("and the one that spoke carried the reader's own stop, whole",
+                  why_refused(broken) in str(
+                      spends.guard_answer(dict(one_call, session_id="a-fresh-session"))
+                      .get("systemMessage", "")),
+                  why_refused(broken)[:90])
+        finally:
+            if held is None:
+                os.environ.pop("CLAUDE_PLUGIN_DATA", None)
+            else:
+                os.environ["CLAUDE_PLUGIN_DATA"] = held
 
     loaded: dict[str, Config] = {}
     for path in paths:
