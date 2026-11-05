@@ -78,6 +78,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 
 import config
@@ -2068,6 +2069,48 @@ def self_test() -> int:
                 f"reported {names_a_tracker(planted, kinds)!r}",
             )
 
+    # ⛔ *Three answers, never a traceback* held on the path a role actually
+    # uses, which is this file run as a **script**. Every assertion above runs
+    # in-process, where `HostUnavailable` is one class -- and that is exactly why
+    # none of them could see the defect this case exists for: run as a script
+    # this file is loaded twice, once as `__main__` and once as `port` under the
+    # implementations' own import, so the two classes were unrelated and
+    # `invoke`'s `except` caught nothing.
+    #
+    # ⚠️ **A subprocess, because the fault only exists in one**, which is the
+    # shape `docs/single-source-of-truth.md` records as the plant that cannot be
+    # in-suite. The failure is provoked with no host and no credential: the
+    # client is not on the path handed to the child, so the first call out raises
+    # the contract's own exception from inside an implementation.
+    own = os.path.join(config.REPO_ROOT, config.CONFIG_PATH)
+    if os.path.exists(own) and TRACKER in specs:
+        shell = dict(os.environ, PATH="")
+        run = subprocess.run(
+            [
+                sys.executable, os.path.abspath(__file__),
+                "--skills-root", config.REPO_ROOT,
+                "--invoke", "read_item", "--argument", "1",
+            ],
+            capture_output=True, text=True, env=shell, timeout=60,
+        )
+        # ⚠️ Read off stdout rather than off the exit status: a failed outcome
+        # and a traceback both exit non-zero, so the status cannot tell them
+        # apart and asserting on it would have passed before the fix.
+        try:
+            reported = json.loads(run.stdout)
+        except ValueError:
+            reported = None
+        check(
+            "run as a script, a call that could not go out is a reported outcome",
+            isinstance(reported, dict) and reported.get("failed") is True,
+            f"printed {run.stdout[:120]!r} with {run.stderr.strip()[:200]!r} on stderr",
+        )
+        check(
+            "and no traceback reaches the person running it",
+            "Traceback (most recent call last)" not in run.stderr,
+            f"stderr carried {run.stderr.strip()[:200]!r}",
+        )
+
     if failures:
         print(f"\n{failures} assertion(s) did not hold.")
     return 1 if failures else 0
@@ -2204,4 +2247,20 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    # ⛔ Dispatched through this file **under its own module name**, never through
+    # `__main__`. Every implementation beside it does `import port`, so a run as a
+    # script loads this file twice -- once as `__main__` and once as `port` -- and
+    # `HostUnavailable` becomes two unrelated classes. `invoke`'s `except` then
+    # cannot catch what an adapter raised, and the contract's stated *three
+    # answers, never a traceback* stops holding on the one path a role actually
+    # uses.
+    #
+    # ⚠️ Measured rather than reasoned about: `--invoke read_item` against a pull
+    # request number came back as a traceback from the pull-request guard, where
+    # the guard's own message belongs in a `failed` outcome. ⛔ And the suite
+    # could not see it, because a suite imports this file as a module and the two
+    # classes are one there -- which is why the dispatch is the fix rather than a
+    # wider `except`.
+    import port as _itself
+
+    sys.exit(_itself.main(sys.argv[1:]))

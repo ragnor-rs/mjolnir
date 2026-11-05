@@ -48,6 +48,11 @@ What it implements, and what it deliberately does not:
   * **`link_dependency` posts a relation on the *blocked* item, keyed on the
     blocker's internal id** -- the same REST shape plain issues take, because a
     board is a view over issues and the dependency is a fact about the issues.
+  * **`read_blockers` reads that relation back, paged whole**, and answers with
+    each blocker's **issue** state rather than its column: a column is the
+    project's own vocabulary (§ 4.2), and the readiness gate reading this needs a
+    fact every project shares. It decides nothing -- which bar a blocker is held
+    to depends on what it produced, and that is the gate's question.
   * **`advance_on_merge` confirms and never asserts.** Two automations can move a
     card -- the host closing the issue off a merged pull request's closing
     reference, and the board's own workflow setting a column when an issue closes
@@ -90,6 +95,8 @@ if _SCRIPTS not in sys.path:
 
 import config  # noqa: E402
 import port  # noqa: E402
+
+from adapters import _code_host_dependency as relation  # noqa: E402
 from port import ConfigError, HostUnavailable  # noqa: E402
 
 KIND = "github-projects"
@@ -1308,14 +1315,41 @@ def link_dependency(blocked: int, blocked_by: int) -> dict:
     read_item(blocked)
     read_item(blocked_by)
     blocker_id = _gh(
-        ["api", f"repos/{repo}/issues/{blocked_by}", "--jq", ".id"], parse=False
+        ["api", relation.issue_path(repo, blocked_by), "--jq", ".id"], parse=False
     )
     _gh([
-        "api", "--method", "POST",
-        f"repos/{repo}/issues/{blocked}/dependencies/blocked_by",
+        "api", "--method", "POST", relation.blocked_by_path(repo, blocked),
         "-F", f"issue_id={blocker_id}",
     ])
     return {"blocked": blocked, "blocked_by": blocked_by, "blocker_id": int(blocker_id)}
+
+
+def read_blockers(number: int) -> dict:
+    """The items this one is recorded as blocked by, each with its own state.
+
+    The read half of `link_dependency`, on the same endpoint and the same object:
+    the board holds no relation of its own, so this reads the issue's own
+    dependencies rather than anything on the card.
+
+    ⛔ **Every page, not the first one.** The endpoint answers a page at a time
+    and a page that fills says nothing about whether more exist -- the same silent
+    ceiling the card reads pay a cursor-follower to avoid, and the gate reading a
+    short answer starts work whose blocker was in the part nobody fetched. The
+    client merges the pages into one array.
+
+    ⚠️ **Read through `read_item` first**, so the pull-request guard covers this
+    too: the path is the issues one, which answers for a pull request as well.
+
+    ⛔ The address and the shape of one entry come from the module this
+    implementation shares with the plain-issues one: both kinds reach the same
+    host, and two copies of one grammar are two statements allowed to disagree.
+    """
+    read_item(number)
+    recorded = _gh(["api", "--paginate", relation.blocked_by_path(_repo(), number)])
+    return {
+        "number": number,
+        "blockers": [relation.blocker(entry) for entry in recorded],
+    }
 
 
 def link_for_close(number: int) -> str:
@@ -1411,6 +1445,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "set_labels": set_labels,
     "assign": assign,
     "link_dependency": link_dependency,
+    "read_blockers": read_blockers,
     "link_for_close": link_for_close,
     "advance_on_merge": advance_on_merge,
     # ⛔ The three operations this tracker has nothing to implement against are

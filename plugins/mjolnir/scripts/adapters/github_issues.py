@@ -26,6 +26,13 @@ What it implements, and what it deliberately does not:
     the inversion `docs/configuration-surface.md` measured. A prose line is what
     the stated fallback does where the capability is absent; here it is present,
     and writing both would be two statements allowed to disagree.
+  * **`read_blockers` reads the same relation back, paged whole.** It is what the
+    readiness gate's blocker predicate has as a source, and the one thing it does
+    not do is decide: each blocker comes back with the host's own state word and
+    the repository it lives in, because which bar a blocker is held to depends on
+    what it produced and that is the gate's question. ⚠️ An item with no recorded
+    blocker is a real answer here; a tracker that *cannot* be asked is the absent
+    case and belongs to the port.
   * **`advance_on_merge` confirms rather than asserts.** The host's own
     automation closes an issue when a pull request carrying a closing reference
     merges, so the capability is present and the procedure does not make the
@@ -68,6 +75,8 @@ if _SCRIPTS not in sys.path:
     sys.path.append(_SCRIPTS)
 
 import port  # noqa: E402
+
+from adapters import _code_host_dependency as relation  # noqa: E402
 
 KIND = "github-issues"
 
@@ -487,13 +496,49 @@ def link_dependency(blocked: int, blocked_by: int) -> dict:
     repo = _repo()
     read_item(blocked)
     read_item(blocked_by)
-    blocker_id = _gh(["api", f"repos/{repo}/issues/{blocked_by}", "--jq", ".id"], parse=False)
+    blocker_id = _gh(
+        ["api", relation.issue_path(repo, blocked_by), "--jq", ".id"], parse=False
+    )
     _gh([
-        "api", "--method", "POST",
-        f"repos/{repo}/issues/{blocked}/dependencies/blocked_by",
+        "api", "--method", "POST", relation.blocked_by_path(repo, blocked),
         "-F", f"issue_id={blocker_id}",
     ])
     return {"blocked": blocked, "blocked_by": blocked_by, "blocker_id": int(blocker_id)}
+
+
+def read_blockers(number: int) -> dict:
+    """The items this one is recorded as blocked by, each with its own state.
+
+    The read half of `link_dependency`, on the same endpoint and the same object:
+    a relation is posted on the **blocked** item, so this reads that item's own
+    dependencies rather than searching for what points at it.
+
+    ⛔ **Every page, not the first one.** The endpoint answers a page at a time
+    and a page that fills says nothing about whether more exist -- so a short read
+    reports an item with thirty-one blockers as having thirty, and the gate
+    reading it starts work whose blocker was in the part nobody fetched. The
+    client merges the pages into one array; measured by shrinking the page size to
+    one against an item with five relations, where the un-merged form answered
+    five separate pages.
+
+    ⚠️ **Read through `read_item` first**, so the pull-request guard covers this
+    too: the path is the issues one, which answers for a pull request as well, and
+    a blocker list read off a pull request is an answer about the wrong object.
+
+    ⚠️ An empty answer is an item with no recorded blocker, which is a real
+    answer here -- the capability is present. A tracker that *cannot* be asked is
+    the absent case, and the port reports that rather than this.
+
+    ⛔ The address and the shape of one entry come from the module the board's
+    implementation shares with this one: both kinds reach the same host, and two
+    copies of one grammar are two statements allowed to disagree.
+    """
+    read_item(number)
+    recorded = _gh(["api", "--paginate", relation.blocked_by_path(_repo(), number)])
+    return {
+        "number": number,
+        "blockers": [relation.blocker(entry) for entry in recorded],
+    }
 
 
 def link_for_close(number: int) -> str:
@@ -585,6 +630,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "set_labels": set_labels,
     "assign": assign,
     "link_dependency": link_dependency,
+    "read_blockers": read_blockers,
     "link_for_close": link_for_close,
     "advance_on_merge": advance_on_merge,
     # ⛔ No `checklist_read`, `checklist_write` or `checklist_item_delete`. See

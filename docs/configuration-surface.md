@@ -538,6 +538,53 @@ a capability difference at all — the API answering them is one API. What proje
 differing in is which mechanism carries the type, the estimate and the template, which is a facet
 below and already has a home of its own.
 
+### The dependency's two halves per tracker, and the one tracker that has neither
+
+⚠️ **The read half is newer than the survey**, and this section is bounded the way the `set_field`
+paragraph above is bounded: the table at the top of this section records what the **copies** did,
+and no copy was measured reading a dependency back — every copy that had a dependency check at all
+read it through whatever its own tracker handed it, and two of the five had no such check. What is
+recorded here is what each **implementation** does, with the source named per row the way the two
+reference-only sections below name theirs.
+
+⛔ **Why it is here at all**: § 5 carries a blocker predicate in the shared library and, until this
+was written, nothing stated **where a blocker is recorded** — so the check had no source, and the
+honest reading of a tracker that cannot be asked was indistinguishable from a tracker with nothing
+to report. The rule is now
+[`schema.md § 3 → An edge is a relation`](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)
+and the operations are `link_dependency` and `read_blockers`.
+
+| Tracker | How an edge is written | How it reads back | Source |
+|---|---|---|---|
+| plain issues | a dependencies API keyed on the blocker's **internal id**, posted on the *blocked* item | the same endpoint, read on the blocked item, **every page** — a page that fills says nothing about whether more exist, and the client merges them only when the paging flag is passed | a live host |
+| GitHub Projects | the same call, because a board holds no relation of its own and the dependency is a fact about the issues | the same endpoint. ⚠️ **The entries are issues and carry their own repository address**, which is the half a bare number loses: a board draws cards from more than one repository, so a blocker read as `#13` resolves against the wrong backlog and the wrong `#13` answers perfectly | the same endpoint, through the same client |
+| Jira | a link call whose `inwardIssue` is the item that **blocks** — the opposite of what the link type's own `inward: is blocked by` wording reads as, and the call succeeds either way | **no call of its own**: the links arrive with the item. The sense is read from which side an entry carries, never from the type's wording, and each entry holds the project's own status word *and* the tracker's category behind it | a live site, through a different interface |
+| Trello | ⛔ **neither half.** There is no relation between two cards, so `link_dependency` is absent and its stated fallback — description links written at both ends by hand — is the only thing there is | ⛔ **absent.** There is no relation object to read, so § 5's blocker predicate reports *unanswered* on this tracker. ⚠️ Never *no blockers*: a prose edge in two card descriptions is readable by a person and is not a verdict a gate may pass on | the published reference |
+
+⛔ **The absence is the row worth reading**, and it is why the predicate's stated behaviour is
+*unanswered* rather than a pass —
+[`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)
+is where that is stated. Three of the four trackers answer; the fourth cannot, and a gate that
+treated *cannot be asked* as *nothing to report* would start every item on that tracker whose
+dependency had not landed — which is § 2's absence-of-signal rule arriving at a readiness gate.
+
+**The measurement that forced the ruling, taken in this repository's own backlog.** Sixty-eight
+dependency edges were stated as prose in issue bodies while the configured readiness list carried
+the blocker predicate with nothing to read; the host's dependency relations were available and
+carried three of the sixty-eight. All sixty-eight are relations now. ⛔ **So the prose line and the
+relation were two statements of one fact** — the defect this toolkit exists to delete, in its own
+backlog — and what settled it is not *delete every sentence naming another item*: some of those
+sentences carried what a relation cannot express, that two items were decided together or that one
+sits below another in an order without blocking it. ⚠️ **Which is why the ruling separates the edge
+from the reasoning about the edge** rather than banning prose, and why its test is what a gate would
+answer rather than what a sentence looks like.
+
+⚠️ **One shape this left behind, measured in this repository's own carriers rather than reasoned
+about**: two project-local roles had written a tracker's own field name and endpoint path into their
+prose, and the naming sweep was green over both — it forbids a tracker's *name* and these are a
+level down from it, the tracker's vocabulary. That is now its own check, recorded with the sweep in
+[`single-source-of-truth.md`](single-source-of-truth.md#the-second-sweep-naming-no-other-project).
+
 ### What building the board's implementation measured
 
 The survey above read the copies; these are the host's own answers, measured while the

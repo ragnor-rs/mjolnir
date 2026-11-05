@@ -34,6 +34,7 @@ from port import HostUnavailable  # noqa: E402
 
 # ⚠️ Not `board`: a case below names a resolved board that, so the module alias
 # has to be the thing under test rather than the thing it answers about.
+from adapters import _code_host_dependency as relation  # noqa: E402
 from adapters import github_projects as under_test  # noqa: E402
 from adapters.github_projects import (  # noqa: E402
     ADAPTER,
@@ -73,6 +74,7 @@ from adapters.github_projects import (  # noqa: E402
     link_dependency,
     link_for_close,
     matches,
+    read_blockers,
     read_item,
     search_items,
     set_field,
@@ -279,6 +281,32 @@ def _item_card(number: int, title: str, status: str = "Todo", kind: str = "Issue
     }
 
 
+def _dependencies_page(entries: list[tuple[int, str, str]]) -> list[dict]:
+    """The host's own answer for the dependencies endpoint: plain issue objects.
+
+    ⚠️ A different shape from everything else this fake answers, and that is the
+    fact rather than an inconsistency: the board is the query interface and the
+    relation is REST, so the two halves of a dependency are read off two
+    interfaces.
+
+    ⛔ **Every entry carries its repository address**, because that is the half a
+    bare number loses: a relation is recordable across repositories, a board draws
+    its cards from more than one, and the wrong `#13` answers perfectly. A fixture
+    that left it out would let an implementation assuming the configured
+    repository read as correct.
+    """
+    return [
+        {
+            "number": number,
+            "state": state,
+            "title": f"a recorded blocker, #{number}",
+            "html_url": f"https://example.invalid/{repo}/issues/{number}",
+            "repository_url": f"https://api.example.invalid/repos/{repo}",
+        }
+        for number, state, repo in entries
+    ]
+
+
 def _default_answers() -> dict:
     """An answer for every call this module can make.
 
@@ -305,6 +333,14 @@ def _default_answers() -> dict:
         "issue create": "https://example.invalid/issues/31",
         "issue comment": "",
         "issue edit": "",
+        # ⛔ Ahead of the bare `api` below, and the order is load-bearing: this
+        # fake matches by prefix after exact, within insertion order, and every
+        # REST call here begins `api`. ⚠️ Named by the **paging flag** rather than
+        # by the path, because `args[:2]` is what this fake reads and the path is
+        # the third word -- which holds while this is the one paged REST read in
+        # the module. A second one would need the fake to name a call by what it
+        # addresses, and this comment is where that shows up.
+        "api --paginate": _dependencies_page([]),
         # Prefix-matched: the dependency lookup addresses one issue by path, and
         # the relation itself is posted with `--method`.
         "api": 4321,
@@ -330,6 +366,7 @@ class _Host:
         self.pages = pages or {}
         self.defaults = _default_answers()
         self.calls: list[str] = []
+        self.sent: list[list[str]] = []
 
     def _answer_for(self, name: str):
         # ⛔ Every exact match first, across both tables, and only then a prefix
@@ -366,6 +403,13 @@ class _Host:
     def __call__(self, args: list[str], parse: bool = True):
         name = self._name(args)
         self.calls.append(name)
+        # ⚠️ The whole call beside the name it answers by. The name is
+        # `args[:2]`, which is the right key for a fake that must not care about
+        # argument order -- and it loses a path that sits behind a flag, so a
+        # write's own address is unassertable from `calls` alone. Measured: the
+        # relation is posted with `--method` in front of its path, so every
+        # dependency write read as the same call.
+        self.sent.append(list(args))
         after = next(
             (part.split("=", 1)[1] for part in args if part.startswith("after=")), None
         )
@@ -805,6 +849,86 @@ def self_test() -> int:
     silent = _Host({})
     with_host(silent, lambda: (item_number(12), link_for_close(12)))
     check("without making a host call", silent.calls == [], f"called {silent.calls}")
+
+    # --- `link_dependency`: which object each half of the write addresses -----
+    #
+    # ⛔ The two halves run opposite ways and nothing held them for this kind: the
+    # id is looked up on the **blocker** and the relation is posted on the
+    # **blocked** item. Swap them and the call still succeeds, recording a real
+    # relation the wrong way round — and the readiness gate reading it then starts
+    # the item that is actually blocked. ⚠️ Asserted off the calls as sent rather
+    # than off the names, because the posted path sits behind a flag.
+    _boards.clear()
+    own_repo = str(configuration.get("host.repo") or "")
+    written = _Host({})
+    with_host(written, lambda: link_dependency(11, 12))
+    posted = [args for args in written.sent if args[:1] == ["api"] and "--method" in args]
+    looked_up = [
+        args for args in written.sent if args[:1] == ["api"] and "--jq" in args
+    ]
+    check(
+        "the relation is posted on the blocked item and the id read off the blocker",
+        len(posted) == 1 and len(looked_up) == 1
+        and relation.blocked_by_path(own_repo, 11) in posted[0]
+        and relation.issue_path(own_repo, 12) in looked_up[0],
+        f"posted {posted!r} after looking up {looked_up!r}",
+    )
+
+    # --- `read_blockers`: the source the readiness gate's blocker check has ---
+    #
+    # ⛔ The relation is a fact about the issues and not about the card, so this
+    # reads REST while every other read here reads the query interface. What the
+    # cases below hold is the three things a gate would be wrong about: which
+    # repository a blocker is in, which state word it carries, and whether the
+    # answer is the first page or all of them.
+    _boards.clear()
+    elsewhere = "another-owner/another-name"
+    recorded = _Host({
+        "api --paginate": _dependencies_page([
+            (12, "closed", own_repo),
+            (13, "open", elsewhere),
+        ]),
+    })
+    answered = with_host(recorded, lambda: read_blockers(11))
+    blockers = answered.get("blockers") if isinstance(answered, dict) else None
+    check(
+        "`read_blockers` answers every recorded blocker with the host's own state word",
+        [(entry["number"], entry["state"]) for entry in blockers or []]
+        == [(12, "closed"), (13, "open")],
+        f"answered {blockers!r}",
+    )
+    check(
+        "and the repository each blocker is in, which a bare number loses",
+        [entry["repo"] for entry in blockers or []] == [own_repo, elsewhere],
+        f"answered {[entry.get('repo') for entry in blockers or []]!r}",
+    )
+    check(
+        "and no verdict about whether the item may start, which is § 5's question",
+        not {"blocked", "ready", "satisfied", "open_blockers"} & set(answered or {}),
+        f"answered keys {sorted(answered or {})!r}",
+    )
+    # ⛔ The paging flag is asserted on the **call**, not inferred from the answer:
+    # the fake merges nothing, so an implementation reading one page would pass
+    # every case above while shortening a real answer. ⚠️ Measured as the residue
+    # of this fake rather than hidden -- what the client does with the flag is the
+    # client's, and this holds that the flag is there to be acted on.
+    paged = [call for call in recorded.calls if call.startswith("api")]
+    check(
+        "and asks for every page rather than the first",
+        paged == ["api --paginate"],
+        f"called {paged!r}",
+    )
+    # ⛔ The guard, in the direction that matters: the path is the issues one,
+    # which answers for a pull request, so a blocker list read with a pull request
+    # number is an answer about the wrong object.
+    guarded = _Host({"Item": _issue_payload(11, typename="PullRequest")})
+    reported = with_host(guarded, lambda: unavailable(lambda: read_blockers(11)))
+    check(
+        "a pull request number is refused before the relation is read",
+        reported is not None and "PullRequest" in reported
+        and guarded.calls == ["Item"],
+        f"got {reported!r} after {guarded.calls}",
+    )
 
     # --- `set_state`: the column, by name, read before written --------------
     #

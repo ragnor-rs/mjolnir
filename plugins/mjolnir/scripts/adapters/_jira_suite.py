@@ -63,6 +63,7 @@ from adapters.jira import (  # noqa: E402
     item_number,
     link_dependency,
     advance_on_merge,
+    read_blockers,
     read_item,
     search_items,
     set_field,
@@ -1305,6 +1306,84 @@ def self_test() -> int:
         and keys_of(item, "blocks") == []
         and keys_of(item, "links") == [key(2)],
         f"read {got(item, 'links')!r}",
+    )
+
+    # --- the read half, which is what a readiness gate has as a source --------
+    #
+    # ⛔ Asserted on the **same round trip** rather than on a fixture of its own:
+    # the predicate § 5 states reads this operation, and what would make it wrong
+    # is the write and the read disagreeing about the direction -- which a
+    # hand-built blocker list cannot show, because it is the same hand that would
+    # have built it the wrong way round.
+    both_ways = host()
+
+    def _link_and_read_blockers():
+        link_dependency(key(1), key(2))
+        return read_blockers(key(1)), read_blockers(key(2))
+
+    answered = with_host(both_ways, _link_and_read_blockers)
+    of_blocked, of_blocker = answered if isinstance(answered, tuple) else ({}, {})
+    check(
+        "`read_blockers` answers the blocked item with the blocker and nothing else",
+        keys_of(of_blocked, "blockers") == [key(2)],
+        f"read {got(of_blocked, 'blockers')!r}",
+    )
+    check(
+        "and answers the blocker itself with nothing, the relation having one direction",
+        keys_of(of_blocker, "blockers") == [],
+        f"read {got(of_blocker, 'blockers')!r}",
+    )
+    # ⛔ Both halves of the state, because a gate on this tracker can only use the
+    # one every project here shares. The word is the project's own vocabulary and
+    # a second project renames it; the category is the tracker's and does not
+    # move. A suite asserting only the word would pass an implementation that
+    # dropped the half the predicate needs.
+    #
+    # ⚠️ Both are read off the **blocker as the item read answers for it** rather
+    # than written here, which is this suite's rule for a status word everywhere
+    # else: a literal would be a second statement of the fixture's own vocabulary
+    # and would rot the day that fixture is reworded.
+    standing = host()
+    blocker_itself = with_host(standing, lambda: read_item(key(2)))
+    entry = (got(of_blocked, "blockers") or [{}])[0]
+    check(
+        "each blocker carries the project's own status word and the tracker's category",
+        entry.get("status") == got(blocker_itself, "status")
+        and entry.get("state") == got(blocker_itself, "state")
+        and entry.get("status") != entry.get("state"),
+        f"carried status={entry.get('status')!r} state={entry.get('state')!r} against "
+        f"{got(blocker_itself, 'status')!r}/{got(blocker_itself, 'state')!r}",
+    )
+    check(
+        "and no verdict about whether the blocked item may start, which is § 5's",
+        not {"blocked", "ready", "satisfied", "open_blockers"} & set(of_blocked),
+        f"answered keys {sorted(of_blocked)!r}",
+    )
+    # ⛔ The call count, not just the answer: this operation is stated to make no
+    # request of its own, and an implementation that asked a second time could
+    # answer correctly while being able to disagree with the item it was read
+    # from. Measured against the reads the item itself costs.
+    just_item = host()
+    with_host(just_item, lambda: read_item(key(1)))
+    just_blockers = host()
+    with_host(just_blockers, lambda: read_blockers(key(1)))
+    check(
+        "`read_blockers` costs exactly what reading the item costs, making no call of its own",
+        just_blockers.calls == just_item.calls,
+        f"called {just_blockers.calls!r} against {just_item.calls!r}",
+    )
+    # ⛔ And the project guard reaches it, which is the whole reason it goes
+    # through `read_item`: a key from another project resolves site-wide and
+    # answers perfectly, so a blocker list read with one is a blocker list from
+    # somebody else's backlog.
+    elsewhere_blockers = host()
+    reported = with_host(
+        elsewhere_blockers, lambda: refused(lambda: read_blockers(foreign(1)))
+    )
+    check(
+        "a key from another project is refused, naming `tracker.project_key`",
+        reported == "tracker.project_key" and elsewhere_blockers.calls == [],
+        f"reported {reported!r} after {elsewhere_blockers.calls}",
     )
 
     # --- searching ------------------------------------------------------------

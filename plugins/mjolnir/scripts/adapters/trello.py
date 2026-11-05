@@ -10,15 +10,23 @@ times.
 
 What it implements, and what it deliberately does not:
 
-  * **Every operation § 3 states except three.** ⛔ No count of them is carried
+  * **Not every operation § 3 states.** ⛔ No count of the absences is carried
     here -- the module next door states why and this one does not restate it: the
     list is closed and stated once, in § 3, and a number here would be wrong the
-    next time it grows. The three are named once in `DELIBERATELY_ABSENT` below:
-    there is no relation between two cards, no reference that closes a card when
-    a branch lands, and therefore no automation to confirm off a merge. ⛔ Each
-    of those is a property of the tracker and not a shortcut here -- the card
-    moves because the procedure moves it, through `set_state`, which is exactly
-    what `advance_on_merge`'s stated fallback says to do.
+    next time it grows. They are named once in `DELIBERATELY_ABSENT` below: there
+    is no relation between two cards, so neither writing one nor reading one back
+    has anything to address; no reference that closes a card when a branch lands;
+    and therefore no automation to confirm off a merge. ⛔ Each of those is a
+    property of the tracker and not a shortcut here -- the card moves because the
+    procedure moves it, through `set_state`, which is exactly what
+    `advance_on_merge`'s stated fallback says to do.
+  * **So this is the tracker where a readiness gate's blocker predicate has no
+    source at all.** `read_blockers` is absent, and § 5 answers that with
+    *unanswered* rather than *no blockers* -- the honest reading, and the one a
+    board's own gate cannot improve on. ⚠️ A dependency written into two card
+    descriptions by `link_dependency`'s fallback is still prose: a role may report
+    it and no check may pass on it, which is § 3's own rule about the edge rather
+    than a limit of this module.
   * **The three checklist operations are present, and this is the first
     implementation where they are.** Both implementations beside this one leave
     them absent because an issue has no check-item object; a card has one, so the
@@ -1373,13 +1381,21 @@ ADAPTER = port.Adapter(binder=bind, operations={
     # named once, below, and read from there by the suite.
 })
 
-# The three the module docstring argues are absent because the tracker has
-# nothing to implement them against: there is no relation between two cards, no
-# reference that closes one when a branch lands, and so no automation to confirm
-# off a merge. ⛔ Written once, here, and read by the suite rather than restated
-# in it: a fourth absence would otherwise be an operation nobody noticed going
-# missing.
-DELIBERATELY_ABSENT = ("link_dependency", "link_for_close", "advance_on_merge")
+# The ones the module docstring argues are absent because the tracker has
+# nothing to implement them against: there is no relation between two cards, so
+# neither half of a dependency has an object to address; no reference that closes
+# one when a branch lands, and so no automation to confirm off a merge.
+# ⛔ Written once, here, and read by the suite rather than restated in it: one
+# more absence would otherwise be an operation nobody noticed going missing.
+# ⚠️ No count, for the reason the docstring gives: this tuple grew by one the
+# first time the port stated a read half for the dependency, and a number in this
+# comment would have been wrong while the suite stayed green.
+DELIBERATELY_ABSENT = (
+    "link_dependency",
+    "read_blockers",
+    "link_for_close",
+    "advance_on_merge",
+)
 
 
 def self_test() -> int:

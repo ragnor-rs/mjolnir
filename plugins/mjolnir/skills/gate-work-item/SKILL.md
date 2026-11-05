@@ -158,10 +158,21 @@ on no item — a claim nobody can check, schedule or finish. ⛔ **It is not 4e*
 are opposite: 4e holds a correct item as merely early and marks nothing, so a prose blocker routed
 there sends back an item whose author has nothing to fix.
 
-**4e. The dependencies have reached their bar.** [`§ 5`](../../config/schema.md#5-readiness-gate--an-ordered-predicate-list)
+**4e. The dependencies have reached their bar.** ⛔ **What states them is the port's own
+`read_blockers` and never a line of the body**, per
+[`§ 3 → An edge is a relation`](../../config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it):
+a sentence naming another item may be reasoning about an edge rather than the edge, and a gate that
+read it would answer differently every time the sentence was reworded. ⛔ **Where that capability is
+absent the verdict is *unanswered* and never *no blockers*** — a tracker that cannot be asked reads
+exactly like a tracker with nothing to report, and a prose edge the fallback wrote goes in the
+report rather than into the pass.
+
+[`§ 5`](../../config/schema.md#5-readiness-gate--an-ordered-predicate-list)
 states the bar and it is not one bar: a code dependency is satisfied once its code is on the
 integration branch, anything else only once it is finished, and requiring the stronger of the two
-everywhere stops every dependent item. Check the reverse direction too — an item nothing here
+everywhere stops every dependent item. ⚠️ **So the bar is this role's and the operation answers with
+each blocker's state alone** — which of the two a given blocker is held to depends on what it
+produced, and no tracker knows that. Check the reverse direction too — an item nothing here
 declares, which declares this one as blocked, is a one-sided relation and neither moves until it is
 fixed. ⚠️ **A dependency recorded in another tracker still holds the item**, and this one cannot see
 it: the test is whether the work has landed, not which system records it. ⚠️ **This failure is not

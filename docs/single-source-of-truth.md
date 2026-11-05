@@ -371,6 +371,7 @@ rather than from a hand-kept list of roots.
 | 10 | No role is resolved by asking who is running — the spellings that resolve the current user and nothing else, each one a form English does not also use ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)) | the strict set | forbidding |
 | 11 | No tracked configuration carries a value under a key the surface marks `# private` — a chat thread's name, a calendar's own name, a person, a path on somebody's machine ([schema § 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)) | every tracked configuration | forbidding |
 | 12 | No invocation of the host client **for a run** — its own `run` subcommand, a dispatch, a pull request's runs, and the endpoints behind all three, in a command line, in a list of quoted words, or split across a continuation. The client itself stays permitted, being how a pull request is opened, read and merged ([schema § 29](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)) | the strict set | forbidding |
+| 13 | No tracker's own vocabulary for a **dependency** — the field an edge is carried in, that field in a query interface's spelling, the endpoint segment it is posted to, the sides of a link call, the link type's own wording. This is check 6 one level down: a role writing one of these names a tracker's *shape* without naming the tracker, which check 6 passed while it was the same defect. ⚠️ Matched in code regions only, by rule 1 and more load-bearingly than anywhere else here — one of those spellings is an ordinary English phrase, and a shipped role explains the direction of a dependency in exactly those words ([schema § 3 → An edge is a relation](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)) | the strict set | forbidding |
 
 ⚠️ **A row takes the next number and never one already in the table.** The first form of the row
 above was inserted in the middle, which left the two rows after it naming checks that had moved —
@@ -680,6 +681,25 @@ exempted the whole directory and so would have read straight past it.
   fail on them, because a shape for a carrier kind this repository has not adopted is not a
   defect. What is held instead: check 4 fails if the strict set empties altogether, and check 5
   fails on a carrier sitting outside every shape.
+- **A dependency described in words, and one tracker's link type spelled as an ordinary noun.**
+  Check 13's list is closed like check 7's and errs the same way: it holds the spellings whose
+  *shape* is decidable — an underscore, a camel hump, a path segment — plus one English phrase held
+  inside a code span, where a literal goes. ⛔ What it cannot reach is a role writing *post the
+  relation on the blocked item, keyed on the blocker's internal id* in a sentence: that is a sweep
+  for every word, and what holds it instead is
+  [schema § 3](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)
+  being the single statement of the rule, with the two operations the only thing a role names.
+  ⚠️ **One spelling was left out deliberately**: one tracker's link type is a single ordinary verb,
+  so matching it even in a code span would redden on a role that quoted a status word or a
+  capability of that spelling. ⛔ **And the strict scope is the rule's own rather than
+  forbearance** — the implementations behind the port must name every one of these to speak to
+  their trackers at all, and `docs/` records which tracker spells which, so a tree-wide sweep
+  would forbid the one place the shape belongs and the evidence for why. ⚠️ **Both green sides are
+  asserted as a problem-set delta rather than by watching a plant redden**, which is the host-run
+  exemptions'
+  form one check over and the only one that isolates a plant here: disabling either mechanism
+  reddens the *unplanted* tree, so a whole-tree reading cannot tell a plant that was swept from a
+  plant that contributed no region at all.
 - **Issues and pull requests**, for the same reason check 3 above cannot read issue state: that
   store is not a file, the workflow holds no credential, and a reviewer covers it.
 
@@ -899,6 +919,25 @@ so for the second port it unmade the other port's table and asserted nothing.
 One check is the half the per-port lookup cannot see: an operation table sitting under a section no
 `# port:` marker names is refused on the surface, that being an operation list no port reads and no
 adapter is held to.
+
+⛔ **And one check runs the file as a script, in a subprocess, which is the only form that can see
+the defect it was written for.** The contract states *three answers, never a traceback* — the stated
+fallback where a capability is absent, the result where it is present, and a `failed` outcome
+naming the host's own words where a call did not go through, which is
+[schema § 3](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)'s
+rule that no absence is an error and that a host which did not answer is not a tracker that
+cannot. ⚠️ **That stopped holding on the one path a role actually uses**, measured by invoking an
+operation against a pull request number: the
+pull-request guard's own message arrived as a traceback. The cause is that an implementation does
+`import port`, so running the file as a script loads it twice — once as the entry point and once
+under its own name — and the contract's exception becomes two unrelated classes, which the `except`
+in the invoking code cannot bridge. ⛔ **Every in-process assertion was green over it and had to
+be**, a suite importing the file as a module having one class, which is why the fix is the script's
+own dispatch and the case is a subprocess. The failure is provoked with no host and no credential:
+the client is absent from the path handed to the child, so the first call out raises from inside an
+implementation. ⚠️ **The verdict is read off what was printed and not off the exit status** — a
+reported failure and a traceback both exit non-zero, so a status assertion would have passed before
+the fix.
 
 The kinds are the same two as above. Reading the operation list and the fallback text out of the
 surface is **computed** — a reworded fallback travels, and a table that states the list twice, or

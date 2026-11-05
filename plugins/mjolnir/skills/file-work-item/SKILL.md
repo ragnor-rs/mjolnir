@@ -301,6 +301,17 @@ a capability is absent: the labels, the assignee, and the relations below.
 
 **Relations are recorded through `link_dependency`, in the tracker, never as a line of prose in the
 body** — except where that capability is absent, which is the one case its fallback allows.
+[`§ 3 → An edge is a relation`](../../config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)
+is the rule and this role is where it is performed; the gate that reads what this writes is
+`read_blockers`, so an edge written as a sentence is an edge no gate can see.
+
+⛔ **What the body keeps instead is the reasoning about the edge, and it is written rather than
+dropped.** That two items were decided in one pass, that one sits below another in an order without
+blocking it, that a pair was settled together — ⚠️ **no relation carries any of those**, so a body
+stating one is not a second statement of anything. The test is § 3's: delete the relation, and if no
+readiness verdict changes, the sentence was never the edge. ⛔ **An item whose body states the edge
+*and* carries the relation is the defect in the other direction**, and the sentence is what goes:
+prose is free to be reworded into disagreeing with the graph, and nothing reports that it has.
 
 ⛔ **Restate the direction in plain language before writing it.** "B cannot ship until A is done"
 means B is blocked by A. Terse phrasing is ambiguous in both readings, and a misread direction costs

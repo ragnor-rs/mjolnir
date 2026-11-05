@@ -50,6 +50,14 @@ What it implements, and what it deliberately does not:
     `inwardIssue` is the issue that **blocks**. Read the wording and you file the
     dependency on the wrong item, and it reads as success. ⛔ So the direction is
     asserted by a round trip in the suite rather than by reading the call.
+  * **`read_blockers` makes no call of its own.** The links arrive with the item,
+    so the read half of that dependency is `read_item`'s answer narrowed to one
+    side of one link type -- which is also why the project guard and the
+    direction rule above hold here without being restated. ⚠️ Each blocker comes
+    back with the project's own status word *and* the tracker's category behind
+    it, and no verdict: which bar a blocker is held to depends on what it
+    produced, and that is the readiness list's question rather than this
+    module's.
   * **A body is a document, not a string.** This tracker's own interface takes
     rich text as a structured document, so `create_item`, `comment` and a write
     to a text field all go through one narrow renderer and one narrow reader.
@@ -821,10 +829,17 @@ def _links_of(issue: dict) -> dict:
         kind = (link.get("type") or {}).get("name")
         inward, outward = link.get("inwardIssue"), link.get("outwardIssue")
         side = inward or outward or {}
+        status = ((side.get("fields") or {}).get("status") or {})
         entry = {
             "key": side.get("key"),
             "type": kind,
-            "status": ((side.get("fields") or {}).get("status") or {}).get("name"),
+            "status": status.get("name"),
+            # ⚠️ Both, and apart, for `_shaped`'s own reason one field over: the
+            # word is this project's vocabulary (§ 4.2) and the category is the
+            # tracker's three-way behind it. A readiness check needs the half
+            # every project on this tracker shares, and a role advancing a state
+            # needs the word -- so neither is derived from the other here.
+            "state": (status.get("statusCategory") or {}).get("key"),
         }
         if kind == BLOCKS and inward:
             blocked_by.append(entry)
@@ -1435,6 +1450,27 @@ def link_dependency(blocked: str, blocked_by: str) -> dict:
     }
 
 
+def read_blockers(key: str) -> dict:
+    """The items this one is recorded as blocked by, each with its own state.
+
+    The read half of `link_dependency`, and ⛔ **it makes no call of its own**: the
+    links arrive with the item, so this is `read_item`'s own answer narrowed to
+    one side of one link type rather than a second request that could disagree
+    with it. The project guard and the direction rule therefore both hold here
+    without being restated.
+
+    ⛔ **Which side is a blocker is `_links_of`'s reading and not this
+    function's.** The sense is read from which side an entry carries, never from
+    the link type's wording -- the inversion this tracker is sharpest about -- so
+    narrowing here is a key lookup and nothing more.
+
+    ⛔ **No verdict.** Each blocker comes back with the project's own status word
+    and the tracker's category behind it, because which bar a blocker is held to
+    depends on what it produced and that is § 5's question.
+    """
+    return {"key": key, "blockers": list(read_item(key).get("blocked_by") or [])}
+
+
 def advance_on_merge(key: str) -> dict:
     """Whether something other than this credential moved the item.
 
@@ -1499,6 +1535,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "set_labels": set_labels,
     "assign": assign,
     "link_dependency": link_dependency,
+    "read_blockers": read_blockers,
     "advance_on_merge": advance_on_merge,
     # ⛔ The four operations this tracker has nothing to implement against are
     # named once, below, and read from there by the suite.

@@ -227,6 +227,37 @@ TRACKER_IDS_ANYWHERE = [
     (re.compile(r"\btrello\.com/[bc]/\S+"), "a Trello board or card"),
 ]
 
+# A tracker's own vocabulary for the relation between two work items: the field
+# it is carried in, the endpoint segment it is posted to, the sides of the call,
+# the link type's own wording. ⛔ A separate list from the tracker names above
+# because it is a level down from them: a role writing one of these names a
+# tracker's *shape* without naming the tracker, which passed that check while
+# being the same defect -- measured in two of this repository's own carriers, each
+# of which had written a field name and a path segment into a role's prose.
+#
+# What the rule is: `schema.md § 3 -> An edge is a relation` makes the dependency
+# a port operation with a stated form per tracker, so a role names the operation
+# and the port answers in whichever shape the tracker has.
+#
+# ⛔ **Matched in code regions only, per rule 1**, and here that is load-bearing
+# rather than cautious: `is blocked by` is one tracker's link type *and* an
+# ordinary English phrase, and every document in this repository writes it. What
+# makes a spelling decidable is either its shape -- an underscore, a camel hump, a
+# path segment -- or a code span being where a literal goes.
+#
+# ⛔ No count of these is written here or in the documents, for the reason the
+# groups above carry none: the first form of this comment said *four* and the
+# phrase arm made it five before the change had landed.
+LINK_TYPE_NAMES = [
+    (re.compile(r"(?<![\w-])blocked_by(?![\w-])"), "a dependency field's own name"),
+    (re.compile(r"(?<![\w-])blockedBy(?![\w-])"),
+     "the same field in a query interface's spelling"),
+    (re.compile(r"(?<![\w-])dependencies/[A-Za-z_]+"), "a dependency endpoint's own path"),
+    (re.compile(r"(?<![\w-])(?:inward|outward)Issue(?![\w-])"),
+     "the sides of a link call, which one tracker inverts"),
+    (re.compile(r"\bis blocked by\b", re.I), "a link type's own wording"),
+]
+
 # Asking who is running. ⛔ Each of these is a spelling that resolves *the
 # current user* and nothing else, and `schema.md § 27` forbids a role being
 # resolved that way: asking the tracker, the host or the shell who you are
@@ -1284,6 +1315,49 @@ def check_no_host_run_call_in_the_strict_set(tree: Tree) -> list[str]:
     return problems
 
 
+def check_no_link_type_is_named_in_the_strict_set(tree: Tree) -> list[str]:
+    """No carrier names a tracker's own vocabulary for a dependency.
+
+    `schema.md § 3 -> An edge is a relation, and a body keeps the reasoning about
+    it` makes the dependency between two work items a port operation with a
+    stated form per tracker. ⛔ So a role names the operation and nothing else: a
+    role that named the field, the endpoint segment or the link type would be
+    carrying one tracker's shape into the shared procedure, which is
+    `check_no_tracker_is_named_in_the_strict_set` one level down -- and the level
+    that check was green over while reading as covering it.
+
+    ⛔ Scoped to the strict set, and the scope is the rule's own rather than
+    forbearance: the implementations behind the port must name these to speak to
+    their trackers at all, and `docs/` records which tracker spells which, so a
+    sweep reddening on either would forbid the one place the shape belongs and
+    the evidence for it.
+
+    ⛔ Scoped to code regions by rule 1, which matters more here than anywhere
+    else in this file: one of the spellings is an English phrase, and a sweep of
+    prose for it would redden on this docstring.
+    """
+    problems = []
+    swept = 0
+    for path in tree.strict():
+        for region in tree.code(path):
+            swept += 1
+            for pattern, what in LINK_TYPE_NAMES:
+                found = pattern.search(region)
+                if found:
+                    problems.append(
+                        f"{path}: `{region.strip()[:70]}` names {what} "
+                        f"(`{found.group(0)}`). A dependency is a port operation with a form "
+                        "stated per tracker (schema § 3): a role names the operation, and the "
+                        "port answers in whichever shape the tracker has."
+                    )
+    if tree.strict() and not swept:
+        problems.append(
+            "The strict set has files and not one line of code in any of them, so this check "
+            "holds nothing. A check that holds nothing reports green."
+        )
+    return problems
+
+
 def check_no_role_is_resolved_through_the_running_user(tree: Tree) -> list[str]:
     """No carrier resolves who holds a role by asking who is running.
 
@@ -1432,6 +1506,8 @@ CHECKS = [
     ("no machine is named", check_no_machine_is_named),
     ("no role is resolved through the running user",
      check_no_role_is_resolved_through_the_running_user),
+    ("no link type is named in the strict set",
+     check_no_link_type_is_named_in_the_strict_set),
 ]
 
 
@@ -2193,6 +2269,26 @@ VIOLATIONS = [
     ("no host run call is in the strict set", "the check suites of the query interface",
      _plant_in_a_carrier(
          '\nAsk `gh api graphql -f query="{ checkSuites { nodes { conclusion } } }"`.\n')),
+    # One per spelling a tracker carries a dependency in, because each is a
+    # different surface a role could reach for -- a field, the same field in
+    # another interface, an endpoint path, the sides of a call, and the link
+    # type's own wording -- and a spelling with no plant is a spelling nothing
+    # asserts is forbidden at all. ⛔ Each is written **inside a code span**,
+    # which is the only position this check reads: a prose plant would assert
+    # nothing while printing red for rule 1's reason.
+    ("no link type is named in the strict set", "a dependency field named in a carrier",
+     _plant_in_a_carrier("\nRead the item's `blocked_by` list before starting.\n")),
+    ("no link type is named in the strict set",
+     "the same field in a query interface's own spelling",
+     _plant_in_a_carrier("\nAsk for `Issue.blockedBy` in one call instead.\n")),
+    ("no link type is named in the strict set", "a dependency endpoint's own path",
+     _plant_in_a_carrier("\nPost it to `dependencies/blocked_by` on the blocked item.\n")),
+    ("no link type is named in the strict set", "the sides of a link call",
+     _plant_in_a_carrier("\nThe item that blocks goes in `inwardIssue`.\n")),
+    ("no link type is named in the strict set", "a link type's own wording, in a span",
+     _plant_in_a_carrier("\nThe type reads `is blocked by` in that direction.\n")),
+    ("no link type is named in the strict set", "a dependency field inside a fenced block",
+     _plant_in_a_carrier("\nThen:\n\n```sh \nread blocked_by\n```\n")),
 ]
 
 
@@ -2321,6 +2417,33 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     # needed its own disabling.
     ("no host run call is in the strict set", "a run call in a script a carrier calls",
      _plant_in_a_carrier_implementation('shown = "gh run view " + run + " --log"\n')),
+    # ⛔ The green side of the dependency check, and the two reasons it is the
+    # rule rather than a wider ban. First: the implementation behind the port must
+    # name the tracker's own field to speak to it at all, and a sweep that
+    # reddened on that would forbid the one place the shape belongs. Second, and
+    # the one rule 1 exists for: the link type's wording is an ordinary English
+    # phrase, so a carrier describing this very rule in prose has to stay green.
+    #
+    # ⚠️ **Both verified as a problem-set delta rather than by watching the plant
+    # redden**, which is the form the host-run exemptions above already record and
+    # the only one that isolates a plant here: disabling either mechanism reddens
+    # the **unplanted** tree, so a whole-tree reading cannot tell a plant that was
+    # swept from a plant that contributed no region at all. Measured — with
+    # `CARRIER_IMPLEMENTATION` emptied the first plant adds exactly one problem
+    # over the seventeen that disabling finds anyway, and with the match widened
+    # from `code()` to the whole file the second adds exactly one over the one
+    # that widening finds in a shipped carrier by itself. ⛔ That one is the false
+    # refusal this scope exists against, and it is live text rather than a
+    # hypothetical: a shipped role explains the direction of a dependency in those
+    # words.
+    ("no link type is named in the strict set",
+     "a dependency field in a script a carrier calls",
+     _plant_in_a_carrier_implementation('blockers = answer["blocked_by"]\n')),
+    ("no link type is named in the strict set",
+     "the link type's wording as an English phrase in a carrier's prose",
+     _plant_in_a_carrier(
+         "\nAn item is blocked by another when the relation says so, never when a "
+         "sentence does.\n")),
 ]
 
 
