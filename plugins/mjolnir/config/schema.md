@@ -709,13 +709,20 @@ root with neither is the code root wearing a name, which is what omitting the bl
 ⛔ **A key of this block written with nothing after it is refused rather than read as the absence
 it looks like**, which is [§ 2](#2-code-host)'s rule for every key here whose omission is itself an
 answer, arriving one section over: a `command_roots:` with nothing under it, a `path:` or an
-`invoke:` left blank, a `command_root:` written empty beside a command, and a
-`code_root_runs_nothing:` holding anything but `true` are each the same text as a key somebody
-meant to fill in. ⚠️ **The flag is read as the one value it states and never for truth**: read as
-truthy, `false` spelled as a word would stop every command in the project, and read as presence the
-key written `false` would do it too. ⛔ **And a key beside `path` and `invoke` is refused with its
-own name**, by the rule the collection above already states for a named root's blocks: it would be
-a fact about where a command runs that nothing reads.
+`invoke:` left blank, and a `command_root:` written empty beside a command are each the same text
+as a key somebody meant to fill in. ⚠️ **A `command_root` that is written at all is reported as
+written**, and never as an omission: the flag's stop below names a key the file does not carry, so
+a blank or a non-string value falls to this rule instead.
+
+⛔ **`code_root_runs_nothing` is held to being boolean and is read for neither truth nor
+presence.** Read as truthy, `false` spelled as a word would stop every command in the project; read
+as presence, the key written `false` would do it too. ⚠️ **`false` is admitted and means what the
+omission means**, which is what lets an entry of the collection above override a `true` the project
+states for every root — the key having no other way to say *this root does run commands*.
+
+⛔ **And a key beside `path` and `invoke` is refused with its own name**, by the rule the collection
+above already states for a named root's blocks: it would be a fact about where a command runs that
+nothing reads.
 
 ⛔ **A command root is named across the project, and two code roots declaring one name are
 refused.** It is the slug rule above one axis over: a reference is written beside a command, and
@@ -1079,9 +1086,9 @@ surface cannot state.
 `triggers` one paragraph down and for the mirror of its reason: the event block is the workflow's
 and no job's, while the directory a command runs in belongs to the command — and this form exists
 because one workflow mirrors several, each of which may run somewhere else. ⚠️ **An entry stating
-`jobs` therefore states no `command_root` of its own, and one that does is refused**: it would
-read as a default the members inherit, which is the shape the filter rule below already refuses
-one key over.
+`jobs` therefore states no `command_root` of its own, and one that does is refused**: it would read
+as a default the members inherit, and the filter rule below is where this facet already states
+that nothing at the entry's level is inherited by a member.
 
 **`paths` sits at the level the workflow file states it at**: the entry's is the filter on the
 event block, and a member's is that job's own where the job carries one. ⛔ **Neither is inherited

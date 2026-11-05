@@ -256,10 +256,12 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/host_checks.py" covers --command <the com
 ⛔ **The question is a command *and* the directory it runs in**
 ([`§ 1`](../../config/schema.md#a-command-root-is-not-a-code-root)), which is configuration and
 never this file's to supply: one command name is a verdict in one package root and work in another,
-so an answer about the text alone is an answer about whichever root was written first. ⚠️ **A
-project whose commands run at its code root is asked for no root and the flag is omitted**, which
-is the ordinary case. ⛔ **And no step of this role changes directory or adds a directory flag of
-its own** — what to run and where comes back from the reader:
+so an answer about the text alone is an answer about whichever root was written first. ⛔ **The name
+is read off the entry the command came from** — that entry's own `command_root`, § 2's on a
+`host.checks` entry or a job of one and § 17's on a local check — and ⚠️ **an entry stating none
+runs at the code root, the flag omitted**, which is the ordinary case. ⛔ **And no step of this role
+changes directory or adds a directory flag of its own** — what to run and where comes back from the
+reader:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --command <the command> \

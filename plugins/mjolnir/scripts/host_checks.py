@@ -83,6 +83,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
 import os
 import re
@@ -1282,6 +1284,28 @@ def self_test() -> int:
         f"reported {facet(rooted)[config.COMMAND_ROOTS]!r}",
     )
 
+    # ⛔ Both of the options the top-level parser and every subcommand carry, in
+    # both positions. ⚠️ Found by review and reproduced: with the repeat
+    # defaulting rather than suppressing, a value given **before** the
+    # subcommand was overwritten by the repeat's own absence -- so `--root` was
+    # accepted and dropped, and `--skills-root` had been dropped the same way
+    # since before this facet existed, invisibly, both defaults being `.`.
+    print("\neither position of the two options every subcommand repeats")
+    for position, argv in (
+        ("before the subcommand",
+         ["--skills-root", "a-root-no-project-is-at", "mirrors", "--command", "x"]),
+        ("after it",
+         ["mirrors", "--command", "x", "--skills-root", "a-root-no-project-is-at"]),
+    ):
+        printed = io.StringIO()
+        with contextlib.redirect_stderr(printed):
+            code = main(argv)
+        check(
+            f"a skills root given {position} is the one resolved",
+            code == 2 and "a-root-no-project-is-at" in printed.getvalue(),
+            f"exited {code} saying {printed.getvalue()[:120]!r}",
+        )
+
     print("\nthis project's own facet loads and answers")
     # ⚠️ The reader beside this file and never whichever one is first on the
     # path: a run from a worktree that imported the primary checkout's reader
@@ -1335,12 +1359,12 @@ def main(argv: list[str] | None = None) -> int:
     # is read per code root where a project's code is several repositories, so a
     # project-level read of it has no answer -- and § 1's command roots, which
     # every reading below also asks about, are that same root's.
-    parser.add_argument(
-        "--root",
-        help="the named code root to read the facet from, where § 1's collection "
+    code_root_help = (
+        "the named code root to read the facet from, where § 1's collection "
         "carries several. Omitted on such a project, every reading is a stop "
-        "naming the roots rather than an answer about the first of them",
+        "naming the roots rather than an answer about the first of them"
     )
+    parser.add_argument("--root", help=code_root_help)
     parser.add_argument("--self-test", action="store_true")
     sub = parser.add_subparsers(dest="what")
 
@@ -1354,11 +1378,18 @@ def main(argv: list[str] | None = None) -> int:
         "there, and is never *any root*"
     )
 
+    # The two options the top-level parser also carries, repeated so that either
+    # position works. The value given before the subcommand is what survives a
+    # subcommand that does not repeat it, and the suppressed default is what
+    # stops the repeat from overwriting it with its own absence.
+    def also_rooted(which) -> None:
+        which.add_argument("--skills-root", default=argparse.SUPPRESS)
+        which.add_argument("--root", default=argparse.SUPPRESS, help=code_root_help)
+
     named = sub.add_parser("mirrors", help="where the host's runs mirror a command")
     named.add_argument("--command", required=True)
     named.add_argument("--command-root", dest="command_root", help=root_help)
-    named.add_argument("--skills-root", default=".")
-    named.add_argument("--root")
+    also_rooted(named)
 
     reach = sub.add_parser("covers", help="which answer a change gets about a command")
     reach.add_argument("--command", required=True)
@@ -1381,8 +1412,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     reach.add_argument("--path", action="append", default=[],
                        help="a path this change touches; repeatable")
-    reach.add_argument("--skills-root", default=".")
-    reach.add_argument("--root")
+    also_rooted(reach)
 
     # ⛔ Both facts are required, and that is § 2's rule rather than this
     # parser's convenience: a precondition the caller could not answer is
@@ -1410,8 +1440,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     where = sub.add_parser("runner", help="where this project's jobs run")
-    where.add_argument("--skills-root", default=".")
-    where.add_argument("--root")
+    also_rooted(where)
 
     args = parser.parse_args(argv)
     if args.self_test:

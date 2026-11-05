@@ -2104,10 +2104,12 @@ VIOLATIONS = [
      _plant_a_configured_path_filter),
     # § 1's command root, which is the directory half of the same outcome: a role
     # that named one would be carrying the package root the facet exists so that
-    # no role has to know. ⚠️ It is not under `host.checks` and not a path's leaf
-    # either -- the name is a **key** of the command-root block and a value of the
-    # reference beside a command -- which is a fourth shape a list of key names
-    # cannot express.
+    # no role has to know. ⚠️ The name is in two places and this sweep reads one
+    # of them: it is a **key** of the command-root block, which the value walk
+    # does not yield, and the **value** of a `command_root` beside a command,
+    # which it does -- so the plant writes both halves and the arm is reached
+    # through the second. Found by review: the first form of this comment said
+    # the name was not under `host.checks`, while its own plant puts it there.
     ("no value is carried in the strict set", "a command root's name out of the configuration",
      _plant_a_configured_command_root),
     # The three ways this check can hold nothing and report green.

@@ -630,7 +630,7 @@ exempted the whole directory and so would have read straight past it.
   instances in the live carriers and not one of them a directory: surface citations written as code
   spans (`config/schema.md § 1`), slash-command names, two of the code host's own API path
   segments, and two prose fractions. ⛔ **So what is held is the half with a stable form**: a
-  command root's *name* is a value of the project's own, so check 11 reddens on one written into a
+  command root's *name* is a value of the project's own, so check 8 reddens on one written into a
   carrier, with a plant that states the root in the configuration and names it in a role. The
   residue — a directory nobody configured, written straight into a role — is a reviewer's catch.
 - **This project's own slug, anywhere at all.** The second exception derives it rather than listing

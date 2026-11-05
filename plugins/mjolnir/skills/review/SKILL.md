@@ -494,10 +494,14 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/host_checks.py" covers --command <the com
 ```
 
 ⛔ **Which directory a command runs in is configuration and never this role's to supply**
-([`§ 1`](../../config/schema.md#a-command-root-is-not-a-code-root)) — so the root is passed by the
-name the configuration gives it, the command is run through whatever that root's own form states,
-and ⛔ **no step of this role changes directory or adds a directory flag of its own.** The
-resolution is one call, which prints what to run, where, and whether that directory is there:
+([`§ 1`](../../config/schema.md#a-command-root-is-not-a-code-root)) — ⛔ **and the name passed above
+is read off the entry the command came from**, which is that entry's own `command_root`: § 2's on a
+`host.checks` entry or a job of one, and
+[`§ 17`](../../config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s on
+a local check. An entry stating none runs at the code root and the flag is omitted. ⛔ **No step of
+this role changes directory or adds a directory flag of its own**, and the command is run through
+whatever that root's own form states. The resolution is one call, which prints what to run, where,
+and whether that directory is there:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --command <the command> \

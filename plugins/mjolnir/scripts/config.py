@@ -3450,6 +3450,16 @@ COMMAND_PLACEHOLDER = "<command>"
 # the rule is in `command_roots` below, because *neither* is the shape this facet
 # exists against -- a root with no path and no form is the code root wearing a
 # name, which omitting the block already says.
+#
+# ⚠️ This tuple **is** a second statement of the surface's own entry, the first
+# being the fence § 1 shows, and the suite holds it to that fence rather than
+# claiming otherwise -- which is `ANSWERS`'s shape in the module beside this one.
+# ⛔ Not derived from `facts` like `per_root` one key up, and the reason is the
+# call graph rather than a preference: `defined_runs` resolves this block and
+# takes no `facts`, so deriving it would thread the surface through two
+# accessors a check beside this module calls, and a reader that validated the
+# block only where facts happened to be in scope would skip the refusal exactly
+# where `host.checks` is walked on its own. Found by review.
 COMMAND_ROOT_KEYS = ("invoke", "path")
 
 
@@ -3628,8 +3638,16 @@ def stops_at_the_code_root(roots: dict[str, dict], runs_nothing: bool, name,
     step registers mirrors a command of the toolkit's that runs at the code root
     and names no package root, so a refusal at the load made this facet and that
     step mutually exclusive on every project the facet was written for.
+
+    ⛔ **Absence and never falsiness**, which is the arm this refusal has to get
+    right to name the right key: a `command_root` written blank, or written as
+    something that is not a string at all, *is* a value somebody wrote, and
+    reported here it comes back as *names no `command_root`* -- a sentence about
+    a key the file carries. Those two are `command_in`'s shape refusals and are
+    reached by falling through this one. Found by review, on this function's
+    first form.
     """
-    if runs_nothing and not (isinstance(name, str) and name.strip()):
+    if runs_nothing and name is None:
         raise ConfigError(
             where,
             f"names no `{COMMAND_ROOT_REF}` while this code root states "
@@ -7620,6 +7638,26 @@ def self_test() -> int:
     # the single-form arms below hold the absence that keeps today's meaning,
     # and those have to run whether or not any example ships a collection.
     print("\n§ 1's command roots, and the two senses of root they keep apart:")
+    # ⛔ The reader's own key tuple against the surface's entry, read off the
+    # fence here rather than trusted: `COMMAND_ROOT_KEYS` is a second statement
+    # of what § 1 shows a command root carrying, and without this arm the two
+    # drift in silence -- a key the surface gained would be refused as unknown,
+    # and one it dropped would go on being accepted. ⚠️ Derived from `declared`,
+    # which is every path the fences state, so the fence moving is what reddens.
+    shown = {
+        parts[5]
+        for path in surface["declared"]
+        if len(parts := path.split(".")) == 6
+        and parts[:2] == ["roots", "code"]
+        and parts[3] == COMMAND_ROOTS
+    }
+    check(
+        "the surface shows exactly the keys a command root carries that this reader reads",
+        shown == set(COMMAND_ROOT_KEYS),
+        f"the surface shows {sorted(shown - set(COMMAND_ROOT_KEYS))} that the reader "
+        f"does not, and the reader reads {sorted(set(COMMAND_ROOT_KEYS) - shown)} that "
+        "the surface does not show",
+    )
     declaring, plain = _a_command_root_root(), _a_plain_code_root()
     check(
         "an example declares command roots on one code root and none on another",
