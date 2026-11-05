@@ -3440,8 +3440,8 @@ the refusal is the only thing that breaks it. A release that deletes whatever re
 
 ⛔ **And the orphaned row has a window in front of it, because every arm above it declines for
 timing rather than for state.** A start publishes its ref and *then* cuts its tree, so across that
-interval the ref has no tree, no pull request and no commits of its own — which is all three live
-arms — and the orphaned row therefore fires on every claim that is seconds old. ⚠️ **Measured
+interval the ref has no tree, no pull request and no commits of its own — which is every live arm
+above it — and the orphaned row therefore fires on every claim that is seconds old. ⚠️ **Measured
 2026-11-05**, three sibling starts inside seven minutes: a refusal read `orphaned-candidate: no arm
 of the liveness test answered yes` against a ref published **36 seconds** earlier by a live session,
 and the same ref, untouched, read `live` five minutes later. ⚠️ It is the same publish-to-cut window

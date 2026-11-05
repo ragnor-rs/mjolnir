@@ -2306,10 +2306,10 @@ def self_test() -> int:
         # ⛔ **And they are stated as absolute offsets rather than as the bound plus or minus
         # something**, which the first draft did and which made this whole block follow the
         # constant wherever it was moved: with the bound planted to a negative, offsets of
-        # `CUT_WINDOW_SECONDS ± 1` went negative too, the arm fired on a ref *older* than its own
-        # creation, and every check here stayed green on a mechanism that was broken. One line
-        # reddened where five should have. The inside offset is the 36 seconds the defect was
-        # measured at; the outside one is an hour, which no plausible bound reaches.
+        # `CUT_WINDOW_SECONDS ± 1` went negative too and the arm fired on a ref *older* than its
+        # own creation. What that cost is in the mutation table the facet's own record carries, and
+        # is not restated here. The inside offset is the 36 seconds the defect was measured at; the
+        # outside one is an hour, which no plausible bound reaches.
         inside = read_liveness(
             two, "origin", "feature/win", "main", sha, born,
             moment(born) + timedelta(seconds=36),
@@ -2345,6 +2345,19 @@ def self_test() -> int:
         suite.ok("⛔ and names the half it could not establish rather than dropping it",
                  any("young enough" in item for item in unread.unestablished),
                  "; ".join(unread.unestablished))
+        # ⛔ The arm's second decline, which had no check at all until this diff was read as a
+        # whole: an instant carrying a zone against one that does not makes the subtraction raise
+        # rather than answer, and this arm is reached from a refusal's own wording -- so a crash
+        # would land on the path that reports the refusal.
+        naive = read_liveness(
+            two, "origin", "feature/win", "main", sha, born,
+            moment(born).replace(tzinfo=None) + timedelta(seconds=36),
+        )
+        suite.ok("a creation and an instant that are not comparable decline rather than raising",
+                 not naive.provisional, naive.reason)
+        suite.ok("⛔ and that decline is named too",
+                 any("not being comparable" in item for item in naive.unestablished),
+                 "; ".join(naive.unestablished))
         # ⛔ Must stay green: the readings every other consumer keys on are untouched, which is
         # what keeps the release's *landed or held here* test and the sweep's *not landed* branch
         # behaving exactly as they did. Checked on the reading itself, because a `provisional`

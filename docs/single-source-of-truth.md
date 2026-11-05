@@ -1185,28 +1185,34 @@ sleeping through it and the suite does not change answer depending on the second
 ⚠️ **And they are stated as absolute offsets rather than relative to the bound, which is check 11's
 lesson arriving on a second row.** Written first as `the bound ± 1`, the whole block *followed the
 constant wherever it was moved*: planting the bound to a negative took both offsets negative with
-it, the arm then fired on a ref older than its own creation, and four of the five checks stayed
-green on a mechanism that was broken — one line reddened where four should have. ⚠️ **The tell was
-the mutation count and not any failure**, which is why the mutation table below is run rather than
-reasoned about: a self-referential assertion reads as a passing check and as a reached mechanism at
-the same time. The offsets are now 36 seconds, the interval the defect was measured at, and an
-hour.
+it, the arm then fired on a ref older than its own creation, and most of the block stayed green on a
+mechanism that was broken. ⚠️ **The tell was the mutation count and not any failure**, which is why
+the table below is run rather than reasoned about: a self-referential assertion reads as a passing
+check and as a reached mechanism at the same time. The offsets are now 36 seconds, the interval the
+defect was measured at, and an hour.
 
-| what was disabled | lines reddened | restored |
+| what was disabled | what the suite did | restored |
 |---|---|---|
-| the window arm never fires, its bound planted to a negative | 4 | 0 |
-| the arm fires and sets no provisional flag | 3 | 0 |
-| the age dropped from the reason, the bound left in it | 1 | 0 |
-| the report renders a provisional reading through the orphaned wording | 1 | 0 |
-| an unreadable creation becomes provisional rather than declining | 3 | 0 |
+| the window arm never fires, its bound planted to a negative | 4 lines red | 0 |
+| the arm fires and sets no provisional flag | 3 lines red | 0 |
+| the age dropped from the reason, the bound left in it | 1 line red | 0 |
+| the report renders a provisional reading through the orphaned wording | 1 line red | 0 |
+| an unreadable creation becomes provisional rather than declining | 3 lines red | 0 |
+| the incomparable-instants decline removed | **crash**, no line red at all | 0 |
 
-⚠️ **Three green sides are asserted beside it**, because this reading is a new branch through code
-four other consumers key on: that `provisional` sets neither `live` nor `landed`, so the release's
-*landed or held here* test and the sweep's *not landed* branch cannot have moved; that a provisional
-claim still refuses a start; and that a ref whose creation cannot be read keeps the orphaned reading
-and **names** the half it could not establish. ⚠️ The last of those is the arm this repository's own
-remote always takes in the suite — a bare repository records no branch creation — which is why check
-4's existing orphan case stayed green through the change rather than needing a new fixture.
+⚠️ **The last row is a different signal from the five above it and is the reason the decline is
+there.** Removing it does not redden the suite; it kills it, the subtraction raising on an instant
+carrying a zone against one that does not — and this arm is reached from a refusal's own wording, so
+the crash would land on the path that reports the refusal. ⚠️ A mutation that crashes is still a
+reached mechanism, but it is **not** a check being shown it can fail, and the row says which it is.
+
+⚠️ **Green sides are asserted beside it**, because this reading is a new branch through code other
+consumers key on: that `provisional` sets neither `live` nor `landed`, so the release's *landed or
+held here* test and the sweep's *not landed* branch cannot have moved; that a provisional claim
+still refuses a start; and that a ref whose creation cannot be read keeps the orphaned reading and
+**names** the half it could not establish. ⚠️ That last one is the arm this repository's own remote
+always takes in the suite — a bare repository records no branch creation — which is why check 4's
+existing orphan case stayed green through the change rather than needing a new fixture.
 
 ⚠️ **One thing the suite's own first run caught, kept because it is the shape rather than the
 slip.** The report check was first written to forbid the word *ask* in a provisional report, and the
