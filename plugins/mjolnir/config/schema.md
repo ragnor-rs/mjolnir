@@ -652,6 +652,134 @@ carry.** Which root a given work item belongs to is the item's own fact, read of
 [§ 4.7](#47-code-root), so the key reaching the rule above is the name this collection gives a
 root and not a guess about one.
 
+### A command root is not a code root
+
+```yaml
+roots:
+  code:
+    app:
+      path: "<a subdirectory>"       # the code root, as above
+      command_roots:                 # where a command of this root runs; absent means the code root
+        web-client:
+          path: "<a package root, relative to the code root>"
+        api-service:
+          invoke: "<the form a command in this root is run through> <command>"
+      code_root_runs_nothing: true   # ⛔ no command is valid at the code root itself
+```
+
+**The directory a command runs in is a fact of its own, and no other key on this surface states
+it.** Measured over six stacks: three run a verdict command somewhere other than the code root, and
+one of the three has **no command valid at the code root at all** — two package roots, each with
+its own manifest, and no manifest at the top
+([the measurement](../../../docs/build-surface.md#a-verdict-is-a-command-a-root-and-a-condition)).
+
+⛔ **This is not the collection above, and keying it there would be wrong twice.** That collection
+is per *repository*, for the three axes that differ with one — the host, its `checks` and the
+branch model. These roots differ in the directory alone and share all three, so a repository entry
+per package root would duplicate those blocks identically and leave [§ 4.7](#47-code-root)'s
+question of which repository an item belongs to with no meaning, every answer being the same
+repository. The alternative inside that collection is one entry whose `path` lies about where
+commands run.
+
+⛔ **Absence keeps today's meaning, and is the ordinary case rather than a gap.** A project whose
+commands run at the code root states nothing here and is never asked for a root; ⚠️ **so no key of
+this block is ever required**, which is the obligation
+[the subsection below](#the-surface-is-resolved-beside-the-configuration) puts on a change that
+makes one required.
+
+**Every key here names which root it means**, which is this subsection's title read as a naming
+rule. The surface already carries a skills root and a code root, so a third sense of the bare word
+would be read as one of those two at every site that states it.
+
+⛔ **A command root states `path`, or `invoke`, or both, and one stating neither is refused.** A
+root with neither is the code root wearing a name, which is what omitting the block already says.
+
+- **`path` is the directory the command runs in**, relative to the code root — the package root
+  with its own manifest, and the one a host workflow reaches by setting a working directory.
+- **`invoke` is the form a command in this root is run through**, and it carries `<command>`
+  **exactly once**. ⛔ **A form carrying none is refused**: it would run and report a verdict having
+  run something other than the command. ⛔ **A form carrying two is refused as well** — a command
+  run twice is a repair performed twice wherever the command is not the pure check it was taken
+  for, which is [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s
+  distinction arriving here.
+- ⚠️ **`path` is absent where `invoke` reaches the root.** One of the six runs its linters through a
+  container exec, against a directory **no checkout holds** and named inside the image, so a root
+  stated as a path relative to the code root could not state that one at all.
+
+⛔ **A key of this block written with nothing after it is refused rather than read as the absence
+it looks like**, which is [§ 2](#2-code-host)'s rule for every key here whose omission is itself an
+answer, arriving one section over: a `command_roots:` with nothing under it, a `path:` or an
+`invoke:` left blank, a `command_root:` written empty beside a command, and a
+`code_root_runs_nothing:` holding anything but `true` are each the same text as a key somebody
+meant to fill in. ⚠️ **The flag is read as the one value it states and never for truth**: read as
+truthy, `false` spelled as a word would stop every command in the project, and read as presence the
+key written `false` would do it too. ⛔ **And a key beside `path` and `invoke` is refused with its
+own name**, by the rule the collection above already states for a named root's blocks: it would be
+a fact about where a command runs that nothing reads.
+
+⛔ **A command root is named across the project, and two code roots declaring one name are
+refused.** It is the slug rule above one axis over: a reference is written beside a command, and
+§ 17's list is the project's rather than a root's — so one name answering in two places would
+resolve a project-level verdict into whichever repository happened to be read first.
+
+⛔ **And the block itself is one code root's: stated above several, it is refused.** A `path` here
+is relative to *a* code root, so a block above two answers for neither — which is the collection's
+own project-level rule in the other direction. ⚠️ **It is refused rather than inherited** because
+inheriting it makes both roots declare every name, and the rule above would then fire naming a key
+neither entry carries. ⚠️ **`code_root_runs_nothing` is not refused there**, a boolean above
+several roots being one answer they may legitimately share.
+
+⛔ **What names a root is `command_root`, written beside the command and never inside it.**
+[§ 2](#2-code-host)'s `mirrors` carries it, a job of a workflow carries its own, and § 17's
+`command` carries it. ⛔ **So a directory is never a flag buried in a command**: buried, it is a
+fact no consumer can read, and the guard that refuses a local run the host has already made then
+cannot tell two roots' identically-named commands apart. ⚠️ **Which is measured rather than
+feared** — in one of the six, `lint` is a fixer in one package root and a pure check in the other,
+and that project's own guard against duplicating the host's checks declines to classify it for
+exactly this reason. ⚠️ **Stated at the key and refused by nothing**, as the verdict-producing-root
+rule below is: a flag a project writes inside a command is a flag some command legitimately
+takes, so a reader forbidding one by name would refuse a verdict command that needs it. What a
+role is held to is the other half — the sweep that forbids a directory flag inside a
+*role's* own text, whose reach and its limit are in
+[`docs/single-source-of-truth.md`](../../../docs/single-source-of-truth.md#what-this-sweep-deliberately-does-not-check).
+
+⛔ **A command stating no `command_root` runs at the code root, and `code_root_runs_nothing: true`
+stops that command with the roots named.** ⚠️ **The flag is what makes the omission a question
+rather than an answer**, and it is not derivable from the roots that are listed: a project with a
+command root beside a code root that also runs commands and a project whose code root runs nothing
+state the same list.
+
+⛔ **The flag stops a command where it is about to run, and is not a refusal of the
+configuration** — which is the one rule of this subsection that is not refuse-at-read, and it is
+stated because the alternative was measured and is worse. The gate
+[the install step](#what-the-toolkit-installs-into-a-project-and-what-takes-it-out) writes
+registers a `host.checks` entry of its own, mirroring a command **of the toolkit's** that runs at
+the code root and names no package root; refused at the load, that entry made this facet and the
+install step mutually exclusive on exactly the projects the facet was written for. ⚠️ **So § 2's
+facet is not held to the flag and
+[§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s list is**: that section
+states only commands a *role* runs for a verdict, and nothing the toolkit installs is registered
+there, so the collision cannot arise on that side. ⛔ **A name no root declares is refused at the
+load on both**, that being a configuration defect either way.
+
+⛔ **The root an entry states is the root that produces the verdict anybody reads**, not merely a
+root the command will run in. ⚠️ **Stated at the key rather than refused by the reader**, which is
+§ 17's form for its sibling rule that a verdict changes nothing: measured on the project whose
+linter, run from the package root, does not reproduce the finding the host's own invocation
+reports — and nothing tells those two roots apart mechanically.
+
+⛔ **A command that could not be run in its root is reported against that root, and never retried
+at the code root.** It is the refusal above for the case no configuration can answer: a container
+that is not up, a form whose target is absent. ⚠️ **A root stated as a `path` is held to existing**,
+exactly as the code root above is; a root reached through a form alone is reported
+**unestablished**, there being no directory for this surface's reader to test.
+
+⚠️ **One pairing no check holds, stated rather than left to a green run**: a `path` here and the
+working directory of the workflow job mirroring that command are two statements of one directory,
+and [the comparison against the host's own definitions](#the-facet-against-the-hosts-own-definitions)
+reads neither. It is no worse than it was — before this key, that directory was a substring of a
+`mirrors` nothing parsed — and what would close it is a reading of the job's own block.
+
 ### The skills root is where the role runs
 
 ⛔ **The skills root is the directory the role was invoked in. It is procedure, and this surface
@@ -749,6 +877,7 @@ host:
   checks:                  # the host's own runs, keyed by workflow name — never job name; required
     - workflow: "…"
       mirrors: "<local command>"   # the local command whose verdict this run duplicates
+      command_root: "<name>"       # § 1's root it runs in; omitted where that is the code root
       triggers: "<event>(<types>) -> <ref>"  # what starts it; a list when there is more than one
       paths: ["…"]                 # path filters; omitted when the workflow runs on every change
 ```
@@ -811,6 +940,14 @@ tell apart, which is the opposite error from the one this rule exists for.
 ⚠️ **An entry states one mirrored command, or the jobs that mirror several.** The second form is
 the subsection below; a second command written in a comment beside the facet is a fact the surface
 does not hold under either of them.
+
+⛔ **`command_root` names the directory the mirrored command runs in, and it is
+[§ 1](#a-command-root-is-not-a-code-root)'s key rather than a second statement of one.** That
+section states what a command root is, what a reference resolves against and what an omitted one
+means; this facet's own fact is only that the reference sits here, beside the command, because
+`mirrors` is one command stated whole and a directory buried inside it is a fact no consumer of
+this facet can read. ⚠️ **It is a property of the command and not of the workflow**, so a `jobs`
+member carries its own — the subsection below.
 
 ⛔ **Where a project does control its own workflows, each mirrored command takes a workflow of
 its own.** Not because one job per workflow is better continuous integration, but because the
@@ -896,6 +1033,7 @@ host:
       jobs:                    # stated instead of `mirrors`, never beside it
         - job: "<the job's id, as the workflow file spells it>"
           mirrors: "<local command>"
+          command_root: "<name>"   # § 1's root this job's command runs in
           paths: ["…"]         # this job's own filter; omitted where the job carries none
 ```
 
@@ -936,6 +1074,14 @@ check from reading nothing, and configurations written that way stop loading.
 runs from a command to the job mirroring it, and it is many-to-one in that direction. Refusing it
 would put a project back where this form exists to stop it being — holding a configuration the
 surface cannot state.
+
+⛔ **`command_root` sits on the member and never on the entry**, which is the opposite level from
+`triggers` one paragraph down and for the mirror of its reason: the event block is the workflow's
+and no job's, while the directory a command runs in belongs to the command — and this form exists
+because one workflow mirrors several, each of which may run somewhere else. ⚠️ **An entry stating
+`jobs` therefore states no `command_root` of its own, and one that does is refused**: it would
+read as a default the members inherit, which is the shape the filter rule below already refuses
+one key over.
 
 **`paths` sits at the level the workflow file states it at**: the entry's is the filter on the
 event block, and a member's is that job's own where the job carries one. ⛔ **Neither is inherited
@@ -4227,6 +4373,7 @@ is procedure is the arithmetic over them.
 ```yaml
 checks_local:                # the verdicts no host run produces; required
   - command: "<the command whose exit status is the verdict, and which changes nothing>"
+    command_root: "<name>"     # § 1's root it runs in; omitted where that is the code root
     proves: "<what a pass establishes>"
     invalidate: "<the command that defeats a cached, incremental or stale pass>"
     requires: ["<a precondition the command does not check itself>"]
@@ -4267,6 +4414,17 @@ and a member of a list sits at no path a marker or a condition can reach.
   [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls), which
   settles the question this key was open for: a command is never a path a role prefixes with an
   interpreter.
+- ⛔ **`command_root` is where it runs, and it is
+  [§ 1](#a-command-root-is-not-a-code-root)'s key rather than a second statement of one** — that
+  section states what a root is, what a reference resolves against and what an omitted one means.
+  ⚠️ **One key for the entry and not one per command**: `invalidate` below defeats *this* command's
+  stale pass, so it runs in the same root, and a second key would let the two disagree about which
+  tree the defeat applied to. ⛔ **The reference is resolved across every code root** rather than
+  against the one a view carries, this list being the project's: § 1 makes a command root's name
+  unique across the project for exactly this read. ⛔ **And this list is the one held to
+  `code_root_runs_nothing` where it is written**, § 2's facet being exempt for the reason that
+  section's own subsection states: every entry here is a command a role runs, and nothing the
+  toolkit installs is registered here.
 - ⚠️ **And it changes nothing.** A command that repairs what it judges is not a local verdict, and
   ⛔ **this is stated at the key rather than refused by the reader**: one measured command name is a
   verdict under one root and a rewrite under another, and nothing tells the two apart mechanically

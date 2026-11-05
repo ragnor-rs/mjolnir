@@ -485,11 +485,33 @@ against whatever an entry mirrors rather than against one string**, which is
 answers both halves — the mapping, and whether the mirroring run reaches this change:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/host_checks.py" mirrors --command <the command>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/host_checks.py" mirrors --command <the command> \
+  --command-root <the root it runs in>
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/host_checks.py" covers --command <the command> \
+  --command-root <the root it runs in> \
   --event <this change's event> --ref <the ref it is against> \
   --type <that event's type> --path <each path it touches>
 ```
+
+⛔ **Which directory a command runs in is configuration and never this role's to supply**
+([`§ 1`](../../config/schema.md#a-command-root-is-not-a-code-root)) — so the root is passed by the
+name the configuration gives it, the command is run through whatever that root's own form states,
+and ⛔ **no step of this role changes directory or adds a directory flag of its own.** The
+resolution is one call, which prints what to run, where, and whether that directory is there:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --command <the command> \
+  --command-root <the root it runs in>
+```
+
+- ⛔ **A command that could not be run in its root is reported against that root and never retried
+  at the code root** — the project may have said no command is valid there, and a failure obtained
+  that way reads as the change's rather than as the environment's.
+- ⚠️ **A root reached through a form rather than a directory comes back *unestablished*** rather
+  than absent: there is no directory for the reader to test, and the role says so.
+- ⚠️ **A project whose commands run at its code root states none of this and is asked for no
+  root**, which is the ordinary case — the flag is omitted and both readings above answer exactly
+  as they did.
 
 ⚠️ **Three of the four answers read as *run it here* and none of them as covered**, so a command
 this role declines to run locally is one the first call reported mirrored *and* the second reported

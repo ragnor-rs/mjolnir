@@ -51,14 +51,23 @@ legitimate absence, meaning every verdict is local, so every question here comes
 back *no answer* on it -- ⛔ never *not covered* and never green, which is the
 absence rule the facet opens with.
 
+**A question is a command and the directory it runs in.** § 1's command roots make one command
+name a verdict in one package root and work in another, so every reading below takes
+`--command-root` and an answer about the text alone is an answer about whichever root was written
+first. ⚠️ Omitted, the question is about the **code root** -- which is every project whose commands
+run there, and is never *any root*. `--root` is the other sense of the word: which of § 1's *code*
+roots the facet is read from, where a project's code is several repositories.
+
 Usage:
-    host_checks.py [--skills-root DIR]
+    host_checks.py [--skills-root DIR] [--root ROOT]
                                    print the facet as a consumer reads it
-    host_checks.py mirrors --command CMD [--skills-root DIR]
+    host_checks.py mirrors --command CMD [--command-root NAME]
+                           [--root ROOT] [--skills-root DIR]
                                    name where the host's runs mirror this
-                                   command, or that nothing does
+                                   command in that root, or that nothing does
     host_checks.py covers --command CMD --event EVENT --ref REF
-                          [--type TYPE] [--path PATH ...] [--skills-root DIR]
+                          [--command-root NAME] [--type TYPE] [--path PATH ...]
+                          [--root ROOT] [--skills-root DIR]
                                    which of § 2's four answers this change gets
     host_checks.py conclusion --steps N --passed yes|no
                               [--superseded-by RUN]
@@ -365,12 +374,21 @@ def _ranked(standings: list[str]) -> str:
     return next(answer for answer in ANSWERS if answer in answers)
 
 
-def mirrors(configuration: config.Config, command: str) -> dict:
+def mirrors(configuration: config.Config, command: str,
+            command_root: str | None = None) -> dict:
     """Where the host's runs mirror this command, read from the facet alone.
 
     The answer a guard's refusal names, so it carries the phrase § 2 keys the
     facet by -- the workflow, or the job of a workflow where a job is what
     mirrors the command.
+
+    ⛔ **The question is a command *and* a root**, which is § 1's rule read from
+    this end: one command name is a verdict in one package root and work in
+    another, so an answer about the text alone is an answer about whichever root
+    was written first. ⚠️ `command_root` omitted is the **code root** and not
+    *any root* -- a project whose commands run at the code root passes nothing
+    and reads exactly as it did, while a project with command roots gets an
+    answer about the root it asked about.
 
     ⛔ `mirrored` is three-valued and the third value is not a `false`.
     Nothing mirroring the command is § 17's complement and a definite answer:
@@ -384,10 +402,10 @@ def mirrors(configuration: config.Config, command: str) -> dict:
     answers about a run and a *change*, and this question has no change in it;
     borrowing `reached` here would name the same word for two findings.
     """
-    wanted = " ".join(command.split())
     if not configuration.get("host.checks"):
         return {
             "command": command,
+            config.COMMAND_ROOT_REF: command_root,
             "mirrored": None,
             "answer": NO_ANSWER,
             "mirrored_by": [],
@@ -395,27 +413,59 @@ def mirrors(configuration: config.Config, command: str) -> dict:
                        "being local. That is no answer about a host run, never a "
                        "command the host runs and never one it does not.",
         }
-    records = [r for r in configuration.mirrors() if r["normalised"] == wanted]
+    records = _mirroring(configuration, command, command_root)
     if not records:
         return {
             "command": command,
+            config.COMMAND_ROOT_REF: command_root,
             "mirrored": False,
             "answer": NO_ANSWER,
             "mirrored_by": [],
-            "because": "no `host.checks` entry mirrors this command, so no host "
-                       "run answers for it -- § 17's complement: it is the one "
-                       "that must run locally.",
+            # ⚠️ The root is named in the reason and not only in the answer: with
+            # command roots configured, *nothing mirrors it* is a statement about
+            # one root, and a reader given the text alone would read it as a
+            # statement about the command.
+            "because": "no `host.checks` entry mirrors this command in "
+                       + (f"the `{command_root}` command root"
+                          if command_root else "the code root")
+                       + ", so no host run answers for it -- § 17's complement: "
+                         "it is the one that must run locally.",
         }
     return {
         "command": command,
+        config.COMMAND_ROOT_REF: command_root,
         "mirrored": True,
         "answer": None,
         "mirrored_by": [r["mirrored_by"] for r in records],
         "workflows": sorted({r["workflow"] for r in records}),
         "jobs": sorted({r["job"] for r in records if r["job"]}),
-        "because": "the facet states a run that answers for this command; "
-                   "whether it reaches a given change is `covers`.",
+        # ⚠️ The root is named rather than referred to, and the code root is
+        # named by name where there is none: *in this command root* read as a
+        # sentence about a project that declares none, which is every project
+        # whose commands run at its code root.
+        "because": "the facet states a run that answers for this command in "
+                   + (f"the `{command_root}` command root"
+                      if command_root else "the code root")
+                   + "; whether it reaches a given change is `covers`.",
     }
+
+
+def _mirroring(configuration: config.Config, command: str,
+               command_root: str | None) -> list[dict]:
+    """Every record of § 2's facet that mirrors this command in this root.
+
+    ⛔ One filter and not one per caller: `mirrors` and `covers` ask the same
+    question of the same facet, and the pair § 1 makes the key is easy to reduce
+    to its text in one of two places -- which is the per-consumer reading the
+    facet exists to delete.
+    """
+    wanted = " ".join(command.split())
+    return [
+        record
+        for record in configuration.mirrors()
+        if record["normalised"] == wanted
+        and record[config.COMMAND_ROOT_REF] == command_root
+    ]
 
 
 def covers(
@@ -425,6 +475,7 @@ def covers(
     ref: str,
     kind: str | None = None,
     paths: list[str] | None = None,
+    command_root: str | None = None,
 ) -> dict:
     """Which of § 2's four answers this change gets about this command.
 
@@ -438,26 +489,28 @@ def covers(
     the first one found: a command mirrored by two entries is covered where
     either reaches the change, and stopping at the first would report *out of
     scope* on the strength of the entry that happens to be written above.
+
+    ⛔ `command_root` is § 1's, as it is above: the question is about a command
+    in a root, and a change covered in one package root is not covered in the
+    other merely because the command is spelled the same.
     """
     paths = paths or []
     change = {"event": event, "ref": ref, "type": kind, "paths": paths}
-    found = mirrors(configuration, command)
+    found = mirrors(configuration, command, command_root)
     # Both of that answer's negative values land here, and § 2's table is why
     # they land on the same verdict: an empty facet and a command nothing
     # mirrors are each *nothing to read*, however differently they got there.
     if not found["mirrored"]:
         return {
             "command": command,
+            config.COMMAND_ROOT_REF: command_root,
             "change": change,
             "verdict": NO_ANSWER,
             "because": found["because"],
             "per_run": [],
         }
-    wanted = " ".join(command.split())
     per_run = []
-    for record in configuration.mirrors():
-        if record["normalised"] != wanted:
-            continue
+    for record in _mirroring(configuration, command, command_root):
         answer = _answer_for(record, event, ref, kind, paths)
         per_run.append({
             "mirrored_by": record["mirrored_by"],
@@ -474,6 +527,7 @@ def covers(
     )
     return {
         "command": command,
+        config.COMMAND_ROOT_REF: command_root,
         "change": change,
         "verdict": verdict,
         "because": next(r["because"] for r in per_run if r["answer"] == verdict),
@@ -620,6 +674,15 @@ def facet(configuration: config.Config) -> dict:
     return {
         "checks": records,
         "empty": not configuration.get("host.checks"),
+        # ⚠️ Carried for the reason `runner` below is: a reader printing the
+        # facet is about to run a mirrored command or ask about one, and which
+        # directory each runs in is the fact § 1 states beside it. ⛔ Rendered
+        # rather than left to the entries, because a root an entry names is a
+        # name until something resolves it.
+        config.COMMAND_ROOTS: {
+            name: configuration.command_root(name)
+            for name in configuration.command_roots()
+        },
         # ⚠️ Carried here as well as behind its own subcommand, because a reader
         # printing the facet is a reader about to write or wait for a run, and
         # where those run is the same statement one key over.
@@ -642,12 +705,16 @@ def _surface_text() -> str:
         return handle.read()
 
 
-def _a_configuration(checks) -> config.Config:
+def _a_configuration(checks, command_roots=None) -> config.Config:
     """A loadable configuration whose `host.checks` is the stated list.
 
     Built from an example rather than written here, so a facet this module reads
     is one the reader beside it accepts -- a planted configuration that does not
     load would make every answer below an answer about nothing.
+
+    `command_roots` is § 1's block, absent by default: the example states none,
+    which is the shape every answer below was written against and the one that
+    has to keep answering identically.
     """
     import yaml
 
@@ -657,6 +724,8 @@ def _a_configuration(checks) -> config.Config:
     with open(path, encoding="utf-8") as handle:
         data = yaml.safe_load(handle)
     data.setdefault("host", {})["checks"] = checks
+    if command_roots is not None:
+        data[config.COMMAND_ROOTS] = command_roots
     # § 17's refusal reads `host.checks` to find a local check the host already
     # runs, so a plant that happens to collide with one would be refused by the
     # reader rather than answered here.
@@ -699,6 +768,30 @@ FOUR_JOBS = [{
         {"job": "another-job", "mirrors": "another-mirrored-command"},
     ],
 }]
+
+# § 1's measured case, as a facet this module answers about: one command name in
+# two command roots, each mirrored by a workflow of its own. ⚠️ The two entries
+# are identical but for the root, which is the whole point -- keyed on the text
+# alone, one of them is unreachable.
+TWO_ROOTS = {
+    "a-package-root": {"path": "a-tree/one"},
+    "a-root-reached-through-a-form": {"invoke": "a-wrapper <command>"},
+}
+
+ONE_NAME_TWO_ROOTS = [
+    {
+        "workflow": "A workflow",
+        "mirrors": "a-mirrored-command",
+        "command_root": "a-package-root",
+        "triggers": "pull_request -> *",
+    },
+    {
+        "workflow": "Another workflow",
+        "mirrors": "a-mirrored-command",
+        "command_root": "a-root-reached-through-a-form",
+        "triggers": "push -> main",
+    },
+]
 
 
 def self_test() -> int:
@@ -1127,6 +1220,68 @@ def self_test() -> int:
         "the answer named fewer runs than the facet states for this command",
     )
 
+    print("\none command name in two command roots")
+    rooted = _a_configuration(ONE_NAME_TWO_ROOTS, TWO_ROOTS)
+    names = list(TWO_ROOTS)
+    # ⛔ The discrimination is the assertion. Keyed on the command text alone,
+    # the second entry is unreachable and both of these answers come back as the
+    # first entry's -- which is § 1's measured defect: one command name is a
+    # verdict in one package root and work in the other.
+    answers = [mirrors(rooted, "a-mirrored-command", name) for name in names]
+    check(
+        "each root gets its own answer about the same command text",
+        all(a["mirrored"] for a in answers)
+        and len({tuple(a["mirrored_by"]) for a in answers}) == 2,
+        f"answered {[a['mirrored_by'] for a in answers]!r}",
+    )
+    check(
+        "and each answer names the root it was asked about",
+        [a[config.COMMAND_ROOT_REF] for a in answers] == names,
+        f"answered {[a[config.COMMAND_ROOT_REF] for a in answers]!r}",
+    )
+    # ⚠️ And the two roots' runs are reached by different changes, which is what
+    # makes the discrimination worth having: a change on the integration branch
+    # is covered in one root and has no answer in the other.
+    verdicts = [
+        covers(rooted, "a-mirrored-command", A_PULL_REQUEST, "main", None, [], name)[
+            "verdict"
+        ]
+        for name in names
+    ]
+    check(
+        "so one root's run reaches a pull request and the other's does not",
+        verdicts[0] == REACHED and len(set(verdicts)) == 2,
+        f"answered {verdicts!r}",
+    )
+    # ⛔ The code root is a root like any other and not a wildcard: asked with no
+    # root, this facet answers about the code root -- where neither entry runs.
+    unrooted = mirrors(rooted, "a-mirrored-command")
+    check(
+        "while the same command asked with no root is not mirrored at the code root",
+        unrooted["mirrored"] is False
+        and "the code root" in unrooted["because"],
+        f"answered {unrooted!r}",
+    )
+    # ⛔ And the green side of the absence: a project stating no command roots
+    # answers exactly as it did, which is the arm every assertion above this
+    # section already runs against and this one states.
+    plain = mirrors(_a_configuration(ONE_ENTRY), "a-mirrored-command")
+    check(
+        "a project declaring no command roots answers about the command alone",
+        plain["mirrored"] is True
+        and plain[config.COMMAND_ROOT_REF] is None,
+        f"answered {plain!r}",
+    )
+    check(
+        "and the facet reading renders each command root rather than naming it",
+        set(facet(rooted)[config.COMMAND_ROOTS]) == set(names)
+        and all(
+            "runs_at" in each
+            for each in facet(rooted)[config.COMMAND_ROOTS].values()
+        ),
+        f"reported {facet(rooted)[config.COMMAND_ROOTS]!r}",
+    )
+
     print("\nthis project's own facet loads and answers")
     # ⚠️ The reader beside this file and never whichever one is first on the
     # path: a run from a worktree that imported the primary checkout's reader
@@ -1176,15 +1331,38 @@ def main(argv: list[str] | None = None) -> int:
         description="What the host's own runs answer about a command and a change.",
     )
     parser.add_argument("--skills-root", default=".")
+    # ⛔ § 1's code root, named on every reading rather than on one: this facet
+    # is read per code root where a project's code is several repositories, so a
+    # project-level read of it has no answer -- and § 1's command roots, which
+    # every reading below also asks about, are that same root's.
+    parser.add_argument(
+        "--root",
+        help="the named code root to read the facet from, where § 1's collection "
+        "carries several. Omitted on such a project, every reading is a stop "
+        "naming the roots rather than an answer about the first of them",
+    )
     parser.add_argument("--self-test", action="store_true")
     sub = parser.add_subparsers(dest="what")
 
+    # ⛔ The root is a named argument on both readings and not a positional
+    # convenience: § 1 makes the question *a command in a root*, and a caller
+    # that omitted it would be asking about the code root while believing it had
+    # asked about the command.
+    root_help = (
+        "which of § 1's command roots the command runs in. Omitted, the question "
+        "is about the code root -- which is every project whose commands run "
+        "there, and is never *any root*"
+    )
+
     named = sub.add_parser("mirrors", help="where the host's runs mirror a command")
     named.add_argument("--command", required=True)
+    named.add_argument("--command-root", dest="command_root", help=root_help)
     named.add_argument("--skills-root", default=".")
+    named.add_argument("--root")
 
     reach = sub.add_parser("covers", help="which answer a change gets about a command")
     reach.add_argument("--command", required=True)
+    reach.add_argument("--command-root", dest="command_root", help=root_help)
     # ⛔ No `choices` here: § 2 states the event vocabulary is the host's, so a
     # closed set in this parser would refuse a change whose event the host
     # really sends and the facet really names.
@@ -1204,6 +1382,7 @@ def main(argv: list[str] | None = None) -> int:
     reach.add_argument("--path", action="append", default=[],
                        help="a path this change touches; repeatable")
     reach.add_argument("--skills-root", default=".")
+    reach.add_argument("--root")
 
     # ⛔ Both facts are required, and that is § 2's rule rather than this
     # parser's convenience: a precondition the caller could not answer is
@@ -1232,6 +1411,7 @@ def main(argv: list[str] | None = None) -> int:
 
     where = sub.add_parser("runner", help="where this project's jobs run")
     where.add_argument("--skills-root", default=".")
+    where.add_argument("--root")
 
     args = parser.parse_args(argv)
     if args.self_test:
@@ -1253,22 +1433,31 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         print(json.dumps(answered, indent=2, ensure_ascii=False))
         return 0
+    # ⛔ The load and every reading below are inside one handler, and the reading
+    # is why: § 1's collection states `checks` per code root and § 1's command
+    # roots per code root too, so a project-level read of either is a stop with
+    # the roots named -- which reached the caller as a traceback while only the
+    # load was handled. ⚠️ Exit 2 and the refusal on stderr, as the load's own
+    # failure already is: a reading this module cannot give is never printed as
+    # one of § 2's four answers.
     try:
         configuration = config.load(args.skills_root)
+        if args.root:
+            configuration = configuration.root(args.root)
+        if args.what == "mirrors":
+            answer = mirrors(configuration, args.command, args.command_root)
+        elif args.what == "covers":
+            answer = covers(
+                configuration, args.command, args.event, args.ref, args.kind,
+                args.path, args.command_root,
+            )
+        elif args.what == "runner":
+            answer = runner(configuration)
+        else:
+            answer = facet(configuration)
     except (ConfigError, OSError) as exc:
         print(exc, file=sys.stderr)
         return 2
-    if args.what == "mirrors":
-        answer = mirrors(configuration, args.command)
-    elif args.what == "covers":
-        answer = covers(
-            configuration, args.command, args.event, args.ref, args.kind,
-            args.path,
-        )
-    elif args.what == "runner":
-        answer = runner(configuration)
-    else:
-        answer = facet(configuration)
     # ⚠️ Not escaped: every `because` cites a section by its sign, and a report
     # that printed the escape would send a reader looking for a section number
     # the surface does not have.
