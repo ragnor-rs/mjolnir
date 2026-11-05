@@ -1922,6 +1922,41 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         and another_role in nowhere.detail,
         f"got {str(nowhere)!r}",
     )
+    # ⛔ Only the role moves. § 32 states a reverse move does not rewrite the
+    # item's own text, and the way that fails is a convenience: a reversal that
+    # left a note saying why would make itself a second author of the item. The
+    # double below implements the operations that would do it, so the assertion
+    # is that they were never reached rather than that they were absent.
+    touched: list[str] = []
+
+    def _noting(name):
+        def operation(*args, **kwargs):
+            touched.append(name)
+            return kwargs.get("status", name)
+
+        return operation
+
+    writing = Adapter(
+        {
+            operation: _noting(operation)
+            for operation in ("set_state", "comment", "set_labels")
+            if operation in stated
+        }
+    )
+    only_the_role = Port(
+        _with_reversals(
+            [a_status],
+            [{"trigger": a_trigger, "to_role": a_role, "writer": PROCEDURE}],
+        ),
+        spec,
+        adapter=writing,
+        stated=stated,
+    ).revert_to(a_trigger)
+    check(
+        "a step backwards writes the state and nothing else on the item",
+        only_the_role.performed and touched == ["set_state"],
+        f"the implementation was asked for {touched!r}",
+    )
     # ⚠️ The two directions over one configuration, which is what *behaves
     # exactly as it did* has to mean: the reverse edge above is ruled, and the
     # advance is unchanged by its being there.

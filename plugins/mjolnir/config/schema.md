@@ -6859,10 +6859,15 @@ reversals:
 ```
 
 [§ 4.2](#42-status--an-ordered-set-of-name-role-writer) is an ordered set and every writer in it
-advances. ⚠️ **This is the first facet that reads that order**, which is what makes *ordered* in
-that section's title load-bearing rather than descriptive: the position a status is written at is
-what makes a move to it a step backwards, and a project whose list is not its own ladder states
-something here it did not mean to.
+advances; nothing there, in any role or in any operation describes the reverse edge.
+
+⛔ **And this facet does not read that order either, which is a stated limit rather than an
+omission.** An entry names the role it steps **to** and no role it steps *from*, so there is no pair
+for a position to be compared across: what makes a move here a step backwards is the project saying
+it is, by ruling the trigger. ⚠️ **So nothing holds an entry to going backwards at all** — a project
+could rule an edge that steps an item forward, and it would be performed. What that costs is a
+configuration that lies to its reader and no verdict about it; what would close it is an entry
+naming both ends, which no project measured had a use for.
 
 ⛔ **The failure it exists to prevent is an item that ships invisibly.** A role that deploys a batch
 reads each item's role to decide what the batch carries, so an item left in a role its code no
