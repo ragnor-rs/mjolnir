@@ -250,9 +250,10 @@ a case whose subject is absent from the live catalogue answers indistinguishably
 
 **This reading is what
 [`schema § 31`](../plugins/mjolnir/config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)
-was written from, and the facet differs from the item wherever the table below forced it to.** Each
-difference under its own heading is a thing the measurement forced rather than a preference, which
-is why they are recorded here and the rule is stated there.
+was written from, and it differs from the item as filed on the retired need, on what an entry is,
+on where a verdict comes from, and on what is asked for.** Each of those has a heading below, and
+each is a thing the measurement forced rather than a preference — which is why they are recorded
+here and the rule is stated there.
 
 | | tiers present | what the unrunnable ones need | asked for rather than automatic | refused outright |
 |---|---|---|---|---|
@@ -271,8 +272,8 @@ Read down the *what the unrunnable ones need* column: some rows name a store **t
 a service** and others a container daemon so the **run** can stand its own up. That is one tier
 whose dependency arrives two ways, so *the host cannot run this tier* is false for the first group
 and conditional for the second — and a need spelled `host_runnable` encodes the binary the column
-disproves. ⚠️ **Which rows are which is the column's to say and is not counted here**, the figure
-having diverged from it on the first attempt at writing one down.
+disproves. ⚠️ **Which rows are in which group is stated once above**, in this section's own
+host-runnable sentence, and is not counted again here.
 
 So the facet carries `dependency` as the need and `stood_up_by` as who supplies it, and refuses the
 retired word by name:
@@ -321,12 +322,18 @@ sourceless entry's reading is stated at
 rather than here. ⛔ **And one tier has no source by construction**, the person-judged one: a
 machine verdict read for it is the failure § 13 calls indistinguishable from success, which is a
 different mistake from that section's *check somebody turns off* and the one a reader of the
-*answered by* column meets. Which rows carry such a tier is the *tiers present* column's to say.
+*answered by* column meets. ⚠️ **A's manual checklist is the only row that names such a tier
+outright**, which is a limit of the reading rather than a count of the six: the column records what
+each project's files state, and a person-judged tier can be a practice no file mentions.
 
 ### The fourth difference: what is asked for, and what is refused outright
 
-The *asked for rather than automatic* column is populated in most rows, and the two reasons behind
-it are money and throughput — the figures and the environments being the column's own.
+**The *asked for rather than automatic* column is populated in five of the six, and the reasons are
+not one reason.** F's evaluation set is money — about $3.65 a run against a budget already exhausted
+once. A's whole acceptance run is an argument it refuses to default. C's live-model harnesses and
+B's bot suite are in no workflow at all. E's live-platform path is deliberately not automated. ⛔ So
+*opt-in* is a property a project states rather than one derivable from a cost, which is why the
+facet carries the key instead of reading a price.
 
 ⛔ **The rail that performs an asking already exists and reads commands**, which is
 [`schema § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)

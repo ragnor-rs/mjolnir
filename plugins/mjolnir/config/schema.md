@@ -3897,13 +3897,12 @@ done:
   role that runs it**, not the reviewing one, whose own local-check rule is about the change's plan
   rather than this list.
 - ⛔ **A check names what it asks about and never its own preconditions.** What a check needs before
-  it can run at all — a deployment, a credential, indexed material, money — and what it reports
-  when it ran only in part is
+  it can run at all — a deployment, a credential, indexed material, money — is
   [§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s axis, and ⛔ **what it
   reports when it ran only in part is
-  [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s** — that section
-  disclaiming the figures to this one, so a citation sending both halves to one of them sends one of
-  them wrong. ⚠️ **§ 31 reads whether a check on this list is answered by a person as the second
+  [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s** — the two
+  halves going to two sections, so a citation sending both to one of them sends one of them wrong.
+  ⚠️ **§ 31 reads whether a check on this list is answered by a person as the second
   half of its own derivation, and declares no answerer key of its own.**
   Two facets describing one unrunnable tier in two
   vocabularies is the thing that must not happen here. ⚠️ **What a *local* command needs before it
@@ -4048,10 +4047,8 @@ document that claims to describe one of them — a computed comparison, which is
 check and not the kind that quotes a sentence back at the text it came from. The tier this guards
 is the end-to-end one, whose place on the tier axis is
 [§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s — and ⚠️ **where that tier's
-criterion is the register itself**, the comparison below is what holds it, which such a project
-names as its `selection_held_by` rather than describing again. ⛔ **Not an identity in general**: a
-project selecting by a marker its cases declare keeps a register this still compares, and that
-comparison holds nothing about the selection. Its own verdict's discipline is
+criterion is the register itself**, the comparison below is what holds it, on the condition and for
+the reason that section states beside `selection_held_by`. Its own verdict's discipline is
 [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s, and neither is restated
 here.
 
@@ -6451,7 +6448,11 @@ one workflow or one command is the state in which one run answers for two suites
 which answer is which. ⚠️ **A project wanting its tiers answered apart states a source apart** — § 2
 admits a check per workflow and § 17 a verdict per command, so the split is already expressible.
 ⛔ **And two sourceless entries under one tier are refused** for the same reason: nothing
-distinguishes them.
+distinguishes them. ⚠️ **Except on the person-judged tier, where a source is refused outright** —
+there the **criterion** is the discriminator, so two such suites stating one `selects` are refused
+instead. ⛔ **The exemption is narrowed and not switched off**, which is the direction that matters:
+exempting the tier whole admits two byte-identical entries, which is the written-twice state the
+rule is about and which a reader of the tier then meets reported twice.
 
 ⚠️ **A project's own word for a tier never enters.** The one measured collision is a consumer
 calling its browser suite *the acceptance scenarios*, which is this surface's `end_to_end`; a
@@ -6526,12 +6527,13 @@ there rather than here.
 
 ### An opt-in tier is never started without being asked for
 
-⛔ **`started` is written on every entry, and `asked` is the value that costs something.** One
-measured tier costs real money a run against a budget that has already been exhausted once
+⛔ **`started` is written on every entry but an `acceptance` one, and `asked` is the value that
+costs something.** One measured tier costs real money a run against a budget that has already been
+exhausted once
 ([the measurement](../../../docs/build-surface.md#the-tiers-what-each-needs-and-which-are-asked-for)
 records the figure, and this section does not) — so a tier that starts itself is a tier that spends
-without supervision. ⚠️ **What an `acceptance` entry does about this key is the verdict subsection's
-below**, stated once there with the other two keys that tier refuses.
+without supervision. ⚠️ **Why that one tier is excepted is the verdict subsection's below**, with
+the other two keys it refuses; what is stated here is only that the key is otherwise written.
 
 ⛔ **An entry stating `asked` states a `command`, and the project carries a non-empty
 [§ 19](#19-a-command-that-spends-and-the-supervision-it-is-refused-without) deny list** — refused

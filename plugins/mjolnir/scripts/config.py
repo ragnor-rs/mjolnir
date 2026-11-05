@@ -3284,9 +3284,14 @@ TIER_OBLIGATIONS = {
 # The one tier § 31 answers through § 13 rather than through a run, and the keys
 # that are therefore refused on it: what starts a person looking is that
 # section's record, and a machine verdict read for a person-judged tier is the
-# check somebody turns off. ⛔ Stated here rather than derived from the table
-# above, because what makes this tier different is its *answerer*, which is § 13's
-# column and not a need this facet states.
+# failure § 13 calls **indistinguishable from success** -- a check only a person
+# can answer, answered by reasoning about it. ⚠️ Not that section's *check
+# somebody turns off*, which names the opposite mistake, a machine reading handed
+# to a person; the inverted citation was written here first and corrected by
+# review after it had reached the surface, the docs and two examples.
+# ⛔ Stated here rather than derived from the table above, because what makes this
+# tier different is its *answerer*, which is § 13's own and not a need this facet
+# states.
 PERSON_JUDGED_TIER = "acceptance"
 PERSON_JUDGED_REFUSES = ("started", "workflow", "command")
 
@@ -3352,18 +3357,34 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
     # configuration pairing `executed.carrier: command` with
     # `test_tiers.carrier: none` loaded clean while deleting a single entry from
     # the list was refused.
-    def hold_against_executed(stated_needs: set[str]) -> None:
+    # ⛔ Two messages for one rule, because the two carriers leave the reader
+    # different remedies. ⚠️ Written as one message first, and that was a defect
+    # of its own: under the absence it named `test_tiers.tiers` -- a path no such
+    # configuration contains, and one the arm below refuses outright -- so the
+    # refusal pointed at a key the reader may not write and offered a fix this
+    # same function rejects. Found by review, which is the shape this function
+    # had already been corrected for once.
+    def hold_against_executed(stated_needs: set[str], carried: bool) -> None:
         if _get(data, "executed.carrier") != "command":
             return
         if "dependency" in stated_needs:
             return
+        if carried:
+            raise ConfigError(
+                "test_tiers.tiers",
+                "names no suite whose `needs` carries `dependency`, and "
+                "`executed.carrier: command` states the arithmetic for exactly "
+                "that tier (§ 16). One of the two is wrong: either the suite "
+                "with a dependency is missing from this list, or the count is "
+                "configured for a tier this project does not have.",
+            )
         raise ConfigError(
-            "test_tiers.tiers",
-            "names no suite whose `needs` carries `dependency`, and "
-            "`executed.carrier: command` states the arithmetic for exactly that "
-            "tier (§ 16). One of the two is wrong: either the suite with a "
-            "dependency is missing from this list, or the count is configured "
-            "for a tier this project does not have.",
+            "test_tiers.carrier",
+            "is `none` while `executed.carrier: command` states the arithmetic "
+            "for a tier whose dependency is stood up for the run (§ 16), so this "
+            "project counts the cases of a tier it says it has none of. State "
+            "the suite under `carrier: list`, or state `executed.carrier: none` "
+            "with its own reason.",
         )
 
     carrier = _get(data, "test_tiers.carrier")
@@ -3380,7 +3401,7 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
                 "absence is the statement, so a suite here is one nothing reads: "
                 "delete the key, or state the carrier it belongs to.",
             )
-        hold_against_executed(set())
+        hold_against_executed(set(), carried=False)
         return
     if carrier != "list":
         return
@@ -3525,8 +3546,10 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
                         f"is written on an `{PERSON_JUDGED_TIER}` suite, which "
                         "§ 31 refuses. That tier's answerer is a person by the "
                         "derivation, so what starts one looking is § 13's record "
-                        "and a machine verdict read for it is that section's "
-                        "*check somebody turns off* arriving one facet early.",
+                        "and a machine verdict read for it is the failure that "
+                        "section calls indistinguishable from success — a check "
+                        "only a person can answer, answered by reasoning about "
+                        "it.",
                     )
             # ⛔ And the answerer it defers to is held to existing. Without this
             # the derivation's second column is a sentence rather than a rail: a
@@ -3671,12 +3694,30 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
                     "answered apart states a source apart.",
                 )
             seen_sources[source] = where
-        # ⛔ Not reached for the person-judged tier, whose only legal shape is
-        # sourceless: the remedy this refusal names -- state a source apart -- is
-        # refused on that tier by the arm above, so applying it there sent a
-        # reader to a fix this same function rejects. ⚠️ Two such suites are told
-        # apart by `selects`, which every entry states. Found by review.
-        elif tier != PERSON_JUDGED_TIER:
+        # ⛔ The person-judged tier is told apart by its criterion rather than by
+        # a source, because a source is refused on it: the remedy the general
+        # refusal names -- state a source apart -- is one the arm above rejects
+        # for that tier, so applying it there sent a reader to a fix this same
+        # function forbids.
+        #
+        # ⚠️ Narrowed rather than switched off, which the first form of this got
+        # wrong: exempting the tier outright let two **byte-identical** entries
+        # load, which is exactly the one-entry-written-twice state the rule is
+        # about, and the reading then printed every line of it twice. Found by
+        # review of the correction.
+        elif tier == PERSON_JUDGED_TIER:
+            criterion = _normalised_command(str(entry.get("selects") or ""))
+            if criterion in sourceless:
+                raise ConfigError(
+                    f"{where}.selects",
+                    f"is the criterion {sourceless[criterion]} already states, on "
+                    f"a second `{tier}` suite (§ 31). A source is refused on this "
+                    "tier, so the criterion is what tells two of its suites "
+                    "apart — and two stating one criterion are one suite written "
+                    "twice, reported twice to whoever asks about the tier.",
+                )
+            sourceless[criterion] = where
+        else:
             if tier in sourceless:
                 raise ConfigError(
                     f"{where}.tier",
@@ -3743,7 +3784,7 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
     # ⚠️ The converse is not refused: § 16's own weaker form is a tier stated
     # with no count beside it, and reporting that here would be a second
     # statement of that section's rule.
-    hold_against_executed(stated_needs)
+    hold_against_executed(stated_needs, carried=True)
 
 
 def _path_filter(node: dict, where: str) -> None:
@@ -10644,8 +10685,22 @@ def _planted_violations():
          "test_tiers.tiers[0].started", _an_opt_in_suite_with_nothing_denied),
         ("a count configured for a tier no suite claims",
          "test_tiers.tiers", _a_count_configured_for_a_tier_the_list_denies),
+        # ⛔ Keyed on `carrier` and not on `tiers`, which is the fix this plant
+        # holds: a configuration stating the absence carries no `tiers` path, and
+        # the arm above refuses one written there — so a refusal naming it sent
+        # the reader to a key they may not write and a remedy this function
+        # rejects. ⚠️ `_refused` compares the key and never checks the path
+        # exists, so nothing but this expectation holds it.
         ("a count configured beside the carrier that claims no tier at all",
-         "test_tiers.tiers", _a_count_configured_beside_a_stated_absence),
+         "test_tiers.carrier", _a_count_configured_beside_a_stated_absence),
+        # ⛔ The narrowed exemption's red side. The person-judged tier is exempt
+        # from the sourceless-collision rule because the remedy that rule names
+        # is refused on it — but exempting it outright let two byte-identical
+        # entries load, which is the one-entry-written-twice state the rule is
+        # about. Its criterion is the discriminator, so a repeat of that is
+        # refused instead.
+        ("two person-judged suites stating one criterion",
+         "test_tiers.tiers[1].selects", _two_person_judged_suites_alike),
         ("a suite stated beside the carrier that names none",
          "test_tiers.tiers", _an_absent_test_tiers_block(tiers=[])),
         ("a type the branch-prefix map does not cover",
@@ -11047,6 +11102,26 @@ def _two_person_judged_suites(data: dict) -> dict:
             stood_up_by=_DROP,
             started=_DROP,
             selects="a second criterion, for the screens the first one leaves",
+        )
+    )
+    return data
+
+
+def _two_person_judged_suites_alike(data: dict) -> dict:
+    """Two person-judged suites stating one criterion (§ 31).
+
+    ⛔ The plant the first form of the exemption had no answer to: byte-identical
+    entries loaded clean and the reading printed every line of them twice. ⚠️ It
+    is the criterion that is repeated and not the whole entry, so what reddens is
+    the discriminator rather than any other key.
+    """
+    data = _a_person_judged_suite(data)
+    data["test_tiers"]["tiers"].append(
+        _a_suite(
+            tier="acceptance",
+            needs=["deploy", "credential"],
+            stood_up_by=_DROP,
+            started=_DROP,
         )
     )
     return data

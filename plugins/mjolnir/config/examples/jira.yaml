@@ -480,15 +480,17 @@ test_tiers:
       # would collide with the person-judged tier, which is `checklist_ticked` under `done:` above.
       # ⛔ `money` with them, because the register facet above says so of this same suite: «it
       # needs a deployment, a credential and money». Omitting it here would leave the file stating
-      # what the tier needs in two places and disagreeing with itself — and `money` is the need
-      # that decides whether a tier is opt-in.
+      # what the tier needs in two places and disagreeing with itself.
+      #
+      # ⚠️ And it still starts itself, which is the pairing worth seeing: a need is not a rail.
+      # What makes the sibling entry below opt-in is its `started`, and nothing ties `money` to
+      # that value — this suite's cost is covered by its own budget and the project runs it on
+      # every change.
       needs: [deploy, credential, money]
       started: automatic
       selects: "the journeys the register names, one case file per journey"
-      # ⛔ § 15's comparison is this tier's holder **because** the criterion above is the register:
-      # that section holds a register to the case files on disk, which is what holds this
-      # criterion. ⚠️ Not a general identity — a project selecting by marker and keeping a
-      # register has a register check that holds nothing about its selection.
+      # ⛔ § 15's comparison is this tier's holder **because** the criterion above is the register
+      # itself — the condition that section's own rule states. It is named rather than described.
       selection_held_by: "the e2e_register comparison configured above"
       # The target this suite is never run against, and the measured reason: it writes to a real
       # third-party account. ⚠️ A name and nothing more — what a deploy target is remains #63's.

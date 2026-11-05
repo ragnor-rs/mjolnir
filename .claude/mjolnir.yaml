@@ -629,11 +629,23 @@ test_tiers:
   # by walking the port packages and keying on each module's `KIND`, so it has a set of cases it
   # selects from, which is exactly the property § 31 makes the test.
   #
-  # ⚠️ And the selection is unheld, which is why stating it is worth more than the absence was: an
-  # implementation whose module name starts with an underscore, or which omits `KIND`, drops out of
-  # the discovery in silence, and the runner reports an implementation with no suite rather than
-  # failing on it. So a shrinking set reads as a healthy count — § 31's stale-in-both-directions
-  # case, in this repository, surfaced by configuring the facet rather than by being bitten.
+  # ⚠️ And the selection is unheld, which is why stating it is worth more than the absence was —
+  # ⛔ but the hazard is narrow, and narrower than this comment first claimed. A module that omits
+  # `KIND` does **not** drop out silently: `port.load_adapters` raises on it, keyed on the module,
+  # and the runner turns that into a red. What is silent is the **rename**: an implementation moved
+  # to a leading-underscore name stops being an implementation by the package's own rule, so it
+  # leaves the discovered set with nothing saying an adapter has gone.
+  #
+  # ⚠️ What holds the other direction is already recorded in docs/single-source-of-truth.md — that
+  # every declared port has an implementation installed — so it is cited here and not restated.
+  # What nothing holds is the set of implementations against the suites among them.
+  #
+  # ⛔ And this entry contradicts the two facets above, which say «every check in this repository»
+  # carries its planted violations and is its own suite over the tree. That quantifier was already
+  # false of this runner before this facet existed — it ships no `--self-test` by its own design
+  # statement — and the reasons that carry it are #195's to settle, that item having been filed
+  # against exactly this class of clause. Named here rather than corrected, because repairing them
+  # is that item's outcome and not this one's.
   #
   # ⛔ The reason the absence was wrong is recorded rather than quietly replaced: its clauses were
   # false of this tree in the way #195 measured the sibling facet's to be. «Every fixture is
@@ -641,9 +653,10 @@ test_tiers:
   # failure to create one raises rather than skipping» is false at two measured sites, where a
   # missing binary or a uid-0 process drops a block of assertions and the run still exits zero.
   #
-  # ⚠️ The gates are deliberately not rows here. § 31 states the list as the suites that need
-  # something, and a row per workflow would be a second statement of `host.checks` above, free to
-  # disagree with it.
+  # ⚠️ The gates are deliberately not rows here, by § 31's rule that the list is the suites that
+  # need something rather than an inventory — a row per workflow would be an inventory of the gate
+  # set. ⛔ Not because such a row could disagree with `host.checks` above: a `workflow` that
+  # resolves to no entry there is refused, which is the whole point of naming one.
   carrier: list
   tiers:
     - tier: unit
@@ -658,9 +671,9 @@ test_tiers:
         every module under a port's implementation directory whose name does not begin with an
         underscore and which declares a `KIND`, each contributing the suite it exposes
       # ⛔ No `selection_held_by`, and it is this repository's own open gap rather than an
-      # oversight: nothing compares the discovered set against the implementations that are
-      # installed, so the criterion is reported **unheld**. The run names an implementation it
-      # found with no suite; it does not name one it failed to find at all.
+      # oversight: nothing compares the implementations installed against the suites among them,
+      # so the criterion is reported **unheld**. The run names an implementation it found with no
+      # suite; nothing says an implementation stopped being one.
       workflow: "Adapter suites"
 
 spend_guard:

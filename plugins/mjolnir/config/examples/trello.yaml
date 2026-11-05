@@ -431,11 +431,12 @@ test_tiers:
   # all refused on this entry, a machine verdict read for a person-judged tier being the failure
   # § 13 calls indistinguishable from success.
   #
-  # ⚠️ The two facets above are absent and this one is carried, which is not a contradiction: they
-  # ask what a *register* and a *count* say about the cases of **this** tier, and this tier has
-  # none — a person walks the change. ⛔ Not that the project has no suite at all: the two inner
-  # repositories each mirror one, under their own `host` blocks above. This facet asks what the
-  # tier needs before anybody can judge it, and the answer is a deployment.
+  # ⚠️ The two facets above are absent and this one is carried, which is not a contradiction. The
+  # register facet asks what a coverage document says about this tier's case files, and this tier
+  # has none — a person walks the change. The count facet is absent for a different reason it
+  # states in its own words: there is no tier of **that** kind here at all. ⛔ And neither means
+  # the project runs nothing: the inner repositories mirror commands of their own under the `host`
+  # blocks above. This facet asks what the tier needs before anybody can judge it: a deployment.
   carrier: list
   tiers:
     - tier: acceptance

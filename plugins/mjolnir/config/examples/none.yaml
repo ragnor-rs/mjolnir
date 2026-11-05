@@ -263,8 +263,9 @@ test_tiers:
     There is no suite and therefore no tier. The one mapped role reads evidence off the machine and
     writes a document, so nothing here can be unable to run.
   revisit_when: >-
-    A suite is mapped at all. This fires strictly earlier than either facet above: the first suite
-    with no dependency and no interface to drive meets this trigger and neither of theirs.
+    A suite is mapped at all. Narrower than neither of the facets above and wider than the count
+    one: a suite with no dependency to stand up meets this and not that, while a role exercised
+    through an interface meets the register facet's and not this.
 
 spend_guard:
   # The empty list, like `checks_local` and `exclusive_resources` above: the one mapped role reads

@@ -151,12 +151,14 @@ done:
 # commands above, and the suite that needs a store stood up is run nowhere but here (§ 17).
 checks_local:
   - command: "<the integration suite command>"
-    # ⚠️ Reworded where § 31's `stood_up_by` made the question decidable: this entry said the run
-    # stood the store up while `executed` below says the **host** supplies it as a service beside
-    # the run, and the two could coexist as prose. They cannot coexist under a closed key, and the
-    # host side is the one that facet states twice — in its own comment and in its `requires`.
-    proves: "the suite passes against the store the host supplies beside the run"
-    requires: ["the service the host supplies beside the run"]
+    proves: "the suite passes against a store this run stands up"
+    # ⛔ The **local** precondition, and § 17 evaluates it: a value naming the service the host
+    # supplies beside its own run would be false by construction here, which is a `done:` check
+    # that can never read green. ⚠️ That is what this entry was briefly reworded to say, to
+    # reconcile it with `executed` below — the wrong direction, since the two facets are about two
+    # different runs of these cases and § 31's `stood_up_by` follows this entry, the tier's own
+    # verdict source.
+    requires: ["a container daemon"]
 
 # § 18, and the one arm a project discovers by being refused: the linter above has a fixing
 # variant, and the two are told apart by a flag rather than by a name — so the fixing form is
@@ -380,12 +382,14 @@ test_tiers:
   carrier: list
   tiers:
     - tier: integration
-      # The dependency is the only need, and `stood_up_by` is where the measured split lands:
-      # the **host** supplies it as a service beside the run. ⛔ Which does not make the tier
-      # host-only — § 31 refuses `host_runnable` as a need for exactly this reason, and the
-      # local half of the same suite is the `min: 1` floor's whole subject above.
+      # The dependency is the only need, and `stood_up_by` is where the measured split lands.
+      # ⛔ `run`, because this entry's verdict is the **local** command below and that run stands
+      # its own store up — the key follows the verdict the tier names. ⚠️ `executed` below is
+      # about the host's run of the same cases, where a service arrives beside the run and every
+      # case skips locally; the two are not in conflict, which is why § 16 rules that it does not
+      # matter who stands the dependency up and § 31 refuses `host_runnable` as a need.
       needs: [dependency]
-      stood_up_by: host
+      stood_up_by: run
       started: automatic
       # ⚠️ Selected by a named list, which is one of the three measured mechanisms and the one
       # that can go stale: a suite added and not named here drops out silently.
