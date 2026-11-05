@@ -1181,6 +1181,25 @@ orphaned, which is the carrier exactly as the defect was measured on it; with it
 reading is provisional. Both instants are
 **stated** rather than taken from the clock, so the two sides of the bound are reached without
 sleeping through it and the suite does not change answer depending on the second it runs at.
+
+⚠️ **And they are stated as absolute offsets rather than relative to the bound, which is check 11's
+lesson arriving on a second row.** Written first as `the bound ± 1`, the whole block *followed the
+constant wherever it was moved*: planting the bound to a negative took both offsets negative with
+it, the arm then fired on a ref older than its own creation, and four of the five checks stayed
+green on a mechanism that was broken — one line reddened where four should have. ⚠️ **The tell was
+the mutation count and not any failure**, which is why the mutation table below is run rather than
+reasoned about: a self-referential assertion reads as a passing check and as a reached mechanism at
+the same time. The offsets are now 36 seconds, the interval the defect was measured at, and an
+hour.
+
+| what was disabled | lines reddened | restored |
+|---|---|---|
+| the window arm never fires, its bound planted to a negative | 4 | 0 |
+| the arm fires and sets no provisional flag | 3 | 0 |
+| the age dropped from the reason, the bound left in it | 1 | 0 |
+| the report renders a provisional reading through the orphaned wording | 1 | 0 |
+| an unreadable creation becomes provisional rather than declining | 3 | 0 |
+
 ⚠️ **Three green sides are asserted beside it**, because this reading is a new branch through code
 four other consumers key on: that `provisional` sets neither `live` nor `landed`, so the release's
 *landed or held here* test and the sweep's *not landed* branch cannot have moved; that a provisional

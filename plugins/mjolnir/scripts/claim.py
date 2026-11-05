@@ -2302,13 +2302,21 @@ def self_test() -> int:
         # ⚠️ Both instants are stated rather than taken from the clock, so the two sides of the
         # bound are reached without sleeping through it and the suite does not change answer at
         # whatever second it happens to run.
+        #
+        # ⛔ **And they are stated as absolute offsets rather than as the bound plus or minus
+        # something**, which the first draft did and which made this whole block follow the
+        # constant wherever it was moved: with the bound planted to a negative, offsets of
+        # `CUT_WINDOW_SECONDS ± 1` went negative too, the arm fired on a ref *older* than its own
+        # creation, and every check here stayed green on a mechanism that was broken. One line
+        # reddened where five should have. The inside offset is the 36 seconds the defect was
+        # measured at; the outside one is an hour, which no plausible bound reaches.
         inside = read_liveness(
             two, "origin", "feature/win", "main", sha, born,
-            moment(born) + timedelta(seconds=CUT_WINDOW_SECONDS - 1),
+            moment(born) + timedelta(seconds=36),
         )
         outside = read_liveness(
             two, "origin", "feature/win", "main", sha, born,
-            moment(born) + timedelta(seconds=CUT_WINDOW_SECONDS + 1),
+            moment(born) + timedelta(seconds=3600),
         )
         # ⚠️ The reports are compared on the **reading's name** and not on the word `ask`, which
         # was the first draft and went red on the suite's own first run: the provisional wording
@@ -2318,6 +2326,8 @@ def self_test() -> int:
         said_outside = Status(True, sha, Holder(), outside, False).report()
         suite.ok("a ref younger than the bound reads provisional, not orphaned",
                  inside.provisional, inside.reason)
+        suite.ok("⛔ and the reading names the ref's own age, not only the bound",
+                 "36s old" in inside.reason, inside.reason)
         suite.ok("⛔ and its report names re-reading, carrying no orphaned reading at all",
                  "read it again" in said_inside and "orphaned-candidate" not in said_inside,
                  said_inside)
