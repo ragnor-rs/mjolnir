@@ -5805,10 +5805,10 @@ def refusal_text(error: BaseException) -> str:
     its own snippet -- but dozens of this reader's refusals interpolate the
     project's stated value verbatim, so one mistyped long scalar answers with
     that scalar, measured at fifty thousand characters. ⚠️ Which is not a
-    message at any cadence: the figure used to be multiplied by the messages a
-    guard set sent per command, and `inert_report` below is what took that
-    multiplier away -- the cut stands on the scalar alone. ⚠️ The key is at the
-    head of every stop, so a cut takes the explanation and never the name.
+    message at any cadence, so the cut stands on that scalar alone and not on
+    how often the answer carrying it is sent -- which `inert_report` below makes
+    once a session. ⚠️ The key is at the head of every stop, so a cut takes the
+    explanation and never the name.
 
     ⛔ One implementation, because the four guards that send such a message
     would otherwise each carry the cut and the class prefix, and four copies of
@@ -5858,6 +5858,14 @@ def said_once(session: str, fact: str) -> bool:
     keep one; saying it twice is the direction this facet fails in everywhere
     else, and silence is the one answer a guard may not produce.
 
+    ⛔ **Which is why the store is created in a step of its own**, rather than
+    in the same arm as the claim: *the file is already there* is the one
+    `OSError` that means *said*, and `makedirs` raises exactly it where the
+    store's own path is taken by a file — so one arm over both calls read a
+    store nobody can create as a fact already stated, and silenced the session
+    for good. ⚠️ Found by review on this change, reproduced with a file written
+    at the store's path.
+
     ⚠️ **Nothing prunes it, which is a property of what it holds** rather than an
     omission: one empty file per session that had an unresolvable configuration,
     against the re-read ledger's one per file a session reads.
@@ -5870,6 +5878,9 @@ def said_once(session: str, fact: str) -> bool:
     keyed = hashlib.sha256(f"{session.strip()}\x00{fact}".encode("utf-8")).hexdigest()[:24]
     try:
         os.makedirs(where, exist_ok=True)
+    except OSError:
+        return True
+    try:
         claim = os.open(
             os.path.join(where, f"{keyed}.said"),
             os.O_CREAT | os.O_EXCL | os.O_WRONLY,
@@ -6472,21 +6483,18 @@ def self_test() -> int:
         try:
             os.environ["CLAUDE_PLUGIN_DATA"] = os.path.join(directory, "a-plugin-store")
 
-            # ⛔ The citation held to the surface by its anchor, so a reworded
-            # heading reddens here rather than shipping a message that cites a
-            # section nobody can resolve. The anchor is derived from the
-            # citation's own tail, never written twice.
-            titled = INERT_CITATION.split("→")[-1].strip().lower().replace("`", "")
-            slug = re.sub(r"[^\w\s-]", "", titled).replace(" ", "-")
+            # ⛔ The citation held to the surface, so a reworded heading reddens
+            # here rather than shipping a message that cites a section nobody
+            # can resolve. ⛔ Against the heading's **text**, which the citation
+            # carries verbatim -- never against an anchor derived here: four
+            # carriers already derive that, and a fifth derivation is the
+            # restated-fact class this change is otherwise about. The anchor half
+            # is each carrier's own `ARM_ANCHORS` check.
+            titled = INERT_CITATION.split("→")[-1].strip()
             with open(surface_for("."), encoding="utf-8") as handle:
-                headings = {
-                    re.sub(r"[^\w\s-]", "", line.lstrip("#").strip().lower().replace("`", ""))
-                    .replace(" ", "-")
-                    for line in handle.read().splitlines()
-                    if line.startswith("#")
-                }
-            check("the answer cites a subsection the surface still carries", slug in headings,
-                  f"{slug!r} is not one of the surface's headings")
+                surface = handle.read()
+            check("the answer cites a heading the surface still carries",
+                  f"\n### {titled}\n" in surface, f"no `### {titled}` on the surface")
 
             check("a fact is said to a session once and not twice",
                   said_once("a-session", "a-fact") and not said_once("a-session", "a-fact"))
@@ -6501,13 +6509,24 @@ def self_test() -> int:
 
             # ⛔ A store that cannot be written to speaks rather than falling
             # silent, which is the direction every unestablished fact in this
-            # facet takes. Planted by naming a directory under a *file*, which
-            # is the shape a store nobody can create actually has.
+            # facet takes. ⛔ **Both shapes, because they raise different
+            # errors and only one of them is the error that means *said*:** a
+            # store under a *file*, which cannot be created at all, and the
+            # store's own path taken by a file, whose `FileExistsError` one arm
+            # over both calls read as the claim already standing. ⚠️ The second
+            # is the plant for a defect this review reproduced.
             blocked = os.path.join(directory, "not-a-directory")
             with open(blocked, "w", encoding="utf-8") as handle:
                 handle.write("")
             os.environ["CLAUDE_PLUGIN_DATA"] = os.path.join(blocked, "a-store")
-            check("a store this cannot write to is spoken past, never obeyed",
+            check("a store that cannot be created is spoken past, never obeyed",
+                  all(said_once("a-session", "a-fact") for _ in range(3)))
+            taken = os.path.join(directory, "a-store-whose-path-is-a-file")
+            os.makedirs(taken)
+            with open(os.path.join(taken, "said"), "w", encoding="utf-8") as handle:
+                handle.write("")
+            os.environ["CLAUDE_PLUGIN_DATA"] = taken
+            check("and a store whose own path is a file is spoken past too",
                   all(said_once("a-session", "a-fact") for _ in range(3)))
             os.environ["CLAUDE_PLUGIN_DATA"] = os.path.join(directory, "a-plugin-store")
 
