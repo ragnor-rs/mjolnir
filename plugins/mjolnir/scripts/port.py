@@ -2011,10 +2011,15 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         refused_report["writer"] == NEVER and refused_report["trigger"] == a_trigger,
         f"reported {refused_report!r}",
     )
-    # ⛔ The operation is named before anything is resolved, in both directions.
-    # The code says so in a comment and nothing held it: the call is deletable
-    # from either method with every arm green. ⚠️ What it costs is a role
-    # reporting a move against an operation the surface has renamed away.
+    # ⛔ The operation is named before anything is resolved, in both directions,
+    # and ⚠️ **the fixture has to take a path that never reaches `invoke`** --
+    # which is the whole subtlety and cost one no-op plant to find. `invoke`
+    # names the operation itself, so a configuration the procedure may write
+    # raises from there whether or not these methods name it first, and an arm built
+    # on one passes with the early call deleted. What the early call actually
+    # buys is the **returning** paths: a refusal or a report is an `Outcome`
+    # naming `set_state`, and without the call a role is handed one about an
+    # operation the surface has renamed away.
     without = {
         operation: fallback
         for operation, fallback in stated.items()
@@ -2026,16 +2031,23 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
     renamed = Port(
         _with_reversals(
             [a_status],
-            [{"trigger": a_trigger, "to_role": a_role, "writer": PROCEDURE}],
+            # The trigger ruled is **not** the one asked for below, so the ask
+            # takes the unruled-trigger refusal and returns before `invoke`.
+            [{"trigger": another_trigger, "to_role": a_role, "writer": PROCEDURE}],
         ),
         spec,
         adapter=Adapter(),
         stated=without,
     )
-    for direction, argument in (("revert_to", a_trigger), ("advance_to", a_role)):
+    for direction, argument in (
+        # Each argument picks a returning path: a trigger no entry rules, and a
+        # role no status maps.
+        ("revert_to", a_trigger),
+        ("advance_to", another_role),
+    ):
         gone = _refused(lambda: getattr(renamed, direction)(argument))
         check(
-            f"`{direction}` names the operation before resolving anything, and stops without it",
+            f"`{direction}` names the operation before it reports anything, and stops without it",
             gone == f"{spec.prefix}.operations.set_state",
             f"reported {gone!r}",
         )
