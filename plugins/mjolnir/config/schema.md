@@ -4282,14 +4282,14 @@ the entry it registered.
 ⚠️ **The permitted half is only worth anything to a project that *authors* this carrier**, and it
 is permitted rather than recommended everywhere else: an adopter consumes the carrier and never
 asserts it, so an adopter mirroring `--self-test` registers a run holding somebody else's code —
-pointless rather than refused. ⛔ **And what a reader can decide the subject of is the command this
-surface ships and nothing else**: a project's own command making the same judgement is one no
-reader recognises, so a stated absence beside one is that project's own to answer, which is a
-residue stated here rather than closed.
-
-⚠️ **[§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran) holds the same
-rule for its own carrier and cites this paragraph for it**, rather than carrying a second
-statement: what differs between the two sections is the command the rule names and not the rule.
+pointless rather than refused. ⛔ **And what a reader recognises is an invocation of the carrier
+shipped beside it, by the path that carrier sits at**: a project's own command making the same
+judgement is one no reader can decide the subject of, so a stated absence beside one is that
+project's own to answer. ⚠️ **Which makes the recognition a path and not an identity**, and what
+that leaves open is stated here rather than closed: this carrier vendored under another file name
+is not reached, while a command naming the path without running it is — the second being the
+direction a refusal has to err in where the subject is a check that holds nothing being read as
+green.
 
 ## 16. What a run executed, and the count that is the only evidence it ran
 
@@ -4406,13 +4406,10 @@ does today.** ⛔ **A reader reports it as unavailable and a run says the count 
 never that nothing was skipped** — absence of signal is not an answer ([§ 2](#2-code-host)), and
 `skipped: 0` is the one thing a project with no declaration must not be told.
 
-⛔ **And no check in `host.checks` whose command answers about this project's counts, which is
-[§ 15](#15-end-to-end-coverage-recorded)'s rule and is cited rather than stated a second time.** It
-reads here with this facet's carrier substituted and nothing else changed: the arithmetic has no
-subject under the absence, so a run of it exits neither green nor red and an entry mirroring it is
-a red check by construction, while the same command under `--self-test` answers about the carrier
-instead and is permitted. ⚠️ **One rule between the two sections**, which is the division they
-already have for the shape rules of their own keys.
+⛔ **And no check in `host.checks` whose command answers about this project's counts**, which is
+[§ 15](#15-end-to-end-coverage-recorded)'s rule read with this facet's carrier in place of that
+one's — ⚠️ **cited and not stated again here**, which is the division the two sections already have
+for the shape rules of their own keys.
 
 **What reads this facet.** The verdict is produced by the carrier shipped with this surface, run as
 a host check like any other (§ 2). ⚠️ **The role that launches a tier is #128's** and is not this

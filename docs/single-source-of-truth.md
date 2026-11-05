@@ -1901,12 +1901,12 @@ neither green nor red, which is the same rule the width check applies to a tree 
 configured: a check that holds nothing may not report green. What the workflow therefore runs is
 the carrier's own assertion suite.
 
-⚠️ **Which is also what makes the entry in `host.checks` legitimate here**, and that is the
-reader's answer rather than this document's.
-[schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded) makes the clause
-about an entry under the absence a rule about what the entry's **command** answers about: the plain
-command is refused at load time, naming the facet and the entry, and a `--self-test` mirror is
-permitted. The message that command prints names the same split.
+⚠️ **Which is also what makes the entry in `host.checks` legitimate here, and that is the reader's
+answer rather than this document's.** The entry mirrors the carrier's own `--self-test`; which
+entry a stated absence admits is
+[schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded)'s, and what
+refuses the other pairing is the configuration reader, naming the facet and the entry. ⛔ Neither
+half of that rule is restated here, and the message the plain command prints names the same split.
 
 What it holds, on a project that carries the facet: the register against the case list **both
 ways**, and the change against both. Every value is read from the configuration — the suite root,
@@ -1975,15 +1975,19 @@ is refused rather than read as nothing to hold
   configured and never inferred, so this file's `run:` and its entry's `mirrors` are still held
   together by eye.
 - **Whether an entry in `host.checks` may be registered at all under the stated absence.** Held by
-  the configuration reader, at load time and for every role rather than once on a push, and planted
-  in both directions in its own suite. ⛔ What that rule reaches is the command this surface ships:
-  a project's own command making the same judgement is one no reader can decide the subject of, so a
-  stated absence beside one is that project's to answer and
-  [schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded) states the
-  residue rather than closing it. ⚠️ And the recognition is by the script's own file name, so a
-  command naming it as *data* rather than running it is refused too — which is the direction a
-  refusal has to err in for two facets whose whole subject is a check that holds nothing being read
-  as green.
+  the configuration reader rather than by this check — at load time and for every role rather than
+  once on a push, planted in both directions in its own suite, with the rule and the residue it
+  leaves open both
+  [schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded)'s. ⚠️ What is
+  recorded here is the reach. The recognition is the carrier's own directory and file name, read off
+  the reader's own location, so a project's script that merely shares the name is not reached and a
+  command naming the path without running it is; the asserting flag is read off the call that names
+  the carrier rather than off the command string, in any spelling the carrier's own parser accepts.
+  Each spelling that hid one or the other — quotation marks round the path, shell punctuation
+  against it, a chain supplying the flag from another command, the module form, the name cased
+  differently — is planted, in the direction it was measured failing. ⛔ So is the map of carrier
+  names against files that are there: a rename with the map left behind would otherwise match
+  nothing and report green.
 
 ## A tier held to the count the tree declares
 
@@ -2009,7 +2013,8 @@ executed is the failure the rule names, so reporting it for a project that decla
 be the one wrong answer available. What the workflow runs is the carrier's own assertion suite,
 which [schema § 16](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
 permits beside the absence by citing § 15, and whose alternative the configuration reader refuses at
-load time — the same rule and the same plants as the section above, with this carrier substituted.
+load time — one rule over both carriers, with the plants for the spellings it can be written in
+carried on this one.
 
 What it holds, on a project that carries the facet: the two counts against each other, and every
 skip against whether it says what it wanted. Both commands are read from the configuration, so the
