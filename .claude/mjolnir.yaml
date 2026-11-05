@@ -590,36 +590,49 @@ e2e_register:
   # system behind the interface a person uses — does not exist to be deployed.
   #
   # ⚠️ The facet is still stated, because an unset key and a decided one read alike. The carrier
-  # that holds the coverage record for the tiers this repository *does* run is its own gate list:
-  # every check carries its planted violations and the workflow runs them before it holds
-  # anything, which is a per-check assertion rather than a register of scenarios.
+  # that holds the coverage record for the tiers this repository *does* run is its own gate list,
+  # and what holds each entry there is stated beside that entry: its planted violations where it
+  # carries them, its own printed count where its job is running discovered suites instead.
+  # ⛔ Not a property the whole set has — `adapter_suites.py` ships no `--self-test` by its own
+  # design statement — so a quantifier over the gate list is the one thing this cannot say.
   carrier: none
   absent_reason: >-
     No end-to-end tier: nothing here is deployed and no interface is driven. Every check in this
-    repository answers about the tree it runs in, and each carries its own planted violations
-    rather than a row in a register.
+    repository answers about the tree it runs in, and what holds each one is stated beside it
+    rather than as a row in a register.
   revisit_when: >-
     A role is carried by something that has to be stood up before it can be exercised — a service,
     a hosted endpoint, or an install this repository performs rather than describes.
 
 executed:
-  # ⛔ No tier here has a dependency the run stands up, which is the only tier § 16 is about. Every
-  # check in this repository is its own suite over the tree it runs in: nothing is created for a
-  # run and nothing can be absent, so there is no state in which one of them executes zero cases
-  # and still exits zero. A declaration and a report would be two commands counting assertions
-  # that cannot be skipped.
+  # ⛔ No tier here has a dependency stood up for the run, which is § 16's one subject test — a
+  # store the subject talks to over its real protocol, created for the run rather than mocked and
+  # rather than found already running. The single tier in `test_tiers` below needs nothing, so
+  # this facet has no subject, and a declaration and a report would be two commands judging a
+  # tier § 16 is not about.
   #
-  # ⚠️ Which is a narrower statement than «the counts would be useless»: they would be readable,
-  # and judging them would hold nothing, because the degradation § 16 names is unreachable here.
+  # ⛔ And that is the whole of the reason, because the two wider claims a reader might expect
+  # under it are false of this tree. «Nothing is created for a run»: the claim carrier's suite
+  # inits a bare repository and clones it, and the boundary, the port contract, the configuration
+  # reader, the rules loader and this check itself each build a temporary tree. «Nothing can be
+  # absent, so no run executes zero cases and still exits zero»: `destinations/_file_suite.py`
+  # skips a block under uid 0 with the reason named and exits zero, and `adapter_suites.py`
+  # prints «0 with a suite» and exits zero where no installed implementation exposes one.
+  #
+  # ⚠️ So the failure § 16 exists to catch is reachable here, by routes its subject test does not
+  # reach — stated rather than argued away. What holds the discovery route is `test_tiers`'
+  # `selects` below, which reports its criterion **unheld**; the skipped-block route is held by
+  # nothing, and this sentence is the only record it has.
   carrier: none
   absent_reason: >-
-    No tier whose dependency the run stands up: every check here is a suite over the tree it runs
-    in, with nothing created for the run and nothing that can be absent, so no run of one can
-    execute zero cases and report success.
+    No tier whose dependency is stood up for the run, which is the one property § 16 makes a tier
+    its subject by: the single tier here needs nothing, so there is no declaration for a report to
+    be judged against.
   revisit_when: >-
-    A check here needs something stood up before it can execute — a store, a service, or an
-    install this repository performs rather than describes — which is the same trigger the
-    end-to-end facet above carries.
+    A tier here talks to a dependency outside its own run's control — a store over its real
+    protocol, a service, an index — whose absence the runner handles by skipping rather than by
+    failing. ⛔ Not a temporary directory or a repository a suite creates and removes itself,
+    which is the tree the suite runs in, relocated.
 
 test_tiers:
   # ⛔ One entry, and it is **not** the absence this facet was first written with here. Almost
@@ -640,12 +653,11 @@ test_tiers:
   # every declared port has an implementation installed — so it is cited here and not restated.
   # What nothing holds is the set of implementations against the suites among them.
   #
-  # ⛔ And this entry contradicts the two facets above, which say «every check in this repository»
-  # carries its planted violations and is its own suite over the tree. That quantifier was already
-  # false of this runner before this facet existed — it ships no `--self-test` by its own design
-  # statement — and the reasons that carry it are #195's to settle, that item having been filed
-  # against exactly this class of clause. Named here rather than corrected, because repairing them
-  # is that item's outcome and not this one's.
+  # ⚠️ And this runner is why neither facet above states a quantifier over the gate set: it ships
+  # no `--self-test` by its own design statement, so it carries no planted violations and is not
+  # its own suite over the tree. What holds it is the count it prints — and ⛔ that count reads
+  # healthy over a smaller set, «0 with a suite» exiting zero, which is the residue the `executed`
+  # facet above records.
   #
   # ⛔ The reason the absence was wrong is recorded rather than quietly replaced: its clauses were
   # false of this tree in the way #195 measured the sibling facet's to be. «Every fixture is
