@@ -63,6 +63,10 @@ without any of those reading as a broken install.
 
 Usage:
     config.py [--skills-root DIR]   print the resolved configuration as JSON
+    config.py --command CMD [--command-root NAME] [--root ROOT]
+                                    resolve one command against § 1's command
+                                    roots: what to run, the directory to run it
+                                    in, and whether that directory is there
     config.py --self-test           hold this reader to the surface and the
                                     examples, then print what it found
 """
@@ -78,6 +82,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 
 
 def _yaml():
@@ -877,10 +882,19 @@ def _merged(project: dict | None, entry: dict | None) -> dict | None:
     merge -- `checks` is a list and a root's check set is disjoint from the
     other's, so merging *into* a list would produce a set neither repository
     runs.
+
+    ⚠️ A block that is **not a mapping** is the degenerate case of the same rule
+    and is replaced whole: § 1's `code_root_runs_nothing` is one value with no
+    keys to read over, so what an entry states for it *is* that root's answer.
+    Written as a merge it raises rather than answering -- `{**True}` is not a
+    mapping unpacking -- which would make a project stating that flag on two
+    roots unreadable instead of refusing one key.
     """
     if entry is None:
         return project
     if project is None:
+        return entry
+    if not isinstance(project, dict) or not isinstance(entry, dict):
         return entry
     return {**project, **entry}
 
@@ -1161,6 +1175,81 @@ def _code_root_facet(data: dict, roots: dict[str, dict]) -> None:
             f"the roots {named} (§ 5). An item naming no repository would then be "
             "admitted by the gate and stop a role downstream, which is the one "
             "place § 4.7's answer is expensive to be missing.",
+        )
+
+
+def _command_root_facet(data: dict, roots: dict[str, dict]) -> None:
+    """§ 1's command roots across every code root, and the references into them.
+
+    ⛔ Project-level rather than one of `validate`'s, and for `_code_root_facet`'s
+    reason one facet over: a view carries one code root's block, and both rules
+    here are about **all** of them at once. The name rule compares the roots two
+    code repositories declare, which no view can see; and § 17's list is the
+    project's rather than a root's, so a local check legitimately names a root
+    the view being validated does not carry -- refused there, it would refuse a
+    correct configuration once per sibling root.
+
+    ⚠️ It runs after every view, so a block that is itself unreadable has already
+    been refused at its own key: this one only ever sees roots that walked.
+    """
+    # ⛔ The block is one code root's and is refused above several, which is the
+    # inverse of § 1's project-level-read rule and has the same cause: a command
+    # root's `path` is relative to *a* code root, so one block above two answers
+    # for neither. ⚠️ Refused rather than inherited, because inheriting it makes
+    # both roots declare every name and the uniqueness rule below then fires on
+    # a key neither entry carries -- a refusal naming a path the file does not
+    # contain, which is the one output this module may not produce.
+    if len(roots) > 1 and _get(data, COMMAND_ROOTS) is not None:
+        raise ConfigError(
+            COMMAND_ROOTS,
+            "is stated above the whole project while `roots.code` carries "
+            f"{', '.join(repr(k) for k in roots)}. § 1 states a command root "
+            "relative to one code root, so a block here answers for none of "
+            "them: state it inside the entry whose repository the roots are in.",
+        )
+
+    declared: dict[str, str] = {}
+    for key, root in roots.items():
+        for name in command_roots(root):
+            first = declared.setdefault(name, key)
+            if first != key:
+                raise ConfigError(
+                    f"roots.code.{key}.{COMMAND_ROOTS}.{name}",
+                    f"declares the command root {name!r}, which "
+                    f"`roots.code.{first}` declares as well. § 1 makes the name "
+                    "unique across the project because a reference is written "
+                    "beside a command and § 17's list is the project's: one name "
+                    "answering in two places resolves a project-level verdict "
+                    "into whichever repository was read first.",
+                )
+
+    union = {
+        name: root
+        for code_root in roots.values()
+        for name, root in command_roots(code_root).items()
+    }
+    local_checks = _absent_as(_get(data, "checks_local"), [])
+    if not isinstance(local_checks, list):
+        # Already refused by `validate`, which every view goes through before
+        # this runs. Returning rather than restating it keeps one refusal for
+        # one defect.
+        return
+    for index, entry in enumerate(local_checks):
+        if not isinstance(entry, dict):
+            continue
+        stated = entry.get(COMMAND_ROOT_REF)
+        if not isinstance(stated, str) or stated in union:
+            # The flag's own refusal and the shape rules are `validate`'s, read
+            # against the root whose code it is. What is left here is the one
+            # arm no view can answer: a name no code root declares.
+            continue
+        raise ConfigError(
+            f"checks_local[{index}].{COMMAND_ROOT_REF}",
+            f"names the command root {stated!r}, which no code root declares. "
+            f"The project declares {', '.join(repr(k) for k in union) or 'none'} "
+            "(§ 1). A local verdict whose root nothing carries is reported "
+            "rather than run at the code root, where § 1 states the command may "
+            "not work at all.",
         )
 
 
@@ -2413,6 +2502,75 @@ class Config:
         self.get("host.checks")
         return mirrored_runs(self.data)
 
+    def command_roots(self) -> dict[str, dict]:
+        """§ 1's command roots for this code root, or `{}` where it declares none.
+
+        ⚠️ `{}` is the ordinary case and not an empty answer: § 1 makes the
+        absence keep today's meaning, every command running at the code root.
+        ⛔ Read through `get`, so a project-level read where some entry declares
+        its own is refused rather than answered from the first of them.
+        """
+        self.get(COMMAND_ROOTS)
+        return command_roots(self.data)
+
+    def command(self, command: str, root: str | None = None) -> dict:
+        """One command resolved against § 1: what to run, where, and whether it is there.
+
+        ⛔ The whole public face of the facet, and the only place a command and a
+        root are joined: a role or a guard composing one itself would be the
+        per-consumer reading the facet exists to delete, one key further on from
+        the directory flag buried in a command string.
+        """
+        roots = self.command_roots()
+        # ⛔ § 1's flag, applied **here** and nowhere earlier: this is a role
+        # about to run a command, which is the act the flag stops. The facet's
+        # own walk does not apply it, for the reason stated at `command_in`.
+        stops_at_the_code_root(
+            roots, runs_nothing_at_the_code_root(self.data), root, COMMAND_ROOT_REF
+        )
+        resolved = command_in(roots, root, command, COMMAND_ROOT_REF)
+        return {**self._where(resolved["path"], resolved["invoke"]), **resolved}
+
+    def command_root(self, name: str) -> dict:
+        """One of § 1's command roots as a report names it, or the lookup's own stop."""
+        root = self.command_roots()
+        if name not in root:
+            # ⛔ The same stop a resolution gives, through the same function: a
+            # second refusal written here would be a second answer to *this
+            # project declares no such root*.
+            command_in(root, name, COMMAND_PLACEHOLDER, COMMAND_ROOT_REF)
+        return {
+            COMMAND_ROOT_REF: name,
+            "path": root[name].get("path"),
+            "invoke": root[name].get("invoke"),
+            **self._where(root[name].get("path"), root[name].get("invoke")),
+        }
+
+    def _where(self, path, invoke) -> dict:
+        """The directory a command root resolves to, and whether it is there.
+
+        ⛔ `reachable` is three-valued and the third value is not a `false`. A
+        root stated as a `path` is a directory this reader can test; a root
+        reached through an `invoke` form alone is **unestablished**, the measured
+        case being a path inside a running container that no test here reaches
+        and that it would be wrong to call absent. ⛔ A role that cannot reach
+        such a root reports it against the root and never retries at the code
+        root (§ 1).
+        """
+        at = (
+            os.path.normpath(os.path.join(self.code_root, str(path)))
+            if path is not None
+            else self.code_root
+        )
+        return {
+            "runs_at": at,
+            # ⚠️ Asked now rather than read off the load, which is not a second
+            # statement of the load-time arm: `check_paths` is off for a
+            # configuration read as text, and a role asking this question wants
+            # the answer as the tree stands.
+            "reachable": None if path is None and invoke else os.path.isdir(at),
+        }
+
     def defined_runs(self) -> list[dict]:
         """§ 2's `host.checks` as one record per entry, the run rather than the command.
 
@@ -2949,6 +3107,15 @@ class Config:
             key: {
                 "code_root": os.path.abspath(view.code_root),
                 "repo": view.get("host.repo"),
+                # § 1's command roots, reported beside the code root they belong
+                # to and never flattened across the project: the whole facet is
+                # that these two senses of *root* are different, so a report
+                # listing one set under no code root would state the confusion
+                # the key names exist against. ⚠️ `{}` is the ordinary case.
+                COMMAND_ROOTS: {
+                    name: view.command_root(name) for name in view.command_roots()
+                },
+                CODE_ROOT_RUNS_NOTHING: runs_nothing_at_the_code_root(view.data),
             }
             for key, view in self.views.items()
         }
@@ -3428,6 +3595,12 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
     # call site, always passing the union — with a docstring naming callers that
     # do not exist. Found by review; a parameter nothing can omit cannot drift
     # from the rule.
+    # ⚠️ The set is of command **texts** and carries no command root, which § 31
+    # states as a limit rather than leaving to be found: where a project states
+    # one text in two of § 1's command roots, a tier's reference resolves to the
+    # text and names neither entry. What that costs is a tier whose root is
+    # unestablished there -- never a tier whose verdict comes from nowhere, the
+    # membership test below being unchanged.
     commands = {
         _normalised_command(entry["command"])
         for entry in _absent_as(_get(data, "checks_local"), [])
@@ -3949,7 +4122,234 @@ def _triggers(entry: dict, where: str) -> None:
     _type_clauses(value, where)
 
 
-def _mirrored_commands(data: dict) -> dict[str, str]:
+# § 1's two per-root keys that say where a command runs, and the key a command
+# names one of them with. ⛔ Spelled once here rather than at each use, and ⚠️
+# held to the surface by the suite rather than by this comment: the first two are
+# in `PER_ROOT_BLOCKS` because the surface's own entry shows them, so a literal
+# here the surface stopped showing reddens there.
+COMMAND_ROOTS = "command_roots"
+CODE_ROOT_RUNS_NOTHING = "code_root_runs_nothing"
+COMMAND_ROOT_REF = "command_root"
+
+# Where the command goes inside an `invoke` form (§ 1). ⛔ A form and not a
+# pattern, which is `PLACEHOLDER`'s own reason one facet over: what reads this
+# already holds the command and has to be told where it belongs, so a form
+# carrying no placeholder has nowhere to put it.
+COMMAND_PLACEHOLDER = "<command>"
+
+# The keys a command root carries (§ 1). ⛔ Both optional and ⛔ not both absent:
+# the rule is in `command_roots` below, because *neither* is the shape this facet
+# exists against -- a root with no path and no form is the code root wearing a
+# name, which omitting the block already says.
+#
+# ⚠️ This tuple **is** a second statement of the surface's own entry, the first
+# being the fence § 1 shows, and the suite holds it to that fence rather than
+# claiming otherwise -- which is `ANSWERS`'s shape in the module beside this one.
+# ⛔ Not derived from `facts` like `per_root` one key up, and the reason is the
+# call graph rather than a preference: `defined_runs` resolves this block and
+# takes no `facts`, so deriving it would thread the surface through two
+# accessors a check beside this module calls, and a reader that validated the
+# block only where facts happened to be in scope would skip the refusal exactly
+# where `host.checks` is walked on its own. Found by review.
+COMMAND_ROOT_KEYS = ("invoke", "path")
+
+
+def command_roots(data: dict) -> dict[str, dict]:
+    """§ 1's command roots for one code root, held to their shape.
+
+    ⛔ Read off **one view** and never off the project, which is what makes this
+    per code root with no rule written twice: `_resolve` puts each root's block
+    at the top of its own view, so a read here is that root's -- and a project
+    whose code is one repository reads the project's own dict, which is the same
+    object. A reader that looped the collection itself would be a second
+    resolution of § 1 free to disagree with the one every other key goes through.
+
+    ⚠️ An absent block is `{}` and is the ordinary case: § 1 makes the absence
+    keep today's meaning, every command running at the code root.
+    """
+    stated = _get(data, COMMAND_ROOTS)
+    if stated is None:
+        return {}
+    if not isinstance(stated, dict) or not stated:
+        raise ConfigError(
+            COMMAND_ROOTS,
+            f"is {stated!r}; § 1 states it as the roots a command of this code "
+            "root runs in, keyed by name. A project whose commands run at the "
+            "code root omits the key -- written blank it reads as that absence "
+            "while looking like a block somebody filled in, and every command "
+            "naming a root would then be refused for naming one nothing carries.",
+        )
+    for name, root in stated.items():
+        at = f"{COMMAND_ROOTS}.{name}"
+        if not isinstance(root, dict):
+            raise ConfigError(
+                at,
+                f"is {root!r}, and § 1 states a command root as a block carrying "
+                f"{' and '.join(f'`{k}`' for k in COMMAND_ROOT_KEYS)}. A bare "
+                "path written here is the natural mistake and makes the root "
+                "unreadable rather than wrong in one key.",
+            )
+        unknown = sorted(set(root) - set(COMMAND_ROOT_KEYS))
+        if unknown:
+            raise ConfigError(
+                f"{at}.{unknown[0]}",
+                "is not a key a command root carries. § 1 shows an entry with "
+                f"{' and '.join(f'`{k}`' for k in COMMAND_ROOT_KEYS)}, and a key "
+                "beside those would be a fact about where a command runs that "
+                "nothing reads.",
+            )
+        for key in COMMAND_ROOT_KEYS:
+            if key in root and (not isinstance(root[key], str) or not root[key].strip()):
+                raise ConfigError(
+                    f"{at}.{key}",
+                    f"is {root[key]!r}; § 1 states each of a command root's two "
+                    "keys as a string, and absent where the other reaches the "
+                    "root. Written blank it reads as that absence while looking "
+                    "like a value somebody wrote.",
+                )
+        if not any(key in root for key in COMMAND_ROOT_KEYS):
+            raise ConfigError(
+                at,
+                "states neither `path` nor `invoke`, and § 1 refuses a root with "
+                "neither: it is the code root wearing a name, which is what "
+                "omitting this block already says. State the directory the "
+                "command runs in, or the form it is run through.",
+            )
+        form = root.get("invoke")
+        if form is not None and form.count(COMMAND_PLACEHOLDER) != 1:
+            # ⛔ Both directions, and neither is a shape a role could recover
+            # from. None: the form runs and reports a verdict having run
+            # something other than the command. Two: the command runs twice, and
+            # § 17 states that a command name is a verdict under one root and a
+            # rewrite under another -- so the second run is a repair performed
+            # twice wherever this one is not the pure check it was taken for.
+            raise ConfigError(
+                f"{at}.invoke",
+                f"is {form!r}, which carries `{COMMAND_PLACEHOLDER}` "
+                f"{form.count(COMMAND_PLACEHOLDER)} times; § 1 states the form "
+                "carries it exactly once. With none the form runs and reports a "
+                "verdict about something other than the command; with two the "
+                "command runs twice, which repairs the tree twice wherever it is "
+                "not the pure check it was read as.",
+            )
+    return dict(stated)
+
+
+def runs_nothing_at_the_code_root(data: dict) -> bool:
+    """§ 1's flag for one code root, held to being the one value it states.
+
+    ⛔ Presence is not the test and truthiness is not either: the key states a
+    fact about this root, so a value that is neither boolean is refused rather
+    than read as the permissive half. Read as truthy, `false` written as the
+    string `"no"` would stop every command in the project; read as presence, the
+    same key written `false` would do it too.
+    """
+    stated = _get(data, CODE_ROOT_RUNS_NOTHING)
+    if stated is None:
+        return False
+    if not isinstance(stated, bool):
+        raise ConfigError(
+            CODE_ROOT_RUNS_NOTHING,
+            f"is {stated!r}; § 1 states it as whether any command is valid at "
+            "this code root -- `true`, or the key omitted. A value of another "
+            "shape is read as the permissive half by anything that tests it for "
+            "truth, so a project that meant to say its root runs nothing would "
+            "have every command run there anyway.",
+        )
+    return stated
+
+
+def command_in(roots: dict[str, dict], name, command: str, where: str) -> dict:
+    """§ 1's resolution of one command: the form to run, and the root it runs in.
+
+    ⛔ One implementation, so no two consumers compose a command differently --
+    the facet exists because a directory buried in a command string is a fact
+    each consumer read its own way, and a second join written in a role or a
+    guard would be that defect with a key in front of it.
+
+    ⛔ Neither refusal falls back to the code root: a blank name and a name
+    nothing declares are each a stop naming the roots there are, because running
+    at the code root instead produces a failure that reads as the change's rather
+    than as the configuration's.
+
+    ⚠️ What this function does **not** apply is § 1's
+    `code_root_runs_nothing` -- that one is `stops_at_the_code_root` below, and
+    the split is the section's own: the flag stops a *role* about to run a
+    command, and is not a refusal of the configuration. Applied here it refused
+    every project the facet was written for the moment the install step ran:
+    the body-section gate's own entry mirrors a command of the toolkit's that
+    legitimately runs at the code root and names no package root, so a load-time
+    refusal made the facet and the install step mutually exclusive. Measured.
+    """
+    if not isinstance(name, str) or not name.strip():
+        if name is not None:
+            raise ConfigError(
+                where,
+                f"is {name!r}; § 1 states `{COMMAND_ROOT_REF}` as the name of one "
+                f"of this code root's `{COMMAND_ROOTS}`, and omitted where the "
+                "command runs at the code root. Written blank it reads as that "
+                "omission while looking like a root somebody named.",
+            )
+        return {
+            COMMAND_ROOT_REF: None,
+            "command": command,
+            "path": None,
+            "invoke": None,
+        }
+    if name not in roots:
+        raise ConfigError(
+            where,
+            f"names the command root {name!r}, which this code root's "
+            f"`{COMMAND_ROOTS}` does not carry. It carries "
+            f"{', '.join(repr(k) for k in roots) or 'none'} (§ 1); a consumer "
+            "handed a name nothing declares stops rather than running at the "
+            "code root.",
+        )
+    root = roots[name]
+    form = root.get("invoke")
+    return {
+        COMMAND_ROOT_REF: name,
+        "command": form.replace(COMMAND_PLACEHOLDER, command) if form else command,
+        "path": root.get("path"),
+        "invoke": form,
+    }
+
+
+def stops_at_the_code_root(roots: dict[str, dict], runs_nothing: bool, name,
+                           where: str) -> None:
+    """§ 1's `code_root_runs_nothing`, applied where a command is about to run.
+
+    ⛔ **A stop and never a fall-back.** A command naming no root runs at the
+    code root, and a code root the project says runs nothing is a code root the
+    command cannot work at -- so the failure it would produce there reads as the
+    change's rather than as this key's.
+
+    ⛔ **And it is applied at the resolution rather than at the load**, which is
+    the arm `command_in` above records the measurement for: the gate the install
+    step registers mirrors a command of the toolkit's that runs at the code root
+    and names no package root, so a refusal at the load made this facet and that
+    step mutually exclusive on every project the facet was written for.
+
+    ⛔ **Absence and never falsiness**, which is the arm this refusal has to get
+    right to name the right key: a `command_root` written blank, or written as
+    something that is not a string at all, *is* a value somebody wrote, and
+    reported here it comes back as *names no `command_root`* -- a sentence about
+    a key the file carries. Those two are `command_in`'s shape refusals and are
+    reached by falling through this one. Found by review, on this function's
+    first form.
+    """
+    if runs_nothing and name is None:
+        raise ConfigError(
+            where,
+            f"names no `{COMMAND_ROOT_REF}` while this code root states "
+            f"`{CODE_ROOT_RUNS_NOTHING}: true`, so the command would run where "
+            "the project has said no command is valid -- and the failure that "
+            "follows reads as the change's rather than as this key's. The roots "
+            f"it may name: {', '.join(repr(k) for k in roots) or 'none'} (§ 1).",
+        )
+
+
+def _mirrored_commands(data: dict) -> dict[tuple[str | None, str], str]:
     """Normalised command -> where the host's runs mirror it (§ 2).
 
     The value is the phrase § 13's refusal names, so a collision reports the
@@ -3973,10 +4373,19 @@ def _mirrored_commands(data: dict) -> dict[str, str]:
     `run` load clean. `host.checks` is required and non-empty-checked and had
     never been type-checked, so the shapes were harmless until something read
     the entries.
+
+    ⛔ The key is the **pair**, the command root and the normalised command, and
+    not the command alone. § 1 states why: one command name is a verdict in one
+    package root and work in another, so a map keyed on the text answers for a
+    root nobody asked about -- measured as a collision refusal firing on the
+    strength of a run in the other root, and as the guard beside this module
+    refusing a local run the host had made somewhere else.
     """
-    out: dict[str, str] = {}
+    out: dict[tuple[str | None, str], str] = {}
     for record in mirrored_runs(data):
-        out.setdefault(record["normalised"], record["mirrored_by"])
+        out.setdefault(
+            (record[COMMAND_ROOT_REF], record["normalised"]), record["mirrored_by"]
+        )
     return out
 
 
@@ -4002,6 +4411,13 @@ def mirrored_runs(data: dict) -> list[dict]:
     an entry here, and a `mirrors`, a `jobs`, a member of one, a trigger and a
     path filter below. Skipping any of them empties this list in silence, and
     both consumers of it report an absence where the project stated a run.
+
+    ⚠️ Each record carries the command **as written** and the command **as it
+    runs**, which § 1's `invoke` form makes two different strings. The first is
+    what a reader of the configuration recognises; the second is what a guard
+    matches a shell call against, and a consumer given only one of them would
+    either fail to recognise the call or report a command the project never
+    wrote.
     """
     out: list[dict] = []
     for run in defined_runs(data):
@@ -4010,6 +4426,10 @@ def mirrored_runs(data: dict) -> list[dict]:
                 {
                     "command": mirrored["command"],
                     "normalised": mirrored["normalised"],
+                    COMMAND_ROOT_REF: mirrored[COMMAND_ROOT_REF],
+                    "runs": mirrored["runs"],
+                    "runs_normalised": mirrored["runs_normalised"],
+                    "runs_in": mirrored["runs_in"],
                     "mirrored_by": mirrored["mirrored_by"],
                     "workflow": run["workflow"],
                     "job": mirrored["job"],
@@ -4045,6 +4465,11 @@ def defined_runs(data: dict) -> list[dict]:
             "refusal reads them to find a done check the host already runs, and "
             "would hold nothing against a shape it cannot walk.",
         )
+    # § 1's command roots, resolved once for the walk and off **this view**: a
+    # `host.checks` list is the code root's, so the roots a reference may name
+    # are that same root's. ⛔ Read here rather than per entry, so a block the
+    # reader cannot walk is refused before any entry resolves against half of it.
+    roots = command_roots(data)
     out: list[dict] = []
     # ⛔ The key held to being *a* key, which § 2 states one paragraph on from the
     # rule that an entry carries one. ⚠️ Not folded, unlike § 20's heading one
@@ -4061,7 +4486,7 @@ def defined_runs(data: dict) -> list[dict]:
                 "`workflow` (§ 2). An entry this reader cannot walk takes "
                 "whatever it mirrors out of § 13's refusal in silence.",
             )
-        run = _entry_run(entry, index)
+        run = _entry_run(entry, index, roots)
         first = keyed.setdefault(run["workflow"], index)
         if first != index:
             raise ConfigError(
@@ -4079,7 +4504,7 @@ def defined_runs(data: dict) -> list[dict]:
     return out
 
 
-def _entry_run(entry: dict, index: int) -> dict:
+def _entry_run(entry: dict, index: int, roots: dict[str, dict]) -> dict:
     """One entry's record: every fact § 2 states about the run, held to its shape.
 
     `commands` is the per-command half, one member per command this entry
@@ -4099,7 +4524,7 @@ def _entry_run(entry: dict, index: int) -> dict:
         "triggers": entry.get("triggers"),
         "paths": entry.get("paths"),
         "jobs": entry.get("jobs") if "jobs" in entry else None,
-        "commands": list(_entry_commands(entry, index)),
+        "commands": list(_entry_commands(entry, index, roots)),
     }
 
 
@@ -4121,7 +4546,7 @@ def _entry_workflow(entry: dict, where: str) -> str:
     return workflow
 
 
-def _entry_commands(entry: dict, index: int):
+def _entry_commands(entry: dict, index: int, roots: dict[str, dict]):
     """Yield one record per command this entry mirrors.
 
     The two forms § 2 states, read in one place so that neither can grow a
@@ -4129,19 +4554,36 @@ def _entry_commands(entry: dict, index: int):
     which is a run the host makes with no local counterpart -- `defined_runs`
     above is the walk that still carries it.
 
-    Each record carries the command as written, its normalised form, the phrase
-    naming where it is mirrored, the job's id where a job is what mirrors it,
-    and that job's own path filter. ⚠️ The entry's own facts -- its workflow,
-    its triggers and its filter -- sit on the entry's record rather than being
-    copied onto each of these, `mirrored_runs` being what joins the two.
+    Each record carries the command as written, its normalised form, § 1's root
+    it runs in and the command as that root runs it, the phrase naming where it
+    is mirrored, the job's id where a job is what mirrors it, and that job's own
+    path filter. ⚠️ The entry's own facts -- its workflow, its triggers and its
+    filter -- sit on the entry's record rather than being copied onto each of
+    these, `mirrored_runs` being what joins the two.
     """
     where = f"host.checks[{index}]"
     workflow = _entry_workflow(entry, where)
 
-    def record(command: str, mirrored_by: str, job: str | None, filters) -> dict:
+    def record(command: str, root, at: str, mirrored_by: str, job: str | None,
+               filters) -> dict:
+        # ⛔ § 1's one resolution, called rather than reproduced: the join of a
+        # form and a command is stated once, and a second join written here
+        # would be the per-consumer reading this facet exists to delete.
+        #
+        # ⚠️ `code_root_runs_nothing` is **not** applied here, and that is § 1's
+        # own split rather than an omission: this facet states what the *host*
+        # ran, and one of its entries is the gate the install step registers --
+        # a command of the toolkit's that runs at the code root and names no
+        # package root. The flag stops a role about to run a command, which is
+        # `Config.command` below.
+        resolved = command_in(roots, root, command, at)
         return {
             "command": command,
             "normalised": _normalised_command(command),
+            COMMAND_ROOT_REF: resolved[COMMAND_ROOT_REF],
+            "runs": resolved["command"],
+            "runs_normalised": _normalised_command(resolved["command"]),
+            "runs_in": resolved["path"],
             "mirrored_by": mirrored_by,
             "job": job,
             "paths": filters,
@@ -4159,6 +4601,20 @@ def _entry_commands(entry: dict, index: int):
             "it mirrors. Read together they leave a consumer choosing which of "
             "two statements of one fact to believe.",
         )
+    # ⛔ § 2's level rule for this key, refused where it is written: a
+    # `command_root` on an entry whose commands are its jobs' would read as a
+    # default each member inherits, and this form exists precisely because one
+    # workflow's jobs may run in different roots. ⚠️ Presence and never value,
+    # for the reason the exclusivity above is read that way.
+    if "jobs" in entry and COMMAND_ROOT_REF in entry:
+        raise ConfigError(
+            f"{where}.{COMMAND_ROOT_REF}",
+            "is stated on an entry whose commands are its `jobs`, and § 2 puts "
+            "this key on the member: the directory belongs to the command, and "
+            "this form exists because one workflow's jobs may each run "
+            "somewhere else. Written here it reads as a default the members "
+            "inherit, which is what the filter rule beside it already refuses.",
+        )
     if "mirrors" in entry:
         if entry["mirrors"] is None:
             raise ConfigError(
@@ -4170,6 +4626,8 @@ def _entry_commands(entry: dict, index: int):
             )
         yield record(
             _command(entry["mirrors"], f"{where}.mirrors"),
+            entry.get(COMMAND_ROOT_REF),
+            f"{where}.{COMMAND_ROOT_REF}",
             f"the `{workflow}` workflow",
             None,
             None,
@@ -4211,6 +4669,8 @@ def _entry_commands(entry: dict, index: int):
         _path_filter(job, f"{at}.paths")
         yield record(
             _command(job["mirrors"], f"{at}.mirrors"),
+            job.get(COMMAND_ROOT_REF),
+            f"{at}.{COMMAND_ROOT_REF}",
             f"the `{name}` job of the `{workflow}` workflow",
             name,
             job.get("paths"),
@@ -5529,6 +5989,14 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # is marked on the surface and answers whether the key is written; what each
     # value has to *be* is here, as § 16's is.
     mirrored = _mirrored_commands(data)
+    # § 1's roots for this view, for the two things an entry below needs them
+    # for: the flag that refuses a command naming no root, and the join that
+    # makes `runs` the string a consumer matches a call against. ⚠️ An entry
+    # naming a root **this** view does not carry is not refused here -- the list
+    # is the project's and a name may be a sibling code root's, which is what
+    # `_command_root_facet` resolves against every root at once.
+    local_roots = command_roots(data)
+    local_runs_nothing = runs_nothing_at_the_code_root(data)
     local_checks = _absent_as(_get(data, "checks_local"), [])
     if not isinstance(local_checks, list):
         raise ConfigError(
@@ -5626,7 +6094,30 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
             # there and accepted here is the second vocabulary that section
             # refuses, arriving as behaviour rather than as text.
             _type_clauses(condition, f"{where}.counts_when")
-        collision = mirrored.get(_normalised_command(command))
+        # § 1's root this verdict runs in. ⛔ Resolved before the collision
+        # below, because the collision is asked about the **pair**: one command
+        # name is a verdict in one package root and work in another, so a local
+        # check colliding with a mirrored command only collides where both run
+        # in the same root. ⚠️ A name no root of this view carries resolves to
+        # nothing here and is refused by the project-level facet instead, which
+        # is the one read that can see every root.
+        #
+        # ⛔ And § 1's flag **is** applied here, unlike on § 2's facet one key
+        # over: every entry of this list is a command a *role* runs for a
+        # verdict, which is the act the flag stops, and nothing the toolkit
+        # installs is registered here -- so the refusal that made the facet and
+        # the install step mutually exclusive on § 2's side cannot arise.
+        stated_root = entry.get(COMMAND_ROOT_REF)
+        if not isinstance(stated_root, str) or stated_root in local_roots:
+            stops_at_the_code_root(
+                local_roots, local_runs_nothing, stated_root,
+                f"{where}.{COMMAND_ROOT_REF}",
+            )
+            command_in(
+                local_roots, stated_root, command,
+                f"{where}.{COMMAND_ROOT_REF}",
+            )
+        collision = mirrored.get((stated_root, _normalised_command(command)))
         if collision:
             raise ConfigError(
                 f"{where}.command",
@@ -6719,11 +7210,28 @@ def _resolve(
     # missing slug reported at the project's path and the second one's at its
     # own, for one defect written twice.
     overridden: set[str] = {"roots.code"} if collection else set()
+    # The block names each entry states, kept beside `overridden` and ⛔ not
+    # folded into it: this set is read only to place a refusal **on a block**,
+    # while `overridden` decides which project-level reads are refused. Folded,
+    # an entry stating `host:` would make every `host.kind` read a stop, which
+    # is the one answer § 1 says a project with two roots does still have.
+    stated_blocks: dict[str, set[str]] = {key: set() for key in roots}
     if collection:
         for key in roots:
             for name in facts.get("per_root") or ():
-                entry = _get(data, f"roots.code.{key}.{name}") or {}
-                overridden.update(f"{name}.{stated}" for stated in entry)
+                entry = _get(data, f"roots.code.{key}.{name}")
+                if name in (_get(data, f"roots.code.{key}") or {}):
+                    stated_blocks[key].add(name)
+                # ⚠️ A block that is one value rather than a mapping crosses at
+                # its own path: there are no keys under it to name, so the thing
+                # a project-level read of it would have to answer for is the
+                # block. Iterating it instead raised for `True` and read a
+                # string one character at a time, which is the same defect
+                # `_merged` above carries the other half of.
+                if isinstance(entry, dict):
+                    overridden.update(f"{name}.{stated}" for stated in entry)
+                elif entry is not None:
+                    overridden.add(name)
 
     for key, root in roots.items():
         if collection:
@@ -6756,7 +7264,13 @@ def _resolve(
                 at = f"roots.code.{key}.path"
             elif any(
                 at == stated or at.startswith(f"{stated}.") for stated in overridden
-            ):
+            ) or at in stated_blocks[key]:
+                # ⚠️ The second arm is the block itself, which the first cannot
+                # reach: an entry stating a block with nothing readable in it
+                # contributes no child path to `overridden`, so a refusal on the
+                # block kept the project's path and sent a reader to a key their
+                # entry is where it is written. Measured on a command-root block
+                # written blank.
                 at = f"roots.code.{key}.{at}"
             raise ConfigError(at, str(error).partition(": ")[2]) from None
         views[key] = Config(
@@ -6771,6 +7285,9 @@ def _resolve(
     # § 4.7, after every view and before the paths are tested: the rules turn on
     # how many roots there are, which no view can see.
     _code_root_facet(data, roots)
+    # § 1's command roots, beside it and for the same reason: the name rule
+    # compares what two code roots declare, and § 17's list is the project's.
+    _command_root_facet(data, roots)
     # § 4.8, beside it and for the mirror of its reason: the rules turn on which
     # of the facet's two forms is written, whose keys sit one level deeper than
     # any absolute path in `validate` reaches.
@@ -6790,6 +7307,29 @@ def _resolve(
                 "here rather than proceeding -- a fresh clone of an outer "
                 "repository does not contain the inner one.",
             )
+        # § 1's command roots, held to the same test and only where a root is
+        # stated as a directory. ⛔ A root reached through an `invoke` form alone
+        # is **unestablished** rather than missing: the measured case is a path
+        # inside a running container, which no test here can reach and which it
+        # would be wrong to call absent.
+        if not check_paths:
+            continue
+        for name, root in command_roots(view.data).items():
+            stated = root.get("path")
+            if stated is None:
+                continue
+            at = os.path.normpath(os.path.join(view.code_root, str(stated)))
+            if not os.path.isdir(at):
+                raise ConfigError(
+                    f"{COMMAND_ROOTS}.{name}.path"
+                    if not collection
+                    else f"roots.code.{key}.{COMMAND_ROOTS}.{name}.path",
+                    f"names {at!r}, which does not exist. § 1 holds a command "
+                    "root stated as a path to existing exactly as the code root "
+                    "above is held: a role stops and names the root rather than "
+                    "running the command at the code root, where the project may "
+                    "have said no command is valid at all.",
+                )
     return config
 
 
@@ -6874,7 +7414,7 @@ MARKED_REQUIRED = [
 # cannot catch is the derivation replaced by a literal of these same contents,
 # and what catches *that* is the arm asserting the shipped collection is refused
 # once the derived set is emptied.
-PER_ROOT_BLOCKS = ["branch_model", "host"]
+PER_ROOT_BLOCKS = ["branch_model", "code_root_runs_nothing", "command_roots", "host"]
 
 # The conditional requirements, stated here for the reason the list above is:
 # derived assertions would assert whatever the surface happened to say. Each entry
@@ -7824,20 +8364,437 @@ def self_test() -> int:
                 f"reported {broken!r}, expected {expected!r}",
             )
         # ⛔ And the per-root blocks are read off the surface rather than listed
-        # in this module: with the derivation emptied, the shipped collection's
-        # own `host` is refused as a block a named root does not carry. ⚠️ What
-        # this arm does not catch is the derivation replaced by a literal of the
-        # same contents -- the set comparison above is that direction, reddening
-        # the moment the surface's entry stops showing a block.
+        # in this module: with the derivation emptied, the first block the
+        # shipped collection's own entry states is refused as one a named root
+        # does not carry. ⚠️ What this arm does not catch is the derivation
+        # replaced by a literal of the same contents -- the set comparison above
+        # is that direction, reddening the moment the surface's entry stops
+        # showing a block.
+        #
+        # ⚠️ The expected key is **derived from the entry** rather than named: a
+        # literal here would have to be re-chosen every time the example states
+        # another block, and the refusal reports whichever is alphabetically
+        # first among the keys it cannot place. Measured: written as `host`, this
+        # arm reddened the moment the example carried § 1's command roots, which
+        # sort ahead of it.
         blind = dict(surface)
         blind["per_root"] = []
+        unplaceable = sorted(
+            set(_get(_a_collection_example(), f"roots.code.{first}")) - {"path"}
+        )
         unread = _refused(_a_collection_example(), facts=blind)
         check(
             "the blocks a named root carries are read from the surface, not from here",
-            unread == f"roots.code.{first}.host",
-            f"reported {unread!r}",
+            unread == f"roots.code.{first}.{unplaceable[0]}",
+            f"reported {unread!r}, expected "
+            f"{f'roots.code.{first}.{unplaceable[0]}'!r}",
         )
 
+    # § 1's command roots -- the directory a command runs in, which is not the
+    # repository it is in. ⛔ Against the shipped collection for the reason the
+    # arms above are, and ⛔ **outside the `len(keys) > 1` block on purpose**:
+    # the single-form arms below hold the absence that keeps today's meaning,
+    # and those have to run whether or not any example ships a collection.
+    print("\n§ 1's command roots, and the two senses of root they keep apart:")
+    # ⛔ The reader's own key tuple against the surface's entry, read off the
+    # fence here rather than trusted: `COMMAND_ROOT_KEYS` is a second statement
+    # of what § 1 shows a command root carrying, and without this arm the two
+    # drift in silence -- a key the surface gained would be refused as unknown,
+    # and one it dropped would go on being accepted. ⚠️ Derived from `declared`,
+    # which is every path the fences state, so the fence moving is what reddens.
+    shown = {
+        parts[5]
+        for path in surface["declared"]
+        if len(parts := path.split(".")) == 6
+        and parts[:2] == ["roots", "code"]
+        and parts[3] == COMMAND_ROOTS
+    }
+    check(
+        "the surface shows exactly the keys a command root carries that this reader reads",
+        shown == set(COMMAND_ROOT_KEYS),
+        f"the surface shows {sorted(shown - set(COMMAND_ROOT_KEYS))} that the reader "
+        f"does not, and the reader reads {sorted(set(COMMAND_ROOT_KEYS) - shown)} that "
+        "the surface does not show",
+    )
+    declaring, plain = _a_command_root_root(), _a_plain_code_root()
+    check(
+        "an example declares command roots on one code root and none on another",
+        bool(declaring) and bool(plain),
+        f"declaring {declaring!r}, plain {plain!r}",
+    )
+    # ⛔ The green side of the absence, held on every shipped example rather than
+    # argued for: the facet is optional, so a project that writes none of it
+    # reads exactly as it did before the key existed.
+    for path in _examples():
+        with open(path, encoding="utf-8") as handle:
+            each = load_text(handle.read(), EXAMPLES)
+        if each.root_keys != [ONE_ROOT]:
+            continue
+        resolved = each.only_root.command("a-command")
+        check(
+            f"{os.path.basename(path)} declares no command root, so a command is "
+            "unchanged and runs at the code root",
+            each.only_root.command_roots() == {}
+            and resolved["command"] == "a-command"
+            and resolved[COMMAND_ROOT_REF] is None
+            and resolved["runs_at"] == each.only_root.code_root,
+            f"resolved {resolved!r}",
+        )
+
+    if declaring and plain:
+        several = _resolve(_a_collection_example(), EXAMPLES, surface, False)
+        declared = several.root(declaring)
+        # ⛔ The two ways a root is stated, asserted separately: one is a
+        # directory this reader can test and the other is a form reaching
+        # something no checkout holds, and the second is the arm the measurement
+        # forced. ⚠️ `reachable` is three-valued -- the form's answer is
+        # unestablished and never `false`, which is what stops a role reading an
+        # absent container as an absent root.
+        by_path = [
+            name for name, root in declared.command_roots().items() if root.get("path")
+        ]
+        by_form = [
+            name
+            for name, root in declared.command_roots().items()
+            if root.get("invoke") and not root.get("path")
+        ]
+        check(
+            "the declaring root states one command root as a path and one as a form",
+            len(by_path) == 1 and len(by_form) == 1,
+            f"by path {by_path!r}, by form {by_form!r}",
+        )
+        if by_path and by_form:
+            directory = declared.command_root(by_path[0])
+            check(
+                "a root stated as a path resolves under its own code root",
+                directory["runs_at"].startswith(declared.code_root)
+                and directory["runs_at"] != declared.code_root
+                and directory["reachable"] is False,
+                f"resolved {directory!r}",
+            )
+            form = declared.command_root(by_form[0])
+            check(
+                "a root reached through a form resolves with no path, and is "
+                "reported unestablished rather than absent",
+                form["path"] is None and form["reachable"] is None,
+                f"resolved {form!r}",
+            )
+            # ⛔ The join itself: the command goes where the form puts it, and
+            # the command as written stays readable beside it. A consumer given
+            # only one of the two either fails to recognise a shell call or
+            # reports a command the project never wrote.
+            through = declared.command("a-command", by_form[0])
+            check(
+                "a command resolved through a form is the form with the command in it",
+                through["command"]
+                == declared.command_roots()[by_form[0]]["invoke"].replace(
+                    COMMAND_PLACEHOLDER, "a-command"
+                )
+                and "a-command" in through["command"],
+                f"resolved {through!r}",
+            )
+        # ⛔ The stop a code root that runs nothing gives, which is the whole of
+        # what that flag buys: the permissive reading runs the command where the
+        # project has said it cannot work, and reports the failure as the
+        # change's.
+        runs_nothing = runs_nothing_at_the_code_root(declared.data)
+        stopped = None
+        try:
+            declared.command("a-command")
+        except ConfigError as error:
+            stopped = str(error)
+        check(
+            "the declaring root states that nothing runs at its code root",
+            runs_nothing,
+            f"reported {runs_nothing!r}",
+        )
+        check(
+            "so a command naming no root is a stop there, with the roots it may name",
+            stopped is not None
+            and all(repr(n) in stopped for n in declared.command_roots()),
+            f"reported {stopped!r}",
+        )
+        # ⛔ And the stop is at the **resolution** rather than at the load, which
+        # is § 1's own split and is asserted rather than described: applied at
+        # the load it refused every project this facet was written for the
+        # moment the install step ran, the body-section gate's entry mirroring a
+        # command of the toolkit's that runs at the code root and names no
+        # package root. ⚠️ The entry is planted rather than imported from the
+        # installer, so this arm asserts the *shape* and not that module.
+        installed = _a_collection_example()
+        _get(installed, f"roots.code.{declaring}.host.checks").append({
+            "workflow": "A gate this toolkit installs",
+            "mirrors": "a-command-of-the-toolkit-s-own",
+            "triggers": "pull_request -> *",
+        })
+        broken = _refused(installed)
+        check(
+            "a gate whose command runs at the code root and names no root still loads",
+            broken is None,
+            f"refused {broken!r}, which makes this facet and the install step "
+            "mutually exclusive on every project it was written for",
+        )
+        # ⚠️ And the complement, on the root beside it: a code root that does run
+        # commands answers a command naming no root with the code root, which is
+        # the absence keeping its meaning inside a project that uses the facet
+        # elsewhere.
+        beside = several.root(plain).command("a-command")
+        check(
+            "while the root declaring none answers with its own code root",
+            beside[COMMAND_ROOT_REF] is None
+            and beside["command"] == "a-command"
+            and beside["runs_at"] == several.root(plain).code_root,
+            f"resolved {beside!r}",
+        )
+        # ⛔ § 1's own case: one command name present in two roots. The pair is
+        # the key, so the two are two records and two answers -- keyed on the
+        # text alone, the second entry is dropped and every consumer answers for
+        # whichever root was written first.
+        shared_text = [
+            record
+            for record in declared.mirrors()
+            if [r["normalised"] for r in declared.mirrors()].count(record["normalised"])
+            > 1
+        ]
+        check(
+            "the declaring root mirrors one command text in two command roots",
+            len(shared_text) == 2
+            and len({r[COMMAND_ROOT_REF] for r in shared_text}) == 2,
+            f"found {[(r[COMMAND_ROOT_REF], r['normalised']) for r in declared.mirrors()]!r}",
+        )
+        if len(shared_text) == 2:
+            keyed = _mirrored_commands(declared.data)
+            check(
+                "and each is answered about by its own root, not by whichever "
+                "entry came first",
+                all(
+                    keyed.get((r[COMMAND_ROOT_REF], r["normalised"]))
+                    == r["mirrored_by"]
+                    for r in shared_text
+                )
+                and len({keyed[(r[COMMAND_ROOT_REF], r["normalised"])] for r in shared_text})
+                == 2,
+                f"keyed {keyed!r}",
+            )
+            check(
+                "and the two run different commands, the form being applied to one of them",
+                len({r["runs"] for r in shared_text}) == 2,
+                f"runs {sorted(r['runs'] for r in shared_text)!r}",
+            )
+
+        # ⛔ One plant per refusal this facet carries, the block's and the
+        # reference's alike: a branch with no plant is a branch nothing asserts
+        # can fail.
+        root_name = next(iter(_get(_a_collection_example(), f"roots.code.{declaring}.{COMMAND_ROOTS}")))
+        for label, mutate, expected in (
+            ("a command-root block written blank",
+             lambda entry: entry.__setitem__(COMMAND_ROOTS, {}),
+             f"roots.code.{declaring}.{COMMAND_ROOTS}"),
+            ("a command root that is not a block",
+             lambda entry: entry[COMMAND_ROOTS].__setitem__(root_name, "a-directory"),
+             f"roots.code.{declaring}.{COMMAND_ROOTS}.{root_name}"),
+            ("a command root stating neither a path nor a form",
+             lambda entry: entry[COMMAND_ROOTS].__setitem__(root_name, {}),
+             f"roots.code.{declaring}.{COMMAND_ROOTS}.{root_name}"),
+            ("a command root carrying a key the surface does not show",
+             lambda entry: entry[COMMAND_ROOTS][root_name].__setitem__("shell", "sh"),
+             f"roots.code.{declaring}.{COMMAND_ROOTS}.{root_name}.shell"),
+            ("a command root's path written blank",
+             lambda entry: entry[COMMAND_ROOTS][root_name].__setitem__("path", ""),
+             f"roots.code.{declaring}.{COMMAND_ROOTS}.{root_name}.path"),
+            ("a form with nowhere to put the command",
+             lambda entry: entry[COMMAND_ROOTS][root_name].__setitem__(
+                 "invoke", "a-wrapper"),
+             f"roots.code.{declaring}.{COMMAND_ROOTS}.{root_name}.invoke"),
+            ("a form that would run the command twice",
+             lambda entry: entry[COMMAND_ROOTS][root_name].__setitem__(
+                 "invoke", f"a-wrapper {COMMAND_PLACEHOLDER} {COMMAND_PLACEHOLDER}"),
+             f"roots.code.{declaring}.{COMMAND_ROOTS}.{root_name}.invoke"),
+            ("a code root that runs nothing said as something other than a boolean",
+             lambda entry: entry.__setitem__(CODE_ROOT_RUNS_NOTHING, "yes"),
+             f"roots.code.{declaring}.{CODE_ROOT_RUNS_NOTHING}"),
+            ("a mirrored command naming a root nothing declares",
+             lambda entry: entry["host"]["checks"][0].__setitem__(
+                 COMMAND_ROOT_REF, "a-root-no-project-declares"),
+             f"host.checks[0].{COMMAND_ROOT_REF}"),
+            ("a reference written blank",
+             lambda entry: entry["host"]["checks"][0].__setitem__(
+                 COMMAND_ROOT_REF, ""),
+             f"host.checks[0].{COMMAND_ROOT_REF}"),
+            ("a reference on an entry whose commands are its jobs",
+             lambda entry: entry["host"]["checks"][0].update(
+                 jobs=[{"job": "a-job", "mirrors": "a-command",
+                        COMMAND_ROOT_REF: root_name}],
+                 mirrors=None,
+             ) or entry["host"]["checks"][0].pop("mirrors"),
+             f"host.checks[0].{COMMAND_ROOT_REF}"),
+        ):
+            broken = _command_root_broken(mutate)
+            check(
+                f"{label} is refused, with the key named",
+                broken == expected,
+                f"reported {broken!r}, expected {expected!r}",
+            )
+        # ⛔ The two rules no view can see. The first: a command-root name is the
+        # project's rather than a code root's, because § 17's list is written
+        # beside no root at all.
+        clashing = _a_collection_example()
+        _get(clashing, f"roots.code.{plain}")[COMMAND_ROOTS] = {
+            root_name: {"path": "a-package-root"}
+        }
+        broken = _refused(clashing)
+        check(
+            "two code roots declaring one command-root name are refused, with "
+            "both roots reachable from the refusal",
+            broken == f"roots.code.{plain}.{COMMAND_ROOTS}.{root_name}",
+            f"reported {broken!r}",
+        )
+        # ⛔ And the second: the block above several code roots. ⚠️ Asserted
+        # because the permissive reading is not merely wrong but *reports*
+        # wrongly -- inherited, both roots declare every name and the rule above
+        # fires naming a key neither entry carries.
+        above = _a_collection_example()
+        above[COMMAND_ROOTS] = {"a-root-above-the-project": {"path": "a-tree"}}
+        broken = _refused(above)
+        check(
+            "a command-root block stated above several code roots is refused at "
+            "its own key",
+            broken == COMMAND_ROOTS,
+            f"reported {broken!r}",
+        )
+        # ⚠️ And the flag is **not** refused there, a boolean above several roots
+        # being one answer they may share -- which is the green side that keeps
+        # the rule above from reading as *no per-root key may sit at the top*.
+        shared = _a_collection_example()
+        shared[CODE_ROOT_RUNS_NOTHING] = True
+        broken = _refused(shared)
+        check(
+            "while the flag stated above several code roots is one answer they share",
+            broken is None,
+            f"refused {broken!r}",
+        )
+        # ⛔ And § 17's own reference, resolved across every root: a local check
+        # legitimately names a sibling root's command root, so the arm that
+        # refuses an unknown name is the project's and not a view's.
+        for label, entry, expected in (
+            ("a local verdict naming a root no code root declares",
+             {"command": "a-command", "proves": "a planted claim",
+              COMMAND_ROOT_REF: "a-root-no-project-declares"},
+             f"checks_local[0].{COMMAND_ROOT_REF}"),
+            ("a local verdict naming no root where a code root runs nothing",
+             {"command": "a-command", "proves": "a planted claim"},
+             f"checks_local[0].{COMMAND_ROOT_REF}"),
+        ):
+            local = _a_collection_example()
+            local["checks_local"] = [entry]
+            broken = _refused(local)
+            check(
+                f"{label} is refused, with the key named",
+                broken == expected,
+                f"reported {broken!r}, expected {expected!r}",
+            )
+        # ⚠️ The green side of the level rule, which its plant cannot assert: a
+        # `jobs` member stating its own root resolves, and that is the shape the
+        # second form exists for -- one workflow whose jobs each run somewhere
+        # else. ⛔ Asserted on the **resolution** and not on the load, a plant
+        # that only loaded leaving the join unexercised.
+        by_job = _a_collection_example()
+        entry = _get(by_job, f"roots.code.{declaring}.host.checks")[0]
+        command = entry.pop("mirrors")
+        entry.pop(COMMAND_ROOT_REF)
+        entry["jobs"] = [
+            {"job": "a-planted-job", "mirrors": command,
+             COMMAND_ROOT_REF: by_form[0] if by_form else root_name},
+        ]
+        broken = _refused(by_job)
+        resolved = (
+            _resolve(by_job, EXAMPLES, surface, False).root(declaring).mirrors()
+            if broken is None
+            else []
+        )
+        check(
+            "a job of a workflow states its own command root, and the command "
+            "resolves through it",
+            broken is None
+            and len(resolved) == 2
+            and any(
+                r["job"] == "a-planted-job"
+                and r[COMMAND_ROOT_REF] == (by_form[0] if by_form else root_name)
+                and r["runs"] != r["command"]
+                for r in resolved
+            ),
+            f"refused {broken!r}, resolved "
+            f"{[(r['job'], r[COMMAND_ROOT_REF], r['runs']) for r in resolved]!r}",
+        )
+        # ⚠️ And the green side of that pair, which the two plants cannot
+        # assert: a local verdict naming a root some code root declares loads.
+        named_local = _a_collection_example()
+        named_local["checks_local"] = [
+            {"command": "a-command", "proves": "a planted claim",
+             COMMAND_ROOT_REF: root_name}
+        ]
+        broken = _refused(named_local)
+        check(
+            "while a local verdict naming a declared root loads",
+            broken is None,
+            f"refused {broken!r}",
+        )
+
+    # The single form's own spelling of the block, which the shipped collection
+    # cannot carry: the per-root block at the top level, where a single-root
+    # project writes `host` and `branch_model`.
+    single_form = _a_single_form_with_command_roots()
+    broken = _refused(single_form)
+    check(
+        "a project with one code root carries command roots at the top level",
+        broken is None,
+        f"refused {broken!r}",
+    )
+    if broken is None:
+        resolved = _resolve(single_form, EXAMPLES, surface, False).only_root
+        named = next(iter(resolved.command_roots()))
+        check(
+            "and resolves a command through one of them",
+            resolved.command("a-command", named)[COMMAND_ROOT_REF] == named,
+            f"resolved {resolved.command('a-command', named)!r}",
+        )
+        check(
+            "while a command naming none still runs at its code root, the "
+            "project having stated nothing about that root",
+            resolved.command("a-command")["runs_at"] == resolved.code_root,
+            f"resolved {resolved.command('a-command')!r}",
+        )
+
+    # ⛔ A command root stated as a path is held to existing, which the plants
+    # above cannot reach: every example's code root is a placeholder, so under
+    # `check_paths` the code root's own refusal fires first and a plant there
+    # would assert that arm instead of this one. ⚠️ Both directions, in a
+    # directory of this run's own: absent is a stop naming the root, and present
+    # loads -- a one-armed assertion here would pass against a reader that
+    # refused every command root there is.
+    for exists in (False, True):
+        with tempfile.TemporaryDirectory() as root:
+            data = _a_single_form_with_command_roots()
+            data["roots"]["code"] = "."
+            named = next(iter(data[COMMAND_ROOTS]))
+            data[COMMAND_ROOTS] = {named: {"path": "a-package-root"}}
+            if exists:
+                os.makedirs(os.path.join(root, "a-package-root"))
+            broken = None
+            try:
+                _resolve(data, root, surface, True)
+            except ConfigError as error:
+                broken = error.key
+            check(
+                "a command root stated as a path that is not there is a stop "
+                "naming the root"
+                if not exists
+                else "and the same configuration loads once the directory is there",
+                broken == (None if exists else f"{COMMAND_ROOTS}.{named}.path"),
+                f"reported {broken!r}",
+            )
+
+    if len(keys) > 1:
         # § 4.7. ⛔ Against the **shipped** collection for the reason the arms
         # above are: what an adopter copies is what is held, and a hand-built
         # facet here would be a shape this repository ships nowhere. Its own
@@ -9414,8 +10371,11 @@ def self_test() -> int:
         f"refused {broken!r}",
     )
     mirrored = _mirrored_commands(four)
+    # ⚠️ The key is § 1's pair, and `None` is the root an entry stating no
+    # `command_root` resolves to -- which is every entry of every example, the
+    # facet being absent where commands run at the code root.
     answers = [
-        mirrored.get(f"the-{ordinal}-command")
+        mirrored.get((None, f"the-{ordinal}-command"))
         for ordinal in ("first", "second", "third", "fourth")
     ]
     check(
@@ -9472,7 +10432,8 @@ def self_test() -> int:
     check(
         "two workflows naming one job keep their own answers",
         len(across) == 2
-        and across.get("the-first-command") != across.get("the-second-command"),
+        and across.get((None, "the-first-command"))
+        != across.get((None, "the-second-command")),
         f"resolved {across!r}",
     )
 
@@ -9535,7 +10496,7 @@ def self_test() -> int:
     )
     check(
         "a workflow running one check is still answered about by its own name",
-        "Planted" in (plain.get("a-mirrored-command") or ""),
+        "Planted" in (plain.get((None, "a-mirrored-command")) or ""),
         f"resolved {plain!r}",
     )
 
@@ -12597,6 +13558,55 @@ def _collection_broken(mutate) -> str | None:
     return _refused(data)
 
 
+# § 1's command roots. ⛔ The **shipped** collection again, for the reason stated
+# above it: what an adopter copies is what is held, and a hand-built block would
+# be a shape this repository ships nowhere. ⚠️ Which root carries the facet is
+# found by shape rather than named, so an example that moves it is still held.
+def _a_command_root_root() -> str:
+    """The key of the code root the shipped collection declares command roots on."""
+    for key, entry in (_get(_a_collection_example() or {}, "roots.code") or {}).items():
+        if isinstance(entry, dict) and entry.get(COMMAND_ROOTS):
+            return key
+    return ""
+
+
+def _a_plain_code_root() -> str:
+    """The key of the code root that declares none, which is the facet's green side."""
+    for key, entry in (_get(_a_collection_example() or {}, "roots.code") or {}).items():
+        if isinstance(entry, dict) and not entry.get(COMMAND_ROOTS):
+            return key
+    return ""
+
+
+def _command_root_broken(mutate, *, check_paths: bool = False) -> str | None:
+    """The key a collection with one plant in its command roots refuses on.
+
+    `mutate` is handed the **entry** that declares them, so a plant reaches both
+    the block and the `host.checks` beside it -- the two halves § 1 states, the
+    roots and the reference into them.
+    """
+    data = _a_collection_example()
+    mutate(_get(data, f"roots.code.{_a_command_root_root()}"))
+    return _refused(data, check_paths=check_paths)
+
+
+def _a_single_form_with_command_roots() -> dict:
+    """A single-root example carrying § 1's command roots at the top level.
+
+    ⛔ The one place a command-root fixture is built rather than shipped, and the
+    reason is § 4.7's built fixture's: the shipped collection can only carry the
+    facet *inside* an entry, so the single form's own spelling -- the block at the
+    top level beside `host` and `branch_model`, which is where every per-root
+    block of a single-root project is written -- would be exercised by nothing.
+    ⚠️ The block is **lifted off the shipped collection** rather than written
+    here, so what is held is still the shape an adopter copies.
+    """
+    data = _a_valid_example()
+    source = _get(_a_collection_example(), f"roots.code.{_a_command_root_root()}")
+    data[COMMAND_ROOTS] = copy.deepcopy(source[COMMAND_ROOTS])
+    return data
+
+
 def _a_collection_carrying(carrier: str, mapping: dict, **keys) -> dict:
     """The shipped collection with § 4.7's facet carried another way.
 
@@ -12754,6 +13764,23 @@ def main(argv: list[str]) -> int:
         "way, and `loop_exempt.borderline` says who answers it",
     )
     parser.add_argument(
+        "--command",
+        metavar="COMMAND",
+        help="a command to resolve against § 1's command roots. Prints what to "
+        "run, the directory to run it in, and whether that directory is there -- "
+        "⛔ a root reached through an `invoke` form alone is reported "
+        "unestablished rather than absent, and a role that cannot reach it names "
+        "the root rather than running at the code root",
+    )
+    parser.add_argument(
+        "--command-root",
+        metavar="NAME",
+        help="which of § 1's command roots `--command` runs in. Omitted, the "
+        "command runs at the code root -- and a code root stating "
+        f"`{CODE_ROOT_RUNS_NOTHING}: true` makes that omission a stop rather "
+        "than an answer",
+    )
+    parser.add_argument(
         "--tier",
         metavar="TIER",
         help="the § 31 tier to report: every suite classified under it, what each "
@@ -12796,6 +13823,21 @@ def main(argv: list[str]) -> int:
         # the argument would turn an unanswered class into a silent *not
         # exempt* -- the safe-looking reading that drops the exemption a project
         # configured.
+        # ⛔ After the root narrowing, and that is the facet's own rule rather
+        # than this parser's order: § 1's command roots belong to one code root,
+        # so a project with several resolves the code root first and a read made
+        # at the project level is refused by `get` rather than answered from the
+        # first of them.
+        if args.command:
+            answer = config.command(args.command, args.command_root)
+        elif args.command_root:
+            raise ConfigError(
+                COMMAND_ROOT_REF,
+                "names a root with no command to run in it: § 1 states the root "
+                "a *command* runs in, so a name alone asks nothing. Pass "
+                "`--command` with it, or read the roots this project declares "
+                "out of the report this run prints without either.",
+            )
         if args.exempt_for:
             answer = config.exempt_for(args.exempt_for, args.of_kind)
         elif args.of_kind:

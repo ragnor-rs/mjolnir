@@ -1066,8 +1066,42 @@ def _run_host_in(args: list[str], root: str, timeout: int) -> tuple[int, str]:
     return proc.returncode, proc.stdout
 
 
+def _call_is_in_the_root(config, record: dict, cwd: str | None) -> bool:
+    """Whether this call was made in the command root the record mirrors (§ 1).
+
+    ⛔ The arm the facet exists for, on this side of it: two command roots'
+    identically-named commands are one string, so the text cannot tell them
+    apart and the directory the call was made in is what does. Buried in a
+    `mirrors` as a directory flag, neither could be read at all.
+
+    ⚠️ Three cases, which the record reduces to two branches -- and ⛔ the test
+    is `runs_in` rather than the root's name, so this function names no key of
+    the facet and cannot spell one differently from the reader that resolved it.
+    - A root stated as a **path** carries one: the call has to have been made at
+      or under it. ⛔ An unreadable or absent `cwd` does **not** match -- holding
+      nothing is this guard's open direction throughout, and a refusal taken on
+      a guess about where a call was made is the expensive mistake.
+    - A root reached through an **invoke** form carries none: the form is in the
+      call's own text, so the text match already discriminated. The directory is
+      not asked about, the measured case being a path no checkout holds.
+    - **No root at all** carries none either, which is the code root: every
+      project whose commands run there, answered exactly as this guard answered
+      before the facet existed.
+    """
+    if record.get("runs_in") is None:
+        return True
+    if not cwd:
+        return False
+    try:
+        root = Path(config.code_root, str(record["runs_in"])).resolve()
+        here = Path(cwd).resolve()
+    except OSError:
+        return False
+    return here == root or root in here.parents
+
+
 def already_run_guard(config, command: str, *, host=None, probe=None,
-                      environment=None, code=None) -> dict:
+                      environment=None, code=None, cwd: str | None = None) -> dict:
     """Refuse a local run of a command the host's own runs have already made.
 
     ⛔ **Nothing is read here that the facet already states.** Which run mirrors
@@ -1080,6 +1114,13 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
     ⚠️ **How that run concluded is deliberately not read**, by § 18: a red run has
     spent the time and answered, and what releases the call afterwards is the work
     itself — an edit leaves the tree carrying something the host has not seen.
+
+    ⛔ **The call is matched against the command *as its root runs it*, and in
+    that root** (§ 1). A command resolved through an `invoke` form is a different
+    string from the one the project wrote, so matching the written form would
+    never recognise the call; and two package roots' identically-named commands
+    are the same string, so matching text alone refuses a run on the strength of
+    a host run made somewhere else.
     """
     stated = config.get("already_run.never_guard")
     if stated is None:
@@ -1089,7 +1130,9 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
         return {}
     records = [
         record for record in config.mirrors()
-        if record.get("normalised") and in_command_position(command, record["normalised"])
+        if record.get("runs_normalised")
+        and in_command_position(command, record["runs_normalised"])
+        and _call_is_in_the_root(config, record, cwd)
     ]
     if not records:
         # ⛔ The silent arm, and the one every call in every project takes: a
@@ -1102,7 +1145,10 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
     # and the reproduction here was the mirror image: with one record read, a
     # command mirrored twice reported *nothing has run* and named a workflow that
     # was not the one the host had run.
-    records.sort(key=lambda r: -len(r["normalised"]))
+    # ⚠️ On the string that was **matched**, which is the command as its root
+    # runs it: sorted on the written form, a form-resolved record would be
+    # ordered by a string this call never contained.
+    records.sort(key=lambda r: -len(r["runs_normalised"]))
     exempt = next(
         (entry for entry in stated
          if isinstance(entry, str) and in_command_position(command, entry)),
@@ -1164,12 +1210,21 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
             if config.get("already_run.escape")
             else "Edit the tree, so the host's run stops answering about the code in hand"
         )
+        # ⚠️ The command named is the one that would **run**, and the root is
+        # named with it where there is one: with command roots configured, the
+        # written form is a string the person never typed, and the same written
+        # form belongs to another root whose run has not happened.
+        where = (
+            f" in the `{record['command_root']}` command root"
+            if record.get("command_root")
+            else ""
+        )
         return _deny(
             f"{REPORT_PREFIX} — {ALREADY_RUN}: {why}, {head[:12]} ({ALREADY_RUN_CITATION}). "
             f"⛔ Its conclusion is not what is read here — the run exists for this code and "
-            f"did not conclude without executing one, so running `{record['normalised']}` "
-            f"locally spends the time a second time and holds whatever place the call puts at "
-            f"stake. {unblocks}."
+            f"did not conclude without executing one, so running `{record['runs']}`"
+            f"{where} locally spends the time a second time and holds whatever place the call "
+            f"puts at stake. {unblocks}."
         )
     # ⛔ The conflict is asked about only once nothing has a run, which is the one
     # state the two answers share a shape in — and asked once for the call rather
@@ -1314,7 +1369,13 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
     # ⚠️ Its host reader is its own and not the merge guard's: the two arms ask
     # different questions of the client and one of them is rooted in the tree,
     # so one stand-in for both would answer with the wrong shape.
-    answered = already_run_guard(loaded, command, host=runs, probe=probe, code=code)
+    # ⚠️ The directory is handed over for § 1's sake and not the host's: two
+    # command roots' identically-named commands are one string, so where the
+    # call was made is the only thing that tells them apart.
+    answered = already_run_guard(
+        loaded, command, host=runs, probe=probe, code=code,
+        cwd=str(payload.get("cwd") or "") or None,
+    )
     if answered.get("hookSpecificOutput"):
         return answered
     held = capacity_guard(
@@ -1917,9 +1978,47 @@ A_MIRRORED_JOB = [{
     "jobs": [{"job": "a-job", "mirrors": "a-mirrored-command"}],
 }]
 
+# § 1's measured case as this guard meets it: one command name in two package
+# roots, each mirrored by a workflow of its own, and only one of the two with a
+# run for this commit. ⚠️ `a-root-that-has-run` is the root whose workflow the
+# fixtures below give a run -- the name says which arm it is for and nothing
+# about any project.
+TWO_PACKAGE_ROOTS = {
+    "a-root-that-has-run": {"path": "a-package-root"},
+    "a-root-that-has-not": {"path": "another-package-root"},
+}
+
+ONE_COMMAND_IN_TWO_ROOTS = [
+    {
+        "workflow": "A workflow",
+        "mirrors": "a-mirrored-command",
+        "command_root": "a-root-that-has-run",
+        "triggers": "pull_request -> *",
+    },
+    {
+        "workflow": "Another workflow",
+        "mirrors": "a-mirrored-command",
+        "command_root": "a-root-that-has-not",
+        "triggers": "pull_request -> *",
+    },
+]
+
+# And the other half of § 1: a root reached through a form, where the call's own
+# text is what tells it apart and no directory is asked about.
+A_ROOT_REACHED_THROUGH_A_FORM = {
+    "a-root-reached-through-a-form": {"invoke": "a-wrapper <command>"},
+}
+
+A_FORM_MIRRORED_RUN = [{
+    "workflow": "A workflow",
+    "mirrors": "a-mirrored-command",
+    "command_root": "a-root-reached-through-a-form",
+    "triggers": "pull_request -> *",
+}]
+
 
 def _a_project(checks, never_guard=None, escape=None, operational_when=None,
-               repo: str = "an-owner/a-repository"):
+               repo: str = "an-owner/a-repository", command_roots=None):
     """A loadable configuration carrying this facet and this guard's own keys.
 
     ⛔ Built from an example and loaded through the shared reader rather than
@@ -1935,6 +2034,11 @@ def _a_project(checks, never_guard=None, escape=None, operational_when=None,
         data = yaml.safe_load(handle)
     data["host"]["repo"] = repo
     data["host"]["checks"] = checks
+    # § 1's command roots, absent by default: the example states none, which is
+    # the shape every other arm of this suite was written against and the one
+    # that has to keep answering identically.
+    if command_roots is not None:
+        data[reader.COMMAND_ROOTS] = command_roots
     # § 17's collision refusal reads `host.checks`, so the example's own local
     # list is cleared rather than left to collide with a planted entry.
     data["checks_local"] = []
@@ -2570,7 +2674,8 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         out.append("A command the host has already run for this commit is refused:")
 
         def already(command: str, project=None, runs=None, jobs=None, mergeable=None,
-                    host_code: int = 0, tree=None, environment=None, probe=None) -> dict:
+                    host_code: int = 0, tree=None, environment=None, probe=None,
+                    cwd: str | None = None) -> dict:
             return already_run_guard(
                 project if project is not None else _a_project(A_MIRRORED_RUN),
                 command,
@@ -2579,6 +2684,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                 code=tree if tree is not None else _a_tree(),
                 environment=environment if environment is not None else {},
                 probe=probe,
+                cwd=cwd,
             )
 
         def said(answer: dict) -> str:
@@ -2612,6 +2718,67 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         ):
             check(f"{label}: still the command, and refused", denied(already(command)),
                   repr(already(command))[:160])
+
+        # --- § 1's command roots, on this side of the facet -----------------
+        #
+        # ⛔ The defect the facet exists against, reproduced as a plant: two
+        # package roots run a command of the same name, and only one of them has
+        # a host run for this commit. Matched on the text alone, the call in the
+        # root that has NOT run is refused on the strength of the other root's
+        # run -- which is a verdict about code nobody checked.
+        out.append("")
+        out.append("One command name in two package roots is told apart by where the call ran:")
+        rooted = _a_project(ONE_COMMAND_IN_TWO_ROOTS, command_roots=TWO_PACKAGE_ROOTS)
+        at_run, at_pending = (
+            str(Path(rooted.code_root, TWO_PACKAGE_ROOTS[name]["path"]))
+            for name in ("a-root-that-has-run", "a-root-that-has-not")
+        )
+        answered = already("a-mirrored-command", project=rooted, cwd=at_run)
+        check("the root whose workflow has a run for this commit is refused",
+              denied(answered), repr(answered)[:200])
+        check("and the refusal names that root, not the command alone",
+              "a-root-that-has-run" in reason(answered), reason(answered)[:200])
+        answered = already("a-mirrored-command", project=rooted, cwd=at_pending)
+        check("while the same command in the other root is not refused",
+              not denied(answered), repr(answered)[:200])
+        check("and says nothing has run rather than nothing is mirrored",
+              NOTHING_HAS_RUN in said(answered), said(answered)[:200])
+        # ⚠️ And a call whose directory could not be read holds nothing, which is
+        # this guard's open direction: a refusal taken on a guess about where a
+        # call was made is the expensive mistake.
+        answered = already("a-mirrored-command", project=rooted, cwd=None)
+        check("a call whose directory is unknown is held to neither root",
+              answered == {}, repr(answered)[:200])
+        # ⛔ And a directory under the root counts, not only the root itself: a
+        # command is run from a subdirectory of its package root as readily as
+        # from its top.
+        answered = already("a-mirrored-command", project=rooted,
+                           cwd=str(Path(at_run, "a-subdirectory")))
+        check("a call from below the root is still in that root",
+              denied(answered), repr(answered)[:200])
+
+        out.append("")
+        out.append("A root reached through a form is matched on the command as it runs:")
+        formed = _a_project(A_FORM_MIRRORED_RUN,
+                            command_roots=A_ROOT_REACHED_THROUGH_A_FORM)
+        answered = already("a-wrapper a-mirrored-command", project=formed)
+        check("the resolved form in command position is refused", denied(answered),
+              repr(answered)[:200])
+        check("and the refusal names the command that would run, not the one written",
+              "a-wrapper a-mirrored-command" in reason(answered),
+              reason(answered)[:200])
+        # ⛔ The complement, and the one that would be a false refusal: the
+        # written form is not what this project runs anywhere, so a call of it is
+        # not the mirrored command.
+        answered = already("a-mirrored-command", project=formed)
+        check("while the written form alone is not the command the host ran",
+              answered == {}, repr(answered)[:200])
+        # ⚠️ The green side of the whole facet, stated rather than assumed: every
+        # arm above this section runs against a project declaring no command
+        # root, and answers as it did before the key existed.
+        check("a project declaring no command roots is refused as it always was",
+              denied(already("a-mirrored-command")),
+              repr(already("a-mirrored-command"))[:200])
 
         # ⛔ The exit-status measurement. The client exits non-zero while runs are
         # pending *and* when one has failed, so both readings are planted: a

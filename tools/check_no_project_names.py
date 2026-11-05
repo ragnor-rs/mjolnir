@@ -1615,6 +1615,45 @@ def _plant_a_configured_path_filter(tree: Tree) -> Tree:
     return _plant_in_a_carrier(f"\nThe run watches `{glob}`.\n")(tree)
 
 
+def _plant_a_configured_command_root(tree: Tree) -> Tree:
+    """A command root's name, stated in the configuration and named in a carrier.
+
+    `schema.md § 1 -> A command root is not a code root` makes the directory a
+    command runs in a configured fact, so its **name** is a value of the
+    project's own -- and a role that wrote one down would be carrying the
+    package root this whole facet exists so that no role has to know.
+
+    ⛔ Both halves are planted, for `_plant_a_configured_path_filter`'s reason
+    one key over: this repository's commands all run at its code root, so it
+    states no command root and an arm reading the live configuration would hold
+    nothing here.
+
+    ⛔ **And the name is planted where it is a *value* and not only where it is a
+    key.** A command root is declared as a key of the block and referred to as
+    the value of `command_root` beside a command, and this sweep reads values --
+    so a plant that wrote the block alone stayed green while the arm it meant to
+    assert was never reached. Measured, on this plant's first form.
+
+    ⚠️ **The sweep cannot reach the other spelling of the same mistake** -- a
+    relative directory name written straight into a role, which is
+    indistinguishable from a role's own citation of a configured path. That limit
+    is stated in `docs/single-source-of-truth.md` rather than left to be inferred
+    from this plant being the only one.
+    """
+    document = yaml.safe_load(tree.text.get(OWN_CONFIG, "")) or {}
+    entries = (document.get("host") or {}).get("checks") or []
+    if not entries or not isinstance(entries[0], dict):
+        raise AssertionError(
+            f"{OWN_CONFIG} states no `host.checks` entry to name a command root, "
+            "so this plant tests nothing"
+        )
+    named = "a-planted-package-root"
+    document["command_roots"] = {named: {"path": "a-planted-tree"}}
+    entries[0]["command_root"] = named
+    tree.text[OWN_CONFIG] = yaml.safe_dump(document)
+    return _plant_in_a_carrier(f"\nRun the check in `{named}` first.\n")(tree)
+
+
 def _plant_in_a_named_root(roots: list[str], text: str):
     """Into a strict file inside one of the roots given, synthesised if none.
 
@@ -2063,6 +2102,16 @@ VIOLATIONS = [
          f"\nThe run starts on `{_a_facet_value(tree, 'triggers')}`.\n")(tree)),
     ("no value is carried in the strict set", "a path filter out of the facet",
      _plant_a_configured_path_filter),
+    # § 1's command root, which is the directory half of the same outcome: a role
+    # that named one would be carrying the package root the facet exists so that
+    # no role has to know. ⚠️ The name is in two places and this sweep reads one
+    # of them: it is a **key** of the command-root block, which the value walk
+    # does not yield, and the **value** of a `command_root` beside a command,
+    # which it does -- so the plant writes both halves and the arm is reached
+    # through the second. Found by review: the first form of this comment said
+    # the name was not under `host.checks`, while its own plant puts it there.
+    ("no value is carried in the strict set", "a command root's name out of the configuration",
+     _plant_a_configured_command_root),
     # The three ways this check can hold nothing and report green.
     ("no value is carried in the strict set", "a surface that publishes nothing",
      _plant_a_surface_publishing_nothing),

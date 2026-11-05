@@ -42,12 +42,13 @@ the three has no command valid at the code root at all**: C, whose instructions 
 root carries no manifest and that npm cannot run there. ⚠️ **A is the harder case and the one a
 reading of its instructions alone gets wrong**: its own front page is in a checkout that holds no
 code, the code is in two repositories nested under it and ignored by it, and each of those has its
-own host, its own checks and its own verdict set — so "the code root" is a question #56 answers
-before #61 can. That is the shape
-[#61](https://github.com/ragnor-rs/mjolnir/issues/61) was written from, and reading C again confirms
-every clause of it but one: two package roots, each with its own manifest; `lint` **present in both
-and meaning different things** — a fixer in one root and a pure check in the other; and the test
-runner in one root with the type checker and the style linter in the other. ⚠️ **The one clause that
+own host, its own checks and its own verdict set — so "the code root" is a question the repository
+collection answers before a command root can. That is the shape
+[`schema § 1 → A command root is not a code root`](../plugins/mjolnir/config/schema.md#a-command-root-is-not-a-code-root)
+was written from, and reading C again confirms every clause of it but one: two package roots, each
+with its own manifest; `lint` **present in both and meaning different things** — a fixer in one root
+and a pure check in the other; and the test runner in one root with the type checker and the style
+linter in the other. ⚠️ **The one clause that
 does not reproduce is a second colliding name**: `format` is in both roots too and means the same
 thing in each, differing only in its glob. E is a second instance of the shape in a different
 language pair — a JVM build at the root and a Python package root whose suite the host workflow
@@ -72,13 +73,17 @@ runner both reach their tools through a container exec, and the directory they p
 inside the image, named after the theme it holds; the container is identified by a name read out of
 an environment file rather than written down. So a command root stated as a `path` relative to the
 code root cannot state this one, and a facet that only had that field would be unable to express a
-sixth of the set it was written for. What shape answers it is #61's, which carries the amendment.
+sixth of the set it was written for. What answers it on the surface is the same section's second
+field — the form a command in that root is run through, with the command's place inside it stated —
+and `path` being absent where the form reaches the root.
 
 **In A the root decides the verdict rather than merely locating it.** Its instructions record that
 running the linter from the theme directory does not reproduce the pull request's finding, and that
 only the host's own invocation does — from the repository root, with the configuration passed
 explicitly and plugins resolved against the theme. A local pass obtained the other way is not the
-same claim.
+same claim, which is why the root an entry states is the one that produces the verdict anybody
+reads rather than merely a root the command will run in — a rule addressed to whoever writes the
+configuration, nothing here telling the two roots apart mechanically.
 
 **One command name is a verdict in one root and work in the other.** In C, `npm run lint` is
 `eslint --fix` in one package root and a pure check in the other. Its own guard against duplicating

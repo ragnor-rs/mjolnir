@@ -618,6 +618,21 @@ exempted the whole directory and so would have read straight past it.
   inherit it — they read `code()` regions too. ⚠️ Measured: an absolute path in a sentence is not
   read at all. The trade is rule 1's, for the same reason, and the live instance it allowed was a
   shipped role citing this project's own backlog by URL, caught by a reader.
+- **A *relative* directory name written into a role.** The three arms above reach a directory
+  reaching a command by a change of directory, by a flag, or absolutely; what none of them reaches
+  is a package root written bare, as a positional argument or in prose —
+  [schema § 1](../plugins/mjolnir/config/schema.md#a-command-root-is-not-a-code-root) makes that
+  directory a configured fact, so a role naming one has copied a project's own. ⛔ **It is not a
+  search this check can delegate**, and the reason is a shape collision rather than effort: a role
+  legitimately cites `.claude/mjolnir.yaml` and a skill's own path, and a configured path and a
+  foreign package root are one shape. ⚠️ **Measured, against the obvious narrowing** — flag every
+  path-shaped token in a code region that this repository does not track — which found **eighteen**
+  instances in the live carriers and not one of them a directory: surface citations written as code
+  spans (`config/schema.md § 1`), slash-command names, two of the code host's own API path
+  segments, and two prose fractions. ⛔ **So what is held is the half with a stable form**: a
+  command root's *name* is a value of the project's own, so check 8 reddens on one written into a
+  carrier, with a plant that states the root in the configuration and names it in a role. The
+  residue — a directory nobody configured, written straight into a role — is a reviewer's catch.
 - **This project's own slug, anywhere at all.** The second exception derives it rather than listing
   it, and — unlike the third, which names the roots each cited artifact is permitted in — it is
   scoped to nothing. ⚠️ So a carrier may name this repository's host, backlog and item numbers

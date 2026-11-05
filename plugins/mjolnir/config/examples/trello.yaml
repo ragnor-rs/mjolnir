@@ -13,9 +13,35 @@ roots:
       host:
         repo: "APP_OWNER/APP_REPO"      # NOT the outer repository, and not the other root's
         checks:
-          - workflow: "Tests"
-            mirrors: "<the test command>"
+          # ⚠️ One command text, two verdicts: the two entries below mirror the SAME command in
+          # the two package roots below, which is § 1's measured case — the command name is
+          # present in both roots and means something different in each. What the host mirrors
+          # is therefore keyed on the root as well as on the command, and `command_root` is
+          # what says which. ⛔ A directory flag written into `mirrors` instead is the shape
+          # that facet exists against: buried there, no consumer can tell these two apart.
+          - workflow: "Web checks"
+            mirrors: "<the check command>"
+            command_root: web-client
             triggers: "pull_request -> <integration branch>"
+          - workflow: "Api checks"
+            mirrors: "<the check command>"
+            command_root: api-service
+            triggers: "pull_request -> <integration branch>"
+      # § 1's command roots: this repository's code is one repository with two package roots and
+      # no manifest at the top, so the directory a command runs in is a fact of its own — not a
+      # second repository, the host and the check set above being one answer for both.
+      command_roots:
+        # Stated as a directory, relative to the code root above.
+        web-client:
+          path: "<a package root inside this repository>"
+        # Stated as a form instead, because this root is NOT a directory any checkout holds:
+        # the measured case is a path inside a running container reached through an exec. ⛔ The
+        # form carries `<command>` exactly once, which is where the command goes.
+        api-service:
+          invoke: "<the wrapper that reaches this root> <command>"
+      # ⛔ And nothing runs at the code root itself: there is no manifest there. A command
+      # naming no `command_root` is refused here rather than run where it cannot work.
+      code_root_runs_nothing: true
     site:
       path: "<another subdirectory>"
       host:
@@ -35,6 +61,10 @@ roots:
         mechanics: null
         regenerable: []
         exclusive_resources: []
+      # ⚠️ And no `command_roots` and no `code_root_runs_nothing` for this root: its commands run
+      # at its own code root, which is § 1's ordinary case and the absence that keeps today's
+      # meaning. The two keys the root above states are that root's and are never read for this
+      # one — which is the same per-root grain as the three blocks already here.
 
 host:
   # What both roots share, read by each where its own entry above says nothing (§ 1). ⛔ The slug
