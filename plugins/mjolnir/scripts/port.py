@@ -110,6 +110,11 @@ OPERATION_NAME = re.compile(r"^`(?P<name>[a-z][a-z0-9_]*)`$")
 PROCEDURE = "procedure"
 NEVER = "never"
 
+# § 32's key, spelled out for the reason the two writers above are and held to
+# the surface by the self-test the same way: a refusal naming a key the surface
+# has renamed sends somebody to edit a key that is not there.
+REVERSALS = "reversals"
+
 # The kind that addresses nothing, shared by every port: § 3's trackerless
 # configuration and § 26's project with no destination are the same statement one
 # port apart, and both get the adapter that implements nothing. Spelled out for
@@ -682,6 +687,15 @@ class Outcome:
     cannot do that, here is what happens instead*; `failed` says *it can, and the
     call did not go through*. A role that retried the fallback on a failure would
     be acting on a decision nobody made, so the two never share a branch.
+
+    ⚠️ **`refused` carries one more case than a writer's.** § 32 refuses a step
+    backwards the project rules no reverse edge for, and that refusal has no
+    writer to name -- so `refused` with `writer` unset is a real state rather
+    than a half-filled one.
+
+    ⛔ **`to_role` and `trigger` are data and not prose.** A batch report naming
+    the items that stepped back has to read them off the outcome; parsing them
+    out of `detail` would make a sentence somebody may reword into an interface.
     """
 
     def __init__(
@@ -694,6 +708,8 @@ class Outcome:
         refused: bool = False,
         writer: str | None = None,
         failed: bool = False,
+        to_role: str | None = None,
+        trigger: str | None = None,
     ):
         self.operation = operation
         self.performed = performed
@@ -702,6 +718,8 @@ class Outcome:
         self.refused = refused
         self.writer = writer
         self.failed = failed
+        self.to_role = to_role
+        self.trigger = trigger
 
     def __bool__(self) -> bool:
         return self.performed
@@ -847,36 +865,26 @@ class Port:
 
     # -- the one operation the surface guards with more than a capability
 
-    def advance_to(self, role: str, *args, **kwargs) -> Outcome:
-        """Ask for an advance to a status **role**, never to a status word.
+    def _mapped_status(self, role: str) -> dict | None:
+        """The one status this project maps to a role, or `None` where it maps none.
 
-        Four answers are reports rather than exceptions: no status here maps the
-        role, which is a legitimate configuration (§ 4.2); the configured writer
-        is somebody else, which is a refusal naming that writer; the writer is
-        `never`, which § 4.2 states as the case where the procedure writes
-        nothing at all and reports -- so the refusal hands the move to nobody,
-        there being no writer to hand it to; or the move goes through `set_state`
-        and its capability decides. What is refused with the key named, the way
-        the reader refuses a configuration the surface does not allow, is a role
-        mapped to two status words (§ 4.2 states the mapping is at most one).
+        ⛔ **One reader of `statuses`, shared by both directions.** § 4.2 puts the
+        role-to-word mapping in the port and nowhere else, and a reverse move
+        resolving it a second time would be exactly the second reader that
+        section forbids -- allowed to disagree with this one about which word a
+        role answers to.
+
+        What is refused with the key named, the way the reader refuses a
+        configuration the surface does not allow, is a role mapped to two status
+        words (§ 4.2 states the mapping is at most one).
         """
-        # Named rather than written into the two Outcomes below: an operation the
-        # surface has renamed must stop this role rather than have it report a
-        # move against an operation that no longer exists.
-        self._stated("set_state")
         statuses = [
             status
             for status in (self.config.get("statuses") or [])
             if status.get("role") == role
         ]
         if not statuses:
-            return Outcome(
-                "set_state",
-                performed=False,
-                detail=f"No status here maps the `{role}` role, so there is "
-                "nothing to advance to. A project maps a subset and an absent "
-                "role is a legitimate configuration.",
-            )
+            return None
         if len(statuses) > 1:
             # Taking the first would be the plausible-thing-first failure the
             # surface keeps naming: the procedure asks for a role, and a role
@@ -889,20 +897,34 @@ class Port:
                 "maps a role to at most one status, because the procedure asks to "
                 "advance to a role and two status words leave the move undefined.",
             )
+        return statuses[0]
 
-        status = statuses[0]
-        writer = status.get("writer")
+    def _refused_by_writer(
+        self, writer: str | None, move: str, **about
+    ) -> Outcome | None:
+        """§ 4.2's writer guard, in one statement for both directions.
+
+        ⛔ **Shared rather than written once per direction**, because § 32 states
+        a reverse edge's writer is checked *exactly* as the forward one is: two
+        copies of this refusal are two copies allowed to drift, and the `never`
+        arm is the one that must not -- it is the only writer with nobody to hand
+        the move to, so a refusal that handed it to somebody would name a writer
+        that does not exist.
+
+        `None` where the procedure may write; the refusal otherwise.
+        """
         if writer == NEVER:
             return Outcome(
                 "set_state",
                 performed=False,
                 refused=True,
                 writer=writer,
-                detail=f"Refused: the `{role}` status (`{status.get('name')}`) is "
+                detail=f"Refused: {move} is "
                 f"`writer: {NEVER}` here, so the procedure writes nothing at all "
                 "and reports instead. There is no other writer to hand the move "
                 "to -- the credential acts as a person's own account, and every "
                 "write would read as that person speaking.",
+                **about,
             )
         if writer != PROCEDURE:
             return Outcome(
@@ -910,10 +932,47 @@ class Port:
                 performed=False,
                 refused=True,
                 writer=writer,
-                detail=f"Refused: the `{role}` status (`{status.get('name')}`) is "
+                detail=f"Refused: {move} is "
                 f"written by `{writer}` here, not by the procedure. The move is "
                 "reported for that writer to make rather than made.",
+                **about,
             )
+        return None
+
+    def advance_to(self, role: str, *args, **kwargs) -> Outcome:
+        """Ask for an advance to a status **role**, never to a status word.
+
+        Four answers are reports rather than exceptions: no status here maps the
+        role, which is a legitimate configuration (§ 4.2); the configured writer
+        is somebody else, which is a refusal naming that writer; the writer is
+        `never`, which § 4.2 states as the case where the procedure writes
+        nothing at all and reports -- so the refusal hands the move to nobody,
+        there being no writer to hand it to; or the move goes through `set_state`
+        and its capability decides.
+
+        ⛔ **It asks for an advance and never discovers a reversal.** A step
+        backwards is `revert_to` below, asked for as one, by § 32 -- so what this
+        method does on a project that rules no reverse edge is what it did before
+        that facet existed.
+        """
+        # Named rather than written into the two Outcomes below: an operation the
+        # surface has renamed must stop this role rather than have it report a
+        # move against an operation that no longer exists.
+        self._stated("set_state")
+        status = self._mapped_status(role)
+        if status is None:
+            return Outcome(
+                "set_state",
+                performed=False,
+                detail=f"No status here maps the `{role}` role, so there is "
+                "nothing to advance to. A project maps a subset and an absent "
+                "role is a legitimate configuration.",
+            )
+        refusal = self._refused_by_writer(
+            status.get("writer"), f"the `{role}` status (`{status.get('name')}`)"
+        )
+        if refusal is not None:
+            return refusal
         # ⛔ The resolved status word is handed to the adapter, which is the
         # whole point of asking for a role: the caller names a **role**, this
         # layer turns it into the one status word the project mapped to it, and
@@ -927,6 +986,95 @@ class Port:
         # what § 3 forbids. An absent capability stayed correct throughout,
         # which is why nothing before an implementation existed could catch it.
         return self.invoke("set_state", *args, status=status.get("name"), **kwargs)
+
+    def revert_to(self, trigger: str, *args, **kwargs) -> Outcome:
+        """Step an item **back**, on a trigger this project rules (§ 32).
+
+        ⛔ **The target role is the configuration's and never the caller's.** A
+        role naming where to step back to would be deriving the edge § 32 says
+        is configured; what a role states here is what it observed.
+
+        Four answers are reports rather than exceptions: this project rules no
+        reverse edge for the trigger, which is the refusal that keeps a role from
+        inventing a step backwards and is the behaviour of every project that
+        writes `[]`; no status maps the entry's role; either writer refusal, by
+        the shared guard above, so the reverse is checked exactly as the forward
+        one is; or the move goes through `set_state` and its capability decides.
+
+        ⚠️ **The writer read is the entry's and not the target status's.** § 4.2's
+        writer answers who advances *into* a status, which is a different act --
+        and the two legitimately differ, a status a deploy writes being sent back
+        by the person who ordered the work.
+        """
+        # Named first, for the reason `advance_to` names it: an operation the
+        # surface has renamed must stop the role rather than have it report a
+        # move against an operation that no longer exists.
+        self._stated("set_state")
+        entries = [
+            entry
+            for entry in (self.config.get(REVERSALS) or [])
+            if isinstance(entry, dict) and entry.get("trigger") == trigger
+        ]
+        if not entries:
+            return Outcome(
+                "set_state",
+                performed=False,
+                refused=True,
+                trigger=trigger,
+                detail=f"Refused: this project rules no reverse edge for "
+                f"`{trigger}` (`{REVERSALS}`), so there is no step backwards to "
+                "make. § 32 configures a reverse edge and derives none, which is "
+                "what keeps a role from stepping an item back on its own "
+                "judgement -- and where the move happened outside the procedure "
+                "anyway, what the report names is that, never the item's role "
+                "being written to match.",
+            )
+        if len(entries) > 1:
+            # Refused rather than taking the first, for § 4.2's reason one role
+            # answered by two status words is: the ask names a trigger, and two
+            # entries answering it leave the move undefined. ⚠️ The reader
+            # refuses this at load, so what reaches here is a `Port` built over a
+            # configuration the reader never saw -- which the suite below is, and
+            # which a role that composed its own dict would be.
+            raise ConfigError(
+                REVERSALS,
+                f"rules the `{trigger}` trigger {len(entries)} times. § 32 rules "
+                "a trigger at most once, because the ask names a trigger and two "
+                "entries leave the move undefined.",
+            )
+        entry = entries[0]
+        role = entry.get("to_role")
+        status = self._mapped_status(role)
+        if status is None:
+            # ⚠️ The reader refuses this at load too, and for a reason the report
+            # here does not restate: a `to_role` no status maps is written in the
+            # file, where § 4.2's absent role is met against an item. What is left
+            # for this branch is the same hand-built configuration as above.
+            return Outcome(
+                "set_state",
+                performed=False,
+                trigger=trigger,
+                to_role=role,
+                detail=f"No status here maps the `{role}` role, so the reverse "
+                f"edge ruled for `{trigger}` has nowhere to step back to.",
+            )
+        refusal = self._refused_by_writer(
+            entry.get("writer"),
+            f"the step back to the `{role}` status (`{status.get('name')}`) on "
+            f"`{trigger}`",
+            trigger=trigger,
+            to_role=role,
+        )
+        if refusal is not None:
+            return refusal
+        outcome = self.invoke("set_state", *args, status=status.get("name"), **kwargs)
+        # ⛔ Written onto the shared outcome rather than threaded through
+        # `invoke`: these two are this method's facts and no other operation has
+        # them, and they are **fields** because a batch report naming what
+        # stepped back reads them rather than parsing the sentence above.
+        outcome.trigger = trigger
+        outcome.to_role = role
+        return outcome
 
     # -- what this configuration cannot do, as a report and never as a fault
 
@@ -1107,6 +1255,18 @@ def _any_example() -> config.Config:
 def _with_statuses(statuses: list[dict]) -> config.Config:
     configuration = _any_example()
     configuration.data["statuses"] = statuses
+    return configuration
+
+
+def _with_reversals(statuses: list[dict], reversals: list[dict]) -> config.Config:
+    """A configuration carrying both halves § 32 is read across.
+
+    Both at once because neither half answers alone: a reverse edge names a role
+    and the role names a status word, so a fixture setting one of them is a
+    fixture whose reversal has nowhere to land.
+    """
+    configuration = _with_statuses(statuses)
+    configuration.data[REVERSALS] = reversals
     return configuration
 
 
@@ -1626,6 +1786,160 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         f"got {str(unmapped)!r}",
     )
 
+    # § 32's step backwards, asked for as one. ⚠️ The trigger words are the
+    # surface's own, for the reason the role words above are: a literal here is a
+    # vocabulary this file would be allowed to disagree with.
+    triggers = config.facts_for(f"{REVERSALS}.trigger")
+    check(
+        f"the surface states the `{REVERSALS}.trigger` set this suite reverts on",
+        bool(triggers),
+        f"states {triggers!r}",
+    )
+    a_trigger, another_trigger = (triggers + triggers)[0], (triggers + triggers)[1]
+    a_status = {"name": "a status", "role": a_role, "writer": PROCEDURE}
+    # ⛔ The first arm, and the one the facet exists for: a project that rules no
+    # reverse edge refuses the ask rather than performing it. A `set_state` double
+    # that answers is what makes this falsifiable -- if the refusal were dropped,
+    # the move would go through and the result would be the status word.
+    answering = Adapter({"set_state": lambda *a, **k: k.get("status", "<no status>")})
+    unruled = Port(
+        _with_reversals([a_status], []), spec, adapter=answering, stated=stated
+    ).revert_to(a_trigger)
+    check(
+        "a step backwards no reverse edge rules is refused, naming the key",
+        unruled.refused
+        and not unruled.performed
+        and REVERSALS in unruled.detail
+        and unruled.trigger == a_trigger,
+        f"got {str(unruled)!r}",
+    )
+    check(
+        "and the refusal names no writer, there being no edge to have one",
+        unruled.writer is None,
+        f"named `{unruled.writer}`",
+    )
+    # ⛔ The entry's writer and not the target status's, which is the one place
+    # the two directions differ: the status below is one the procedure may write,
+    # so a reverse move reading *its* writer would go through.
+    for writer in [w for w in config.facts_for("writer") if w != PROCEDURE]:
+        outcome = Port(
+            _with_reversals(
+                [a_status],
+                [{"trigger": a_trigger, "to_role": a_role, "writer": writer}],
+            ),
+            spec,
+            adapter=answering,
+            stated=stated,
+        ).revert_to(a_trigger)
+        check(
+            f"a step backwards written by `{writer}` is refused, naming the writer",
+            outcome.refused
+            and not outcome.performed
+            and outcome.writer == writer
+            and writer in outcome.detail
+            and outcome.to_role == a_role,
+            f"got {str(outcome)!r}",
+        )
+        if writer == NEVER:
+            check(
+                f"and the `{NEVER}` arm hands the step back to nobody here too",
+                "writer to make" not in outcome.detail
+                and "no other writer" in outcome.detail,
+                f"got {str(outcome)!r}",
+            )
+    reverting = Port(
+        _with_reversals(
+            [a_status],
+            [{"trigger": a_trigger, "to_role": a_role, "writer": PROCEDURE}],
+        ),
+        spec,
+        adapter=answering,
+        stated=stated,
+    )
+    stepped = reverting.revert_to(a_trigger)
+    check(
+        "a step backwards the procedure may write goes through the capability",
+        stepped.performed and not stepped.refused,
+        f"got {str(stepped)!r}",
+    )
+    check(
+        "and the implementation is handed the status word, through one resolver",
+        stepped.result == "a status" and stepped.result != a_role,
+        f"the implementation received {stepped.result!r}",
+    )
+    check(
+        "and the outcome carries the trigger and the role as fields, not as prose",
+        stepped.trigger == a_trigger and stepped.to_role == a_role,
+        f"carries trigger={stepped.trigger!r} to_role={stepped.to_role!r}",
+    )
+    # ⛔ The configuration is read on every call and never resolved once. § 32
+    # states a role reads an item's role where it uses it, and a port that cached
+    # the edge would answer the second ask from the first ask's configuration --
+    # so the fixture is **edited between two calls on one port** and the second
+    # answer has to follow the edit. ⚠️ A suite that built a second `Port` would
+    # pass with the cache in place, which is why this reuses the instance above.
+    reverting.config.data[REVERSALS] = [
+        {"trigger": a_trigger, "to_role": a_role, "writer": NEVER}
+    ]
+    again = reverting.revert_to(a_trigger)
+    check(
+        "the same port asked twice reads the configuration again, not a cached edge",
+        again.refused and again.writer == NEVER,
+        f"answered {str(again)!r} after the edge was rewritten under it",
+    )
+    twice_ruled = _refused(
+        lambda: Port(
+            _with_reversals(
+                [a_status],
+                [
+                    {"trigger": a_trigger, "to_role": a_role, "writer": PROCEDURE},
+                    {"trigger": a_trigger, "to_role": a_role, "writer": NEVER},
+                ],
+            ),
+            spec,
+            adapter=Adapter(),
+            stated=stated,
+        ).revert_to(a_trigger)
+    )
+    check(
+        "one trigger ruled twice is refused, naming the key",
+        twice_ruled == REVERSALS,
+        f"reported {twice_ruled!r}",
+    )
+    nowhere = Port(
+        _with_reversals(
+            [],
+            [{"trigger": another_trigger, "to_role": another_role, "writer": PROCEDURE}],
+        ),
+        spec,
+        adapter=answering,
+        stated=stated,
+    ).revert_to(another_trigger)
+    check(
+        "a reverse edge to a role no status maps is reported, not performed",
+        not nowhere.performed
+        and not nowhere.refused
+        and another_role in nowhere.detail,
+        f"got {str(nowhere)!r}",
+    )
+    # ⚠️ The two directions over one configuration, which is what *behaves
+    # exactly as it did* has to mean: the reverse edge above is ruled, and the
+    # advance is unchanged by its being there.
+    both = Port(
+        _with_reversals(
+            [a_status],
+            [{"trigger": a_trigger, "to_role": a_role, "writer": NEVER}],
+        ),
+        spec,
+        adapter=answering,
+        stated=stated,
+    )
+    check(
+        "an advance is unaffected by a reverse edge being ruled beside it",
+        both.advance_to(a_role).performed,
+        f"got {str(both.advance_to(a_role))!r}",
+    )
+
 
 def _hold_registration(check, spec: PortSpec) -> None:
     """Registration and discovery, against one port's own package.
@@ -2034,6 +2348,17 @@ def self_test() -> int:
             sentinel in config.facts_for("writer"),
             f"states {config.facts_for('writer')!r}",
         )
+    # § 32's key, held the same way and for the same reason: a refusal above
+    # tells somebody which key to edit, and a key the surface has renamed sends
+    # them to one that is not there. ⚠️ Read off the surface through the reader's
+    # own parse, which is the idiom this file already uses for a kind set.
+    with open(config.SURFACE, encoding="utf-8") as handle:
+        declared = config.surface_facts(handle.read())["required"]
+    check(
+        f"the surface still declares `{REVERSALS}` as a required key",
+        REVERSALS in declared,
+        f"declares {sorted(declared)!r}",
+    )
     # ⛔ And the one every port shares, held to **every** port's own kind set
     # rather than to one: a port whose alternation lost the word would have this
     # module resolve `none` as a kind somebody forgot to build, which is the one

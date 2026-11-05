@@ -159,6 +159,15 @@ statuses:
 # writer: never throughout — the credential acts as a person's own account, so every write
 # reads as that person speaking. The procedure reports the move it would have made instead.
 
+# § 32. The reverse edge this project rules, and it is the case its filing role already stops
+# on: an item in a finished state whose work was never implemented, with new criteria appended
+# under it. The ruling there is to surface it and **ask**, which is what `writer: orderer`
+# carries — the procedure is refused the write and the person who ordered the work decides.
+# ⚠️ Writing `never` here instead would say the same thing about the write and the wrong thing
+# about who may make it: there would be nobody to hand the move to.
+reversals:
+  - { trigger: work_added_under_a_finished_item, to_role: in_flight, writer: orderer }
+
 # § 4.8's grouping checks, and each names which grouping it asks about because this project
 # carries more than one (§ 5). ⛔ No entry below carries the project's own word for a grouping:
 # that is what the facet above exists for, and `field_present` naming either of those fields is

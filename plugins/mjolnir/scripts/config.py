@@ -2739,6 +2739,22 @@ class Config:
                 "No status is configured, so the procedure never asks the port "
                 "to advance an item and reports no missing state as a fault."
             )
+        # § 32, and the stated absence of a list rather than of a carrier, for the
+        # reason § 20's is: the behaviour with `[]` is the behaviour before the
+        # facet existed, so what the key buys is the difference between a project
+        # that decided no status of its moves backwards and one that never asked.
+        # ⛔ Reported as the procedure performing no reverse move, never as an
+        # item that cannot step back -- a person and the tracker's own automation
+        # both still can, and that is the case § 32 exists against.
+        if not self.get("reversals"):
+            out.append(
+                "No reverse edge is ruled (`reversals: []`), so the procedure "
+                "performs no backwards move and an ask for one is refused with "
+                "the key named. ⛔ Not an absence of signal: the project states "
+                "it, and an item can still be stepped back by a person or by the "
+                "tracker's own automation, which this reports nothing about "
+                "(§ 32)."
+            )
         if not self.get("readiness"):
             out.append("The readiness gate is empty, so there is nothing to gate.")
         if not self.get("done"):
@@ -5947,6 +5963,75 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
         if "name" not in status:
             raise ConfigError(f"{where}.name", "required (§ 4.2).")
 
+    # § 32. Read against `statuses` above rather than beside it, because every
+    # refusal here is about the two agreeing: a reverse edge names a role, and a
+    # role no status maps is a move this project has nowhere to make. ⛔ Refused
+    # at load and not met against an item -- which is the whole difference from
+    # § 4.2's absent-role case, where a role the configuration does not map is
+    # legitimate and reported by the port.
+    mapped_roles = {
+        status.get("role") for status in statuses if isinstance(status, dict)
+    }
+    reversals = _absent_as(_get(data, "reversals"), [])
+    if not isinstance(reversals, list):
+        raise ConfigError(
+            "reversals", "must be a list; `[]` where no reverse edge is ruled (§ 32)."
+        )
+    seen_triggers: dict[str, int] = {}
+    for index, entry in enumerate(reversals):
+        where = f"reversals[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where, "must be a mapping of trigger, to_role and writer (§ 32)."
+            )
+        triggers = vocabulary(facts, "reversals.trigger", "a reversal trigger")
+        if "trigger" not in entry:
+            raise ConfigError(f"{where}.trigger", "required (§ 32).")
+        if entry["trigger"] not in triggers:
+            raise ConfigError(
+                f"{where}.trigger",
+                f"is {entry['trigger']!r}; the surface states "
+                f"{' | '.join(triggers)}. The set is what a role here observes, "
+                "so a trigger nothing observes is an item on the role that would "
+                "rather than a word in this file.",
+            )
+        if entry["trigger"] in seen_triggers:
+            raise ConfigError(
+                f"{where}.trigger",
+                f"is {entry['trigger']!r}, which reversals"
+                f"[{seen_triggers[entry['trigger']]}] already rules (§ 32). The ask "
+                "names a trigger, so two entries leave the move undefined -- for "
+                "the reason § 4.2 refuses two status words answering one role.",
+            )
+        seen_triggers[entry["trigger"]] = index
+        # ⛔ Both vocabularies are § 4.2's own, read at its paths rather than
+        # restated under this key: a second alternation would be a second closed
+        # set allowed to disagree with the one the statuses above are held to.
+        roles = vocabulary(facts, "role", "a reversal target role")
+        if "to_role" not in entry:
+            raise ConfigError(f"{where}.to_role", "required (§ 32).")
+        if entry["to_role"] not in roles:
+            raise ConfigError(
+                f"{where}.to_role",
+                f"is {entry['to_role']!r}; the surface states {' | '.join(roles)}.",
+            )
+        if entry["to_role"] not in mapped_roles:
+            raise ConfigError(
+                f"{where}.to_role",
+                f"is {entry['to_role']!r}, which no status in `statuses` maps "
+                "(§ 32). A reverse edge to a role this project has no status for "
+                "is a move with nowhere to land, and it is refused here rather "
+                "than met against an item.",
+            )
+        writers = vocabulary(facts, "writer", "a reversal writer")
+        if "writer" not in entry:
+            raise ConfigError(f"{where}.writer", "required (§ 32).")
+        if entry["writer"] not in writers:
+            raise ConfigError(
+                f"{where}.writer",
+                f"is {entry['writer']!r}; the surface states {' | '.join(writers)}.",
+            )
+
     readiness = _absent_as(_get(data, "readiness"), [])
     if not isinstance(readiness, list):
         raise ConfigError("readiness", "must be a list; `[]` where there is no gate.")
@@ -7392,6 +7477,7 @@ MARKED_REQUIRED = [
     "people.carrier",
     f"{PRIVATE_KEY}.carrier",
     "readiness",
+    "reversals",
     "roots.code",
     "session",
     "spend_guard.deny",
@@ -11326,6 +11412,41 @@ def _planted_violations():
          at("statuses", [{"name": "x", "role": "sideways", "writer": "procedure"}])),
         ("a status writer outside the vocabulary", "statuses[0].writer",
          at("statuses", [{"name": "x", "role": "initial", "writer": "the cat"}])),
+        # § 32's shape, and then the two refusals that are about `reversals` and
+        # `statuses` **agreeing** rather than about either on its own. ⚠️ The
+        # target of the last one is a role the surface states and this project
+        # maps no status to: a project that came to map it would leave the plant
+        # reaching nothing, and what that produces is this case reporting no
+        # refusal at all rather than a quiet pass.
+        ("a reversals list that is not a list", "reversals",
+         at("reversals", "backwards")),
+        ("a reversal entry that is not a block", "reversals[0]",
+         at("reversals", ["back"])),
+        ("a reversal with no trigger", "reversals[0].trigger",
+         at("reversals", [{"to_role": "initial", "writer": "automation"}])),
+        ("a reversal trigger outside the vocabulary", "reversals[0].trigger",
+         at("reversals", [{"trigger": "a hunch", "to_role": "initial",
+                           "writer": "automation"}])),
+        ("one trigger ruled twice", "reversals[1].trigger",
+         at("reversals", [{"trigger": "merged_under_a_later_role",
+                           "to_role": "initial", "writer": "automation"},
+                          {"trigger": "merged_under_a_later_role",
+                           "to_role": "initial", "writer": "procedure"}])),
+        ("a reversal with no target role", "reversals[0].to_role",
+         at("reversals", [{"trigger": "merged_under_a_later_role",
+                           "writer": "automation"}])),
+        ("a reversal target outside the vocabulary", "reversals[0].to_role",
+         at("reversals", [{"trigger": "merged_under_a_later_role",
+                           "to_role": "sideways", "writer": "automation"}])),
+        ("a reversal target no status maps", "reversals[0].to_role",
+         at("reversals", [{"trigger": "merged_under_a_later_role",
+                           "to_role": "deployed", "writer": "automation"}])),
+        ("a reversal with no writer", "reversals[0].writer",
+         at("reversals", [{"trigger": "merged_under_a_later_role",
+                           "to_role": "initial"}])),
+        ("a reversal writer outside the vocabulary", "reversals[0].writer",
+         at("reversals", [{"trigger": "merged_under_a_later_role",
+                           "to_role": "initial", "writer": "the cat"}])),
         ("a readiness list that is not a list", "readiness", at("readiness", "all")),
         ("a readiness entry that is not a block", "readiness[0]", at("readiness", ["x"])),
         ("a readiness entry with no check", "readiness[0].check",

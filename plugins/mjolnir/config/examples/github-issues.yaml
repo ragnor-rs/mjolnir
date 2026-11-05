@@ -115,6 +115,12 @@ statuses:
   # whether it happened.
   - { name: "closed", role: terminal, writer: automation }
 
+# § 32. No reverse edge is ruled. A two-state tracker can still be stepped back — reopening a
+# closed issue is exactly that — but nothing in this project's loop does it, and `[]` is what
+# says so: the procedure performs no backwards move and refuses an ask for one. ⚠️ It reports
+# nothing about a person reopening an issue by hand, which stays available and unruled.
+reversals: []
+
 readiness:
   - { check: state_is, roles: [initial], stop: "The issue is already closed." }
   - { check: no_open_blockers, stop: "An issue this one depends on has not landed yet." }

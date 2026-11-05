@@ -331,6 +331,14 @@ statuses:
   - { name: "open",   role: initial,  writer: procedure }
   - { name: "closed", role: terminal, writer: automation }
 
+# § 32. No reverse edge is ruled here, and the honest reason is that the one case this
+# repository has is answered a different way: an item whose unmet bullet turns up after it
+# closed is reopened and edited by hand, which is a person's decision and not a trigger any
+# role observes. ⚠️ So `[]` rather than `work_added_under_a_finished_item` — a trigger
+# configured for a move no role here makes would be dead configuration, which is what the
+# surface's own trigger set is closed to prevent.
+reversals: []
+
 readiness:
   - { check: state_is, roles: [initial], stop: "The issue is already closed." }
   - { check: no_open_blockers, stop: "An issue this one depends on has not landed yet." }
