@@ -3660,8 +3660,8 @@ def _validate_test_tiers(
                 raise ConfigError(
                     f"{where}.started",
                     "required (§ 31) on every suite but a person-judged one: a "
-                    "suite that starts itself and one somebody has to ask for are "
-                    f"different rails. The surface states {' | '.join(starts)}.",
+                    "suite that starts itself and one that waits to be asked for "
+                    f"are different rails. The surface states {' | '.join(starts)}.",
                 )
             if started not in starts:
                 raise ConfigError(
