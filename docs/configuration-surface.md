@@ -1964,6 +1964,44 @@ repair. ⛔ **And it is cut**, because the reader's refusals interpolate the pro
 value: one long mistyped scalar answered with 50,063 characters of itself, which is the figure a
 first pass at this missed by measuring the required-key arm alone.
 
+### How loud that window was, and the two defects measuring it found
+
+The two subsections above are about the state. This one is about what the state *sounded like* while
+it stood, which nothing had measured. Taken 2026-11-05 against a configured project three required
+keys short of resolving:
+
+| | |
+|---|---|
+| guards that answered on one `Bash` call | four — the spend one, the live one, the context one, the enforcement one |
+| arms that answered again on the same call's completion | one — the context guard's result arm |
+| deduplication of any kind | none, in any of them |
+| distinct facts those five messages carried | one |
+| messages in a session of 73 guarded calls | ≈ 290, and a floor rather than a total: the session was still open when it was counted |
+
+⛔ **The cost is linear in the guarded calls a session makes**, so what it charged most was the
+session doing the most work — against a state the surface creates deliberately every time a key is
+newly marked `# required`, and calls one line to answer rather than a migration
+([`schema § 29`](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)). The interval
+between such a key landing and that line being written was as loud as four messages per shell
+command, in every project the install reaches.
+
+⛔ **What was wrong was the cadence and never the direction.** Failing open is right for the reason
+each guard states, and so is carrying the reader's stop; what neither of those licenses is saying it
+again on the next call, which is how *the answer says so* had been read
+([`schema § 19 → How often a configuration that does not resolve is reported`](../plugins/mjolnir/config/schema.md#how-often-a-configuration-that-does-not-resolve-is-reported)).
+
+⚠️ **The second defect is in the same measurement: four sentences for one fact.** They differed in a
+prefix and a section citation, and the enforcement guard's carried no citation at all — and four
+messages also leave whoever reads them to work out that they add up to every guard installed, where
+one sentence naming the set says so. ⛔ **Which is why the cadence and the consolidation are one
+rule rather than two**: a per-guard claim would have kept the four sentences and merely thinned them
+([`schema § 19 → How often a configuration that does not resolve is reported`](../plugins/mjolnir/config/schema.md#how-often-a-configuration-that-does-not-resolve-is-reported)).
+
+⚠️ **What the rule does not change is the state.** A project whose configuration the installed
+surface has just invalidated still has every call held to nothing until somebody writes the key; it
+is now told once instead of four times per command. The subsection above is that state, and the
+files it happens in are ones no check here can open.
+
 ## The bookkeeping role: three copies that are a third of it, and two keys that came out of it
 
 This role divided in two directions at once, and this is the one place the copies are counted.

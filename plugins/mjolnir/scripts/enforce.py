@@ -75,6 +75,9 @@ ARM_ANCHORS = {
     "unconfigured": "a-hook-in-a-project-that-states-no-configuration",
     "record": "what-a-hook-refuses-and-the-record-it-reads",
     "direction": "which-direction-a-guard-fails-in",
+    # § 19's cadence, which is the reader's rather than this carrier's: the arm
+    # below hands it the stop and sends whatever it answers.
+    "cadence": "how-often-a-configuration-that-does-not-resolve-is-reported",
     "lease": "a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it",
     "already_run": "18-the-guard-on-a-command-the-host-has-already-run",
     "guardable": "what-may-be-guarded-and-the-two-ways-a-refusal-stands-down",
@@ -1292,10 +1295,15 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
         return {}
     loaded, stop = (config, "") if config is not None else _read(payload.get("cwd"))
     if loaded is None:
-        return {"systemMessage": (
-            "Enforcement: the project's configuration could not be read, so this command was "
-            f"held to nothing.{stop}"
-        )}
+        # ⛔ Reported, and the call proceeds, by § 7's table: what a broken
+        # configuration cannot say is whether this call is one the record
+        # guards, so the refusing arm would refuse every call in the project --
+        # the edit that repairs the configuration included (§ 19).
+        # ⛔ And the answer is the reader's own, sent once for the session
+        # rather than once per guard per call: the sentence names every guard
+        # the configuration makes inert, so this arm composes none of it and
+        # carries no prefix of its own (§ 19 -> How often).
+        return _inert(str(payload.get("session_id") or ""), stop)
     refused = merge_guard(loaded, command, host=host)
     if refused:
         return refused
@@ -1625,6 +1633,24 @@ def _read(cwd: str | None):
         return loaded, (f" {reader.REFUSAL_PREFACE} {stop}" if stop else "")
     except Exception:  # noqa: BLE001 -- an unreachable reader explains nothing
         return None, ""
+
+
+def _inert(session: str, stop: str) -> dict:
+    """The reader's own answer where the configuration did not resolve (§ 19).
+
+    ⛔ Asked through the shared reader for `_read`'s reason, the cadence
+    included: the sentence, the set of guards it names and the key it is said
+    once per are one statement, so an arm composing any of them would drift from
+    the three beside it. ⚠️ **This arm is where that drifted**, and it is the
+    half a reader notices: its own sentence was the one of the four that cited
+    no section at all.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set one line up
+        return reader.inert_report(session, stop)
+    except Exception:  # noqa: BLE001 -- an unreachable reader answers nothing
+        return {}
 
 
 # --- the arms a role invokes ------------------------------------------------
@@ -2168,6 +2194,15 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             where = Path(directory) / name
             where.mkdir(parents=True, exist_ok=True)
             return where
+
+        # ⛔ The per-session store under this directory rather than the machine's
+        # own -- a second store beside the lease one above, and for the same
+        # reason. The answer about an unresolvable configuration is said once per
+        # session (§ 19), and every payload below names one session, so a suite
+        # claiming on the real store asserts the message on its first run and
+        # the silence on every run after it. ⚠️ Measured on this file: the second
+        # run of it reddened both § 7 checks.
+        os.environ["CLAUDE_PLUGIN_DATA"] = str(Path(directory) / "a-plugin-store")
 
         # ⛔ What every exit payload below names as its directory, and the reason
         # is the base-reading arm rather than the leases: that arm answers about
@@ -2861,6 +2896,42 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("and gives nothing back on an exit either, there being nothing read to release",
               release_answer(_exit("Stop", outside), now=1000.0,
                              store=fresh("unreadable")) == {})
+        # ⛔ The cadence, which is what makes that one answer rather than one per
+        # guard per call, and the arm this file got most wrong: its own sentence
+        # was the one of the four that cited no section at all. ⚠️ Asserted here
+        # as well as in the reader because an arm that composed its own again
+        # would pass both checks above -- those read the message, and only these
+        # read how often it comes and whose it is (§ 19 -> How often).
+        out.append("")
+        out.append("And it is said once for the session rather than on every call:")
+        mine = _call("a-claiming-command", session="a-session-of-this-suite", cwd=unreadable)
+        first = guard_answer(mine, now=1000.0, store=fresh("once"))
+        again = guard_answer(mine, now=1000.0, store=fresh("once"))
+        check("the first guarded call of a session is answered",
+              bool(first.get("systemMessage")), repr(first)[:160])
+        check("and the next one is not, the fact having been said",
+              again == {}, repr(again)[:160])
+        check("the answer names every guard the configuration makes inert, not this one",
+              "every guard" in str(first.get("systemMessage")),
+              str(first.get("systemMessage"))[:160])
+        check("and it cites the section the cadence is stated in, which this arm cited none of",
+              reader.INERT_CITATION in str(first.get("systemMessage")),
+              str(first.get("systemMessage"))[:200])
+        # ⛔ A second configuration whose stop is a different one, because the
+        # claim is keyed on the fact: a key repaired and the reader stopping on
+        # the next one is news rather than a repeat.
+        other = _a_root(Path(directory) / "states-something-else",
+                        "roots: [this is not a mapping]\n")
+        check("the second fixture's stop is a different one, or this asserts nothing",
+              reader.why_refused(other) not in ("", stop), reader.why_refused(other)[:80])
+        check("a different stop in the same session is said too",
+              bool(guard_answer(_call("a-claiming-command", session="a-session-of-this-suite",
+                                      cwd=other), now=1000.0,
+                                store=fresh("once")).get("systemMessage")))
+        check("an event naming no session is never silenced",
+              all(bool(guard_answer(_call("a-claiming-command", session="", cwd=unreadable),
+                                    now=1000.0, store=fresh("once")).get("systemMessage"))
+                  for _ in range(2)))
         check("while a merge whose record could not be read is refused",
               denied(guard_answer(_call("gh pr merge 7"), config=_a_config([]), now=1000.0,
                                   store=fresh("merge"), host=_a_host(code=1))))

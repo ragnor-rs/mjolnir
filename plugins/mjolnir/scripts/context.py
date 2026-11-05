@@ -78,14 +78,16 @@ ARM_ANCHORS = {
     "read": "a-read-this-session-has-already-made",
     "exempt": "the-commands-a-project-names-as-never-bounded",
     "proceeds": "why-every-unestablished-fact-here-proceeds",
-    # The parse this carrier reads rather than states, and the three § 7 rules it
-    # obeys rather than states: an install is silent in a project that configures
-    # nothing, the direction a guard fails in is procedure, and a hook holds its
-    # rule on every call its matcher fires on.
+    # The parse this carrier reads rather than states, the three § 7 rules it
+    # obeys rather than states -- an install is silent in a project that
+    # configures nothing, the direction a guard fails in is procedure, and a hook
+    # holds its rule on every call its matcher fires on -- and § 19's cadence,
+    # which is the reader's: both arms hand it the stop and send what it answers.
     "position": "the-command-position-and-why-the-whole-call-is-not-one",
     "unconfigured": "a-hook-in-a-project-that-states-no-configuration",
     "direction": "which-direction-a-guard-fails-in",
     "reach": "what-a-hook-can-establish-about-the-role-it-is-running-under",
+    "cadence": "how-often-a-configuration-that-does-not-resolve-is-reported",
 }
 
 FACET_CITATION = "schema § 22 → What enters the window, bounded where the call is made"
@@ -543,15 +545,20 @@ def ledger_root() -> Path:
 
     ⛔ Derived, never configured. § 22 makes the ledger per session and nobody's
     artifact: a project stating where it lives would be stating a path for a
-    record only one session ever reads. ⚠️ Under the harness's own store for this
-    plugin where it hands one over, and a temp directory otherwise -- which does
-    not survive a reboot, and for a ledger that is the wanted behaviour rather
-    than a cost, a session not surviving one either.
+    record only one session ever reads.
+
+    ⛔ **And derived by the shared reader rather than here**, which is the two
+    shapes' own reasoning and not restated: this ledger and § 19's
+    once-per-session claim are two names under one store, so a second copy of
+    *where this machine keeps per-session state* would drift the first time
+    either moved. ⚠️ The import cannot fail on the path that reaches this — the
+    arm calling it has resolved a configuration through the same reader — and an
+    arm that reached it without one would be asserting a ledger for a project
+    whose rule nothing read.
     """
-    stated = os.environ.get("CLAUDE_PLUGIN_DATA")
-    if isinstance(stated, str) and stated.strip():
-        return Path(stated.strip()) / "reads"
-    return Path(tempfile.gettempdir()) / f"mjolnir-reads-{os.getuid()}"
+    import config as reader  # noqa: PLC0415 -- the path is set at import time
+
+    return Path(reader.session_store("reads"))
 
 
 def ledger_dir(session: str) -> Path | None:
@@ -865,10 +872,11 @@ def _loaded(payload: dict, config):
         # pointing at § 19's: what a broken configuration cannot say is whether
         # this call is bounded at all, so the refusing arm would refuse every call
         # in the project -- the edit that repairs the configuration included.
-        return None, {"systemMessage": (
-            "Context guard: the project's configuration could not be read, so this call was held "
-            f"to nothing. ({FACET_CITATION}){stop}"
-        )}
+        # ⛔ And the answer is the reader's own, sent once for the session rather
+        # than once per arm per call: the sentence names every guard the
+        # configuration makes inert, so neither arm composes any of it and
+        # neither carries a prefix of its own (§ 19 -> How often).
+        return None, _inert(str(payload.get("session_id") or ""), stop)
     return loaded, {}
 
 
@@ -920,6 +928,26 @@ def _read(cwd: str | None):
         return loaded, (f" {reader.REFUSAL_PREFACE} {stop}" if stop else "")
     except Exception:  # noqa: BLE001 -- an unreachable reader explains nothing
         return None, ""
+
+
+def _inert(session: str, stop: str) -> dict:
+    """The reader's own answer where the configuration did not resolve (§ 19).
+
+    ⛔ Asked through the shared reader for `_read`'s reason, the cadence
+    included: the sentence, the set of guards it names and the key it is said
+    once per are one statement, so an arm composing any of them would drift from
+    the three beside it -- which is what four prefixes and three citations were.
+
+    ⚠️ **Both of this carrier's events answer through here**, which is why the
+    claim is the session's and not the call's: the arm before a call and the arm
+    after it are two processes, and the second has no reading of what the first
+    answered.
+    """
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set at import time
+        return reader.inert_report(session, stop)
+    except Exception:  # noqa: BLE001 -- an unreachable reader answers nothing
+        return {}
 
 
 # --- holding this file to the surface and to its carrier --------------------
@@ -1724,7 +1752,7 @@ def self_test() -> int:  # noqa: PLR0912, PLR0915 -- one assertion per rule, rea
         check("the call is held to nothing rather than refused",
               "hookSpecificOutput" not in answered and bool(answered.get("systemMessage")),
               repr(answered)[:160])
-        check("and the person is told which guard held nothing",
+        check("and the person is told the call was held to nothing",
               "held to nothing" in str(answered.get("systemMessage")),
               str(answered.get("systemMessage"))[:160])
         # ⛔ Held against the reader's own answer and never a substring of it
@@ -1737,10 +1765,50 @@ def self_test() -> int:  # noqa: PLR0912, PLR0915 -- one assertion per rule, rea
         check("and it carries the reader's own stop, whole, so the key is in the message",
               bool(stop) and stop in str(answered.get("systemMessage")),
               f"stop={stop[:70]!r} said={str(answered.get('systemMessage'))[:130]!r}")
+        # ⛔ The result arm answers through the same reader, so it says the same
+        # thing -- driven in a session of its own, the arm above having already
+        # taken this fact's claim in `a-session`. ⚠️ Which is the measurement
+        # rather than an inconvenience: the two arms are two processes on one
+        # call, and the second has no reading of what the first answered, so
+        # *said once* has to be the session's and not the call's (§ 19).
+        came_back = {**_came_back("a-free-command", long_result), "cwd": broken,
+                     "session_id": "a-session-of-the-result-arm"}
         check("the result arm says the same thing",
-              "held to nothing" in str(result_answer(
-                  {**_came_back("a-free-command", long_result), "cwd": broken}
-              ).get("systemMessage", "")))
+              "held to nothing" in str(result_answer(came_back).get("systemMessage", "")))
+        check("and says nothing in a session it has already been said to",
+              result_answer(came_back) == {}, repr(result_answer(came_back))[:120])
+
+        # ⛔ The cadence, which is what makes that one answer rather than one per
+        # arm per call. ⚠️ Asserted here as well as in the reader because an arm
+        # that composed its own sentence again would pass every check above it:
+        # the ones above read the message, and only these read how often it
+        # comes and whose it is (§ 19 -> How often).
+        out.append("")
+        out.append("And it is said once for the session rather than on every call:")
+        mine = {**_call(UNBOUNDED_COMMAND), "cwd": broken,
+                "session_id": "a-session-of-this-suite"}
+        first, again = guard_answer(mine), guard_answer(mine)
+        check("the first guarded call of a session is answered",
+              bool(first.get("systemMessage")), repr(first)[:160])
+        check("and the next one is not, the fact having been said",
+              again == {}, repr(again)[:160])
+        check("the answer names every guard the configuration makes inert, not this one",
+              "every guard" in str(first.get("systemMessage")),
+              str(first.get("systemMessage"))[:160])
+        check("and carries no prefix of this guard's own",
+              not str(first.get("systemMessage")).startswith("Context guard"),
+              str(first.get("systemMessage"))[:70])
+        # ⛔ A second configuration whose stop is a different one, because the
+        # claim is keyed on the fact: a key repaired and the reader stopping on
+        # the next one is news rather than a repeat.
+        other = _a_root(root / "states-something-else", "- not a configuration\n")
+        check("the second fixture's stop is a different one, or this asserts nothing",
+              reader.why_refused(other) not in ("", stop), reader.why_refused(other)[:80])
+        check("a different stop in the same session is said too",
+              bool(guard_answer({**mine, "cwd": other}).get("systemMessage")))
+        check("an event naming no session is never silenced",
+              all(bool(guard_answer({**mine, "session_id": ""}).get("systemMessage"))
+                  for _ in range(2)))
 
     # ⛔ The one thing the fake above cannot assert: that the keys these arms read
     # are the keys a shipped configuration actually resolves to. The fake answers

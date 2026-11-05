@@ -65,12 +65,15 @@ ARM_ANCHORS = {
     "verdict": "which-verdict-and-who-would-answer-the-prompt",
     "allowlist": "the-machines-named-are-the-ones-that-are-not-live",
     "closed": "the-four-ways-it-fails-closed",
-    # The parse this carrier reads rather than states, and the two § 7 rules it
-    # obeys rather than states: an install is silent in a project that
-    # configures nothing, and the direction a guard fails in is procedure.
+    # The parse this carrier reads rather than states, and the rules it obeys
+    # rather than states: an install is silent in a project that configures
+    # nothing, the direction a guard fails in is procedure, and how often a
+    # configuration that does not resolve is reported is the reader's -- this
+    # arm hands it the stop and sends whatever it answers.
     "position": "the-command-position-and-why-the-whole-call-is-not-one",
     "unconfigured": "a-hook-in-a-project-that-states-no-configuration",
     "direction": "which-direction-a-guard-fails-in",
+    "cadence": "how-often-a-configuration-that-does-not-resolve-is-reported",
 }
 
 FACET_CITATION = "schema § 21 → A command that could open a session on a live machine"
@@ -424,10 +427,11 @@ def guard_answer(payload: dict, *, config=None) -> dict:
         # this call reaches anything at all, so the refusing arm would refuse
         # every call in the project -- the edit that repairs the configuration
         # included.
-        return {"systemMessage": (
-            "Live guard: the project's configuration could not be read, so this command was held "
-            f"to nothing. ({FACET_CITATION}){stop}"
-        )}
+        # ⛔ And the answer is the reader's own, sent once for the session
+        # rather than once per guard per call: the sentence names every guard
+        # the configuration makes inert, so this arm composes none of it and
+        # carries no prefix of its own (§ 19 -> How often).
+        return _inert(str(payload.get("session_id") or ""), stop)
     return live_guard(loaded, command, str(payload.get(PERMISSION_MODE) or ""))
 
 
@@ -482,6 +486,26 @@ def _read(cwd: str | None):
         return loaded, (f" {reader.REFUSAL_PREFACE} {stop}" if stop else "")
     except Exception:  # noqa: BLE001 -- an unreachable reader explains nothing
         return None, ""
+
+
+def _inert(session: str, stop: str) -> dict:
+    """The reader's own answer where the configuration did not resolve (§ 19).
+
+    ⛔ Asked through the shared reader for `_read`'s reason, the cadence
+    included: the sentence, the set of guards it names and the key it is said
+    once per are one statement, so an arm composing any of them would drift from
+    the three beside it -- which is what four prefixes and three citations were.
+
+    ⛔ Nothing where the reader cannot be reached, which is a direction this arm
+    cannot actually take: `states_a_configuration` has already answered through
+    the same import and answers no where it fails, so the branch above is
+    unreachable without it.
+    """
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set at import time
+        return reader.inert_report(session, stop)
+    except Exception:  # noqa: BLE001 -- an unreachable reader answers nothing
+        return {}
 
 
 # --- holding this file to the surface and to its carrier --------------------
@@ -730,6 +754,13 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
 
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
+        # ⛔ The per-session store under this directory rather than the machine's
+        # own, because the answer about an unresolvable configuration is said
+        # once per session (§ 19): a suite claiming on the real store asserts
+        # the message on its first run and the silence on every run after it.
+        # ⚠️ Measured rather than foreseen -- the second run of a sibling suite
+        # reddened its two § 7 checks.
+        os.environ["CLAUDE_PLUGIN_DATA"] = str(root / "a-plugin-store")
         listed = root / "outside-every-tree" / "the-names-that-are-not-live"
         listed.parent.mkdir(parents=True, exist_ok=True)
         listed.write_text(
@@ -931,7 +962,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("the call is held to nothing rather than denied",
               "hookSpecificOutput" not in answered and bool(answered.get("systemMessage")),
               repr(answered)[:160])
-        check("and the person is told which guard held nothing",
+        check("and the person is told the call was held to nothing",
               "held to nothing" in str(answered.get("systemMessage")),
               str(answered.get("systemMessage"))[:160])
         # ⛔ Held against the reader's own answer and never a substring of it
@@ -944,6 +975,38 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("and it carries the reader's own stop, whole, so the key is in the message",
               bool(stop) and stop in str(answered.get("systemMessage")),
               f"stop={stop[:70]!r} said={str(answered.get('systemMessage'))[:130]!r}")
+
+        # ⛔ The cadence, which is what makes that one answer rather than one per
+        # guard per call. ⚠️ Asserted here as well as in the reader because an
+        # arm that composed its own sentence again would pass every check above
+        # it: the ones above read the message, and only these read how often it
+        # comes and whose it is (§ 19 -> How often).
+        out.append("")
+        out.append("And it is said once for the session rather than on every call:")
+        mine = {**_call(f"{tool} {LIVE}"), "cwd": broken,
+                "session_id": "a-session-of-this-suite"}
+        first, again = guard_answer(mine), guard_answer(mine)
+        check("the first guarded call of a session is answered",
+              bool(first.get("systemMessage")), repr(first)[:160])
+        check("and the next one is not, the fact having been said",
+              again == {}, repr(again)[:160])
+        check("the answer names every guard the configuration makes inert, not this one",
+              "every guard" in str(first.get("systemMessage")),
+              str(first.get("systemMessage"))[:160])
+        check("and carries no prefix of this guard's own",
+              not str(first.get("systemMessage")).startswith("Live guard"),
+              str(first.get("systemMessage"))[:70])
+        # ⛔ A second configuration whose stop is a different one, because the
+        # claim is keyed on the fact: a key repaired and the reader stopping on
+        # the next one is news rather than a repeat.
+        other = _a_root(root / "states-something-else", "- not a configuration\n")
+        check("the second fixture's stop is a different one, or this asserts nothing",
+              reader.why_refused(other) not in ("", stop), reader.why_refused(other)[:80])
+        check("a different stop in the same session is said too",
+              bool(guard_answer({**mine, "cwd": other}).get("systemMessage")))
+        check("an event naming no session is never silenced",
+              all(bool(guard_answer({**mine, "session_id": ""}).get("systemMessage"))
+                  for _ in range(2)))
 
         out.append("")
         out.append("The allowlist is read as a file of names, and nothing else:")
