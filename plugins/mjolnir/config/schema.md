@@ -6904,7 +6904,7 @@ that reaches either direction's guard. So what is stated here is the rule a reve
 to, and the first role to make one is the first to be held to it.
 
 **The trigger set is closed on what the survey measured a project ruling**, which is what makes it
-a vocabulary rather than a guess: each of the three is one project's stated rule
+a vocabulary rather than a guess: every word above is some project's stated rule
 ([the measurement](../../../docs/configuration-surface.md#a-status-that-moves-backwards-in-three-of-six-projects-and-ruled-in-two)).
 ⚠️ **A fourth was looked for and is deliberately not a word here** — a deploy that fails after the
 advance was already written — because no project was found ruling it; and nothing here would name it
