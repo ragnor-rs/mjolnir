@@ -3709,12 +3709,14 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
         # ⛔ Keyed by **kind** as well as by value, because this map holds two
         # kinds of discriminator: a tier name for the general rule and a
         # criterion for the person-judged one. ⚠️ Keyed on the bare value they
-        # shared one namespace, so a `selects` whose normalised text is one of
-        # the four tier words collided with a sourceless suite of that tier —
-        # refusing a legitimate configuration with every clause of the message
-        # false, and with which of the two messages came back decided by the
-        # order the entries were written in. Found by review of the correction
-        # that introduced it.
+        # shared one namespace, so a `selects` whose normalised text is a tier
+        # word collided with a sourceless suite of that tier — refusing a
+        # legitimate configuration with every clause of the message false, and
+        # with which of the two messages came back decided by the order the
+        # entries were written in. ⛔ Not every tier word: the person-judged one
+        # never reaches the tier-keyed branch, so it has no key to collide with,
+        # and a comment claiming all of them would be the kind of count this
+        # repository deletes.
         elif tier == PERSON_JUDGED_TIER:
             criterion = ("selects", _normalised_command(str(entry.get("selects") or "")))
             if criterion in sourceless:

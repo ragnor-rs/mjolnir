@@ -386,10 +386,10 @@ test_tiers:
       # ⛔ `run`, by § 31's rule that the value follows the verdict this entry names: that verdict
       # is the local command below, and that run stands its own store up.
       #
-      # ⚠️ `executed` below describes the host's run of the same cases, and its comment there says
+      # ⚠️ `executed` above describes the host's run of the same cases, and its comment there says
       # those cases skip locally — which does not sit with the local entry's own `proves`. That
-      # disagreement is this file's and pre-dates the facet; § 31 states outright that nothing
-      # compares the two, so naming it is all this comment can honestly do.
+      # disagreement is this file's and pre-dates the facet; nothing in § 31 reaches a `proves`,
+      # so naming it is all this comment can honestly do.
       needs: [dependency]
       stood_up_by: run
       started: automatic

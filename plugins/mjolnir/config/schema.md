@@ -6479,13 +6479,17 @@ counted, and a figure copied out of it is a figure to keep in sync.
 arithmetic reads the same either way, that section having already ruled that it does not matter who
 stands the dependency up.
 
-⛔ **And where the same cases are run both ways, the value follows the verdict this entry names.**
-One measured project has its store arrive as a service on the host and stand it up itself locally,
-so the tier is honestly described either way and a reader asking *which* has no answer from the
-needs alone. The key is the suite's, the suite's identity is its verdict source, and so the run
-that source names is the run `stood_up_by` is about. ⚠️ **Stated here because it was first settled
-in an example's comments**, where it was a rule nothing could be held to and which two passes of
-this facet answered differently.
+⛔ **On an entry that names a source, the value describes that source's own run.** It follows from
+the identity rule above rather than from a measurement: the key is the suite's, a suite is
+identified by its verdict source, so the run that source names is the run there is anything to say
+about. ⚠️ **Which settles the case where a project's prose describes the dependency arriving two
+ways** — a service beside the host's run, a daemon for a local one — without this facet having to
+decide which description is right.
+
+⛔ **On an entry that names none it describes the tier's dependency and nothing about whose run
+stands it up**, and that limit is stated rather than left to be discovered: a sourceless entry is
+legitimate, the person-judged tier has no other shape, and ⛔ **nothing in this surface resolves the
+question for one** — a reader wanting the answer reads the project's own commands.
 
 ⛔ **And `needs: []` is a statement rather than an unset key**, by the rule this surface opens
 with: a project whose unit tier needs nothing beyond its own build says so, and a tier whose needs

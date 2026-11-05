@@ -333,8 +333,8 @@ give are not one reason**: money in one row, an argument the run refuses to defa
 workflow at all in two more, and a deliberate omission in a fifth. ⛔ So *opt-in* is a property a
 project states rather than one derivable from a cost, which is why the facet carries the key instead
 of reading a price. ⚠️ **The cells are not recopied here**, the figure and the environments being
-the column's — which is the discipline this section states two headings up and would otherwise
-break on its own page.
+the column's — the discipline the first difference above states about its own group, kept on this
+page as well as asked of the surface.
 
 ⛔ **The rail that performs an asking already exists and reads commands**, which is
 [`schema § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
