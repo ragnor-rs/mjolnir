@@ -32,7 +32,7 @@ import sys
 import tempfile
 import unicodedata
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # ⛔ The claim is a test-and-set in **two** arms, because the two orders fail differently and
@@ -61,6 +61,18 @@ REFS_PREFIX = "refs/heads/"
 # How the refusal explains itself when the ref's own history is all there is. Read by the
 # self-test, so a reword travels rather than breaking it.
 UNESTABLISHED = "could not be established"
+
+# How long after a ref is published its claim's tree may not exist yet. Inside this many seconds
+# the orphaned reading is *provisional* rather than a person's call. That the window exists at all,
+# why the reading inside it is read again rather than asked about, why the bound is not a
+# configuration key, and the asymmetry that picks the value rather than a measurement of the
+# interval, are the rule's and are stated with it -- `config/schema.md` § 10 -> *The claim on a
+# work item*.
+#
+# ⚠️ What a reader editing *this* number needs and the surface does not say: nothing else reads it,
+# and it is compared against the host's own `branch_creation` stamp, so a project whose remote
+# records no such stamp never reaches this arm at all and keeps the orphaned reading.
+CUT_WINDOW_SECONDS = 120
 
 # How long a slug may be. A bound is needed for the cut to be part of the derivation rather than
 # a thing the filesystem does later at a length that varies by machine; the value is a readability
@@ -530,6 +542,13 @@ class Liveness:
     live: bool
     reason: str
     landed: bool = False
+    # ⛔ **A fourth reading, and it qualifies the orphaned one rather than joining the disjunction
+    # above.** It is set only where no live arm answered *and* the ref is young enough that its own
+    # tree may not exist yet, so `live` stays false and `landed` stays false and nothing keyed on
+    # either changes behaviour -- which is what keeps the release's *landed or held here* test and
+    # the sweep's *not landed* branch exactly as they were. What it changes is the question a report
+    # puts to a person: read it again, rather than decide.
+    provisional: bool = False
     unestablished: list[str] = field(default_factory=list)
 
 
@@ -778,8 +797,19 @@ def read_liveness(
     integration: str,
     ref_sha: str,
     created_at: str | None = None,
+    now: "datetime | None" = None,
+    window: int = CUT_WINDOW_SECONDS,
 ) -> Liveness:
     """`created_at` is when *this* ref came into existence, read from the host's own record.
+
+    `now` is the instant the window arm at the end measures the ref's age against, and it exists
+    so the suite can stand on both sides of the bound without sleeping. ⛔ Every caller leaves it
+    unset: a role reading a claim reads it at the moment it asks.
+
+    `window` is that arm's bound, and it is a parameter for one reason: ⛔ **the suite plants the
+    arm away by setting it to zero**, which is how the measured defect is reproduced rather than
+    described — a 36-second-old sibling claim reading `orphaned-candidate … ask`. It is the same
+    lever `slug_for`'s `limit` is, and for the same reason.
 
     ⛔ **The host's pull-request arms are keyed on a branch *name*, and a name outlives the ref
     that wore it.** Measured 2026-10-19: a ref published at 14:47:34 read back `landed: the host
@@ -916,6 +946,44 @@ def read_liveness(
             True, "the ref carries commits beyond the integration branch", unestablished=unestablished
         )
 
+    # ⛔ The window in front of the orphaned row, read **after** every arm above and never instead
+    # of one: a ref young enough that its own tree may not be cut yet declines every live arm
+    # for timing rather than for state, so the orphaned reading is provisional and the remedy is to
+    # read it again. § 10's rule; the bound is `CUT_WINDOW_SECONDS` above.
+    #
+    # ⚠️ `created_at` is the ref's own birth as the host records it, which is the same half the
+    # landed arm needs -- so an unreadable one declines here exactly as it declines there, and the
+    # reading stays orphaned-candidate rather than becoming provisional on a guess.
+    born = moment(created_at)
+    if born is None:
+        unestablished.append(
+            "whether this ref is young enough that its own tree may not be cut yet, the ref's "
+            f"creation having {UNESTABLISHED}"
+        )
+    else:
+        at = now or datetime.now(timezone.utc)
+        # ⚠️ One instant carrying a zone and the other not makes the subtraction raise rather than
+        # answer, and this is reached from a refusal's own wording -- so it declines, for the
+        # reason `merge_lands_this_ref` declines on the same mismatch.
+        if (born.tzinfo is None) != (at.tzinfo is None):
+            unestablished.append(
+                "whether this ref is young enough that its own tree may not be cut yet, its "
+                "creation and the current instant not being comparable"
+            )
+        elif at - born < timedelta(seconds=window):
+            # ⚠️ The **age** is in the reason and not only the bound, because the bound alone
+            # leaves a reader to subtract two instants to find out how close to it this ref is --
+            # and how close is the whole of what decides whether reading it again is worth it.
+            age = int((at - born).total_seconds())
+            return Liveness(
+                False,
+                f"no arm of the liveness test answered yes, and this ref is {age}s old -- inside "
+                f"the {window}-second window a start takes between publishing its ref "
+                "and cutting its tree",
+                provisional=True,
+                unestablished=unestablished,
+            )
+
     return Liveness(
         False, "no arm of the liveness test answered yes", unestablished=unestablished
     )
@@ -955,6 +1023,16 @@ class Status:
                 )
             elif self.liveness.live:
                 lines.append(f"live: {self.liveness.reason}.")
+            elif self.liveness.provisional:
+                # ⛔ Read again, never asked about. The orphaned wording below is a person's call
+                # because its two readings cannot be told apart by waiting; this one can, so
+                # putting it to a person hands over a question that answers itself.
+                lines.append(
+                    "provisional: "
+                    f"{self.liveness.reason}. A start publishes its ref before it cuts its tree, "
+                    "so this is what a live sibling looks like mid-start: read it again rather "
+                    "than asking."
+                )
             else:
                 # ⛔ Reported, never broken. The two readings are stated because they are
                 # genuinely indistinguishable from here.
@@ -1555,6 +1633,33 @@ def self_test() -> int:
         suite.ok(
             "without the rollback it leaves the local branch behind too",
             _local_branch(one, "feature/y"),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, two = _bare_world(stack)
+        take(one, "feature/win", str(Path(tmp) / "t1"))
+        # Plant: the window arm's bound set to zero, which is the carrier as it stood when the
+        # defect was measured. Read from the *other* clone, so no tree answers and the ref carries
+        # no commits -- a live sibling 36 seconds into its own start, seen from outside.
+        #
+        # ⛔ This reaches the arm rather than asserting about it: with the bound at zero the same
+        # reading that is `provisional` below comes back `orphaned-candidate`, whose remedy is to
+        # ask a person about a session that is working.
+        sha = remote_ref_sha(two, "origin", "feature/win") or ""
+        born = "2026-11-05T20:37:54Z"
+        asked = moment(born) + timedelta(seconds=36)
+        unwindowed = read_liveness(two, "origin", "feature/win", "main", sha, born, asked, window=0)
+        suite.ok(
+            "with the window's bound at zero a 36-second-old sibling claim reads orphaned",
+            not unwindowed.provisional and not unwindowed.live and not unwindowed.landed,
+            unwindowed.reason,
+        )
+        windowed = read_liveness(two, "origin", "feature/win", "main", sha, born, asked)
+        suite.ok(
+            "and the bound is what changes it, the same reading being provisional with it in place",
+            windowed.provisional,
+            windowed.reason,
         )
 
     # ---- Phase two: the rule. ----
@@ -2182,6 +2287,85 @@ def self_test() -> int:
         here = status(one, "feature/z")
         suite.ok("the clone holding the tree also reads it live",
                  here.liveness is not None and here.liveness.live, here.report())
+
+    print("\nthe window in front of the orphaned reading:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, two = _bare_world(stack)
+        take(one, "feature/win", str(Path(tmp) / "t1"))
+        # Read from the other clone throughout: no tree here, no commits, no host record of a
+        # pull request. Every live arm declines for timing rather than for state, which is
+        # the state a start is in between publishing its ref and cutting its tree.
+        sha = remote_ref_sha(two, "origin", "feature/win") or ""
+        born = "2026-11-05T20:37:54Z"
+        # ⚠️ Both instants are stated rather than taken from the clock, so the two sides of the
+        # bound are reached without sleeping through it and the suite does not change answer at
+        # whatever second it happens to run.
+        #
+        # ⛔ **And they are stated as absolute offsets rather than as the bound plus or minus
+        # something**, which the first draft did and which made this whole block follow the
+        # constant wherever it was moved: with the bound planted to a negative, offsets of
+        # `CUT_WINDOW_SECONDS ± 1` went negative too and the arm fired on a ref *older* than its
+        # own creation. What that cost is in the mutation table the facet's own record carries, and
+        # is not restated here. The inside offset is the 36 seconds the defect was measured at; the
+        # outside one is an hour, which no plausible bound reaches.
+        inside = read_liveness(
+            two, "origin", "feature/win", "main", sha, born,
+            moment(born) + timedelta(seconds=36),
+        )
+        outside = read_liveness(
+            two, "origin", "feature/win", "main", sha, born,
+            moment(born) + timedelta(seconds=3600),
+        )
+        # ⚠️ The reports are compared on the **reading's name** and not on the word `ask`, which
+        # was the first draft and went red on the suite's own first run: the provisional wording
+        # ends "rather than asking", so a check forbidding the word matched its own remedy. The
+        # spelling a report is held to is the one that names which question a person is being put.
+        said_inside = Status(True, sha, Holder(), inside, False).report()
+        said_outside = Status(True, sha, Holder(), outside, False).report()
+        suite.ok("a ref younger than the bound reads provisional, not orphaned",
+                 inside.provisional, inside.reason)
+        suite.ok("⛔ and the reading names the ref's own age, not only the bound",
+                 "36s old" in inside.reason, inside.reason)
+        suite.ok("⛔ and its report names re-reading, carrying no orphaned reading at all",
+                 "read it again" in said_inside and "orphaned-candidate" not in said_inside,
+                 said_inside)
+        suite.ok("the same ref a second past the bound reads as an orphaned candidate",
+                 not outside.provisional and not outside.live and not outside.landed,
+                 outside.reason)
+        suite.ok("⛔ and that one asks, the reading a person settles being unchanged",
+                 "orphaned-candidate" in said_outside and "ask." in said_outside,
+                 said_outside)
+        # ⛔ The declining arm, which is the whole of what this project's own remote supports: a
+        # bare repository records no `branch_creation`, so `status` hands the age arm nothing.
+        unread = read_liveness(two, "origin", "feature/win", "main", sha)
+        suite.ok("a ref whose creation cannot be read stays an orphaned candidate",
+                 not unread.provisional, unread.reason)
+        suite.ok("⛔ and names the half it could not establish rather than dropping it",
+                 any("young enough" in item for item in unread.unestablished),
+                 "; ".join(unread.unestablished))
+        # ⛔ The arm's second decline, which had no check at all until this diff was read as a
+        # whole: an instant carrying a zone against one that does not makes the subtraction raise
+        # rather than answer, and this arm is reached from a refusal's own wording -- so a crash
+        # would land on the path that reports the refusal.
+        naive = read_liveness(
+            two, "origin", "feature/win", "main", sha, born,
+            moment(born).replace(tzinfo=None) + timedelta(seconds=36),
+        )
+        suite.ok("a creation and an instant that are not comparable decline rather than raising",
+                 not naive.provisional, naive.reason)
+        suite.ok("⛔ and that decline is named too",
+                 any("not being comparable" in item for item in naive.unestablished),
+                 "; ".join(naive.unestablished))
+        # ⛔ Must stay green: the readings every other consumer keys on are untouched, which is
+        # what keeps the release's *landed or held here* test and the sweep's *not landed* branch
+        # behaving exactly as they did. Checked on the reading itself, because a `provisional`
+        # that had set either flag would change both of those silently.
+        suite.ok("⛔ provisional sets neither `live` nor `landed`, so nothing downstream moves",
+                 not inside.live and not inside.landed)
+        suite.ok("⛔ and a provisional claim still refuses a start",
+                 not claim_free(two, "feature/win")[0])
 
     print("\nrelease:")
 

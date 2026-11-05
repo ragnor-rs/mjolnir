@@ -222,8 +222,21 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" take \
   authority.
 - `claim.py name` answers what a start would call the branch, for a reply that needs the name
   before the claim exists. ⛔ It is the same derivation and not a second one.
-- ⛔ **An orphaned claim is not takeable by this role.** `status` reports one as an
-  orphaned-candidate with both readings stated; it is a person's call. **Ask.**
+- ⛔ **A refusal reading `provisional` is read again, never asked about.** A start publishes its ref
+  before it cuts its tree, so that reading is what a sibling a minute into its own start looks like
+  from here — the carrier says which it is in the refusal itself
+  ([`§ 10`](../../config/schema.md#the-claim-on-a-work-item)). Re-run the same attempt; a second
+  provisional answer means the sibling is working and the item is simply taken, which the bullet
+  above already disposes of.
+- ⛔ **An orphaned claim is not takeable by this role**, and ⛔ **that is not the same thing as
+  stopping the pass.** `status` reports one as an orphaned-candidate with both readings stated, and
+  which of the two answers above governs is decided by how the item was chosen rather than by the
+  reading:
+  - **Auto-picked** ⇒ skipped like any other refusal, the pass takes the next candidate, and the
+    orphan is **named in the reply** for a person to settle. ⛔ The asking is about that claim's own
+    disposition and never about which item to start — a pass that stopped here would deliver nothing
+    and ask a question the ordering has already answered.
+  - **Named** ⇒ stop and ask, there being no next candidate to fall through to.
 
 **The assignee is written beside the claim and is not part of it.** It goes through `assign`, and
 ⚠️ where every session authenticates as the same user it carries *taken* and nothing more — it
@@ -332,7 +345,9 @@ first sentence, then the facts, with a table where the content enumerates.
   is outside every tree and outlives the window, while a session that ends mid-item leaves it
   standing. ⛔ **So the reply also says what reading it back will look like** — an orphaned claim,
   which step 4 makes a person's call rather than this role's, and which is the one case on this
-  route a person still has to resume by hand;
+  route a person still has to resume by hand. ⚠️ **And that it does not read that way immediately**:
+  for the length of § 10's cut window the same ref reads `provisional` instead, so a reading taken
+  moments after this session died says *read it again* and only a later one asks;
 - ⛔ **where the project maps no finishing role**, that the route ends with the work in the tree and
   nothing to open a change — § The loop's absent-leg rule, said here because a route that ends
   silently is what this statement exists to prevent;
