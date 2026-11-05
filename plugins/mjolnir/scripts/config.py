@@ -3104,6 +3104,26 @@ class Config:
                     "(`writer: never`): the credential acts as a person's own "
                     "account, so the move is reported instead of made."
                 )
+        # § 32, and the loop above is why this one exists rather than being read
+        # off it: that loop answers who may write a status **going in**, and a
+        # reverse edge carries its own writer, which § 32 says may legitimately
+        # differ. ⛔ So a project whose forward writer is `procedure` and whose
+        # reverse writer is anybody else reads, from the loop alone, as one the
+        # procedure may move either way -- true going in and false coming back,
+        # which is the one reading this facet must not leave a role with.
+        # ⚠️ Reported for every writer that is not the procedure's and not for
+        # `never` alone: unlike a status, a reverse edge has no second mechanism
+        # a role could ask, so each of them is equally a move it may not make.
+        for entry in self.get("reversals") or []:
+            if not isinstance(entry, dict) or entry.get("writer") == "procedure":
+                continue
+            writer, to_role = entry.get("writer"), entry.get("to_role")
+            out.append(
+                f"The step back to `{to_role}` on `{entry.get('trigger')}` may "
+                f"not be written by the procedure (`writer: {writer}`), whatever "
+                "that status's forward writer is: the move is reported for "
+                f"`{writer}` to make rather than made (§ 32)."
+            )
         return out
 
     def to_dict(self) -> dict:
@@ -5964,12 +5984,15 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
         if "name" not in status:
             raise ConfigError(f"{where}.name", "required (§ 4.2).")
 
-    # § 32. Read against `statuses` above rather than beside it, because every
-    # refusal here is about the two agreeing: a reverse edge names a role, and a
-    # role no status maps is a move this project has nowhere to make. ⛔ Refused
-    # at load and not met against an item -- which is the whole difference from
-    # § 4.2's absent-role case, where a role the configuration does not map is
-    # legitimate and reported by the port.
+    # § 32. Read after `statuses` above rather than anywhere in this function,
+    # because **one** of the refusals below is about the two keys agreeing: a
+    # reverse edge names a role, and a role no status maps is a move this project
+    # has nowhere to make. ⚠️ The rest read `reversals` alone and would behave
+    # the same placed anywhere -- said plainly, because the position needs one
+    # reason and a reason generalised to every branch is the wrong one. ⛔ The
+    # agreement is refused at load and not met against an item, which is the
+    # whole difference from § 4.2's absent-role case, where a role the
+    # configuration does not map is legitimate and reported by the port.
     mapped_roles = {
         status.get("role") for status in statuses if isinstance(status, dict)
     }
@@ -5993,8 +6016,9 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                 f"{where}.trigger",
                 f"is {entry['trigger']!r}; the surface states "
                 f"{' | '.join(triggers)}. The set is closed on what the survey "
-                "measured a project ruling, so a trigger no project was found to "
-                "rule is a change to the surface rather than a word in this file.",
+                "measured a project's work doing, ruled or not, so a case no "
+                "project was found doing is a change to the surface rather than a "
+                "word in this file.",
             )
         if entry["trigger"] in seen_triggers:
             raise ConfigError(
@@ -8007,19 +8031,40 @@ def self_test() -> int:
     # directions, because the complement is what makes the report mean anything
     # -- a project that rules an edge must *not* be told it rules none, which is
     # the one way this branch can be wrong while still printing.
-    ruling, silent = [], []
+    # ⚠️ Named apart from `silent` above, which this function rebinds twice
+    # already for two other facets: a third meaning for one name in one function
+    # is a trap for whichever edit reads the wrong one.
+    rules_an_edge, rules_none = [], []
     for name, example in sorted(loaded.items()):
         lines = example.unavailable()
         says_none = any("No reverse edge is ruled" in line for line in lines)
         if _absent_as(example.get("reversals"), []):
-            ruling.append(name)
+            rules_an_edge.append(name)
             check(
                 f"{name} rules a reverse edge and is not reported as ruling none",
                 not says_none,
                 f"reported {lines!r}",
             )
+            # ⛔ And every edge the procedure may not write is named, which the
+            # per-status loop cannot answer: a reverse writer may differ from
+            # the target status's, so an edge reported only by that loop is one
+            # a role reads as writable in both directions. ⚠️ Held per entry
+            # rather than per example, since one project may rule several.
+            for entry in _absent_as(example.get("reversals"), []):
+                if entry.get("writer") == "procedure":
+                    continue
+                check(
+                    f"{name} names the step back to `{entry.get('to_role')}` "
+                    "as one the procedure may not write",
+                    any(
+                        str(entry.get("trigger")) in line
+                        and str(entry.get("writer")) in line
+                        for line in lines
+                    ),
+                    f"reported {lines!r}",
+                )
         else:
-            silent.append(name)
+            rules_none.append(name)
             check(
                 f"{name} says it rules no reverse edge",
                 says_none,
@@ -8027,8 +8072,8 @@ def self_test() -> int:
             )
     check(
         "an example reaches each of § 32's two arms",
-        bool(ruling) and bool(silent),
-        f"ruling {ruling!r}, silent {silent!r}",
+        bool(rules_an_edge) and bool(rules_none),
+        f"ruling an edge {rules_an_edge!r}, ruling none {rules_none!r}",
     )
     check(
         "an example reaches each of those two arms",
@@ -11441,12 +11486,18 @@ def _planted_violations():
          at("statuses", [{"name": "x", "role": "sideways", "writer": "procedure"}])),
         ("a status writer outside the vocabulary", "statuses[0].writer",
          at("statuses", [{"name": "x", "role": "initial", "writer": "the cat"}])),
-        # § 32's shape, and then the two refusals that are about `reversals` and
-        # `statuses` **agreeing** rather than about either on its own. ⚠️ The
-        # target of the last one is a role the surface states and this project
-        # maps no status to: a project that came to map it would leave the plant
-        # reaching nothing, and what that produces is this case reporting no
-        # refusal at all rather than a quiet pass.
+        # § 32's shape, and then the one refusal that is about `reversals` and
+        # `statuses` **agreeing** rather than about either on its own -- the
+        # target-no-status-maps case, last of the three `to_role` plants.
+        #
+        # ⛔ **Its target is derived and not a literal, and the literal was the
+        # quiet pass.** The role has to be one the surface states *and* this
+        # example maps no status to: written as `deployed`, the plant was one
+        # rename away from being refused by the **vocabulary** branch under the
+        # identical key, which reads green while asserting nothing about the
+        # agreement branch. ⚠️ The arm that reports a project coming to map it is
+        # the complement and is honest either way -- `broken` becomes `None` and
+        # the case reddens -- so only the vocabulary route needed closing.
         ("a reversals list that is not a list", "reversals",
          at("reversals", "backwards")),
         ("a reversal entry that is not a block", "reversals[0]",
@@ -11469,7 +11520,8 @@ def _planted_violations():
                            "to_role": "sideways", "writer": "automation"}])),
         ("a reversal target no status maps", "reversals[0].to_role",
          at("reversals", [{"trigger": "merged_under_a_later_role",
-                           "to_role": "deployed", "writer": "automation"}])),
+                           "to_role": _a_role_no_status_maps(),
+                           "writer": "automation"}])),
         ("a reversal with no writer", "reversals[0].writer",
          at("reversals", [{"trigger": "merged_under_a_later_role",
                            "to_role": "initial"}])),
@@ -13361,6 +13413,33 @@ def _a_valid_example() -> dict:
     """
     with open(_examples()[0], encoding="utf-8") as handle:
         return _load_yaml(handle.read(), CONFIG_PATH)
+
+
+def _a_role_no_status_maps() -> str:
+    """A role § 4.2 states that the example `_a_valid_example` maps no status to.
+
+    ⛔ Derived from the surface and the example together, because a literal here
+    is one rename away from sending its plant into the **vocabulary** branch
+    under the same key -- which reads green while asserting nothing about the
+    agreement between `reversals` and `statuses` (§ 32). ⚠️ Raises rather than
+    answering where the example maps every role the surface states: there is then
+    no such role to plant, and a plant built on a fallback would assert whatever
+    the fallback happened to be.
+    """
+    mapped = {
+        status.get("role")
+        for status in _absent_as(_get(_a_valid_example(), "statuses"), [])
+        if isinstance(status, dict)
+    }
+    for role in facts_for("role"):
+        if role not in mapped:
+            return role
+    raise ConfigError(
+        "statuses",
+        "the example maps every role the surface states, so § 32's "
+        "target-no-status-maps plant has no role to aim at and would assert "
+        "nothing. Plant it against an example that maps a subset.",
+    )
 
 
 def _a_chat_kind_that_reads_an_archive() -> str:

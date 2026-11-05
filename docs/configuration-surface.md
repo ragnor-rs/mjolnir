@@ -2634,7 +2634,7 @@ of them, and only two of the three state it as a rule:
 
 The remaining projects state nothing about a reverse edge: two have roles that refuse to write a
 status later than the work supports and never the other way, and one carries no work-item status
-vocabulary at all, having no process role files.
+vocabulary for a reverse edge to move through at all.
 
 ⚠️ **Two of the three are not what the item asking for this predicted**, which is worth recording
 because the prediction is what the facet was nearly built against: it read as one project ruling two
@@ -2660,8 +2660,19 @@ surface and not in the role that reads it.
 ⚠️ **One more trigger was looked for and not found**: a deploy that fails after the advance was
 already written. No project's deploy role steps the item back on a failed run — one of them states
 the opposite, that a failed release is not repaired by moving anything backwards — so the surface's
-list is the cases above and no more. ⛔ **The criterion is what a project was measured ruling**, and
-it is worth being exact about which, because the near-miss criterion excludes a case the list
-contains: *what a role in this procedure observes* would drop A's acceptance rejection too, that
-project's deploy role having no counterpart here either. What would add the missing one is a project
-found ruling it, and #13 is where the role that would observe it is answered.
+list is the cases above and no more.
+
+⛔ **The criterion is what a project's work was measured *doing*, ruled or not** — stated, with the
+alternative it rejects, at
+[`schema.md § 32`](../plugins/mjolnir/config/schema.md#32-a-status-that-moves-backwards). Two
+near-miss criteria were each written into the surface and taken back out, which is worth recording
+because both read as the obvious one:
+
+| Criterion | What it wrongly excludes |
+|---|---|
+| *What a role in this procedure observes* | A's acceptance rejection, that project's deploy role having no counterpart here either — so it drops a case with a rule behind it |
+| *What a project was measured **ruling*** | B's merge case, which is ruled nowhere — so it drops the one case with **no** rule, which is the one that needs a key |
+
+The second is the sharper trap: a facet whose purpose is to let a project rule what is already
+happening to it cannot take *already ruled* as its admission test. What would add the missing one is
+a project found doing it, and #13 is where the role that would observe it is answered.

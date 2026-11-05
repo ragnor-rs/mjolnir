@@ -333,10 +333,10 @@ statuses:
 
 # § 32. No reverse edge is ruled here, and the honest reason is that the one case this
 # repository has is answered a different way: an item whose unmet bullet turns up after it
-# closed is reopened and edited by hand, which is a person's decision and not a trigger any
-# role observes. ⚠️ So `[]` rather than `work_added_under_a_finished_item` — a trigger
-# configured for a move no role here makes would be dead configuration, which is what the
-# surface's own trigger set is closed to prevent.
+# closed is reopened and edited by hand, and this project's two statuses give a reverse move
+# nowhere to go that a reopen does not already reach. ⚠️ So `[]` — and ⛔ that is this
+# project's answer about itself and never a statement about the trigger set, whose own
+# criterion § 32 states and this comment does not restate.
 reversals: []
 
 readiness:

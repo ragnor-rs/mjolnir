@@ -6903,14 +6903,21 @@ deploy role of #13 and the advance of #44 — neither of which is built, and the
 that reaches either direction's guard. So what is stated here is the rule a reverse move is held
 to, and the first role to make one is the first to be held to it.
 
-**The trigger set is closed on what the survey measured a project ruling**, which is what makes it
-a vocabulary rather than a guess: every word above is some project's stated rule
+**The trigger set is closed on what the survey measured a project's work actually doing**, ruled or
+not, which is what makes it a vocabulary rather than a guess
 ([the measurement](../../../docs/configuration-surface.md#a-status-that-moves-backwards-in-three-of-six-projects-and-ruled-in-two)).
-⚠️ **A fourth was looked for and is deliberately not a word here** — a deploy that fails after the
-advance was already written — because no project was found ruling it; and nothing here would name it
-either, no role in this procedure deploying. ⛔ **Which of those two is the criterion matters**: a
-trigger some project rules is a word here whether or not a role in this procedure observes it, and
-whether *this* project configures it is a separate question its own `[]` answers.
+⚠️ **Ruled is not the test, and one of the words above is the reason it cannot be**: that case
+happens in a project whose process rules it nowhere — the tracker's own automation performs it and
+the only statement near it forbids correcting a status by hand — which is the state this facet
+exists to let a project leave. A set closed on *ruled* would exclude the one case with no rule,
+which is the one that needs a key.
+
+⚠️ **One more was looked for and is deliberately not a word here** — a deploy that fails after the
+advance was already written — because no project was found doing it **or** ruling it, and one states
+the opposite outright. ⛔ **Which criterion this is matters twice over**: a case a project's work
+performs is a word here whether or not that project has a rule for it and whether or not a role in
+this procedure observes it, and whether *this* project configures it is a separate question its own
+`[]` answers.
 
 ⛔ **A `to_role` no status maps is refused with the key named**, which is a reader's refusal rather
 than a role's report: § 4.2's absent-role case is a legitimate configuration met against an item,

@@ -50,9 +50,13 @@ Three things it deliberately does not do:
     absent case is blank, an operation asked for or implemented that the surface
     does not state for that port, two adapters for one kind, a module in a port's
     package naming no kind or failing to import, a status word the configuration
-    maps that its tracker cannot hold, and a role mapped to two status words.
-    None of those is a tracker or a store that cannot do something; each is a
-    text that does not say what the procedure is supposed to do.
+    maps that its tracker cannot hold, a role mapped to two status words, and a
+    reverse-edge trigger ruled twice. None of those is a tracker or a store that
+    cannot do something; each is a text that does not say what the procedure is
+    supposed to do. ⚠️ **The last two are one shape and are listed apart on
+    purpose**: both are a configuration answering once-asked questions twice,
+    and each names its own key, so a reader meeting either is sent to the key
+    they would edit rather than to the shape they share.
   * **It does not decide what a role then does.** The port reports which
     fallback was taken; whether that stops the role is the role's business, the
     way `config.py` reports what a configuration cannot support without acting
@@ -942,13 +946,16 @@ class Port:
     def advance_to(self, role: str, *args, **kwargs) -> Outcome:
         """Ask for an advance to a status **role**, never to a status word.
 
-        Four answers are reports rather than exceptions: no status here maps the
-        role, which is a legitimate configuration (§ 4.2); the configured writer
-        is somebody else, which is a refusal naming that writer; the writer is
-        `never`, which § 4.2 states as the case where the procedure writes
-        nothing at all and reports -- so the refusal hands the move to nobody,
-        there being no writer to hand it to; or the move goes through `set_state`
-        and its capability decides.
+        What comes back is a report rather than an exception wherever the
+        configuration is a legitimate one: no status here maps the role, which is
+        exactly that (§ 4.2); the configured writer is somebody else, which is a
+        refusal naming that writer; the writer is `never`, which § 4.2 states as
+        the case where the procedure writes nothing at all and reports -- so the
+        refusal hands the move to nobody, there being no writer to hand it to; or
+        the move goes through `set_state` and its capability decides. ⛔ **The
+        raise is one layer down**, in `_mapped_status`, for a role two status
+        words answer. ⚠️ **No count of either list is written here**, a figure
+        over them being a copy of what the code does.
 
         ⛔ **It asks for an advance and never discovers a reversal.** A step
         backwards is `revert_to` below, asked for as one, by § 32 -- so what this
@@ -960,16 +967,26 @@ class Port:
         # move against an operation that no longer exists.
         self._stated("set_state")
         status = self._mapped_status(role)
+        # ⛔ `to_role` is carried on every answer this method gives, including the
+        # ones whose `detail` already names the role. The report's own rule is
+        # that a fact a move or a refusal *names* is a field, and a direction
+        # that spelled the role into prose and left the field null would oblige
+        # the parse that rule exists to delete -- measured as exactly that, the
+        # reverse direction having been given the fields while this one kept the
+        # prose.
         if status is None:
             return Outcome(
                 "set_state",
                 performed=False,
+                to_role=role,
                 detail=f"No status here maps the `{role}` role, so there is "
                 "nothing to advance to. A project maps a subset and an absent "
                 "role is a legitimate configuration.",
             )
         refusal = self._refused_by_writer(
-            status.get("writer"), f"the `{role}` status (`{status.get('name')}`)"
+            status.get("writer"),
+            f"the `{role}` status (`{status.get('name')}`)",
+            to_role=role,
         )
         if refusal is not None:
             return refusal
@@ -985,7 +1002,9 @@ class Port:
         # role passing the status word itself -- and that second one is exactly
         # what § 3 forbids. An absent capability stayed correct throughout,
         # which is why nothing before an implementation existed could catch it.
-        return self.invoke("set_state", *args, status=status.get("name"), **kwargs)
+        outcome = self.invoke("set_state", *args, status=status.get("name"), **kwargs)
+        outcome.to_role = role
+        return outcome
 
     def revert_to(self, trigger: str, *args, **kwargs) -> Outcome:
         """Step an item **back**, on a trigger this project rules (§ 32).
@@ -994,12 +1013,17 @@ class Port:
         role naming where to step back to would be deriving the edge § 32 says
         is configured; what a role states here is what it observed.
 
-        Four answers are reports rather than exceptions: this project rules no
-        reverse edge for the trigger, which is the refusal that keeps a role from
-        inventing a step backwards and is the behaviour of every project that
-        writes `[]`; no status maps the entry's role; either writer refusal, by
-        the shared guard above, so the reverse is checked exactly as the forward
-        one is; or the move goes through `set_state` and its capability decides.
+        What comes back is a report rather than an exception wherever the
+        configuration is a legitimate one: this project rules no reverse edge for
+        the trigger, which is the refusal that keeps a role from inventing a step
+        backwards and is the behaviour of every project that writes `[]`; no
+        status maps the entry's role; either writer refusal, by the shared guard
+        above, so the reverse is checked exactly as the forward one is; or the
+        move goes through `set_state` and its capability decides. ⛔ **One case
+        raises instead** — a trigger ruled twice, which the module docstring
+        lists with the other ambiguous statements. ⚠️ **No count of them is
+        written here**: the list above is answers and the one below is a raise,
+        and a figure over either is a copy of what the code does.
 
         ⚠️ **The writer read is the entry's and not the target status's.** § 4.2's
         writer answers who advances *into* a status, which is a different act --
@@ -1153,10 +1177,9 @@ def invocation_report(name: str, operation: str, outcome: "Outcome") -> dict:
     writer and § 32's trigger and target role are what a role acts on -- the
     writer a refusal hands the move to, the items a batch report says stepped
     back -- and a shape that carried them only inside `detail` would oblige every
-    reader to parse a sentence somebody may reword. ⚠️ **Measured on § 32's own
-    change**, where the two new fields were added to `Outcome` under a docstring
-    forbidding exactly that parse and did not reach this shape; `writer` had the
-    same gap already and is closed here with them.
+    reader to parse a sentence somebody may reword. ⚠️ **Both directions, which
+    is the half that goes missing**: a role named in an advance's prose and left
+    null in its field is the same parse one direction over.
     """
     return {
         "port": name,
@@ -1350,9 +1373,12 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
 
     ⛔ Takes the port rather than finding one: `self_test` runs this over every
     port the markers declare, so an assertion written here is an assertion made
-    about all of them. A port-specific one — § 4.2's writer refusal is the only
-    case — is guarded by the operation it needs being in that port's own list,
-    which is the port's fact and not a branch on its name.
+    about all of them. A port-specific one — § 4.2's writer refusal and § 32's
+    reverse edge, both of which hang off `set_state` — is guarded by the
+    operation it needs being in that port's own list, which is the port's fact
+    and not a branch on its name. ⚠️ **No count of those is written here**: the
+    guard is what makes one safe, so a figure over them would be a copy that
+    goes stale the next time one is added, green.
     """
     # ⛔ Read the surface through `check` rather than beside it. The reader's
     # own suite learned this the hard way one file over: the command the
@@ -1786,6 +1812,35 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         advanced.result != a_role,
         f"received the role `{a_role}` where its status word belongs",
     )
+    # ⛔ The forward direction carries the role as a field too, on every answer it
+    # gives. ⚠️ Asserted on the **report** and over all three answers, because the
+    # way this fails is one direction being given the fields while the other keeps
+    # the role in its prose -- measured exactly that way on § 32's own change.
+    for label, outcome in (
+        ("a performed advance", advanced),
+        (
+            "an advance refused by its writer",
+            Port(
+                _with_statuses([{"name": "a status", "role": a_role, "writer": NEVER}]),
+                spec,
+                adapter=Adapter(),
+                stated=stated,
+            ).advance_to(a_role),
+        ),
+        (
+            "an advance to a role no status maps",
+            Port(_with_statuses([]), spec, adapter=Adapter(), stated=stated).advance_to(
+                another_role
+            ),
+        ),
+    ):
+        asked = another_role if "no status maps" in label else a_role
+        reported = invocation_report(spec.name, "set_state", outcome)
+        check(
+            f"{label} reports the role it was about as a field",
+            reported["to_role"] == asked,
+            f"reported to_role={reported['to_role']!r}, wanted {asked!r}",
+        )
     twice = _with_statuses(
         [
             {"name": "one word", "role": a_role, "writer": PROCEDURE},
@@ -1961,12 +2016,21 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
 
         return operation
 
-    writing = Adapter(
-        {
-            operation: _noting(operation)
-            for operation in ("set_state", "comment", "set_labels")
-            if operation in stated
-        }
+    writes = {
+        operation: _noting(operation)
+        for operation in ("set_state", "comment", "set_labels")
+        if operation in stated
+    }
+    writing = Adapter(writes)
+    # ⛔ The double has to implement something besides the move, or the assertion
+    # below degrades from *they were never reached* to *they were absent* -- the
+    # `if operation in stated` filter is required, `Adapter` refusing an
+    # operation the surface does not state, and it is also what would quietly
+    # empty this fixture if either of the other two left § 3's table.
+    check(
+        "the double implements an item-writing operation besides the move itself",
+        len(writes) > 1,
+        f"implements only {sorted(writes)!r}, so nothing could have been reached",
     )
     only_the_role = Port(
         _with_reversals(
@@ -2476,10 +2540,12 @@ def self_test() -> int:
         )
     # § 32's key, held the same way and for the same reason: a refusal above
     # tells somebody which key to edit, and a key the surface has renamed sends
-    # them to one that is not there. ⚠️ Read off the surface through the reader's
-    # own parse, which is the idiom this file already uses for a kind set.
-    with open(config.SURFACE, encoding="utf-8") as handle:
-        declared = config.surface_facts(handle.read())["required"]
+    # them to one that is not there. ⚠️ **Through `surface_facts` and not
+    # `facts_for`**, which is the sibling above's idiom and reaches `enums`
+    # alone -- a `# required` marker is not an alternation, so there is nothing
+    # to read it through. ⛔ And over the text this function already holds rather
+    # than opening the surface a third time.
+    declared = config.surface_facts(surface_text)["required"]
     check(
         f"the surface still declares `{REVERSALS}` as a required key",
         REVERSALS in declared,
