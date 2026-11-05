@@ -6859,7 +6859,7 @@ reversals:
 ```
 
 [§ 4.2](#42-status--an-ordered-set-of-name-role-writer) is an ordered set and every writer in it
-advances; nothing there, in any role or in any operation describes the reverse edge.
+advances, and nothing there — nor any role, nor any operation — describes the reverse edge.
 
 ⛔ **And this facet does not read that order either, which is a stated limit rather than an
 omission.** An entry names the role it steps **to** and no role it steps *from*, so there is no pair
