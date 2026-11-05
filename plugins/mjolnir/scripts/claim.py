@@ -947,7 +947,7 @@ def read_liveness(
         )
 
     # ⛔ The window in front of the orphaned row, read **after** every arm above and never instead
-    # of one: a ref young enough that its own tree may not be cut yet declines all three live arms
+    # of one: a ref young enough that its own tree may not be cut yet declines every live arm
     # for timing rather than for state, so the orphaned reading is provisional and the remedy is to
     # read it again. § 10's rule; the bound is `CUT_WINDOW_SECONDS` above.
     #
@@ -2295,7 +2295,7 @@ def self_test() -> int:
         _, one, two = _bare_world(stack)
         take(one, "feature/win", str(Path(tmp) / "t1"))
         # Read from the other clone throughout: no tree here, no commits, no host record of a
-        # pull request. All three live arms decline for timing rather than for state, which is
+        # pull request. Every live arm declines for timing rather than for state, which is
         # the state a start is in between publishing its ref and cutting its tree.
         sha = remote_ref_sha(two, "origin", "feature/win") or ""
         born = "2026-11-05T20:37:54Z"

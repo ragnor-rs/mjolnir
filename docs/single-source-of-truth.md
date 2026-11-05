@@ -1200,7 +1200,7 @@ defect was measured at, and an hour.
 | an unreadable creation becomes provisional rather than declining | 3 lines red | 0 |
 | the incomparable-instants decline removed | **crash**, no line red at all | 0 |
 
-⚠️ **The last row is a different signal from the five above it and is the reason the decline is
+⚠️ **The last row is a different signal from the rows above it and is the reason the decline is
 there.** Removing it does not redden the suite; it kills it, the subtraction raising on an instant
 carrying a zone against one that does not — and this arm is reached from a refusal's own wording, so
 the crash would land on the path that reports the refusal. ⚠️ A mutation that crashes is still a
