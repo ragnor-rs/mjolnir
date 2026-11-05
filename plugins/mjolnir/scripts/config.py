@@ -1748,6 +1748,137 @@ class Config:
             )
         return {"name": name, **self.groupings[name]}
 
+    def tier(self, name: str) -> dict:
+        """§ 31's suites classified under one tier, and what each needs.
+
+        The reading the launching role is owed, performed here for the reason
+        `person_for` below is one implementation: a role parsing this facet for
+        itself is a second reader of it, free to disagree about what the project
+        wrote. ⛔ And it **renders** every key an entry carries rather than only
+        the ones the caller asked about, which is what holds them: a field no
+        output prints is a field nothing asserts, so `refused_on` and
+        `selection_held_by` would otherwise be validated and then unread.
+
+        ⛔ Three answers, and never two. A tier the project states as unable to
+        run comes back with its suites; a tier it does not state comes back
+        `stated: false` with its suites empty -- which is § 31's *what is absent
+        from the list is a suite with nothing to lack* and ⛔ never *a tier that
+        failed*; and a facet the project states absent comes back
+        `carried: false` with the project's own reason, which is
+        [§ 2](#2-code-host)'s absence-of-signal rule arriving where a role would
+        otherwise read *no suites* as *nothing to run*.
+
+        ⚠️ `verdict` is reported as the pair it is -- where it came from and what
+        it is read out of -- and a suite that states neither comes back
+        `source: null`, which the launching role reads as **no answer** and never
+        as green. That is the one arm of this facet that must not weaken, so it
+        is carried in the shape of the answer rather than left to a reader.
+        """
+        names = vocabulary(self.facts, "test_tiers.tier", "a tier")
+        if name not in names:
+            raise ConfigError(
+                "test_tiers.tier",
+                f"is asked about as {name!r}; the surface states "
+                f"{' | '.join(names)}. ⛔ A project's own word for a tier never "
+                "enters, so a reading asked under one answers about no tier at "
+                "all rather than about the nearest one (§ 31).",
+            )
+        if self.get("test_tiers.carrier") == "none":
+            stated = " ".join(str(self.get("test_tiers.absent_reason")).split())
+            return {
+                "tier": name,
+                "carried": False,
+                "stated": False,
+                "suites": [],
+                "absent_reason": stated,
+                "report": [
+                    "No test tier is carried (`test_tiers.carrier: none`), so "
+                    f"whether a {name!r} suite here could fail to run is "
+                    "**unavailable** rather than answered. ⛔ Not a project with "
+                    "no such suite, and not a suite that passed.",
+                ],
+            }
+        suites = [
+            dict(entry)
+            for entry in _absent_as(self.get("test_tiers.tiers"), [])
+            if isinstance(entry, dict) and entry.get("tier") == name
+        ]
+        out = []
+        for entry in suites:
+            source = None
+            if entry.get("workflow"):
+                source = {"from": "host.checks", "workflow": entry["workflow"]}
+            elif entry.get("command"):
+                source = {"from": "checks_local", "command": entry["command"]}
+            elif name == PERSON_JUDGED_TIER:
+                # ⛔ The person-judged tier is **answered**, by § 13's own
+                # person-answered check, and its sourceless shape is the only one
+                # it has. ⚠️ Reported as `null` it was indistinguishable from an
+                # unanswered machine tier, and the report line below said it was
+                # never green -- which § 31 explicitly denies. Found by review,
+                # firing on every project that states such a suite.
+                source = {"from": "done", "answered_by": "human"}
+            out.append(
+                {
+                    "tier": name,
+                    "needs": list(entry.get("needs") or []),
+                    "stood_up_by": entry.get("stood_up_by"),
+                    "started": entry.get("started"),
+                    "selects": entry.get("selects"),
+                    "selection_held_by": entry.get("selection_held_by"),
+                    "selection_held": "selection_held_by" in entry,
+                    "refused_on": list(entry.get("refused_on") or []),
+                    "verdict": source,
+                }
+            )
+        report = []
+        for entry in out:
+            if name == PERSON_JUDGED_TIER:
+                report.append(
+                    f"A {name!r} suite is answered by a person, through § 13's "
+                    "own person-answered check, and never by a run — so it "
+                    "states no verdict source and ⛔ that is **not** the "
+                    "no-answer shape (§ 31)."
+                )
+            elif entry["verdict"] is None:
+                report.append(
+                    f"A {name!r} suite states no verdict source, so it reports "
+                    "**no answer** and is never green (§ 31)."
+                )
+            if not entry["selection_held"]:
+                report.append(
+                    f"A {name!r} suite states no `selection_held_by`, so its "
+                    "criterion is reported **unheld** (§ 31): nothing compares "
+                    "what it selects against the suite, in either direction."
+                )
+            if entry["refused_on"]:
+                report.append(
+                    f"A {name!r} suite is refused on "
+                    f"{', '.join(repr(t) for t in entry['refused_on'])} — ⛔ a "
+                    "refusal to perform rather than a note, and the target "
+                    "vocabulary is not this facet's."
+                )
+            if entry["started"] == "asked":
+                report.append(
+                    f"A {name!r} suite is opt-in (`started: asked`), so it is "
+                    "never started without being asked for, and § 19's guard is "
+                    "what performs the asking."
+                )
+        if not suites:
+            report.append(
+                f"This project states no {name!r} suite that needs anything, so "
+                "there is nothing here that could fail to run. ⛔ Not a project "
+                "with no such suite: § 31 states the list as the suites that "
+                "need something rather than an inventory of every suite there is."
+            )
+        return {
+            "tier": name,
+            "carried": True,
+            "stated": bool(suites),
+            "suites": out,
+            "report": report,
+        }
+
     def person_for(self, role: str) -> dict:
         """§ 27's identity for one role, looked up in the project's own map.
 
@@ -2487,6 +2618,22 @@ class Config:
                 "and no run is held to a floor: "
                 f"{' '.join(str(reason).split())}"
             )
+        # § 31, and reported for the reason § 15's and § 16's are: a role that
+        # would have asked which tiers could not run learns that no suite here
+        # can fail to run, rather than meeting a key that is not there. ⛔ And it
+        # is never reported as a project with no tiers: § 31 states the list as
+        # the suites that *need something*, so the absence is about what can
+        # lack and says nothing about what a project covers -- reporting it as
+        # coverage would be the one wrong answer available here.
+        if self.get("test_tiers.carrier") == "none":
+            reason = self.get("test_tiers.absent_reason")
+            out.append(
+                "No test tier is carried (`test_tiers.carrier: none`), so no "
+                "suite here is stated as able to fail to run, nothing is asked "
+                "about what a tier lacked, and ⛔ this is **not** a statement "
+                "about what the project covers: "
+                f"{' '.join(str(reason).split())}"
+            )
         # § 25, and reported for the reason § 15's is: a role that would have
         # refreshed memory, or read it, learns that the project keeps none --
         # rather than meeting a block that is not there. ⛔ And it is reported as
@@ -3114,6 +3261,544 @@ def _normalised_command(command: str) -> str:
     catch. § 13 says the same, having been corrected with this.
     """
     return " ".join(command.split())
+
+
+# § 31's derivation, as the one thing an alternation cannot state: which need a
+# tier's own name obliges it to carry. Spelled out here for the reason
+# `BOUND_ANSWERERS` above is -- the surface states the four names and the five
+# needs, and *which name obliges which need* is the cross-product it draws in
+# prose and a table. ⛔ `unit` is in the map with an empty obligation rather than
+# left out, because its rule is the opposite one: it may carry no need at all,
+# and an absence here would read as a tier with nothing to hold.
+#
+# ⚠️ `acceptance` carries `deploy` and not `material` or `money`: a person
+# looking at a deployed system is the whole of the row, and anything further is
+# that project's own and legitimately stated beside it.
+TIER_OBLIGATIONS = {
+    "unit": (),
+    "integration": ("dependency",),
+    "end_to_end": ("deploy",),
+    "acceptance": ("deploy",),
+}
+
+# The one tier § 31 answers through § 13 rather than through a run, and the keys
+# that are therefore refused on it: what starts a person looking is that
+# section's record, and a machine verdict read for a person-judged tier is the
+# failure § 13 calls **indistinguishable from success** -- a check only a person
+# can answer, answered by reasoning about it. ⚠️ Not that section's *check
+# somebody turns off*, which names the opposite mistake, a machine reading handed
+# to a person; the inverted citation was written here first and corrected by
+# review after it had reached the surface, the docs and two examples.
+# ⛔ Stated here rather than derived from the table above, because what makes this
+# tier different is its *answerer*, which is § 13's own and not a need this facet
+# states.
+PERSON_JUDGED_TIER = "acceptance"
+PERSON_JUDGED_REFUSES = ("started", "workflow", "command")
+
+# The keys an entry of § 31's list may carry. ⛔ A list of its own rather than a
+# derivation, for the reason a member of a list sits at no path a marker can
+# reach (§ 17): there is nothing on the surface for this to be read off, so an
+# unknown key would otherwise load clean and state a rule nothing performs --
+# which is the defect every marker on that surface exists to remove.
+TIER_ENTRY_KEYS = {
+    "tier",
+    "needs",
+    "stood_up_by",
+    "started",
+    "selects",
+    "selection_held_by",
+    "refused_on",
+    "workflow",
+    "command",
+}
+
+
+def _tier_text(entry: dict, key: str, where: str, what: str, required: bool):
+    """One of § 31's prose-required strings, or a refusal naming what it is for.
+
+    ⛔ Required-ness here is prose on the surface rather than a marker, which is
+    § 17's reason beside `command` and `proves`: a marker names a key at a path,
+    and these sit inside a list member. So the reader carries it, and the
+    refusal cites the section instead of the marker.
+    """
+    if key not in entry:
+        if required:
+            raise ConfigError(f"{where}.{key}", f"required (§ 31): {what}")
+        return None
+    value = entry[key]
+    if not isinstance(value, str) or not value.strip():
+        raise ConfigError(
+            f"{where}.{key}",
+            f"is {value!r}, which states nothing (§ 31): {what} A key written "
+            "blank satisfies a presence test and answers the question it was "
+            "written for with nothing.",
+        )
+    return value
+
+
+def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
+    """§ 31's entries, which no marker on the surface can reach.
+
+    Requiredness of `carrier` and of the list itself is marked and answered
+    before this runs; what each entry has to *be* is here, which is the division
+    § 15 and § 16 already have one facet over.
+
+    ⛔ Every arm refuses rather than skipping. The direction matters more here
+    than in either neighbour: this facet's whole subject is a tier that reports
+    nothing being read as green, so an entry a reader could not make sense of and
+    quietly passed over is that failure arriving through the facet written to
+    prevent it.
+    """
+    # ⛔ The § 16 agreement is evaluated for **every** carrier, and the set of
+    # stated needs is what varies: under the absence it is empty, which is the
+    # strongest form of the violation § 31 refuses -- a project stating the
+    # arithmetic while saying it has no such tier at all. ⚠️ Gated inside the
+    # `list` arm this was the one form never reached, found by review: a
+    # configuration pairing `executed.carrier: command` with
+    # `test_tiers.carrier: none` loaded clean while deleting a single entry from
+    # the list was refused.
+    # ⛔ Two messages for one rule, because the two carriers leave the reader
+    # different remedies. ⚠️ Written as one message first, and that was a defect
+    # of its own: under the absence it named `test_tiers.tiers` -- a path no such
+    # configuration contains, and one the arm below refuses outright -- so the
+    # refusal pointed at a key the reader may not write and offered a fix this
+    # same function rejects. Found by review, which is the shape this function
+    # had already been corrected for once.
+    def hold_against_executed(stated_needs: set[str], carried: bool) -> None:
+        if _get(data, "executed.carrier") != "command":
+            return
+        if "dependency" in stated_needs:
+            return
+        if carried:
+            raise ConfigError(
+                "test_tiers.tiers",
+                "names no suite whose `needs` carries `dependency`, and "
+                "`executed.carrier: command` states the arithmetic for exactly "
+                "that tier (§ 16). One of the two is wrong: either the suite "
+                "with a dependency is missing from this list, or the count is "
+                "configured for a tier this project does not have.",
+            )
+        raise ConfigError(
+            "test_tiers.carrier",
+            "is `none` while `executed.carrier: command` states the arithmetic "
+            "for a tier whose dependency is stood up for the run (§ 16), so this "
+            "project counts the cases of a tier it says it has none of. State "
+            "the suite under `carrier: list`, or state `executed.carrier: none` "
+            "with its own reason.",
+        )
+
+    carrier = _get(data, "test_tiers.carrier")
+    if carrier == "none":
+        # ⛔ The stated absence that also states a list, refused with the key
+        # named -- § 16's arm one facet over, and the same reason: the shape
+        # rules below are gated on the carrier, so without this a list of
+        # entries loads clean under the absence and reads to the next person as
+        # suites something holds.
+        if _has(data, "test_tiers.tiers"):
+            raise ConfigError(
+                "test_tiers.tiers",
+                "is written beside `test_tiers.carrier: none` (§ 31). The "
+                "absence is the statement, so a suite here is one nothing reads: "
+                "delete the key, or state the carrier it belongs to.",
+            )
+        hold_against_executed(set(), carried=False)
+        return
+    if carrier != "list":
+        return
+
+    tiers = _get(data, "test_tiers.tiers")
+    if not isinstance(tiers, list) or not tiers:
+        raise ConfigError(
+            "test_tiers.tiers",
+            f"is {tiers!r}; § 31 states it as the suites that need something — a "
+            "list, and a non-empty one under this carrier. A project whose "
+            "suites need nothing states `carrier: none`, which is a different "
+            "fact from a carrier with nothing under it.",
+        )
+
+    names = vocabulary(facts, "test_tiers.tier", "a tier")
+    allowed_needs = vocabulary_list(facts, "test_tiers.needs", "what a tier needs")
+    standers = vocabulary(facts, "test_tiers.stood_up_by", "who stands a dependency up")
+    starts = vocabulary(facts, "test_tiers.started", "how a suite is started")
+
+    # ⛔ The union is the caller's to compute and is **required** rather than
+    # defaulted: § 31's facet is the project's while `host` is a root's, so a
+    # reference resolved against one view would refuse a suite naming a sibling
+    # root's workflow. ⚠️ A default was written here first and was dead — one
+    # call site, always passing the union — with a docstring naming callers that
+    # do not exist. Found by review; a parameter nothing can omit cannot drift
+    # from the rule.
+    commands = {
+        _normalised_command(entry["command"])
+        for entry in _absent_as(_get(data, "checks_local"), [])
+        if isinstance(entry, dict) and isinstance(entry.get("command"), str)
+    }
+    denies = _absent_as(_get(data, "spend_guard.deny"), [])
+
+    seen_sources: dict[str, str] = {}
+    # `(the kind of discriminator, its value) -> where it was first stated`.
+    sourceless: dict[tuple[str, str], str] = {}
+    stated_needs: set[str] = set()
+
+    for index, entry in enumerate(tiers):
+        where = f"test_tiers.tiers[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}; § 31 states each member as a suite — a mapping of "
+                "the tier it is classified under and what it needs. A member of "
+                "another shape names no suite and is read by nothing.",
+            )
+        unknown = sorted(set(entry) - TIER_ENTRY_KEYS)
+        if unknown:
+            raise ConfigError(
+                f"{where}.{unknown[0]}",
+                f"is not a key § 31 states for a suite. The keys are "
+                f"{', '.join(sorted(TIER_ENTRY_KEYS))}. A key nothing reads "
+                "states a rule nothing performs, which is what this surface's "
+                "markers exist to remove — and a member of a list is the one "
+                "place no marker can reach, so it is refused here instead.",
+            )
+
+        tier = entry.get("tier")
+        if tier is None:
+            raise ConfigError(
+                f"{where}.tier",
+                "required (§ 31): it is the tier this suite is classified under, "
+                "and the half of the derivation this facet states. An entry with "
+                "no tier is a suite a shared check asking *did this tier pass* "
+                "can never be told about.",
+            )
+        if tier not in names:
+            raise ConfigError(
+                f"{where}.tier",
+                f"is {tier!r}; the surface states {' | '.join(names)}. ⛔ A "
+                "project's own word for a tier never enters: the one measured "
+                "collision is a browser suite called *the acceptance scenarios*, "
+                "which is this surface's `end_to_end`, and taking the project's "
+                "word for it files two different tiers under the person-judged "
+                "name.",
+            )
+
+        if "needs" not in entry:
+            raise ConfigError(
+                f"{where}.needs",
+                "required (§ 31): it is what this suite needs before it can run "
+                "at all, and `[]` is the statement a suite needing nothing makes. "
+                "A suite whose needs nobody wrote down and one that needs nothing "
+                "read identically otherwise.",
+            )
+        needs = entry["needs"]
+        if not isinstance(needs, list):
+            raise ConfigError(
+                f"{where}.needs",
+                f"is {needs!r}; § 31 states it as what the suite needs — a list, "
+                "even where there is one, and `[]` where there is none. Read as a "
+                "sequence of characters it names no need this surface states and "
+                "the refusal below would be about the wrong thing.",
+            )
+        for position, need in enumerate(needs):
+            if need not in allowed_needs:
+                raise ConfigError(
+                    f"{where}.needs[{position}]",
+                    f"is {need!r}; the surface states "
+                    f"{', '.join(allowed_needs)}. ⚠️ `host_runnable` is "
+                    "deliberately not among them and is refused by name "
+                    "elsewhere: whether the host can run a tier is not a "
+                    "property of the tier, which is what `stood_up_by` carries "
+                    "instead.",
+                )
+        if len(set(needs)) != len(needs):
+            raise ConfigError(
+                f"{where}.needs",
+                f"names a need twice: {needs!r}. One statement per need — a "
+                "repeated one reads as two things to lack and is printed twice "
+                "in the report of what the suite could not get.",
+            )
+        stated_needs.update(needs)
+
+        obliged = TIER_OBLIGATIONS.get(tier, ())
+        for need in obliged:
+            if need not in needs:
+                raise ConfigError(
+                    f"{where}.needs",
+                    f"does not carry `{need}`, and § 31's derivation obliges it "
+                    f"for a `{tier}` suite: the four tier names are the "
+                    "cross-product of this key and § 13's `answered_by`, so a "
+                    "name whose needs contradict it is a classification nothing "
+                    "supports. Either state the need or classify the suite under "
+                    "the tier it is.",
+                )
+        if tier == "unit" and needs:
+            raise ConfigError(
+                f"{where}.needs",
+                f"is {needs!r} on a `unit` suite, and § 31's derivation states "
+                "that tier as needing nothing the build does not already start. A "
+                "suite that needs something is a suite in the tier past this one, "
+                "and classifying it here is how a tier that could not run comes "
+                "to be read as one that cannot fail to.",
+            )
+
+        if tier == PERSON_JUDGED_TIER:
+            for key in PERSON_JUDGED_REFUSES:
+                if key in entry:
+                    raise ConfigError(
+                        f"{where}.{key}",
+                        f"is written on an `{PERSON_JUDGED_TIER}` suite, which "
+                        "§ 31 refuses. That tier's answerer is a person by the "
+                        "derivation, so what starts one looking is § 13's record "
+                        "and a machine verdict read for it is the failure that "
+                        "section calls indistinguishable from success — a check "
+                        "only a person can answer, answered by reasoning about "
+                        "it.",
+                    )
+            # ⛔ And the answerer it defers to is held to existing. Without this
+            # the derivation's second column is a sentence rather than a rail: a
+            # project classifying a suite as person-judged while its `done:` list
+            # asks nobody has configured a tier no act answers, which reads as a
+            # tier with an answerer because the name says so.
+            answered = [
+                check
+                for check in _absent_as(_get(data, "done"), [])
+                if isinstance(check, dict) and check.get("answered_by") == "human"
+            ]
+            if not answered:
+                raise ConfigError(
+                    f"{where}.tier",
+                    f"is `{PERSON_JUDGED_TIER}` and this project's `done:` list "
+                    "carries no check answered by a person (§ 13), so nothing "
+                    "answers this tier. § 31's derivation reads that column as "
+                    "the other half of the name: state the check, or classify the "
+                    "suite under the tier a run answers.",
+                )
+
+        if "dependency" in needs:
+            stood = entry.get("stood_up_by")
+            if stood is None:
+                raise ConfigError(
+                    f"{where}.stood_up_by",
+                    "required (§ 31) where `needs` carries `dependency`: it is "
+                    "the split that replaced `host_runnable`, and the reason "
+                    "*the host cannot run this tier* is not a value on this "
+                    f"surface. The surface states {' | '.join(standers)}.",
+                )
+            if stood not in standers:
+                raise ConfigError(
+                    f"{where}.stood_up_by",
+                    f"is {stood!r}; the surface states {' | '.join(standers)}. "
+                    "⚠️ Neither value makes the tier unrunnable — § 16's "
+                    "arithmetic reads the same either way — so a third value "
+                    "would be a claim about the tier that facet has already "
+                    "ruled out.",
+                )
+        elif "stood_up_by" in entry:
+            raise ConfigError(
+                f"{where}.stood_up_by",
+                "is written on a suite whose `needs` does not carry "
+                "`dependency` (§ 31), so it names who stands up something the "
+                "suite does not need. Delete it, or state the need it is about.",
+            )
+
+        _tier_text(
+            entry,
+            "selects",
+            where,
+            "it is the criterion this suite's cases are chosen by, which is what "
+            "keeps a count from standing alone — a partially run tier reports "
+            "which cases were dropped and by what criterion.",
+            required=True,
+        )
+        _tier_text(
+            entry,
+            "selection_held_by",
+            where,
+            "it is the comparison that holds that criterion to the suite; its "
+            "absence is a real configuration, under which the criterion is "
+            "reported unheld.",
+            required=False,
+        )
+
+        refused = entry.get("refused_on")
+        if refused is not None:
+            if not isinstance(refused, list):
+                raise ConfigError(
+                    f"{where}.refused_on",
+                    f"is {refused!r}; § 31 states it as the targets this suite is "
+                    "never run against — a list, even where there is one. Read as "
+                    "a sequence it refuses the suite on one target per character, "
+                    "which refuses it everywhere and nowhere.",
+                )
+            for position, target in enumerate(refused):
+                if not isinstance(target, str) or not target.strip():
+                    raise ConfigError(
+                        f"{where}.refused_on[{position}]",
+                        f"is {target!r}, which names no target (§ 31). An entry "
+                        "naming nothing is counted as a refusal and matches no "
+                        "target, so the suite reads as refused somewhere and runs "
+                        "everywhere.",
+                    )
+
+        workflow = _tier_text(
+            entry,
+            "workflow",
+            where,
+            "it is the `host.checks` entry whose run is this suite's verdict.",
+            required=False,
+        )
+        command = _tier_text(
+            entry,
+            "command",
+            where,
+            "it is the `checks_local` entry whose exit status is this suite's "
+            "verdict.",
+            required=False,
+        )
+        if workflow is not None and command is not None:
+            raise ConfigError(
+                f"{where}.command",
+                "is written beside a `workflow` (§ 31). Two sources for one "
+                "suite's verdict is the state in which *did this tier pass* has "
+                "two answers and nothing says which is the one to read — so the "
+                "two keys are exclusive, and a suite answered both ways is two "
+                "suites.",
+            )
+        if workflow is not None and workflow not in workflows:
+            raise ConfigError(
+                f"{where}.workflow",
+                f"is {workflow!r}, and no `host.checks` entry states that "
+                "workflow (§ 2). ⛔ A suite names the verdict that already exists "
+                "and never a second spelling of it, so a name resolving to "
+                "nothing is a verdict nobody produces reported as one somebody "
+                "does.",
+            )
+        if command is not None and _normalised_command(command) not in commands:
+            raise ConfigError(
+                f"{where}.command",
+                f"is {command!r}, and no `checks_local` entry states that "
+                "command (§ 17). ⛔ The comparison is the command as both sides "
+                "wrote it with only its runs of whitespace normalised, so this is "
+                "a second spelling or a verdict nothing runs — and § 17 is the "
+                "single statement of every verdict the host does not produce.",
+            )
+
+        source = f"workflow {workflow!r}" if workflow else (
+            f"command {_normalised_command(command)!r}" if command else None
+        )
+        if source is not None:
+            if source in seen_sources:
+                raise ConfigError(
+                    f"{where}.{'workflow' if workflow else 'command'}",
+                    f"names the same verdict as {seen_sources[source]} (§ 31). "
+                    "The entry's identity is its verdict source, so one source "
+                    "naming two suites is one run answering for both with nothing "
+                    "saying which answer is which. A project wanting its tiers "
+                    "answered apart states a source apart.",
+                )
+            seen_sources[source] = where
+        # ⛔ The person-judged tier is told apart by its criterion rather than by
+        # a source, because a source is refused on it: the remedy the general
+        # refusal names -- state a source apart -- is one the arm above rejects
+        # for that tier, so applying it there sent a reader to a fix this same
+        # function forbids.
+        #
+        # ⚠️ Narrowed rather than switched off, which the first form of this got
+        # wrong: exempting the tier outright let two **byte-identical** entries
+        # load, which is exactly the one-entry-written-twice state the rule is
+        # about, and the reading then printed every line of it twice. Found by
+        # review of the correction.
+        # ⛔ Keyed by **kind** as well as by value, because this map holds two
+        # kinds of discriminator: a tier name for the general rule and a
+        # criterion for the person-judged one. ⚠️ Keyed on the bare value they
+        # shared one namespace, so a `selects` whose normalised text is a tier
+        # word collided with a sourceless suite of that tier — refusing a
+        # legitimate configuration with every clause of the message false, and
+        # with which of the two messages came back decided by the order the
+        # entries were written in. ⛔ Not every tier word: the person-judged one
+        # never reaches the tier-keyed branch, so it has no key to collide with,
+        # and a comment claiming all of them would be the kind of count this
+        # repository deletes.
+        elif tier == PERSON_JUDGED_TIER:
+            criterion = ("selects", _normalised_command(str(entry.get("selects") or "")))
+            if criterion in sourceless:
+                raise ConfigError(
+                    f"{where}.selects",
+                    f"is the criterion {sourceless[criterion]} already states, on "
+                    f"a second `{tier}` suite (§ 31). A source is refused on this "
+                    "tier, so the criterion is what tells two of its suites "
+                    "apart — and two stating one criterion are one suite written "
+                    "twice, reported twice to whoever asks about the tier.",
+                )
+            sourceless[criterion] = where
+        else:
+            at_tier = ("tier", tier)
+            if at_tier in sourceless:
+                raise ConfigError(
+                    f"{where}.tier",
+                    f"is a second `{tier}` suite with no verdict source, "
+                    f"alongside {sourceless[at_tier]} (§ 31). Nothing "
+                    "distinguishes them: the identity is the source, so two "
+                    "entries without one under a single tier are one entry "
+                    "written twice — state a source apart, which § 2 and § 17 "
+                    "each admit.",
+                )
+            sourceless[at_tier] = where
+
+        if tier != PERSON_JUDGED_TIER:
+            started = entry.get("started")
+            if started is None:
+                raise ConfigError(
+                    f"{where}.started",
+                    "required (§ 31) on every suite but a person-judged one: a "
+                    "suite that starts itself and one that waits to be asked for "
+                    f"are different rails. The surface states {' | '.join(starts)}.",
+                )
+            if started not in starts:
+                raise ConfigError(
+                    f"{where}.started",
+                    f"is {started!r}; the surface states {' | '.join(starts)}.",
+                )
+            # ⛔ This arm runs **before** the opt-in one below, and the order is
+            # the rule rather than a preference. With the alternation at two
+            # values, `asked` beside a workflow also satisfies the opt-in arm's
+            # own precondition -- so written the other way round a workflow-plus-
+            # `asked` entry would be refused for carrying no command, and this
+            # branch would be unreachable: a rule the surface states, asserted by
+            # a plant that could never redden on it. Found by writing the plant.
+            if workflow is not None and started != "automatic":
+                raise ConfigError(
+                    f"{where}.started",
+                    f"is {started!r} on a suite whose verdict is a workflow "
+                    "(§ 31). What starts a host run is the workflow's own "
+                    "triggers (§ 2), so `asked` here is a rule two facets would "
+                    "perform differently — and § 2 is where a run that only ever "
+                    "starts on a dispatch says so.",
+                )
+            if started == "asked":
+                if command is None:
+                    raise ConfigError(
+                        f"{where}.command",
+                        "required (§ 31) on a suite stating `started: asked`: the "
+                        "rail that performs the asking is § 19's guard and it "
+                        "reads commands, so an opt-in suite with no command of "
+                        "its own has stated a preference rather than a rail.",
+                    )
+                if not denies:
+                    raise ConfigError(
+                        f"{where}.started",
+                        "is `asked` and `spend_guard.deny` is empty (§ 19), so "
+                        "nothing here performs an asking — which is the shape "
+                        "that reads as supervision and is none. ⚠️ Whether that "
+                        "list reaches *this* command is not compared, § 19 "
+                        "matching a command and its arguments and a second "
+                        "implementation of that matching being what this surface "
+                        "deletes.",
+                    )
+
+    # ⛔ The one agreement § 31 holds between itself and § 16, and only this one.
+    # ⚠️ The converse is not refused: § 16's own weaker form is a tier stated
+    # with no count beside it, and reporting that here would be a second
+    # statement of that section's rule.
+    hold_against_executed(stated_needs, carried=True)
 
 
 def _path_filter(node: dict, where: str) -> None:
@@ -3960,7 +4645,51 @@ def _private(data: dict, facts: dict) -> list[str]:
     return supplied
 
 
-def validate(data: dict, facts: dict) -> None:
+def _workflows_anywhere(data: dict, facts: dict) -> set[str]:
+    """Every workflow name this project states, across every code root.
+
+    ⛔ Read from the whole configuration rather than from the view being
+    validated, and that is a correctness fix rather than a convenience: § 1's
+    collection resolves one view per root, each carrying **that root's** `host`
+    block, while § 31's facet is the project's and not a root's. So a suite
+    naming a workflow stated under one root is validated against another root's
+    checks as well — and a reference check reading only the view would refuse a
+    configuration somebody legitimately wrote, every time a project with several
+    roots stated a tier. ⚠️ The direction matters: a false refusal at load time
+    stops every role on that project, which is the one way this guard may not
+    fail.
+
+    ⚠️ `checks_local` needs no such union, being a project-level key: § 1's
+    per-root blocks are `branch_model` and `host`, read off the surface rather
+    than listed here, so a command resolves the same in every view.
+    """
+    out = {
+        entry.get("workflow")
+        for entry in _absent_as(_get(data, "host.checks"), [])
+        if isinstance(entry, dict)
+    }
+    # ⚠️ The single form states `roots.code` as a path string, so the collection
+    # walk below is skipped rather than attempted on it: § 1 gives the key two
+    # shapes and a reader assuming the richer one raises on every project that
+    # wrote the simpler one. Found by this module's own suite, which loads a
+    # configuration of each shape.
+    collection = _get(data, "roots.code")
+    for named in (collection.values() if isinstance(collection, dict) else ()):
+        if not isinstance(named, dict):
+            continue
+        for name in facts.get("per_root") or ():
+            block = named.get(name)
+            if not isinstance(block, dict):
+                continue
+            out.update(
+                entry.get("workflow")
+                for entry in _absent_as(block.get("checks"), [])
+                if isinstance(entry, dict)
+            )
+    return {name for name in out if name}
+
+
+def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # ⛔ Walked rather than looked up by path, because a retired key may sit
     # inside a list: `_get` descends a dict and returns the default the moment it
     # meets one, so `done.run` read that way is a refusal that never fires on the
@@ -4735,6 +5464,8 @@ def validate(data: dict, facts: dict) -> None:
                     "performs: delete the key, or state the carrier it belongs "
                     "to.",
                 )
+
+    _validate_test_tiers(data, facts, workflows)
 
     statuses = _absent_as(_get(data, "statuses"), [])
     if not isinstance(statuses, list):
@@ -6006,7 +6737,11 @@ def _resolve(
         for path, value in facts["defaults"].items():
             _set_default(view, path, value)
         try:
-            validate(view, facts)
+            # ⛔ The workflow names are computed from the whole configuration
+            # and handed in, rather than read out of the view: § 31's facet is
+            # the project's and `host` is a root's, so a view-local reading
+            # would refuse a suite naming a sibling root's workflow.
+            validate(view, facts, _workflows_anywhere(data, facts))
         except ConfigError as error:
             if not collection:
                 raise
@@ -6121,6 +6856,7 @@ MARKED_REQUIRED = [
     "session",
     "spend_guard.deny",
     "statuses",
+    "test_tiers.carrier",
     "tracker.kind",
     "work_item.due_date.carrier",
     "work_item.estimate.carrier",
@@ -6206,6 +6942,14 @@ MARKED_REQUIRED_WHEN = [
     # a key written empty satisfies a presence test.
     (PRIVATE_KEYS_PATH, f"{PRIVATE_KEY}.carrier", PRIVATE_FILE),
     (PRIVATE_SOURCE_PATH, f"{PRIVATE_KEY}.carrier", PRIVATE_FILE),
+    # § 31's one: the list of suites, needed by the carrier that states one and
+    # meaningless where the project says no suite of its own can fail to run.
+    # ⛔ `absent_reason` is **not** here, the absent-capable class below carrying
+    # it for every facet that has one; and no per-entry key is here either,
+    # because a member of a list sits at no path a marker can reach -- which is
+    # § 17's note on `command`, and the reason § 31's entry rules are the
+    # reader's own below rather than a second spelling of a marker.
+    ("test_tiers.tiers", "test_tiers.carrier", "list"),
     ("tracker.board", "tracker.kind", "trello"),
     ("tracker.project.number", "tracker.kind", "github-projects"),
     ("tracker.project.owner", "tracker.kind", "github-projects"),
@@ -6231,6 +6975,13 @@ MARKED_PROCEDURE = [
     # map to look in.
     "current_user",
     "fail_open",
+    # § 31's. ⛔ The one marked key that was a *value* in the item this facet
+    # ships: it was offered as one of the five needs, and the measurement across
+    # six consumers is what retired it -- two have the host supply the
+    # dependency and three stand their own up, so the same tier is host-runnable
+    # in one and conditional in the other. A project writing it would be
+    # configuring the binary `stood_up_by` replaced.
+    "host_runnable",
     "install",
     # § 30's two, and ⛔ the one marked class where the *rule* is wider than the
     # markers: these are the two spellings a project would reach for to key the
@@ -6313,6 +7064,7 @@ MARKED_ABSENT_CAPABLE = [
     "ordering",
     "people",
     PRIVATE_KEY,
+    "test_tiers",
     "work_item.code_root",
     "work_item.due_date",
     "work_item.estimate",
@@ -9166,6 +9918,217 @@ def self_test() -> int:
             failures += 1
             print(f"  FAIL  this repository's own {CONFIG_PATH}: {error}")
 
+    print("\n§ 31, what a tier needs before it can run -- and the tier that has no answer:")
+    # ⛔ The reading rather than the refusals, which the plants above hold. What
+    # these arms are for is the half § 31 commits the reader to that validation
+    # cannot reach: a field no output renders is a field nothing asserts, so each
+    # key an entry carries is read back out of the answer here. ⚠️ Measured by
+    # replacing three of the renderings with constants -- `started`,
+    # `selection_held_by` and `refused_on` -- which reddened these arms and the
+    # report lines derived from them, and nothing else in the suite.
+    absent = _tier_read("integration", _an_absent_test_tiers_block())
+    check(
+        "a project stating the absence reports the tier as unavailable, not absent",
+        absent["carried"] is False and not absent["suites"]
+        and "**unavailable**" in " ".join(absent["report"]),
+        f"answered {absent!r}",
+    )
+    check(
+        "and it carries the project's own reason rather than a reader's gloss",
+        absent["absent_reason"] == "a stated reason",
+        f"carried {absent.get('absent_reason')!r}",
+    )
+    # ⛔ The second of the three answers, and the one a reader is likeliest to
+    # collapse into the first: the facet is carried and states no suite of this
+    # tier, which § 31 says is a suite with nothing to lack. ⚠️ Held on the
+    # wording, because `stated: false` alone reads the same as the absence above.
+    unstated = _tier_read("end_to_end", _a_test_tiers_block(workflow=_SAME))
+    check(
+        "a carried facet naming no suite of this tier says it has nothing to lack",
+        unstated["carried"] is True and unstated["stated"] is False
+        and "rather than an inventory" in " ".join(unstated["report"]),
+        f"answered {unstated!r}",
+    )
+    # The suite read back whole, one arm per key, with the fixture stating every
+    # one of them so that a key dropped from the rendering reddens here.
+    full = _tier_read(
+        "integration",
+        _a_test_tiers_block(
+            workflow=_SAME,
+            stood_up_by="host",
+            selection_held_by="a comparison holding the criterion to the suite",
+            refused_on=["a-target-this-suite-is-never-run-against"],
+        ),
+    )
+    suite = full["suites"][0]
+    for label, got, wanted in (
+        ("the needs it states", suite["needs"], ["dependency"]),
+        ("who stands its dependency up", suite["stood_up_by"], "host"),
+        ("whether it starts itself", suite["started"], "automatic"),
+        ("the criterion its cases are chosen by", suite["selects"],
+         "a criterion the cases are chosen by"),
+        ("the comparison holding that criterion", suite["selection_held_by"],
+         "a comparison holding the criterion to the suite"),
+        ("that the criterion is held at all", suite["selection_held"], True),
+        ("the targets it is refused on", suite["refused_on"],
+         ["a-target-this-suite-is-never-run-against"]),
+        ("where its verdict comes from", suite["verdict"]["from"], "host.checks"),
+    ) + (
+        ("the workflow its verdict is read out of", suite["verdict"]["workflow"],
+         _a_workflow_the_base_states(_a_valid_example())),
+    ):
+        check(f"a suite reports {label}", got == wanted, f"reported {got!r}")
+    check(
+        "a refused target is reported as a refusal to perform, not as a note",
+        any("refusal to perform rather than a note" in line for line in full["report"]),
+        f"reported {full['report']!r}",
+    )
+    # ⛔ The arm that must not weaken, asserted on the answer and not on the
+    # prose: a suite stating neither source comes back with no verdict, and the
+    # report says so in the words § 31 uses. A reading that defaulted it to the
+    # project's only workflow would be the green this facet exists to prevent.
+    silent = _tier_read("integration", _a_test_tiers_block())
+    check(
+        "a suite naming no verdict source reports no answer, and never green",
+        silent["suites"][0]["verdict"] is None
+        and "**no answer**" in " ".join(silent["report"]),
+        f"answered {silent!r}",
+    )
+    check(
+        "and a suite nothing holds the selection of is reported unheld",
+        any("**unheld**" in line for line in silent["report"]),
+        f"reported {silent['report']!r}",
+    )
+    # ⛔ The person-judged tier, which is the finding this arm exists for: the
+    # reading reported it as stating no verdict source and therefore **never
+    # green**, which § 31 explicitly denies, with the correction appended after
+    # the wrong sentence rather than replacing it -- and `verdict: null` left it
+    # indistinguishable from an unanswered machine tier. Found by review, firing
+    # on every project that states such a suite.
+    judged = _tier_read(PERSON_JUDGED_TIER, _a_person_judged_suite)
+    said = " ".join(judged["report"])
+    check(
+        "a person-judged suite is reported as answered by a person, not as no answer",
+        "answered by a person" in said and "**no answer**" not in said,
+        f"reported {judged['report']!r}",
+    )
+    check(
+        "and its verdict names § 13's record rather than coming back null",
+        (judged["suites"][0]["verdict"] or {}).get("from") == "done",
+        f"carried {judged['suites'][0]['verdict']!r}",
+    )
+    # ⛔ The green side of the exemption that fix needed, verified by the plant
+    # one line down staying red: two sourceless suites under the person-judged
+    # tier load, because the remedy the collision refusal names -- state a
+    # source apart -- is itself refused on that tier. An exemption with no
+    # must-stay-green arm is an exemption nobody checked.
+    two_judged = _refused(_two_person_judged_suites(_a_collection_example()))
+    check(
+        "two person-judged suites load, the collision rule not reaching that tier",
+        two_judged is None,
+        f"reported {two_judged!r}",
+    )
+    # ⛔ The green side of the discriminator's own namespace, which is where the
+    # narrowing first went wrong: the map held a tier name for one rule and a
+    # criterion for the other under one key space, so a `selects` whose text is
+    # a bare tier word collided with a sourceless suite of that tier. ⚠️ Both
+    # orders are asserted, because which of the two false messages came back was
+    # decided by the order the entries were written in.
+    for label, accept_first in (
+        ("a criterion spelled as a tier word, that tier's suite after it", True),
+        ("and the same pair written the other way round", False),
+    ):
+        collide = _a_person_judged_suite(_a_collection_example())
+        judged_suite = collide["test_tiers"]["tiers"][0]
+        # ⛔ The tier whose name is also a legal sourceless suite, derived rather
+        # than spelled: the one this surface obliges to need nothing. A tier word
+        # picked by position would be one whose own obligations refuse the plain
+        # suite below, and the arm would redden on `needs` instead of on the
+        # collision it is written for.
+        needs_nothing = next(
+            name for name, obliged in sorted(TIER_OBLIGATIONS.items()) if not obliged
+        )
+        judged_suite["selects"] = needs_nothing
+        plain = _a_suite(tier=needs_nothing, needs=[], stood_up_by=_DROP)
+        collide["test_tiers"]["tiers"] = (
+            [judged_suite, plain] if accept_first else [plain, judged_suite]
+        )
+        got = _refused(collide)
+        check(f"{label} loads", got is None, f"reported {got!r}")
+
+    # ⚠️ The opt-in line, which is the one a reader would otherwise have to infer
+    # from `started` -- and the field was replaceable by a constant without it.
+    opt_in = _tier_read("end_to_end", _an_opt_in_suite_with_nothing_denied_but_denying)
+    check(
+        "an opt-in suite is reported as never started without being asked for",
+        any("never started without being asked for" in line
+            for line in opt_in["report"]),
+        f"reported {opt_in['report']!r}",
+    )
+    # ⛔ And the tier word held at the point of asking, which is a different act
+    # from holding a configuration's: a role asking under a project's own word
+    # would otherwise get an empty answer and read it as a tier with nothing to
+    # lack -- the collision § 31 names, arriving through the reading.
+    try:
+        _tier_read("smoke")
+        said = None
+    except ConfigError as error:
+        said = error.key
+    check(
+        "a tier asked about under a word the surface does not state is refused",
+        said == "test_tiers.tier",
+        f"answered {said!r}",
+    )
+    # ⛔ § 1's collection against § 31's facet, which is where this reader had a
+    # false refusal: `validate` resolves one view per root and each view carries
+    # **that root's** `host` block, while this facet is the project's — so a
+    # reference read out of the view refused a suite naming a sibling root's
+    # workflow, for every project with several roots that stated a tier. ⚠️ Found
+    # by reading the resolution rather than by a failing example, no shipped
+    # example naming a workflow from a tier; and a false refusal at load time
+    # stops every role on that project, which is the direction this may not fail
+    # in.
+    collection = _a_collection_example()
+    if collection is None:
+        failures += 1
+        print("  FAIL  no example carries § 1's collection, so the per-root arm is unasserted")
+    else:
+        per_root = {
+            entry.get("workflow")
+            for named in (_get(collection, "roots.code") or {}).values()
+            if isinstance(named, dict) and isinstance(named.get("host"), dict)
+            for entry in _absent_as(named["host"].get("checks"), [])
+            if isinstance(entry, dict) and entry.get("workflow")
+        }
+        check(
+            "the collection example states a workflow under a root, so this arm has a subject",
+            bool(per_root),
+            f"found {per_root!r}",
+        )
+        for label, name, wanted in (
+            ("a suite naming a workflow one root states loads", sorted(per_root)[0], None),
+            ("and one naming a workflow no root states is still refused",
+             "A workflow no root mirrors", "test_tiers.tiers[0].workflow"),
+        ):
+            data = _a_test_tiers_block(workflow=name)(copy.deepcopy(collection))
+            # ⚠️ The suite's own tier is one this example's `done:` list can
+            # answer, or the person-judged arm would refuse first and neither
+            # direction would be about the workflow at all.
+            data["test_tiers"]["tiers"][0]["tier"] = "integration"
+            refused = _refused(data)
+            check(label, refused == wanted, f"reported {refused!r}")
+
+    # The invocation itself, which is what § 31 points the launching role at.
+    buffer, failed = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(failed):
+        code = main(["--skills-root", REPO_ROOT, "--no-check-paths", "--tier", "unit"])
+    printed = buffer.getvalue()
+    check(
+        "the invocation prints the tier reading the launching role is pointed at",
+        code == 0 and '"tier": "unit"' in printed,
+        f"exited {code} having printed {printed[:160]!r} and {failed.getvalue()[:160]!r}",
+    )
+
     if failures:
         print(f"\n{failures} assertion(s) did not hold.")
     return 1 if failures else 0
@@ -9862,6 +10825,136 @@ def _planted_violations():
          "executed.declares", _an_absent_executed_with(declares="a-command")),
         ("a precondition stated beside the carrier that names none",
          "executed.requires", _an_absent_executed_with(requires=["a-store"])),
+        # § 31's entries. ⚠️ Every one of these refusals is in the permissive
+        # direction, which is what makes the set worth its length: each would
+        # otherwise leave a reader reporting a suite as stated while nothing
+        # could read it, and a suite nothing reads is a tier that reports nothing
+        # being read as green — the failure the facet exists to prevent, arriving
+        # through the facet.
+        ("a suite list written as one suite rather than a list",
+         "test_tiers.tiers", _a_test_tiers_block(tiers="a-suite")),
+        ("a carried facet with no suite under it",
+         "test_tiers.tiers", _a_test_tiers_block(tiers=[])),
+        ("a suite that is not a block", "test_tiers.tiers[0]",
+         _a_test_tiers_block(tiers=["a-suite"])),
+        # ⛔ The unknown-key arm, which has nothing on the surface to be read off:
+        # a member of a list sits at no path a marker can reach (§ 17), so a key
+        # nobody reads would otherwise load clean.
+        ("a key beside the ones a suite carries",
+         "test_tiers.tiers[0].a-key-no-suite-carries",
+         _a_test_tiers_block(**{"a-key-no-suite-carries": "a value"})),
+        ("a suite classified under no tier", "test_tiers.tiers[0].tier",
+         _a_test_tiers_block(tier=_DROP)),
+        ("a tier outside the surface's alternation", "test_tiers.tiers[0].tier",
+         _a_test_tiers_block(tier="smoke")),
+        ("a suite saying nothing about what it needs",
+         "test_tiers.tiers[0].needs", _a_test_tiers_block(needs=_DROP)),
+        ("needs written as one need rather than a list",
+         "test_tiers.tiers[0].needs", _a_test_tiers_block(needs="dependency")),
+        # ⛔ Planted with the retired word on purpose: it is the value the item
+        # this facet ships offered, so it is the one an adopter reading that item
+        # would write, and the arm that refuses it is the measurement landing.
+        ("the retired binary written as a need",
+         "test_tiers.tiers[0].needs[0]",
+         _a_test_tiers_block(needs=["host_runnable"])),
+        ("a need stated twice", "test_tiers.tiers[0].needs",
+         _a_test_tiers_block(needs=["dependency", "dependency"])),
+        ("a tier whose needs contradict its own name",
+         "test_tiers.tiers[0].needs",
+         _a_test_tiers_block(tier="end_to_end")),
+        ("a suite that needs something classified under the tier that needs nothing",
+         "test_tiers.tiers[0].needs", _a_test_tiers_block(tier="unit")),
+        # § 31's person-judged tier, one plant per refused key. ⚠️ `started` is
+        # dropped from the second and third, or the first arm of the loop refuses
+        # and the other two are asserted by nothing.
+        ("a person-judged suite stating how it is started",
+         "test_tiers.tiers[0].started",
+         _a_test_tiers_block(tier="acceptance", needs=["deploy"],
+                             stood_up_by=_DROP)),
+        ("a person-judged suite reading a host run for its verdict",
+         "test_tiers.tiers[0].workflow",
+         _a_test_tiers_block(tier="acceptance", needs=["deploy"],
+                             stood_up_by=_DROP, started=_DROP, workflow=_SAME)),
+        ("a person-judged suite reading a command for its verdict",
+         "test_tiers.tiers[0].command",
+         _a_test_tiers_block(tier="acceptance", needs=["deploy"],
+                             stood_up_by=_DROP, started=_DROP,
+                             command="a-command")),
+        # ⛔ And the derivation's second column held to existing, which is what
+        # makes it a rail rather than a sentence: the example these plants break
+        # asks nobody, so a person-judged suite in it is a tier no act answers.
+        ("a person-judged suite on a project whose done list asks nobody",
+         "test_tiers.tiers[0].tier",
+         _a_test_tiers_block(tier="acceptance", needs=["deploy"],
+                             stood_up_by=_DROP, started=_DROP)),
+        ("a suite with a dependency and nobody standing it up",
+         "test_tiers.tiers[0].stood_up_by",
+         _a_test_tiers_block(stood_up_by=_DROP)),
+        ("a stander-up outside the surface's alternation",
+         "test_tiers.tiers[0].stood_up_by",
+         _a_test_tiers_block(stood_up_by="somebody")),
+        ("a stander-up named for a dependency the suite does not need",
+         "test_tiers.tiers[0].stood_up_by",
+         _a_test_tiers_block(tier="end_to_end", needs=["deploy"])),
+        ("a suite saying nothing about how its cases are chosen",
+         "test_tiers.tiers[0].selects", _a_test_tiers_block(selects=_DROP)),
+        ("a criterion written blank, which a report would print as nothing",
+         "test_tiers.tiers[0].selects", _a_test_tiers_block(selects="   ")),
+        ("a holder written blank, which reads as a criterion that is held",
+         "test_tiers.tiers[0].selection_held_by",
+         _a_test_tiers_block(selection_held_by="   ")),
+        ("refused targets written as one target rather than a list",
+         "test_tiers.tiers[0].refused_on",
+         _a_test_tiers_block(refused_on="a-target")),
+        ("a refused target that names nothing",
+         "test_tiers.tiers[0].refused_on[1]",
+         _a_test_tiers_block(refused_on=["a-target", "  "])),
+        ("a suite whose verdict is stated twice, one way each",
+         "test_tiers.tiers[0].command",
+         _a_test_tiers_block(workflow=_SAME, command="a-command")),
+        ("a workflow no host check states", "test_tiers.tiers[0].workflow",
+         _a_test_tiers_block(workflow="A workflow nothing mirrors")),
+        ("a command no local check states", "test_tiers.tiers[0].command",
+         _a_test_tiers_block(command="a-command-nothing-states")),
+        ("two suites answered by one verdict", "test_tiers.tiers[1].workflow",
+         _two_suites_naming_one_verdict),
+        ("two suites under one tier that nothing tells apart",
+         "test_tiers.tiers[1].tier", _two_suites_under_one_tier_with_no_verdict),
+        ("a suite saying nothing about whether it starts itself",
+         "test_tiers.tiers[0].started", _a_test_tiers_block(started=_DROP)),
+        ("a start outside the surface's alternation",
+         "test_tiers.tiers[0].started", _a_test_tiers_block(started="nightly")),
+        # ⛔ Before the opt-in arm below, and the order is the rule: with two
+        # values in the alternation, `asked` beside a workflow satisfies both
+        # arms, so written the other way round this plant would redden on the
+        # missing command and the workflow rule would be unreachable.
+        ("an opt-in suite whose verdict is a run the host starts itself",
+         "test_tiers.tiers[0].started",
+         _a_test_tiers_block(started="asked", workflow=_SAME)),
+        ("an opt-in suite with no command of its own to be asked about",
+         "test_tiers.tiers[0].command", _a_test_tiers_block(started="asked")),
+        ("an opt-in suite on a project that denies nothing",
+         "test_tiers.tiers[0].started", _an_opt_in_suite_with_nothing_denied),
+        ("a count configured for a tier no suite claims",
+         "test_tiers.tiers", _a_count_configured_for_a_tier_the_list_denies),
+        # ⛔ Keyed on `carrier` and not on `tiers`, which is the fix this plant
+        # holds: a configuration stating the absence carries no `tiers` path, and
+        # the arm above refuses one written there — so a refusal naming it sent
+        # the reader to a key they may not write and a remedy this function
+        # rejects. ⚠️ `_refused` compares the key and never checks the path
+        # exists, so nothing but this expectation holds it.
+        ("a count configured beside the carrier that claims no tier at all",
+         "test_tiers.carrier", _a_count_configured_beside_a_stated_absence),
+        # ⛔ The narrowed exemption's red side. The person-judged tier is exempt
+        # from the sourceless-collision rule because the remedy that rule names
+        # is refused on it — but exempting it outright let two byte-identical
+        # entries load, which is the one-entry-written-twice state the rule is
+        # about. Its criterion is the discriminator, so a repeat of that is
+        # refused instead.
+        ("two person-judged suites stating one criterion",
+         "test_tiers.tiers[1].selects", _two_person_judged_suites_alike),
+        ("a suite stated beside the carrier that names none",
+         "test_tiers.tiers", _an_absent_test_tiers_block(tiers=[])),
         ("a type the branch-prefix map does not cover",
          "work_item.type_branch_prefix.epic", _a_type_with_no_prefix),
         ("a template keyed to a type the project cannot assign",
@@ -10069,6 +11162,282 @@ def _an_absent_executed_with(**overrides):
     return mutate
 
 
+def _a_suite(**overrides) -> dict:
+    """§ 31's entry at its valid shape, with keys replaced or removed.
+
+    A key whose override is `_DROP` is **deleted** rather than set to `None`,
+    which is the distinction several of these plants turn on: a missing key and a
+    key written empty are two different refusals, and a fixture that could only
+    write `None` would assert one of them twice and the other never.
+    """
+    suite = {
+        "tier": "integration",
+        "needs": ["dependency"],
+        "stood_up_by": "run",
+        "started": "automatic",
+        "selects": "a criterion the cases are chosen by",
+    }
+    suite.update(overrides)
+    return {key: value for key, value in suite.items() if value is not _DROP}
+
+
+_DROP = object()
+
+
+def _a_workflow_the_base_states(data: dict) -> str:
+    """The name of a workflow the example already mirrors.
+
+    ⛔ Read off the example rather than written here, for the reason
+    `_a_valid_example` is found rather than named: a fixture spelling a workflow
+    name would be this module naming one project's own, and a plant asserting
+    that a *stated* workflow resolves has to use a name the project stated.
+    """
+    for entry in _absent_as(_get(data, "host.checks"), []):
+        if isinstance(entry, dict) and isinstance(entry.get("workflow"), str):
+            return entry["workflow"]
+    raise ConfigError(
+        "host.checks",
+        "states no workflow in the example these plants are written against, so "
+        "a suite naming one could not be written and the arm holding a named "
+        "workflow to an entry that exists would be asserted by nothing (§ 31).",
+    )
+
+
+def _a_test_tiers_block(**overrides):
+    """§ 31's facet carried, with one key of its single suite replaced.
+
+    Written out rather than borrowed from whichever example states the facet, for
+    the reason § 15's and § 16's fixtures are: the conditional marker refuses a
+    *missing* `tiers` before any shape rule is reached, so a plant that broke one
+    key of a borrowed block would redden on whatever the borrowing left out.
+
+    ⚠️ `tiers` itself is overridable, which is what lets the same helper plant a
+    list of the wrong shape and a member of the wrong shape as well as a suite
+    with one key wrong.
+    """
+
+    def mutate(data: dict) -> dict:
+        suite_overrides = dict(overrides)
+        tiers = suite_overrides.pop("tiers", None)
+        if "workflow" in suite_overrides and suite_overrides["workflow"] is _SAME:
+            suite_overrides["workflow"] = _a_workflow_the_base_states(data)
+        node = data.setdefault("test_tiers", {})
+        node.clear()
+        node["carrier"] = "list"
+        node["tiers"] = tiers if tiers is not None else [_a_suite(**suite_overrides)]
+        return data
+
+    return mutate
+
+
+_SAME = object()
+
+
+def _an_absent_test_tiers_block(**overrides):
+    """§ 31's facet stated absent, with a value written beside the absence.
+
+    The other half of its shape rules: the walk above is reached only under
+    `carrier: list`, so this is what holds the arm refusing a suite beside a
+    stated absence. ⛔ Without it, a list of suites loads clean on every project
+    whose carrier is `none` and reads to the next person as suites something
+    holds.
+    """
+
+    def mutate(data: dict) -> dict:
+        node = data.setdefault("test_tiers", {})
+        node.clear()
+        node.update({"carrier": "none", "absent_reason": "a stated reason"})
+        node.update(overrides)
+        return data
+
+    return mutate
+
+
+def _two_suites_naming_one_verdict(data: dict) -> dict:
+    """Two suites whose verdict is the same workflow (§ 31).
+
+    The identity rule's plant. ⚠️ The two differ in their tier, so what reddens
+    is the shared source and not a repeated classification -- planted the other
+    way round it would assert nothing, several suites under one tier being
+    exactly what the facet admits.
+    """
+    name = _a_workflow_the_base_states(data)
+    data["test_tiers"] = {
+        "carrier": "list",
+        "tiers": [
+            _a_suite(workflow=name),
+            _a_suite(tier="end_to_end", needs=["deploy"], stood_up_by=_DROP,
+                     workflow=name),
+        ],
+    }
+    return data
+
+
+def _two_suites_under_one_tier_with_no_verdict(data: dict) -> dict:
+    """Two suites under one tier, neither naming a verdict (§ 31).
+
+    ⛔ The complement of the plant above, and the reason the rule has two arms:
+    with the identity being the source, entries that state none are told apart by
+    nothing -- so one tier carrying two of them is one entry written twice.
+    """
+    data["test_tiers"] = {
+        "carrier": "list",
+        "tiers": [_a_suite(), _a_suite()],
+    }
+    return data
+
+
+def _an_opt_in_suite_with_nothing_denied(data: dict) -> dict:
+    """An opt-in suite whose command resolves, on a project denying nothing.
+
+    ⛔ The command is added to `checks_local` as well, or the resolution arm
+    refuses first and this one is asserted by nothing -- the plant has to reach
+    *this* mechanism, which means every earlier arm has to be satisfied. Measured
+    by writing it without the entry and watching the wrong key come back.
+    """
+    command = "a-command-no-workflow-mirrors"
+    data["checks_local"] = [
+        {"command": command, "proves": "what one run of it establishes"}
+    ]
+    data.setdefault("spend_guard", {})["deny"] = []
+    data["test_tiers"] = {
+        "carrier": "list",
+        "tiers": [_a_suite(started="asked", stood_up_by=_DROP, needs=["deploy"],
+                           tier="end_to_end", command=command)],
+    }
+    return data
+
+
+def _a_person_judged_suite(data: dict) -> dict:
+    """One person-judged suite, on a project whose done list asks a person.
+
+    ⛔ The `done:` entry is added here rather than assumed: the example these
+    fixtures are built from asks nobody, which is what the *derivation's second
+    column* plant asserts -- so a fixture that did not add one would redden on
+    that arm instead and say nothing about the reading.
+    """
+    done = list(_absent_as(_get(data, "done"), []))
+    done.append(
+        {
+            "check": "human_verification",
+            "answered_by": "human",
+            "stop": "Drive the change and record what you saw.",
+        }
+    )
+    data["done"] = done
+    data["test_tiers"] = {
+        "carrier": "list",
+        "tiers": [
+            _a_suite(
+                tier="acceptance",
+                needs=["deploy"],
+                stood_up_by=_DROP,
+                started=_DROP,
+            )
+        ],
+    }
+    return data
+
+
+def _two_person_judged_suites(data: dict) -> dict:
+    """Two person-judged suites, which § 31 admits and the collision rule must not reach.
+
+    ⚠️ Told apart by `selects`, which every entry states — the discriminator the
+    sourceless-collision rule cannot use for the one tier whose only legal shape
+    is sourceless.
+    """
+    data = _a_person_judged_suite(data)
+    data["test_tiers"]["tiers"].append(
+        _a_suite(
+            tier="acceptance",
+            needs=["deploy"],
+            stood_up_by=_DROP,
+            started=_DROP,
+            selects="a second criterion, for the screens the first one leaves",
+        )
+    )
+    return data
+
+
+def _two_person_judged_suites_alike(data: dict) -> dict:
+    """Two person-judged suites stating one criterion (§ 31).
+
+    ⛔ The plant the first form of the exemption had no answer to: byte-identical
+    entries loaded clean and the reading printed every line of them twice. ⚠️ It
+    is the criterion that is repeated and not the whole entry, so what reddens is
+    the discriminator rather than any other key.
+    """
+    data = _a_person_judged_suite(data)
+    data["test_tiers"]["tiers"].append(
+        _a_suite(
+            tier="acceptance",
+            needs=["deploy", "credential"],
+            stood_up_by=_DROP,
+            started=_DROP,
+        )
+    )
+    return data
+
+
+def _an_opt_in_suite_with_nothing_denied_but_denying(data: dict) -> dict:
+    """The same opt-in suite, on a project that does deny something.
+
+    ⛔ The green side of the arm the plant above reddens on, and it is a fixture
+    of its own rather than the plant reused: an opt-in suite that *loads* is what
+    the reading's report line is asserted against, and without it that line would
+    be asserted only where the configuration is refused -- which is to say
+    nowhere.
+    """
+    data = _an_opt_in_suite_with_nothing_denied(data)
+    data["spend_guard"]["deny"] = [
+        {
+            "command": "a-command-no-workflow-mirrors",
+            "reason": "what one run of it costs, and against which budget",
+        }
+    ]
+    return data
+
+
+def _a_count_configured_for_a_tier_the_list_denies(data: dict) -> dict:
+    """§ 16's arithmetic stated while no suite carries a dependency (§ 31).
+
+    The one agreement the two facets are held to. ⚠️ Both halves are written
+    here: the base example states the count absent, so a plant that only
+    rewrote the suite list would leave the condition unmet and redden on
+    nothing.
+    """
+    data["executed"] = {
+        "carrier": "command",
+        "declares": "a-command-printing-a-count",
+        "reports": "a-command-printing-a-run",
+    }
+    data["test_tiers"] = {
+        "carrier": "list",
+        "tiers": [
+            _a_suite(tier="end_to_end", needs=["deploy"], stood_up_by=_DROP)
+        ],
+    }
+    return data
+
+
+def _a_count_configured_beside_a_stated_absence(data: dict) -> dict:
+    """§ 16's arithmetic stated beside `test_tiers.carrier: none` (§ 31).
+
+    ⛔ The strongest form of the same disagreement the plant above catches, and
+    the one form the first implementation never reached: gated inside the `list`
+    arm, the comparison could not see a project that had declared it has no such
+    tier at all. Found by review, dormant across every shipped configuration,
+    and now the arm that holds the carrier-independent evaluation.
+    """
+    data["executed"] = {
+        "carrier": "command",
+        "declares": "a-command-printing-a-count",
+        "reports": "a-command-printing-a-run",
+    }
+    data["test_tiers"] = {"carrier": "none", "absent_reason": "a stated reason"}
+    return data
+
+
 def _a_staging_entry_keyed_by_a_number(data: dict) -> dict:
     """An entry whose key YAML reads as a number rather than a role's name.
 
@@ -10185,6 +11554,22 @@ def _answer_on(paths, kind=None, *, classes=None, borderline=None,
     with open(SURFACE, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
     return _resolve(data, EXAMPLES, facts, False).exempt_for(paths, kind)
+
+
+def _tier_read(tier: str, mutate=None):
+    """§ 31's reading of one tier, or the `ConfigError` it refused with.
+
+    ⛔ The whole answer rather than a rendering, for the reason `_answer_on`
+    above returns one: the arms below read the fields the launching role reads,
+    and a rendering would let a field be replaceable by a constant with the
+    suite still green — which is exactly how an unrendered field goes unheld.
+    """
+    data = _a_valid_example()
+    if mutate is not None:
+        data = mutate(data)
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    return _resolve(data, EXAMPLES, facts, False).tier(tier)
 
 
 def _verdict_on(paths, kind=None, **overrides) -> str:
@@ -11369,6 +12754,17 @@ def main(argv: list[str]) -> int:
         "way, and `loop_exempt.borderline` says who answers it",
     )
     parser.add_argument(
+        "--tier",
+        metavar="TIER",
+        help="the § 31 tier to report: every suite classified under it, what each "
+        "needs, who stands its dependency up, whether it starts itself, the "
+        "criterion its cases are chosen by and whether anything holds that "
+        "criterion, the targets it is refused on, and where its verdict comes "
+        "from. ⛔ A suite stating no source is reported as **no answer** and "
+        "never as green, and a tier the project does not state is reported as a "
+        "tier with nothing to lack rather than as one that passed",
+    )
+    parser.add_argument(
         "--self-test",
         action="store_true",
         help="hold this reader to the surface and the examples",
@@ -11389,6 +12785,11 @@ def main(argv: list[str]) -> int:
         # project's rather than a root's, so either form resolves it, and a role
         # that has narrowed to a root still asks the same question.
         answer = config.person_for(args.person_for) if args.person_for else None
+        # ⛔ After the root narrowing for § 27's reason one argument up: § 31's
+        # facet is the project's rather than a root's, so either form resolves
+        # it and a role that has narrowed to a root asks the same question.
+        if args.tier:
+            answer = config.tier(args.tier)
         # ⛔ After the root narrowing for § 27's reason, and ⚠️ **the kind is
         # read whether or not it was given**: a run that passed paths and no
         # kind is asking the question § 30's third verdict answers, so dropping
