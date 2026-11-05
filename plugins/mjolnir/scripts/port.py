@@ -2028,23 +2028,20 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
     # ⚠️ The adapter implements nothing, and it has to: `Port` holds an adapter to
     # the stated list as it is built, so one implementing an operation this
     # fixture has removed is refused before either method is reached.
+    # ⛔ Both lists empty, so **every** ask takes a returning path whatever the
+    # surface's vocabularies hold: no entry rules any trigger and no status maps
+    # any role. ⚠️ Written this way rather than with a second trigger and a
+    # second role, which is the shape it had first: those come off the surface's
+    # own sets by index, so a surface that ever stated one trigger or one role
+    # would hand this fixture the same word twice, the ask would reach `invoke`
+    # after all, and the arm would go quietly back to asserting nothing.
     renamed = Port(
-        _with_reversals(
-            [a_status],
-            # The trigger ruled is **not** the one asked for below, so the ask
-            # takes the unruled-trigger refusal and returns before `invoke`.
-            [{"trigger": another_trigger, "to_role": a_role, "writer": PROCEDURE}],
-        ),
+        _with_reversals([], []),
         spec,
         adapter=Adapter(),
         stated=without,
     )
-    for direction, argument in (
-        # Each argument picks a returning path: a trigger no entry rules, and a
-        # role no status maps.
-        ("revert_to", a_trigger),
-        ("advance_to", another_role),
-    ):
+    for direction, argument in (("revert_to", a_trigger), ("advance_to", a_role)):
         gone = _refused(lambda: getattr(renamed, direction)(argument))
         check(
             f"`{direction}` names the operation before it reports anything, and stops without it",
