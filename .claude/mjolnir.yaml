@@ -593,8 +593,8 @@ e2e_register:
   # that holds the coverage record for the tiers this repository *does* run is its own gate list,
   # and what holds each entry there is stated beside that entry: its planted violations where it
   # carries them, its own printed count where its job is running discovered suites instead.
-  # ⛔ Not a property the whole set has — `adapter_suites.py` ships no `--self-test` by its own
-  # design statement — so a quantifier over the gate list is the one thing this cannot say.
+  # ⛔ Stated per entry and not as one property of the whole set — `adapter_suites.py` ships no
+  # `--self-test` by its own design statement, so *what* holds a check is the half that varies.
   carrier: none
   absent_reason: >-
     No end-to-end tier: nothing here is deployed and no interface is driven. Every check in this
