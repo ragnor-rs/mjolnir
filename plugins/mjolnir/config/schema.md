@@ -3454,6 +3454,10 @@ provisional one is distinguishable by **waiting** — so handing it to a person 
 that answers itself. ⚠️ Wherever `branch_model.parallel_trees` is true this is the ordinary case and
 not an edge one: two starts a minute apart each read the other as orphaned.
 
+**The reading names the ref's own age and not only the bound**, for the reason the refusal names
+who holds the claim and since when: how close to the bound a ref is decides whether reading it
+again is worth doing at all, and a bound on its own leaves that to be worked out from two instants.
+
 **The window's bound is stated rather than derived, and it is deliberately not a key here.** What it
 bounds is the carrier's own interval between publishing a ref and cutting the tree — the item
 post-check's reads of the host, and then the cut — so it is a property of the carrier rather than of

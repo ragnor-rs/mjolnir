@@ -971,10 +971,14 @@ def read_liveness(
                 "creation and the current instant not being comparable"
             )
         elif at - born < timedelta(seconds=window):
+            # ⚠️ The **age** is in the reason and not only the bound, because the bound alone
+            # leaves a reader to subtract two instants to find out how close to it this ref is --
+            # and how close is the whole of what decides whether reading it again is worth it.
+            age = int((at - born).total_seconds())
             return Liveness(
                 False,
-                "no arm of the liveness test answered yes, and this ref is younger than the "
-                f"{window}-second window a start takes between publishing its ref "
+                f"no arm of the liveness test answered yes, and this ref is {age}s old -- inside "
+                f"the {window}-second window a start takes between publishing its ref "
                 "and cutting its tree",
                 provisional=True,
                 unestablished=unestablished,
