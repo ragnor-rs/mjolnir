@@ -348,9 +348,10 @@ stop the rest holding nothing. ⛔ No count of either group is carried here or i
 first form of both sentences carried one, and the check the sweep grew next made it wrong.
 
 Three scopes, and no count of the checks in each. The repository-wide one looks for what identifies
-someone else's project; the strict one — the carrier roots, never the whole tree — looks for a
-value, a tracker or a stack in text that is supposed to be procedure; and the third is **every
-tracked configuration**, this project's own and the examples, which is where a value of
+someone else's project; the strict one — the carrier roots, never the whole tree — looks for
+anything a role's text may not carry at all, a value and a tracker and a stack among them; and
+the third is **every tracked configuration**, this project's own and the examples, which is where
+a value of
 [§ 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)'s class
 would be checked in. A carrier is a skill, a command or a hook (schema § 7), so the
 strict set is matched by *shape* — `plugins/*/skills/`, `commands/`, `.claude/hooks/` and so on —
@@ -689,10 +690,13 @@ exempted the whole directory and so would have read straight past it.
   for every word, and what holds it instead is
   [schema § 3](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)
   being the single statement of the rule, with the two operations the only thing a role names.
-  ⚠️ **One spelling was left out deliberately**: one tracker's link type is a single ordinary verb,
-  so matching it even in a code span would redden on a role that quoted a status word or a
-  capability of that spelling. ⛔ **And the strict scope is the rule's own rather than
-  forbearance** — the implementations behind the port must name every one of these to speak to
+  ⚠️ **The names that are also English phrases are held in one position only** — as the whole of a
+  code region, which is rule 2's own test applied to a name rather than to a value. ⛔ The first
+  form matched them anywhere in a region and refused three shapes a shipped carrier plausibly
+  holds: a commit subject quoted in a span, an example item body inside a fence, and an example of
+  what this port's own answer carries. Each is a sentence and none is a role naming a tracker, so
+  all three are now asserted on the green side. ⛔ **And the strict scope is the rule's own rather
+  than forbearance** — the implementations behind the port must name every one of these to speak to
   their trackers at all, and `docs/` records which tracker spells which, so a tree-wide sweep
   would forbid the one place the shape belongs and the evidence for why. ⚠️ **Both green sides are
   asserted as a problem-set delta rather than by watching a plant redden**, which is the host-run

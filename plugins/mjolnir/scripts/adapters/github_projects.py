@@ -768,7 +768,24 @@ def read_item(number: int) -> dict:
     the one that stays correct if that stops being true.
     """
     owner, name = _repo().split("/")
-    answer = _graphql(ITEM_QUERY, owner=owner, name=name, number=int(number))
+    # ⛔ Refused as a configuration rather than let out as a `ValueError`. The
+    # port passes every value from an invocation as text and catches only the
+    # contract's own exceptions, so a non-numeric argument reached the operator as
+    # a traceback where § 3 states three answers and none of them is one -- the
+    # same contract this module's own dispatch was repaired for. ⚠️ Every
+    # operation here routes through this function, so the refusal covers all of
+    # them rather than one.
+    try:
+        addressed = int(number)
+    except (TypeError, ValueError):
+        raise ConfigError(
+            "tracker.operations.read_item",
+            f"was handed {number!r}, which is not an item number. This tracker "
+            "numbers its items, and a value that is not one addresses nothing -- "
+            "so it is refused here rather than reaching the host as a query it "
+            "cannot answer.",
+        ) from None
+    answer = _graphql(ITEM_QUERY, owner=owner, name=name, number=addressed)
     found = (answer.get("repository") or {}).get("issueOrPullRequest")
     if found is None:
         raise HostUnavailable(
@@ -1340,15 +1357,21 @@ def read_blockers(number: int) -> dict:
     ⚠️ **Read through `read_item` first**, so the pull-request guard covers this
     too: the path is the issues one, which answers for a pull request as well.
 
-    ⛔ The address and the shape of one entry come from the module this
-    implementation shares with the plain-issues one: both kinds reach the same
-    host, and two copies of one grammar are two statements allowed to disagree.
+    ⛔ The address, the shape of one entry and the refusal on an answer neither
+    can be read from come from the module this implementation shares with the
+    plain-issues one: both kinds reach the same host, and two copies of one
+    grammar are two statements allowed to disagree.
+
+    ⛔ **The number in the answer is the host's and never the argument.** The port
+    passes every value from an invocation as text, so echoing the argument put a
+    string beside blocker entries carrying integers -- one answer, two types for
+    one field name. ⚠️ The guard read above already holds the host's own integer.
     """
-    read_item(number)
-    recorded = _gh(["api", "--paginate", relation.blocked_by_path(_repo(), number)])
+    item = read_item(number)
+    path = relation.blocked_by_path(_repo(), number)
     return {
-        "number": number,
-        "blockers": [relation.blocker(entry) for entry in recorded],
+        "number": item["number"],
+        "blockers": relation.blockers_of(_gh(["api", "--paginate", path]), path),
     }
 
 

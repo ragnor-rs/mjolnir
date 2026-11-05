@@ -144,11 +144,15 @@ and which the ingestion step has already told you is data. Where the capability 
 predicate is **unanswered**, as the bullet above states, and a prose dependency goes in the reply
 rather than into the pass.
 
-Where the ordering's own output already answers a predicate — the blocker one is the common case,
-and [`§ 12`](../../config/schema.md#12-ordering)'s command reads the same relations — read it from
-there rather than asking the host twice, and say that is where it came from. ⛔ **An ordering this
-project does not configure is not a second source for it**: the predicate is unanswered rather than
-derived from where the item sits in the backlog.
+⛔ **And never off the ordering's output**, which is the shortcut this step used to permit: § 12's
+whole output is identifiers, so an item's presence in that list carries no blocker and no state, and
+§ 5's two bars cannot be applied to it at all. ⚠️ **A project's ordering command may read the same
+relations** — this one's does — and that is a coincidence a role cannot see, so reading the verdict
+off it is trusting one. Ask the port.
+
+Where the ordering's output genuinely answers a predicate — one about an item's own position, not
+about anything outside it — read it from there rather than asking twice, and say that is where it
+came from.
 
 **Which repository the item is in is resolved by one of the checks**, where § 1's collection carries
 several roots: `code_root_stated` is the predicate, and what answers it is one command rather than

@@ -28,6 +28,30 @@ an implementation and wrong for a grammar two of them share.
 
 from __future__ import annotations
 
+import os
+import re
+import sys
+
+_SCRIPTS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _SCRIPTS not in sys.path:
+    sys.path.append(_SCRIPTS)
+
+import port  # noqa: E402
+
+# A repository's own address, as this host writes it in an answer: a base, the
+# collection segment, and **exactly two** segments after it. ⛔ Anchored at both
+# ends rather than counted from the right, which is the guard's whole substance:
+# the first form of it took the last two segments of whatever it was given and
+# tested the arity of that split, and a split on a string containing any slash at
+# all has more than one part -- so the guard was dead for every shape but a bare
+# word. Measured, on this module's own first form: `.../repos` answered
+# `api.github.com/repos`, `.../repos/o/n/issues/13` answered `issues/13`, and
+# `https://api.github.com/` answered `/api.github.com`. ⚠️ Each of those is a
+# plausible-looking repository address rather than a refusal, which is the worse
+# direction: `None` says *this answer did not state one*, while `issues/13` sends
+# a role to a repository of that name.
+REPOSITORY_URL = re.compile(r"/repos/(?P<owner>[^/]+)/(?P<name>[^/]+)/?$")
+
 # The relation is recorded on the **blocked** item, and this is the one place
 # that is written down for this host. ⛔ Posting it on the blocker records a real
 # relation the wrong way round and answers as though it had worked -- the
@@ -58,22 +82,79 @@ def blocker(entry: dict) -> dict:
     board draws its cards from more than one, so a bare number sends a role
     looking for `#13` in the wrong backlog -- where the wrong `#13` answers
     perfectly rather than failing. ⚠️ Derived from the answer's own repository
-    address: the configured repository is where the *blocked* item lives, which is
-    a different fact.
+    address, matched whole by `REPOSITORY_URL` above: the configured repository is
+    where the *blocked* item lives, which is a different fact. ⛔ **An address
+    this host did not write is `None` and never a guess at two of its segments**,
+    for the reason stated on that pattern.
 
-    ⛔ **The state is the host's own word, lowered, and no verdict is derived from
-    it.** Which of § 5's two bars a blocker is held to depends on what that
-    blocker produced, so a `blocked`/`ready` answer here would be an
-    implementation deciding a predicate it cannot see the inputs of. ⚠️ On the
-    board that also means the **issue's** state rather than the card's column: a
-    column is one project's own vocabulary (§ 4.2), and a predicate answered in it
-    would be answered in a word no other project shares.
+    ⛔ **The state is the host's own word and no verdict is derived from it.**
+    Which of § 5's two bars a blocker is held to depends on what that blocker
+    produced, so a `blocked`/`ready` answer here would be an implementation
+    deciding a predicate it cannot see the inputs of. ⚠️ On the board that also
+    means the **issue's** state rather than the card's column: a column is one
+    project's own vocabulary (§ 4.2), and a predicate answered in it would be
+    answered in a word no other project shares.
+
+    ⚠️ **Lowered, and that is deliberate rather than tidying** -- the plain-issues
+    module names this host's two states as lower-case constants and compares in
+    them, so an answer in the host's own case would be the one shape in that
+    module a caller has to `.lower()` for itself. ⛔ **`read_item` keeps the
+    host's case** because what matches a project's `statuses` vocabulary is
+    matched elsewhere and a role advancing a state reads that word; the two are
+    one fact in two cases, and this is the half a predicate reads.
+
+    ⛔ **Why the closed state is not the whole answer**: this host records *why* an
+    item closed, and a blocker abandoned rather than finished is `closed` with a
+    reason that says so. § 5's bar is what the dependency **produced**, so an
+    implementation answering `closed` alone hands a gate a blocker that looks
+    satisfied and produced nothing. ⚠️ Measured on this repository's own backlog,
+    which holds items closed that way -- dormant only because no live item rests
+    on one today. The reason is carried as the host states it and judged nowhere
+    here.
     """
-    address = (entry.get("repository_url") or "").rstrip("/").rsplit("/", 2)
+    address = REPOSITORY_URL.search(entry.get("repository_url") or "")
+    reason = entry.get("state_reason")
     return {
         "number": entry.get("number"),
         "state": (entry.get("state") or "").lower(),
+        "state_reason": reason.lower() if isinstance(reason, str) else None,
         "title": entry.get("title"),
         "url": entry.get("html_url"),
-        "repo": "/".join(address[-2:]) if len(address) >= 2 else None,
+        "repo": f"{address['owner']}/{address['name']}" if address else None,
     }
+
+
+def blockers_of(answered, path: str) -> list[dict]:
+    """Every recorded blocker out of what the host answered, shape held first.
+
+    ⛔ **An answer this function cannot read is a *failed* operation and never a
+    traceback.** The client is asked for every page and merges them into one
+    array, which is undocumented behaviour its own help contradicts -- it states
+    that each page is a separate array and that an outer wrapper is opt-in. So the
+    two shapes that behaviour could become are held here rather than iterated
+    over: a body that is not an array at all, and an array whose entries are not
+    items. ⚠️ Measured on the shapes rather than on the client: unmerged pages
+    reach the reader as a parse error and a wrapped object reaches it as an
+    attribute error on a string, and both arrive where the port states three
+    answers and no traceback.
+
+    ⚠️ The path is named in the refusal so a reader can reproduce the call. It is
+    the whole of what this function knows about where the answer came from --
+    which client spoke is the caller's, and this grammar is shared by two.
+    """
+    if not isinstance(answered, list):
+        raise port.HostUnavailable(
+            f"`{path}` answered with {type(answered).__name__} where an array of "
+            "items was expected, so what this item is blocked by could not be "
+            "read. An unreadable answer is not the same as an item with no "
+            "recorded blocker."
+        )
+    unreadable = [index for index, entry in enumerate(answered)
+                  if not isinstance(entry, dict)]
+    if unreadable:
+        raise port.HostUnavailable(
+            f"`{path}` answered an array whose entry at position {unreadable[0]} "
+            f"is {type(answered[unreadable[0]]).__name__} and not an item, so the "
+            f"{len(answered)} recorded blocker(s) could not be read."
+        )
+    return [blocker(entry) for entry in answered]

@@ -240,22 +240,50 @@ TRACKER_IDS_ANYWHERE = [
 # and the port answers in whichever shape the tracker has.
 #
 # ⛔ **Matched in code regions only, per rule 1**, and here that is load-bearing
-# rather than cautious: `is blocked by` is one tracker's link type *and* an
-# ordinary English phrase, and every document in this repository writes it. What
-# makes a spelling decidable is either its shape -- an underscore, a camel hump, a
-# path segment -- or a code span being where a literal goes.
+# rather than cautious: a link type's own wording is also an ordinary English
+# phrase, and every document in this repository writes it.
 #
-# ⛔ No count of these is written here or in the documents, for the reason the
-# groups above carry none: the first form of this comment said *four* and the
-# phrase arm made it five before the change had landed.
-LINK_TYPE_NAMES = [
+# ⛔ **Two positions, because the spellings are of two kinds** — and the split is
+# rule 2's, applied to a name rather than to a value. A token whose *shape* is
+# decidable (an underscore, a camel hump, a path segment, a metadata key) is
+# matched anywhere in a code region. A name that is also an English phrase is
+# matched only as the **whole** of one, which is where a literal stands alone.
+# ⚠️ Measured, on this list's first form: matching the phrase anywhere in a code
+# region refused a commit subject quoted in a span, an example item body inside a
+# fence, and an example of what this port's own answer carries — three shapes a
+# shipped carrier plausibly holds, none of them a role naming a tracker.
+#
+# ⛔ No count of either group is written here or in the documents, for the reason
+# the groups above carry none: the first form of this comment said *four*, the
+# phrase made it five, and the review that followed made it seven across two
+# lists.
+LINK_TYPE_TOKENS = [
     (re.compile(r"(?<![\w-])blocked_by(?![\w-])"), "a dependency field's own name"),
     (re.compile(r"(?<![\w-])blockedBy(?![\w-])"),
      "the same field in a query interface's spelling"),
-    (re.compile(r"(?<![\w-])dependencies/[A-Za-z_]+"), "a dependency endpoint's own path"),
+    # ⛔ The host's own segments and not any word after the collection: the first
+    # form took `dependencies/[A-Za-z_]+` and refused `docs/dependencies/graph.md`
+    # and a hook installing from a `dependencies/` directory, neither of which is
+    # a tracker's vocabulary.
+    (re.compile(r"(?<![\w-])dependencies/(?:blocked_by|blocking)(?![\w-])"),
+     "a dependency endpoint's own path"),
     (re.compile(r"(?<![\w-])(?:inward|outward)Issue(?![\w-])"),
      "the sides of a link call, which one tracker inverts"),
-    (re.compile(r"\bis blocked by\b", re.I), "a link type's own wording"),
+    # ⛔ The field a hosted tracker carries its links in, which the first form of
+    # this list claimed to cover and did not: it held the code host's field name
+    # and named no other tracker's.
+    (re.compile(r"(?<![\w-])issuelinks(?![\w-])"),
+     "the field a hosted tracker carries its links in"),
+    # The metadata keys a link type's two descriptions sit under. ⚠️ A key rather
+    # than its value, which is what makes it decidable where the value is a
+    # sentence.
+    (re.compile(r"(?<![\w-])(?:inward|outward)\s*:\s*\S"),
+     "a link type's own metadata key"),
+]
+
+LINK_TYPE_PHRASES = [
+    (re.compile(r"^(?:is\s+blocked\s+by|blocked\s+by|blocks)$", re.I),
+     "a link type's own wording"),
 ]
 
 # Asking who is running. ⛔ Each of these is a spelling that resolves *the
@@ -737,6 +765,15 @@ class Tree:
         A script: every line that is not a comment. A shebang names an absolute
         path and a comment is prose, so sweeping either would be the failure
         rule 1 exists to prevent.
+
+        ⛔ **The prose half is flattened before any span is extracted**, which is
+        exactly what `value_contexts` below does and for the same reason: this
+        repository hard-wraps its prose, markdown lets a code span cross a
+        newline, and a span wrapped across two lines was found by **neither**
+        half of a line-by-line pass. ⚠️ Measured — a two-word name inside a
+        wrapped span was invisible to the sweep while the same name on one line
+        reddened. A fenced block keeps its own lines, because there a line break
+        is the code's and not the wrap's.
         """
         body = self.text[path]
         if not path.endswith(".md"):
@@ -747,19 +784,18 @@ class Tree:
                 if stripped
             ]
         regions: list[str] = []
+        prose: list[str] = []
         fenced = False
         for line in body.splitlines():
             if line.lstrip().startswith("```"):
                 fenced = not fenced
                 continue
-            if fenced:
-                regions.append(line)
-            else:
-                # ⛔ Both paths, for the reason the fence toggle is in both: a
-                # ``…`` span's backticks are not a span's delimiters, so leaving
-                # them in pairs them with the ones after and a real code span
-                # stops being read as one.
-                regions.extend(CODE_SPAN.findall(self._spans_out(line, regions)))
+            (regions if fenced else prose).append(line)
+        # ⛔ Both paths, for the reason the fence toggle is in both: a ``…`` span's
+        # backticks are not a span's delimiters, so leaving them in pairs them
+        # with the ones after and a real code span stops being read as one.
+        flat = re.sub(r"\n\s*", " ", "\n".join(prose))
+        regions.extend(CODE_SPAN.findall(self._spans_out(flat, regions)))
         return regions
 
     @staticmethod
@@ -1333,23 +1369,42 @@ def check_no_link_type_is_named_in_the_strict_set(tree: Tree) -> list[str]:
     the evidence for it.
 
     ⛔ Scoped to code regions by rule 1, which matters more here than anywhere
-    else in this file: one of the spellings is an English phrase, and a sweep of
-    prose for it would redden on this docstring.
+    else in this file: one group of the spellings is English phrases, and a sweep
+    of prose for those would redden on this docstring.
+
+    ⛔ **And the two groups are matched in two positions**, which is rule 2's own
+    split applied to a name: a token whose shape is decidable is matched anywhere
+    in a region, while a name that is also an English phrase is matched only as
+    the whole of one. The grammar above records what the single-position form
+    refused.
     """
     problems = []
     swept = 0
+
+    def named(path: str, region: str, what: str, found: str) -> None:
+        problems.append(
+            f"{path}: `{region.strip()[:70]}` names {what} "
+            f"(`{found}`). A dependency is a port operation with a form "
+            "stated per tracker (schema § 3): a role names the operation, and the "
+            "port answers in whichever shape the tracker has."
+        )
+
     for path in tree.strict():
         for region in tree.code(path):
             swept += 1
-            for pattern, what in LINK_TYPE_NAMES:
+            for pattern, what in LINK_TYPE_TOKENS:
                 found = pattern.search(region)
                 if found:
-                    problems.append(
-                        f"{path}: `{region.strip()[:70]}` names {what} "
-                        f"(`{found.group(0)}`). A dependency is a port operation with a form "
-                        "stated per tracker (schema § 3): a role names the operation, and the "
-                        "port answers in whichever shape the tracker has."
-                    )
+                    named(path, region, what, found.group(0))
+            for pattern, what in LINK_TYPE_PHRASES:
+                # ⚠️ The wrap is not part of a name, for the reason rule 2 gives
+                # about a value: this repository hard-wraps its prose and these
+                # names are multi-word. A region's newlines are already flattened
+                # where it came from prose; a fenced region keeps its lines,
+                # because there a line break is the code's own.
+                whole = re.sub(r"\s+", " ", region).strip()
+                if pattern.match(whole):
+                    named(path, region, what, whole)
     if tree.strict() and not swept:
         problems.append(
             "The strict set has files and not one line of code in any of them, so this check "
@@ -1728,6 +1783,29 @@ def _plant_a_configured_command_root(tree: Tree) -> Tree:
     entries[0]["command_root"] = named
     tree.text[OWN_CONFIG] = yaml.safe_dump(document)
     return _plant_in_a_carrier(f"\nRun the check in `{named}` first.\n")(tree)
+
+
+def _plant_strict_files_with_no_code(tree: Tree) -> Tree:
+    """Every strict file rewritten to prose, so no region is swept at all.
+
+    ⛔ The counterpart of the empty-strict-set plant one check over: a strict set
+    with files in it and not one code region is the other way a check scoped to
+    `code()` holds nothing while reporting green. ⚠️ A sibling guard of the same
+    shape is unplanted, and that is noted rather than copied -- a precedent for
+    leaving one unasserted is not a reason to leave a second.
+
+    ⚠️ **Every strict file and not only the markdown ones**, which this plant's
+    first form got wrong: `code()` reads a non-markdown carrier as its own
+    non-comment lines, so a hook left alone kept the sweep non-empty and the
+    plant stayed green while reading as held.
+    """
+    for path in tree.strict():
+        tree.text[path] = (
+            "# Planted\n\nProse with no span and no fence in it.\n"
+            if path.endswith(".md")
+            else "# nothing but a comment, which rule 1 does not read\n"
+        )
+    return tree
 
 
 def _plant_in_a_named_root(roots: list[str], text: str):
@@ -2271,24 +2349,50 @@ VIOLATIONS = [
          '\nAsk `gh api graphql -f query="{ checkSuites { nodes { conclusion } } }"`.\n')),
     # One per spelling a tracker carries a dependency in, because each is a
     # different surface a role could reach for -- a field, the same field in
-    # another interface, an endpoint path, the sides of a call, and the link
-    # type's own wording -- and a spelling with no plant is a spelling nothing
-    # asserts is forbidden at all. ⛔ Each is written **inside a code span**,
-    # which is the only position this check reads: a prose plant would assert
+    # another interface, an endpoint path, the sides of a call, the field another
+    # tracker keeps its links in, a link type's metadata key, and the type's own
+    # wording -- and a spelling with no plant is a spelling nothing asserts is
+    # forbidden at all. ⛔ Each is written **inside a code span or a fence**,
+    # which are the only positions this check reads: a prose plant would assert
     # nothing while printing red for rule 1's reason.
+    #
+    # ⛔ **And each carries only its own spelling.** ⚠️ Measured: the endpoint
+    # plant's first form was `dependencies/blocked_by`, which reddens the field
+    # arm too -- so deleting the endpoint arm whole left the self-test green while
+    # still printing *red on … a dependency endpoint's own path*. A plant that
+    # reddens by another arm's route proves nothing about the arm it names.
     ("no link type is named in the strict set", "a dependency field named in a carrier",
      _plant_in_a_carrier("\nRead the item's `blocked_by` list before starting.\n")),
     ("no link type is named in the strict set",
      "the same field in a query interface's own spelling",
      _plant_in_a_carrier("\nAsk for `Issue.blockedBy` in one call instead.\n")),
     ("no link type is named in the strict set", "a dependency endpoint's own path",
-     _plant_in_a_carrier("\nPost it to `dependencies/blocked_by` on the blocked item.\n")),
+     _plant_in_a_carrier("\nPost it to `dependencies/blocking` on the other item.\n")),
     ("no link type is named in the strict set", "the sides of a link call",
      _plant_in_a_carrier("\nThe item that blocks goes in `inwardIssue`.\n")),
-    ("no link type is named in the strict set", "a link type's own wording, in a span",
+    ("no link type is named in the strict set",
+     "the field a hosted tracker keeps its links in",
+     _plant_in_a_carrier("\nThe links arrive under `issuelinks` with the item.\n")),
+    ("no link type is named in the strict set", "a link type's own metadata key",
+     _plant_in_a_carrier("\nThe type states `inward: is blocked by` for that side.\n")),
+    ("no link type is named in the strict set",
+     "a link type's own wording, as the whole of a span",
      _plant_in_a_carrier("\nThe type reads `is blocked by` in that direction.\n")),
+    # ⛔ The same wording with the wrap falling inside the span, which is the arm
+    # `code()` was changed for: markdown lets a span cross a newline, this
+    # repository hard-wraps, and a line-by-line pass found neither half.
+    ("no link type is named in the strict set",
+     "a link type's own wording, wrapped inside its span",
+     _plant_in_a_carrier("\nThe type reads `is blocked\nby` in that direction.\n")),
     ("no link type is named in the strict set", "a dependency field inside a fenced block",
      _plant_in_a_carrier("\nThen:\n\n```sh \nread blocked_by\n```\n")),
+    ("no link type is named in the strict set",
+     "the wording as the whole of a line of a fence",
+     _plant_in_a_carrier("\nThen:\n\n```text \nis blocked by\n```\n")),
+    # The way this check can hold nothing and report green, which is the computed
+    # half its two forbidding groups lean on.
+    ("no link type is named in the strict set",
+     "a strict set whose files carry no code at all", _plant_strict_files_with_no_code),
 ]
 
 
@@ -2444,6 +2548,22 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
      _plant_in_a_carrier(
          "\nAn item is blocked by another when the relation says so, never when a "
          "sentence does.\n")),
+    # ⛔ The three shapes the single-position form refused, each a thing a shipped
+    # carrier plausibly holds and none of them a role naming a tracker. ⚠️ Each
+    # was found by a reader rather than reasoned about, and each is why the phrase
+    # group is matched as a **whole** region and the endpoint arm names the host's
+    # own segments instead of any word.
+    ("no link type is named in the strict set",
+     "the wording inside a longer span, which is a sentence and not a name",
+     _plant_in_a_carrier(
+         "\nA subject like `fix: the gate is blocked by nothing` is ordinary.\n")),
+    ("no link type is named in the strict set",
+     "the wording in a sentence inside a fence, where an example body goes",
+     _plant_in_a_carrier(
+         "\nAn example body:\n\n```text \nThis is blocked by the API work.\n```\n")),
+    ("no link type is named in the strict set",
+     "an ordinary path whose first segment happens to be the collection's word",
+     _plant_in_a_carrier("\nRead it out of `docs/dependencies/graph.md` instead.\n")),
 ]
 
 

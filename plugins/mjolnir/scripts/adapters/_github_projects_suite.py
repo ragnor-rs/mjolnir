@@ -281,7 +281,7 @@ def _item_card(number: int, title: str, status: str = "Todo", kind: str = "Issue
     }
 
 
-def _dependencies_page(entries: list[tuple[int, str, str]]) -> list[dict]:
+def _dependencies_page(entries: list[tuple[int, str, str, str | None]]) -> list[dict]:
     """The host's own answer for the dependencies endpoint: plain issue objects.
 
     ⚠️ A different shape from everything else this fake answers, and that is the
@@ -294,16 +294,24 @@ def _dependencies_page(entries: list[tuple[int, str, str]]) -> list[dict]:
     its cards from more than one, and the wrong `#13` answers perfectly. A fixture
     that left it out would let an implementation assuming the configured
     repository read as correct.
+
+    ⛔ **And every entry carries the host's own reason for its state**, which is
+    the half a closed state loses: an item abandoned rather than finished is
+    closed, and § 5's bar is what the dependency produced. A fixture whose closed
+    entries were all finished would let an implementation dropping the reason read
+    as correct -- measured on this repository's own backlog, which holds items
+    closed that way.
     """
     return [
         {
             "number": number,
             "state": state,
+            "state_reason": reason,
             "title": f"a recorded blocker, #{number}",
             "html_url": f"https://example.invalid/{repo}/issues/{number}",
             "repository_url": f"https://api.example.invalid/repos/{repo}",
         }
-        for number, state, repo in entries
+        for number, state, repo, reason in entries
     ]
 
 
@@ -333,13 +341,19 @@ def _default_answers() -> dict:
         "issue create": "https://example.invalid/issues/31",
         "issue comment": "",
         "issue edit": "",
-        # ⛔ Ahead of the bare `api` below, and the order is load-bearing: this
-        # fake matches by prefix after exact, within insertion order, and every
-        # REST call here begins `api`. ⚠️ Named by the **paging flag** rather than
-        # by the path, because `args[:2]` is what this fake reads and the path is
-        # the third word -- which holds while this is the one paged REST read in
-        # the module. A second one would need the fake to name a call by what it
-        # addresses, and this comment is where that shows up.
+        # ⚠️ Named by the **paging flag** rather than by the path, because
+        # `args[:2]` is what this fake reads and the path is the third word --
+        # which holds while this is the one paged REST read in the module. A
+        # second one would need the fake to name a call by what it addresses, and
+        # this comment is where that shows up.
+        #
+        # ⚠️ **Its position among the keys is not load-bearing**, and the first
+        # form of this comment claimed it was: `_answer_for` tries every exact
+        # match across both tables before any prefix, this name is exactly what
+        # `_name` returns for the paged call, and it is a prefix of nothing else.
+        # Reproduced by moving it after `api` and watching the suite stay green --
+        # a comment asserting an ordering nothing depends on is the restated-fact
+        # class one layer down.
         "api --paginate": _dependencies_page([]),
         # Prefix-matched: the dependency lookup addresses one issue by path, and
         # the relation itself is posted with `--method`.
@@ -885,27 +899,60 @@ def self_test() -> int:
     elsewhere = "another-owner/another-name"
     recorded = _Host({
         "api --paginate": _dependencies_page([
-            (12, "closed", own_repo),
-            (13, "open", elsewhere),
+            (12, "closed", own_repo, "completed"),
+            (13, "open", elsewhere, None),
+            (14, "closed", own_repo, "not_planned"),
         ]),
     })
     answered = with_host(recorded, lambda: read_blockers(11))
     blockers = answered.get("blockers") if isinstance(answered, dict) else None
+
+    # ⛔ Every field read with `.get` and never by subscript. ⚠️ Measured on this
+    # block's own first form: a plant that dropped a field killed the run with a
+    # `KeyError` where a verdict belongs, which is the shape the suite beside this
+    # one records -- an assertion about a missing field cannot be the thing that
+    # cannot survive it.
+    def field(name: str) -> list:
+        return [entry.get(name) for entry in blockers or [{}]]
+
     check(
         "`read_blockers` answers every recorded blocker with the host's own state word",
-        [(entry["number"], entry["state"]) for entry in blockers or []]
-        == [(12, "closed"), (13, "open")],
+        list(zip(field("number"), field("state")))
+        == [(12, "closed"), (13, "open"), (14, "closed")],
         f"answered {blockers!r}",
     )
     check(
         "and the repository each blocker is in, which a bare number loses",
-        [entry["repo"] for entry in blockers or []] == [own_repo, elsewhere],
-        f"answered {[entry.get('repo') for entry in blockers or []]!r}",
+        field("repo") == [own_repo, elsewhere, own_repo],
+        f"answered {field('repo')!r}",
     )
+    # ⛔ The reason beside the state, which is the half a closed state loses: #12
+    # and #14 are both `closed` and only one of them produced anything, and § 5's
+    # bar is what the dependency produced. An implementation dropping this answers
+    # the two identically.
     check(
-        "and no verdict about whether the item may start, which is § 5's question",
-        not {"blocked", "ready", "satisfied", "open_blockers"} & set(answered or {}),
-        f"answered keys {sorted(answered or {})!r}",
+        "and the host's own reason for a closed state, so an abandoned blocker is "
+        "not an achieved one",
+        field("state_reason") == ["completed", None, "not_planned"],
+        f"answered {field('state_reason')!r}",
+    )
+    # ⛔ The answer's keys, exactly, at **both** levels -- and that is the arm this
+    # case was rewritten for. The first form asserted that a hardcoded set of
+    # verdict words was absent from the top level, which `{"number","blockers"}`
+    # cannot contain and an empty dict satisfies: near-vacuous, and blind to the
+    # place a verdict would actually be derived, which is the entry. Reproduced by
+    # making the shared shaping derive one and watching the old assertion pass.
+    # ⚠️ Read off the production answer rather than written twice: what is
+    # asserted is that the two levels carry these fields and no others.
+    check(
+        "and nothing beyond the fields the operation states, at either level",
+        set(answered or {}) == {"number", "blockers"}
+        and all(
+            set(entry) == {"number", "state", "state_reason", "title", "url", "repo"}
+            for entry in blockers or [{}]
+        ),
+        f"answered {sorted(answered or {})!r} over "
+        f"{sorted((blockers or [{}])[0])!r}",
     )
     # ⛔ The paging flag is asserted on the **call**, not inferred from the answer:
     # the fake merges nothing, so an implementation reading one page would pass
@@ -918,6 +965,36 @@ def self_test() -> int:
         paged == ["api --paginate"],
         f"called {paged!r}",
     )
+    # ⛔ The endpoint itself, as a literal, which nothing else in this tree states.
+    # ⚠️ The direction case below compares the call against the production helper,
+    # so it holds which object each half addresses and says nothing about the
+    # address -- an endpoint renamed to something that does not exist passed every
+    # case here, measured. The plain-issues module shares this helper and has its
+    # own suite; this is the one place the string is written down against it.
+    read = [args for args in recorded.sent if args[:2] == ["api", "--paginate"]]
+    check(
+        "at the endpoint this host keeps the relation on, written out here once",
+        read == [["api", "--paginate", f"repos/{own_repo}/issues/11/dependencies/blocked_by"]],
+        f"called {read!r}",
+    )
+    # ⛔ An answer the shared grammar cannot read is a failed outcome and not a
+    # traceback, which is the contract § 3 states. Two shapes, because the client's
+    # own help says each page is a separate array and an outer wrapper is opt-in --
+    # so both are shapes its merging could become.
+    for label, planted in (
+        ("an object where an array belongs", {"total_count": 1}),
+        ("an array whose entry is not an item", ["#13"]),
+    ):
+        malformed = _Host({"api --paginate": planted})
+        reported = with_host(malformed, lambda: unavailable(lambda: read_blockers(11)))
+        check(
+            f"and {label} is a failed call naming the call that made it",
+            # ⚠️ The path through the production helper rather than as a literal:
+            # the case above is what holds the literal, and spelling it here too
+            # would make an endpoint rename redden three cases by one route.
+            reported is not None and relation.blocked_by_path(own_repo, 11) in reported,
+            f"got {reported!r}",
+        )
     # ⛔ The guard, in the direction that matters: the path is the issues one,
     # which answers for a pull request, so a blocker list read with a pull request
     # number is an answer about the wrong object.
@@ -928,6 +1005,39 @@ def self_test() -> int:
         reported is not None and "PullRequest" in reported
         and guarded.calls == ["Item"],
         f"got {reported!r} after {guarded.calls}",
+    )
+    # ⛔ And a value that is not a number at all is refused as a configuration
+    # rather than let out as a `ValueError`, every operation here routing through
+    # the same guard. The port catches the contract's own exceptions and nothing
+    # else, so this is the difference between a reported refusal and a traceback.
+    shapeless = _Host({})
+    reported = with_host(shapeless, lambda: refused(lambda: read_blockers("not-a-number")))
+    check(
+        "a value that is not an item number is refused before any call",
+        reported == "tracker.operations.read_item" and shapeless.calls == [],
+        f"reported {reported!r} after {shapeless.calls}",
+    )
+    # ⛔ The repository address is matched whole, and this is the arm that holds
+    # it: the guard's first form tested the arity of a split and was dead for
+    # every input containing a slash, so a truncated or unexpected address came
+    # back as a plausible-looking repository instead of as nothing. ⚠️ Asserted
+    # through the shared module directly -- it is a pure shaping with no host in
+    # it, and the alternative is a fixture per malformed address.
+    misread = [
+        address for address in (
+            "https://api.example.invalid/repos",
+            "https://api.example.invalid/",
+            "https://api.example.invalid/repos/o/n/issues/13",
+        )
+        if relation.blocker({"repository_url": address})["repo"] is not None
+    ]
+    check(
+        "an address this host did not write answers no repository rather than a guess",
+        not misread
+        and relation.blocker(
+            {"repository_url": "https://api.example.invalid/repos/o/n/"}
+        )["repo"] == "o/n",
+        f"read a repository out of {misread!r}",
     )
 
     # --- `set_state`: the column, by name, read before written --------------

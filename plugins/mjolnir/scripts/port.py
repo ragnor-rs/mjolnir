@@ -2077,39 +2077,98 @@ def self_test() -> int:
     # implementations' own import, so the two classes were unrelated and
     # `invoke`'s `except` caught nothing.
     #
+    # ⛔ **Two arms, because the end-to-end one cannot be the only one.** What it
+    # provokes is a *failed* call, and only an implementation that reaches its
+    # host through a client on the path can be made to fail with no host — so on
+    # a project whose kind speaks its own transport the provocation lands on a
+    # different arm, and a case that insisted would redden in an adopter's tree
+    # for a reason that is not the defect. The first arm below holds the dispatch
+    # whatever the kind; the second is the evidence where it can be had, and says
+    # so when it cannot.
+    #
+    # ⚠️ **The first is a forbidding check on this file's own entry point**, which
+    # is the shape the tracker-name check above already takes against this same
+    # source. It is weaker than running the thing, and it is the arm that cannot
+    # be absent.
+    entry = source.rsplit('if __name__ == "__main__":', 1)
+    check(
+        "this file's entry point dispatches through its own module name",
+        len(entry) == 2 and re.search(r"import\s+port\s+as\s+\w+", entry[1])
+        and not re.search(r"(?<![\w.])main\(sys\.argv", entry[1]),
+        f"the entry point reads {entry[-1].strip()[:120]!r}",
+    )
+
     # ⚠️ **A subprocess, because the fault only exists in one**, which is the
     # shape `docs/single-source-of-truth.md` records as the plant that cannot be
-    # in-suite. The failure is provoked with no host and no credential: the
-    # client is not on the path handed to the child, so the first call out raises
-    # the contract's own exception from inside an implementation.
+    # in-suite.
+    #
+    # ⛔ **The child is handed a minimal environment rather than this one with the
+    # path emptied**, and that is not tidiness: an implementation speaking its own
+    # transport does not need a client at all, so a child inheriting this shell
+    # could carry a credential and make a **live call out of a self-test** the
+    # host runs with no credential precisely to prevent it. What is passed is what
+    # the configuration reader needs to resolve a project and nothing else, so
+    # *no host and no credential* is a property of the call rather than a claim in
+    # a comment.
     own = os.path.join(config.REPO_ROOT, config.CONFIG_PATH)
     if os.path.exists(own) and TRACKER in specs:
-        shell = dict(os.environ, PATH="")
-        run = subprocess.run(
-            [
-                sys.executable, os.path.abspath(__file__),
-                "--skills-root", config.REPO_ROOT,
-                "--invoke", "read_item", "--argument", "1",
-            ],
-            capture_output=True, text=True, env=shell, timeout=60,
-        )
-        # ⚠️ Read off stdout rather than off the exit status: a failed outcome
-        # and a traceback both exit non-zero, so the status cannot tell them
-        # apart and asserting on it would have passed before the fix.
+        bare = {
+            name: os.environ[name]
+            for name in ("HOME", "TMPDIR", "LANG", "LC_ALL")
+            if name in os.environ
+        }
         try:
-            reported = json.loads(run.stdout)
-        except ValueError:
-            reported = None
-        check(
-            "run as a script, a call that could not go out is a reported outcome",
-            isinstance(reported, dict) and reported.get("failed") is True,
-            f"printed {run.stdout[:120]!r} with {run.stderr.strip()[:200]!r} on stderr",
-        )
-        check(
-            "and no traceback reaches the person running it",
-            "Traceback (most recent call last)" not in run.stderr,
-            f"stderr carried {run.stderr.strip()[:200]!r}",
-        )
+            run = subprocess.run(
+                [
+                    sys.executable, os.path.abspath(__file__),
+                    "--skills-root", config.REPO_ROOT,
+                    "--invoke", "read_item", "--argument", "1",
+                ],
+                capture_output=True, text=True, env=dict(bare, PATH=""), timeout=60,
+            )
+        except subprocess.TimeoutExpired:
+            # ⛔ Reported rather than raised. A transport that hangs would
+            # otherwise kill the run with a traceback where a verdict belongs,
+            # which is the defect one layer up from the one this case is about.
+            run = None
+            check(
+                "the script answered at all, rather than hanging",
+                False,
+                "the child did not return within its bound, so the end-to-end arm "
+                "could not be read",
+            )
+        if run is not None:
+            # ⚠️ Read off stdout rather than off the exit status: a failed outcome
+            # and a traceback both exit non-zero, so the status cannot tell them
+            # apart and asserting on it would have passed before the fix.
+            try:
+                reported = json.loads(run.stdout)
+            except ValueError:
+                reported = None
+            # ⛔ The traceback arm holds whatever the child answered, because it
+            # is the one that is kind-independent: a refusal, a fallback and a
+            # failure are all outcomes, and none of them is a traceback.
+            check(
+                "run as a script, no traceback reaches the person running it",
+                "Traceback (most recent call last)" not in run.stderr,
+                f"stderr carried {run.stderr.strip()[:200]!r}",
+            )
+            if isinstance(reported, dict) and reported.get("failed") is True:
+                check(
+                    "and a call that could not go out came back as a failed outcome",
+                    True,
+                )
+            else:
+                # ⛔ Named as unprovoked rather than passed or failed, which is
+                # § 11's rule about what a report could not establish: this
+                # project's configured kind could not be made to fail without a
+                # host, so the end-to-end half of the dispatch is unheld here and
+                # the arm above is what holds it.
+                print(
+                    "  --    the failed-call arm is UNPROVOKED under this project's "
+                    f"kind: the child answered {str(reported)[:90]!r}, which is an "
+                    "outcome and not a failure"
+                )
 
     if failures:
         print(f"\n{failures} assertion(s) did not hold.")

@@ -8,14 +8,23 @@ nobody's problem.
 
 What it implements, and what it deliberately does not:
 
-  * **Every operation § 3 states except the checklist ones.** That absence is a
-    fact about the tracker rather than a shortcut here -- plain issues have no
-    check-item object at all. A task list is markdown inside the body, which is
-    *precisely* what `checklist_write`'s stated fallback already says to do, so
-    implementing them against body text would dress the fallback up as a
-    capability and cost a role the knowledge that it is reading prose. ⛔ No
-    count of them is carried: the list is closed and stated once, in § 3, and a
-    number here would be wrong the next time it grows.
+  * **Not every operation § 3 states**, and the ones it leaves are named once in
+    `DELIBERATELY_ABSENT` below. ⛔ No count of them is carried: the list is
+    closed and stated once, in § 3, and a number here would be wrong the next
+    time it grows. ⚠️ **The first form of this bullet said *except the checklist
+    ones*** and was wrong -- a fourth operation was absent beside them and the
+    sentence read as covering it. Found by the suite beside this module asserting
+    the relation rather than the sentence, which is why the set lives in a tuple
+    now and the suite reads it from there.
+      - **The three checklist operations**, because plain issues have no
+        check-item object at all. A task list is markdown inside the body, which
+        is *precisely* what `checklist_write`'s stated fallback already says to
+        do, so implementing them against body text would dress the fallback up as
+        a capability and cost a role the knowledge that it is reading prose.
+      - **`set_field`**, for the same kind of reason one object up: an issue here
+        has no field of its own to write. What another tracker carries in a field
+        -- an estimate, a date, a code root -- reaches a plain issue as a label or
+        as body text, which is what that operation's own stated fallback answers.
   * **`set_state` writes `open` or `closed` and refuses any other word.** A
     project whose `statuses` name a third state has written something plain
     issues cannot hold, and that is a statement the surface has to answer rather
@@ -532,12 +541,19 @@ def read_blockers(number: int) -> dict:
     ⛔ The address and the shape of one entry come from the module the board's
     implementation shares with this one: both kinds reach the same host, and two
     copies of one grammar are two statements allowed to disagree.
+
+    ⛔ **The number in the answer is the host's and never the argument.** The
+    port passes every value from an invocation as text, so echoing the argument
+    put a string beside blocker entries carrying integers -- one answer, two types
+    for one field name, and a consumer keying a dict on either mismatches in
+    silence. ⚠️ The guard read above already holds the host's own integer, so this
+    costs no call.
     """
-    read_item(number)
-    recorded = _gh(["api", "--paginate", relation.blocked_by_path(_repo(), number)])
+    item = read_item(number)
+    path = relation.blocked_by_path(_repo(), number)
     return {
-        "number": number,
-        "blockers": [relation.blocker(entry) for entry in recorded],
+        "number": item["number"],
+        "blockers": relation.blockers_of(_gh(["api", "--paginate", path]), path),
     }
 
 
@@ -620,6 +636,23 @@ def advance_on_merge(number: int) -> dict:
     }
 
 
+def self_test() -> int:
+    """This implementation's suite, which lives in the module beside it.
+
+    ⛔ **Scoped to the relation between two work items, and the scope is printed
+    by every run** rather than left in a docstring: this module had no suite at
+    all until those operations landed, and a suite that exists reads as a module
+    that is held. What the rest of it is held by is still the port's own contract
+    and a reader, and the run says so in both directions.
+
+    ⚠️ The suite's module name opens with `_`, which is what keeps discovery from
+    reading it as an implementation that names no kind.
+    """
+    from adapters import _github_issues_suite as suite
+
+    return suite.self_test()
+
+
 ADAPTER = port.Adapter(binder=bind, operations={
     "read_item": read_item,
     "search_items": search_items,
@@ -633,7 +666,21 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "read_blockers": read_blockers,
     "link_for_close": link_for_close,
     "advance_on_merge": advance_on_merge,
-    # ⛔ No `checklist_read`, `checklist_write` or `checklist_item_delete`. See
-    # the module docstring: plain issues have no check-item object, and the three
-    # stated fallbacks are already the right behaviour rather than a degradation.
+    # ⛔ The operations this tracker has nothing to implement against are named
+    # once, below, and read from there by the suite.
 })
+
+# The ones the module docstring argues are absent because the tracker has nothing
+# to implement them against: there is no check-item object, so a task list is
+# markdown in the body, and no field object either, so what another tracker keeps
+# in a field reaches an issue here as a label or as body text. ⛔ Written once,
+# here, and read by the suite rather than restated in it: one more absence would
+# otherwise be an operation nobody noticed going missing -- which is exactly what
+# happened to the fourth entry, absent while the docstring said *except the
+# checklist ones*.
+DELIBERATELY_ABSENT = (
+    "set_field",
+    "checklist_read",
+    "checklist_write",
+    "checklist_item_delete",
+)

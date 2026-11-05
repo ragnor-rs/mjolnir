@@ -2308,11 +2308,14 @@ or quiet:
   and this is the check it exists for. ⛔ **Where that capability is absent the check reports
   *unanswered*, never *no blockers*** — [§ 11](#a-report-names-what-it-could-not-establish)'s rule,
   and the failure direction that matters: a tracker that cannot be asked reads exactly like a
-  tracker with nothing to report. ⚠️ **The answer may arrive from a reading a role already has** —
-  [§ 12](#12-ordering)'s ordering reads the same relations where a project configures one, so a role
-  holding that output reads the verdict off it rather than asking twice, and says where it came
-  from. ⛔ What is not available is a second *source*: an ordering a project does not configure is
-  not a fallback, and the predicate is unanswered rather than derived from the backlog's shape.
+  tracker with nothing to report. ⛔ **And [§ 12](#12-ordering)'s ordering is not a second source
+  for it.** That facet's whole output is identifiers, most takeable first — it carries no blocker,
+  no state and nothing about what a blocker produced — so a verdict taken from an item's *presence*
+  in that list is a verdict derived from the backlog's shape, which § 12 states an ordering does not
+  answer and which the bullet below makes impossible anyway: neither bar can be applied to a reading
+  that does not say which blocker is which. ⚠️ **An ordering command may well read the same
+  relations**, and that changes nothing: what a project's command computed is not a fact the
+  procedure can see, so a role that skipped the operation would be trusting a coincidence.
 
 - **A dependency's bar depends on what the dependency produced.** A code dependency is satisfied
   when its code is on the integration branch; a non-code dependency only when it is finished.
