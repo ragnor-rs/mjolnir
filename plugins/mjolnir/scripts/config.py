@@ -3436,7 +3436,8 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
     denies = _absent_as(_get(data, "spend_guard.deny"), [])
 
     seen_sources: dict[str, str] = {}
-    sourceless: dict[str, str] = {}
+    # `(the kind of discriminator, its value) -> where it was first stated`.
+    sourceless: dict[tuple[str, str], str] = {}
     stated_needs: set[str] = set()
 
     for index, entry in enumerate(tiers):
@@ -3705,8 +3706,17 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
         # load, which is exactly the one-entry-written-twice state the rule is
         # about, and the reading then printed every line of it twice. Found by
         # review of the correction.
+        # ⛔ Keyed by **kind** as well as by value, because this map holds two
+        # kinds of discriminator: a tier name for the general rule and a
+        # criterion for the person-judged one. ⚠️ Keyed on the bare value they
+        # shared one namespace, so a `selects` whose normalised text is one of
+        # the four tier words collided with a sourceless suite of that tier —
+        # refusing a legitimate configuration with every clause of the message
+        # false, and with which of the two messages came back decided by the
+        # order the entries were written in. Found by review of the correction
+        # that introduced it.
         elif tier == PERSON_JUDGED_TIER:
-            criterion = _normalised_command(str(entry.get("selects") or ""))
+            criterion = ("selects", _normalised_command(str(entry.get("selects") or "")))
             if criterion in sourceless:
                 raise ConfigError(
                     f"{where}.selects",
@@ -3718,16 +3728,18 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
                 )
             sourceless[criterion] = where
         else:
-            if tier in sourceless:
+            at_tier = ("tier", tier)
+            if at_tier in sourceless:
                 raise ConfigError(
                     f"{where}.tier",
                     f"is a second `{tier}` suite with no verdict source, "
-                    f"alongside {sourceless[tier]} (§ 31). Nothing distinguishes "
-                    "them: the identity is the source, so two entries without one "
-                    "under a single tier are one entry written twice — state a "
-                    "source apart, which § 2 and § 17 each admit.",
+                    f"alongside {sourceless[at_tier]} (§ 31). Nothing "
+                    "distinguishes them: the identity is the source, so two "
+                    "entries without one under a single tier are one entry "
+                    "written twice — state a source apart, which § 2 and § 17 "
+                    "each admit.",
                 )
-            sourceless[tier] = where
+            sourceless[at_tier] = where
 
         if tier != PERSON_JUDGED_TIER:
             started = entry.get("started")
@@ -9804,6 +9816,34 @@ def self_test() -> int:
         two_judged is None,
         f"reported {two_judged!r}",
     )
+    # ⛔ The green side of the discriminator's own namespace, which is where the
+    # narrowing first went wrong: the map held a tier name for one rule and a
+    # criterion for the other under one key space, so a `selects` whose text is
+    # a bare tier word collided with a sourceless suite of that tier. ⚠️ Both
+    # orders are asserted, because which of the two false messages came back was
+    # decided by the order the entries were written in.
+    for label, accept_first in (
+        ("a criterion spelled as a tier word, that tier's suite after it", True),
+        ("and the same pair written the other way round", False),
+    ):
+        collide = _a_person_judged_suite(_a_collection_example())
+        judged_suite = collide["test_tiers"]["tiers"][0]
+        # ⛔ The tier whose name is also a legal sourceless suite, derived rather
+        # than spelled: the one this surface obliges to need nothing. A tier word
+        # picked by position would be one whose own obligations refuse the plain
+        # suite below, and the arm would redden on `needs` instead of on the
+        # collision it is written for.
+        needs_nothing = next(
+            name for name, obliged in sorted(TIER_OBLIGATIONS.items()) if not obliged
+        )
+        judged_suite["selects"] = needs_nothing
+        plain = _a_suite(tier=needs_nothing, needs=[], stood_up_by=_DROP)
+        collide["test_tiers"]["tiers"] = (
+            [judged_suite, plain] if accept_first else [plain, judged_suite]
+        )
+        got = _refused(collide)
+        check(f"{label} loads", got is None, f"reported {got!r}")
+
     # ⚠️ The opt-in line, which is the one a reader would otherwise have to infer
     # from `started` -- and the field was replaceable by a constant without it.
     opt_in = _tier_read("end_to_end", _an_opt_in_suite_with_nothing_denied_but_denying)

@@ -383,11 +383,13 @@ test_tiers:
   tiers:
     - tier: integration
       # The dependency is the only need, and `stood_up_by` is where the measured split lands.
-      # ⛔ `run`, because this entry's verdict is the **local** command below and that run stands
-      # its own store up — the key follows the verdict the tier names. ⚠️ `executed` below is
-      # about the host's run of the same cases, where a service arrives beside the run and every
-      # case skips locally; the two are not in conflict, which is why § 16 rules that it does not
-      # matter who stands the dependency up and § 31 refuses `host_runnable` as a need.
+      # ⛔ `run`, by § 31's rule that the value follows the verdict this entry names: that verdict
+      # is the local command below, and that run stands its own store up.
+      #
+      # ⚠️ `executed` below describes the host's run of the same cases, and its comment there says
+      # those cases skip locally — which does not sit with the local entry's own `proves`. That
+      # disagreement is this file's and pre-dates the facet; § 31 states outright that nothing
+      # compares the two, so naming it is all this comment can honestly do.
       needs: [dependency]
       stood_up_by: run
       started: automatic

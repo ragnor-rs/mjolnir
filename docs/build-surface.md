@@ -328,12 +328,13 @@ each project's files state, and a person-judged tier can be a practice no file m
 
 ### The fourth difference: what is asked for, and what is refused outright
 
-**The *asked for rather than automatic* column is populated in five of the six, and the reasons are
-not one reason.** F's evaluation set is money — about $3.65 a run against a budget already exhausted
-once. A's whole acceptance run is an argument it refuses to default. C's live-model harnesses and
-B's bot suite are in no workflow at all. E's live-platform path is deliberately not automated. ⛔ So
-*opt-in* is a property a project states rather than one derivable from a cost, which is why the
-facet carries the key instead of reading a price.
+**The *asked for rather than automatic* column's own cells are the finding, and ⛔ the reasons they
+give are not one reason**: money in one row, an argument the run refuses to default in another, no
+workflow at all in two more, and a deliberate omission in a fifth. ⛔ So *opt-in* is a property a
+project states rather than one derivable from a cost, which is why the facet carries the key instead
+of reading a price. ⚠️ **The cells are not recopied here**, the figure and the environments being
+the column's — which is the discipline this section states two headings up and would otherwise
+break on its own page.
 
 ⛔ **The rail that performs an asking already exists and reads commands**, which is
 [`schema § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)

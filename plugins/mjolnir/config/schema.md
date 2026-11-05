@@ -6479,6 +6479,14 @@ counted, and a figure copied out of it is a figure to keep in sync.
 arithmetic reads the same either way, that section having already ruled that it does not matter who
 stands the dependency up.
 
+⛔ **And where the same cases are run both ways, the value follows the verdict this entry names.**
+One measured project has its store arrive as a service on the host and stand it up itself locally,
+so the tier is honestly described either way and a reader asking *which* has no answer from the
+needs alone. The key is the suite's, the suite's identity is its verdict source, and so the run
+that source names is the run `stood_up_by` is about. ⚠️ **Stated here because it was first settled
+in an example's comments**, where it was a rule nothing could be held to and which two passes of
+this facet answered differently.
+
 ⛔ **And `needs: []` is a statement rather than an unset key**, by the rule this surface opens
 with: a project whose unit tier needs nothing beyond its own build says so, and a tier whose needs
 nobody wrote down reads identically otherwise. ⛔ **A need stated twice is refused**, for the reason
