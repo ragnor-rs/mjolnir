@@ -584,55 +584,49 @@ environment:
   inherits: [PATH, HOME, TMPDIR, CLAUDE_PLUGIN_ROOT, CLAUDE_PLUGIN_DATA]
 
 e2e_register:
-  # ⛔ Nothing here is driven end to end, so there is no suite for a register to describe and no
-  # new check in `host.checks` above. What this repository ships is read by a person running a
-  # role and by the gates in `tools/`; the thing an end-to-end case would drive — a deployed
-  # system behind the interface a person uses — does not exist to be deployed.
+  # ⛔ Nothing here is driven end to end, so there is no suite for a register to describe. ⚠️ The
+  # `End-to-end register` entry in `host.checks` above is no check on this tree's scenarios
+  # either: it mirrors the carrier's own `--self-test`, so what that run holds is the carrier and
+  # not this project. What this repository ships is read by a person running a role and by the
+  # gates in `tools/`; the thing an end-to-end case would drive — a deployed system behind the
+  # interface a person uses — does not exist to be deployed.
   #
-  # ⚠️ The facet is still stated, because an unset key and a decided one read alike. The carrier
-  # that holds the coverage record for the tiers this repository *does* run is its own gate list,
-  # and what holds each entry there is stated beside that entry: its planted violations where it
-  # carries them, its own printed count where its job is running discovered suites instead.
-  # ⛔ Stated per entry and not as one property of the whole set — `adapter_suites.py` ships no
-  # `--self-test` by its own design statement, so *what* holds a check is the half that varies.
+  # ⚠️ The facet is still stated, because an unset key and a decided one read alike. ⛔ And what
+  # stands in for a register is nothing one property of the gate list above could carry: each
+  # check states its own holding — `adapter_suites.py` ships no `--self-test` by its own design
+  # statement where its siblings carry one — so there are no scenarios here to read rows off.
   carrier: none
   absent_reason: >-
-    No end-to-end tier: nothing here is deployed and no interface is driven. Every check in this
-    repository answers about the tree it runs in, and what holds each one is stated beside it
-    rather than as a row in a register.
+    No end-to-end tier: nothing here is deployed and no interface is driven, so no scenario exists
+    for a register to carry a row about.
   revisit_when: >-
     A role is carried by something that has to be stood up before it can be exercised — a service,
     a hosted endpoint, or an install this repository performs rather than describes.
 
 executed:
-  # ⛔ No tier here has a dependency stood up for the run, which is § 16's one subject test — a
-  # store the subject talks to over its real protocol, created for the run rather than mocked and
-  # rather than found already running. The single tier in `test_tiers` below needs nothing, so
-  # this facet has no subject, and a declaration and a report would be two commands judging a
-  # tier § 16 is not about.
+  # ⛔ No tier this project states has a dependency § 16 makes a subject of, so this facet has no
+  # subject. The reader says the same thing from the other side: `carrier: command` is refused
+  # beside a `test_tiers` list naming no entry whose `needs` carries a dependency — so `none` here
+  # is the only value the surface admits while that list stands, rather than a preference.
   #
-  # ⛔ And that is the whole of the reason, because the two wider claims a reader might expect
-  # under it are false of this tree. «Nothing is created for a run»: the claim carrier's suite
-  # inits a bare repository and clones it, and the boundary, the port contract, the configuration
-  # reader, the rules loader and this check itself each build a temporary tree. «Nothing can be
-  # absent, so no run executes zero cases and still exits zero»: `destinations/_file_suite.py`
-  # skips a block under uid 0 with the reason named and exits zero, and `adapter_suites.py`
-  # prints «0 with a suite» and exits zero where no installed implementation exposes one.
+  # ⚠️ And the reason stops there, because the wider claims this absence used to rest on are false
+  # of this tree: suites here do build fixtures for their runs, and a run here can drop a block of
+  # assertions and still exit zero. Where those sites are named is the `test_tiers` comment below,
+  # cited rather than restated — the shape that comment already uses for the adjacent fact.
   #
-  # ⚠️ So the failure § 16 exists to catch is reachable here, by routes its subject test does not
-  # reach — stated rather than argued away. What holds the discovery route is `test_tiers`'
-  # `selects` below, which reports its criterion **unheld**; the skipped-block route is held by
-  # nothing, and this sentence is the only record it has.
+  # ⛔ So the degradation § 16 names is reachable here by a route its subject test does not reach,
+  # and nothing holds it. ⚠️ Not the tier's `selects` below, which is the criterion and not a
+  # holder, and not the count `adapter_suites.py` prints, which nothing judges: what § 31 offers is
+  # `selection_held_by`, and stating none is the gap the tier entry below already records.
   carrier: none
   absent_reason: >-
     No tier whose dependency is stood up for the run, which is the one property § 16 makes a tier
-    its subject by: the single tier here needs nothing, so there is no declaration for a report to
-    be judged against.
+    its subject by: no tier this project states needs anything, so there is no declaration for a
+    report to be judged against.
   revisit_when: >-
-    A tier here talks to a dependency outside its own run's control — a store over its real
-    protocol, a service, an index — whose absence the runner handles by skipping rather than by
-    failing. ⛔ Not a temporary directory or a repository a suite creates and removes itself,
-    which is the tree the suite runs in, relocated.
+    `test_tiers` gains an entry whose `needs` carries a stood-up dependency — the one state in
+    which § 16's arithmetic may be configured here at all, the reader refusing
+    `executed.carrier: command` beside a tier list naming none.
 
 test_tiers:
   # ⛔ One entry, and it is **not** the absence this facet was first written with here. Almost
@@ -653,17 +647,17 @@ test_tiers:
   # every declared port has an implementation installed — so it is cited here and not restated.
   # What nothing holds is the set of implementations against the suites among them.
   #
-  # ⚠️ And this runner is why neither facet above states a quantifier over the gate set: it ships
-  # no `--self-test` by its own design statement, so it carries no planted violations and is not
-  # its own suite over the tree. What holds it is the count it prints — and ⛔ that count reads
-  # healthy over a smaller set, «0 with a suite» exiting zero, which is the residue the `executed`
-  # facet above records.
+  # ⚠️ And this runner is why the facets above carry no one property of the gate list: it ships no
+  # `--self-test` by its own design statement, so it carries no planted violations and is not its
+  # own suite over the tree. ⛔ And what it prints is a count nothing judges, so the count holds it
+  # no better — § 16's `min` is what would, and the `executed` facet above says why none is set.
   #
   # ⛔ The reason the absence was wrong is recorded rather than quietly replaced: its clauses were
-  # false of this tree in the way #195 measured the sibling facet's to be. «Every fixture is
-  # created inside the assertion using it» is false — several suites build one per block — and «a
-  # failure to create one raises rather than skipping» is false at two measured sites, where a
-  # missing binary or a uid-0 process drops a block of assertions and the run still exits zero.
+  # false of this tree. «Every fixture is created inside the assertion using it» is false — several
+  # suites build one per block — and «a failure to create one raises rather than skipping» is false
+  # wherever a missing binary or a uid-0 process drops a block of assertions and the run still
+  # exits zero. Among them: `destinations/_file_suite.py` under uid 0, `claim.py` where `lsof` is
+  # absent, and `tools/check_nothing_deferred.py` where git cannot be reached.
   #
   # ⚠️ The gates are deliberately not rows here, by § 31's rule that the list is the suites that
   # need something rather than an inventory — a row per workflow would be an inventory of the gate

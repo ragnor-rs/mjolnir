@@ -544,7 +544,7 @@ against a file nothing tracks it does nothing at all — so the break survives i
 every check green. ⚠️ **Confirming the red is not the whole of it**, since a break the assertion
 reddens on by another route leaves the test believed and unexercised — which is measured on this
 repository's own checks
-([the measurement](../../../docs/single-source-of-truth.md#each-check-has-a-violation-it-is-asserted-to-redden-on)).
+([the measurement](../../../docs/single-source-of-truth.md#a-check-that-carries-the-mode-is-asserted-to-redden-on-a-violation)).
 ⛔ **The same rule for a different artifact is #28's** — the checks a document role ships — and it is
 cited here rather than ruled a second time.
 
