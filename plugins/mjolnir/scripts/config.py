@@ -3430,6 +3430,36 @@ def _normalised_command(command: str) -> str:
     return " ".join(command.split())
 
 
+# §§ 15 and 16's stated absences against § 2's own list: the carrier each facet's
+# check is run by, and the flag that turns one into an assertion of itself.
+# ⛔ Named here rather than read off the surface, because the rule those sections
+# state is about what an entry's command *answers about* -- and the only commands
+# a reader can decide that for are the ones shipped beside it. An adopter's own
+# command making the same judgement is the residue § 15 states rather than
+# closes.
+ABSENT_FACET_CARRIERS = {
+    "e2e_register": "check_e2e_register.py",
+    "executed": "executed.py",
+}
+ASSERTS_ITSELF = "--self-test"
+
+
+def _runs_script(command: str, script: str) -> bool:
+    """Whether a command names the given script as a path it runs.
+
+    The word, by its last path segment, so the one spelling this cannot be
+    written out of is a different file name. ⚠️ A command naming the script as
+    *data* rather than running it matches too, and that is the direction this
+    has to err in: the facets it serves are the two whose whole subject is a
+    check that holds nothing being read as green, and § 2's rule is that absence
+    of signal is not an answer. The refusal names the command, so a project in
+    that position can read what matched.
+    """
+    return any(
+        word == script or word.endswith("/" + script) for word in command.split()
+    )
+
+
 # § 31's derivation, as the one thing an alternation cannot state: which need a
 # tier's own name obliges it to carry. Spelled out here for the reason
 # `BOUND_ANSWERERS` above is -- the surface states the four names and the five
@@ -6900,6 +6930,46 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
             "this pair exempts a change from every role in the loop and leaves "
             "nothing to commit it. Run the third, or state no class.",
         )
+
+    # §§ 15 and 16's stated absences against § 2's list, and ⛔ **last here for
+    # the reason the rule above it is**: it reads a facet and `host.checks`, each
+    # of which has rules of its own, so a configuration malformed in either is
+    # refused on *that* key first. The walk is `mirrored_runs`' rather than a
+    # second reading of the facet, two walks of one list being two readings
+    # allowed to disagree about what the project wrote.
+    #
+    # ⚠️ The rule is about what the entry's **command** answers about and never
+    # about the entry: the comparison a facet states has no subject under its own
+    # absence, so a run of it exits neither green nor red and the entry is a red
+    # check by construction -- while the same script under `--self-test` holds
+    # the shipped carrier against its own planted violations and answers about
+    # the carrier instead. § 15 states the split and § 16 cites it.
+    #
+    # ⛔ The flag is tested as a **word** of the same spelling and never as a
+    # substring: `--self-testing` names no flag either script parses, so read
+    # loosely it would exempt a command that runs the plain check.
+    for facet, script in sorted(ABSENT_FACET_CARRIERS.items()):
+        if _get(data, f"{facet}.carrier") != "none":
+            continue
+        for record in mirrored_runs(data):
+            # ⚠️ Both spellings, because § 1's `invoke` form makes the command as
+            # written and the command as it runs two different strings: held on
+            # one of them, a root whose form wraps the script exempts it.
+            for spelling in (record["normalised"], record["runs_normalised"]):
+                words = spelling.split()
+                if not _runs_script(spelling, script) or ASSERTS_ITSELF in words:
+                    continue
+                raise ConfigError(
+                    "host.checks",
+                    f"states {record['mirrored_by']} mirroring {spelling!r} while "
+                    f"`{facet}.carrier` is `none`. That command answers about this "
+                    f"project's own subject for a facet stating it has none, so it "
+                    f"reports no subject and exits neither green nor red -- a red "
+                    f"check by construction (§ 15). Delete the entry, state the "
+                    f"facet it holds, or mirror the same script under "
+                    f"`{ASSERTS_ITSELF}`, which answers about the carrier rather "
+                    f"than about this tree and is permitted beside the absence.",
+                )
 
 
 def surface_for(skills_root: str = ".") -> str:
@@ -10508,6 +10578,43 @@ def self_test() -> int:
         check(f"{label} is refused, with the key named", broken == key,
               f"reported {broken!r}")
 
+    # ⛔ The green side of the three plants above, which §§ 15 and 16 make the
+    # whole of the rule rather than an exception to it: the rule is about what an
+    # entry's command answers about, so the same script under its asserting flag
+    # answers about the carrier and is permitted beside the absence. ⚠️ Planted
+    # rather than left to this repository's own configuration, which carries both
+    # entries: a rule widened to the entry would refuse that file and no arm here
+    # would say which half was wrong.
+    for facet, script in sorted(ABSENT_FACET_CARRIERS.items()):
+        for label, command in (
+            ("alone", f"python3 a-root/{script} {ASSERTS_ITSELF}"),
+            ("beside other arguments",
+             f"python3 a-root/{script} --skills-root . {ASSERTS_ITSELF}"),
+        ):
+            stood = _refused(
+                _an_absence_mirroring(facet, command)(_a_valid_example())
+            )
+            check(
+                f"{facet}: the carrier asserting itself, with the flag {label}, "
+                "loads beside the absence",
+                stood is None,
+                f"refused {stood!r}, which makes the stated absence and the "
+                "assertion of the carrier mutually exclusive",
+            )
+    # ⚠️ And the complement on a third carrier, which is what keeps the rule from
+    # being read as *no entry may name a script*: `boundary.py`'s facet is carried
+    # here, so its plain command is an ordinary entry and must stay green.
+    beside = _refused(
+        _an_absence_mirroring("executed", "python3 a-root/boundary.py")(
+            _a_valid_example()
+        )
+    )
+    check(
+        "a carrier whose own facet is carried is an ordinary entry beside the absence",
+        beside is None,
+        f"refused {beside!r}, which reads the rule as being about the entry",
+    )
+
     # ⛔ A shape rule answers what a value has to *be* and never whether it is
     # written. Requiredness is the surface's marker, checked in `validate` above,
     # and a rule that refuses absence as well states one fact twice -- with the
@@ -11786,6 +11893,24 @@ def _planted_violations():
          "executed.declares", _an_absent_executed_with(declares="a-command")),
         ("a precondition stated beside the carrier that names none",
          "executed.requires", _an_absent_executed_with(requires=["a-store"])),
+        # §§ 15 and 16 against § 2's list: an entry whose command answers about a
+        # subject the project says it has none of. ⛔ One plant per facet rather
+        # than one for the rule, because the refusal names the facet's own key and
+        # a single arm would leave the other carrier's spelling asserted by
+        # nothing. ⚠️ The third is the flag read as a substring -- `--self-testing`
+        # parses as no flag either script has, so a loose test would exempt a
+        # command that runs the plain check.
+        ("a check mirroring the register carrier beside its stated absence",
+         "host.checks",
+         _an_absence_mirroring(
+             "e2e_register", "python3 a-root/check_e2e_register.py")),
+        ("a check mirroring the count carrier beside its stated absence",
+         "host.checks",
+         _an_absence_mirroring("executed", "python3 a-root/executed.py")),
+        ("the asserting flag written as a prefix of another word",
+         "host.checks",
+         _an_absence_mirroring(
+             "executed", "python3 a-root/executed.py --self-testing")),
         # § 31's entries. ⚠️ Every one of these refusals is in the permissive
         # direction, which is what makes the set worth its length: each would
         # otherwise leave a reader reporting a suite as stated while nothing
@@ -12118,6 +12243,38 @@ def _an_absent_executed_with(**overrides):
         node.clear()
         node.update({"carrier": "none", "absent_reason": "a stated reason"})
         node.update(overrides)
+        return data
+
+    return mutate
+
+
+def _an_absence_mirroring(facet: str, command: str):
+    """A facet stated absent beside a `host.checks` entry mirroring `command`.
+
+    §§ 15 and 16's rule against § 2's own list, which is the one pairing on this
+    surface whose halves are each ordinary alone: the absence is what a project
+    with no such tier states, and an entry is what every other check in a gate
+    list is. ⛔ So a plant for it writes **both**, and the arms beside it write
+    the same pair with the asserting flag on -- the permitted half, which a rule
+    widened to the entry rather than to its command would refuse.
+
+    ⚠️ The facet is written out rather than overridden, for the reason the
+    fixtures above are: the example this breaks may already state the absence,
+    and a plant that only appended an entry would assert nothing about the half
+    it means to pair with.
+    """
+
+    def mutate(data: dict) -> dict:
+        node = data.setdefault(facet, {})
+        node.clear()
+        node.update({"carrier": "none", "absent_reason": "a stated reason"})
+        _get(data, "host.checks").append(
+            {
+                "workflow": "A planted entry",
+                "mirrors": command,
+                "triggers": "pull_request -> *",
+            }
+        )
         return data
 
     return mutate
