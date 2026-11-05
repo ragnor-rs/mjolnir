@@ -2742,7 +2742,8 @@ class Config:
         # § 32, and the stated absence of a list rather than of a carrier, for the
         # reason § 20's is: the behaviour with `[]` is the behaviour before the
         # facet existed, so what the key buys is the difference between a project
-        # that decided no status of its moves backwards and one that never asked.
+        # that decided no status of its own moves backwards and one that never
+        # asked.
         # ⛔ Reported as the procedure performing no reverse move, never as an
         # item that cannot step back -- a person and the tracker's own automation
         # both still can, and that is the case § 32 exists against.
@@ -5991,9 +5992,9 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
             raise ConfigError(
                 f"{where}.trigger",
                 f"is {entry['trigger']!r}; the surface states "
-                f"{' | '.join(triggers)}. The set is what a role here observes, "
-                "so a trigger nothing observes is an item on the role that would "
-                "rather than a word in this file.",
+                f"{' | '.join(triggers)}. The set is closed on what the survey "
+                "measured a project ruling, so a trigger no project was found to "
+                "rule is a change to the surface rather than a word in this file.",
             )
         if entry["trigger"] in seen_triggers:
             raise ConfigError(
@@ -8001,6 +8002,34 @@ def self_test() -> int:
                 ),
                 f"reported {lines!r}",
             )
+    # § 32's report, held the same way and for the reason this block exists: an
+    # arm no example reaches is an arm nothing asserts can speak. ⛔ Both
+    # directions, because the complement is what makes the report mean anything
+    # -- a project that rules an edge must *not* be told it rules none, which is
+    # the one way this branch can be wrong while still printing.
+    ruling, silent = [], []
+    for name, example in sorted(loaded.items()):
+        lines = example.unavailable()
+        says_none = any("No reverse edge is ruled" in line for line in lines)
+        if _absent_as(example.get("reversals"), []):
+            ruling.append(name)
+            check(
+                f"{name} rules a reverse edge and is not reported as ruling none",
+                not says_none,
+                f"reported {lines!r}",
+            )
+        else:
+            silent.append(name)
+            check(
+                f"{name} says it rules no reverse edge",
+                says_none,
+                f"reported {lines!r}",
+            )
+    check(
+        "an example reaches each of § 32's two arms",
+        bool(ruling) and bool(silent),
+        f"ruling {ruling!r}, silent {silent!r}",
+    )
     check(
         "an example reaches each of those two arms",
         bool(subset) and bool(unmapped),

@@ -6859,7 +6859,17 @@ reversals:
 ```
 
 [§ 4.2](#42-status--an-ordered-set-of-name-role-writer) is an ordered set and every writer in it
-advances, and nothing there — nor any role, nor any operation — describes the reverse edge.
+advances; what this facet adds is the edge that section does not describe, and
+[§ 3](#the-operations-and-what-an-absent-capability-does)'s `set_state` row names both directions
+because one operation performs them.
+
+⛔ **The key is required, so a configuration written before this facet existed stops loading** —
+[§ 1](#the-surface-is-resolved-beside-the-configuration)'s case of a change that makes a key
+required, whose two duties are discharged in the same commit rather than here: the absent form is
+`[]`, written into every configuration this repository carries, and **the record this lands with
+says that configurations outside this repository are now refused** until each writes the key.
+⚠️ **No check here can reach them**, which is why the statement is the whole of what a change can
+do about it.
 
 ⛔ **And this facet does not read that order either, which is a stated limit rather than an
 omission.** An entry names the role it steps **to** and no role it steps *from*, so there is no pair
@@ -6887,10 +6897,20 @@ nobody decided** — measured on one project, where the tracker's own automation
 code-landed status off every closing merge and so steps an already-deployed item back with no rule
 anywhere and nothing reporting it.
 
-**The trigger set is what a role here observes**, which is what closes it. ⚠️ **A fourth trigger is
-anticipated and is deliberately not a word here** — a deploy that fails after the advance was
-already written — because no role in this procedure deploys, so it belongs to the item that builds
-that role rather than to a vocabulary entry nothing would ever name.
+⚠️ **No role asks it yet, and this is written that way rather than in the indicative.** The ask
+exists on the port and the roles that would make it are the ones that read an item's role — the
+deploy role of #13 and the advance of #44 — neither of which is built, and there is no invocation
+that reaches either direction's guard. So what is stated here is the rule a reverse move is held
+to, and the first role to make one is the first to be held to it.
+
+**The trigger set is closed on what the survey measured a project ruling**, which is what makes it
+a vocabulary rather than a guess: each of the three is one project's stated rule
+([the measurement](../../../docs/configuration-surface.md#a-status-that-moves-backwards-in-three-of-six-projects-and-ruled-in-two)).
+⚠️ **A fourth was looked for and is deliberately not a word here** — a deploy that fails after the
+advance was already written — because no project was found ruling it; and nothing here would name it
+either, no role in this procedure deploying. ⛔ **Which of those two is the criterion matters**: a
+trigger some project rules is a word here whether or not a role in this procedure observes it, and
+whether *this* project configures it is a separate question its own `[]` answers.
 
 ⛔ **A `to_role` no status maps is refused with the key named**, which is a reader's refusal rather
 than a role's report: § 4.2's absent-role case is a legitimate configuration met against an item,
@@ -6905,16 +6925,19 @@ being a status a deploy writes and the person who ordered the work sends back. �
 exactly as the forward one is**: the procedure is refused where the writer is anybody else, `never`
 refuses with no writer to hand the move to, and each refusal **names the writer** (§ 4.2).
 
-⛔ **Only the role moves.** The item's own text is not rewritten by a reverse move: what the step
-back contradicts in the body is named in the report, and whoever owns that text writes it. A move
-that edited the body would make the reversal a second author of the item, which is
+⛔ **Only the role moves.** The item's own text is not rewritten by a reverse move, and that half is
+performed: the move writes the state and asks for nothing else on the item. A move that edited the
+body would make the reversal a second author of the item, which is
 [§ An artifact states what is true now](#an-artifact-states-what-is-true-now) answered by the wrong
-party.
+party. ⚠️ **Naming what the step back contradicts in the body is the role's obligation and not the
+port's**, so it rests on the same unbuilt roles as the ask above rather than on anything here.
 
-⛔ **A role reads an item's role where it uses it, and never a value read earlier in the pass.** A
-reversal can land between a read and a use, and the direction that errs in is a batch assembled
-from a role the item no longer holds — which is the same wrong answer as the first rule above,
-reached without any configuration being wrong.
+⛔ **A role reads an item's role where it *acts* on it, and never from a value read earlier in the
+pass.** A reversal can land between a read and a use, and the direction that errs in is a batch
+assembled from a role the item no longer holds — the same wrong answer as the first rule above,
+reached without any configuration being wrong. ⚠️ **It reaches a role that acts and not one that
+reports**: a reading carried across the steps of one pass in order to *say where the work stands* is
+this rule's subject only once something is written on the strength of it.
 
 ## What the toolkit installs into a project, and what takes it out
 

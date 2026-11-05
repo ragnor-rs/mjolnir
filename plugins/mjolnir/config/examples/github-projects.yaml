@@ -134,9 +134,10 @@ statuses:
 # § 32. One reverse edge, and nothing the procedure does: the board's own automation writes
 # `Merged` off every pull request carrying a closing reference, so a second change under an
 # item already at `Done` steps it back there. `writer: automation` is what that is, so the
-# procedure is refused and reports the move the board already made — and the entry exists so
-# that a role reading this item's role knows the step backwards is ruled rather than a board
-# somebody has to explain.
+# procedure is refused and reports the move the board already made. ⚠️ The surveyed project on
+# this tracker rules none of that — the entry is what ruling it looks like, and the reason to
+# write it is that a role reading this item's role then finds the step backwards stated rather
+# than finding a board doing something the configuration denies.
 reversals:
   - { trigger: merged_under_a_later_role, to_role: code_landed, writer: automation }
 

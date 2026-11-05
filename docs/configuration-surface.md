@@ -2632,8 +2632,9 @@ of them, and only two of the three state it as a rule:
 | C | A finished item whose work was never implemented, with new criteria appended under it: **surface it and ask whether to reopen** | **Ruled**, in the filing role, and the ruling is to *ask* — the only instance where the answer is a question rather than a move |
 | B | The board's automation writes the code-landed status off every closing merge, so a second change under an item already past that status steps it back | **Not ruled anywhere.** The only statement about it is the opposite one — ⛔ never hand-edit a status, because the status means the code really was deployed |
 
-The other three state nothing: two run forward-only sweeps whose roles refuse to write a later
-status than the work supports, and the third carries no status vocabulary at all.
+The remaining projects state nothing about a reverse edge: two have roles that refuse to write a
+status later than the work supports and never the other way, and one carries no work-item status
+vocabulary at all, having no process role files.
 
 ⚠️ **Two of the three are not what the item asking for this predicted**, which is worth recording
 because the prediction is what the facet was nearly built against: it read as one project ruling two
@@ -2656,7 +2657,11 @@ an item that should have stepped back and did not is **invisible to it**, ships 
 named in no report. The gate is sound and the ladder is wrong, which is why the edge belongs on the
 surface and not in the role that reads it.
 
-⚠️ **A fourth trigger was looked for and not found**: a deploy that fails after the advance was
+⚠️ **One more trigger was looked for and not found**: a deploy that fails after the advance was
 already written. No project's deploy role steps the item back on a failed run — one of them states
-the opposite, that a failed release is not repaired by moving anything backwards — so the trigger
-set stops at three, and what would add the fourth is a role in this procedure that deploys (#13).
+the opposite, that a failed release is not repaired by moving anything backwards — so the surface's
+list is the cases above and no more. ⛔ **The criterion is what a project was measured ruling**, and
+it is worth being exact about which, because the near-miss criterion excludes a case the list
+contains: *what a role in this procedure observes* would drop A's acceptance rejection too, that
+project's deploy role having no counterpart here either. What would add the missing one is a project
+found ruling it, and #13 is where the role that would observe it is answered.

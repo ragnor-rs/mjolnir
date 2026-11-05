@@ -1030,33 +1030,37 @@ class Port:
                 "being written to match.",
             )
         if len(entries) > 1:
-            # Refused rather than taking the first, for § 4.2's reason one role
-            # answered by two status words is: the ask names a trigger, and two
-            # entries answering it leave the move undefined. ⚠️ The reader
-            # refuses this at load, so what reaches here is a `Port` built over a
-            # configuration the reader never saw -- which the suite below is, and
-            # which a role that composed its own dict would be.
+            # ⛔ The reader is where this rule is **stated**, and this is not a
+            # second statement of it: the reader refuses a duplicate trigger at
+            # load with the entry named, so what reaches here is a `Port` built
+            # over a configuration the reader never validated -- the suite below,
+            # and a role that composed its own dict. ⚠️ Refused rather than taking
+            # the first, which is § 4.2's reason one role answered by two status
+            # words has no answer, and the message points at the reader rather
+            # than repeating why.
             raise ConfigError(
                 REVERSALS,
-                f"rules the `{trigger}` trigger {len(entries)} times. § 32 rules "
-                "a trigger at most once, because the ask names a trigger and two "
-                "entries leave the move undefined.",
+                f"rules the `{trigger}` trigger {len(entries)} times here, which "
+                "the configuration reader refuses at load with the entry named "
+                "(§ 32). A configuration that did not go through it has no answer "
+                "for this ask, and the first entry is not one.",
             )
         entry = entries[0]
         role = entry.get("to_role")
         status = self._mapped_status(role)
         if status is None:
-            # ⚠️ The reader refuses this at load too, and for a reason the report
-            # here does not restate: a `to_role` no status maps is written in the
-            # file, where § 4.2's absent role is met against an item. What is left
-            # for this branch is the same hand-built configuration as above.
+            # ⚠️ The reader refuses this at load too, and this report does not
+            # restate its reason either: a `to_role` no status maps is written in
+            # the file, where § 4.2's absent role is met against an item. What is
+            # left for this branch is the same unvalidated configuration as above.
             return Outcome(
                 "set_state",
                 performed=False,
                 trigger=trigger,
                 to_role=role,
                 detail=f"No status here maps the `{role}` role, so the reverse "
-                f"edge ruled for `{trigger}` has nowhere to step back to.",
+                f"edge ruled for `{trigger}` has nowhere to step back to -- which "
+                "the configuration reader refuses at load.",
             )
         refusal = self._refused_by_writer(
             entry.get("writer"),
@@ -1144,6 +1148,15 @@ def invocation_report(name: str, operation: str, outcome: "Outcome") -> dict:
     ⛔ Every one of `Outcome`'s three answers is a field, and `performed` is not
     inferred from `result` being there: an operation that legitimately answers
     `None` -- a day with no entry -- would otherwise read as one that did not run.
+
+    ⛔ **And every fact a refusal or a move *names* is a field too.** § 4.2's
+    writer and § 32's trigger and target role are what a role acts on -- the
+    writer a refusal hands the move to, the items a batch report says stepped
+    back -- and a shape that carried them only inside `detail` would oblige every
+    reader to parse a sentence somebody may reword. ⚠️ **Measured on § 32's own
+    change**, where the two new fields were added to `Outcome` under a docstring
+    forbidding exactly that parse and did not reach this shape; `writer` had the
+    same gap already and is closed here with them.
     """
     return {
         "port": name,
@@ -1153,6 +1166,9 @@ def invocation_report(name: str, operation: str, outcome: "Outcome") -> dict:
         "refused": outcome.refused,
         "detail": outcome.detail,
         "result": outcome.result,
+        "writer": outcome.writer,
+        "to_role": outcome.to_role,
+        "trigger": outcome.trigger,
     }
 
 
@@ -1171,6 +1187,13 @@ def refusal_report(name: str, operation: str, error: ConfigError) -> dict:
         "refused": True,
         "detail": str(error),
         "result": None,
+        # ⛔ Present and null rather than absent: the shape is the same shape, and
+        # a refusal that dropped three keys would be the second reader the
+        # docstring above forbids. A `ConfigError` names a key and never a writer,
+        # a trigger or a role, so null is the honest value for all three.
+        "writer": None,
+        "to_role": None,
+        "trigger": None,
         "key": error.key,
     }
 
@@ -1872,12 +1895,14 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         stepped.trigger == a_trigger and stepped.to_role == a_role,
         f"carries trigger={stepped.trigger!r} to_role={stepped.to_role!r}",
     )
-    # ⛔ The configuration is read on every call and never resolved once. § 32
-    # states a role reads an item's role where it uses it, and a port that cached
-    # the edge would answer the second ask from the first ask's configuration --
-    # so the fixture is **edited between two calls on one port** and the second
-    # answer has to follow the edit. ⚠️ A suite that built a second `Port` would
-    # pass with the cache in place, which is why this reuses the instance above.
+    # ⛔ The configuration is read on every call and never resolved once -- which
+    # is § 1's rule that the reader is the one answer and not § 32's about an
+    # item's role, a distinction worth keeping because the two are easy to
+    # conflate here. A port that cached the edge would answer the second ask from
+    # the first ask's configuration, so the fixture is **edited between two calls
+    # on one port** and the second answer has to follow the edit. ⚠️ A suite that
+    # built a second `Port` would pass with the cache in place, which is why this
+    # reuses the instance above.
     reverting.config.data[REVERSALS] = [
         {"trigger": a_trigger, "to_role": a_role, "writer": NEVER}
     ]
@@ -1957,6 +1982,63 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         only_the_role.performed and touched == ["set_state"],
         f"the implementation was asked for {touched!r}",
     )
+    # ⛔ The fields reach the shape a role actually reads, which is the half the
+    # `Outcome` docstring promises and the half that went missing: a role handed
+    # only `detail` has to parse the sentence that docstring forbids parsing.
+    # ⚠️ Asserted on the report rather than on the outcome, the outcome's own
+    # fields being asserted three arms up.
+    stepped_report = invocation_report(spec.name, "set_state", stepped)
+    check(
+        "and a role reads the trigger and the role off the report, not out of the prose",
+        stepped_report["trigger"] == a_trigger and stepped_report["to_role"] == a_role,
+        f"reported {stepped_report!r}",
+    )
+    refused_report = invocation_report(
+        spec.name,
+        "set_state",
+        Port(
+            _with_reversals(
+                [a_status],
+                [{"trigger": a_trigger, "to_role": a_role, "writer": NEVER}],
+            ),
+            spec,
+            adapter=answering,
+            stated=stated,
+        ).revert_to(a_trigger),
+    )
+    check(
+        "and reads the refusing writer off it too, which § 4.2 says the refusal names",
+        refused_report["writer"] == NEVER and refused_report["trigger"] == a_trigger,
+        f"reported {refused_report!r}",
+    )
+    # ⛔ The operation is named before anything is resolved, in both directions.
+    # The code says so in a comment and nothing held it: the call is deletable
+    # from either method with every arm green. ⚠️ What it costs is a role
+    # reporting a move against an operation the surface has renamed away.
+    without = {
+        operation: fallback
+        for operation, fallback in stated.items()
+        if operation != "set_state"
+    }
+    # ⚠️ The adapter implements nothing, and it has to: `Port` holds an adapter to
+    # the stated list as it is built, so one implementing an operation this
+    # fixture has removed is refused before either method is reached.
+    renamed = Port(
+        _with_reversals(
+            [a_status],
+            [{"trigger": a_trigger, "to_role": a_role, "writer": PROCEDURE}],
+        ),
+        spec,
+        adapter=Adapter(),
+        stated=without,
+    )
+    for direction, argument in (("revert_to", a_trigger), ("advance_to", a_role)):
+        gone = _refused(lambda: getattr(renamed, direction)(argument))
+        check(
+            f"`{direction}` names the operation before resolving anything, and stops without it",
+            gone == f"{spec.prefix}.operations.set_state",
+            f"reported {gone!r}",
+        )
     # ⚠️ The two directions over one configuration, which is what *behaves
     # exactly as it did* has to mean: the reverse edge above is ruled, and the
     # advance is unchanged by its being there.
