@@ -2618,3 +2618,45 @@ directory** —
 [`schema.md § 30 → Where an exempt change goes`](../plugins/mjolnir/config/schema.md#where-an-exempt-change-goes-and-the-one-role-it-runs):
 `work_in_shared_checkout` routes the work of an *item*, and an exempt change has no item, no claim
 and no tree cut for it.
+
+## A status that moves backwards, in three of six projects and ruled in two
+
+Every status ladder the survey read runs one way, and every writer on it advances
+([`schema.md § 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)).
+A sweep of all six projects' process copies for a move in the other direction found one in **three**
+of them, and only two of the three state it as a rule:
+
+| | What was found | How it is written |
+|---|---|---|
+| A | Acceptance is a person's judgement against the item's own criteria, **and the same person may send the item back** out of the deployed column instead of on | **Ruled**, in the deploy role's own text, beside the prohibition on that role touching the next column at all |
+| C | A finished item whose work was never implemented, with new criteria appended under it: **surface it and ask whether to reopen** | **Ruled**, in the filing role, and the ruling is to *ask* — the only instance where the answer is a question rather than a move |
+| B | The board's automation writes the code-landed status off every closing merge, so a second change under an item already past that status steps it back | **Not ruled anywhere.** The only statement about it is the opposite one — ⛔ never hand-edit a status, because the status means the code really was deployed |
+
+The other three state nothing: two run forward-only sweeps whose roles refuse to write a later
+status than the work supports, and the third carries no status vocabulary at all.
+
+⚠️ **Two of the three are not what the item asking for this predicted**, which is worth recording
+because the prediction is what the facet was nearly built against: it read as one project ruling two
+cases, and what the copies say today is three projects with one case each, in three different roles,
+answered three different ways. ⛔ **The design consequence is the trigger key.** One reverse edge per
+project and one case each means a project's answer is a function of *what happened* rather than of
+where the item sits, so the edge is keyed on the trigger and carries its own writer —
+[`schema.md § 32`](../plugins/mjolnir/config/schema.md#32-a-status-that-moves-backwards).
+
+**What the three cases establish about the writer**, which is the half § 4.2 had nowhere to say: A's
+sits on a status its own forward writer is the deploy, and the person sending it back is the one who
+ordered the work. So the writer of a reverse edge is **not** the target status's — two writers on
+one transition pair, and the forward one answers who advances into a status rather than who sends an
+item back out of it.
+
+**And the failure that makes it a facet rather than a convention** is B's, read off its own release
+gate: that gate reads every item *below* the deployed status and fails the release where one owns a
+commit on the integration branch. An item that stepped back out of a later status is caught by it;
+an item that should have stepped back and did not is **invisible to it**, ships in the batch and is
+named in no report. The gate is sound and the ladder is wrong, which is why the edge belongs on the
+surface and not in the role that reads it.
+
+⚠️ **A fourth trigger was looked for and not found**: a deploy that fails after the advance was
+already written. No project's deploy role steps the item back on a failed run — one of them states
+the opposite, that a failed release is not repaired by moving anything backwards — so the trigger
+set stops at three, and what would add the fourth is a role in this procedure that deploys (#13).

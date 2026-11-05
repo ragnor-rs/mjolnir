@@ -6868,7 +6868,7 @@ something here it did not mean to.
 reads each item's role to decide what the batch carries, so an item left in a role its code no
 longer answers for is in no batch and named in no batch report — a wrong answer from that role
 rather than a missing nicety
-([the measurement](../../../docs/configuration-surface.md#a-status-that-moves-backwards-and-the-three-projects-that-rule-one)).
+([the measurement](../../../docs/configuration-surface.md#a-status-that-moves-backwards-in-three-of-six-projects-and-ruled-in-two)).
 
 ⛔ **A reverse edge is configured and never derived, and `[]` is today's behaviour exactly.** A role
 does not step an item back on its own judgement, and a project that rules none has a procedure that
