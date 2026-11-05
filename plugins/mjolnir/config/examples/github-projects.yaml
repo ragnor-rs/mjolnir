@@ -152,6 +152,12 @@ done:
 checks_local:
   - command: "<the integration suite command>"
     proves: "the suite passes against a store this run stands up"
+    # ⛔ The **local** precondition, and § 17 evaluates it: a value naming the service the host
+    # supplies beside its own run would be false by construction here, which is a `done:` check
+    # that can never read green. ⚠️ That is what this entry was briefly reworded to say, to
+    # reconcile it with `executed` below — the wrong direction, since the two facets are about two
+    # different runs of these cases and § 31's `stood_up_by` follows this entry, the tier's own
+    # verdict source.
     requires: ["a container daemon"]
 
 # § 18, and the one arm a project discovers by being refused: the linter above has a fixing
@@ -367,6 +373,44 @@ executed:
   min: 1
   requires:
     - "the service the host supplies beside the run, which a local run does not have"
+
+test_tiers:
+  # Two tiers that can fail to run, and ⛔ neither of them the end-to-end one — that suite is in a
+  # repository of its own, which is what the register facet above states. The list is the suites
+  # that need something (§ 31), so the unit tier the `CI` workflow runs is deliberately not a row
+  # here: it needs only what the build already starts.
+  carrier: list
+  tiers:
+    - tier: integration
+      # The dependency is the only need, and `stood_up_by` is where the measured split lands.
+      # ⛔ `run`, by § 31's rule that the value follows the verdict this entry names: that verdict
+      # is the local command below, and that run stands its own store up.
+      #
+      # ⚠️ `executed` above describes the host's run of the same cases, and its comment there says
+      # those cases skip locally — which does not sit with the local entry's own `proves`. That
+      # disagreement is this file's and pre-dates the facet; nothing in § 31 reaches a `proves`,
+      # so naming it is all this comment can honestly do.
+      needs: [dependency]
+      stood_up_by: run
+      started: automatic
+      # ⚠️ Selected by a named list, which is one of the three measured mechanisms and the one
+      # that can go stale: a suite added and not named here drops out silently.
+      selects: "the suites named in `scripts/integration-run-report`, one assertion per suite"
+      # ⛔ So the criterion is held, and this is what closes the staleness above: the declaration
+      # command counts the cases the tree holds, and the report names what ran — the arithmetic
+      # § 16 judges, read here as the comparison that keeps the list honest.
+      selection_held_by: "scripts/integration-case-count against scripts/integration-run-report"
+      # The verdict already exists under `checks_local` above and is **named**, never respelled.
+      command: "<the integration suite command>"
+    - tier: acceptance
+      # The person-judged tier, answered by the `human_verification` check under `done:` above.
+      # ⛔ No `started`, no `workflow` and no `command`: what starts a person looking is § 13's
+      # record, and a machine verdict read for this tier is the failure that section calls
+      # indistinguishable from success — a check only a person can answer, answered by reasoning
+      # about it.
+      needs: [deploy]
+      selects: >-
+        the paths through the running application the change reaches, decided by whoever drives it
 
 spend_guard:
   # The stricter value, and the configuration it is for: what spends here is a metered deploy, and

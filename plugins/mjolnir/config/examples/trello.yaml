@@ -454,6 +454,37 @@ executed:
     A suite lands that creates something for itself before it can run — a store, a service or a
     daemon — which is the same trigger the facet above carries.
 
+test_tiers:
+  # The one tier this project has that can fail to run, and ⛔ the one shape § 31 gives no verdict
+  # source at all: the person-judged tier. Its answerer is the `human_verification` check under
+  # `done:` above, which is what the derivation reads — so `workflow`, `command` and `started` are
+  # all refused on this entry, a machine verdict read for a person-judged tier being the failure
+  # § 13 calls indistinguishable from success.
+  #
+  # ⚠️ The two facets above are absent and this one is carried, which is not a contradiction. The
+  # register facet asks what a coverage document says about this tier's case files, and this tier
+  # has none — a person walks the change. The count facet is absent for a different reason it
+  # states in its own words: there is no tier of **that** kind here at all. ⛔ And neither means
+  # the project runs nothing: the inner repositories mirror commands of their own under the `host`
+  # blocks above. This facet asks what the tier needs before anybody can judge it: a deployment.
+  carrier: list
+  tiers:
+    - tier: acceptance
+      # A running deployment of the change, which is what the walk-through needs and what nothing
+      # here stands up automatically. ⛔ No credential and no money: the person already has their
+      # own access, and nothing in the walk is metered.
+      needs: [deploy]
+      # The criterion, in this project's own words. ⚠️ It is a criterion and not a list, which is
+      # the honest shape for a tier nobody has written case files for.
+      selects: >-
+        every change the walk-through reaches: the screens the change touches, decided by the
+        person from the change itself
+      # ⛔ No `selection_held_by`, and the cost is § 31's stated one rather than an oversight:
+      # nothing holds the criterion to this tier's cases, there being no case files to hold it
+      # to, so the selection is reported unheld. The remedy is case files, which is the register
+      # facet's own `revisit_when` above.
+      refused_on: ["<the environment real customers are on>"]
+
 spend_guard:
   # The simplest shape the facet has: one command that spends, named, with no pattern beside it.
   # ⚠️ The command alone decides here because the script does nothing else — which is exactly the
