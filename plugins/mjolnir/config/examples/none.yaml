@@ -254,6 +254,18 @@ executed:
     document, so there is no count of executed cases to declare or to judge.
   revisit_when: A suite is mapped that creates a dependency for itself before it can run.
 
+test_tiers:
+  # The absence in its emptiest form: there is no suite at all, so there is no tier that could
+  # lack a deploy, a credential, material or money. ⚠️ Stated rather than left unset, which is
+  # this file's whole shape: every absence in it carries its reason.
+  carrier: none
+  absent_reason: >-
+    There is no suite and therefore no tier. The one mapped role reads evidence off the machine and
+    writes a document, so nothing here can be unable to run.
+  revisit_when: >-
+    A suite is mapped at all, which is the same trigger the two facets above carry — the first tier
+    this project gains is also the first one that could need something.
+
 spend_guard:
   # The empty list, like `checks_local` and `exclusive_resources` above: the one mapped role reads
   # evidence off the machine and writes a file, and no command it runs costs anything. ⛔ The guard

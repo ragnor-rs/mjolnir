@@ -337,6 +337,21 @@ executed:
     A case lands that needs a store, a service or a daemon created for the run — the first moment
     a pass and a run that executed nothing stop reading alike.
 
+test_tiers:
+  # The first day once more, and the facet's commonest configuration: one tier, needing only what
+  # the build already starts, so nothing here can fail to run. ⛔ Which is why the absence is
+  # written rather than a single `unit` entry — § 31 states the list as the suites that need
+  # something, and an entry whose needs are empty and whose criterion is «everything the build
+  # runs» would be a row restating the workflow above.
+  carrier: none
+  absent_reason: >-
+    Every tier here is the unit one: the single workflow above runs what the build runs, against
+    nothing it has to stand up, reach or pay for. No suite can report nothing and be read as green.
+  revisit_when: >-
+    A suite lands that needs a dependency stood up, a deployment, a credential, indexed material or
+    money — which is the same trigger the two facets above carry, and the first entry this list
+    would hold.
+
 spend_guard:
   # The first day again: everything this project runs is free, so nothing is denied. ⚠️ Worth
   # stating even here, because the facet's cheapest failure is a project that acquires a paid

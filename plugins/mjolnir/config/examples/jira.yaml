@@ -186,8 +186,8 @@ done:
   - { check: merged, answered_by: procedure, stop: "The change has not landed." }
 
 # § 17, carried in full — the facet's complement of `host.checks` above, which mirrors one
-# command on release-branch changes only. Two entries, because two verdicts are two entries and
-# never two commands in one.
+# command on release-branch changes only. An entry per verdict, because a verdict is an entry and
+# never a second command inside one.
 checks_local:
   - command: "<the acceptance scenario command>"
     proves: "the scenarios pass against a running instance of this build"
@@ -203,6 +203,11 @@ checks_local:
     # Nothing cached and nothing stood up, so neither `invalidate` nor `requires` is written —
     # an absence rather than a key left blank.
     proves: "every document this change touches still describes the tree"
+  - command: "<the graded evaluation set command>"
+    proves: "the graded set scores at or above the bar this project holds itself to"
+    # ⛔ What it needs and nothing about what it costs: the cost is `spend_guard` below, and the
+    # fact that it is opt-in is `test_tiers` below that. Three facets, one per question.
+    requires: ["a model credential", "the budget the grading draws on"]
 
 # § 18, and the arm this project is the reason for: it already owns a probe answering whether
 # the host can run these jobs — the account's runners are its own, and a suspended one is a
@@ -433,6 +438,64 @@ executed:
   requires:
     - "a store the run creates for itself, reachable over its own protocol"
     - "the credential that store is created with, in the environment the run inherits"
+
+test_tiers:
+  # The facet at its fullest, and the project it was extracted from: three suites that can fail to
+  # run, two of them classified under one tier. ⛔ Which is why an entry is a suite rather than a
+  # tier — keyed on the tier, this project would have had to state its end-to-end scenarios or its
+  # graded set and not both, and they differ in what they need and in whether they start
+  # themselves.
+  #
+  # ⚠️ The unit tier is not a row. It needs only what the build already starts, and § 31 states the
+  # list as the suites that need something rather than an inventory.
+  carrier: list
+  tiers:
+    - tier: integration
+      # The dependency the **run** stands up — a store created for the run, over its real
+      # protocol — which is the other half of the split `stood_up_by` carries, and the tier § 16's
+      # arithmetic above is about. ⛔ The two keys are not two statements of one fact: that facet
+      # counts what executed, this one says what the suite is.
+      needs: [dependency]
+      stood_up_by: run
+      started: automatic
+      selects: "every case under the integration source root, by the suffix that marks the tier"
+      # ⛔ Held by the arithmetic above rather than by a second comparison: the declaration counts
+      # what the tree holds and the report says what ran, which is what catches a selection that
+      # has gone stale in the direction that reports as complete.
+      selection_held_by: "scripts/count-integration-cases against the report the run prints"
+      # The verdict is the host's own run of this project's build, named and never respelled.
+      workflow: "Build"
+    - tier: end_to_end
+      # ⚠️ The word trap, and the reason the tier word is this surface's and never the project's:
+      # this project calls these «the acceptance scenarios», and they are browser-driven against a
+      # deployed instance with no person judging them. Filed under the project's own word they
+      # would collide with the person-judged tier, which is `checklist_ticked` under `done:` above.
+      needs: [deploy, credential]
+      started: automatic
+      selects: "the journeys the register names, one case file per journey"
+      # ⛔ § 15 **is** this comparison, named here rather than described again: the register above
+      # holds the journeys to the case files on disk, in both directions.
+      selection_held_by: "the e2e_register comparison configured below"
+      # The target this suite is never run against, and the measured reason: it writes to a real
+      # third-party account. ⚠️ A name and nothing more — what a deploy target is remains #63's.
+      refused_on: ["<the environment real customers are on>"]
+      command: "<the acceptance scenario command>"
+    - tier: end_to_end
+      # The second suite under the same tier, and the one that costs money: a graded evaluation
+      # run against a finite budget. ⛔ `asked` is what makes it opt-in, and the rail that performs
+      # the asking is `spend_guard` below — this facet states that the suite is opt-in and keeps no
+      # record of its own.
+      # ⛔ `deploy` is here because the derivation obliges it for this tier and
+      # because it is true: the set is graded against the running instance. What
+      # distinguishes this suite from the one above is the other two needs.
+      needs: [deploy, material, money]
+      started: asked
+      selects: >-
+        the graded cases whose material the index has caught up on, dropped by the marker each
+        case carries when it has not
+      # ⛔ No `selection_held_by`, and the cost is stated: nothing compares the marker against the
+      # index, so a run that dropped most of the set reports its criterion and not a completeness.
+      command: "<the graded evaluation set command>"
 
 spend_guard:
   # The facet at the shape it was extracted from: one runner invokes this project's cheap suites

@@ -621,6 +621,39 @@ executed:
     install this repository performs rather than describes — which is the same trigger the
     end-to-end facet above carries.
 
+test_tiers:
+  # ⛔ There is no tier here to be unable to run, because every check in this repository is a
+  # **gate** rather than a suite of cases, which is the distinction § 31 draws before this absence
+  # is written. A gate has nothing to select from, nothing to drop and nothing that could fail to
+  # start.
+  #
+  # ⚠️ Each clause of the reason below is narrowed to what is checkable, because the sibling
+  # facet's reason is not: #195 measured two of its clauses false — the suites here do build
+  # temporary trees and do clone repositories, so «nothing created for the run» overreaches. What
+  # that item established and this reason rests on instead is that every fixture is created inside
+  # the assertion using it and a failure to create one **raises** rather than skipping.
+  #
+  # ⚠️ Some gates here do reach outside the tree — a merge base, the host's own answer about an
+  # open pull request — so «nothing is reached» would be false and is deliberately not claimed.
+  # ⛔ And no count of which ones is written either: a figure here is a figure to keep in sync, and
+  # the clause below is the property they share instead. What makes them gates anyway is that none
+  # has cases, and each **refuses** naming what it could not establish rather than reporting
+  # green: § 2's absence rule already answering the failure § 31 exists to catch.
+  #
+  # ⚠️ Which is also why this is the absence and not a list of entries: § 31 states the list as
+  # the suites that need something rather than an inventory, so a row per workflow would be a
+  # second statement of `host.checks` above, free to disagree with it.
+  carrier: none
+  absent_reason: >-
+    There is no test tier here, only gates: every fixture a check needs is created inside the
+    assertion that uses it and a failure to create one raises rather than skipping, so no run here
+    can execute nothing and still exit zero. Where a gate here does reach outside this tree it
+    refuses naming what it could not establish rather than reporting green.
+  revisit_when: >-
+    A check here comes to depend on something outside its own run's control — a store, a service
+    or a deployment it does not create and remove itself — whose absence a runner would handle
+    silently rather than raise on.
+
 spend_guard:
   # ⛔ Nothing here spends. Every command this repository runs is a gate over its own tree: no
   # model provider is called, no tier is metered, and nothing is deployed — so the deny list is

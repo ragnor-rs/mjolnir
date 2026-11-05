@@ -368,6 +368,38 @@ executed:
   requires:
     - "the service the host supplies beside the run, which a local run does not have"
 
+test_tiers:
+  # Two tiers that can fail to run, and ⛔ neither of them the end-to-end one — that suite is in a
+  # repository of its own, which is what the register facet above states. The list is the suites
+  # that need something (§ 31), so the unit tier the `CI` workflow runs is deliberately not a row
+  # here: it needs only what the build already starts.
+  carrier: list
+  tiers:
+    - tier: integration
+      # The dependency is the only need, and `stood_up_by` is where the measured split lands:
+      # the **host** supplies it as a service beside the run. ⛔ Which does not make the tier
+      # host-only — § 31 refuses `host_runnable` as a need for exactly this reason, and the
+      # local half of the same suite is the `min: 1` floor's whole subject above.
+      needs: [dependency]
+      stood_up_by: host
+      started: automatic
+      # ⚠️ Selected by a named list, which is one of the three measured mechanisms and the one
+      # that can go stale: a suite added and not named here drops out silently.
+      selects: "the suites named in `scripts/integration-run-report`, one assertion per suite"
+      # ⛔ So the criterion is held, and this is what closes the staleness above: the declaration
+      # command counts the cases the tree holds, and the report names what ran — the arithmetic
+      # § 16 judges, read here as the comparison that keeps the list honest.
+      selection_held_by: "scripts/integration-case-count against scripts/integration-run-report"
+      # The verdict already exists under `checks_local` above and is **named**, never respelled.
+      command: "<the integration suite command>"
+    - tier: acceptance
+      # The person-judged tier, answered by the `human_verification` check under `done:` above.
+      # ⛔ No `started`, no `workflow` and no `command`: what starts a person looking is § 13's
+      # record, and a machine verdict read for this tier is the check somebody turns off.
+      needs: [deploy]
+      selects: >-
+        the paths through the running application the change reaches, decided by whoever drives it
+
 spend_guard:
   # The stricter value, and the configuration it is for: what spends here is a metered deploy, and
   # a go given inside a session is a go for an act that reaches a live environment. ⛔ So no answer
