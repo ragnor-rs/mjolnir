@@ -508,7 +508,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--adapter-item", action="append", default=[], metavar="KIND=N",
                         help="the work item that builds that kind's adapter; repeatable")
     parser.add_argument("--migration-items", default="", metavar="N,N",
-                        help="the work items whose `blocked_by` closure is the critical path")
+                        help="the work items whose blocker closure is the critical path")
     parser.add_argument("--candidate", action="append", default=[], metavar="NAME=FILE",
                         help="a configuration drafted for that target, validated against its "
                              "own skills root and written nowhere; repeatable")
@@ -753,7 +753,7 @@ def main(argv: list[str]) -> int:
         print(line("VERDICT", verdict))
         (ready if verdict == "READY" else not_ready).append(name)
 
-    print("\nthe migration's critical path — open items, `blocked_by` walked transitively")
+    print("\nthe migration's critical path — open items, blockers walked transitively")
     if not migration_items:
         # ⚠️ Named rather than skipped. A section that vanished with its roots would leave the
         # report looking complete while the one transitive question went unasked.

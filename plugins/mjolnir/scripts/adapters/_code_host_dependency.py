@@ -15,11 +15,12 @@ not hypothetical — the sides of this relation are easy to get backwards, and a
 copy that inverted one while the other stayed right would be a readiness gate
 answering differently per kind on one host.
 
-⛔ **The address and the shaping are here; the call, the guard and the refusal are
-not.** Which transport a module speaks through is its own — one goes straight out,
-the other through a named seam its suite substitutes — and what a refusal says
-names the thing it was about to reach, a card or an issue. What the two share is
-only *where the relation lives* and *what one of its entries means*.
+⛔ **The address, the shaping and the refusal on an answer neither can be read
+from are here; the call and the guard are not.** Which transport a module speaks
+through is its own, and so is the pull-request guard every operation routes
+through — those name the thing they were about to reach. What the two share is
+where the relation lives, what one of its entries means, and what an entry that
+cannot be read is.
 
 ⚠️ The module name opens with `_` so the port's discovery skips it: a module in
 `adapters/` that names no kind is refused rather than skipped, which is right for
@@ -50,7 +51,19 @@ import port  # noqa: E402
 # plausible-looking repository address rather than a refusal, which is the worse
 # direction: `None` says *this answer did not state one*, while `issues/13` sends
 # a role to a repository of that name.
-REPOSITORY_URL = re.compile(r"/repos/(?P<owner>[^/]+)/(?P<name>[^/]+)/?$")
+REPOSITORY_URL = re.compile(r"/repos/(?P<owner>[\w.-]+)/(?P<name>[\w.-]+)/?$")
+
+def _word(value) -> str:
+    """One field of a host answer, as a string, whatever the host put there.
+
+    ⚠️ Not a convenience: an entry is outside this procedure, so a field this
+    shaping treats as a word may arrive as a number or a null. The first form
+    guarded one field of three and let the other two out as attribute and type
+    errors, which `blockers_of` below states is never what an unreadable answer
+    becomes.
+    """
+    return value if isinstance(value, str) else ""
+
 
 # The relation is recorded on the **blocked** item, and this is the one place
 # that is written down for this host. ⛔ Posting it on the blocker records a real
@@ -112,12 +125,15 @@ def blocker(entry: dict) -> dict:
     on one today. The reason is carried as the host states it and judged nowhere
     here.
     """
-    address = REPOSITORY_URL.search(entry.get("repository_url") or "")
-    reason = entry.get("state_reason")
+    # ⛔ Every field read for its own type and none assumed to be a string. A
+    # host answer is outside this procedure, and an entry carrying a number where
+    # a word belongs reached the operator as an attribute error -- which is the
+    # traceback the port states three answers instead of.
+    address = REPOSITORY_URL.search(_word(entry.get("repository_url")))
     return {
         "number": entry.get("number"),
-        "state": (entry.get("state") or "").lower(),
-        "state_reason": reason.lower() if isinstance(reason, str) else None,
+        "state": _word(entry.get("state")).lower(),
+        "state_reason": _word(entry.get("state_reason")).lower() or None,
         "title": entry.get("title"),
         "url": entry.get("html_url"),
         "repo": f"{address['owner']}/{address['name']}" if address else None,

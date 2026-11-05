@@ -248,15 +248,13 @@ TRACKER_IDS_ANYWHERE = [
 # decidable (an underscore, a camel hump, a path segment, a metadata key) is
 # matched anywhere in a code region. A name that is also an English phrase is
 # matched only as the **whole** of one, which is where a literal stands alone.
-# ⚠️ Measured, on this list's first form: matching the phrase anywhere in a code
-# region refused a commit subject quoted in a span, an example item body inside a
-# fence, and an example of what this port's own answer carries — three shapes a
-# shipped carrier plausibly holds, none of them a role naming a tracker.
+# ⚠️ What the single-position form refused is recorded with this check's other
+# limits, in the document this file's docstring names — three shapes a shipped
+# carrier plausibly holds, none of them a role naming a tracker.
 #
 # ⛔ No count of either group is written here or in the documents, for the reason
-# the groups above carry none: the first form of this comment said *four*, the
-# phrase made it five, and the review that followed made it seven across two
-# lists.
+# the groups above carry none: every form of this comment that carried one was
+# made wrong by the next spelling added, twice over.
 LINK_TYPE_TOKENS = [
     (re.compile(r"(?<![\w-])blocked_by(?![\w-])"), "a dependency field's own name"),
     (re.compile(r"(?<![\w-])blockedBy(?![\w-])"),
@@ -281,10 +279,18 @@ LINK_TYPE_TOKENS = [
      "a link type's own metadata key"),
 ]
 
+# ⛔ One wording, and the single ordinary verb is deliberately not among them: a
+# role may quote a status word or a capability of that spelling, and matching it
+# even as a whole span would refuse that. ⚠️ The first form of this list added it
+# while deleting the sentence that had recorded the omission, which is how a
+# decision gets reversed with nothing saying so.
+#
+# ⚠️ Trailing punctuation comes off before matching, because a literal quoted at
+# the end of a sentence carries the sentence's own stop inside its span.
 LINK_TYPE_PHRASES = [
-    (re.compile(r"^(?:is\s+blocked\s+by|blocked\s+by|blocks)$", re.I),
-     "a link type's own wording"),
+    (re.compile(r"^is\s+blocked\s+by$", re.I), "a link type's own wording"),
 ]
+PUNCTUATION = " \t.,;:!?'\"`"
 
 # Asking who is running. ⛔ Each of these is a spelling that resolves *the
 # current user* and nothing else, and `schema.md § 27` forbids a role being
@@ -1372,11 +1378,8 @@ def check_no_link_type_is_named_in_the_strict_set(tree: Tree) -> list[str]:
     else in this file: one group of the spellings is English phrases, and a sweep
     of prose for those would redden on this docstring.
 
-    ⛔ **And the two groups are matched in two positions**, which is rule 2's own
-    split applied to a name: a token whose shape is decidable is matched anywhere
-    in a region, while a name that is also an English phrase is matched only as
-    the whole of one. The grammar above records what the single-position form
-    refused.
+    ⛔ **And the two groups are matched in two positions**, for the reason the
+    grammar above states.
     """
     problems = []
     swept = 0
@@ -1402,7 +1405,7 @@ def check_no_link_type_is_named_in_the_strict_set(tree: Tree) -> list[str]:
                 # names are multi-word. A region's newlines are already flattened
                 # where it came from prose; a fenced region keeps its lines,
                 # because there a line break is the code's own.
-                whole = re.sub(r"\s+", " ", region).strip()
+                whole = re.sub(r"\s+", " ", region).strip(PUNCTUATION)
                 if pattern.match(whole):
                     named(path, region, what, whole)
     if tree.strict() and not swept:
@@ -1790,8 +1793,8 @@ def _plant_strict_files_with_no_code(tree: Tree) -> Tree:
 
     ⛔ The counterpart of the empty-strict-set plant one check over: a strict set
     with files in it and not one code region is the other way a check scoped to
-    `code()` holds nothing while reporting green. ⚠️ A sibling guard of the same
-    shape is unplanted, and that is noted rather than copied -- a precedent for
+    `code()` holds nothing while reporting green. ⚠️ Used by both checks that are
+    scoped that way -- the sibling guard was unplanted, and a precedent for
     leaving one unasserted is not a reason to leave a second.
 
     ⚠️ **Every strict file and not only the markdown ones**, which this plant's
@@ -2209,8 +2212,9 @@ VIOLATIONS = [
     ("no stack is named in the strict set",
      "an interpreter prefixing a key's placeholder rather than a command stated whole",
      _plant_in_a_carrier("\nRun `python3 <day_log.script> --check` here too.\n")),
-    # The same construct against rule 1's reader: `code()` pairs spans per line,
-    # so a double span ahead of a command is where that pairing goes wrong.
+    # The same construct against rule 1's reader: a ``…`` span's backticks are
+    # not a span's delimiters, so a double span ahead of a command is where that
+    # pairing goes wrong.
     ("no stack is named in the strict set", "a build tool after a double span",
      _plant_in_a_carrier("\nMatching `` `x` is retired `` and then `npm run build` first.\n")),
     ("no value is carried in the strict set", "a status word in a carrier",
@@ -2389,6 +2393,16 @@ VIOLATIONS = [
     ("no link type is named in the strict set",
      "the wording as the whole of a line of a fence",
      _plant_in_a_carrier("\nThen:\n\n```text \nis blocked by\n```\n")),
+    # ⛔ The same wording carrying the stop of the sentence it was quoted in,
+    # which is the shape a role writing prose actually produces.
+    ("no link type is named in the strict set",
+     "the wording as a whole span with the sentence's own punctuation on it",
+     _plant_in_a_carrier("\nThe type reads `is blocked by.` in that direction.\n")),
+    # ⛔ The sibling guard this check's own plant reaches too. ⚠️ Added here rather
+    # than noted as a gap: a change that reports no open item may not carry one,
+    # and the plant above was written for the same shape one check over.
+    ("no stack is named in the strict set",
+     "a strict set whose files carry no code at all", _plant_strict_files_with_no_code),
     # The way this check can hold nothing and report green, which is the computed
     # half its two forbidding groups lean on.
     ("no link type is named in the strict set",
@@ -2532,11 +2546,9 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     # redden**, which is the form the host-run exemptions above already record and
     # the only one that isolates a plant here: disabling either mechanism reddens
     # the **unplanted** tree, so a whole-tree reading cannot tell a plant that was
-    # swept from a plant that contributed no region at all. Measured — with
-    # `CARRIER_IMPLEMENTATION` emptied the first plant adds exactly one problem
-    # over the seventeen that disabling finds anyway, and with the match widened
-    # from `code()` to the whole file the second adds exactly one over the one
-    # that widening finds in a shipped carrier by itself. ⛔ That one is the false
+    # swept from a plant that contributed no region at all. Measured — with each
+    # mechanism disabled in turn, its own plant adds exactly one problem over
+    # whatever disabling finds anyway. ⛔ One of those is the false
     # refusal this scope exists against, and it is live text rather than a
     # hypothetical: a shipped role explains the direction of a dependency in those
     # words.
@@ -2548,11 +2560,9 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
      _plant_in_a_carrier(
          "\nAn item is blocked by another when the relation says so, never when a "
          "sentence does.\n")),
-    # ⛔ The three shapes the single-position form refused, each a thing a shipped
-    # carrier plausibly holds and none of them a role naming a tracker. ⚠️ Each
-    # was found by a reader rather than reasoned about, and each is why the phrase
-    # group is matched as a **whole** region and the endpoint arm names the host's
-    # own segments instead of any word.
+    # ⛔ The shapes the single-position form refused, each found by a reader and
+    # each a reason the phrase group is matched as a **whole** region and the
+    # endpoint arm names the host's own segments instead of any word.
     ("no link type is named in the strict set",
      "the wording inside a longer span, which is a sentence and not a name",
      _plant_in_a_carrier(
@@ -2634,8 +2644,8 @@ def main(argv: list[str]) -> int:
             print(f"  - {problem}")
         return 1
     print(
-        "\nNo other project is named, and nothing under a carrier root carries a value, a "
-        "tracker or a stack."
+        "\nNo other project is named, and no carrier root carries anything a role's "
+        "text may not."
     )
     return 0
 

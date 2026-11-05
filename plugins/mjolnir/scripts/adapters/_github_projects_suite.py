@@ -315,6 +315,18 @@ def _dependencies_page(entries: list[tuple[int, str, str, str | None]]) -> list[
     ]
 
 
+def _asked_for(args: list[str], default: int = 7) -> int:
+    """The item number a call carried, read off the call itself.
+
+    The client passes a typed variable as `number=11`, so this is what lets the
+    fake answer for the object that was asked for rather than for one constant.
+    """
+    for part in args:
+        if part.startswith("number="):
+            return int(part.split("=", 1)[1])
+    return default
+
+
 def _default_answers() -> dict:
     """An answer for every call this module can make.
 
@@ -327,7 +339,13 @@ def _default_answers() -> dict:
     """
     return {
         "Board": _board_payload_for(_page_of(FIELD_NODES)),
-        "Item": _issue_payload(),
+        # ⛔ Answers for the number that was **asked for**, not one canned number
+        # for every ask. ⚠️ Measured: while it answered a fixed number, an
+        # implementation that read a number back off this answer and used it
+        # addressed that one instead — so a case about which object a call
+        # addresses was asserting the fixture's constant. A case that wants a
+        # particular item still overrides this key.
+        "Item": lambda args: _issue_payload(_asked_for(args)),
         "Items": {"repositoryOwner": {"projectV2": {"items": _page_of([])}}},
         # Prefix-matched across the four documents a value is written through,
         # which all answer in the same shape.
@@ -942,8 +960,8 @@ def self_test() -> int:
     # cannot contain and an empty dict satisfies: near-vacuous, and blind to the
     # place a verdict would actually be derived, which is the entry. Reproduced by
     # making the shared shaping derive one and watching the old assertion pass.
-    # ⚠️ Read off the production answer rather than written twice: what is
-    # asserted is that the two levels carry these fields and no others.
+    # ⚠️ What is asserted is that the two levels carry these fields and no
+    # others, so an added key reddens whichever level grew it.
     check(
         "and nothing beyond the fields the operation states, at either level",
         set(answered or {}) == {"number", "blockers"}
@@ -965,12 +983,13 @@ def self_test() -> int:
         paged == ["api --paginate"],
         f"called {paged!r}",
     )
-    # ⛔ The endpoint itself, as a literal, which nothing else in this tree states.
-    # ⚠️ The direction case below compares the call against the production helper,
-    # so it holds which object each half addresses and says nothing about the
-    # address -- an endpoint renamed to something that does not exist passed every
-    # case here, measured. The plain-issues module shares this helper and has its
-    # own suite; this is the one place the string is written down against it.
+    # ⛔ The endpoint itself, as a literal. ⚠️ The direction case below compares
+    # the call against the production helper, so it holds which object each half
+    # addresses and says nothing about the address -- an endpoint renamed to
+    # something that does not exist passed every case here, measured. ⚠️ The
+    # sibling kind shares this helper and states the literal in its own suite, so
+    # a rename reddens in both: one assertion per kind, which is what the shared
+    # helper cannot give.
     read = [args for args in recorded.sent if args[:2] == ["api", "--paginate"]]
     check(
         "at the endpoint this host keeps the relation on, written out here once",
@@ -1010,12 +1029,31 @@ def self_test() -> int:
     # rather than let out as a `ValueError`, every operation here routing through
     # the same guard. The port catches the contract's own exceptions and nothing
     # else, so this is the difference between a reported refusal and a traceback.
-    shapeless = _Host({})
-    reported = with_host(shapeless, lambda: refused(lambda: read_blockers("not-a-number")))
+    # ⚠️ Four shapes, because the first form of this guard called `int()` and so
+    # took three of them: a bool addresses item 1, a float addresses its floor,
+    # and a padded string addresses the number inside it -- while the refusal's
+    # own message says a value that is not a number addresses nothing.
+    for handed in ("not-a-number", True, 1.9, " 11 "):
+        shapeless = _Host({})
+        reported = with_host(
+            shapeless, lambda handed=handed: refused(lambda: read_blockers(handed))
+        )
+        check(
+            f"{handed!r} is refused as an item number, before any call",
+            reported == "tracker.operations.read_item" and shapeless.calls == [],
+            f"reported {reported!r} after {shapeless.calls}",
+        )
     check(
-        "a value that is not an item number is refused before any call",
-        reported == "tracker.operations.read_item" and shapeless.calls == [],
-        f"reported {reported!r} after {shapeless.calls}",
+        "while the two shapes a number does arrive in are accepted",
+        all(
+            isinstance(
+                (with_host(_Host({}), lambda handed=handed: read_blockers(handed))
+                 or {}).get("number"),
+                int,
+            )
+            for handed in (11, "11")
+        ),
+        "an integer or a string of digits was refused",
     )
     # ⛔ The repository address is matched whole, and this is the arm that holds
     # it: the guard's first form tested the arity of a split and was dead for

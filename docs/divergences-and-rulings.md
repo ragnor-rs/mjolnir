@@ -18,10 +18,10 @@ workflow holds the table to it: a cell naming a document instead is this record 
 second authority for the rule, and a cell naming an unnumbered work item cannot be resolved by
 anyone asking whether the outcome has moved yet. Some rulings below add `the skill` **beside** a
 section, for an outcome split between the surface and the skill that carries it; that is
-permitted alongside a home and never instead of one. ⚠️ **No count of those is given**, for the
-reason no count is given anywhere in this document: the first form of this sentence said *one*, was
-already wrong at five, and was carried past a sixth without anybody noticing — which is the drift
-this record is supposed to catch rather than demonstrate.
+permitted alongside a home and never instead of one. ⚠️ **No count of those is given here**: the
+first form of this sentence said *one*, was already wrong at five, and was carried past a sixth
+without anybody noticing — which is the drift this record is supposed to catch rather than
+demonstrate.
 
 Projects are referred to as A–F. Naming them is forbidden here.
 

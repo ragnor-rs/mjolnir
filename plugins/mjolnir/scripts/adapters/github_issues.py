@@ -9,22 +9,14 @@ nobody's problem.
 What it implements, and what it deliberately does not:
 
   * **Not every operation § 3 states**, and the ones it leaves are named once in
-    `DELIBERATELY_ABSENT` below. ⛔ No count of them is carried: the list is
-    closed and stated once, in § 3, and a number here would be wrong the next
-    time it grows. ⚠️ **The first form of this bullet said *except the checklist
-    ones*** and was wrong -- a fourth operation was absent beside them and the
-    sentence read as covering it. Found by the suite beside this module asserting
-    the relation rather than the sentence, which is why the set lives in a tuple
-    now and the suite reads it from there.
-      - **The three checklist operations**, because plain issues have no
-        check-item object at all. A task list is markdown inside the body, which
-        is *precisely* what `checklist_write`'s stated fallback already says to
-        do, so implementing them against body text would dress the fallback up as
-        a capability and cost a role the knowledge that it is reading prose.
-      - **`set_field`**, for the same kind of reason one object up: an issue here
-        has no field of its own to write. What another tracker carries in a field
-        -- an estimate, a date, a code root -- reaches a plain issue as a label or
-        as body text, which is what that operation's own stated fallback answers.
+    `DELIBERATELY_ABSENT` below, with the reason beside each there rather than
+    here. ⛔ No count of them is carried: the list is closed and stated once, in
+    § 3, and a number here would be wrong the next time it grows. ⚠️ **The first
+    form of this bullet said *except the checklist ones*** and was wrong -- a
+    fourth operation was absent beside them and the sentence read as covering it.
+    Found by the suite beside this module asserting the relation rather than the
+    sentence, which is why the set lives in a tuple now and the suite reads it
+    from there.
   * **`set_state` writes `open` or `closed` and refuses any other word.** A
     project whose `statuses` name a third state has written something plain
     issues cannot hold, and that is a statement the surface has to answer rather
@@ -163,7 +155,7 @@ def _repo() -> str:
     return repo
 
 
-def _gh(args: list[str], *, parse: bool = True):
+def _subprocess_gh(args: list[str], parse: bool):
     """One host call. Every failure comes back as the contract's own exception.
 
     ⛔ `port.HostUnavailable` rather than a class of this module's: the port
@@ -191,7 +183,31 @@ def _gh(args: list[str], *, parse: bool = True):
     # where a verdict belongs, from the one path meant to report cleanly.
     if not done.stdout.strip():
         raise port.HostUnavailable(f"`{shown}` answered with nothing where a body was expected")
-    return json.loads(done.stdout)
+    # ⛔ And a body that is not one document is refused here too. The client's own
+    # help states that a paginated read prints **one array per page**, which two
+    # other consumers in this toolkit already read as a stream for that reason --
+    # so a merged answer is behaviour rather than a contract, and the shape it
+    # degrades to is several documents in a row. `json.loads` raises `ValueError`
+    # on that, which `Port.invoke` does not catch: the operator got a traceback
+    # where § 3 states three answers and none of them is one.
+    try:
+        return json.loads(done.stdout)
+    except ValueError as error:
+        raise port.HostUnavailable(
+            f"`{shown}` answered something that is not one JSON document "
+            f"({error}). An unreadable answer is not the same as a clean one."
+        ) from None
+
+
+# The one named seam, as the three implementations after this one have. ⚠️ Added
+# later than they were, and the reason is the suite beside this module: the
+# refusals above are this function's own, and a suite that substitutes `_gh`
+# replaces the thing that raises them. With the seam, they are reachable.
+TRANSPORT = _subprocess_gh
+
+
+def _gh(args: list[str], *, parse: bool = True):
+    return TRANSPORT(args, parse)
 
 
 # --- the operations ---------------------------------------------------------
@@ -503,16 +519,25 @@ def link_dependency(blocked: int, blocked_by: int) -> dict:
     the two the guard was missing.
     """
     repo = _repo()
-    read_item(blocked)
-    read_item(blocked_by)
+    # ⛔ The numbers in the answer are the host's and never the arguments, for
+    # `read_blockers`'s reason one function down: the port passes every value
+    # from an invocation as text, and the two guard reads already hold the
+    # host's own integers.
+    blocked_item, blocker_item = read_item(blocked), read_item(blocked_by)
     blocker_id = _gh(
-        ["api", relation.issue_path(repo, blocked_by), "--jq", ".id"], parse=False
+        ["api", relation.issue_path(repo, blocker_item["number"]), "--jq", ".id"],
+        parse=False,
     )
     _gh([
-        "api", "--method", "POST", relation.blocked_by_path(repo, blocked),
+        "api", "--method", "POST",
+        relation.blocked_by_path(repo, blocked_item["number"]),
         "-F", f"issue_id={blocker_id}",
     ])
-    return {"blocked": blocked, "blocked_by": blocked_by, "blocker_id": int(blocker_id)}
+    return {
+        "blocked": blocked_item["number"],
+        "blocked_by": blocker_item["number"],
+        "blocker_id": int(blocker_id),
+    }
 
 
 def read_blockers(number: int) -> dict:
@@ -522,13 +547,8 @@ def read_blockers(number: int) -> dict:
     a relation is posted on the **blocked** item, so this reads that item's own
     dependencies rather than searching for what points at it.
 
-    ⛔ **Every page, not the first one.** The endpoint answers a page at a time
-    and a page that fills says nothing about whether more exist -- so a short read
-    reports an item with thirty-one blockers as having thirty, and the gate
-    reading it starts work whose blocker was in the part nobody fetched. The
-    client merges the pages into one array; measured by shrinking the page size to
-    one against an item with five relations, where the un-merged form answered
-    five separate pages.
+    ⛔ **Every page, not the first one**, which the shared module below states
+    the measurement for.
 
     ⚠️ **Read through `read_item` first**, so the pull-request guard covers this
     too: the path is the issues one, which answers for a pull request as well, and
@@ -550,7 +570,10 @@ def read_blockers(number: int) -> dict:
     costs no call.
     """
     item = read_item(number)
-    path = relation.blocked_by_path(_repo(), number)
+    # ⚠️ The path takes the host's own number too, not the argument: the guard
+    # read above normalises one and leaving the other raw had the two halves of
+    # one call addressing different things.
+    path = relation.blocked_by_path(_repo(), item["number"])
     return {
         "number": item["number"],
         "blockers": relation.blockers_of(_gh(["api", "--paginate", path]), path),
@@ -670,14 +693,23 @@ ADAPTER = port.Adapter(binder=bind, operations={
     # once, below, and read from there by the suite.
 })
 
-# The ones the module docstring argues are absent because the tracker has nothing
-# to implement them against: there is no check-item object, so a task list is
-# markdown in the body, and no field object either, so what another tracker keeps
-# in a field reaches an issue here as a label or as body text. ⛔ Written once,
-# here, and read by the suite rather than restated in it: one more absence would
-# otherwise be an operation nobody noticed going missing -- which is exactly what
-# happened to the fourth entry, absent while the docstring said *except the
-# checklist ones*.
+# The ones absent because the tracker has nothing to implement them against, each
+# with its reason:
+#
+#   * the three checklist operations, because plain issues have no check-item
+#     object at all -- a task list is markdown inside the body, which is precisely
+#     what `checklist_write`'s stated fallback already says to do, so implementing
+#     them against body text would dress the fallback up as a capability and cost
+#     a role the knowledge that it is reading prose;
+#   * `set_field`, for the same kind of reason one object up: an issue here has no
+#     field of its own to write, and what another tracker keeps in a field -- an
+#     estimate, a date, a code root -- reaches a plain issue as a label or as body
+#     text, which is that operation's own stated fallback.
+#
+# ⛔ Written once, here, and read by the suite rather than restated in it: one more
+# absence would otherwise be an operation nobody noticed going missing -- which is
+# exactly what happened to the fourth entry, absent while the docstring said
+# *except the checklist ones*.
 DELIBERATELY_ABSENT = (
     "set_field",
     "checklist_read",

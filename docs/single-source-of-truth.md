@@ -372,7 +372,7 @@ rather than from a hand-kept list of roots.
 | 10 | No role is resolved by asking who is running — the spellings that resolve the current user and nothing else, each one a form English does not also use ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)) | the strict set | forbidding |
 | 11 | No tracked configuration carries a value under a key the surface marks `# private` — a chat thread's name, a calendar's own name, a person, a path on somebody's machine ([schema § 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)) | every tracked configuration | forbidding |
 | 12 | No invocation of the host client **for a run** — its own `run` subcommand, a dispatch, a pull request's runs, and the endpoints behind all three, in a command line, in a list of quoted words, or split across a continuation. The client itself stays permitted, being how a pull request is opened, read and merged ([schema § 29](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)) | the strict set | forbidding |
-| 13 | No tracker's own vocabulary for a **dependency** — the field an edge is carried in, that field in a query interface's spelling, the endpoint segment it is posted to, the sides of a link call, the link type's own wording. This is check 6 one level down: a role writing one of these names a tracker's *shape* without naming the tracker, which check 6 passed while it was the same defect. ⚠️ Matched in code regions only, by rule 1 and more load-bearingly than anywhere else here — one of those spellings is an ordinary English phrase, and a shipped role explains the direction of a dependency in exactly those words ([schema § 3 → An edge is a relation](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)) | the strict set | forbidding |
+| 13 | No tracker's own vocabulary for a **dependency** — the field an edge is carried in, the endpoint it is posted to, the sides and the wording of a link call, each named in the grammar and nowhere else. This is check 6 one level down: a role writing one of these names a tracker's *shape* without naming the tracker, which check 6 passed while it was the same defect. ⚠️ Matched in code regions only, by rule 1 and more load-bearingly than anywhere else here — a link type's wording is also an ordinary English phrase, and a shipped role explains the direction of a dependency in exactly those words ([schema § 3 → An edge is a relation](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)) | the strict set | forbidding |
 
 ⚠️ **A row takes the next number and never one already in the table.** The first form of the row
 above was inserted in the middle, which left the two rows after it naming checks that had moved —
@@ -684,8 +684,8 @@ exempted the whole directory and so would have read straight past it.
   fails on a carrier sitting outside every shape.
 - **A dependency described in words, and one tracker's link type spelled as an ordinary noun.**
   Check 13's list is closed like check 7's and errs the same way: it holds the spellings whose
-  *shape* is decidable — an underscore, a camel hump, a path segment — plus one English phrase held
-  inside a code span, where a literal goes. ⛔ What it cannot reach is a role writing *post the
+  *shape* is decidable, plus a wording held only where it is the whole of a code span, which is
+  where a literal stands alone. ⛔ What it cannot reach is a role writing *post the
   relation on the blocked item, keyed on the blocker's internal id* in a sentence: that is a sweep
   for every word, and what holds it instead is
   [schema § 3](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)

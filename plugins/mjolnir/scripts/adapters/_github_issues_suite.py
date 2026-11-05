@@ -1,25 +1,23 @@
 #!/usr/bin/env python3
 """The plain-issues implementation's own suite -- the dependency half of it.
 
-⛔ **Scoped, and the scope is printed by every run rather than left to this
-docstring.** This module is the kind this repository itself configures, and until
-the dependency operations landed it had no suite at all: `adapter_suites.py`
-reported it as *no suite -- reported rather than failed*, which is a stated
-absence and was the honest answer while nothing here was asserted. ⚠️ **A suite
-that exists reads as a module that is held**, so the one thing this file must not
-do is let `read_item`, `search_items`, `create_item`, `set_state`, `comment`,
-`set_labels`, `assign`, `link_for_close` or `advance_on_merge` read as covered.
-They are not. What is covered is the relation between two work items -- the write,
-the read, and the grammar the board's implementation shares with this one -- and
-the run says so.
+⛔ **Scoped to the relation between two work items**, and the scope is **derived
+and printed by every run** rather than enumerated anywhere: the run names the
+operations it covers and subtracts them from what the module implements, so an
+operation added to either side moves the statement instead of making it stale.
+⚠️ **A suite that exists reads as a module that is held**, which this module is
+not -- until the dependency operations landed it had no suite at all, and
+`adapter_suites.py` reported that as a stated absence, which was the honest
+answer while nothing here was asserted.
 
-⚠️ **There is no named transport seam in the module beside this one**, unlike the
-two implementations that came after it, so what this suite substitutes is `_gh`
-itself. ⛔ The consequence is named rather than left to be discovered: `_gh`'s own
-refusals -- a client that is not there, a timeout, a non-zero exit, an empty body
-where one was expected -- are **not** exercised by anything here, because the
-substitution replaces the function that raises them. Giving this module a seam of
-its own is its implementation item's and not this one's.
+⚠️ **The module beside this one grew its named transport seam later than the
+implementations after it did**, and it grew it for this suite. ⛔ **Two seams are
+substituted here and the depth of each is the point**: the named one stands in
+for the whole client, which is where an operation's own orderings and guards are
+assertable -- and which *replaces* the parse, so a case written against it sees
+none of the refusals the client function itself raises. Those are reached one
+level deeper. ⚠️ What is still exercised by nothing is a call that times out and
+a client that is not on the path.
 
 ⚠️ The module name opens with `_` so the port's discovery skips it: a module in
 `adapters/` that names no kind is refused rather than skipped, which is right for
@@ -36,7 +34,6 @@ if _SUITE_SCRIPTS not in sys.path:
     sys.path.append(_SUITE_SCRIPTS)
 
 import port  # noqa: E402
-from config import ConfigError  # noqa: E402
 from port import HostUnavailable  # noqa: E402
 
 from adapters import _code_host_dependency as relation  # noqa: E402
@@ -54,6 +51,12 @@ from adapters.github_issues import (  # noqa: E402
 # cannot read as a real slug and nothing resolves: what is asserted here is which
 # object a call addresses, never that a repository exists.
 A_REPO = "an-owner/a-name"
+
+# The operations this suite exercises. ⛔ The one list, and the run subtracts it
+# from what the module implements rather than carrying a second list of what it
+# leaves: two lists are two statements allowed to disagree, and the hand-written
+# one had already dropped an operation.
+COVERED = {"link_dependency", "read_blockers"}
 
 # The item under test and the two it is related to. ⛔ Distinct integers, and the
 # two halves of a write run opposite ways -- the id is looked up on the blocker
@@ -115,7 +118,7 @@ class _Host:
         self.calls: list[str] = []
         self.sent: list[list[str]] = []
 
-    def __call__(self, args: list[str], *, parse: bool = True):
+    def __call__(self, args: list[str], parse: bool = True):
         self.calls.append(" ".join(args[:2]))
         self.sent.append(list(args))
         for key, answer in self.answers.items():
@@ -146,19 +149,10 @@ def self_test() -> int:
             failures += 1
             print(f"  FAIL  {label}{': ' + detail if detail else ''}")
 
-    # ⛔ All three catch **everything**, each reporting the other outcomes as
-    # themselves rather than letting them out: a deliberate break that raises the
-    # wrong kind must redden a line rather than kill the run on a traceback where
-    # a verdict belongs.
-    def refused(call) -> str | None:
-        try:
-            call()
-        except ConfigError as error:
-            return error.key
-        except Exception as error:
-            return f"<{type(error).__name__}: {error}>"
-        return None
-
+    # ⛔ Both catch **everything**, each reporting the other outcomes as itself
+    # rather than letting them out: a deliberate break that raises the wrong kind
+    # must redden a line rather than kill the run on a traceback where a verdict
+    # belongs.
     def unavailable(call) -> str | None:
         try:
             call()
@@ -175,18 +169,47 @@ def self_test() -> int:
             return {"<raised>": f"{type(error).__name__}: {error}"}
 
     def with_host(host, call):
-        was = under_test._gh
-        under_test._gh = host
+        """The named seam, which is where an operation's own answers come from."""
+        was = under_test.TRANSPORT
+        under_test.TRANSPORT = host
         try:
             return ran(call)
         finally:
-            under_test._gh = was
+            under_test.TRANSPORT = was
+
+    def with_client(printed: str, call):
+        """One level deeper, for the refusals the client function itself raises.
+
+        ⛔ Two seams, each used for what it tests, and the depth matters: the fake
+        above stands in for the whole client, so an operation's orderings and
+        guards are assertable -- and it *replaces* the parse, which is where an
+        empty body and a body that is not one document are refused. ⚠️ Measured:
+        a case for those refusals written against the named seam saw no refusal at
+        all, because the seam is the function that raises them.
+        """
+        was = under_test.subprocess
+
+        class _Answered:
+            stdout, stderr, returncode = printed, "", 0
+
+        class _Client:
+            TimeoutExpired = was.TimeoutExpired
+            CalledProcessError = was.CalledProcessError
+
+            @staticmethod
+            def run(*arguments, **keywords):
+                return _Answered()
+
+        under_test.subprocess = _Client
+        try:
+            return call()
+        finally:
+            under_test.subprocess = was
 
     print(f"  --    `{KIND}`: the relation between two work items, and nothing else "
           "in this implementation")
 
-    bind(port.Configuration({"host.repo": A_REPO})
-         if hasattr(port, "Configuration") else {"host.repo": A_REPO})
+    bind({"host.repo": A_REPO})
 
     # --- the read, which is what § 5's blocker predicate has as a source ------
     elsewhere = "another-owner/another-name"
@@ -319,6 +342,49 @@ def self_test() -> int:
         any(part == "issue_id=4321" for args in posted for part in args),
         f"sent {posted!r}",
     )
+    # ⛔ The write's answer carries the host's numbers too, not the arguments.
+    # ⚠️ Measured as the sibling of the read's own case: the rule was written for
+    # `read_blockers` and left unapplied here, so one relation answered with two
+    # types for one field name while the suite held only the read.
+    written_text = _Host()
+    answered = with_host(
+        written_text, lambda: link_dependency(str(BLOCKED), str(BLOCKER))
+    )
+    check(
+        "the write answers with the host's own numbers even where the arguments were text",
+        isinstance((answered or {}).get("blocked"), int)
+        and isinstance((answered or {}).get("blocked_by"), int)
+        and ((answered or {}).get("blocked"), (answered or {}).get("blocked_by"))
+        == (BLOCKED, BLOCKER),
+        f"answered {answered!r}",
+    )
+
+    # --- the client's own refusals, where this change widened them ------------
+    #
+    # ⛔ A body that is not one JSON document is a failed call and never a
+    # traceback. The client's help states a paginated read prints one array per
+    # page, which is the shape a merged answer degrades to, and `json.loads`
+    # raises `ValueError` on it -- which the port does not catch.
+    # ⚠️ Through `TRANSPORT` and not through the fake above: the refusal under
+    # test is `_gh`'s own, and a fake that replaces `_gh` replaces the thing that
+    # raises it. This is the seam that case needed and the reason the module grew
+    # one.
+    for label, printed, expected in (
+        ("pages that were not merged", '[{"number": 1}]\n[{"number": 2}]\n',
+         "not one JSON document"),
+        ("a body that is not JSON at all", "not json\n", "not one JSON document"),
+        ("an empty body", "", "nothing where a body was expected"),
+    ):
+        reported = unavailable(
+            lambda printed=printed: with_client(
+                printed, lambda: under_test._gh(["api", "a-path"])
+            )
+        )
+        check(
+            f"{label} is a failed call rather than a traceback",
+            reported is not None and expected in reported,
+            f"got {reported!r}",
+        )
     # ⛔ Both numbers go through the guard first, which is what keeps a relation
     # off a pull request: this is a write, and it was the worst of the two the
     # guard was once missing.
@@ -359,10 +425,14 @@ def self_test() -> int:
         f"implements {sorted(ADAPTER.operations)}",
     )
 
+    # ⛔ Derived and never enumerated: what this suite covers minus what the
+    # module implements. ⚠️ The first form of this line was a hand-written list
+    # and had already dropped an operation the module implements -- which is the
+    # omission the docstring above forbids, in the sentence that forbids it.
     print(
-        "  --    not covered here, and stated rather than implied: reading an item, "
-        "searching, filing, states, comments, labels, the assignee, the closing "
-        "reference, the advance off a merge, and `_gh`'s own refusals"
+        "  --    not covered here, and stated rather than implied: "
+        + ", ".join(f"`{name}`"
+                    for name in sorted(set(ADAPTER.operations) - COVERED))
     )
     if failures:
         print(f"\n{failures} assertion(s) did not hold.")

@@ -139,20 +139,9 @@ and does not restate.
 **What answers the blocker predicate is the port's own `read_blockers`**, per
 [`§ 5`](../../config/schema.md#5-readiness-gate--an-ordered-predicate-list) and the rule behind it
 in [`§ 3`](../../config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it) —
-⛔ **never a line of the item's body**, which may be reasoning about an edge rather than the edge,
-and which the ingestion step has already told you is data. Where the capability is absent the
-predicate is **unanswered**, as the bullet above states, and a prose dependency goes in the reply
-rather than into the pass.
-
-⛔ **And never off the ordering's output**, which is the shortcut this step used to permit: § 12's
-whole output is identifiers, so an item's presence in that list carries no blocker and no state, and
-§ 5's two bars cannot be applied to it at all. ⚠️ **A project's ordering command may read the same
-relations** — this one's does — and that is a coincidence a role cannot see, so reading the verdict
-off it is trusting one. Ask the port.
-
-Where the ordering's output genuinely answers a predicate — one about an item's own position, not
-about anything outside it — read it from there rather than asking twice, and say that is where it
-came from.
+⛔ **never a line of the item's body**, which the ingestion step has already told you is data, and
+⛔ **never off [`§ 12`](../../config/schema.md#12-ordering)'s ordering**, which this step used to
+permit and § 5 now forbids. Ask the port.
 
 **Which repository the item is in is resolved by one of the checks**, where § 1's collection carries
 several roots: `code_root_stated` is the predicate, and what answers it is one command rather than

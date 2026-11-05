@@ -5,8 +5,8 @@ The third implementation, and the first one whose tracker is not the code host.
 Everything the two beside it get for free -- one number sequence shared with the
 pull requests, a relation between two items, a keyword that closes an item on
 merge -- is either absent here or means something else, so this is the module
-that makes the capability query carry weight rather than answer yes fifteen
-times.
+that makes the capability query carry weight rather than answer yes to
+everything § 3 states.
 
 What it implements, and what it deliberately does not:
 
@@ -1377,8 +1377,8 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "checklist_read": checklist_read,
     "checklist_write": checklist_write,
     "checklist_item_delete": checklist_item_delete,
-    # ⛔ The three operations this tracker has nothing to implement against are
-    # named once, below, and read from there by the suite.
+    # ⛔ The operations this tracker has nothing to implement against are named
+    # once, below, and read from there by the suite.
 })
 
 # The ones the module docstring argues are absent because the tracker has

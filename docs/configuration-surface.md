@@ -542,11 +542,10 @@ below and already has a home of its own.
 
 ⚠️ **The read half is newer than the survey**, and this section is bounded the way the `set_field`
 paragraph above is bounded: the table at the top of this section records what the **copies** did,
-and no copy was measured reading a dependency back. ⛔ **So this section records the read half and
-nothing else** — the write half is that table's `link_dependency` row and the Jira reference section
-below, and ⚠️ **the first form of this section restated both of them**, which is the defect it is
-the remedy for one layer down. A row here that wanted the write form names where it is rather than
-repeating it.
+and no copy was measured reading a dependency back. ⛔ **So the write half is not restated here** —
+it is that table's `link_dependency` row and the Jira reference section below, and ⚠️ **the first
+form of this section copied both of them**, which is the defect it is the remedy for one layer
+down. A row below that needs the write form points at it rather than repeating it.
 
 ⛔ **Why it is here at all**: § 5 carries a blocker predicate in the shared library and, until this
 was written, nothing stated **where a blocker is recorded** — so the check had no source, and the
@@ -557,7 +556,7 @@ and the operations are `link_dependency` and `read_blockers`.
 
 | Tracker | How a dependency reads back | Source |
 |---|---|---|
-| plain issues, and a board | one endpoint, read on the *blocked* item — the same one the write posts to, the board holding no relation of its own. **Every page**: a page that fills says nothing about whether more exist, and the client merges them only when the paging flag is passed. ⚠️ **The entries are issues and carry their own repository address**, which is the half a bare number loses: a relation is recordable across repositories and a board draws cards from more than one, so a blocker read as `#13` resolves against the wrong backlog and the wrong `#13` answers perfectly. ⛔ **And the state word is not the whole state**: this host records *why* an item closed, so an item abandoned rather than finished is `closed` with a reason that says so — and § 5's bar is what the dependency produced | a live host |
+| plain issues, and a board | one endpoint, read on the *blocked* item — the same one the write posts to, the board holding no relation of its own. **Every page**, under the same silent ceiling the search rows below record, and the client merges them only when the paging flag is passed. ⚠️ **The entries are issues and carry their own repository address**, which is the half a bare number loses: a relation is recordable across repositories and a board draws cards from more than one, so a blocker read as `#13` resolves against the wrong backlog and the wrong `#13` answers perfectly. ⛔ **And the state word is not the whole state**: this host records *why* an item closed, so an item abandoned rather than finished is `closed` with a reason that says so — and § 5's bar is what the dependency produced | a live host |
 | Jira | **no call of its own**: the links arrive with the item. The sense is read from which side an entry carries and never from the type's wording — the inversion the reference section below measured, where the write is the other chance to invert it — and each entry holds the project's own status word *and* the tracker's category behind it | a live site, through a different interface |
 | Trello | ⛔ **absent.** There is no relation object to read, there being none to write either, so § 5's blocker predicate reports *unanswered* on this tracker. ⚠️ Never *no blockers*: a prose edge in two card descriptions is readable by a person and is not a verdict a gate may pass on | the published reference |
 
@@ -587,9 +586,7 @@ prose, and the naming sweep was green over both — it forbids a tracker's *name
 level down from it, the tracker's vocabulary. That is now its own check, recorded with the sweep in
 [`single-source-of-truth.md`](single-source-of-truth.md#the-second-sweep-naming-no-other-project).
 ⚠️ **And the check's own first form over-reached in the other direction**, which is recorded there
-too: matching a link type's wording anywhere in a code region refused a commit subject, an example
-item body and an example of what this port's own answer carries — so the names that are also English
-phrases are held only where one stands alone, and the rest by their shape.
+too.
 
 ### What building the board's implementation measured
 

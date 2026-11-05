@@ -8,7 +8,7 @@ of those were copy-pasted around rather than resolved.
 
 What it implements, and what it deliberately does not:
 
-  * **Every operation § 3 states except the three checklist ones.** A task list on
+  * **Not every operation § 3 states; the checklist ones are absent.** A task list on
     an issue is markdown inside the body -- there is no check-item object to read,
     tick or delete -- so the three stated fallbacks are already the right
     behaviour and implementing them against body text would dress a fallback up
@@ -239,7 +239,20 @@ def _subprocess_gh(args: list[str], parse: bool):
         return done.stdout.strip()
     if not done.stdout.strip():
         raise HostUnavailable(f"`{shown}` answered with nothing where a body was expected")
-    return json.loads(done.stdout)
+    # ⛔ A body that is not one document is refused rather than parsed. The
+    # client's own help states that a paginated read prints one array per page,
+    # which two other consumers in this toolkit already read as a stream for that
+    # reason -- so a merged answer is behaviour rather than a contract, and
+    # `json.loads` raises `ValueError` on the shape it degrades to. `Port.invoke`
+    # does not catch that, so the operator got a traceback where § 3 states three
+    # answers and none of them is one.
+    try:
+        return json.loads(done.stdout)
+    except ValueError as error:
+        raise HostUnavailable(
+            f"`{shown}` answered something that is not one JSON document "
+            f"({error}). An unreadable answer is not the same as a clean one."
+        ) from None
 
 
 def _subprocess_probe(args: list[str]):
@@ -775,16 +788,21 @@ def read_item(number: int) -> dict:
     # same contract this module's own dispatch was repaired for. ⚠️ Every
     # operation here routes through this function, so the refusal covers all of
     # them rather than one.
-    try:
+    # ⚠️ Digits rather than whatever `int()` accepts. The first form of this
+    # guard called `int()` and so took `True` as item 1, `1.9` as item 1 and
+    # `" 11 "` as item 11 -- while its own message said a value that is not a
+    # number addresses nothing.
+    addressed = number if isinstance(number, int) and not isinstance(number, bool) else None
+    if addressed is None and isinstance(number, str) and number.isdigit():
         addressed = int(number)
-    except (TypeError, ValueError):
+    if addressed is None:
         raise ConfigError(
             "tracker.operations.read_item",
             f"was handed {number!r}, which is not an item number. This tracker "
             "numbers its items, and a value that is not one addresses nothing -- "
             "so it is refused here rather than reaching the host as a query it "
             "cannot answer.",
-        ) from None
+        )
     answer = _graphql(ITEM_QUERY, owner=owner, name=name, number=addressed)
     found = (answer.get("repository") or {}).get("issueOrPullRequest")
     if found is None:
@@ -1329,16 +1347,23 @@ def link_dependency(blocked: int, blocked_by: int) -> dict:
     had worked.
     """
     repo = _repo()
-    read_item(blocked)
-    read_item(blocked_by)
+    # ⛔ The numbers in the answer are the host's and never the arguments, for
+    # `read_blockers`'s reason one function down.
+    blocked_item, blocker_item = read_item(blocked), read_item(blocked_by)
     blocker_id = _gh(
-        ["api", relation.issue_path(repo, blocked_by), "--jq", ".id"], parse=False
+        ["api", relation.issue_path(repo, blocker_item["number"]), "--jq", ".id"],
+        parse=False,
     )
     _gh([
-        "api", "--method", "POST", relation.blocked_by_path(repo, blocked),
+        "api", "--method", "POST",
+        relation.blocked_by_path(repo, blocked_item["number"]),
         "-F", f"issue_id={blocker_id}",
     ])
-    return {"blocked": blocked, "blocked_by": blocked_by, "blocker_id": int(blocker_id)}
+    return {
+        "blocked": blocked_item["number"],
+        "blocked_by": blocker_item["number"],
+        "blocker_id": int(blocker_id),
+    }
 
 
 def read_blockers(number: int) -> dict:
@@ -1348,11 +1373,9 @@ def read_blockers(number: int) -> dict:
     the board holds no relation of its own, so this reads the issue's own
     dependencies rather than anything on the card.
 
-    ⛔ **Every page, not the first one.** The endpoint answers a page at a time
-    and a page that fills says nothing about whether more exist -- the same silent
-    ceiling the card reads pay a cursor-follower to avoid, and the gate reading a
-    short answer starts work whose blocker was in the part nobody fetched. The
-    client merges the pages into one array.
+    ⛔ **Every page, not the first one**, which the shared module below states
+    the measurement for -- the same silent ceiling the card reads pay a
+    cursor-follower to avoid.
 
     ⚠️ **Read through `read_item` first**, so the pull-request guard covers this
     too: the path is the issues one, which answers for a pull request as well.
@@ -1368,7 +1391,10 @@ def read_blockers(number: int) -> dict:
     one field name. ⚠️ The guard read above already holds the host's own integer.
     """
     item = read_item(number)
-    path = relation.blocked_by_path(_repo(), number)
+    # ⚠️ The path takes the host's own number too, not the argument: `read_item`
+    # normalises one and leaving the other raw had the two halves of one call
+    # addressing different things.
+    path = relation.blocked_by_path(_repo(), item["number"])
     return {
         "number": item["number"],
         "blockers": relation.blockers_of(_gh(["api", "--paginate", path]), path),
@@ -1471,8 +1497,8 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "read_blockers": read_blockers,
     "link_for_close": link_for_close,
     "advance_on_merge": advance_on_merge,
-    # ⛔ The three operations this tracker has nothing to implement against are
-    # named once, below, and read from there by the suite.
+    # ⛔ The operations this tracker has nothing to implement against are named
+    # once, below, and read from there by the suite.
 })
 
 # The three the module docstring argues are absent because the tracker has

@@ -10,12 +10,12 @@ supposed to move off happens somewhere this tracker cannot see.
 
 What it implements, and what it deliberately does not:
 
-  * **Every operation § 3 states except four.** ⛔ No count of them is carried --
-    the list is closed and stated once, in § 3, and a number here would be wrong
-    the next time it grows. The four are named once in `DELIBERATELY_ABSENT`
-    below: this tracker has no check-item object of its own, so the three
-    checklist operations are prose in the description, which is precisely what
-    their stated fallbacks already say to do; and ⛔ **no closing keyword
+  * **Not every operation § 3 states.** ⛔ No count of them is carried -- the
+    list is closed and stated once, in § 3, and a number here would be wrong the
+    next time it grows. They are named once in `DELIBERATELY_ABSENT` below: this
+    tracker has no check-item object of its own, so the three checklist
+    operations are prose in the description, which is precisely what their
+    stated fallbacks already say to do; and ⛔ **no closing keyword
     exists**, so `link_for_close` has nothing to compose. A text that closed an
     item on merge would be this adapter inventing a mechanism the tracker does
     not have, and the stated fallback -- the item moves separately -- is the
@@ -1467,8 +1467,22 @@ def read_blockers(key: str) -> dict:
     ⛔ **No verdict.** Each blocker comes back with the project's own status word
     and the tracker's category behind it, because which bar a blocker is held to
     depends on what it produced and that is § 5's question.
+
+    ⛔ **An answer that did not carry the links at all is a failed call, never an
+    item with no blocker.** `_shaped` sets the key only where the field was there,
+    so reading it with a default answered the same for an unread field and an
+    empty one -- absence of signal turned into *no blockers*, which is the failure
+    the code-host path in this toolkit is guarded against and the one a readiness
+    gate cannot survive.
     """
-    return {"key": key, "blockers": list(read_item(key).get("blocked_by") or [])}
+    item = read_item(key)
+    if "blocked_by" not in item:
+        raise HostUnavailable(
+            f"the answer for {key} carried no links field, so what it is blocked "
+            "by could not be read. An unreadable answer is not the same as an "
+            "item with no recorded blocker."
+        )
+    return {"key": key, "blockers": list(item["blocked_by"])}
 
 
 def advance_on_merge(key: str) -> dict:
@@ -1537,8 +1551,8 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "link_dependency": link_dependency,
     "read_blockers": read_blockers,
     "advance_on_merge": advance_on_merge,
-    # ⛔ The four operations this tracker has nothing to implement against are
-    # named once, below, and read from there by the suite.
+    # ⛔ The operations this tracker has nothing to implement against are named
+    # once, below, and read from there by the suite.
 })
 
 # The four the module docstring argues are absent because the tracker has nothing

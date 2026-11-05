@@ -1385,6 +1385,19 @@ def self_test() -> int:
         reported == "tracker.project_key" and elsewhere_blockers.calls == [],
         f"reported {reported!r} after {elsewhere_blockers.calls}",
     )
+    # ⛔ An answer that did not carry the links at all is a failed call, never an
+    # item with no blocker. ⚠️ This is the one tracker where the two halves cannot
+    # disagree, the read making no call of its own -- so an unread field is the
+    # only way it can go wrong, and reading it with a default answered the same
+    # for an unread field and an empty one.
+    unread = host(issues=None)
+    unread.issues[key(1)]["fields"].pop("issuelinks", None)
+    reported = with_host(unread, lambda: unavailable(lambda: read_blockers(key(1))))
+    check(
+        "an answer carrying no links field is a failed call, not an item with no blocker",
+        reported is not None and "no links field" in reported,
+        f"got {reported!r}",
+    )
 
     # --- searching ------------------------------------------------------------
     #

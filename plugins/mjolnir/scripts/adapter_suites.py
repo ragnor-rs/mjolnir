@@ -23,9 +23,13 @@ a store's vocabulary out of the shared procedure is this sentence and the review
 that reads it, not a gate, and a claim to the contrary would be the kind of
 unheld assertion the surface spends its refusals on.
 
-⚠️ **An implementation with no suite is reported, not failed.** The first one
-built was proved against the live tracker this repository runs on, and a runner
-that reddened for it would be refusing a decision somebody made. What *is* a
+⚠️ **An implementation with no suite is reported, not failed**, which is a
+decision about what this runner is for rather than about any one implementation:
+whether a module has a suite beside it is that module's item's to answer, and a
+runner that reddened would be refusing somebody's decision. ⛔ No implementation
+is in that state today, so the branch below is reachable by nothing installed --
+stated because a reader who finds it would otherwise look for the case it
+answers. What *is* a
 failure is finding no implementation at all: that is a runner holding nothing
 while reporting green, which is the one shape every check here is written against.
 
