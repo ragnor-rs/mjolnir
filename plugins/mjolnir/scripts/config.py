@@ -3447,13 +3447,16 @@ ASSERTS_ITSELF = "--self-test"
 def _runs_script(command: str, script: str) -> bool:
     """Whether a command names the given script as a path it runs.
 
-    The word, by its last path segment, so the one spelling this cannot be
-    written out of is a different file name. ⚠️ A command naming the script as
-    *data* rather than running it matches too, and that is the direction this
-    has to err in: the facets it serves are the two whose whole subject is a
-    check that holds nothing being read as green, and § 2's rule is that absence
-    of signal is not an answer. The refusal names the command, so a project in
-    that position can read what matched.
+    Matched as a whole word and by its last path segment, so where the script
+    sits does not decide the answer -- an adopter's install path, a sibling
+    checkout and a bare name are one command here, and the only spelling this
+    cannot be written out of is a different file name.
+
+    ⚠️ A command naming the script as *data* rather than running it matches too,
+    and that is the direction this has to err in: the facets it serves are the
+    two whose whole subject is a check that holds nothing being read as green,
+    and § 2's rule is that absence of signal is not an answer. The refusal
+    quotes the command, so a project in that position can read what matched.
     """
     return any(
         word == script or word.endswith("/" + script) for word in command.split()
@@ -10582,9 +10585,10 @@ def self_test() -> int:
     # whole of the rule rather than an exception to it: the rule is about what an
     # entry's command answers about, so the same script under its asserting flag
     # answers about the carrier and is permitted beside the absence. ⚠️ Planted
-    # rather than left to this repository's own configuration, which carries both
-    # entries: a rule widened to the entry would refuse that file and no arm here
-    # would say which half was wrong.
+    # beside the arm further down that loads this repository's own configuration
+    # rather than left to it: that file carries both entries, so it reddens on a
+    # rule widened to the entry -- but it reddens on *any* refusal of that file,
+    # and these arms are what name which half was wrong.
     for facet, script in sorted(ABSENT_FACET_CARRIERS.items()):
         for label, command in (
             ("alone", f"python3 a-root/{script} {ASSERTS_ITSELF}"),
@@ -10614,6 +10618,23 @@ def self_test() -> int:
         beside is None,
         f"refused {beside!r}, which reads the rule as being about the entry",
     )
+    # ⛔ And what the planted key cannot assert: § 15 states that the refusal
+    # names the facet **and** the entry, and both plants refuse on `host.checks`,
+    # so the key they compare would be identical with the facet left out of the
+    # message entirely.
+    for facet, script in sorted(ABSENT_FACET_CARRIERS.items()):
+        said = _refusal_said(
+            _an_absence_mirroring(facet, f"python3 a-root/{script}")(
+                _a_valid_example()
+            )
+        )
+        check(
+            f"{facet}: and the refusal names the facet, the entry and what it matched",
+            f"`{facet}.carrier`" in said
+            and "A planted entry" in said
+            and script in said,
+            f"said {said!r}",
+        )
 
     # ⛔ A shape rule answers what a value has to *be* and never whether it is
     # written. Requiredness is the surface's marker, checked in `validate` above,
@@ -11895,11 +11916,14 @@ def _planted_violations():
          "executed.requires", _an_absent_executed_with(requires=["a-store"])),
         # §§ 15 and 16 against § 2's list: an entry whose command answers about a
         # subject the project says it has none of. ⛔ One plant per facet rather
-        # than one for the rule, because the refusal names the facet's own key and
-        # a single arm would leave the other carrier's spelling asserted by
-        # nothing. ⚠️ The third is the flag read as a substring -- `--self-testing`
-        # parses as no flag either script has, so a loose test would exempt a
-        # command that runs the plain check.
+        # than one for the rule: both refuse on `host.checks`, so the key these
+        # arms compare is no evidence about which carrier matched, and a single
+        # plant would leave the other one's spelling asserted by nothing. ⚠️ What
+        # the key cannot assert either is that the message names the facet and the
+        # entry, which § 15 requires of the refusal -- the arm for that is in
+        # `self_test` beside the permitted half. ⚠️ The third plant is the flag
+        # read as a substring: `--self-testing` parses as no flag either script
+        # has, so a loose test would exempt a command running the plain check.
         ("a check mirroring the register carrier beside its stated absence",
          "host.checks",
          _an_absence_mirroring(
@@ -12259,9 +12283,9 @@ def _an_absence_mirroring(facet: str, command: str):
     widened to the entry rather than to its command would refuse.
 
     ⚠️ The facet is written out rather than overridden, for the reason the
-    fixtures above are: the example this breaks may already state the absence,
-    and a plant that only appended an entry would assert nothing about the half
-    it means to pair with.
+    fixtures above are: the example this breaks may state the facet rather than
+    its absence, and a plant that only appended an entry would then not reach the
+    rule at all and would still read as a plant.
     """
 
     def mutate(data: dict) -> dict:
@@ -13466,6 +13490,24 @@ def _refused(data: dict, *, check_paths: bool = False, facts: dict | None = None
     except ConfigError as error:
         return error.key
     return None
+
+
+def _refusal_said(data: dict) -> str:
+    """The whole of a refusal's text, or the empty string where none was raised.
+
+    ⛔ Beside `_refused` above rather than widening it: that one answers which
+    key a configuration is refused on, which is what every plant in this module
+    compares, and an arm asserting what a *message* names is a different
+    question. ⚠️ Two rules refusing on one key is exactly where it is worth
+    asking -- the key is then no evidence about which of them fired.
+    """
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    try:
+        _resolve(data, EXAMPLES, facts, False)
+    except ConfigError as error:
+        return str(error)
+    return ""
 
 
 def _example_missing(path: str, _loaded) -> str | None:

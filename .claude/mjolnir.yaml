@@ -587,10 +587,7 @@ e2e_register:
   # ⛔ Nothing here is driven end to end, so there is no suite for a register to describe. What
   # this repository ships is read by a person running a role and by the gates in `tools/`; the
   # thing an end-to-end case would drive — a deployed system behind the interface a person uses —
-  # does not exist to be deployed. ⚠️ No clause here argues for the `End-to-end register` entry in
-  # `host.checks` above: § 15 rules which entry a stated absence admits, and the reader refuses the
-  # other pairing, so an argument written beside the entry would be a second answer to a settled
-  # question.
+  # does not exist to be deployed.
   #
   # ⚠️ The facet is still stated, because an unset key and a decided one read alike. ⛔ And what
   # stands in for a register is nothing one property of the gate list above could carry: each

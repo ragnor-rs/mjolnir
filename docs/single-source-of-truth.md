@@ -1901,12 +1901,12 @@ neither green nor red, which is the same rule the width check applies to a tree 
 configured: a check that holds nothing may not report green. What the workflow therefore runs is
 the carrier's own assertion suite.
 
-⚠️ **Which is also why the entry in `host.checks` is legitimate here**, and that is the reader's
-answer rather than this document's: the clause
-[schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded) states about an
-entry under the absence is about what the entry's **command** answers about, so the plain command
-is refused at load time and a `--self-test` mirror is permitted. The refusal names the facet and
-the entry, and the message the plain command prints names the same split.
+⚠️ **Which is also what makes the entry in `host.checks` legitimate here**, and that is the
+reader's answer rather than this document's.
+[schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded) makes the clause
+about an entry under the absence a rule about what the entry's **command** answers about: the plain
+command is refused at load time, naming the facet and the entry, and a `--self-test` mirror is
+permitted. The message that command prints names the same split.
 
 What it holds, on a project that carries the facet: the register against the case list **both
 ways**, and the change against both. Every value is read from the configuration — the suite root,
@@ -1981,8 +1981,9 @@ is refused rather than read as nothing to hold
   stated absence beside one is that project's to answer and
   [schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded) states the
   residue rather than closing it. ⚠️ And the recognition is by the script's own file name, so a
-  command naming it as *data* is refused too — the fail-closed direction, which for these two facets
-  is the only one available.
+  command naming it as *data* rather than running it is refused too — which is the direction a
+  refusal has to err in for two facets whose whole subject is a check that holds nothing being read
+  as green.
 
 ## A tier held to the count the tree declares
 
