@@ -104,17 +104,22 @@ deciding it**:
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" status --repo-root <code-root> --item <number>
 ```
 
-⛔ **Four readings come back and the reply carries whichever came** — `free`, and `taken` with one
-of `live`, `landed` or `orphaned-candidate`. ⚠️ **`landed` is the one this step is most likely to
-meet and the one a two-way reading loses**: a ref whose change has merged is exactly the *branch
-whose item is already closed* that step 4 calls a tell, so collapsing it into *taken* reports work
-in flight that is already in.
+⛔ **The reply carries whichever reading came back**, and the readings are § 10's table rather than
+this file's to list. ⚠️ **`landed` is the one this step is most likely to meet and the one a
+two-way reading loses**: a ref whose change has merged is exactly the *branch whose item is already
+closed* that step 4 calls a tell, so collapsing it into *taken* reports work in flight that is
+already in.
 
 ⛔ **An orphaned candidate is reported with both readings and resolved by nobody here**
 ([`§ 10`](../../config/schema.md#the-claim-on-a-work-item)) — it is the one thing on this route a
 person still resumes by hand, which is exactly why a load's job is to put it in front of them.
 ⚠️ **The word is `orphaned-candidate` and the *candidate* is load-bearing**: that section's own rule
 is that the same marker is left by a session a minute into its work.
+
+⛔ **And `provisional` is not that reading and is not put in front of anybody.** It is what the same
+ref reads for the length of § 10's cut window, a start publishing its ref before cutting its tree —
+so a load that meets it reports the reading and **reads it again**, rather than handing a person a
+question that answers itself by waiting.
 
 ⚠️ **This reading reaches the code host**, unlike the position above it: the carrier asks the host
 what the ref's change did. It writes nothing, and the reply says the reading was taken rather than
@@ -338,8 +343,9 @@ it — the outcome in the first sentence, then the facts, with a table where the
   stashed or moved**, with the one reading that asked the remote named where it did;
 - the item by identifier **and** title, its state, and ⛔ **any disagreement between that state and
   the branch, surfaced and not resolved**;
-- the claim, as whichever of the four readings came back — and for an orphaned candidate, both
-  readings with the question put to the person;
+- the claim, as whichever reading came back — for an orphaned candidate, both readings with the
+  question put to the person, and for a provisional one, that it was read again and what the second
+  reading said;
 - what the last pass was doing: the artifact and whether it held — or that the store holds none for
   this item — the boundary it names, the last instruction and the last reply, **which of the two the
   record ends on**, every compaction and what it dropped, **which transcript was excluded** — the

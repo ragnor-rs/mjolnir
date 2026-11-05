@@ -646,20 +646,23 @@ def _decide(
         )
     spent = held.liveness is not None and held.liveness.landed
     if not spent:
-        # ⛔ Not landed covers three different states and the report says which: live, an orphaned
-        # candidate, and a reading that failed. ⚠️ None of the three is removable here and only one
-        # of them is a problem -- an orphaned candidate is a person's call, per § 10.
+        # ⛔ Not landed covers every other reading of § 10's table plus a reading that failed, and
+        # the report says which. ⚠️ None of them is removable here, and which of them owes a person
+        # anything is that section's to say rather than a list kept here.
         reason = (
             held.liveness.reason
             if held.liveness is not None
             else "nothing could be read about its claim"
         )
         missing = list(held.liveness.unestablished) if held.liveness else []
-        # ⛔ **Live is the one reading that owes a person nothing, and the line is § 10's own.** A
+        # ⛔ **Live is the reading that owes a person nothing, and the line is § 10's own.** A
         # branch somebody is working is the ordinary state of a tree and narrating it on every
-        # session open is how a channel stops being read. An **orphaned candidate** is the other
-        # half of the same table and is a person's call -- the section says the sweep that finds
-        # one states both readings and *asks* -- so it is said, and so is a reading that failed.
+        # session open is how a channel stops being read. An **orphaned candidate** is a person's
+        # call by that same table -- the section says the sweep that finds one states both readings
+        # and *asks* -- so it is said, and so is a reading that failed. ⚠️ A **provisional** reading
+        # is said here too, which is the safe direction for this consumer and not a contradiction of
+        # § 10's *read it again*: what a sweep over trees surfaces is a tree, and the remedy for the
+        # reading is the reader's, one `status` later.
         # ⚠️ Either way the full report names the unestablished half; what this decides is only
         # whether the event that opens a session says it unprompted.
         return kept(
