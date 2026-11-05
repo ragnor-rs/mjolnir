@@ -1976,9 +1976,14 @@ credential and no network. ⛔ The rule is
 and this document states none of it: what is recorded here is the reach of the check.
 
 ⚠️ **It has no subject in this repository either**, for the same reason as the section above and a
-different fact about it: no tier here has a dependency a run stands up. Every check in this
-tree is a suite over the tree it runs in, so nothing is created for a run and nothing can be
-absent — which is the one degradation § 16 is about. This project therefore states
+different fact about it: no tier this project states has a dependency § 16 makes a subject of, and
+the reader refuses `executed.carrier: command` beside a tier list naming none — so the absence is
+the only value admitted here rather than a preference. ⛔ **Not because nothing is created for a
+run and nothing can be absent**: suites here do build fixtures for their runs, and a run here can
+drop a block of assertions and still exit zero, which `.claude/mjolnir.yaml`'s own `test_tiers`
+comment names the sites of. So the degradation § 16 is about is reachable in this tree by a route
+its subject test does not reach, and what that leaves unheld is recorded in the configuration
+rather than argued away here. This project therefore states
 `executed.carrier: none`, and pointed at a project in that position the check says the count is
 **unavailable** and exits without producing a verdict — ⚠️ **which is a non-zero status and not a
 third colour**, a runner having only two: what it means is *do not run this check here*, and the
@@ -3646,15 +3651,17 @@ What it holds:
 - **Whatever is not committed**, and **issues and pull requests**, for the reason every check above
   gives: the workflow holds no credential.
 
-## Each check has a violation it is asserted to redden on
+## A check that carries the mode is asserted to redden on a violation
 
 `--self-test` plants one violation per check and asserts that check goes red, as the first step of
 the workflow — before the tree is held to anything. The discipline is #28's: an assertion written
 before its break tends to match only the break its author imagined, and a check that cannot fail
 is not a check.
 
-Every script here carries the mode and each is run through it by its workflow, before the tree —
-or, for the gate on the change, the pull request — is held to anything. The plant is per *branch
+A script carrying the mode is run through it by its workflow, before the tree — or, for the gate
+on the change, the pull request — is held to anything. ⛔ **Not every check here carries it**:
+`adapter_suites.py` ships none by its own design statement, its job *being* running suites, and
+what holds it is the count it prints instead. The plant is per *branch
 that does real work* rather than per check: a plant that reddens a check by the wrong
 route proves nothing about the branch it was written for. ⛔ The numbers are deliberately not
 written down here: a count in prose is a copy that has to be kept in sync, and the run prints its
