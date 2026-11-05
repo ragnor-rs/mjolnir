@@ -622,37 +622,46 @@ executed:
     end-to-end facet above carries.
 
 test_tiers:
-  # ⛔ There is no tier here to be unable to run, because every check in this repository is a
-  # **gate** rather than a suite of cases, which is the distinction § 31 draws before this absence
-  # is written. A gate has nothing to select from, nothing to drop and nothing that could fail to
-  # start.
+  # ⛔ One entry, and it is **not** the absence this facet was first written with here. Almost
+  # every check in this repository is a gate by § 31's test — its subject is this tree's own files
+  # and it selects no cases, its planted violations being written inline — and the absence looked
+  # right for that reason. One check is not: `adapter_suites.py` **discovers** the suites it runs
+  # by walking the port packages and keying on each module's `KIND`, so it has a set of cases it
+  # selects from, which is exactly the property § 31 makes the test.
   #
-  # ⚠️ Each clause of the reason below is narrowed to what is checkable, because the sibling
-  # facet's reason is not: #195 measured two of its clauses false — the suites here do build
-  # temporary trees and do clone repositories, so «nothing created for the run» overreaches. What
-  # that item established and this reason rests on instead is that every fixture is created inside
-  # the assertion using it and a failure to create one **raises** rather than skipping.
+  # ⚠️ And the selection is unheld, which is why stating it is worth more than the absence was: an
+  # implementation whose module name starts with an underscore, or which omits `KIND`, drops out of
+  # the discovery in silence, and the runner reports an implementation with no suite rather than
+  # failing on it. So a shrinking set reads as a healthy count — § 31's stale-in-both-directions
+  # case, in this repository, surfaced by configuring the facet rather than by being bitten.
   #
-  # ⚠️ Some gates here do reach outside the tree — a merge base, the host's own answer about an
-  # open pull request — so «nothing is reached» would be false and is deliberately not claimed.
-  # ⛔ And no count of which ones is written either: a figure here is a figure to keep in sync, and
-  # the clause below is the property they share instead. What makes them gates anyway is that none
-  # has cases, and each **refuses** naming what it could not establish rather than reporting
-  # green: § 2's absence rule already answering the failure § 31 exists to catch.
+  # ⛔ The reason the absence was wrong is recorded rather than quietly replaced: its clauses were
+  # false of this tree in the way #195 measured the sibling facet's to be. «Every fixture is
+  # created inside the assertion using it» is false — several suites build one per block — and «a
+  # failure to create one raises rather than skipping» is false at two measured sites, where a
+  # missing binary or a uid-0 process drops a block of assertions and the run still exits zero.
   #
-  # ⚠️ Which is also why this is the absence and not a list of entries: § 31 states the list as
-  # the suites that need something rather than an inventory, so a row per workflow would be a
-  # second statement of `host.checks` above, free to disagree with it.
-  carrier: none
-  absent_reason: >-
-    There is no test tier here, only gates: every fixture a check needs is created inside the
-    assertion that uses it and a failure to create one raises rather than skipping, so no run here
-    can execute nothing and still exit zero. Where a gate here does reach outside this tree it
-    refuses naming what it could not establish rather than reporting green.
-  revisit_when: >-
-    A check here comes to depend on something outside its own run's control — a store, a service
-    or a deployment it does not create and remove itself — whose absence a runner would handle
-    silently rather than raise on.
+  # ⚠️ The gates are deliberately not rows here. § 31 states the list as the suites that need
+  # something, and a row per workflow would be a second statement of `host.checks` above, free to
+  # disagree with it.
+  carrier: list
+  tiers:
+    - tier: unit
+      # Nothing: the suites run on what the build already starts. ⛔ `[]` is the statement rather
+      # than an unset key, and it is what makes this a `unit` entry rather than a tier that could
+      # fail to run — nothing is deployed, reached, indexed or metered.
+      needs: []
+      started: automatic
+      # The criterion, which is a discovery rather than a list — one of the three measured
+      # mechanisms, and the one that goes stale without saying so.
+      selects: >-
+        every module under a port's implementation directory whose name does not begin with an
+        underscore and which declares a `KIND`, each contributing the suite it exposes
+      # ⛔ No `selection_held_by`, and it is this repository's own open gap rather than an
+      # oversight: nothing compares the discovered set against the implementations that are
+      # installed, so the criterion is reported **unheld**. The run names an implementation it
+      # found with no suite; it does not name one it failed to find at all.
+      workflow: "Adapter suites"
 
 spend_guard:
   # ⛔ Nothing here spends. Every command this repository runs is a gate over its own tree: no

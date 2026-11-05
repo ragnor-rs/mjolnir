@@ -3899,8 +3899,12 @@ done:
 - ⛔ **A check names what it asks about and never its own preconditions.** What a check needs before
   it can run at all — a deployment, a credential, indexed material, money — and what it reports
   when it ran only in part is
-  [§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s axis, which reads this
-  list's `answered_by` as the second half of its own derivation and states no answerer of its own.
+  [§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s axis, and ⛔ **what it
+  reports when it ran only in part is
+  [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s** — that section
+  disclaiming the figures to this one, so a citation sending both halves to one of them sends one of
+  them wrong. ⚠️ **§ 31 reads whether a check on this list is answered by a person as the second
+  half of its own derivation, and declares no answerer key of its own.**
   Two facets describing one unrunnable tier in two
   vocabularies is the thing that must not happen here. ⚠️ **What a *local* command needs before it
   can run is stated where that command is**, as its `requires`
@@ -4043,9 +4047,11 @@ any of them.** What the procedure holds is the **agreement** between two file li
 document that claims to describe one of them — a computed comparison, which is the strong kind of
 check and not the kind that quotes a sentence back at the text it came from. The tier this guards
 is the end-to-end one, whose place on the tier axis is
-[§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s — and whose own
-`selection_held_by` **is** the comparison below, named there and not duplicated — and whose own
-verdict's discipline is
+[§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s — and ⚠️ **where that tier's
+criterion is the register itself**, the comparison below is what holds it, which such a project
+names as its `selection_held_by` rather than describing again. ⛔ **Not an identity in general**: a
+project selecting by a marker its cases declare keeps a register this still compares, and that
+comparison holds nothing about the selection. Its own verdict's discipline is
 [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s, and neither is restated
 here.
 
@@ -6354,10 +6360,10 @@ test_tiers:
   revisit_when: "…"         # where a trigger for the absence exists
 ```
 
-The vocabularies an entry draws on, stated once and under the keys they belong to — a member of a
-list sits at no path a marker can reach, which is the device
-[§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check) already uses for
-the same reason:
+The vocabularies an entry draws on, stated once and under the keys they belong to — the device
+[§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check) already uses,
+here for [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s reason rather than
+that section's: a member of a list sits at no path a marker can reach.
 
 ```yaml
 test_tiers:
@@ -6382,21 +6388,30 @@ what makes the absence worth configuring at all
 
 ⛔ **So the list is the suites that need something, and not an inventory of every suite a project
 has.** A tier needing nothing is stated only where the project wants its criterion on the record,
-and ⚠️ **a project whose whole suite needs nothing states the absence below rather than one entry
-per check**. ⛔ **A reader of this facet therefore never reads it as coverage**: what is absent
-from the list is a suite with nothing to lack, not a suite nobody wrote.
+and ⚠️ **a project with no suite to state writes the absence this section ends with**, rather than
+one entry per check. ⛔ **A reader of this facet therefore never reads it as coverage**: what is
+absent from the list is a suite with nothing to lack, not a suite nobody wrote.
 
 ⛔ **And a gate is not a tier, which is the distinction a project writing the absence has to make
-first.** A tier is a suite of **cases** over something the project produces — so it has cases to
-select, to drop and to fail to start. A gate holds a change's own files to a property and has none
-of those: there is nothing to select, nothing to skip, and its subject is the tree it runs in.
-⚠️ **The two can look alike from the configuration**, both being `host.checks` entries with a
+first.** ⛔ **The test is whether the run has a set of cases it *selects*** — because that is the
+set a `selects` criterion is about, the set a partial run drops from, and the set that can go stale.
+A gate holds a change's own files to a property and has no such set: its subject is the tree it runs
+in. ⚠️ **The two can look alike from the configuration**, both being `host.checks` entries with a
 mirrored command, which is why the test is what the command is *about* rather than what runs it.
+
+⚠️ **Carrying planted violations does not make a gate a tier**, which is the near miss: a check
+asserting that it reddens on each of its own plants has cases in the loose sense and **selects**
+none of them — they are written inline, and one that could not run raises rather than dropping out.
+⛔ **A run that *discovers* its cases is the other answer**, whatever it is otherwise: a set read off
+a directory, a package walk or a naming convention is a selection, so a case that stops matching
+leaves the run reporting a healthy count over a smaller set. ⚠️ **That is the property, not the
+subject** — a project's own checks can be a tier by it, and one of them being so is why this
+surface's own repository states a `unit` entry rather than the absence.
 
 ⚠️ **A gate that reads the host is still a gate**, and this is the case that misleads: it needs a
 credential and a reachable host, so it looks like a suite with a need. What makes it not one is
-that it has no cases — and ⛔ **what makes the distinction safe rather than convenient is that such
-a gate already reports its own refusal**, naming what it could not establish, by
+that it selects no cases — and ⛔ **what makes the distinction safe rather than convenient is that
+such a gate already reports its own refusal**, naming what it could not establish, by
 [§ 2](#2-code-host)'s absence rule. A project whose gates did **not** refuse that way has a verdict
 that reads as green on no evidence, and that is § 2's defect to fix rather than a tier to declare
 here.
@@ -6408,19 +6423,22 @@ cross-product of two facets that already exist — this one's `needs`, and § 13
 nothing new is invented and a project that already calls its tiers these things states what it
 already has:
 
-| tier | what it needs | who answers it (§ 13) |
+| tier | what it needs | what answers it |
 |---|---|---|
-| `unit` | nothing the build does not already start | `procedure` |
-| `integration` | a dependency stood up for the run, by the run or by the host | `procedure` |
-| `end_to_end` | a deployed system, driven through the interface a person uses | `procedure` |
-| `acceptance` | a deployed system **and a person looking at it** | `human` |
+| `unit` | nothing the build does not already start | a run |
+| `integration` | a dependency stood up for the run, by the run or by the host | a run |
+| `end_to_end` | a deployed system, driven through the interface a person uses | a run |
+| `acceptance` | a deployed system **and a person looking at it** | a person |
 
 ⛔ **So the reader holds each entry to its own name**, which is what makes the derivation a rail
 rather than a paragraph: `unit` states no need, `integration` states `dependency`, `end_to_end` and
 `acceptance` state `deploy`, and `acceptance` additionally requires the project's `done:` list to
-carry a check answered by a person. ⚠️ **The second column is cited and never copied**: a tier does
-not state its own answerer, because § 13's list already does and two statements of one fact are
-allowed to disagree.
+carry a check answered by a person. ⛔ **That last one is the whole of what the second column
+does**: it is the derivation's other axis and ⛔ **not a value an entry carries** — there is no key
+here to write it in, which is why the column says *a run* and *a person* rather than § 13's own
+`answered_by` words. ⚠️ **Those words attach to a check and never to a tier**, so a column spelled
+in them would be a mapping that exists on no other section — the second statement this derivation is
+built to avoid.
 
 ⛔ **An entry is a suite and the tier is its classification, so several entries may share a tier.**
 One measured project runs an end-to-end suite and a graded evaluation set — same tier, different
@@ -6448,9 +6466,11 @@ person-judged name.
 
 ⛔ **It is refused wherever a configuration states it**, and that is the one place this facet
 contradicts the item it was filed as. *The host cannot run this tier* is not a property of a tier:
-measured across six consumers, two have the **host** supply the dependency as a service and three
-stand their own up inside the run, so the same tier is host-runnable in one and conditional in the
-other ([the measurement](../../../docs/build-surface.md#the-tiers-what-each-needs-and-which-are-asked-for)).
+some consumers have the **host** supply the dependency as a service and others stand their own up
+inside the run, so the same tier is host-runnable in one and conditional in the other
+([the measurement](../../../docs/build-surface.md#the-tiers-what-each-needs-and-which-are-asked-for)).
+⛔ **No count of either group is written here** — the measurement's own table is where they are
+counted, and a figure copied out of it is a figure to keep in sync.
 
 ⛔ **What carries that split is `stood_up_by`, and it is stated exactly where `needs` carries
 `dependency`** — refused anywhere else, since a tier with no dependency has nobody standing one up.
@@ -6460,7 +6480,9 @@ stands the dependency up.
 
 ⛔ **And `needs: []` is a statement rather than an unset key**, by the rule this surface opens
 with: a project whose unit tier needs nothing beyond its own build says so, and a tier whose needs
-nobody wrote down reads identically otherwise.
+nobody wrote down reads identically otherwise. ⛔ **A need stated twice is refused**, for the reason
+§ 23's repeated third is: the list is read as a set of things to lack, so a repeat is printed twice
+in the report of what a suite could not get and reads as two.
 
 ### What a tier states about its own cases, and what it costs to state nothing
 
@@ -6475,17 +6497,25 @@ that reads as complete.
 ⛔ **`selection_held_by` is the comparison that holds that criterion to the suite, and its absence is
 a real configuration whose cost is stated here rather than discovered**: the criterion is reported
 **unheld**, and a selection nobody holds goes stale in both directions — a case nothing selects, and
-a selection naming a case that is gone — while continuing to report as complete.
-⚠️ **§ 15 is the measured instance of such a comparison** rather than a second mechanism: a register
-held to the case files on disk is exactly this, for the one tier that facet is about.
+a selection naming a case that is gone — while continuing to report as complete. ⛔ **The absence is
+the key not being written, and a key written blank is refused**: a comparison named as nothing is
+not the same statement as no comparison, and the two would otherwise read alike — which is the rule
+this surface opens with, arriving at a key whose absence is legitimate.
+⚠️ **§ 15 is such a comparison where a project's criterion is the register itself** — a register
+held to the case files on disk then holds the criterion, which is why that section is named rather
+than a second mechanism declared. ⛔ **It is not one otherwise**: a project selecting by a marker
+its cases declare keeps a register this still compares, and nothing in that comparison reaches the
+marker.
 
 ⛔ **The counts themselves are § 16's and are not restated here.** That facet states what a run
 declares, what it reports, and the one floor it judges; what this one adds is the criterion beside
-the figures. ⚠️ **And `needs` is not a second spelling of § 16's `requires`**: `requires` hangs on
-a command, is a project's own prose, and is evaluated by § 17 before that command's verdict counts,
-while `needs` hangs on the **suite** and is the closed set above — which is what makes the four
-names derivable. ⛔ **Nothing compares the two**, stated rather than left to be discovered: a tier
-carried by a host run has no local command for a `requires` to hang on at all.
+the figures. ⚠️ **And `needs` is not a second spelling of a `requires`**, of which there are two and
+neither is this: § 16's hangs on that facet and is a project's own prose about what its cases want,
+and § 17's hangs on **one command** and is evaluated there before that command's verdict counts.
+`needs` is the closed set above, which is what makes the four names derivable — a prose list could
+not be read against a tier's own name. ⛔ **Nothing compares any of the three**, stated rather than
+left to be discovered: a project may write all of them, and a reader finding them inconsistent has
+found something this surface does not hold.
 
 ⛔ **The two facets are held to agreeing about one thing, and only that one.** § 16 is the facet for
 a tier whose dependency is stood up for the run, so a project stating `executed.carrier: command`
@@ -6496,11 +6526,12 @@ there rather than here.
 
 ### An opt-in tier is never started without being asked for
 
-⛔ **`started` is written on every entry but an `acceptance` one, and `asked` is the value that costs
-something.** One
-measured tier is about four dollars a run against a budget that has already been exhausted once, and
-another is refused on the one environment whose quota caps throughput — so a tier that starts itself
-is a tier that spends without supervision.
+⛔ **`started` is written on every entry, and `asked` is the value that costs something.** One
+measured tier costs real money a run against a budget that has already been exhausted once
+([the measurement](../../../docs/build-surface.md#the-tiers-what-each-needs-and-which-are-asked-for)
+records the figure, and this section does not) — so a tier that starts itself is a tier that spends
+without supervision. ⚠️ **What an `acceptance` entry does about this key is the verdict subsection's
+below**, stated once there with the other two keys that tier refuses.
 
 ⛔ **An entry stating `asked` states a `command`, and the project carries a non-empty
 [§ 19](#19-a-command-that-spends-and-the-supervision-it-is-refused-without) deny list** — refused
@@ -6511,23 +6542,27 @@ none. ⚠️ **The asking is therefore recorded where § 19 records it**, and th
 of its own.
 
 ⚠️ **Whether *this* command is the one that facet denies is not compared, and the limit is stated
-rather than discovered.** A § 19 entry matches a command **and its arguments** — one measured runner
-invokes a project's cheap suites and its paid tier alike — so an entry here, which states one
-command, could only be held against it by a second implementation of that matching. ⛔ **Two
+rather than discovered.** A § 19 entry matches a command **and its arguments**, for that section's
+own measured reason beside `args_match` — so an entry here, which states one command, could only be
+held against it by a second implementation of that matching. ⛔ **Two
 statements of one matching rule is what this surface deletes**, so what is held is that the rail
 exists, and a project whose deny list does not in fact reach this command learns it from § 19's own
 refusal when the command runs.
 
 ⛔ **An entry whose verdict is a `workflow` states `automatic`.** What starts a host run is the
 workflow's own triggers (§ 2), not a key here, so `asked` on such an entry is a rule two facets
-would perform differently — and § 2 is where a run that only ever starts on a dispatch says so.
+would perform differently. ⚠️ **So on such an entry the value means *the workflow's triggers
+decide*, whatever they are** — and not that the suite starts itself: § 2 admits a workflow that only
+ever starts on a dispatch, which is asked for by a person and still states `automatic` here,
+because the asking is that facet's and the rail § 19 supplies reads commands rather than workflows.
 
 ### Which target a tier is refused against
 
 ⛔ **`refused_on` is the targets a tier is never run against, and the refusal is an act rather than a
-note.** The measured cases are two and unrelated: a suite refused against production because it
-writes to a real third-party account, and a measurement environment refused by name because its
-quota is the one that caps throughput.
+note.** The measured reasons are unrelated to each other — a suite that writes to a real
+third-party account, and an environment whose quota is the one that caps throughput — which is why
+the key carries a target and never a reason's vocabulary
+([the measurement](../../../docs/build-surface.md#the-tiers-what-each-needs-and-which-are-asked-for)).
 
 ⚠️ **The target vocabulary is not this facet's.** What a deploy target *is* on this surface is
 #63's, which is open and disagrees with itself; so an entry here is a name, held to being a
@@ -6545,7 +6580,7 @@ holds.
 a `host.checks` entry's own workflow name and `command` is a `checks_local` entry's own command,
 each held to resolving to an entry that is there — so there is exactly one spelling of every command
 a project runs, which is the drift this surface deletes rather than synchronises. ⚠️ **The command
-comparison is § 17's**, with only runs of whitespace normalised, and is not a second grammar.
+comparison is § 17's own**, cited rather than restated, and is not a second grammar.
 
 ⛔ **Both written on one entry is refused.** Two sources for one tier's verdict is the state in which
 *did this tier pass* has two answers and nothing says which is the one to read.
@@ -6558,11 +6593,15 @@ different verdicts**, by [§ 11](#a-report-names-what-it-could-not-establish), a
 folded the first into the second would redden a project for a tier it had honestly declared.
 
 ⛔ **On `acceptance` both keys are refused, and so is `started`.** That tier's answerer is a person
-by the derivation above, so a machine verdict read for it is § 13's *check somebody turns off*
-arriving one facet early, and what starts a person looking is that section's record rather than a
-key here. ⚠️ **Which makes the sourceless shape the only one `acceptance` has**, and the no-answer
-rule above is not what it means: the tier is answered, by § 13, and this facet states what it needs
-and how its cases are chosen.
+by the derivation above, so a machine verdict read for it is the failure § 13 calls
+**indistinguishable from success** — a check only a person can answer, answered by reasoning about
+it — arriving one facet early; and what starts a person looking is that section's record rather than
+a key here. ⚠️ **Not § 13's *check somebody turns off***, which names the opposite mistake: a
+machine reading handed to a person.
+⚠️ **Which makes the sourceless shape the only one `acceptance` has**,
+and the no-answer rule above is **not** what it means: the tier is answered, by § 13, and ⛔ **a
+reader that reported it as unanswered would be giving the wrong one of those two answers** — this
+facet states what it needs and how its cases are chosen, and nothing more about it.
 
 **`carrier: none` is the stated absence, and it is what a project writes when no suite of its own
 can fail to run** — because every tier needs only what the build already starts, or because there is

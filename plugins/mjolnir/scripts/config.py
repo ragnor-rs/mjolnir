@@ -1810,6 +1810,14 @@ class Config:
                 source = {"from": "host.checks", "workflow": entry["workflow"]}
             elif entry.get("command"):
                 source = {"from": "checks_local", "command": entry["command"]}
+            elif name == PERSON_JUDGED_TIER:
+                # ⛔ The person-judged tier is **answered**, by § 13's own
+                # person-answered check, and its sourceless shape is the only one
+                # it has. ⚠️ Reported as `null` it was indistinguishable from an
+                # unanswered machine tier, and the report line below said it was
+                # never green -- which § 31 explicitly denies. Found by review,
+                # firing on every project that states such a suite.
+                source = {"from": "done", "answered_by": "human"}
             out.append(
                 {
                     "tier": name,
@@ -1825,17 +1833,17 @@ class Config:
             )
         report = []
         for entry in out:
-            if entry["verdict"] is None:
+            if name == PERSON_JUDGED_TIER:
+                report.append(
+                    f"A {name!r} suite is answered by a person, through § 13's "
+                    "own person-answered check, and never by a run — so it "
+                    "states no verdict source and ⛔ that is **not** the "
+                    "no-answer shape (§ 31)."
+                )
+            elif entry["verdict"] is None:
                 report.append(
                     f"A {name!r} suite states no verdict source, so it reports "
                     "**no answer** and is never green (§ 31)."
-                    + (
-                        " ⚠️ Which is the only shape this tier has: it is "
-                        "answered by § 13's own person-answered check, not by a "
-                        "run."
-                        if name == PERSON_JUDGED_TIER
-                        else ""
-                    )
                 )
             if not entry["selection_held"]:
                 report.append(
@@ -3323,9 +3331,7 @@ def _tier_text(entry: dict, key: str, where: str, what: str, required: bool):
     return value
 
 
-def _validate_test_tiers(
-    data: dict, facts: dict, workflows: set[str] | None = None
-) -> None:
+def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
     """§ 31's entries, which no marker on the surface can reach.
 
     Requiredness of `carrier` and of the list itself is marked and answered
@@ -3338,6 +3344,28 @@ def _validate_test_tiers(
     quietly passed over is that failure arriving through the facet written to
     prevent it.
     """
+    # ⛔ The § 16 agreement is evaluated for **every** carrier, and the set of
+    # stated needs is what varies: under the absence it is empty, which is the
+    # strongest form of the violation § 31 refuses -- a project stating the
+    # arithmetic while saying it has no such tier at all. ⚠️ Gated inside the
+    # `list` arm this was the one form never reached, found by review: a
+    # configuration pairing `executed.carrier: command` with
+    # `test_tiers.carrier: none` loaded clean while deleting a single entry from
+    # the list was refused.
+    def hold_against_executed(stated_needs: set[str]) -> None:
+        if _get(data, "executed.carrier") != "command":
+            return
+        if "dependency" in stated_needs:
+            return
+        raise ConfigError(
+            "test_tiers.tiers",
+            "names no suite whose `needs` carries `dependency`, and "
+            "`executed.carrier: command` states the arithmetic for exactly that "
+            "tier (§ 16). One of the two is wrong: either the suite with a "
+            "dependency is missing from this list, or the count is configured "
+            "for a tier this project does not have.",
+        )
+
     carrier = _get(data, "test_tiers.carrier")
     if carrier == "none":
         # ⛔ The stated absence that also states a list, refused with the key
@@ -3352,6 +3380,7 @@ def _validate_test_tiers(
                 "absence is the statement, so a suite here is one nothing reads: "
                 "delete the key, or state the carrier it belongs to.",
             )
+        hold_against_executed(set())
         return
     if carrier != "list":
         return
@@ -3371,14 +3400,13 @@ def _validate_test_tiers(
     standers = vocabulary(facts, "test_tiers.stood_up_by", "who stands a dependency up")
     starts = vocabulary(facts, "test_tiers.started", "how a suite is started")
 
-    # ⛔ The union across every root where the caller computed one, and this
-    # view's own block otherwise: § 31's facet is the project's while `host` is
-    # a root's, so a reference resolved against one view would refuse a suite
-    # naming a sibling root's workflow. The fallback keeps every direct caller
-    # — the plants, and any reader holding one configuration — answering as
-    # before.
-    if workflows is None:
-        workflows = _workflows_anywhere(data, facts)
+    # ⛔ The union is the caller's to compute and is **required** rather than
+    # defaulted: § 31's facet is the project's while `host` is a root's, so a
+    # reference resolved against one view would refuse a suite naming a sibling
+    # root's workflow. ⚠️ A default was written here first and was dead — one
+    # call site, always passing the union — with a docstring naming callers that
+    # do not exist. Found by review; a parameter nothing can omit cannot drift
+    # from the rule.
     commands = {
         _normalised_command(entry["command"])
         for entry in _absent_as(_get(data, "checks_local"), [])
@@ -3643,14 +3671,20 @@ def _validate_test_tiers(
                     "answered apart states a source apart.",
                 )
             seen_sources[source] = where
-        else:
+        # ⛔ Not reached for the person-judged tier, whose only legal shape is
+        # sourceless: the remedy this refusal names -- state a source apart -- is
+        # refused on that tier by the arm above, so applying it there sent a
+        # reader to a fix this same function rejects. ⚠️ Two such suites are told
+        # apart by `selects`, which every entry states. Found by review.
+        elif tier != PERSON_JUDGED_TIER:
             if tier in sourceless:
                 raise ConfigError(
                     f"{where}.tier",
                     f"is a second `{tier}` suite with no verdict source, "
                     f"alongside {sourceless[tier]} (§ 31). Nothing distinguishes "
                     "them: the identity is the source, so two entries without one "
-                    "under a single tier are one entry written twice.",
+                    "under a single tier are one entry written twice — state a "
+                    "source apart, which § 2 and § 17 each admit.",
                 )
             sourceless[tier] = where
 
@@ -3706,20 +3740,10 @@ def _validate_test_tiers(
                     )
 
     # ⛔ The one agreement § 31 holds between itself and § 16, and only this one.
-    # A project stating the arithmetic and naming no suite with a dependency has
-    # configured a count over a tier it says it does not have. ⚠️ The converse is
-    # not refused: § 16's own weaker form is a tier stated with no count beside
-    # it, and reporting that here would be a second statement of that section's
-    # rule.
-    if _get(data, "executed.carrier") == "command" and "dependency" not in stated_needs:
-        raise ConfigError(
-            "test_tiers.tiers",
-            "names no suite whose `needs` carries `dependency`, and "
-            "`executed.carrier: command` states the arithmetic for exactly that "
-            "tier (§ 16). One of the two is wrong: either the suite with a "
-            "dependency is missing from this list, or the count is configured for "
-            "a tier this project does not have.",
-        )
+    # ⚠️ The converse is not refused: § 16's own weaker form is a tier stated
+    # with no count beside it, and reporting that here would be a second
+    # statement of that section's rule.
+    hold_against_executed(stated_needs)
 
 
 def _path_filter(node: dict, where: str) -> None:
@@ -4610,7 +4634,7 @@ def _workflows_anywhere(data: dict, facts: dict) -> set[str]:
     return {name for name in out if name}
 
 
-def validate(data: dict, facts: dict, workflows: set[str] | None = None) -> None:
+def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # ⛔ Walked rather than looked up by path, because a retired key may sit
     # inside a list: `_get` descends a dict and returns the default the moment it
     # meets one, so `done.run` read that way is a refusal that never fires on the
@@ -9710,6 +9734,35 @@ def self_test() -> int:
         any("**unheld**" in line for line in silent["report"]),
         f"reported {silent['report']!r}",
     )
+    # ⛔ The person-judged tier, which is the finding this arm exists for: the
+    # reading reported it as stating no verdict source and therefore **never
+    # green**, which § 31 explicitly denies, with the correction appended after
+    # the wrong sentence rather than replacing it -- and `verdict: null` left it
+    # indistinguishable from an unanswered machine tier. Found by review, firing
+    # on every project that states such a suite.
+    judged = _tier_read(PERSON_JUDGED_TIER, _a_person_judged_suite)
+    said = " ".join(judged["report"])
+    check(
+        "a person-judged suite is reported as answered by a person, not as no answer",
+        "answered by a person" in said and "**no answer**" not in said,
+        f"reported {judged['report']!r}",
+    )
+    check(
+        "and its verdict names § 13's record rather than coming back null",
+        (judged["suites"][0]["verdict"] or {}).get("from") == "done",
+        f"carried {judged['suites'][0]['verdict']!r}",
+    )
+    # ⛔ The green side of the exemption that fix needed, verified by the plant
+    # one line down staying red: two sourceless suites under the person-judged
+    # tier load, because the remedy the collision refusal names -- state a
+    # source apart -- is itself refused on that tier. An exemption with no
+    # must-stay-green arm is an exemption nobody checked.
+    two_judged = _refused(_two_person_judged_suites(_a_collection_example()))
+    check(
+        "two person-judged suites load, the collision rule not reaching that tier",
+        two_judged is None,
+        f"reported {two_judged!r}",
+    )
     # ⚠️ The opt-in line, which is the one a reader would otherwise have to infer
     # from `started` -- and the field was replaceable by a constant without it.
     opt_in = _tier_read("end_to_end", _an_opt_in_suite_with_nothing_denied_but_denying)
@@ -10591,6 +10644,8 @@ def _planted_violations():
          "test_tiers.tiers[0].started", _an_opt_in_suite_with_nothing_denied),
         ("a count configured for a tier no suite claims",
          "test_tiers.tiers", _a_count_configured_for_a_tier_the_list_denies),
+        ("a count configured beside the carrier that claims no tier at all",
+         "test_tiers.tiers", _a_count_configured_beside_a_stated_absence),
         ("a suite stated beside the carrier that names none",
          "test_tiers.tiers", _an_absent_test_tiers_block(tiers=[])),
         ("a type the branch-prefix map does not cover",
@@ -10946,6 +11001,57 @@ def _an_opt_in_suite_with_nothing_denied(data: dict) -> dict:
     return data
 
 
+def _a_person_judged_suite(data: dict) -> dict:
+    """One person-judged suite, on a project whose done list asks a person.
+
+    ⛔ The `done:` entry is added here rather than assumed: the example these
+    fixtures are built from asks nobody, which is what the *derivation's second
+    column* plant asserts -- so a fixture that did not add one would redden on
+    that arm instead and say nothing about the reading.
+    """
+    done = list(_absent_as(_get(data, "done"), []))
+    done.append(
+        {
+            "check": "human_verification",
+            "answered_by": "human",
+            "stop": "Drive the change and record what you saw.",
+        }
+    )
+    data["done"] = done
+    data["test_tiers"] = {
+        "carrier": "list",
+        "tiers": [
+            _a_suite(
+                tier="acceptance",
+                needs=["deploy"],
+                stood_up_by=_DROP,
+                started=_DROP,
+            )
+        ],
+    }
+    return data
+
+
+def _two_person_judged_suites(data: dict) -> dict:
+    """Two person-judged suites, which § 31 admits and the collision rule must not reach.
+
+    ⚠️ Told apart by `selects`, which every entry states — the discriminator the
+    sourceless-collision rule cannot use for the one tier whose only legal shape
+    is sourceless.
+    """
+    data = _a_person_judged_suite(data)
+    data["test_tiers"]["tiers"].append(
+        _a_suite(
+            tier="acceptance",
+            needs=["deploy"],
+            stood_up_by=_DROP,
+            started=_DROP,
+            selects="a second criterion, for the screens the first one leaves",
+        )
+    )
+    return data
+
+
 def _an_opt_in_suite_with_nothing_denied_but_denying(data: dict) -> dict:
     """The same opt-in suite, on a project that does deny something.
 
@@ -10984,6 +11090,24 @@ def _a_count_configured_for_a_tier_the_list_denies(data: dict) -> dict:
             _a_suite(tier="end_to_end", needs=["deploy"], stood_up_by=_DROP)
         ],
     }
+    return data
+
+
+def _a_count_configured_beside_a_stated_absence(data: dict) -> dict:
+    """§ 16's arithmetic stated beside `test_tiers.carrier: none` (§ 31).
+
+    ⛔ The strongest form of the same disagreement the plant above catches, and
+    the one form the first implementation never reached: gated inside the `list`
+    arm, the comparison could not see a project that had declared it has no such
+    tier at all. Found by review, dormant across every shipped configuration,
+    and now the arm that holds the carrier-independent evaluation.
+    """
+    data["executed"] = {
+        "carrier": "command",
+        "declares": "a-command-printing-a-count",
+        "reports": "a-command-printing-a-run",
+    }
+    data["test_tiers"] = {"carrier": "none", "absent_reason": "a stated reason"}
     return data
 
 

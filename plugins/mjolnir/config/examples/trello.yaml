@@ -428,12 +428,14 @@ test_tiers:
   # The one tier this project has that can fail to run, and ⛔ the one shape § 31 gives no verdict
   # source at all: the person-judged tier. Its answerer is the `human_verification` check under
   # `done:` above, which is what the derivation reads — so `workflow`, `command` and `started` are
-  # all refused on this entry, a machine verdict read for a person-judged tier being the check
-  # somebody turns off.
+  # all refused on this entry, a machine verdict read for a person-judged tier being the failure
+  # § 13 calls indistinguishable from success.
   #
   # ⚠️ The two facets above are absent and this one is carried, which is not a contradiction: they
-  # ask what a *register* and a *count* say about a suite, and there is no suite. This one asks
-  # what the tier needs before anybody can judge it, and the answer is a deployment.
+  # ask what a *register* and a *count* say about the cases of **this** tier, and this tier has
+  # none — a person walks the change. ⛔ Not that the project has no suite at all: the two inner
+  # repositories each mirror one, under their own `host` blocks above. This facet asks what the
+  # tier needs before anybody can judge it, and the answer is a deployment.
   carrier: list
   tiers:
     - tier: acceptance
@@ -447,9 +449,9 @@ test_tiers:
         every change the walk-through reaches: the screens the change touches, decided by the
         person from the change itself
       # ⛔ No `selection_held_by`, and the cost is § 31's stated one rather than an oversight:
-      # nothing holds the criterion to a suite, because there is no suite to hold it to, so the
-      # selection is reported unheld. The remedy is case files, which is the register facet's
-      # own `revisit_when` above.
+      # nothing holds the criterion to this tier's cases, there being no case files to hold it
+      # to, so the selection is reported unheld. The remedy is case files, which is the register
+      # facet's own `revisit_when` above.
       refused_on: ["<the environment real customers are on>"]
 
 spend_guard:

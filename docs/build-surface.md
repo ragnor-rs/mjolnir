@@ -250,9 +250,9 @@ a case whose subject is absent from the live catalogue answers indistinguishably
 
 **This reading is what
 [`schema § 31`](../plugins/mjolnir/config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)
-was written from, and the facet differs from the item in four places.** Each difference below is a
-thing the measurement forced rather than a preference, which is why they are recorded here and the
-rule is stated there.
+was written from, and the facet differs from the item wherever the table below forced it to.** Each
+difference under its own heading is a thing the measurement forced rather than a preference, which
+is why they are recorded here and the rule is stated there.
 
 | | tiers present | what the unrunnable ones need | asked for rather than automatic | refused outright |
 |---|---|---|---|---|
@@ -265,14 +265,14 @@ rule is stated there.
 
 ### The first difference: `host_runnable` was never a property of a tier
 
-⛔ **The first of the five needs is retired, and the measurement is what retired it**
+⛔ **The first of the five needs is refused by name, and the measurement is why**
 ([`§ 31 → Why host_runnable is not one of the needs`](../plugins/mjolnir/config/schema.md#why-host_runnable-is-not-one-of-the-needs)).
-Read down the
-*what the unrunnable ones need* column: B and C need a store **the host supplies as a service**,
-while D and E need a container daemon so the **run** can stand its own up. That is one tier whose
-dependency arrives two ways, so *the host cannot run this tier* is false for the first pair and
-conditional for the second — and a need spelled `host_runnable` encodes the binary the column
-disproves.
+Read down the *what the unrunnable ones need* column: some rows name a store **the host supplies as
+a service** and others a container daemon so the **run** can stand its own up. That is one tier
+whose dependency arrives two ways, so *the host cannot run this tier* is false for the first group
+and conditional for the second — and a need spelled `host_runnable` encodes the binary the column
+disproves. ⚠️ **Which rows are which is the column's to say and is not counted here**, the figure
+having diverged from it on the first attempt at writing one down.
 
 So the facet carries `dependency` as the need and `stood_up_by` as who supplies it, and refuses the
 retired word by name:
@@ -290,9 +290,9 @@ the evidence that nothing is being imposed —
 [`§ 31 → The four values are derived`](../plugins/mjolnir/config/schema.md#the-four-values-are-derived-so-no-adopter-adopts-a-vocabulary)
 states the rule and holds each entry to its own name.
 
-⚠️ **The measurement also forced the entry to be a *suite* rather than a tier.** F runs an
-end-to-end suite **and** an evaluation set: same tier, different needs, one automatic and one asked
-for. Keyed on the tier, F would have had to state one of them — so the entry is a suite, its
+⚠️ **The measurement also forced the entry to be a *suite* rather than a tier.** Row F's *tiers
+present* and *asked for* cells together name two suites of one tier that differ in both needs and
+starting; keyed on the tier, F would have had to state one of them. So the entry is a suite, its
 identity is its verdict source, and several entries may share a tier.
 
 ⛔ **And the word trap is the reason the tier word is never the project's**
@@ -309,35 +309,36 @@ opaque project-supplied entry point and read its exit status?
 
 ⛔ **Measured against the six, it is neither, and the reason is that both answers add a second
 spelling of a command this surface already states once.** Every one of the six states its
-verdict-producing commands in exactly two places —
-[`schema § 2`](../plugins/mjolnir/config/schema.md#2-code-host)'s `checks` for what the host runs and
+verdict-producing commands in the two places
+[`schema § 2`](../plugins/mjolnir/config/schema.md#2-code-host)'s `checks` and
 [`schema § 17`](../plugins/mjolnir/config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s
-`checks_local` for what it does not — so a tier **names** one of those and the reference is held:
-[`§ 31 → Where a tier's verdict comes from`](../plugins/mjolnir/config/schema.md#where-a-tiers-verdict-comes-from-and-the-tier-that-has-none).
+`checks_local` already model, and in no third. What the facet does with that is
+[`§ 31 → Where a tier's verdict comes from`](../plugins/mjolnir/config/schema.md#where-a-tiers-verdict-comes-from-and-the-tier-that-has-none)'s.
 
-⚠️ **Which keeps the absence rule the comment says must not weaken**, and makes it the shape of the
-answer rather than a sentence: a suite naming neither source reports **no answer** and is never
-green. ⛔ **And one tier has no source by construction** — the person-judged one, whose answerer is
-§ 13's column, so a machine verdict read for it is that section's *check somebody turns off*
-arriving a facet early. C and D have no such tier; A, B and F each do.
+⚠️ **Which is also what keeps the absence rule the item's comment says must not weaken** — the
+sourceless entry's reading is stated at
+[`§ 31 → Where a tier's verdict comes from`](../plugins/mjolnir/config/schema.md#where-a-tiers-verdict-comes-from-and-the-tier-that-has-none)
+rather than here. ⛔ **And one tier has no source by construction**, the person-judged one: a
+machine verdict read for it is the failure § 13 calls indistinguishable from success, which is a
+different mistake from that section's *check somebody turns off* and the one a reader of the
+*answered by* column meets. Which rows carry such a tier is the *tiers present* column's to say.
 
 ### The fourth difference: what is asked for, and what is refused outright
 
-The *asked for rather than automatic* column holds in five of the six, and the two reasons are
-money and throughput: F's evaluation set is about $3.65 a run against a finite budget, and B refuses
-one measurement environment by name because its quota is the one that caps throughput.
+The *asked for rather than automatic* column is populated in most rows, and the two reasons behind
+it are money and throughput — the figures and the environments being the column's own.
 
 ⛔ **The rail that performs an asking already exists and reads commands**, which is
 [`schema § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
 — so the facet states that a suite is opt-in and leaves the asking there:
 [`§ 31 → An opt-in tier is never started without being asked for`](../plugins/mjolnir/config/schema.md#an-opt-in-tier-is-never-started-without-being-asked-for).
-⚠️ **What it deliberately does not do is compare the two.** A § 19 entry matches a command *and its
-arguments* — F's single runner invokes its cheap suites and its paid tier alike, which is the
-measurement `args_match` exists for — so holding a tier's one command against that list would be a
-second implementation of the matching, and the facet holds only that the rail exists.
+⚠️ **What it deliberately does not do is compare the two**, and the reason is the measurement rather
+than the rule: F's single runner invokes its cheap suites and its paid tier alike, which is what
+makes a § 19 entry match arguments as well as a command — so a tier's one command could not be held
+against that list without a second implementation of the matching.
 
-The *refused outright* column holds in two, for unrelated reasons: F's end-to-end suite against
-production, because it writes to a real third-party account, and B's measurement environment above.
+The *refused outright* column is populated for unrelated reasons, which is the finding: writing to a
+real third-party account in one row, and a quota that caps throughput in another.
 ⛔ **The refusal is an act and the target vocabulary is somebody else's** —
 [`§ 31 → Which target a tier is refused against`](../plugins/mjolnir/config/schema.md#which-target-a-tier-is-refused-against)
 holds an entry to being a name and nothing more, because what a deploy target *is* on this surface
@@ -363,16 +364,11 @@ So a partial run reports in two measured forms — skipped-and-listed, and dropp
 the floor that catches the third case is already surface at
 [`schema § 16`](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran).
 ⚠️ **A preference, labelled:** of the three selection mechanisms, marker and named list are both
-honest and the choice between them is a project's, so nothing here recommends one. ⛔ **Which is why
-the facet states that a tier says how its cases are chosen and never which mechanism** — and why the
-key beside it is the *comparison* that holds the criterion rather than a flag claiming it is held:
-B's named list is the one of the three that goes stale in both directions, so what closes it is a
-comparison, and its absence is reported as a criterion **unheld** rather than passed over.
-
-⚠️ **§ 15 is an instance of that comparison and not a second mechanism.** A's coverage rule is a
-check over the diff holding a register to the case files on disk, which is exactly what a tier's
-`selection_held_by` names — so the facet cites that section rather than describing the comparison
-again.
+honest and the choice between them is a project's, so nothing here recommends one. ⚠️ **What the
+measurement adds is which of the three can go stale without saying so** — B's named list, where a
+suite added and not named drops out — and that is the fact
+[`§ 31 → What a tier states about its own cases`](../plugins/mjolnir/config/schema.md#what-a-tier-states-about-its-own-cases-and-what-it-costs-to-state-nothing)
+is built on; the rule it draws from it is stated there.
 
 **A's whole suite is the one the surface would otherwise read as absent, and ⚠️ the one its own
 prose reports wrongly.** Its instructions say it has no automated tests; what it has is eleven

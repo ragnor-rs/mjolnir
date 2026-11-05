@@ -151,8 +151,12 @@ done:
 # commands above, and the suite that needs a store stood up is run nowhere but here (§ 17).
 checks_local:
   - command: "<the integration suite command>"
-    proves: "the suite passes against a store this run stands up"
-    requires: ["a container daemon"]
+    # ⚠️ Reworded where § 31's `stood_up_by` made the question decidable: this entry said the run
+    # stood the store up while `executed` below says the **host** supplies it as a service beside
+    # the run, and the two could coexist as prose. They cannot coexist under a closed key, and the
+    # host side is the one that facet states twice — in its own comment and in its `requires`.
+    proves: "the suite passes against the store the host supplies beside the run"
+    requires: ["the service the host supplies beside the run"]
 
 # § 18, and the one arm a project discovers by being refused: the linter above has a fixing
 # variant, and the two are told apart by a flag rather than by a name — so the fixing form is
@@ -395,7 +399,9 @@ test_tiers:
     - tier: acceptance
       # The person-judged tier, answered by the `human_verification` check under `done:` above.
       # ⛔ No `started`, no `workflow` and no `command`: what starts a person looking is § 13's
-      # record, and a machine verdict read for this tier is the check somebody turns off.
+      # record, and a machine verdict read for this tier is the failure that section calls
+      # indistinguishable from success — a check only a person can answer, answered by reasoning
+      # about it.
       needs: [deploy]
       selects: >-
         the paths through the running application the change reaches, decided by whoever drives it

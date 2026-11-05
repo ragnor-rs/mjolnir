@@ -207,7 +207,15 @@ checks_local:
     proves: "the graded set scores at or above the bar this project holds itself to"
     # ⛔ What it needs and nothing about what it costs: the cost is `spend_guard` below, and the
     # fact that it is opt-in is `test_tiers` below that. Three facets, one per question.
-    requires: ["a model credential", "the budget the grading draws on"]
+    # ⚠️ The budget is deliberately **not** a precondition here: it is a cost, and § 17 blocks a
+    # verdict on an unmet precondition and reports an unevaluatable one as undeterminable — so a
+    # budget written here would be a `done:` check that can never read green.
+    requires: ["a model credential"]
+    # ⛔ Without this the entry would be read for every change, because `done:` below carries a
+    # `local` check and that check reads every entry of this facet — which would make an opt-in
+    # paid tier a condition of finishing anything. The release line is where this project does
+    # want it.
+    counts_when: ["pull_request -> release/*", "push -> release/*"]
 
 # § 18, and the arm this project is the reason for: it already owns a probe answering whether
 # the host can run these jobs — the account's runners are its own, and a suspended one is a
@@ -470,12 +478,18 @@ test_tiers:
       # this project calls these «the acceptance scenarios», and they are browser-driven against a
       # deployed instance with no person judging them. Filed under the project's own word they
       # would collide with the person-judged tier, which is `checklist_ticked` under `done:` above.
-      needs: [deploy, credential]
+      # ⛔ `money` with them, because the register facet above says so of this same suite: «it
+      # needs a deployment, a credential and money». Omitting it here would leave the file stating
+      # what the tier needs in two places and disagreeing with itself — and `money` is the need
+      # that decides whether a tier is opt-in.
+      needs: [deploy, credential, money]
       started: automatic
       selects: "the journeys the register names, one case file per journey"
-      # ⛔ § 15 **is** this comparison, named here rather than described again: the register above
-      # holds the journeys to the case files on disk, in both directions.
-      selection_held_by: "the e2e_register comparison configured below"
+      # ⛔ § 15's comparison is this tier's holder **because** the criterion above is the register:
+      # that section holds a register to the case files on disk, which is what holds this
+      # criterion. ⚠️ Not a general identity — a project selecting by marker and keeping a
+      # register has a register check that holds nothing about its selection.
+      selection_held_by: "the e2e_register comparison configured above"
       # The target this suite is never run against, and the measured reason: it writes to a real
       # third-party account. ⚠️ A name and nothing more — what a deploy target is remains #63's.
       refused_on: ["<the environment real customers are on>"]

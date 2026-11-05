@@ -349,8 +349,8 @@ test_tiers:
     nothing it has to stand up, reach or pay for. No suite can report nothing and be read as green.
   revisit_when: >-
     A suite lands that needs a dependency stood up, a deployment, a credential, indexed material or
-    money — which is the same trigger the two facets above carry, and the first entry this list
-    would hold.
+    money — the first entry this list would hold. This is wider than either facet above: a suite
+    needing only a credential, or only money, meets this trigger and neither of theirs.
 
 spend_guard:
   # The first day again: everything this project runs is free, so nothing is denied. ⚠️ Worth
