@@ -82,6 +82,12 @@ statuses: []
 # An empty status list is legitimate. Every role is absent, so the procedure never asks the
 # port to advance anything and never reports a missing state as a fault.
 
+# § 32. Empty for the same reason, one step further on: there is no status to move backwards
+# to, so there is no reverse edge to rule. ⚠️ Not a consequence a reader derives from the
+# empty list above — the key is stated, because a project with a ladder and no reverse edge
+# writes exactly this and the two have to read apart.
+reversals: []
+
 readiness:
   # An empty gate is legitimate too: there is no item to gate.
   []

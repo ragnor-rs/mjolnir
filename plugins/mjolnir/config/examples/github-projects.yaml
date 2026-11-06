@@ -131,6 +131,16 @@ statuses:
   - { name: "Merged",      role: code_landed, writer: automation }
   - { name: "Done",        role: terminal,    writer: deploy }
 
+# § 32. One reverse edge, and nothing the procedure does: the board's own automation writes
+# `Merged` off every pull request carrying a closing reference, so a second change under an
+# item already at `Done` steps it back there. `writer: automation` is what that is, so the
+# procedure is refused and reports the move the board already made. ⚠️ The surveyed project on
+# this tracker rules none of that — the entry is what ruling it looks like, and the reason to
+# write it is that a role reading this item's role then finds the step backwards stated rather
+# than finding a board doing something the configuration denies.
+reversals:
+  - { trigger: merged_under_a_later_role, to_role: code_landed, writer: automation }
+
 readiness:
   - { check: state_is, roles: [initial], stop: "The item is not in the starting state." }
   - { check: no_open_blockers, stop: "An open blocker has to land first." }

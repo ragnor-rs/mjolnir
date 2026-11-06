@@ -331,6 +331,14 @@ statuses:
   - { name: "open",   role: initial,  writer: procedure }
   - { name: "closed", role: terminal, writer: automation }
 
+# § 32. No reverse edge is ruled here, and the honest reason is that the one case this
+# repository has is answered a different way: an item whose unmet bullet turns up after it
+# closed is reopened and edited by hand, and this project's two statuses give a reverse move
+# nowhere to go that a reopen does not already reach. ⚠️ So `[]` — and ⛔ that is this
+# project's answer about itself and never a statement about the trigger set, whose own
+# criterion § 32 states and this comment does not restate.
+reversals: []
+
 readiness:
   - { check: state_is, roles: [initial], stop: "The issue is already closed." }
   - { check: no_open_blockers, stop: "An issue this one depends on has not landed yet." }
