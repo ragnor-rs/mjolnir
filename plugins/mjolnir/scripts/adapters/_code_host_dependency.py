@@ -58,9 +58,10 @@ def _word(value) -> str:
 
     ⚠️ Not a convenience: an entry is outside this procedure, so a field this
     shaping treats as a word may arrive as a number or a null. The first form
-    guarded one field of three and let the other two out as attribute and type
+    guarded the address alone and let the others out as attribute and type
     errors, which `blockers_of` below states is never what an unreadable answer
-    becomes.
+    becomes. ⚠️ **And this is a shaping and not a guard** -- what may not be left
+    empty is refused in `blockers_of`, before anything here runs.
     """
     return value if isinstance(value, str) else ""
 
@@ -125,10 +126,12 @@ def blocker(entry: dict) -> dict:
     on one today. The reason is carried as the host states it and judged nowhere
     here.
     """
-    # ⛔ Every field read for its own type and none assumed to be a string. A
-    # host answer is outside this procedure, and an entry carrying a number where
-    # a word belongs reached the operator as an attribute error -- which is the
-    # traceback the port states three answers instead of.
+    # ⛔ Every field a comparison is made on is read for its own type rather than
+    # assumed to be a string. A host answer is outside this procedure, and an
+    # entry carrying a number where a word belongs reached the operator as an
+    # attribute error -- which is the traceback the port states three answers
+    # instead of. ⚠️ The identifier, the title and the address are carried as the
+    # host stated them, nothing here comparing on any of the three.
     address = REPOSITORY_URL.search(_word(entry.get("repository_url")))
     return {
         "number": entry.get("number"),
@@ -142,6 +145,12 @@ def blocker(entry: dict) -> dict:
 
 def blockers_of(answered, path: str) -> list[dict]:
     """Every recorded blocker out of what the host answered, shape held first.
+
+    ⛔ **Every page, and a caller that asks for one has not asked a narrower
+    question** -- it has read a shorter list, so a blocker in the part nobody
+    fetched is a blocker § 5's predicate never sees and an item starts on a
+    verdict about the first page. That is why both callers pass the paging flag
+    and why what follows is held rather than trusted.
 
     ⛔ **An answer this function cannot read is a *failed* operation and never a
     traceback.** The client is asked for every page and merges them into one
@@ -172,5 +181,20 @@ def blockers_of(answered, path: str) -> list[dict]:
             f"`{path}` answered an array whose entry at position {unreadable[0]} "
             f"is {type(answered[unreadable[0]]).__name__} and not an item, so the "
             f"{len(answered)} recorded blocker(s) could not be read."
+        )
+    # ⛔ And an entry whose state is not a word is refused rather than shaped. It
+    # is the one field § 5's bar is applied to, so an empty string there is a
+    # blocker reported as neither open nor closed -- an unreadable field dressed
+    # as an answer, in the function whose whole contract above is that it never
+    # does that.
+    stateless = [index for index, entry in enumerate(answered)
+                 if not isinstance(entry.get("state"), str)]
+    if stateless:
+        entry = answered[stateless[0]]
+        raise port.HostUnavailable(
+            f"`{path}` answered an item at position {stateless[0]} whose `state` "
+            f"is {type(entry.get('state')).__name__}, so whether that blocker is "
+            "open could not be read. An unreadable state is not the same as an "
+            "open one or a closed one."
         )
     return [blocker(entry) for entry in answered]

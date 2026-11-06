@@ -10,9 +10,9 @@ What it implements, and what it deliberately does not:
 
   * **Not every operation § 3 states; the checklist ones are absent.** A task list on
     an issue is markdown inside the body -- there is no check-item object to read,
-    tick or delete -- so the three stated fallbacks are already the right
-    behaviour and implementing them against body text would dress a fallback up
-    as a capability. The same absence as the plain-issues implementation beside
+    tick or delete -- so their stated fallbacks are already the right behaviour
+    and implementing them against body text would dress a fallback up as a
+    capability. The same absence as the plain-issues implementation beside
     this one, and for the same reason rather than by copying it.
   * **`set_state` writes the board's column and never the issue's own state.**
     That is what the tracker holds: a card's status is a single-select value, and
@@ -239,13 +239,12 @@ def _subprocess_gh(args: list[str], parse: bool):
         return done.stdout.strip()
     if not done.stdout.strip():
         raise HostUnavailable(f"`{shown}` answered with nothing where a body was expected")
-    # ⛔ A body that is not one document is refused rather than parsed. The
-    # client's own help states that a paginated read prints one array per page,
-    # which two other consumers in this toolkit already read as a stream for that
-    # reason -- so a merged answer is behaviour rather than a contract, and
-    # `json.loads` raises `ValueError` on the shape it degrades to. `Port.invoke`
-    # does not catch that, so the operator got a traceback where § 3 states three
-    # answers and none of them is one.
+    # ⛔ A body that is not one document is refused rather than parsed, the shape
+    # a merged paginated answer degrades to being several documents in a row --
+    # which `_code_host_dependency.blockers_of` states the behaviour for.
+    # `json.loads` raises `ValueError` on it and `Port.invoke` does not catch
+    # that, so the operator got a traceback where § 3 states three answers and
+    # none of them is one.
     try:
         return json.loads(done.stdout)
     except ValueError as error:
@@ -788,12 +787,12 @@ def read_item(number: int) -> dict:
     # same contract this module's own dispatch was repaired for. ⚠️ Every
     # operation here routes through this function, so the refusal covers all of
     # them rather than one.
-    # ⚠️ Digits rather than whatever `int()` accepts. The first form of this
-    # guard called `int()` and so took `True` as item 1, `1.9` as item 1 and
-    # `" 11 "` as item 11 -- while its own message said a value that is not a
-    # number addresses nothing.
+    # ⚠️ Decimal digits rather than whatever `int()` accepts, and the shapes it
+    # would have accepted are the cases in this kind's suite. ⛔ `isdecimal` and
+    # not `isdigit`: a superscript answers `isdigit` and then raises in `int`,
+    # which is the traceback this guard exists to replace.
     addressed = number if isinstance(number, int) and not isinstance(number, bool) else None
-    if addressed is None and isinstance(number, str) and number.isdigit():
+    if addressed is None and isinstance(number, str) and number.isdecimal():
         addressed = int(number)
     if addressed is None:
         raise ConfigError(
@@ -1373,9 +1372,9 @@ def read_blockers(number: int) -> dict:
     the board holds no relation of its own, so this reads the issue's own
     dependencies rather than anything on the card.
 
-    ⛔ **Every page, not the first one**, which the shared module below states
-    the measurement for -- the same silent ceiling the card reads pay a
-    cursor-follower to avoid.
+    ⛔ **Every page, not the first one**, for the reason
+    `_code_host_dependency.blockers_of` states -- the same silent ceiling the card
+    reads pay a cursor-follower to avoid.
 
     ⚠️ **Read through `read_item` first**, so the pull-request guard covers this
     too: the path is the issues one, which answers for a pull request as well.
@@ -1450,28 +1449,33 @@ def advance_on_merge(number: int) -> dict:
     """
     item = read_item(number)
     owner, name = _repo().split("/")
+    # ⛔ The number the query and the answer carry is the host's, off the read
+    # above, rather than the argument: the port passes every value as text, so
+    # `int()` here would be a second normalisation of the thing the guard already
+    # normalised -- and the one in `read_item` is the one that refuses.
+    addressed = item["number"]
     # ⚠️ `or {}` rather than a default on `get`: the host answers `repository:
     # null` for a repository this credential cannot see, and a default only
     # applies where the key is **absent** -- so the plain form raises an attribute
     # error on the null, which is a traceback where this operation's own refusal
     # belongs. The same form `read_item` takes, for the same reason.
-    answer = _graphql(CLOSED_BY_QUERY, owner=owner, name=name, number=int(number))
+    answer = _graphql(CLOSED_BY_QUERY, owner=owner, name=name, number=addressed)
     issue = (answer.get("repository") or {}).get("issue")
     if issue is None:
         raise HostUnavailable(
-            f"the host answered null for #{number} in {owner}/{name} when asked "
+            f"the host answered null for #{addressed} in {owner}/{name} when asked "
             "what closed it, so the automation's work could not be read."
         )
     merged = [
         node
         for node in _whole(
             issue.get("closedByPullRequestsReferences"),
-            f"the pull requests that closed #{number}",
+            f"the pull requests that closed #{addressed}",
         )
         if node.get("merged")
     ]
     return {
-        "number": number,
+        "number": addressed,
         "advanced": str(issue.get("state", "")).lower() == "closed" and bool(merged),
         "state": issue.get("state"),
         "status": item["status"],
@@ -1501,10 +1505,10 @@ ADAPTER = port.Adapter(binder=bind, operations={
     # once, below, and read from there by the suite.
 })
 
-# The three the module docstring argues are absent because the tracker has
-# nothing to implement them against. ⛔ Written once, here, and read by the
-# self-test's completeness check rather than restated in it: a fourth absence
-# would otherwise be an operation nobody noticed going missing.
+# The ones the module docstring argues are absent because the tracker has nothing
+# to implement them against. ⛔ Written once, here, and read by the self-test's
+# completeness check rather than restated in it: an absence added here would
+# otherwise be an operation nobody noticed going missing.
 DELIBERATELY_ABSENT = ("checklist_read", "checklist_write", "checklist_item_delete")
 
 

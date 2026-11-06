@@ -473,9 +473,16 @@ class _Host:
                     "inward": under_test.INWARD_READS,
                     "outward": under_test.OUTWARD_READS,
                 },
+                # ⚠️ The summary as well as the status, because the host puts both
+                # in a link payload. A fixture carrying only what the code read at
+                # the time it was written is a fixture that cannot see a field go
+                # unread -- which is how the blocker's own name went uncarried.
                 side: {
                     "key": other,
-                    "fields": {"status": self.issues[other]["fields"]["status"]},
+                    "fields": {
+                        "status": self.issues[other]["fields"]["status"],
+                        "summary": self.issues[other]["fields"].get("summary"),
+                    },
                 },
             })
         return None
@@ -1359,6 +1366,29 @@ def self_test() -> int:
         not {"blocked", "ready", "satisfied", "open_blockers"} & set(of_blocked),
         f"answered keys {sorted(of_blocked)!r}",
     )
+    # ⛔ And a name and an address per blocker, so a role reporting one does not
+    # need a call of its own per entry -- read off the item's own answer for the
+    # blocker rather than written here, for the reason the status pair above is.
+    check(
+        "and the blocker's own title and address, as the item read answers them",
+        entry.get("title") == got(blocker_itself, "title")
+        and entry.get("url") == got(blocker_itself, "url"),
+        f"carried {entry.get('title')!r} at {entry.get('url')!r} against "
+        f"{got(blocker_itself, 'title')!r} at {got(blocker_itself, 'url')!r}",
+    )
+    # ⛔ The key in the answer is the item's own and never the argument's spelling,
+    # which is the rule the code-host kinds carry for their numbers. ⚠️ Asked with a
+    # padded key, that being the one legitimate shape where the argument and the
+    # item's key differ: the guard matches on a stripped value, so this reaches the
+    # host -- and it also holds the path, which carried the padding raw while the
+    # guard had read the key without it.
+    padded = host()
+    answered_padded = with_host(padded, lambda: read_blockers(f"  {key(1)}  "))
+    check(
+        "the item's own key is the tracker's and not the spelling it was asked with",
+        (answered_padded or {}).get("key") == key(1),
+        f"answered {(answered_padded or {}).get('key')!r} for a padded {key(1)!r}",
+    )
     # ⛔ The call count, not just the answer: this operation is stated to make no
     # request of its own, and an implementation that asked a second time could
     # answer correctly while being able to disagree with the item it was read
@@ -1386,10 +1416,9 @@ def self_test() -> int:
         f"reported {reported!r} after {elsewhere_blockers.calls}",
     )
     # ⛔ An answer that did not carry the links at all is a failed call, never an
-    # item with no blocker. ⚠️ This is the one tracker where the two halves cannot
-    # disagree, the read making no call of its own -- so an unread field is the
-    # only way it can go wrong, and reading it with a default answered the same
-    # for an unread field and an empty one.
+    # item with no blocker, for the reason the operation's own docstring states.
+    # ⚠️ The read makes no call of its own here, so an unread field is the way it
+    # goes wrong.
     unread = host(issues=None)
     unread.issues[key(1)]["fields"].pop("issuelinks", None)
     reported = with_host(unread, lambda: unavailable(lambda: read_blockers(key(1))))

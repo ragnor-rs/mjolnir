@@ -1029,11 +1029,12 @@ def self_test() -> int:
     # rather than let out as a `ValueError`, every operation here routing through
     # the same guard. The port catches the contract's own exceptions and nothing
     # else, so this is the difference between a reported refusal and a traceback.
-    # ⚠️ Four shapes, because the first form of this guard called `int()` and so
-    # took three of them: a bool addresses item 1, a float addresses its floor,
-    # and a padded string addresses the number inside it -- while the refusal's
-    # own message says a value that is not a number addresses nothing.
-    for handed in ("not-a-number", True, 1.9, " 11 "):
+    # ⚠️ The shapes are the ones `int()` accepts and an item number is not, that
+    # being the guard's first form: a bool addresses item 1, a float addresses its
+    # floor, a padded string addresses the number inside it, and a superscript
+    # answers `isdigit` and then raises in `int` -- while the refusal's own
+    # message says a value that is not a number addresses nothing.
+    for handed in ("not-a-number", True, 1.9, " 11 ", "²"):
         shapeless = _Host({})
         reported = with_host(
             shapeless, lambda handed=handed: refused(lambda: read_blockers(handed))
@@ -1438,6 +1439,22 @@ def self_test() -> int:
         "an item closed with nothing merged is not advanced, and says what state it is in",
         answered["advanced"] is False and answered["state"] == "CLOSED",
         f"answered {answered!r}",
+    )
+    # ⛔ Asked with text, which is how the port passes every argument -- so the
+    # number in the answer is the host's own and the typed query variable is built
+    # from it rather than from what the caller spelled. ⚠️ Every case above hands
+    # an integer, where an echo and a read are the same value.
+    host = _Host({
+        "Board": _board_payload_for(_page_of(FIELD_NODES)),
+        "Item": _issue_payload(7, status="Merged"),
+        "ClosedBy": merged_answer,
+    })
+    as_text = with_host(host, lambda: advance_on_merge("7"))
+    check(
+        "and asked with text it answers the host's own number, not the argument",
+        isinstance((as_text or {}).get("number"), int)
+        and (as_text or {}).get("number") == 7,
+        f"answered {(as_text or {}).get('number')!r}",
     )
     # ⛔ A repository the credential cannot see answers `repository: null`, and a
     # null is not an absent key -- so a default on the lookup does not apply to it

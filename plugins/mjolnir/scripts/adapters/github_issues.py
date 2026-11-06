@@ -183,13 +183,12 @@ def _subprocess_gh(args: list[str], parse: bool):
     # where a verdict belongs, from the one path meant to report cleanly.
     if not done.stdout.strip():
         raise port.HostUnavailable(f"`{shown}` answered with nothing where a body was expected")
-    # ⛔ And a body that is not one document is refused here too. The client's own
-    # help states that a paginated read prints **one array per page**, which two
-    # other consumers in this toolkit already read as a stream for that reason --
-    # so a merged answer is behaviour rather than a contract, and the shape it
-    # degrades to is several documents in a row. `json.loads` raises `ValueError`
-    # on that, which `Port.invoke` does not catch: the operator got a traceback
-    # where § 3 states three answers and none of them is one.
+    # ⛔ And a body that is not one document is refused here too, the shape a
+    # merged paginated answer degrades to being several documents in a row --
+    # which `_code_host_dependency.blockers_of` states the behaviour for.
+    # `json.loads` raises `ValueError` on that, which `Port.invoke` does not
+    # catch: the operator got a traceback where § 3 states three answers and none
+    # of them is one.
     try:
         return json.loads(done.stdout)
     except ValueError as error:
@@ -199,10 +198,10 @@ def _subprocess_gh(args: list[str], parse: bool):
         ) from None
 
 
-# The one named seam, as the three implementations after this one have. ⚠️ Added
-# later than they were, and the reason is the suite beside this module: the
-# refusals above are this function's own, and a suite that substitutes `_gh`
-# replaces the thing that raises them. With the seam, they are reachable.
+# The named seam, as the implementations after this one have. ⚠️ Added later than
+# they were, and the reason is the suite beside this module: the refusals above
+# are this function's own, and a suite that substitutes `_gh` replaces the thing
+# that raises them. With the seam, they are reachable.
 TRANSPORT = _subprocess_gh
 
 
@@ -233,21 +232,43 @@ def read_item(number: int) -> dict:
     carrying no `url` is refused rather than passed: the absent signal used to
     read as *not a pull request*, which is the green answer from the one guard
     everything else leans on.
+
+    ⛔ **And the argument has to be a number before it reaches the client**, which
+    is the sibling kind's refusal for the sibling kind's reason and one more of
+    this one's own: the client documents its argument as a number *or a URL*, and
+    a URL names its own repository and wins over `--repo`. So an argument that is
+    not a number had this function validating an item in another repository while
+    every write below addressed the configured one -- the two halves of a call
+    addressing different things, which is the defect the answer's own number was
+    normalised against.
     """
+    # ⚠️ Decimal digits, for the reason the sibling kind's guard states: a
+    # superscript answers `isdigit` and then raises in `int`.
+    addressed = number if isinstance(number, int) and not isinstance(number, bool) else None
+    if addressed is None and isinstance(number, str) and number.isdecimal():
+        addressed = int(number)
+    if addressed is None:
+        raise port.ConfigError(
+            "tracker.operations.read_item",
+            f"was handed {number!r}, which is not an item number. This tracker "
+            "numbers its items, and the client would read an address of another "
+            "shape as naming a repository of its own -- so it is refused here "
+            "rather than answering about an item nobody asked for.",
+        )
     item = _gh([
-        "issue", "view", str(number), "--repo", _repo(),
+        "issue", "view", str(addressed), "--repo", _repo(),
         "--json", "number,title,body,state,labels,assignees,url",
     ])
     url = item.get("url")
     if not url:
         raise port.HostUnavailable(
-            f"`gh issue view {number}` answered with no `url`, so whether #{number} "
-            "is an item or a pull request cannot be told. An unreadable answer is "
-            "not the same as a clean one."
+            f"`gh issue view {addressed}` answered with no `url`, so whether "
+            f"#{addressed} is an item or a pull request cannot be told. An "
+            "unreadable answer is not the same as a clean one."
         )
     if "/pull/" in url:
         raise port.HostUnavailable(
-            f"`gh issue view {number}` answered with pull request #{number} "
+            f"`gh issue view {addressed}` answered with pull request #{addressed} "
             f"({url}), not a work item -- the host numbers both in one sequence. "
             "A role holding a pull request number has the wrong identifier, which "
             "is a different fault from an item that does not exist."
@@ -547,8 +568,8 @@ def read_blockers(number: int) -> dict:
     a relation is posted on the **blocked** item, so this reads that item's own
     dependencies rather than searching for what points at it.
 
-    ⛔ **Every page, not the first one**, which the shared module below states
-    the measurement for.
+    ⛔ **Every page, not the first one**, for the reason
+    `_code_host_dependency.blockers_of` states.
 
     ⚠️ **Read through `read_item` first**, so the pull-request guard covers this
     too: the path is the issues one, which answers for a pull request as well, and
@@ -634,22 +655,26 @@ def advance_on_merge(number: int) -> dict:
     # `issue(number:)`, which answers null for a pull request rather than
     # refusing, and null is indistinguishable here from an item that is not
     # there -- so the clearer refusal has to come from the guard.
-    read_item(number)
+    # ⛔ And the number the query and the answer carry is the **host's**, read off
+    # that guard's own answer rather than taken from the argument: the port passes
+    # every value as text, and a typed GraphQL variable built from the argument is
+    # the half of one call that disagrees with the other.
+    addressed = read_item(number)["number"]
     owner, name = repo.split("/")
     issue = _gh([
         "api", "graphql", "-f", f"query={CLOSED_BY_QUERY}",
-        "-f", f"owner={owner}", "-f", f"name={name}", "-F", f"number={number}",
+        "-f", f"owner={owner}", "-f", f"name={name}", "-F", f"number={addressed}",
     ])["data"]["repository"]["issue"]
     if issue is None:
         raise port.HostUnavailable(
             f"`gh api graphql` (closedByPullRequestsReferences) answered null for "
-            f"#{number} in {repo}, so what closed it could not be read."
+            f"#{addressed} in {repo}, so what closed it could not be read."
         )
     merged = [
         node for node in issue["closedByPullRequestsReferences"]["nodes"] if node["merged"]
     ]
     return {
-        "number": number,
+        "number": addressed,
         "advanced": issue["state"].lower() == CLOSED and bool(merged),
         "state": issue["state"],
         "merged_by": [
@@ -696,7 +721,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # The ones absent because the tracker has nothing to implement them against, each
 # with its reason:
 #
-#   * the three checklist operations, because plain issues have no check-item
+#   * the checklist operations, because plain issues have no check-item
 #     object at all -- a task list is markdown inside the body, which is precisely
 #     what `checklist_write`'s stated fallback already says to do, so implementing
 #     them against body text would dress the fallback up as a capability and cost
@@ -708,8 +733,8 @@ ADAPTER = port.Adapter(binder=bind, operations={
 #
 # ⛔ Written once, here, and read by the suite rather than restated in it: one more
 # absence would otherwise be an operation nobody noticed going missing -- which is
-# exactly what happened to the fourth entry, absent while the docstring said
-# *except the checklist ones*.
+# exactly what happened to `set_field`, absent while the docstring said *except
+# the checklist ones*.
 DELIBERATELY_ABSENT = (
     "set_field",
     "checklist_read",

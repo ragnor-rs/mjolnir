@@ -249,12 +249,8 @@ TRACKER_IDS_ANYWHERE = [
 # matched anywhere in a code region. A name that is also an English phrase is
 # matched only as the **whole** of one, which is where a literal stands alone.
 # ⚠️ What the single-position form refused is recorded with this check's other
-# limits, in the document this file's docstring names — three shapes a shipped
-# carrier plausibly holds, none of them a role naming a tracker.
-#
-# ⛔ No count of either group is written here or in the documents, for the reason
-# the groups above carry none: every form of this comment that carried one was
-# made wrong by the next spelling added, twice over.
+# limits, in the document this file's docstring names — shapes a shipped carrier
+# plausibly holds, none of them a role naming a tracker.
 LINK_TYPE_TOKENS = [
     (re.compile(r"(?<![\w-])blocked_by(?![\w-])"), "a dependency field's own name"),
     (re.compile(r"(?<![\w-])blockedBy(?![\w-])"),
@@ -275,18 +271,24 @@ LINK_TYPE_TOKENS = [
     # The metadata keys a link type's two descriptions sit under. ⚠️ A key rather
     # than its value, which is what makes it decidable where the value is a
     # sentence.
-    (re.compile(r"(?<![\w-])(?:inward|outward)\s*:\s*\S"),
-     "a link type's own metadata key"),
+    # ⛔ **Both keys, in one region, and never either alone.** Each word on its own
+    # is ordinary English in front of a colon -- `inward: toward the centre` in a
+    # span was refused by the first form of this arm, as a tracker's metadata key,
+    # with no tracker vocabulary anywhere in it. A link type object carries the
+    # pair; a sentence does not.
+    (re.compile(r"(?s)^(?=.*(?<![\w-])inward\s*:\s*\S)(?=.*(?<![\w-])outward\s*:\s*\S)"),
+     "a link type's own metadata keys"),
 ]
 
-# ⛔ One wording, and the single ordinary verb is deliberately not among them: a
-# role may quote a status word or a capability of that spelling, and matching it
-# even as a whole span would refuse that. ⚠️ The first form of this list added it
-# while deleting the sentence that had recorded the omission, which is how a
-# decision gets reversed with nothing saying so.
+# ⛔ The full wording alone. Which forms are deliberately outside this group, and
+# that nothing reddens if one is added back, are recorded with this check's other
+# limits in the document the docstring above names. ⚠️ The first form of this list
+# added a form while deleting the sentence that had recorded the omission, which
+# is how a decision gets reversed with nothing saying so.
 #
 # ⚠️ Trailing punctuation comes off before matching, because a literal quoted at
-# the end of a sentence carries the sentence's own stop inside its span.
+# the end of a sentence carries the sentence's own stop inside its span -- the set
+# being wider than that reason is recorded in the same place.
 LINK_TYPE_PHRASES = [
     (re.compile(r"^is\s+blocked\s+by$", re.I), "a link type's own wording"),
 ]
@@ -780,6 +782,15 @@ class Tree:
         wrapped span was invisible to the sweep while the same name on one line
         reddened. A fenced block keeps its own lines, because there a line break
         is the code's and not the wrap's.
+
+        ⛔ **And the flattening is per paragraph, because `CODE_SPAN` is paired.**
+        A hard wrap never crosses a blank line, so a paragraph is the widest
+        scope the wrapped span needs — and it is the narrowest that bounds what
+        one unbalanced delimiter costs, which is the failure the comment on
+        `DOUBLE_SPAN_DELIMITER` states and the reason `_spans_out` splits.
+        ⚠️ Flattened whole, a lone backtick anywhere re-pairs every span after
+        it in the file, and the sweep goes quiet over all of them while the
+        region count barely moves. Held by the plant for it.
         """
         body = self.text[path]
         if not path.endswith(".md"):
@@ -790,18 +801,26 @@ class Tree:
                 if stripped
             ]
         regions: list[str] = []
-        prose: list[str] = []
+        paragraphs: list[list[str]] = [[]]
         fenced = False
         for line in body.splitlines():
             if line.lstrip().startswith("```"):
                 fenced = not fenced
+                paragraphs.append([])
                 continue
-            (regions if fenced else prose).append(line)
-        # ⛔ Both paths, for the reason the fence toggle is in both: a ``…`` span's
-        # backticks are not a span's delimiters, so leaving them in pairs them
-        # with the ones after and a real code span stops being read as one.
-        flat = re.sub(r"\n\s*", " ", "\n".join(prose))
-        regions.extend(CODE_SPAN.findall(self._spans_out(flat, regions)))
+            if fenced:
+                regions.append(line)
+            elif line.strip():
+                paragraphs[-1].append(line)
+            else:
+                paragraphs.append([])
+        for paragraph in paragraphs:
+            # ⛔ Both paths, for the reason the fence toggle is in both: a ``…``
+            # span's backticks are not a span's delimiters, so leaving them in
+            # pairs them with the ones after and a real code span stops being
+            # read as one.
+            flat = re.sub(r"\n\s*", " ", "\n".join(paragraph))
+            regions.extend(CODE_SPAN.findall(self._spans_out(flat, regions)))
         return regions
 
     @staticmethod
@@ -855,19 +874,28 @@ class Tree:
         """
         body = self.text[path]
         if path.endswith(".md"):
-            prose: list[str] = []
+            paragraphs: list[list[str]] = [[]]
             out: list[str] = []
             fenced = False
             for line in body.splitlines():
                 if line.lstrip().startswith("```"):
                     fenced = not fenced
+                    paragraphs.append([])
                     continue
-                (out if fenced else prose).append(line.strip() if fenced else line)
-            # The wrap is not part of the value.
-            flat = re.sub(r"\n\s*", " ", "\n".join(prose))
-            flat = self._spans_out(flat, out)
-            out += CODE_SPAN.findall(flat)
-            out += [g for match in QUOTED_ANY.finditer(flat) for g in match.groups() if g is not None]
+                if fenced:
+                    out.append(line.strip())
+                elif line.strip():
+                    paragraphs[-1].append(line)
+                else:
+                    paragraphs.append([])
+            # ⛔ Per paragraph, and the wrap is not part of the value -- `code()`
+            # states why the scope is the paragraph and not the file.
+            for paragraph in paragraphs:
+                flat = re.sub(r"\n\s*", " ", "\n".join(paragraph))
+                flat = self._spans_out(flat, out)
+                out += CODE_SPAN.findall(flat)
+                out += [g for match in QUOTED_ANY.finditer(flat)
+                        for g in match.groups() if g is not None]
             return out
         out = [line.strip() for line in body.splitlines()]
         out += CODE_SPAN.findall(body)
@@ -1378,7 +1406,7 @@ def check_no_link_type_is_named_in_the_strict_set(tree: Tree) -> list[str]:
     else in this file: one group of the spellings is English phrases, and a sweep
     of prose for those would redden on this docstring.
 
-    ⛔ **And the two groups are matched in two positions**, for the reason the
+    ⛔ **And each group is matched in its own position**, for the reason the
     grammar above states.
     """
     problems = []
@@ -2237,6 +2265,17 @@ VIOLATIONS = [
      _plant_in_a_carrier("\nA span `` opened and never closed, then `In Progress`.\n")),
     ("no value is carried in the strict set", "a status word between two double spans",
      _plant_in_a_carrier("\n`` A `` then `In Progress` then `` B ``.\n")),
+    # ⛔ A **single** unpaired backtick, with the value in a later paragraph --
+    # which `code()` pairs per paragraph for exactly this reason. ⚠️ The stray and
+    # the value have to be in different paragraphs: that is the arm a file-wide
+    # flatten failed, re-pairing every span after the stray one so the sweep went
+    # quiet over all of them while the region count barely moved.
+    ("no value is carried in the strict set",
+     "a status word in a paragraph after a stray span delimiter",
+     _plant_in_a_carrier(
+         "\nA ` delimiter alone, as prose may carry one.\n"
+         "\nMove the item to `In Progress` first.\n"
+     )),
     # ⛔ One per shape a list of key names cannot reach, each reading its value
     # out of the configuration rather than carrying it.
     ("no value is carried in the strict set", "a configured branch prefix, under a key the project names",
@@ -2377,8 +2416,11 @@ VIOLATIONS = [
     ("no link type is named in the strict set",
      "the field a hosted tracker keeps its links in",
      _plant_in_a_carrier("\nThe links arrive under `issuelinks` with the item.\n")),
-    ("no link type is named in the strict set", "a link type's own metadata key",
-     _plant_in_a_carrier("\nThe type states `inward: is blocked by` for that side.\n")),
+    # ⚠️ Both keys, which is what the arm matches and the whole of why: either on
+    # its own is an English word in front of a colon.
+    ("no link type is named in the strict set", "a link type's own metadata keys",
+     _plant_in_a_carrier(
+         "\nThe type states `inward: is blocked by, outward: blocks` either way.\n")),
     ("no link type is named in the strict set",
      "a link type's own wording, as the whole of a span",
      _plant_in_a_carrier("\nThe type reads `is blocked by` in that direction.\n")),
@@ -2542,16 +2584,25 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     # the one rule 1 exists for: the link type's wording is an ordinary English
     # phrase, so a carrier describing this very rule in prose has to stay green.
     #
-    # ⚠️ **Both verified as a problem-set delta rather than by watching the plant
+    # ⚠️ **Verified as a problem-set delta rather than by watching the plant
     # redden**, which is the form the host-run exemptions above already record and
-    # the only one that isolates a plant here: disabling either mechanism reddens
-    # the **unplanted** tree, so a whole-tree reading cannot tell a plant that was
-    # swept from a plant that contributed no region at all. Measured — with each
-    # mechanism disabled in turn, its own plant adds exactly one problem over
-    # whatever disabling finds anyway. ⛔ One of those is the false
-    # refusal this scope exists against, and it is live text rather than a
+    # the only one that isolates a plant here: disabling a scope reddens the
+    # **unplanted** tree, so a whole-tree reading cannot tell a plant that was
+    # swept from a plant that contributed no region at all.
+    #
+    # ⛔ **And the English-phrase exemption below is held by two mechanisms
+    # together and by neither alone**, which the first form of this comment had
+    # wrong: removing the code-region scope leaves the phrase group still held to
+    # the whole of a region, and removing the whole-region position leaves the
+    # phrase outside any region at all -- so its plant adds nothing until both are
+    # gone. ⚠️ The refusal it exists against is live text rather than a
     # hypothetical: a shipped role explains the direction of a dependency in those
     # words.
+    #
+    # ⚠️ **Which mechanism holds which is measured and not reasoned about**, the
+    # phrase group's position being at the call site rather than in the pattern:
+    # stripping a pattern's anchors measures nothing, because the call uses `match`
+    # and not `search`.
     ("no link type is named in the strict set",
      "a dependency field in a script a carrier calls",
      _plant_in_a_carrier_implementation('blockers = answer["blocked_by"]\n')),

@@ -840,6 +840,12 @@ def _links_of(issue: dict) -> dict:
             # every project on this tracker shares, and a role advancing a state
             # needs the word -- so neither is derived from the other here.
             "state": (status.get("statusCategory") or {}).get("key"),
+            # ⚠️ Carried because a role reporting a blocker would otherwise need a
+            # second call per entry to name it, which the code-host entries do not
+            # — the link payload already holds the summary, and the address is
+            # composed from the key exactly as `_shaped` composes an item's own.
+            "title": (side.get("fields") or {}).get("summary"),
+            "url": f"{_site()}/browse/{side.get('key')}",
         }
         if kind == BLOCKS and inward:
             blocked_by.append(entry)
@@ -930,7 +936,13 @@ def read_item(key: str, *, fields: list[str] | None = None) -> dict:
     costs a catalogue read the first time and nothing after. The item's own facts
     are always read.
     """
-    _held_to_project(key)
+    # ⛔ The key the request carries is the one the guard read, not the one it was
+    # handed. The guard matches on a stripped value, so a padded key passed it and
+    # then went into the path raw -- the guard holding one value while the call
+    # addressed another, which is the same two-halves defect the code-host kinds
+    # normalise their numbers against.
+    project, number = _held_to_project(key)
+    addressed = f"{project}-{number}"
     asked = READ_FIELDS
     named = None
     if fields:
@@ -939,12 +951,12 @@ def read_item(key: str, *, fields: list[str] | None = None) -> dict:
             for name in fields
         ]
         asked = asked + "," + ",".join(ids)
-    issue = _call("GET", f"/issue/{key}", params={"fields": asked})
+    issue = _call("GET", f"/issue/{addressed}", params={"fields": asked})
     if not isinstance(issue, dict) or not issue.get("key"):
         raise HostUnavailable(
-            f"`GET {API}/issue/{key}` answered with no key, so whether that item "
-            "is there could not be established. An unreadable answer is not the "
-            "same as a clean one."
+            f"`GET {API}/issue/{addressed}` answered with no key, so whether that "
+            "item is there could not be established. An unreadable answer is not "
+            "the same as a clean one."
         )
     if fields:
         named = _named_values(issue, list(fields))
@@ -1468,6 +1480,14 @@ def read_blockers(key: str) -> dict:
     and the tracker's category behind it, because which bar a blocker is held to
     depends on what it produced and that is § 5's question.
 
+    ⚠️ **And what this tracker cannot answer here is *why* a blocker closed**, which
+    the code-host entries carry. The resolution is not in a link payload, and this
+    operation makes no call of its own -- so a blocker abandoned and one finished
+    both arrive in the category that means neither, and the honest answer is that
+    the field is absent rather than empty. ⛔ A reader of a blocker on this tracker
+    therefore has the category and not what it produced, which is § 2's
+    absence-of-signal rule stated where it bites rather than left to be found.
+
     ⛔ **An answer that did not carry the links at all is a failed call, never an
     item with no blocker.** `_shaped` sets the key only where the field was there,
     so reading it with a default answered the same for an unread field and an
@@ -1482,7 +1502,11 @@ def read_blockers(key: str) -> dict:
             "by could not be read. An unreadable answer is not the same as an "
             "item with no recorded blocker."
         )
-    return {"key": key, "blockers": list(item["blocked_by"])}
+    # ⛔ The key in the answer is the item's own and never the argument, which is
+    # the rule the code-host paths carry for their numbers: every value from an
+    # invocation arrives as text, and a key echoed back is the caller's spelling
+    # rather than the tracker's.
+    return {"key": item["key"], "blockers": list(item["blocked_by"])}
 
 
 def advance_on_merge(key: str) -> dict:
@@ -1555,12 +1579,12 @@ ADAPTER = port.Adapter(binder=bind, operations={
     # once, below, and read from there by the suite.
 })
 
-# The four the module docstring argues are absent because the tracker has nothing
-# to implement them against: there is no check-item object, so the three
-# checklist operations are prose in the description -- which is what their
-# fallbacks already say -- and no keyword in a pull request closes an item here,
-# so `link_for_close` has nothing to compose. ⛔ Written once, here, and read by
-# the suite rather than restated in it: a fifth absence would otherwise be an
+# The ones the module docstring argues are absent because the tracker has nothing
+# to implement them against: there is no check-item object, so the checklist
+# operations are prose in the description -- which is what their fallbacks already
+# say -- and no keyword in a pull request closes an item here, so
+# `link_for_close` has nothing to compose. ⛔ Written once, here, and read by the
+# suite rather than restated in it: an absence added here would otherwise be an
 # operation nobody noticed going missing.
 DELIBERATELY_ABSENT = (
     "link_for_close",

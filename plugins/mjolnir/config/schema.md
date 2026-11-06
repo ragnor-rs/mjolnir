@@ -2309,14 +2309,13 @@ or quiet:
   *unanswered*, never *no blockers*** — [§ 11](#a-report-names-what-it-could-not-establish)'s rule,
   and the failure direction that matters: a tracker that cannot be asked reads exactly like a
   tracker with nothing to report. ⚠️ **And that is why this check is *not* refused where its source
-  is absent**, which is the opposite of what the three bullets below do: their inputs are facets a
-  project **states**, so a configuration carrying the check and not the facet is a contradiction the
-  reader can see. A capability is not stated — [§ 3](#who-declares-a-capability) puts it in the
-  adapter and forbids a project from restating it — so nothing read at configuration time knows
-  whether this predicate will have a source, and the honest answer arrives per item instead.
-  ⛔ **Which leaves one thing a project must read for itself**: configuring this check on a tracker
-  whose adapter has no such capability is a gate that answers *unanswered* for every item forever,
-  and no reader will say so.
+  is absent**, unlike a check whose input is a facet a project **states** — where a configuration
+  carrying the check and not the facet is a contradiction the reader can see. A capability is not
+  stated: [§ 3](#who-declares-a-capability) puts it in the adapter and forbids a project from
+  restating it, so nothing read at configuration time knows whether this predicate will have a
+  source, and the honest answer arrives per item instead. ⛔ **Which is left to a project to read
+  for itself**: configuring this check on a tracker whose adapter has no such capability is a gate
+  that answers *unanswered* for every item forever, and no reader will say so.
   ⛔ **And [§ 12](#12-ordering)'s ordering is not a second source
   for it.** That facet's whole output is identifiers, most takeable first — it carries no blocker,
   no state and nothing about what a blocker produced — so a verdict taken from an item's *presence*

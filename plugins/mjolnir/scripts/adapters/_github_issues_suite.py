@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """The plain-issues implementation's own suite -- the dependency half of it.
 
-⛔ **Scoped to the relation between two work items**, and the scope is **derived
-and printed by every run** rather than enumerated anywhere: the run names the
-operations it covers and subtracts them from what the module implements, so an
-operation added to either side moves the statement instead of making it stale.
+⛔ **Scoped to the relation between two work items**, plus the one operation this
+change's own rule reaches beyond it -- the number in an answer being the host's and
+not the argument, which the merge confirmation builds a typed query variable from.
+The **uncovered** side of that scope is derived and printed by every run: the run
+subtracts what it covers from what the module implements, so an operation added to
+the module moves the statement instead of making it stale. ⚠️ **The covered side is a claim and not a
+measurement** -- `COVERED` below is written by hand, nothing holds it to what the
+run actually exercises, and the print says so.
 ⚠️ **A suite that exists reads as a module that is held**, which this module is
 not -- until the dependency operations landed it had no suite at all, and
 `adapter_suites.py` reported that as a stated absence, which was the honest
@@ -34,7 +38,7 @@ if _SUITE_SCRIPTS not in sys.path:
     sys.path.append(_SUITE_SCRIPTS)
 
 import port  # noqa: E402
-from port import HostUnavailable  # noqa: E402
+from port import ConfigError, HostUnavailable  # noqa: E402
 
 from adapters import _code_host_dependency as relation  # noqa: E402
 from adapters import github_issues as under_test  # noqa: E402
@@ -42,6 +46,7 @@ from adapters.github_issues import (  # noqa: E402
     ADAPTER,
     DELIBERATELY_ABSENT,
     KIND,
+    advance_on_merge,
     bind,
     link_dependency,
     read_blockers,
@@ -56,7 +61,7 @@ A_REPO = "an-owner/a-name"
 # from what the module implements rather than carrying a second list of what it
 # leaves: two lists are two statements allowed to disagree, and the hand-written
 # one had already dropped an operation.
-COVERED = {"link_dependency", "read_blockers"}
+COVERED = {"link_dependency", "read_blockers", "advance_on_merge"}
 
 # The item under test and the two it is related to. ⛔ Distinct integers, and the
 # two halves of a write run opposite ways -- the id is looked up on the blocker
@@ -149,7 +154,7 @@ def self_test() -> int:
             failures += 1
             print(f"  FAIL  {label}{': ' + detail if detail else ''}")
 
-    # ⛔ Both catch **everything**, each reporting the other outcomes as itself
+    # ⛔ Each catches **everything**, reporting the other outcomes as itself
     # rather than letting them out: a deliberate break that raises the wrong kind
     # must redden a line rather than kill the run on a traceback where a verdict
     # belongs.
@@ -158,6 +163,16 @@ def self_test() -> int:
             call()
         except HostUnavailable as error:
             return str(error)
+        except Exception as error:
+            return f"<{type(error).__name__}: {error}>"
+        return None
+
+    def refused(call) -> str | None:
+        """The key a call refuses on, or None where it returns instead."""
+        try:
+            call()
+        except ConfigError as error:
+            return error.key
         except Exception as error:
             return f"<{type(error).__name__}: {error}>"
         return None
@@ -180,12 +195,8 @@ def self_test() -> int:
     def with_client(printed: str, call):
         """One level deeper, for the refusals the client function itself raises.
 
-        ⛔ Two seams, each used for what it tests, and the depth matters: the fake
-        above stands in for the whole client, so an operation's orderings and
-        guards are assertable -- and it *replaces* the parse, which is where an
-        empty body and a body that is not one document are refused. ⚠️ Measured:
-        a case for those refusals written against the named seam saw no refusal at
-        all, because the seam is the function that raises them.
+        The depth of each seam, and why these refusals need this one, is the
+        module docstring's.
         """
         was = under_test.subprocess
 
@@ -206,15 +217,19 @@ def self_test() -> int:
         finally:
             under_test.subprocess = was
 
-    print(f"  --    `{KIND}`: the relation between two work items, and nothing else "
-          "in this implementation")
+    print(f"  --    `{KIND}`: the relation between two work items, and the one "
+          "operation beyond it that answers with a number")
 
     bind({"host.repo": A_REPO})
 
     # --- the read, which is what § 5's blocker predicate has as a source ------
     elsewhere = "another-owner/another-name"
+    # ⚠️ One entry carries the host's word in another case, so the normalisation
+    # this answer is documented to perform is asserted rather than assumed: with
+    # every fixture word already lower-case, dropping the lowering kept the suite
+    # green and the case named the state word in its own label.
     recorded = _Host({"/dependencies/blocked_by": _recorded([
-        (BLOCKER, "closed", A_REPO, "completed"),
+        (BLOCKER, "CLOSED", A_REPO, "COMPLETED"),
         (13, "open", elsewhere, None),
         (14, "closed", A_REPO, "not_planned"),
     ])})
@@ -227,7 +242,7 @@ def self_test() -> int:
         return [entry.get(name) for entry in blockers or [{}]]
 
     check(
-        "`read_blockers` answers every recorded blocker with the host's own state word",
+        "`read_blockers` answers every recorded blocker with the host's state word, lowered",
         list(zip(field("number"), field("state")))
         == [(BLOCKER, "closed"), (13, "open"), (14, "closed")],
         f"answered {blockers!r}",
@@ -238,8 +253,8 @@ def self_test() -> int:
         f"answered {field('repo')!r}",
     )
     check(
-        "and the host's own reason for a closed state, so an abandoned blocker is "
-        "not an achieved one",
+        "and the host's own reason for a closed state, lowered too, so an abandoned "
+        "blocker is not an achieved one",
         field("state_reason") == ["completed", None, "not_planned"],
         f"answered {field('state_reason')!r}",
     )
@@ -286,6 +301,10 @@ def self_test() -> int:
     for label, planted in (
         ("an object where an array belongs", {"total_count": 1}),
         ("an array whose entry is not an item", ["#13"]),
+        # ⛔ The state is the field § 5's bar is applied to, so an entry without a
+        # readable one is refused rather than answered as neither open nor closed.
+        ("an item whose state is not a word",
+         [dict(_recorded([(13, "open", A_REPO, None)])[0], state=None)]),
     ):
         malformed = _Host({"/dependencies/blocked_by": planted})
         reported = with_host(malformed, lambda: unavailable(lambda: read_blockers(BLOCKED)))
@@ -362,13 +381,8 @@ def self_test() -> int:
     # --- the client's own refusals, where this change widened them ------------
     #
     # ⛔ A body that is not one JSON document is a failed call and never a
-    # traceback. The client's help states a paginated read prints one array per
-    # page, which is the shape a merged answer degrades to, and `json.loads`
-    # raises `ValueError` on it -- which the port does not catch.
-    # ⚠️ Through `TRANSPORT` and not through the fake above: the refusal under
-    # test is `_gh`'s own, and a fake that replaces `_gh` replaces the thing that
-    # raises it. This is the seam that case needed and the reason the module grew
-    # one.
+    # traceback, for the reason the client function's own comment states.
+    # ⚠️ Through the deeper seam, per the module docstring.
     for label, printed, expected in (
         ("pages that were not merged", '[{"number": 1}]\n[{"number": 2}]\n',
          "not one JSON document"),
@@ -404,14 +418,79 @@ def self_test() -> int:
             f"sent {guarded.sent!r}",
         )
 
+    # ⛔ An argument that is not a number is refused before any call, this kind's
+    # client documenting its argument as a number **or a URL** -- and a URL names
+    # a repository of its own and wins over `--repo`. ⚠️ So the shape that matters
+    # most here is the one the sibling kind has no equivalent of: without the
+    # guard this read validated an item in another repository while the write
+    # below addressed the configured one, which is the two-halves-of-one-call
+    # defect the answer's own number was normalised against. The other shapes are
+    # the sibling's, for the sibling's reason.
+    for handed in (
+        "not-a-number",
+        True,
+        1.9,
+        " 11 ",
+        "²",
+        f"https://github.com/{elsewhere}/issues/{BLOCKED}",
+    ):
+        shapeless = _Host()
+        reported = with_host(
+            shapeless, lambda handed=handed: refused(lambda: read_blockers(handed))
+        )
+        check(
+            f"{handed!r} is refused as an item number, before any call",
+            reported == "tracker.operations.read_item"
+            and shapeless.calls == [] and shapeless.sent == [],
+            f"reported {reported!r} after {shapeless.calls} and {shapeless.sent}",
+        )
+    check(
+        "while the two shapes a number does arrive in are accepted",
+        all(
+            isinstance(
+                (with_host(_Host(), lambda handed=handed: read_blockers(handed))
+                 or {}).get("number"),
+                int,
+            )
+            for handed in (BLOCKED, str(BLOCKED))
+        ),
+        "an integer or a string of digits was refused",
+    )
+    # ⛔ One operation beyond the relation, and it is here because this change's
+    # own rule reaches it: the number in an answer is the host's, so the operation
+    # that builds a **typed query variable** from its argument is the other half of
+    # that rule and nothing else held it. ⚠️ Every case this kind had handed an
+    # integer, where an echo and a read are the same value.
+    confirming = _Host({"closedByPullRequestsReferences": {
+        "data": {"repository": {"issue": {
+            "state": "CLOSED",
+            "closedByPullRequestsReferences": {
+                "nodes": [{"number": 20, "merged": True, "mergeCommit": {"oid": "abc123"}}],
+            },
+        }}},
+    }})
+    confirmed = with_host(confirming, lambda: advance_on_merge(str(BLOCKED)))
+    check(
+        "the merge confirmation answers the host's own number where the argument was text",
+        isinstance((confirmed or {}).get("number"), int)
+        and (confirmed or {}).get("number") == BLOCKED,
+        f"answered {(confirmed or {}).get('number')!r}",
+    )
+    check(
+        "and the typed query variable is built from it rather than from the argument",
+        [part for args in confirming.sent for part in args if part.startswith("number=")]
+        == [f"number={BLOCKED}"],
+        f"sent {confirming.sent!r}",
+    )
+
     # --- the operation set, against what the surface states -------------------
     #
     # ⛔ Asserted as a **relation** and never as a list or a count: what the
     # surface states minus what this module implements is exactly the set the
     # module itself names as deliberately absent. ⚠️ This is the arm that caught
-    # the module's own docstring overstating what it implements -- a fourth
-    # operation was absent while the sentence said *except the checklist ones* --
-    # so neither side of this comparison is spelled here.
+    # the module's own docstring overstating what it implements -- an operation
+    # was absent while the sentence said *except the checklist ones* -- so neither
+    # side of this comparison is spelled here.
     stated = set(port.surface_operations())
     absent = stated - set(ADAPTER.operations)
     check(
@@ -420,15 +499,20 @@ def self_test() -> int:
         f"absent: {sorted(absent)} against declared {sorted(DELIBERATELY_ABSENT)}",
     )
     check(
-        "and the relation's own two are among the implemented ones",
-        {"link_dependency", "read_blockers"} <= set(ADAPTER.operations),
-        f"implements {sorted(ADAPTER.operations)}",
+        "and everything this suite claims to cover is an operation the module has",
+        COVERED <= set(ADAPTER.operations),
+        f"claims {sorted(COVERED)} against {sorted(ADAPTER.operations)}",
     )
 
-    # ⛔ Derived and never enumerated: what this suite covers minus what the
-    # module implements. ⚠️ The first form of this line was a hand-written list
-    # and had already dropped an operation the module implements -- which is the
-    # omission the docstring above forbids, in the sentence that forbids it.
+    # ⛔ The uncovered side is derived and never enumerated: what the module
+    # implements minus what `COVERED` claims. ⚠️ The first form of this line was a
+    # hand-written list and had already dropped an operation the module
+    # implements -- which is the omission the docstring above forbids, in the
+    # sentence that forbids it.
+    # ⛔ **`COVERED` itself is a claim this suite makes and nothing here holds
+    # it**: falsifying it moves this line in both directions with no assertion
+    # reddening, so what is stated is the claim rather than a measurement. The
+    # arm above catches only a name the module does not implement at all.
     print(
         "  --    not covered here, and stated rather than implied: "
         + ", ".join(f"`{name}`"
