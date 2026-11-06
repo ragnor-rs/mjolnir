@@ -544,7 +544,7 @@ against a file nothing tracks it does nothing at all — so the break survives i
 every check green. ⚠️ **Confirming the red is not the whole of it**, since a break the assertion
 reddens on by another route leaves the test believed and unexercised — which is measured on this
 repository's own checks
-([the measurement](../../../docs/single-source-of-truth.md#each-check-has-a-violation-it-is-asserted-to-redden-on)).
+([the measurement](../../../docs/single-source-of-truth.md#a-check-that-carries-the-mode-is-asserted-to-redden-on-a-violation)).
 ⛔ **The same rule for a different artifact is #28's** — the checks a document role ships — and it is
 cited here rather than ruled a second time.
 
@@ -3430,6 +3430,7 @@ exit is covered by being **detectable** rather than by being released:
 | is checked out in a tree on this machine with a live process **at or below** it | **live** |
 | the host records an open pull request for it | **live** |
 | carries commits of its own | **live** |
+| none of the above, **and** its own creation is inside the stated cut window | **provisional** — read it again |
 | none of the above | **orphaned-candidate** |
 
 ⛔ **Landed needs both halves: that the ref carried work, and that the work is now in the
@@ -3498,6 +3499,44 @@ outside; so the sweep that finds one states both readings and asks. ⛔ **That b
 too**: releasing a claim that is live and held in no tree here is refused, and a person overriding
 the refusal is the only thing that breaks it. A release that deletes whatever ref it is pointed at
 *is* the automatic breaker this rule forbids.
+
+⛔ **And the orphaned row has a window in front of it, because every arm above it declines for
+timing rather than for state.** A start publishes its ref and *then* cuts its tree, so across that
+interval the ref has no tree, no pull request and no commits of its own — which is every live arm
+above it — and the orphaned row therefore fires on every claim that is seconds old. ⚠️ **Measured
+2026-11-05**, three sibling starts inside seven minutes: a refusal read `orphaned-candidate: no arm
+of the liveness test answered yes` against a ref published **36 seconds** earlier by a live session,
+and the same ref, untouched, read `live` five minutes later. ⚠️ It is the same publish-to-cut window
+the landed arm above already names, on the one arm where nothing named it.
+
+⛔ **So the reading inside that window is *provisional*, and its remedy is to read it again rather
+than to ask.** The two readings differ in who can settle them: an orphaned candidate is a person's
+call because the died-session and the about-to-commit session are genuinely indistinguishable, and a
+provisional one is distinguishable by **waiting** — so handing it to a person hands over a question
+that answers itself. ⚠️ Wherever `branch_model.parallel_trees` is true this is the ordinary case and
+not an edge one: two starts a minute apart each read the other as orphaned.
+
+**The reading names the ref's own age and not only the bound**, for the reason the refusal names
+who holds the claim and since when: how close to the bound a ref is decides whether reading it
+again is worth doing at all, and a bound on its own leaves that to be worked out from two instants.
+
+**The window's bound is stated rather than derived, and it is deliberately not a key here.** What it
+bounds is the carrier's own interval between publishing a ref and cutting the tree — the item
+post-check's reads of the host, and then the cut — so it is a property of the carrier rather than of
+any project, and it is stated beside the slug's own bound for the same reason that one is.
+⚠️ **The asymmetry is what picks the value, rather than a measurement of the interval**: too long
+delays escalating a claim whose session really did die mid-cut, which costs one re-read, and too
+short escalates a live sibling to a person, which is the failure measured above. So it is set long.
+
+⛔ **Where the ref's own creation cannot be read, the window arm declines and the reading stays
+orphaned-candidate.** An unreadable creation time is not evidence that a ref is fresh, and declining
+costs the ask the window would have avoided — the safe direction, and the same one the landed arm
+takes for the same missing half.
+
+⛔ **A provisional reading changes nothing about what may be released.** The release's test is
+*landed or held here* and provisional is neither, so a provisional claim is refused exactly as an
+orphaned one is. ⚠️ The reading is about which question to put to a person, never about which refs
+may be deleted.
 
 **The integration branch a claim is cut from is derived, not configured.** This surface carries no
 key naming it, so it is read from what the remote advertises as its default — and where that
