@@ -17,7 +17,8 @@ name: Day log
 #
 # A workflow of its own rather than a second job of a sibling, per § 2 of
 # plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the project
-# controls its workflows, because a `host.checks` entry states one mirrored command.
+# controls its workflows, the cost being a checkout per command and what it buys being `checks`
+# remaining the single statement of what the host runs.
 
 on:
   pull_request:

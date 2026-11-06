@@ -12,9 +12,9 @@ name: Adapter suites
 # name, and a port's own package under plugins/mjolnir/scripts/ is the one place in this
 # toolkit where that name belongs.
 #
-# A workflow of its own rather than a second job of a sibling, per § 2: a `host.checks` entry
-# states one mirrored command, so two commands behind one workflow name could not be stated on
-# the surface at all.
+# A workflow of its own rather than a second job of a sibling, per § 2: where a project controls
+# its own workflows, each mirrored command takes a workflow of its own, the cost being a checkout
+# per command and what it buys being `checks` remaining the single statement of what the host runs.
 
 on:
   pull_request:

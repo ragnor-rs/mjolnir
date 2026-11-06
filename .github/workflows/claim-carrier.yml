@@ -1,9 +1,10 @@
 name: Claim carrier
 
 # The claim on a work item: that taking one is a real test-and-set, and not merely described as
-# one. Its own workflow rather than a job of a sibling, for the reason its siblings are: a
-# `host.checks` entry states one mirrored local command, so two commands behind one workflow name
-# could not be stated on the surface at all.
+# one. Its own workflow rather than a job of a sibling, for the reason its siblings are, per § 2:
+# where a project controls its own workflows, each mirrored command takes a workflow of its own,
+# the cost being a checkout per command and what it buys being `checks` remaining the single
+# statement of what the host runs.
 #
 # No credential and no network. The suite builds a bare repository on disk and two clones of it,
 # and has them race for one item — which is the whole of what the claim needs to arbitrate. What
