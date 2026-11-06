@@ -873,6 +873,29 @@ def self_test() -> int:
                 f"called {host.calls}",
             )
 
+    # ⛔ And every write addresses the number the host answered with rather than
+    # the argument's spelling. ⚠️ Asked with a **zero-padded** decimal, which is
+    # the observable shape: the guard accepts it and normalises it, while `str()`
+    # of the argument and of the host's integer differ -- with an unpadded
+    # argument the two render identically and a case cannot tell the mechanism
+    # from its absence.
+    for operation, call, mark in (
+        ("assign", lambda: assign("011"), "--add-assignee"),
+        ("comment", lambda: comment("011", "a note"), "--body"),
+    ):
+        _boards.clear()
+        padded = _Host({
+            "Board": _board_payload_for(_page_of(FIELD_NODES)),
+            "Item": _issue_payload(11),
+        })
+        with_host(padded, call)
+        written = [args for args in padded.sent if mark in args]
+        check(
+            f"`{operation}` addresses the host's own number, not the argument's spelling",
+            bool(written) and all("11" in args and "011" not in args for args in written),
+            f"sent {written!r}",
+        )
+
     check(
         "`item_number` and `link_for_close` reach the host at all",
         item_number(12) == 12 and item_number({"number": 13}) == 13

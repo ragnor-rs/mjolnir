@@ -1278,7 +1278,7 @@ def comment(number: int, body: str) -> dict:
     """
     item = read_item(number)
     _gh(
-        ["issue", "comment", str(number), "--repo", _repo(), "--body", body],
+        ["issue", "comment", str(item["number"]), "--repo", _repo(), "--body", body],
         parse=False,
     )
     return {"number": item["number"], "url": item["url"], "commented": True}
@@ -1297,7 +1297,7 @@ def set_labels(number: int, labels: list[str]) -> dict:
     current = {label["name"] for label in item["labels"]}
     if wanted == current:
         return item
-    args = ["issue", "edit", str(number), "--repo", _repo()]
+    args = ["issue", "edit", str(item["number"]), "--repo", _repo()]
     for label in sorted(wanted - current):
         args += ["--add-label", label]
     for label in sorted(current - wanted):
@@ -1313,12 +1313,12 @@ def assign(number: int, who: str = "@me") -> dict:
     one account it cannot say **which** session holds the item, so a claim does not
     rest on it -- that is § 10's, and `assign`'s own stated fallback says as much.
     """
-    read_item(number)
+    item = read_item(number)
     _gh(
-        ["issue", "edit", str(number), "--repo", _repo(), "--add-assignee", who],
+        ["issue", "edit", str(item["number"]), "--repo", _repo(), "--add-assignee", who],
         parse=False,
     )
-    return read_item(number)
+    return read_item(item["number"])
 
 
 def link_dependency(blocked: int, blocked_by: int) -> dict:

@@ -68,6 +68,7 @@ COVERED = {
     "read_blockers",
     "advance_on_merge",
     "assign",
+    "comment",
     "item_number",
     "link_for_close",
 }
@@ -555,6 +556,29 @@ def self_test() -> int:
         "the closing reference carries a number the host can resolve, not the argument",
         composed == "Closes #11",
         f"composed {composed!r}",
+    )
+    # ⛔ And every write addresses the number the host answered with. ⚠️ Asked
+    # with a **zero-padded** decimal, which is the observable shape: the guard
+    # accepts it and normalises it, while `str()` of the argument and of the
+    # host's integer differ -- with an unpadded argument the two render
+    # identically and a case cannot tell the mechanism from its absence.
+    padded = _Host()
+    with_host(padded, lambda: under_test.assign(f"0{BLOCKED}"))
+    written = [args for args in padded.sent if "--add-assignee" in args]
+    check(
+        "the assignment addresses the host's own number, not the argument's spelling",
+        written and all(str(BLOCKED) in args and f"0{BLOCKED}" not in args
+                        for args in written),
+        f"sent {written!r}",
+    )
+    noted = _Host()
+    with_host(noted, lambda: under_test.comment(f"0{BLOCKED}", "a note"))
+    posted = [args for args in noted.sent if args[:2] == ["issue", "comment"]]
+    check(
+        "and so does the comment",
+        posted and all(str(BLOCKED) in args and f"0{BLOCKED}" not in args
+                       for args in posted),
+        f"sent {posted!r}",
     )
 
     # --- the operation set, against what the surface states -------------------
