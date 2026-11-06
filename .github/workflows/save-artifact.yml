@@ -1,10 +1,9 @@
 name: Save artifact
 
 # The bookkeeping role's two derivations: which thirds of it run, and the form of the artifact a
-# save writes. Its own workflow rather than a job of a sibling, for the reason its siblings are,
-# per § 2: where a project controls its own workflows, each mirrored command takes a workflow of
-# its own, the cost being a checkout per command and what it buys being `checks` remaining the
-# single statement of what the host runs.
+# save writes. Its own workflow rather than a job of a sibling, for the reason its siblings are:
+# § 2 of plugins/mjolnir/config/schema.md states that ruling and the cost it is worth, and no copy
+# of either is carried here.
 #
 # No credential and no network. The suite writes artifacts in memory, breaks each in one stated
 # way, and asserts the reading back names what is wrong — plus the round trip that is the

@@ -21,9 +21,8 @@ name: Live guard
 # ones it plants for itself.
 #
 # A workflow of its own rather than a second job of a sibling, per § 2 of
-# plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the project
-# controls its workflows, the cost being a checkout per command and what it buys being `checks`
-# remaining the single statement of what the host runs.
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
 
 on:
   pull_request:

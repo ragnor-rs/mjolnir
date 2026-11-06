@@ -4,9 +4,9 @@ name: Title form
 # that writes a title and the host gate that refuses one. Held to the section of
 # plugins/mjolnir/config/schema.md that states the facet; no copy of it is carried here.
 #
-# A workflow of its own rather than a second job of a sibling, per § 2: where a project controls
-# its own workflows, each mirrored command takes a workflow of its own, the cost being a checkout
-# per command and what it buys being `checks` remaining the single statement of what the host runs.
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
 #
 # ⚠️ This repository states no `host.pull_request_title`, so pointed at this tree the module
 # answers that there is no form and no gate is installed. What this run holds is the derivation
