@@ -34,9 +34,8 @@ while reporting green, which is the one shape every check here is written agains
 
 ⛔ **There is no `--self-test`, deliberately.** The sibling scripts carry one
 because their job is something else and the suite is a mode; this script's job
-*is* running suites. ⚠️ **And what holds this runner is its own two refusals** --
-no implementation installed, and a port with none -- rather than the line it
-prints, which is a report and asserts nothing.
+*is* running suites. ⚠️ **And what holds this runner is the refusals in `main`
+below** rather than the line it prints, which is a report and asserts nothing.
 
 Usage:
     adapter_suites.py             run every installed implementation's suite

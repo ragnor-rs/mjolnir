@@ -372,7 +372,7 @@ rather than from a hand-kept list of roots.
 | 10 | No role is resolved by asking who is running — the spellings that resolve the current user and nothing else, each one a form English does not also use ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)) | the strict set | forbidding |
 | 11 | No tracked configuration carries a value under a key the surface marks `# private` — a chat thread's name, a calendar's own name, a person, a path on somebody's machine ([schema § 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)) | every tracked configuration | forbidding |
 | 12 | No invocation of the host client **for a run** — its own `run` subcommand, a dispatch, a pull request's runs, and the endpoints behind all three, in a command line, in a list of quoted words, or split across a continuation. The client itself stays permitted, being how a pull request is opened, read and merged ([schema § 29](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)) | the strict set | forbidding |
-| 13 | No tracker's own vocabulary for a **dependency** — the field an edge is carried in, the endpoint it is posted to, the sides and the wording of a link call, each spelled in the check's own grammar and nowhere a role reads. This is check 6 one level down: a role writing one of these names a tracker's *shape* without naming the tracker, which check 6 passed while it was the same defect. ⚠️ Matched in code regions only, by rule 1 and more load-bearingly than anywhere else here — a link type's wording is also an ordinary English phrase, and a shipped role explains the direction of a dependency in exactly those words ([schema § 3 → An edge is a relation](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)) | the strict set | forbidding |
+| 13 | No tracker's own vocabulary for a **dependency** — the field an edge is carried in, the endpoint it is posted to, the sides and the wording of a link call. This is check 6 one level down: a role writing one of these names a tracker's *shape* without naming the tracker, which check 6 passed while it was the same defect. ⚠️ Matched in code regions only, by rule 1 and more load-bearingly than anywhere else here — a link type's wording is also an ordinary English phrase, and a shipped role explains the direction of a dependency in exactly those words ([schema § 3 → An edge is a relation](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)) | the strict set | forbidding |
 
 ⚠️ **A row takes the next number and never one already in the table.** The first form of the row
 above was inserted in the middle, which left the two rows after it naming checks that had moved —
@@ -719,18 +719,18 @@ exempted the whole directory and so would have read straight past it.
   is ordinary English in front of a colon, and the first form of that arm refused a span reading
   *inward: toward the centre* as a tracker's metadata key with no tracker vocabulary in it. A link
   type object carries both; a sentence carries one.
-- **What a wording's own punctuation does to the whole-region test, past the stop it was written
-  for.** The trailing characters come off both ends of a region before the phrase group is matched,
-  so that a literal quoted at the end of a sentence is still read as that literal — ⚠️ **and the
-  set is wider than that reason**, carrying the question and exclamation marks and the quote
-  characters, so a span reading *is blocked by?* is refused as a link type's wording. ⛔ Stated
-  rather than narrowed: the shape is a sentence written inside a code span, which rule 1 already
-  reads as code, and no carrier in the strict set holds one.
+- **A wording's own trailing punctuation comes off both ends of a region before the phrase group is
+  matched**, so that a literal quoted at the end of a sentence is still read as that literal. ⚠️
+  **The characters stripped are more than that reason needs** — the set is the `PUNCTUATION`
+  constant, read there rather than listed here — so a span whose content is the wording followed by
+  any of them is refused as the wording. ⛔ Stated rather than narrowed: the shape is a sentence
+  written inside a code span, which rule 1 already reads as code.
 - **Which of a wording's forms the arm holds is not derivable from the arm.** The group carries the
   full wording alone; the bare participle and the plain verb are deliberately outside it, the verb
   because a role may quote a status word or a capability of that spelling and the participle
-  because it is the same phrase one word short. ⛔ No plant and no exemption names either, so
-  nothing reddens if one is added back — which is the residue this bullet is the record of.
+  because it is the same phrase one word short. ⛔ Nothing reddens if either is added back, no plant
+  or exemption being a whole region equal to one — which is the residue this bullet is the record
+  of.
 - **Issues and pull requests**, for the same reason check 3 above cannot read issue state: that
   store is not a file, the workflow holds no credential, and a reviewer covers it.
 

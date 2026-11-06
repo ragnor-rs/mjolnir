@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """The plain-issues implementation's own suite -- the dependency half of it.
 
-⛔ **Scoped to the relation between two work items**, plus the one operation this
-change's own rule reaches beyond it -- the number in an answer being the host's and
-not the argument, which the merge confirmation builds a typed query variable from.
-The **uncovered** side of that scope is derived and printed by every run: the run
-subtracts what it covers from what the module implements, so an operation added to
-the module moves the statement instead of making it stale. ⚠️ **The covered side is a claim and not a
+⛔ **Scoped to the relation between two work items**, plus the operations this
+change's own rule reaches beyond it: the number in an answer is the host's and not
+the argument, so the merge confirmation's typed query variable, the assignment that
+wrote before it read, and the two operations that make no call and therefore
+normalise nothing are all here. The **uncovered** side of that scope is derived and
+printed by every run: the run subtracts what it covers from what the module
+implements, so an operation added to the module moves the statement instead of
+making it stale. ⚠️ **The covered side is a claim and not a
 measurement** -- `COVERED` below is written by hand, nothing holds it to what the
 run actually exercises, and the print says so.
 ⚠️ **A suite that exists reads as a module that is held**, which this module is
@@ -61,7 +63,14 @@ A_REPO = "an-owner/a-name"
 # from what the module implements rather than carrying a second list of what it
 # leaves: two lists are two statements allowed to disagree, and the hand-written
 # one had already dropped an operation.
-COVERED = {"link_dependency", "read_blockers", "advance_on_merge"}
+COVERED = {
+    "link_dependency",
+    "read_blockers",
+    "advance_on_merge",
+    "assign",
+    "item_number",
+    "link_for_close",
+}
 
 # The item under test and the two it is related to. ⛔ Distinct integers, and the
 # two halves of a write run opposite ways -- the id is looked up on the blocker
@@ -217,8 +226,8 @@ def self_test() -> int:
         finally:
             under_test.subprocess = was
 
-    print(f"  --    `{KIND}`: the relation between two work items, and the one "
-          "operation beyond it that answers with a number")
+    print(f"  --    `{KIND}`: the relation between two work items, and the "
+          "operations beyond it that carry an identifier")
 
     bind({"host.repo": A_REPO})
 
@@ -301,10 +310,13 @@ def self_test() -> int:
     for label, planted in (
         ("an object where an array belongs", {"total_count": 1}),
         ("an array whose entry is not an item", ["#13"]),
-        # ⛔ The state is the field § 5's bar is applied to, so an entry without a
-        # readable one is refused rather than answered as neither open nor closed.
+        # ⛔ One per field § 5 needs to apply a bar at all: the state, or an entry
+        # answered as neither open nor closed, and the identifier, since neither
+        # bar can be applied to a reading that does not say which blocker is which.
         ("an item whose state is not a word",
          [dict(_recorded([(13, "open", A_REPO, None)])[0], state=None)]),
+        ("an item whose number is not a number",
+         [dict(_recorded([(13, "open", A_REPO, None)])[0], number=None)]),
     ):
         malformed = _Host({"/dependencies/blocked_by": planted})
         reported = with_host(malformed, lambda: unavailable(lambda: read_blockers(BLOCKED)))
@@ -476,11 +488,73 @@ def self_test() -> int:
         and (confirmed or {}).get("number") == BLOCKED,
         f"answered {(confirmed or {}).get('number')!r}",
     )
+    # ⛔ **No case here for where the query variable came from, and that is the
+    # finding rather than an omission**: this kind builds it with an f-string, so
+    # the argument's text and the host's integer render identically and nothing a
+    # suite can read tells them apart. The first form of this assertion compared
+    # the rendered part and stayed green with the mechanism reverted. What is
+    # observable is the answered number, above. ⚠️ The sibling kind passes the
+    # value to its client rather than rendering it, so the flag it chooses is the
+    # observable there and its own suite holds it.
+
+    # --- the operations the argument rule reaches beyond the relation ----------
+    #
+    # ⛔ Here because this change's own rule reaches them and nothing else held
+    # them: an operation that writes before it reads is outside the guard the
+    # module's docstring claims covers every one, and an identifier composed from
+    # an argument rather than normalised is the same two-halves defect one step
+    # removed.
+    taken = _Host(issues={
+        BLOCKED: dict(_issue(BLOCKED), url=f"https://e.invalid/{A_REPO}/pull/{BLOCKED}"),
+    })
+    with_host(taken, lambda: unavailable(lambda: under_test.assign(BLOCKED)))
     check(
-        "and the typed query variable is built from it rather than from the argument",
-        [part for args in confirming.sent for part in args if part.startswith("number=")]
-        == [f"number={BLOCKED}"],
-        f"sent {confirming.sent!r}",
+        "a pull request is refused before the assignment is written, not after",
+        not [args for args in taken.sent if "--add-assignee" in args],
+        f"sent {taken.sent!r}",
+    )
+    numberless = _Host({"issue view": {
+        "title": "an answer with no number",
+        "url": f"https://e.invalid/{A_REPO}/issues/{BLOCKED}",
+        "state": "OPEN", "labels": [], "assignees": [], "body": "",
+    }})
+    reported = with_host(
+        numberless, lambda: unavailable(lambda: read_blockers(BLOCKED))
+    )
+    check(
+        "an answer carrying no number is a failed call, not a subscript on nothing",
+        reported is not None and "no number" in reported,
+        f"got {reported!r}",
+    )
+    # ⛔ The identifier operation makes no call, so what it is handed is all it
+    # has. ⚠️ A string is the shape the port passes, and the first form
+    # subscripted it -- a traceback from the one operation that cannot fail for
+    # any other reason. The non-ASCII decimal digit is the one `isdecimal` admits
+    # and the host does not resolve, so normalising is what makes the reference
+    # the next row asserts a reference the host can read.
+    # ⚠️ Every call through `ran`, so a shape that raises reddens a line rather
+    # than killing the run -- which is what the first form of these did, and a
+    # traceback is not a verdict.
+    read_shapes = [
+        ran(lambda handed=handed: under_test.item_number(handed))
+        for handed in (BLOCKED, str(BLOCKED), f"  {BLOCKED}  ", "١١", {"number": BLOCKED})
+    ]
+    check(
+        "the identifier operation reads a number out of every shape the port passes",
+        read_shapes == [BLOCKED, BLOCKED, BLOCKED, 11, BLOCKED],
+        f"read {read_shapes!r}",
+    )
+    reported = refused(lambda: under_test.item_number("not-a-number"))
+    check(
+        "and refuses a shape carrying no number rather than raising from a subscript",
+        reported == "tracker.operations.item_number",
+        f"reported {reported!r}",
+    )
+    composed = ran(lambda: under_test.link_for_close("١١"))
+    check(
+        "the closing reference carries a number the host can resolve, not the argument",
+        composed == "Closes #11",
+        f"composed {composed!r}",
     )
 
     # --- the operation set, against what the surface states -------------------
@@ -509,10 +583,8 @@ def self_test() -> int:
     # hand-written list and had already dropped an operation the module
     # implements -- which is the omission the docstring above forbids, in the
     # sentence that forbids it.
-    # ⛔ **`COVERED` itself is a claim this suite makes and nothing here holds
-    # it**: falsifying it moves this line in both directions with no assertion
-    # reddening, so what is stated is the claim rather than a measurement. The
-    # arm above catches only a name the module does not implement at all.
+    # ⚠️ The arm above catches only a name the module does not implement at all;
+    # what else `COVERED` is and is not is the module docstring's.
     print(
         "  --    not covered here, and stated rather than implied: "
         + ", ".join(f"`{name}`"

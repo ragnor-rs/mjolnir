@@ -183,12 +183,8 @@ def _subprocess_gh(args: list[str], parse: bool):
     # where a verdict belongs, from the one path meant to report cleanly.
     if not done.stdout.strip():
         raise port.HostUnavailable(f"`{shown}` answered with nothing where a body was expected")
-    # ⛔ And a body that is not one document is refused here too, the shape a
-    # merged paginated answer degrades to being several documents in a row --
-    # which `_code_host_dependency.blockers_of` states the behaviour for.
-    # `json.loads` raises `ValueError` on that, which `Port.invoke` does not
-    # catch: the operator got a traceback where § 3 states three answers and none
-    # of them is one.
+    # ⛔ And a body that is not one document is refused here too, for the reason
+    # `_code_host_dependency.blockers_of` states.
     try:
         return json.loads(done.stdout)
     except ValueError as error:
@@ -259,6 +255,13 @@ def read_item(number: int) -> dict:
         "issue", "view", str(addressed), "--repo", _repo(),
         "--json", "number,title,body,state,labels,assignees,url",
     ])
+    if not isinstance(item.get("number"), int):
+        raise port.HostUnavailable(
+            f"`gh issue view {addressed}` answered with no number, so what it "
+            "answered for could not be established. Every operation here reads "
+            "its own identifier back off this answer, and a subscript on a "
+            "missing one is the traceback § 3 states an outcome instead of."
+        )
     url = item.get("url")
     if not url:
         raise port.HostUnavailable(
@@ -434,8 +437,24 @@ def item_number(item: dict | int) -> int:
 
     Plain issues have a short number and it is the same one everywhere, so there
     is no URL to parse for want of a short-id field.
+
+    ⛔ **A string is one of the shapes this is handed**, the port passing every
+    value from an invocation as text. The first form subscripted anything that was
+    not an `int`, so the ordinary CLI shape came back as a `TypeError` -- a
+    traceback from the one operation that cannot fail for any other reason.
     """
-    return item if isinstance(item, int) else int(item["number"])
+    if isinstance(item, int) and not isinstance(item, bool):
+        return item
+    if isinstance(item, str) and item.strip().isdecimal():
+        return int(item.strip())
+    if isinstance(item, dict):
+        return int(item["number"])
+    raise port.ConfigError(
+        "tracker.operations.item_number",
+        f"was handed {item!r}, which carries no item number. This operation reads "
+        "an identifier out of what it was given and makes no call, so there is "
+        "nothing to resolve a value of another shape against.",
+    )
 
 
 def set_state(number: int, *, status: str) -> dict:
@@ -467,8 +486,8 @@ def set_state(number: int, *, status: str) -> dict:
     if item["state"].lower() == status:
         return item
     verb = "close" if status == CLOSED else "reopen"
-    _gh(["issue", verb, str(number), "--repo", _repo()], parse=False)
-    return read_item(number)
+    _gh(["issue", verb, str(item["number"]), "--repo", _repo()], parse=False)
+    return read_item(item["number"])
 
 
 def comment(number: int, body: str) -> dict:
@@ -479,7 +498,10 @@ def comment(number: int, body: str) -> dict:
     failure the guard exists for.
     """
     item = read_item(number)
-    _gh(["issue", "comment", str(number), "--repo", _repo(), "--body", body], parse=False)
+    _gh(
+        ["issue", "comment", str(item["number"]), "--repo", _repo(), "--body", body],
+        parse=False,
+    )
     return {"number": item["number"], "url": item["url"], "commented": True}
 
 
@@ -495,16 +517,17 @@ def set_labels(number: int, labels: list[str]) -> dict:
     the removals have not.
     """
     wanted = set(labels)
-    current = {label["name"] for label in read_item(number)["labels"]}
+    item = read_item(number)
+    current = {label["name"] for label in item["labels"]}
     if wanted == current:
-        return read_item(number)
-    args = ["issue", "edit", str(number), "--repo", _repo()]
+        return item
+    args = ["issue", "edit", str(item["number"]), "--repo", _repo()]
     for label in sorted(wanted - current):
         args += ["--add-label", label]
     for label in sorted(current - wanted):
         args += ["--remove-label", label]
     _gh(args, parse=False)
-    return read_item(number)
+    return read_item(item["number"])
 
 
 def assign(number: int, who: str = "@me") -> dict:
@@ -514,9 +537,19 @@ def assign(number: int, who: str = "@me") -> dict:
     one account it cannot say **which** session holds the item, so a claim does
     not rest on it -- that is #70's, and `assign`'s own stated fallback says as
     much.
+
+    ⛔ **Read first, like every other write here.** This was the one operation
+    that wrote before it read, so neither the pull-request guard nor the argument
+    guard covered it: an argument the client reads as naming its own repository
+    had the assignment land there, and the read that would have refused it ran
+    afterwards.
     """
-    _gh(["issue", "edit", str(number), "--repo", _repo(), "--add-assignee", who], parse=False)
-    return read_item(number)
+    item = read_item(number)
+    _gh(
+        ["issue", "edit", str(item["number"]), "--repo", _repo(), "--add-assignee", who],
+        parse=False,
+    )
+    return read_item(item["number"])
 
 
 def link_dependency(blocked: int, blocked_by: int) -> dict:
@@ -611,8 +644,14 @@ def link_for_close(number: int) -> str:
     ⚠️ Makes **no host call**, so the pull-request guard does not apply here
     either -- this composes a string out of the number it was given and asserts
     nothing about what that number names.
+
+    ⛔ **The number is held to a decimal integer anyway**, which is the one thing
+    this can get wrong silently: every other operation's bad argument comes back
+    as a refusal from the host, while this one composes a reference the host will
+    never resolve and nothing reports that it did not. ⚠️ Measured on a non-ASCII
+    decimal digit, which `isdecimal` admits and the host does not.
     """
-    return f"Closes #{number}"
+    return f"Closes #{item_number(number)}"
 
 
 # What closed an item, and whether that thing merged. ⚠️ The state word alone

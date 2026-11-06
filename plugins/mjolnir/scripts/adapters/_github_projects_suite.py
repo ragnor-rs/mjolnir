@@ -1456,6 +1456,23 @@ def self_test() -> int:
         and (as_text or {}).get("number") == 7,
         f"answered {(as_text or {}).get('number')!r}",
     )
+    # ⛔ And the variable goes out **typed**, which is the observable the sibling
+    # kind does not have: the client picks its flag off the value's own type, so a
+    # query variable built from the argument's text would be sent as an untyped
+    # one against an `Int!` and refused by the host. ⚠️ Asserted on the flag and
+    # not on the rendered value, which is identical either way.
+    sent = [args for args in host.sent if "ClosedBy" in " ".join(args)]
+    typed = [
+        args[index - 1]
+        for args in sent
+        for index, part in enumerate(args)
+        if part.startswith("number=")
+    ]
+    check(
+        "and the query variable for it is sent typed rather than as text",
+        typed == ["-F"],
+        f"sent {typed!r} out of {sent!r}",
+    )
     # ⛔ A repository the credential cannot see answers `repository: null`, and a
     # null is not an absent key -- so a default on the lookup does not apply to it
     # and the plain form raises an attribute error where this operation's own

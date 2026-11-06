@@ -131,7 +131,7 @@ def blocker(entry: dict) -> dict:
     # entry carrying a number where a word belongs reached the operator as an
     # attribute error -- which is the traceback the port states three answers
     # instead of. ⚠️ The identifier, the title and the address are carried as the
-    # host stated them, nothing here comparing on any of the three.
+    # host stated them, nothing here comparing on them.
     address = REPOSITORY_URL.search(_word(entry.get("repository_url")))
     return {
         "number": entry.get("number"),
@@ -149,19 +149,19 @@ def blockers_of(answered, path: str) -> list[dict]:
     ⛔ **Every page, and a caller that asks for one has not asked a narrower
     question** -- it has read a shorter list, so a blocker in the part nobody
     fetched is a blocker § 5's predicate never sees and an item starts on a
-    verdict about the first page. That is why both callers pass the paging flag
-    and why what follows is held rather than trusted.
+    verdict about the first page. That is why a caller passes the paging flag and
+    why what follows is held rather than trusted.
 
     ⛔ **An answer this function cannot read is a *failed* operation and never a
     traceback.** The client is asked for every page and merges them into one
     array, which is undocumented behaviour its own help contradicts -- it states
     that each page is a separate array and that an outer wrapper is opt-in. So the
-    two shapes that behaviour could become are held here rather than iterated
-    over: a body that is not an array at all, and an array whose entries are not
-    items. ⚠️ Measured on the shapes rather than on the client: unmerged pages
-    reach the reader as a parse error and a wrapped object reaches it as an
-    attribute error on a string, and both arrive where the port states three
-    answers and no traceback.
+    shapes that behaviour could become are held here rather than iterated over: a
+    body that is not an array at all, an array whose entries are not items, and an
+    entry carrying no readable state. ⚠️ Measured on the shapes rather than on the
+    client: unmerged pages reach the reader as a parse error and a wrapped object
+    reaches it as an attribute error on a string, each arriving where the port
+    states an outcome and no traceback.
 
     ⚠️ The path is named in the refusal so a reader can reproduce the call. It is
     the whole of what this function knows about where the answer came from --
@@ -182,19 +182,32 @@ def blockers_of(answered, path: str) -> list[dict]:
             f"is {type(answered[unreadable[0]]).__name__} and not an item, so the "
             f"{len(answered)} recorded blocker(s) could not be read."
         )
-    # ⛔ And an entry whose state is not a word is refused rather than shaped. It
-    # is the one field § 5's bar is applied to, so an empty string there is a
-    # blocker reported as neither open nor closed -- an unreadable field dressed
-    # as an answer, in the function whose whole contract above is that it never
-    # does that.
-    stateless = [index for index, entry in enumerate(answered)
-                 if not isinstance(entry.get("state"), str)]
-    if stateless:
-        entry = answered[stateless[0]]
+    # ⛔ And an entry § 5 could not apply a bar to is refused rather than shaped:
+    # the state, because an empty string there is a blocker reported as neither
+    # open nor closed, and the identifier, because § 5's own bullet says neither
+    # bar can be applied to a reading that does not say which blocker is which.
+    # Either is an unreadable field dressed as an answer, in the function whose
+    # whole contract above is that it never does that.
+    # ⚠️ The cost is stated rather than glossed: it refuses the **list**, so one
+    # unreadable entry among nine makes the predicate unanswered for an item whose
+    # other blockers were perfectly readable. That is the direction § 2's rule
+    # points -- a partial list is the shape that reads as a clean answer.
+    unusable = [
+        (index, field)
+        for index, entry in enumerate(answered)
+        for field, readable in (
+            ("number", isinstance(entry.get("number"), int)
+             and not isinstance(entry.get("number"), bool)),
+            ("state", isinstance(entry.get("state"), str)),
+        )
+        if not readable
+    ]
+    if unusable:
+        index, field = unusable[0]
         raise port.HostUnavailable(
-            f"`{path}` answered an item at position {stateless[0]} whose `state` "
-            f"is {type(entry.get('state')).__name__}, so whether that blocker is "
-            "open could not be read. An unreadable state is not the same as an "
-            "open one or a closed one."
+            f"`{path}` answered an item at position {index} whose `{field}` is "
+            f"{type(answered[index].get(field)).__name__}, so § 5 could not be "
+            "applied to that blocker. An unreadable entry is not the same as an "
+            "item with no recorded blocker."
         )
     return [blocker(entry) for entry in answered]

@@ -239,12 +239,8 @@ def _subprocess_gh(args: list[str], parse: bool):
         return done.stdout.strip()
     if not done.stdout.strip():
         raise HostUnavailable(f"`{shown}` answered with nothing where a body was expected")
-    # ⛔ A body that is not one document is refused rather than parsed, the shape
-    # a merged paginated answer degrades to being several documents in a row --
-    # which `_code_host_dependency.blockers_of` states the behaviour for.
-    # `json.loads` raises `ValueError` on it and `Port.invoke` does not catch
-    # that, so the operator got a traceback where § 3 states three answers and
-    # none of them is one.
+    # ⛔ A body that is not one document is refused rather than parsed, for the
+    # reason `_code_host_dependency.blockers_of` states.
     try:
         return json.loads(done.stdout)
     except ValueError as error:

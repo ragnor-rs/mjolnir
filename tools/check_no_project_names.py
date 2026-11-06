@@ -268,16 +268,16 @@ LINK_TYPE_TOKENS = [
     # and named no other tracker's.
     (re.compile(r"(?<![\w-])issuelinks(?![\w-])"),
      "the field a hosted tracker carries its links in"),
-    # The metadata keys a link type's two descriptions sit under. ⚠️ A key rather
-    # than its value, which is what makes it decidable where the value is a
-    # sentence.
-    # ⛔ **Both keys, in one region, and never either alone.** Each word on its own
-    # is ordinary English in front of a colon -- `inward: toward the centre` in a
-    # span was refused by the first form of this arm, as a tracker's metadata key,
-    # with no tracker vocabulary anywhere in it. A link type object carries the
-    # pair; a sentence does not.
-    (re.compile(r"(?s)^(?=.*(?<![\w-])inward\s*:\s*\S)(?=.*(?<![\w-])outward\s*:\s*\S)"),
-     "a link type's own metadata keys"),
+    # A metadata key a link type's description sits under, **with that
+    # description after it**. ⛔ The key alone is not the test and the pair is not
+    # either: each word is ordinary English in front of a colon, and requiring
+    # both in one region admitted the shape a carrier actually writes -- one key
+    # per line of a fence, or per paragraph. What makes it decidable is the value,
+    # which is a link type's own wording and nothing a sentence carries.
+    (re.compile(
+        r"(?<![\w-])\"?(?:inward|outward)\"?\s*:\s*\"?\s*"
+        r"(?:is\s+blocked\s+by|blocks)(?![\w-])", re.I),
+     "a link type's own metadata key, with its wording"),
 ]
 
 # ⛔ The full wording alone. Which forms are deliberately outside this group, and
@@ -2416,11 +2416,22 @@ VIOLATIONS = [
     ("no link type is named in the strict set",
      "the field a hosted tracker keeps its links in",
      _plant_in_a_carrier("\nThe links arrive under `issuelinks` with the item.\n")),
-    # ⚠️ Both keys, which is what the arm matches and the whole of why: either on
-    # its own is an English word in front of a colon.
-    ("no link type is named in the strict set", "a link type's own metadata keys",
+    # ⛔ One per shape a carrier would write it in, because the pair-in-one-region
+    # form admitted every one of these but the first: a span, one key per line of
+    # a fence, a key alone in its own paragraph, and the quoted form.
+    ("no link type is named in the strict set", "a link type's key and wording in one span",
      _plant_in_a_carrier(
          "\nThe type states `inward: is blocked by, outward: blocks` either way.\n")),
+    ("no link type is named in the strict set", "the same, one key per line of a fence",
+     _plant_in_a_carrier(
+         "\n```yaml\ntype:\n  inward: is blocked by\n  outward: blocks\n```\n")),
+    ("no link type is named in the strict set", "the same, one key to a paragraph",
+     _plant_in_a_carrier(
+         "\nThe inward side reads `inward: is blocked by` here.\n"
+         "\nAnd the other reads `outward: blocks` there.\n")),
+    ("no link type is named in the strict set", "the same, with the keys quoted",
+     _plant_in_a_carrier(
+         "\nSend `{\"inward\": \"is blocked by\"}` as the type.\n")),
     ("no link type is named in the strict set",
      "a link type's own wording, as the whole of a span",
      _plant_in_a_carrier("\nThe type reads `is blocked by` in that direction.\n")),
@@ -2611,6 +2622,12 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
      _plant_in_a_carrier(
          "\nAn item is blocked by another when the relation says so, never when a "
          "sentence does.\n")),
+    # ⛔ The green side of the metadata arm, and the refusal it exists against:
+    # either side of a link type is an ordinary English word in front of a colon,
+    # so the key alone decides nothing and the value is what the arm reads.
+    ("no link type is named in the strict set",
+     "a link type's metadata key as an English word, with an ordinary value",
+     _plant_in_a_carrier("\nThe map reads `inward: toward the centre` and no more.\n")),
     # ⛔ The shapes the single-position form refused, each found by a reader and
     # each a reason the phrase group is matched as a **whole** region and the
     # endpoint arm names the host's own segments instead of any word.

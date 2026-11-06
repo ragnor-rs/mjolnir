@@ -1389,6 +1389,43 @@ def self_test() -> int:
         (answered_padded or {}).get("key") == key(1),
         f"answered {(answered_padded or {}).get('key')!r} for a padded {key(1)!r}",
     )
+    # ⛔ And **every** path, not the read's alone. The guard matches on a stripped
+    # value, so a padded key reaches a path -- and on a live site a path carrying
+    # a space raises inside the client, below every exception the port states an
+    # outcome for. ⚠️ Asserted on a write, which is the half that stayed raw while
+    # the read was being fixed: the read then agreed with the guard and the write
+    # did not, which is worse than both of them failing together.
+    posted = host()
+    with_host(posted, lambda: comment(f"  {key(1)}  ", "a note"))
+    check(
+        "and every path carries that key, the writes included",
+        all(
+            "  " not in what["path"]
+            for name in ("issue", "comment")
+            for what in posted.sent_for(name)
+        ),
+        f"sent {[what['path'] for _, what in posted.sent]!r}",
+    )
+    # ⛔ An address is composed only where there is a key to compose it from, by
+    # the rule the shared code-host grammar states: a guess at a segment is a link
+    # a role prints and a person clicks, while `None` says the answer did not
+    # state one.
+    keyless = host()
+    keyless.issues[key(1)]["fields"]["issuelinks"] = [{
+        "id": "link-1",
+        "type": {
+            "name": under_test.BLOCKS,
+            "inward": under_test.INWARD_READS,
+            "outward": under_test.OUTWARD_READS,
+        },
+        "inwardIssue": {"fields": {"status": keyless.issues[key(2)]["fields"]["status"]}},
+    }]
+    without = with_host(keyless, lambda: read_blockers(key(1)))
+    check(
+        "a blocker the answer named no key for carries no address rather than a composed one",
+        [entry.get("url") for entry in (got(without, "blockers") or [{}])] == [None],
+        f"answered {got(without, 'blockers')!r}",
+    )
     # ⛔ The call count, not just the answer: this operation is stated to make no
     # request of its own, and an implementation that asked a second time could
     # answer correctly while being able to disagree with the item it was read

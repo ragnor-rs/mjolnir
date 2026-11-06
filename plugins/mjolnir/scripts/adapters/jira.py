@@ -813,6 +813,23 @@ def _held_to_project(key: str) -> tuple[str, str]:
     return found.group("project"), found.group("number")
 
 
+def _addressed(key: str) -> str:
+    """The key a request path carries: held to its shape, and canonical.
+
+    ⛔ **Every path this module builds goes through here and never through the
+    argument.** The guard above matches on a stripped value, so a padded key
+    passes it and then reached a path raw -- the guard holding one value while the
+    call addressed another, which is the defect the code-host kinds normalise
+    their numbers against. ⚠️ Worse than a misaddress on a live site: a path
+    carrying a space raises inside the client, below every exception the port
+    states an outcome for.
+
+    ⚠️ Costs no call. The shape is the whole of what it reads.
+    """
+    project, number = _held_to_project(key)
+    return f"{project}-{number}"
+
+
 def _links_of(issue: dict) -> dict:
     """What this item is blocked by, what it blocks, and what else it relates to.
 
@@ -844,8 +861,12 @@ def _links_of(issue: dict) -> dict:
             # second call per entry to name it, which the code-host entries do not
             # — the link payload already holds the summary, and the address is
             # composed from the key exactly as `_shaped` composes an item's own.
+            # ⛔ **And the address only where there is a key to compose it from**,
+            # by the rule the shared code-host grammar states for a repository
+            # address: a guess at a segment is a link a role prints and a person
+            # clicks, while `None` says the answer did not state one.
             "title": (side.get("fields") or {}).get("summary"),
-            "url": f"{_site()}/browse/{side.get('key')}",
+            "url": f"{_site()}/browse/{side['key']}" if side.get("key") else None,
         }
         if kind == BLOCKS and inward:
             blocked_by.append(entry)
@@ -936,13 +957,7 @@ def read_item(key: str, *, fields: list[str] | None = None) -> dict:
     costs a catalogue read the first time and nothing after. The item's own facts
     are always read.
     """
-    # ⛔ The key the request carries is the one the guard read, not the one it was
-    # handed. The guard matches on a stripped value, so a padded key passed it and
-    # then went into the path raw -- the guard holding one value while the call
-    # addressed another, which is the same two-halves defect the code-host kinds
-    # normalise their numbers against.
-    project, number = _held_to_project(key)
-    addressed = f"{project}-{number}"
+    addressed = _addressed(key)
     asked = READ_FIELDS
     named = None
     if fields:
@@ -1206,7 +1221,7 @@ def transitions(key: str) -> list[dict]:
     Measured on a live site, one type offered three of the project's nine
     statuses and another offered all nine.
     """
-    answer = _call("GET", f"/issue/{key}/transitions") or {}
+    answer = _call("GET", f"/issue/{_addressed(key)}/transitions") or {}
     return list(answer.get("transitions") or [])
 
 
@@ -1265,7 +1280,7 @@ def set_state(key: str, *, status: str) -> dict:
     # invented would be written onto the item as though somebody had chosen it,
     # so a screen with a required field comes back as a failure naming the
     # transition -- which is the remedy being a person's rather than a default's.
-    _call("POST", f"/issue/{key}/transitions", body={"transition": {"id": move.get("id")}})
+    _call("POST", f"/issue/{_addressed(key)}/transitions", body={"transition": {"id": move.get("id")}})
     return read_item(key)
 
 
@@ -1347,7 +1362,7 @@ def set_field(key: str, field: str, value) -> dict:
         shaped = str(value)
         _hold_to_policy("set_field", **{field: shaped})
     read_item(key)
-    _call("PUT", f"/issue/{key}", body={"fields": {found["id"]: shaped}})
+    _call("PUT", f"/issue/{_addressed(key)}", body={"fields": {found["id"]: shaped}})
     return read_item(key)
 
 
@@ -1360,7 +1375,7 @@ def comment(key: str, body: str) -> dict:
     """
     _hold_to_policy("comment", body=body)
     item = read_item(key)
-    posted = _call("POST", f"/issue/{key}/comment", body={"body": as_document(body)}) or {}
+    posted = _call("POST", f"/issue/{_addressed(key)}/comment", body={"body": as_document(body)}) or {}
     return {
         "key": item["key"],
         "url": item["url"],
@@ -1382,7 +1397,7 @@ def set_labels(key: str, labels: list[str]) -> dict:
     item = read_item(key)
     if set(item["labels"]) == set(wanted):
         return item
-    _call("PUT", f"/issue/{key}", body={"fields": {"labels": wanted}})
+    _call("PUT", f"/issue/{_addressed(key)}", body={"fields": {"labels": wanted}})
     return read_item(key)
 
 
@@ -1419,7 +1434,7 @@ def assign(key: str, who: str = "@me") -> dict:
         # depending on whether it wrote would make a role's handling of the
         # result depend on a fact it did not ask about.
         return item
-    _call("PUT", f"/issue/{key}/assignee", body={"accountId": account})
+    _call("PUT", f"/issue/{_addressed(key)}/assignee", body={"accountId": account})
     return read_item(key)
 
 
@@ -1534,7 +1549,7 @@ def advance_on_merge(key: str) -> dict:
     """
     item = read_item(key)
     me = str((_site_facts()["me"] or {}).get("accountId") or "")
-    issue = _call("GET", f"/issue/{key}", params={"expand": "changelog", "fields": "status"})
+    issue = _call("GET", f"/issue/{_addressed(key)}", params={"expand": "changelog", "fields": "status"})
     history = ((issue or {}).get("changelog") or {}).get("histories") or []
     moved = None
     for entry in history:
