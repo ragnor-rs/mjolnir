@@ -198,6 +198,17 @@ statuses:
   - { name: "<finished>",    role: terminal,    writer: deploy }
   - { name: "<dropped>",     role: dropped,     writer: procedure }
 
+# § 32. The deepest ladder here is also the one with a reverse edge, and it is the only one
+# this project rules: acceptance is a person's judgement against the item's own criteria, and
+# the same person who would move it on may send it back instead. ⛔ `writer: orderer`, so the
+# procedure is refused and reports — and note it disagrees with the **target** status's own
+# writer: `ready` is `<gated>` above, `writer: procedure`, so a reverse move that read the
+# target's writer would go straight through. That disagreement is § 32's point rather than a
+# mistake: who advances into a status answers a different question from who sends an item back
+# out of it, and the target's writer is the one the port does not read.
+reversals:
+  - { trigger: acceptance_rejected, to_role: ready, writer: orderer }
+
 readiness:
   - { check: state_is, roles: [ready], stop: "The item has not been gated into committed work." }
   - { check: field_present, field: "<due date>", stop: "No due date." }

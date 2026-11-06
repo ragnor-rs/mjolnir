@@ -1630,7 +1630,7 @@ operations the survey reached and says which it did not.
 | `search_items` | the items matching a query — terms, or a field's value with no terms at all — across every state the tracker holds, the closed ones included | the duplicate check cannot run, so the filing role **asks** before writing and never reports a check it did not perform; an unsearchable tracker is not a tracker with no duplicates, by § 2's rule that absence of signal is not an answer |
 | `create_item` | a new work item, from the body the filing role wrote | nothing is filed, and the run report carries the body and says what it would have created |
 | `read_item` | the item's own facts: its body, its state, its fields | the role proceeds on what its argument and its branch already state, and the report names what could not be read |
-| `set_state` | an advance to a **role**, never to a status word (§ 4.2) | the move is reported for whoever does make it; § 4.2's writer refusal is the second, stricter reason the same move is not made |
+| `set_state` | a move to a **role**, never to a status word (§ 4.2) — an advance, or the step backwards [§ 32](#32-a-status-that-moves-backwards) rules | the move is reported for whoever does make it; § 4.2's writer refusal is the second, stricter reason the same move is not made |
 | `item_number` | the identifier the branch name and the pull request carry | the number is read from the argument the role was given, and a role with neither stops rather than inventing one |
 | `link_dependency` | one item recorded as blocked by another | the dependency is written into both items' bodies as prose, which is the one case [`An edge is a relation`](#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it) below admits prose carrying an edge at all |
 | `read_blockers` | the items one item is recorded as blocked by, each with its own state — ⛔ never a verdict about whether the item may start, the bar being § 5's and not a tracker's | § 5's `no_open_blockers` has no source, so it reports **no answer** and never *no blockers*, by § 2's rule that absence of signal is not an answer; and a prose edge `link_dependency`'s fallback wrote is read for the report rather than for the verdict |
@@ -6938,6 +6938,114 @@ today's.
 `tiers` list written beside it is refused with the key named**, the absence being the statement and
 a value beside it a rule nothing performs. ⚠️ **A reader reports it as unavailable**, so a role that
 would have asked which tiers could not run says what the project decided instead.
+
+## 32. A status that moves backwards
+
+```yaml
+reversals:                  # the reverse edges this project rules; required
+  - trigger: merged_under_a_later_role
+    to_role: code_landed
+    writer:  automation
+```
+
+The vocabulary an entry draws on, stated under the key it belongs to — the device
+[§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check) already uses,
+because a member of a list sits at no path a marker can reach:
+
+```yaml
+reversals:
+    trigger: merged_under_a_later_role | work_added_under_a_finished_item | acceptance_rejected
+    to_role: "<one of § 4.2's own roles, read there>"
+    writer:  "<one of § 4.2's own writers, read there>"
+```
+
+[§ 4.2](#42-status--an-ordered-set-of-name-role-writer) is an ordered set and every writer in it
+advances; what this facet adds is the edge that section does not describe, and
+[§ 3](#the-operations-and-what-an-absent-capability-does)'s `set_state` row names both directions
+because one operation performs them.
+
+⛔ **The key is required, so a configuration written before this facet existed stops loading** —
+[§ 1](#the-surface-is-resolved-beside-the-configuration)'s case of a change that makes a key
+required, whose two duties are discharged in the same commit rather than here: the absent form is
+`[]`, written into every configuration this repository carries, and **the record this lands with
+says that configurations outside this repository are now refused** until each writes the key.
+⚠️ **No check here can reach them**, which is why the statement is the whole of what a change can
+do about it.
+
+⛔ **And this facet does not read that order either, which is a stated limit rather than an
+omission.** An entry names the role it steps **to** and no role it steps *from*, so there is no pair
+for a position to be compared across: what makes a move here a step backwards is the project saying
+it is, by ruling the trigger. ⚠️ **So nothing holds an entry to going backwards at all** — a project
+could rule an edge that steps an item forward, and it would be performed. What that costs is a
+configuration that lies to its reader and no verdict about it; what would close it is an entry
+naming both ends, which no project measured had a use for.
+
+⛔ **The failure it exists to prevent is an item that ships invisibly.** A role that deploys a batch
+reads each item's role to decide what the batch carries, so an item left in a role its code no
+longer answers for is in no batch and named in no batch report — a wrong answer from that role
+rather than a missing nicety
+([the measurement](../../../docs/configuration-surface.md#a-status-that-moves-backwards-in-three-of-six-projects-and-ruled-in-two)).
+
+⛔ **A reverse edge is configured and never derived, and `[]` is today's behaviour exactly.** A role
+does not step an item back on its own judgement, and a project that rules none has a procedure that
+performs no reverse move at all — the absence being the statement, by the rule this surface opens
+with.
+
+⛔ **And it is asked for as one.** The procedure does not discover a backwards move inside an
+advance: a role that means to step an item back names the trigger, and an ask naming a trigger this
+project does not rule is **refused with the key named**. ⚠️ **What that rules out is the write
+nobody decided** — measured on one project, where the tracker's own automation writes the
+code-landed status off every closing merge and so steps an already-deployed item back with no rule
+anywhere and nothing reporting it.
+
+⚠️ **No role asks it yet, and this is written that way rather than in the indicative.** The ask
+exists on the port and the roles that would make it are the ones that read an item's role — the
+deploy role of #13 and the advance of #44 — neither of which is built, and there is no invocation
+that reaches either direction's guard. So what is stated here is the rule a reverse move is held
+to, and the first role to make one is the first to be held to it.
+
+**The trigger set is closed on what the survey measured a project's work actually doing**, ruled or
+not, which is what makes it a vocabulary rather than a guess
+([the measurement](../../../docs/configuration-surface.md#a-status-that-moves-backwards-in-three-of-six-projects-and-ruled-in-two)).
+⚠️ **Ruled is not the test, and one of the words above is the reason it cannot be**: that case
+happens in a project whose process rules it nowhere — the tracker's own automation performs it and
+the only statement near it forbids correcting a status by hand — which is the state this facet
+exists to let a project leave. A set closed on *ruled* would exclude the one case with no rule,
+which is the one that needs a key.
+
+⚠️ **One more was looked for and is deliberately not a word here** — a deploy that fails after the
+advance was already written — because no project was found doing it **or** ruling it, and one states
+the opposite outright. ⛔ **Which criterion this is matters twice over**: a case a project's work
+performs is a word here whether or not that project has a rule for it and whether or not a role in
+this procedure observes it, and whether *this* project configures it is a separate question its own
+`[]` answers.
+
+⛔ **A `to_role` no status maps is refused with the key named**, which is a reader's refusal rather
+than a role's report: § 4.2's absent-role case is a legitimate configuration met against an item,
+and this one is written in the file. ⛔ **Two entries for one trigger are refused the same way**,
+for the reason § 4.2 gives where two status words answer one role: the ask names a trigger, and two
+entries leave the move undefined.
+
+⛔ **The writer read for a reverse move is the reversal's own, and the target status's writer is not
+read for it.** § 4.2's writer answers who advances *into* a status on the forward route, which is a
+different act from stepping back into it — and ⚠️ **the two legitimately differ**, the measured case
+being a status a deploy writes and the person who ordered the work sends back. ⛔ **It is checked
+exactly as the forward one is**: the procedure is refused where the writer is anybody else, `never`
+refuses with no writer to hand the move to, and each refusal **names the writer** (§ 4.2).
+
+⛔ **Only the role moves.** The item's own text is not rewritten by a reverse move, and that half is
+performed: the move writes the state and asks for nothing else on the item. A move that edited the
+body would make the reversal a second author of the item, which is
+[§ An artifact states what is true now](#an-artifact-states-what-is-true-now) answered by the wrong
+party. ⚠️ **Naming what the step back contradicts in the body is the role's obligation and not the
+port's**, so it rests on the same unbuilt roles as the ask above rather than on anything here.
+
+⛔ **A role reads an item's role where it *acts* on it, and never from a value read earlier in the
+pass.** A reversal can land between a read and a use, and the direction that errs in is a batch
+assembled from a role the item no longer holds — the same wrong answer as the first rule above,
+reached without any configuration being wrong. ⚠️ **It reaches a role that acts and not one that
+reports**: a reading carried across the steps of one pass in order to *say where the work stands* is
+this rule's subject only once something is written on the strength of it.
 
 ## What the toolkit installs into a project, and what takes it out
 
