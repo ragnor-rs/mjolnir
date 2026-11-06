@@ -5,9 +5,9 @@ name: Landed trees
 # second reading of *has this landed* either — the module imports the claim's own and its suite
 # asserts the surface still states the rule it performs.
 #
-# A workflow of its own rather than a job of a sibling, per § 2: where a project controls its own
-# workflows, each mirrored command takes a workflow of its own, the cost being a checkout per
-# command and what it buys being `checks` remaining the single statement of what the host runs.
+# A workflow of its own rather than a job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
 
 on:
   pull_request:

@@ -1,9 +1,9 @@
 name: Nothing deferred
 
 # The gate that refuses a merge while any item raised against the change is unresolved. Its own
-# workflow rather than a job of a sibling, for the reason its siblings are: a `host.checks` entry
-# states one mirrored local command, so two commands behind one workflow name could not be
-# stated on the surface at all.
+# workflow rather than a job of a sibling, for the reason its siblings are: § 2 of
+# plugins/mjolnir/config/schema.md states that ruling and the cost it is worth, and no copy of
+# either is carried here.
 #
 # ⛔ This is the one workflow here that holds a token scope. Why that is a departure worth making,
 # and what it buys, is stated once in

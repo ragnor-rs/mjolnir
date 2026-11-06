@@ -14,8 +14,8 @@ name: Enforcement
 # docs/single-source-of-truth.md rather than left for a reader to assume away.
 #
 # A workflow of its own rather than a second job of a sibling, per § 2 of
-# plugins/mjolnir/config/schema.md: each mirrored command takes its own workflow where the project
-# controls its workflows, because a `host.checks` entry states one mirrored command.
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
 
 on:
   pull_request:

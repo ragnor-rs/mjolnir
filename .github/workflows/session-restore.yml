@@ -3,8 +3,8 @@ name: Session restore
 # The restoring role's readings, and the evidence each one is read out of: the readings in the
 # procedure's order, where the work is, what the last pass was doing, and whether a working file
 # that is gone replays. Its own workflow rather than a job of a sibling, for the reason its
-# siblings are: a `host.checks` entry states one mirrored local command, so two commands behind
-# one workflow name could not be stated on the surface at all.
+# siblings are: § 2 of plugins/mjolnir/config/schema.md states that ruling and the cost it is
+# worth, and no copy of either is carried here.
 #
 # No credential and no network. The suite builds real repositories and real transcripts in a
 # temporary directory, because what is in question is what git and the harness's own records say
