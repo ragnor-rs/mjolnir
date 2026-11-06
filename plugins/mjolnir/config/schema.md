@@ -4302,11 +4302,33 @@ compliant answer, and the cheapest compliant answer to a rule like that is a cas
 nothing.
 
 **`carrier: none` is the stated absence, and it is what a project with no end-to-end suite
-writes.** No suite, no register, no judged tree, and no new check in `host.checks` — ⚠️ **the
-absence is stated rather than left unset**, by the rule this surface opens with: a project that
-has decided it runs nothing end to end and a project that has not thought about it read
-identically otherwise. ⚠️ **A reader reports it as unavailable**, so a role that would have asked
-about coverage says what the project decided instead.
+writes.** No suite, no register, no judged tree, and no check in `host.checks` that answers about
+this project's scenarios — ⚠️ **the absence is stated rather than left unset**, by the rule this
+surface opens with: a project that has decided it runs nothing end to end and a project that has
+not thought about it read identically otherwise. ⚠️ **A reader reports it as unavailable**, so a
+role that would have asked about coverage says what the project decided instead.
+
+⛔ **The clause about `host.checks` is a rule about what an entry's *command* answers about, and
+never about the entry.** The comparison this section states has no subject under the absence, so a
+run of it reports none and exits neither green nor red — ⚠️ **which a runner has no colour for**, so
+an entry mirroring it is a red check by construction rather than a verdict about anything. ⚠️ **A
+command asserting the carrier *itself* is not that check**: run under `--self-test` it holds the
+shipped comparison against its own planted violations, so what it answers about is the carrier and
+not the tree it runs in, and it is **permitted** beside the stated absence. ⛔ **A reader refuses
+the other pairing**, naming the facet and the entry — rather than leaving each project to argue for
+the entry it registered.
+
+⚠️ **The permitted half is only worth anything to a project that *authors* this carrier**, and it
+is permitted rather than recommended everywhere else: an adopter consumes the carrier and never
+asserts it, so an adopter mirroring `--self-test` registers a run holding somebody else's code —
+pointless rather than refused. ⛔ **And what a reader recognises is an invocation of the carrier
+shipped beside it, by the path that carrier sits at**: a project's own command making the same
+judgement is one no reader can decide the subject of, so a stated absence beside one is that
+project's own to answer. ⚠️ **Which makes the recognition a path and not an identity**, and what
+that leaves open is stated here rather than closed: this carrier vendored under another file name
+is not reached, while a command naming the path without running it is — the second being the
+direction a refusal has to err in where the subject is a check that holds nothing being read as
+green.
 
 ## 16. What a run executed, and the count that is the only evidence it ran
 
@@ -4422,6 +4444,11 @@ passes, and a count with no tree beside it gives a reader no way to tell.
 does today.** ⛔ **A reader reports it as unavailable and a run says the count was *unavailable*,
 never that nothing was skipped** — absence of signal is not an answer ([§ 2](#2-code-host)), and
 `skipped: 0` is the one thing a project with no declaration must not be told.
+
+⛔ **And no check in `host.checks` whose command answers about this project's counts**, which is
+[§ 15](#15-end-to-end-coverage-recorded)'s rule read with this facet's carrier in place of that
+one's — ⚠️ **cited and not stated again here**, which is the division the two sections already have
+for the shape rules of their own keys.
 
 **What reads this facet.** The verdict is produced by the carrier shipped with this surface, run as
 a host check like any other (§ 2). ⚠️ **The role that launches a tier is #128's** and is not this
