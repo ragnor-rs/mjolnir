@@ -913,8 +913,11 @@ def main(argv: list[str]) -> int:
         print(
             f"`{FACET}.carrier` is {facet.get('carrier')!r}, so this project states no "
             "end-to-end suite and no register, and this check has no subject. A project "
-            "in that position runs no such check: delete the entry from `host.checks`, "
-            f"or state the facet. What it decided instead: "
+            "in that position runs no such check: a `host.checks` entry mirroring "
+            "*this* command is refused by the configuration reader, so delete it or "
+            "state the facet -- while one mirroring `--self-test` answers about this "
+            "carrier rather than about this tree and is permitted beside the absence "
+            f"(§ 15). What it decided instead: "
             f"{' '.join(str(facet.get('absent_reason')).split())}",
             file=sys.stderr,
         )

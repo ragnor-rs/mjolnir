@@ -2029,6 +2029,13 @@ neither green nor red, which is the same rule the width check applies to a tree 
 configured: a check that holds nothing may not report green. What the workflow therefore runs is
 the carrier's own assertion suite.
 
+⚠️ **Which is also what makes the entry in `host.checks` legitimate here, and that is the reader's
+answer rather than this document's.** The entry mirrors the carrier's own `--self-test`; which
+entry a stated absence admits is
+[schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded)'s, and what
+refuses the other pairing is the configuration reader, naming the facet and the entry. ⛔ Neither
+half of that rule is restated here, and the message the plain command prints names the same split.
+
 What it holds, on a project that carries the facet: the register against the case list **both
 ways**, and the change against both. Every value is read from the configuration — the suite root,
 the glob a case matches, the register and the heading its table sits under, the heading the
@@ -2095,6 +2102,20 @@ is refused rather than read as nothing to hold
   ⚠️ What stays unheld there is the **command**: the mapping from a run to the command it mirrors is
   configured and never inferred, so this file's `run:` and its entry's `mirrors` are still held
   together by eye.
+- **Whether an entry in `host.checks` may be registered at all under the stated absence.** Held by
+  the configuration reader rather than by this check — at load time and for every role rather than
+  once on a push, planted in both directions in its own suite, with the rule and the residue it
+  leaves open both
+  [schema § 15](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded)'s. ⚠️ What is
+  recorded here is the reach. The recognition is the carrier's own directory and file name, read off
+  the reader's own location, so a project's script that merely shares the name is not reached and a
+  command naming the path without running it is; the asserting flag is read off the call that names
+  the carrier rather than off the command string, in any spelling the carrier's own parser accepts.
+  Each spelling that hid one or the other — quotation marks round the path, shell punctuation
+  against it, a chain supplying the flag from another command, the module form, the name cased
+  differently — is planted, in the direction it was measured failing. ⛔ So is the map of carrier
+  names against files that are there: a rename with the map left behind would otherwise match
+  nothing and report green.
 
 ## A tier held to the count the tree declares
 
@@ -2114,10 +2135,14 @@ its subject test does not reach, and what that leaves unheld is recorded in the 
 rather than argued away here. This project therefore states
 `executed.carrier: none`, and pointed at a project in that position the check says the count is
 **unavailable** and exits without producing a verdict — ⚠️ **which is a non-zero status and not a
-third colour**, a runner having only two: what it means is *do not run this check here*, and the
-message says to delete the entry or state the facet. ⛔ Never zero: zero executed is the failure
-the rule names, so reporting it for a project that declared nothing would be the one wrong answer
-available. What the workflow runs is the carrier's own assertion suite.
+third colour**, a runner having only two: what it means is *do not mirror this command here*, and
+the message names which entry a stated absence admits and which it does not. ⛔ Never zero: zero
+executed is the failure the rule names, so reporting it for a project that declared nothing would
+be the one wrong answer available. What the workflow runs is the carrier's own assertion suite,
+which [schema § 16](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
+permits beside the absence by citing § 15, and whose alternative the configuration reader refuses at
+load time — one rule over both carriers, with the plants for the spellings it can be written in
+carried on this one.
 
 What it holds, on a project that carries the facet: the two counts against each other, and every
 skip against whether it says what it wanted. Both commands are read from the configuration, so the
