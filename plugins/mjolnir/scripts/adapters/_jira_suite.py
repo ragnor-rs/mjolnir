@@ -1754,3 +1754,12 @@ def self_test() -> int:
     if failures:
         print(f"\n{failures} assertion(s) did not hold.")
     return 1 if failures else 0
+
+
+# ⛔ An entry point, so that running this file is not a run that asserts nothing.
+# `adapter_suites.py` is still the one command the host mirrors; what this closes
+# is the shape measured while reviewing this change -- a plant aimed at a suite
+# module invoked as a script reported green because the module exited zero without
+# running a single assertion, which reads exactly like a held mechanism.
+if __name__ == "__main__":
+    sys.exit(self_test())

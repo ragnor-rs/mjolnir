@@ -1512,3 +1512,9 @@ def self_test() -> int:
     return 1 if failures else 0
 
 
+# ⛔ An entry point, for the reason the hosted tracker's suite beside this one
+# states: a run that asserts nothing exits zero and reads as a held mechanism.
+if __name__ == "__main__":
+    sys.exit(self_test())
+
+

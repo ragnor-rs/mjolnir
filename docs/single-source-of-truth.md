@@ -400,7 +400,16 @@ check 0's argument one scope over.
    status vocabulary of `open` and `closed` does not forbid the word "opening", which the day-log
    skill uses freely. ⚠️ The wrap is not part of the value — this repository hard-wraps its prose
    at about 95 columns and most forbidden values are multi-word, so newlines are normalised away
-   before matching. A fenced block's own backticks are removed first, for the same reason as
+   before matching. ⛔ **Per paragraph, and that scope is load-bearing**: the single-backtick form
+   is paired, so flattening a whole file let one unbalanced delimiter re-pair every span after it
+   — measured, a stray backtick at the top of a shipped carrier stopped most of its regions being
+   read as values while the region count barely moved, which is hidden coverage and not a red. A
+   paragraph is the widest scope a wrapped span needs, since a hard wrap never crosses a blank
+   line, and the narrowest that bounds what one stray delimiter costs. ⚠️ **What it gives up**: a
+   span whose delimiters sit either side of a blank line is no longer read — markdown does not
+   carry one either, and nothing else measurably changed, list items, table rows, headings,
+   indented continuations and whitespace-only separators all reading as before.
+   A fenced block's own backticks are removed first, for the same reason as
    rule 1: they would shift the pairing of every span after them. ⚠️ **A ``…`` span is removed on
    the same ground and by the same means** — split on, never paired, since a paired form matches
    one span's closer against the next span's opener and takes every value between them out of the
