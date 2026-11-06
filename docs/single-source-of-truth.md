@@ -1104,7 +1104,9 @@ item already claimed is refused; that the refusal names who holds it and since w
 whichever half it could not establish; that a refused start leaves no ref, no branch and no tree;
 that a released claim is takeable again and a release is re-runnable; that a claim with no work
 and no occupied tree reads as an *orphaned candidate* carrying both readings rather than being
-broken; and that a root with no remote claims locally and says so.
+broken; that a ref younger than the window a start takes between publishing its ref and cutting its
+tree reads *provisional* instead, with re-reading rather than asking as its remedy; and that a root
+with no remote claims locally and says so.
 
 | # | Check | Scope | Kind |
 |---|---|---|---|
@@ -1125,6 +1127,7 @@ broken; and that a root with no remote claims locally and says so.
 | 14 | A **landed** ref still matches the item's name and the item still reads free, and a start on it is not refused | two clones, after a real squash merge | computed |
 | 15 | A merged pull request that **predates the ref** does not land it, and either instant unreadable makes the arm decline | the comparison, with the measured timestamps | computed |
 | 16 | A ref **gone between the listing and the read** holds the item against nobody, and the report says it is gone rather than printing `free` under a `taken` verdict | one reading, constructed | computed |
+| 17 | The **window in front of the orphaned reading**, held on both sides of its bound and on the half it declines on — planted by setting the bound to zero, which is the carrier as the defect was measured on it | two clones, with both instants stated | computed |
 
 ⚠️ **Check 0 is run once per arm, and that is the finding this suite was written by rather than
 for.** The surface states two arms because the first draft of the script shipped only the second —
@@ -1162,6 +1165,61 @@ than anything about the host — so the comparison is what the suite holds. The 
 by hand against the live host instead: the same ref read `landed … releasing it needs no
 override` on the carrier before the change and `orphaned-candidate` after it.
 
+⚠️ **Check 17 exists because every arm above the orphaned row declines for timing rather than for
+state, and nothing named that on this arm.** Measured 2026-11-05 across three sibling starts inside
+seven minutes: a refusal read `orphaned-candidate: no arm of the liveness test answered yes` against
+a ref published 36 seconds earlier by a live session, and the same ref, untouched, read `live` five
+minutes later. The start role's answer for an orphaned candidate is to put it to a person, so the
+cost was a question asked about a session that was working — and the reading that produced it is
+decidable by waiting, which is what makes *read it again* an answer and *ask* the wrong one.
+
+⛔ **The plant is the bound set to zero, and that is what makes the row a check rather than an
+assertion.** The bound is the one
+[schema § 10 → The claim on a work item](../plugins/mjolnir/config/schema.md#the-claim-on-a-work-item)
+states, and this document states none of it. With the bound at zero the same reading comes back
+orphaned, which is the carrier exactly as the defect was measured on it; with it in place the same
+reading is provisional. Both instants are
+**stated** rather than taken from the clock, so the two sides of the bound are reached without
+sleeping through it and the suite does not change answer depending on the second it runs at.
+
+⚠️ **And they are stated as absolute offsets rather than relative to the bound, which is check 11's
+lesson arriving on a second row.** Written first as `the bound ± 1`, the whole block *followed the
+constant wherever it was moved*: planting the bound to a negative took both offsets negative with
+it, the arm then fired on a ref older than its own creation, and most of the block stayed green on a
+mechanism that was broken. ⚠️ **The tell was the mutation count and not any failure**, which is why
+the table below is run rather than reasoned about: a self-referential assertion reads as a passing
+check and as a reached mechanism at the same time. The offsets are now 36 seconds, the interval the
+defect was measured at, and an hour.
+
+| what was disabled | what the suite did | restored |
+|---|---|---|
+| the window arm never fires, its bound planted to a negative | 4 lines red | 0 |
+| the arm fires and sets no provisional flag | 3 lines red | 0 |
+| the age dropped from the reason, the bound left in it | 1 line red | 0 |
+| the report renders a provisional reading through the orphaned wording | 1 line red | 0 |
+| an unreadable creation becomes provisional rather than declining | 3 lines red | 0 |
+| the incomparable-instants decline removed | **crash**, no line red at all | 0 |
+
+⚠️ **The last row is a different signal from the rows above it and is the reason the decline is
+there.** Removing it does not redden the suite; it kills it, the subtraction raising on an instant
+carrying a zone against one that does not — and this arm is reached from a refusal's own wording, so
+the crash would land on the path that reports the refusal. ⚠️ A mutation that crashes is still a
+reached mechanism, but it is **not** a check being shown it can fail, and the row says which it is.
+
+⚠️ **Green sides are asserted beside it**, because this reading is a new branch through code other
+consumers key on: that `provisional` sets neither `live` nor `landed`, so the release's *landed or
+held here* test and the sweep's *not landed* branch cannot have moved; that a provisional claim
+still refuses a start; and that a ref whose creation cannot be read keeps the orphaned reading and
+**names** the half it could not establish. ⚠️ That last one is the arm this repository's own remote
+always takes in the suite — a bare repository records no branch creation — which is why check 4's
+existing orphan case stayed green through the change rather than needing a new fixture.
+
+⚠️ **One thing the suite's own first run caught, kept because it is the shape rather than the
+slip.** The report check was first written to forbid the word *ask* in a provisional report, and the
+provisional wording ends *"rather than asking"* — so a forbidding check matched its own remedy. The
+spelling a report is held to is now the one that names which question a person is being put,
+`orphaned-candidate`, and not the verb.
+
 ⚠️ **Check 2 has two shapes for the same reason, and the second one hid behind the first.** A
 refusal on the *branch name* never reaches the local half at all — the push is what refuses — so
 the no-residue assertion was exercised only where nothing local had been attempted. Where the name
@@ -1190,7 +1248,16 @@ whatever it finds deletes somebody else's work.
 - **The third liveness arm, against a host.** An open pull request referencing the ref needs a
   credential, so in the suite that arm reports itself unestablished and the first two carry the
   verdict. On a project whose claims are all fresh refs with no commits, that leaves liveness
-  resting on the occupied-tree arm alone.
+  resting on the occupied-tree arm alone — which is the precondition the window of check 17 sits in
+  front of, and the reason that window is reached at all rather than being a theoretical branch.
+- **The wiring from the host's record into the window arm.** Check 17 hands the arm a creation time
+  directly, because what was wrong was a comparison that was never made rather than anything about
+  the host — the same split check 15 takes, and held the same way. ⚠️ **What was proved by hand
+  instead, and the two halves are not the same claim**: the holder read against the live host
+  returns a populated, zone-carrying stamp that the comparison's own parser accepts, measured on the
+  three refs the defect was measured on plus the claim this change was made under. ⛔ **What remains
+  unheld anywhere is the join** — a real ref read end-to-end *inside* its own window, which needs a
+  session caught between its publish and its cut and is the one state no fixture here reproduces.
 - **Whether a process occupies a tree, where the open-file table cannot be read.** The arm has
   three answers and the third is *unestablished*, never *the tree is idle*. ⚠️ Check 8 holds the
   at-or-below half against a real process; what no check here holds is the **unreadable** branch,
