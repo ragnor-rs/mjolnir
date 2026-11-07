@@ -63,6 +63,7 @@ from adapters.jira import (  # noqa: E402
     item_number,
     link_dependency,
     advance_on_merge,
+    read_blockers,
     read_item,
     search_items,
     set_field,
@@ -472,9 +473,16 @@ class _Host:
                     "inward": under_test.INWARD_READS,
                     "outward": under_test.OUTWARD_READS,
                 },
+                # ⚠️ The summary as well as the status, because the host puts both
+                # in a link payload. A fixture carrying only what the code read at
+                # the time it was written is a fixture that cannot see a field go
+                # unread -- which is how the blocker's own name went uncarried.
                 side: {
                     "key": other,
-                    "fields": {"status": self.issues[other]["fields"]["status"]},
+                    "fields": {
+                        "status": self.issues[other]["fields"]["status"],
+                        "summary": self.issues[other]["fields"].get("summary"),
+                    },
                 },
             })
         return None
@@ -1307,6 +1315,195 @@ def self_test() -> int:
         f"read {got(item, 'links')!r}",
     )
 
+    # --- the read half, which is what a readiness gate has as a source --------
+    #
+    # ⛔ Asserted on the **same round trip** rather than on a fixture of its own:
+    # the predicate § 5 states reads this operation, and what would make it wrong
+    # is the write and the read disagreeing about the direction -- which a
+    # hand-built blocker list cannot show, because it is the same hand that would
+    # have built it the wrong way round.
+    both_ways = host()
+
+    def _link_and_read_blockers():
+        link_dependency(key(1), key(2))
+        return read_blockers(key(1)), read_blockers(key(2))
+
+    answered = with_host(both_ways, _link_and_read_blockers)
+    of_blocked, of_blocker = answered if isinstance(answered, tuple) else ({}, {})
+    check(
+        "`read_blockers` answers the blocked item with the blocker and nothing else",
+        keys_of(of_blocked, "blockers") == [key(2)],
+        f"read {got(of_blocked, 'blockers')!r}",
+    )
+    check(
+        "and answers the blocker itself with nothing, the relation having one direction",
+        keys_of(of_blocker, "blockers") == [],
+        f"read {got(of_blocker, 'blockers')!r}",
+    )
+    # ⛔ Both halves of the state, because a gate on this tracker can only use the
+    # one every project here shares. The word is the project's own vocabulary and
+    # a second project renames it; the category is the tracker's and does not
+    # move. A suite asserting only the word would pass an implementation that
+    # dropped the half the predicate needs.
+    #
+    # ⚠️ Both are read off the **blocker as the item read answers for it** rather
+    # than written here, which is this suite's rule for a status word everywhere
+    # else: a literal would be a second statement of the fixture's own vocabulary
+    # and would rot the day that fixture is reworded.
+    standing = host()
+    blocker_itself = with_host(standing, lambda: read_item(key(2)))
+    entry = (got(of_blocked, "blockers") or [{}])[0]
+    check(
+        "each blocker carries the project's own status word and the tracker's category",
+        entry.get("status") == got(blocker_itself, "status")
+        and entry.get("state") == got(blocker_itself, "state")
+        and entry.get("status") != entry.get("state"),
+        f"carried status={entry.get('status')!r} state={entry.get('state')!r} against "
+        f"{got(blocker_itself, 'status')!r}/{got(blocker_itself, 'state')!r}",
+    )
+    check(
+        "and no verdict about whether the blocked item may start, which is § 5's",
+        not {"blocked", "ready", "satisfied", "open_blockers"} & set(of_blocked),
+        f"answered keys {sorted(of_blocked)!r}",
+    )
+    # ⛔ And a name and an address per blocker, so a role reporting one does not
+    # need a call of its own per entry -- read off the item's own answer for the
+    # blocker rather than written here, for the reason the status pair above is.
+    check(
+        "and the blocker's own title and address, as the item read answers them",
+        entry.get("title") == got(blocker_itself, "title")
+        and entry.get("url") == got(blocker_itself, "url"),
+        f"carried {entry.get('title')!r} at {entry.get('url')!r} against "
+        f"{got(blocker_itself, 'title')!r} at {got(blocker_itself, 'url')!r}",
+    )
+    # ⛔ The key in the answer is the item's own and never the argument's spelling,
+    # which is the rule the code-host kinds carry for their numbers. ⚠️ Asked with a
+    # padded key, that being the one legitimate shape where the argument and the
+    # item's key differ: the guard matches on a stripped value, so this reaches the
+    # host -- and it also holds the path, which carried the padding raw while the
+    # guard had read the key without it.
+    padded = host()
+    answered_padded = with_host(padded, lambda: read_blockers(f"  {key(1)}  "))
+    check(
+        "the item's own key is the tracker's and not the spelling it was asked with",
+        (answered_padded or {}).get("key") == key(1),
+        f"answered {(answered_padded or {}).get('key')!r} for a padded {key(1)!r}",
+    )
+    # ⛔ And **every** path, not the read's alone. The guard matches on a stripped
+    # value, so a padded key reaches a path -- and on a live site a path carrying
+    # a space raises inside the client, below every exception the port states an
+    # outcome for. ⚠️ Asserted on a write, which is the half that stayed raw while
+    # the read was being fixed: the read then agreed with the guard and the write
+    # did not, which is worse than both of them failing together.
+    # ⛔ One per operation that puts a key in a call of its own, because each
+    # builds its own and the rule is per call. ⛔ **Each row names the route the
+    # operation's own call goes out on**, never a path substring: the read shares
+    # a path prefix with the writes, so a row keyed on a substring was satisfied
+    # by the read. ⚠️ **And `how_many` is the rest of it**: a route an operation
+    # reaches twice -- the read and then its own -- says nothing with one.
+    for operation, call, route_name, how_many in (
+        ("comment", lambda: comment(f"  {key(1)}  ", "a note"), "comment", 1),
+        ("transitions", lambda: under_test.transitions(f"  {key(1)}  "), "transitions", 1),
+        ("set_state", lambda: under_test.set_state(f"  {key(1)}  ", status="<in flight>"),
+         "transition", 1),
+        ("set_field", lambda: set_field(f"  {key(1)}  ", "Priority", "High"), "update", 1),
+        ("set_labels", lambda: under_test.set_labels(f"  {key(1)}  ", ["one"]), "update", 1),
+        ("assign", lambda: under_test.assign(f"  {key(1)}  "), "assignee", 1),
+        # ⚠️ This one writes nothing on the fixture it is handed -- its own call
+        # is a second read of the item, for the changelog -- so what the row can
+        # hold is that call rather than a write, and it says which.
+        ("advance_on_merge", lambda: under_test.advance_on_merge(f"  {key(1)}  "),
+         "issue", 2),
+        ("link_dependency", lambda: link_dependency(f"  {key(1)}  ", key(2)), "link", 1),
+    ):
+        addressed = host()
+        with_host(addressed, call)
+        own = addressed.sent_for(route_name)
+        every = [what["path"] for _, what in addressed.sent] + [
+            str(what["body"]) for _, what in addressed.sent]
+        check(
+            f"`{operation}` carries the key the guard read, in its `{route_name}`"
+            " call and in every other it made",
+            len(own) >= how_many and not any("  " in where for where in every),
+            f"sent {[(name, what['path'], what['body']) for name, what in addressed.sent]!r}",
+        )
+    # ⛔ And every answer keyed on an item names the item's own key, not the
+    # spelling it was asked with. ⚠️ One per operation and per **field**, the
+    # field being why: the one operation that answers with two keys carries
+    # neither of them under `key`, so a loop reading that name alone would have
+    # reported it covered.
+    for operation, call, field in (
+        ("read_blockers", lambda: read_blockers(f"  {key(1)}  "), "key"),
+        ("comment", lambda: comment(f"  {key(1)}  ", "a note"), "key"),
+        ("advance_on_merge", lambda: under_test.advance_on_merge(f"  {key(1)}  "), "key"),
+        ("link_dependency", lambda: link_dependency(f"  {key(1)}  ", key(2)), "blocked"),
+        ("link_dependency", lambda: link_dependency(key(2), f"  {key(1)}  "), "blocked_by"),
+    ):
+        answered_key = (with_host(host(), call) or {}).get(field)
+        check(
+            f"`{operation}` answers with the item's own key, under `{field}`",
+            answered_key == key(1),
+            f"answered {answered_key!r}",
+        )
+    # ⛔ An address is composed only where there is a key to compose it from, by
+    # the rule the shared code-host grammar states: a guess at a segment is a link
+    # a role prints and a person clicks, while `None` says the answer did not
+    # state one.
+    keyless = host()
+    keyless.issues[key(1)]["fields"]["issuelinks"] = [{
+        "id": "link-1",
+        "type": {
+            "name": under_test.BLOCKS,
+            "inward": under_test.INWARD_READS,
+            "outward": under_test.OUTWARD_READS,
+        },
+        "inwardIssue": {"fields": {"status": keyless.issues[key(2)]["fields"]["status"]}},
+    }]
+    without = with_host(keyless, lambda: read_blockers(key(1)))
+    check(
+        "a blocker the answer named no key for carries no address rather than a composed one",
+        [entry.get("url") for entry in (got(without, "blockers") or [{}])] == [None],
+        f"answered {got(without, 'blockers')!r}",
+    )
+    # ⛔ The call count, not just the answer: this operation is stated to make no
+    # request of its own, and an implementation that asked a second time could
+    # answer correctly while being able to disagree with the item it was read
+    # from. Measured against the reads the item itself costs.
+    just_item = host()
+    with_host(just_item, lambda: read_item(key(1)))
+    just_blockers = host()
+    with_host(just_blockers, lambda: read_blockers(key(1)))
+    check(
+        "`read_blockers` costs exactly what reading the item costs, making no call of its own",
+        just_blockers.calls == just_item.calls,
+        f"called {just_blockers.calls!r} against {just_item.calls!r}",
+    )
+    # ⛔ And the project guard reaches it, which is the whole reason it goes
+    # through `read_item`: a key from another project resolves site-wide and
+    # answers perfectly, so a blocker list read with one is a blocker list from
+    # somebody else's backlog.
+    elsewhere_blockers = host()
+    reported = with_host(
+        elsewhere_blockers, lambda: refused(lambda: read_blockers(foreign(1)))
+    )
+    check(
+        "a key from another project is refused, naming `tracker.project_key`",
+        reported == "tracker.project_key" and elsewhere_blockers.calls == [],
+        f"reported {reported!r} after {elsewhere_blockers.calls}",
+    )
+    # ⛔ An answer that did not carry the links at all is a failed call, never an
+    # item with no blocker, for the reason the operation's own docstring states.
+    # ⚠️ The read makes no call of its own here, so an unread field is the way it
+    # goes wrong.
+    unread = host(issues=None)
+    unread.issues[key(1)]["fields"].pop("issuelinks", None)
+    reported = with_host(unread, lambda: unavailable(lambda: read_blockers(key(1))))
+    check(
+        "an answer carrying no links field is a failed call, not an item with no blocker",
+        reported is not None and "no links field" in reported,
+        f"got {reported!r}",
+    )
+
     # --- searching ------------------------------------------------------------
     #
     # ⛔ The query is bounded by the project, and that is the **host's** rule
@@ -1633,3 +1830,12 @@ def self_test() -> int:
     if failures:
         print(f"\n{failures} assertion(s) did not hold.")
     return 1 if failures else 0
+
+
+# ⛔ An entry point, so that running this file is not a run that asserts nothing.
+# `adapter_suites.py` is still the one command the host mirrors; what this closes
+# is the shape measured while reviewing this change -- a plant aimed at a suite
+# module invoked as a script reported green because the module exited zero without
+# running a single assertion, which reads exactly like a held mechanism.
+if __name__ == "__main__":
+    sys.exit(self_test())

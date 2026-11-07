@@ -227,6 +227,70 @@ TRACKER_IDS_ANYWHERE = [
     (re.compile(r"\btrello\.com/[bc]/\S+"), "a Trello board or card"),
 ]
 
+# A tracker's own vocabulary for the relation between two work items: the field
+# it is carried in, the endpoint segment it is posted to, the sides of the call,
+# the link type's own wording. ⛔ A separate list from the tracker names above
+# because it is a level down from them: a role writing one of these names a
+# tracker's *shape* without naming the tracker, which passed that check while
+# being the same defect -- measured in two of this repository's own carriers, each
+# of which had written a field name and a path segment into a role's prose.
+#
+# What the rule is: `schema.md § 3 -> An edge is a relation` makes the dependency
+# a port operation with a stated form per tracker, so a role names the operation
+# and the port answers in whichever shape the tracker has.
+#
+# ⛔ **Matched in code regions only, per rule 1**, and here that is load-bearing
+# rather than cautious: a link type's own wording is also an ordinary English
+# phrase, and every document in this repository writes it.
+#
+# ⛔ **Two positions, because the spellings are of two kinds** — and the split is
+# rule 2's, applied to a name rather than to a value. A token whose *shape* is
+# decidable (an underscore, a camel hump, a path segment, a metadata key) is
+# matched anywhere in a code region. A name that is also an English phrase is
+# matched only as the **whole** of one, which is where a literal stands alone.
+# ⚠️ What the single-position form refused is recorded with this check's other
+# limits, in the document this file's docstring names — shapes a shipped carrier
+# plausibly holds, none of them a role naming a tracker.
+LINK_TYPE_TOKENS = [
+    (re.compile(r"(?<![\w-])blocked_by(?![\w-])"), "a dependency field's own name"),
+    (re.compile(r"(?<![\w-])blockedBy(?![\w-])"),
+     "the same field in a query interface's spelling"),
+    # ⛔ The host's own segments and not any word after the collection: the first
+    # form took `dependencies/[A-Za-z_]+` and refused `docs/dependencies/graph.md`
+    # and a hook installing from a `dependencies/` directory, neither of which is
+    # a tracker's vocabulary.
+    (re.compile(r"(?<![\w-])dependencies/(?:blocked_by|blocking)(?![\w-])"),
+     "a dependency endpoint's own path"),
+    (re.compile(r"(?<![\w-])(?:inward|outward)Issue(?![\w-])"),
+     "the sides of a link call, which one tracker inverts"),
+    # ⛔ The field a hosted tracker carries its links in, which the first form of
+    # this list claimed to cover and did not: it held the code host's field name
+    # and named no other tracker's.
+    (re.compile(r"(?<![\w-])issuelinks(?![\w-])"),
+     "the field a hosted tracker carries its links in"),
+    # A metadata key a link type's description sits under, with that description
+    # after it, for the reason recorded with this check's other limits in the
+    # document the docstring above names.
+    (re.compile(
+        r"(?<![\w-])(?:\\*[\"'])?(?:inward|outward)(?:\\*[\"'])?\s*:\s*"
+        r"(?:\\*[\"'])?\s*(?:is\s+blocked\s+by|blocks)(?![\w-])", re.I),
+     "a link type's own metadata key, with its wording"),
+]
+
+# ⛔ The full wording alone. Which forms are deliberately outside this group, and
+# that nothing reddens if one is added back, are recorded with this check's other
+# limits in the document the docstring above names. ⚠️ The first form of this list
+# added a form while deleting the sentence that had recorded the omission, which
+# is how a decision gets reversed with nothing saying so.
+#
+# ⚠️ Trailing punctuation comes off before matching, because a literal quoted at
+# the end of a sentence carries the sentence's own stop inside its span -- the set
+# being wider than that reason is recorded in the same place.
+LINK_TYPE_PHRASES = [
+    (re.compile(r"^is\s+blocked\s+by$", re.I), "a link type's own wording"),
+]
+PUNCTUATION = " \t.,;:!?'\"`"
+
 # Asking who is running. ⛔ Each of these is a spelling that resolves *the
 # current user* and nothing else, and `schema.md § 27` forbids a role being
 # resolved that way: asking the tracker, the host or the shell who you are
@@ -706,6 +770,24 @@ class Tree:
         A script: every line that is not a comment. A shebang names an absolute
         path and a comment is prose, so sweeping either would be the failure
         rule 1 exists to prevent.
+
+        ⛔ **The prose half is flattened before any span is extracted**, which is
+        exactly what `value_contexts` below does and for the same reason: this
+        repository hard-wraps its prose, markdown lets a code span cross a
+        newline, and a span wrapped across two lines was found by **neither**
+        half of a line-by-line pass. ⚠️ Measured — a two-word name inside a
+        wrapped span was invisible to the sweep while the same name on one line
+        reddened. A fenced block keeps its own lines, because there a line break
+        is the code's and not the wrap's.
+
+        ⛔ **And the flattening is per paragraph, because `CODE_SPAN` is paired.**
+        A hard wrap never crosses a blank line, so a paragraph is the widest
+        scope the wrapped span needs — and it is the narrowest that bounds what
+        one unbalanced delimiter costs, which is the failure the comment on
+        `DOUBLE_SPAN_DELIMITER` states and the reason `_spans_out` splits.
+        ⚠️ Flattened whole, a lone backtick anywhere re-pairs every span after
+        it in the file, and the sweep goes quiet over all of them while the
+        region count barely moves. Held by the plant for it.
         """
         body = self.text[path]
         if not path.endswith(".md"):
@@ -716,19 +798,26 @@ class Tree:
                 if stripped
             ]
         regions: list[str] = []
+        paragraphs: list[list[str]] = [[]]
         fenced = False
         for line in body.splitlines():
             if line.lstrip().startswith("```"):
                 fenced = not fenced
+                paragraphs.append([])
                 continue
             if fenced:
                 regions.append(line)
+            elif line.strip():
+                paragraphs[-1].append(line)
             else:
-                # ⛔ Both paths, for the reason the fence toggle is in both: a
-                # ``…`` span's backticks are not a span's delimiters, so leaving
-                # them in pairs them with the ones after and a real code span
-                # stops being read as one.
-                regions.extend(CODE_SPAN.findall(self._spans_out(line, regions)))
+                paragraphs.append([])
+        for paragraph in paragraphs:
+            # ⛔ Both paths, for the reason the fence toggle is in both: a ``…``
+            # span's backticks are not a span's delimiters, so leaving them in
+            # pairs them with the ones after and a real code span stops being
+            # read as one.
+            flat = re.sub(r"\n\s*", " ", "\n".join(paragraph))
+            regions.extend(CODE_SPAN.findall(self._spans_out(flat, regions)))
         return regions
 
     @staticmethod
@@ -782,19 +871,28 @@ class Tree:
         """
         body = self.text[path]
         if path.endswith(".md"):
-            prose: list[str] = []
+            paragraphs: list[list[str]] = [[]]
             out: list[str] = []
             fenced = False
             for line in body.splitlines():
                 if line.lstrip().startswith("```"):
                     fenced = not fenced
+                    paragraphs.append([])
                     continue
-                (out if fenced else prose).append(line.strip() if fenced else line)
-            # The wrap is not part of the value.
-            flat = re.sub(r"\n\s*", " ", "\n".join(prose))
-            flat = self._spans_out(flat, out)
-            out += CODE_SPAN.findall(flat)
-            out += [g for match in QUOTED_ANY.finditer(flat) for g in match.groups() if g is not None]
+                if fenced:
+                    out.append(line.strip())
+                elif line.strip():
+                    paragraphs[-1].append(line)
+                else:
+                    paragraphs.append([])
+            # ⛔ Per paragraph, and the wrap is not part of the value -- `code()`
+            # states why the scope is the paragraph and not the file.
+            for paragraph in paragraphs:
+                flat = re.sub(r"\n\s*", " ", "\n".join(paragraph))
+                flat = self._spans_out(flat, out)
+                out += CODE_SPAN.findall(flat)
+                out += [g for match in QUOTED_ANY.finditer(flat)
+                        for g in match.groups() if g is not None]
             return out
         out = [line.strip() for line in body.splitlines()]
         out += CODE_SPAN.findall(body)
@@ -1284,6 +1382,65 @@ def check_no_host_run_call_in_the_strict_set(tree: Tree) -> list[str]:
     return problems
 
 
+def check_no_link_type_is_named_in_the_strict_set(tree: Tree) -> list[str]:
+    """No carrier names a tracker's own vocabulary for a dependency.
+
+    `schema.md § 3 -> An edge is a relation, and a body keeps the reasoning about
+    it` makes the dependency between two work items a port operation with a
+    stated form per tracker. ⛔ So a role names the operation and nothing else: a
+    role that named the field, the endpoint segment or the link type would be
+    carrying one tracker's shape into the shared procedure, which is
+    `check_no_tracker_is_named_in_the_strict_set` one level down -- and the level
+    that check was green over while reading as covering it.
+
+    ⛔ Scoped to the strict set, and the scope is the rule's own rather than
+    forbearance: the implementations behind the port must name these to speak to
+    their trackers at all, and `docs/` records which tracker spells which, so a
+    sweep reddening on either would forbid the one place the shape belongs and
+    the evidence for it.
+
+    ⛔ Scoped to code regions by rule 1, which matters more here than anywhere
+    else in this file: one group of the spellings is English phrases, and a sweep
+    of prose for those would redden on this docstring.
+
+    ⛔ **And each group is matched in its own position**, for the reason the
+    grammar above states.
+    """
+    problems = []
+    swept = 0
+
+    def named(path: str, region: str, what: str, found: str) -> None:
+        problems.append(
+            f"{path}: `{region.strip()[:70]}` names {what} "
+            f"(`{found}`). A dependency is a port operation with a form "
+            "stated per tracker (schema § 3): a role names the operation, and the "
+            "port answers in whichever shape the tracker has."
+        )
+
+    for path in tree.strict():
+        for region in tree.code(path):
+            swept += 1
+            for pattern, what in LINK_TYPE_TOKENS:
+                found = pattern.search(region)
+                if found:
+                    named(path, region, what, found.group(0))
+            for pattern, what in LINK_TYPE_PHRASES:
+                # ⚠️ The wrap is not part of a name, for the reason rule 2 gives
+                # about a value: this repository hard-wraps its prose and these
+                # names are multi-word. A region's newlines are already flattened
+                # where it came from prose; a fenced region keeps its lines,
+                # because there a line break is the code's own.
+                whole = re.sub(r"\s+", " ", region).strip(PUNCTUATION)
+                if pattern.match(whole):
+                    named(path, region, what, whole)
+    if tree.strict() and not swept:
+        problems.append(
+            "The strict set has files and not one line of code in any of them, so this check "
+            "holds nothing. A check that holds nothing reports green."
+        )
+    return problems
+
+
 def check_no_role_is_resolved_through_the_running_user(tree: Tree) -> list[str]:
     """No carrier resolves who holds a role by asking who is running.
 
@@ -1432,6 +1589,8 @@ CHECKS = [
     ("no machine is named", check_no_machine_is_named),
     ("no role is resolved through the running user",
      check_no_role_is_resolved_through_the_running_user),
+    ("no link type is named in the strict set",
+     check_no_link_type_is_named_in_the_strict_set),
 ]
 
 
@@ -1652,6 +1811,29 @@ def _plant_a_configured_command_root(tree: Tree) -> Tree:
     entries[0]["command_root"] = named
     tree.text[OWN_CONFIG] = yaml.safe_dump(document)
     return _plant_in_a_carrier(f"\nRun the check in `{named}` first.\n")(tree)
+
+
+def _plant_strict_files_with_no_code(tree: Tree) -> Tree:
+    """Every strict file rewritten to prose, so no region is swept at all.
+
+    ⛔ The counterpart of the empty-strict-set plant one check over: a strict set
+    with files in it and not one code region is the other way a check scoped to
+    `code()` holds nothing while reporting green. ⚠️ Used by both checks that are
+    scoped that way -- the sibling guard was unplanted, and a precedent for
+    leaving one unasserted is not a reason to leave a second.
+
+    ⚠️ **Every strict file and not only the markdown ones**, which this plant's
+    first form got wrong: `code()` reads a non-markdown carrier as its own
+    non-comment lines, so a hook left alone kept the sweep non-empty and the
+    plant stayed green while reading as held.
+    """
+    for path in tree.strict():
+        tree.text[path] = (
+            "# Planted\n\nProse with no span and no fence in it.\n"
+            if path.endswith(".md")
+            else "# nothing but a comment, which rule 1 does not read\n"
+        )
+    return tree
 
 
 def _plant_in_a_named_root(roots: list[str], text: str):
@@ -2055,8 +2237,9 @@ VIOLATIONS = [
     ("no stack is named in the strict set",
      "an interpreter prefixing a key's placeholder rather than a command stated whole",
      _plant_in_a_carrier("\nRun `python3 <day_log.script> --check` here too.\n")),
-    # The same construct against rule 1's reader: `code()` pairs spans per line,
-    # so a double span ahead of a command is where that pairing goes wrong.
+    # The same construct against rule 1's reader: a ``…`` span's backticks are
+    # not a span's delimiters, so a double span ahead of a command is where that
+    # pairing goes wrong.
     ("no stack is named in the strict set", "a build tool after a double span",
      _plant_in_a_carrier("\nMatching `` `x` is retired `` and then `npm run build` first.\n")),
     ("no value is carried in the strict set", "a status word in a carrier",
@@ -2079,6 +2262,17 @@ VIOLATIONS = [
      _plant_in_a_carrier("\nA span `` opened and never closed, then `In Progress`.\n")),
     ("no value is carried in the strict set", "a status word between two double spans",
      _plant_in_a_carrier("\n`` A `` then `In Progress` then `` B ``.\n")),
+    # ⛔ A **single** unpaired backtick, with the value in a later paragraph --
+    # which `code()` pairs per paragraph for exactly this reason. ⚠️ The stray and
+    # the value have to be in different paragraphs: that is the arm a file-wide
+    # flatten failed, re-pairing every span after the stray one so the sweep went
+    # quiet over all of them while the region count barely moved.
+    ("no value is carried in the strict set",
+     "a status word in a paragraph after a stray span delimiter",
+     _plant_in_a_carrier(
+         "\nA ` delimiter alone, as prose may carry one.\n"
+         "\nMove the item to `In Progress` first.\n"
+     )),
     # ⛔ One per shape a list of key names cannot reach, each reading its value
     # out of the configuration rather than carrying it.
     ("no value is carried in the strict set", "a configured branch prefix, under a key the project names",
@@ -2193,6 +2387,86 @@ VIOLATIONS = [
     ("no host run call is in the strict set", "the check suites of the query interface",
      _plant_in_a_carrier(
          '\nAsk `gh api graphql -f query="{ checkSuites { nodes { conclusion } } }"`.\n')),
+    # One per spelling a tracker carries a dependency in, because each is a
+    # different surface a role could reach for -- a field, the same field in
+    # another interface, an endpoint path, the sides of a call, the field another
+    # tracker keeps its links in, a link type's metadata key, and the type's own
+    # wording -- and a spelling with no plant is a spelling nothing asserts is
+    # forbidden at all. ⛔ Each is written **inside a code span or a fence**,
+    # which are the only positions this check reads: a prose plant would assert
+    # nothing while printing red for rule 1's reason.
+    #
+    # ⛔ **And each carries only its own spelling.** ⚠️ Measured: the endpoint
+    # plant's first form was `dependencies/blocked_by`, which reddens the field
+    # arm too -- so deleting the endpoint arm whole left the self-test green while
+    # still printing *red on … a dependency endpoint's own path*. A plant that
+    # reddens by another arm's route proves nothing about the arm it names.
+    ("no link type is named in the strict set", "a dependency field named in a carrier",
+     _plant_in_a_carrier("\nRead the item's `blocked_by` list before starting.\n")),
+    ("no link type is named in the strict set",
+     "the same field in a query interface's own spelling",
+     _plant_in_a_carrier("\nAsk for `Issue.blockedBy` in one call instead.\n")),
+    ("no link type is named in the strict set", "a dependency endpoint's own path",
+     _plant_in_a_carrier("\nPost it to `dependencies/blocking` on the other item.\n")),
+    ("no link type is named in the strict set", "the sides of a link call",
+     _plant_in_a_carrier("\nThe item that blocks goes in `inwardIssue`.\n")),
+    ("no link type is named in the strict set",
+     "the field a hosted tracker keeps its links in",
+     _plant_in_a_carrier("\nThe links arrive under `issuelinks` with the item.\n")),
+    # ⛔ One per shape a carrier would write it in.
+    ("no link type is named in the strict set", "a link type's key and wording in one span",
+     _plant_in_a_carrier(
+         "\nThe type states `inward: is blocked by, outward: blocks` either way.\n")),
+    ("no link type is named in the strict set", "the same, one key per line of a fence",
+     _plant_in_a_carrier(
+         "\n```yaml\ntype:\n  inward: is blocked by\n  outward: blocks\n```\n")),
+    ("no link type is named in the strict set", "the same, one key to a paragraph",
+     _plant_in_a_carrier(
+         "\nThe inward side reads `inward: is blocked by` here.\n"
+         "\nAnd the other reads `outward: blocks` there.\n")),
+    ("no link type is named in the strict set", "the same, with the keys quoted",
+     _plant_in_a_carrier(
+         "\nSend `{\"inward\": \"is blocked by\"}` as the type.\n")),
+    ("no link type is named in the strict set", "the same, single-quoted",
+     _plant_in_a_carrier(
+         "\n```python\nlink = {'inward': 'is blocked by'}\n```\n")),
+    ("no link type is named in the strict set", "the same, escaped inside a shell string",
+     _plant_in_a_carrier(
+         "\nRun `curl -d \"{\\\"inward\\\": \\\"is blocked by\\\"}\"` to post it.\n")),
+    # ⚠️ One backslash per layer: the shell string adds the first and the carrier
+    # that holds the command adds the second, which is the spelling a hook
+    # definition in this tree would actually carry.
+    ("no link type is named in the strict set", "the same, as a JSON carrier holds it",
+     _plant_in_a_carrier(
+         "\nRun `curl -d \"{\\\\\"inward\\\\\": \\\\\"is blocked by\\\\\"}\"`.\n")),
+    ("no link type is named in the strict set",
+     "a link type's own wording, as the whole of a span",
+     _plant_in_a_carrier("\nThe type reads `is blocked by` in that direction.\n")),
+    # ⛔ The same wording with the wrap falling inside the span, which is the arm
+    # `code()` was changed for: markdown lets a span cross a newline, this
+    # repository hard-wraps, and a line-by-line pass found neither half.
+    ("no link type is named in the strict set",
+     "a link type's own wording, wrapped inside its span",
+     _plant_in_a_carrier("\nThe type reads `is blocked\nby` in that direction.\n")),
+    ("no link type is named in the strict set", "a dependency field inside a fenced block",
+     _plant_in_a_carrier("\nThen:\n\n```sh \nread blocked_by\n```\n")),
+    ("no link type is named in the strict set",
+     "the wording as the whole of a line of a fence",
+     _plant_in_a_carrier("\nThen:\n\n```text \nis blocked by\n```\n")),
+    # ⛔ The same wording carrying the stop of the sentence it was quoted in,
+    # which is the shape a role writing prose actually produces.
+    ("no link type is named in the strict set",
+     "the wording as a whole span with the sentence's own punctuation on it",
+     _plant_in_a_carrier("\nThe type reads `is blocked by.` in that direction.\n")),
+    # ⛔ The sibling guard this check's own plant reaches too. ⚠️ Added here rather
+    # than noted as a gap: a change that reports no open item may not carry one,
+    # and the plant above was written for the same shape one check over.
+    ("no stack is named in the strict set",
+     "a strict set whose files carry no code at all", _plant_strict_files_with_no_code),
+    # The way this check can hold nothing and report green, which is the computed
+    # half its two forbidding groups lean on.
+    ("no link type is named in the strict set",
+     "a strict set whose files carry no code at all", _plant_strict_files_with_no_code),
 ]
 
 
@@ -2321,6 +2595,58 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     # needed its own disabling.
     ("no host run call is in the strict set", "a run call in a script a carrier calls",
      _plant_in_a_carrier_implementation('shown = "gh run view " + run + " --log"\n')),
+    # ⛔ The green side of the dependency check, and the two reasons it is the
+    # rule rather than a wider ban. First: the implementation behind the port must
+    # name the tracker's own field to speak to it at all, and a sweep that
+    # reddened on that would forbid the one place the shape belongs. Second, and
+    # the one rule 1 exists for: the link type's wording is an ordinary English
+    # phrase, so a carrier describing this very rule in prose has to stay green.
+    #
+    # ⚠️ **Verified as a problem-set delta rather than by watching the plant
+    # redden**, which is the form the host-run exemptions above already record and
+    # the only one that isolates a plant here: disabling a scope reddens the
+    # **unplanted** tree, so a whole-tree reading cannot tell a plant that was
+    # swept from a plant that contributed no region at all.
+    #
+    # ⛔ **And the English-phrase exemption below is held by two mechanisms
+    # together and by neither alone**, which the first form of this comment had
+    # wrong: removing the code-region scope leaves the phrase group still held to
+    # the whole of a region, and removing the whole-region position leaves the
+    # phrase outside any region at all -- so its plant adds nothing until both are
+    # gone. ⚠️ The refusal it exists against is live text rather than a
+    # hypothetical: a shipped role explains the direction of a dependency in those
+    # words.
+    #
+    # ⚠️ **Which mechanism holds which is measured and not reasoned about**, the
+    # phrase group's position being at the call site rather than in the pattern:
+    # stripping a pattern's anchors measures nothing, because the call uses `match`
+    # and not `search`.
+    ("no link type is named in the strict set",
+     "a dependency field in a script a carrier calls",
+     _plant_in_a_carrier_implementation('blockers = answer["blocked_by"]\n')),
+    ("no link type is named in the strict set",
+     "the link type's wording as an English phrase in a carrier's prose",
+     _plant_in_a_carrier(
+         "\nAn item is blocked by another when the relation says so, never when a "
+         "sentence does.\n")),
+    # ⛔ The green side of the metadata arm, whose reason the document names.
+    ("no link type is named in the strict set",
+     "a link type's metadata key as an English word, with an ordinary value",
+     _plant_in_a_carrier("\nThe map reads `inward: toward the centre` and no more.\n")),
+    # ⛔ The shapes the single-position form refused, each found by a reader and
+    # each a reason the phrase group is matched as a **whole** region and the
+    # endpoint arm names the host's own segments instead of any word.
+    ("no link type is named in the strict set",
+     "the wording inside a longer span, which is a sentence and not a name",
+     _plant_in_a_carrier(
+         "\nA subject like `fix: the gate is blocked by nothing` is ordinary.\n")),
+    ("no link type is named in the strict set",
+     "the wording in a sentence inside a fence, where an example body goes",
+     _plant_in_a_carrier(
+         "\nAn example body:\n\n```text \nThis is blocked by the API work.\n```\n")),
+    ("no link type is named in the strict set",
+     "an ordinary path whose first segment happens to be the collection's word",
+     _plant_in_a_carrier("\nRead it out of `docs/dependencies/graph.md` instead.\n")),
 ]
 
 
@@ -2391,8 +2717,8 @@ def main(argv: list[str]) -> int:
             print(f"  - {problem}")
         return 1
     print(
-        "\nNo other project is named, and nothing under a carrier root carries a value, a "
-        "tracker or a stack."
+        "\nNo other project is named, and no carrier root carries anything a role's "
+        "text may not."
     )
     return 0
 

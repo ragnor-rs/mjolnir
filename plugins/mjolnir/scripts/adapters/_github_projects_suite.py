@@ -34,6 +34,7 @@ from port import HostUnavailable  # noqa: E402
 
 # ⚠️ Not `board`: a case below names a resolved board that, so the module alias
 # has to be the thing under test rather than the thing it answers about.
+from adapters import _code_host_dependency as relation  # noqa: E402
 from adapters import github_projects as under_test  # noqa: E402
 from adapters.github_projects import (  # noqa: E402
     ADAPTER,
@@ -73,6 +74,7 @@ from adapters.github_projects import (  # noqa: E402
     link_dependency,
     link_for_close,
     matches,
+    read_blockers,
     read_item,
     search_items,
     set_field,
@@ -279,6 +281,52 @@ def _item_card(number: int, title: str, status: str = "Todo", kind: str = "Issue
     }
 
 
+def _dependencies_page(entries: list[tuple[int, str, str, str | None]]) -> list[dict]:
+    """The host's own answer for the dependencies endpoint: plain issue objects.
+
+    ⚠️ A different shape from everything else this fake answers, and that is the
+    fact rather than an inconsistency: the board is the query interface and the
+    relation is REST, so the two halves of a dependency are read off two
+    interfaces.
+
+    ⛔ **Every entry carries its repository address**, because that is the half a
+    bare number loses: a relation is recordable across repositories, a board draws
+    its cards from more than one, and the wrong `#13` answers perfectly. A fixture
+    that left it out would let an implementation assuming the configured
+    repository read as correct.
+
+    ⛔ **And every entry carries the host's own reason for its state**, which is
+    the half a closed state loses: an item abandoned rather than finished is
+    closed, and § 5's bar is what the dependency produced. A fixture whose closed
+    entries were all finished would let an implementation dropping the reason read
+    as correct -- measured on this repository's own backlog, which holds items
+    closed that way.
+    """
+    return [
+        {
+            "number": number,
+            "state": state,
+            "state_reason": reason,
+            "title": f"a recorded blocker, #{number}",
+            "html_url": f"https://example.invalid/{repo}/issues/{number}",
+            "repository_url": f"https://api.example.invalid/repos/{repo}",
+        }
+        for number, state, repo, reason in entries
+    ]
+
+
+def _asked_for(args: list[str], default: int = 7) -> int:
+    """The item number a call carried, read off the call itself.
+
+    The client passes a typed variable as `number=11`, so this is what lets the
+    fake answer for the object that was asked for rather than for one constant.
+    """
+    for part in args:
+        if part.startswith("number="):
+            return int(part.split("=", 1)[1])
+    return default
+
+
 def _default_answers() -> dict:
     """An answer for every call this module can make.
 
@@ -291,7 +339,13 @@ def _default_answers() -> dict:
     """
     return {
         "Board": _board_payload_for(_page_of(FIELD_NODES)),
-        "Item": _issue_payload(),
+        # ⛔ Answers for the number that was **asked for**, not one canned number
+        # for every ask. ⚠️ Measured: while it answered a fixed number, an
+        # implementation that read a number back off this answer and used it
+        # addressed that one instead — so a case about which object a call
+        # addresses was asserting the fixture's constant. A case that wants a
+        # particular item still overrides this key.
+        "Item": lambda args: _issue_payload(_asked_for(args)),
         "Items": {"repositoryOwner": {"projectV2": {"items": _page_of([])}}},
         # Prefix-matched across the four documents a value is written through,
         # which all answer in the same shape.
@@ -305,6 +359,20 @@ def _default_answers() -> dict:
         "issue create": "https://example.invalid/issues/31",
         "issue comment": "",
         "issue edit": "",
+        # ⚠️ Named by the **paging flag** rather than by the path, because
+        # `args[:2]` is what this fake reads and the path is the third word --
+        # which holds while this is the one paged REST read in the module. A
+        # second one would need the fake to name a call by what it addresses, and
+        # this comment is where that shows up.
+        #
+        # ⚠️ **Its position among the keys is not load-bearing**, and the first
+        # form of this comment claimed it was: `_answer_for` tries every exact
+        # match across both tables before any prefix, this name is exactly what
+        # `_name` returns for the paged call, and it is a prefix of nothing else.
+        # Reproduced by moving it after `api` and watching the suite stay green --
+        # a comment asserting an ordering nothing depends on is the restated-fact
+        # class one layer down.
+        "api --paginate": _dependencies_page([]),
         # Prefix-matched: the dependency lookup addresses one issue by path, and
         # the relation itself is posted with `--method`.
         "api": 4321,
@@ -330,6 +398,7 @@ class _Host:
         self.pages = pages or {}
         self.defaults = _default_answers()
         self.calls: list[str] = []
+        self.sent: list[list[str]] = []
 
     def _answer_for(self, name: str):
         # ⛔ Every exact match first, across both tables, and only then a prefix
@@ -366,6 +435,13 @@ class _Host:
     def __call__(self, args: list[str], parse: bool = True):
         name = self._name(args)
         self.calls.append(name)
+        # ⚠️ The whole call beside the name it answers by. The name is
+        # `args[:2]`, which is the right key for a fake that must not care about
+        # argument order -- and it loses a path that sits behind a flag, so a
+        # write's own address is unassertable from `calls` alone. Measured: the
+        # relation is posted with `--method` in front of its path, so every
+        # dependency write read as the same call.
+        self.sent.append(list(args))
         after = next(
             (part.split("=", 1)[1] for part in args if part.startswith("after=")), None
         )
@@ -797,14 +873,314 @@ def self_test() -> int:
                 f"called {host.calls}",
             )
 
+    # ⛔ And every write addresses the number the host answered with rather than
+    # the argument's spelling. ⚠️ Asked with a **zero-padded** decimal, which is
+    # the observable shape: the guard accepts it and normalises it, while `str()`
+    # of the argument and of the host's integer differ -- with an unpadded
+    # argument the two render identically and a case cannot tell the mechanism
+    # from its absence.
+    # ⛔ One per write, because each builds its own call and the rule is per call,
+    # and ⚠️ **each row names the call it must have made**: these read the item
+    # first, so an assertion satisfied by *some* clean call would be satisfied by
+    # the read and say nothing about the write it is here for.
+    for operation, call, mark in (
+        ("assign", lambda: assign("011"), "--add-assignee"),
+        ("comment", lambda: comment("011", "a note"), "--body"),
+        ("set_labels", lambda: set_labels("011", ["infra"]), "--add-label"),
+        ("link_dependency", lambda: link_dependency("011", 12), "dependencies/blocked_by"),
+    ):
+        _boards.clear()
+        padded = _Host({
+            "Board": _board_payload_for(_page_of(FIELD_NODES)),
+            "Item": _issue_payload(11),
+        })
+        with_host(padded, call)
+        written = [args for args in padded.sent
+                   if any(mark in str(arg) for arg in args)]
+        # ⛔ The number per **argument**, not as a substring of the whole vector:
+        # over the repr, `11` inside an unrelated argument satisfies a call that
+        # carries no item number at all.
+        addressed_by = [
+            args for args in written
+            if any(str(arg) in ("11", "#11") or "/11/" in str(arg)
+                   or str(arg).endswith("/11") for arg in args)
+        ]
+        check(
+            f"`{operation}` addresses the host's own number, not the argument's spelling",
+            bool(written) and addressed_by == written
+            and all("011" not in str(args) for args in written),
+            f"sent {[args for args in written]!r}",
+        )
+
+    # ⛔ The answer's own number, which this kind had no guard on: the sibling
+    # kind's, for its reason. ⚠️ One per shape the guard holds, the bool because
+    # it is an `int` and passed a type test while naming no item.
+    for label, planted in (
+        ("carrying no number", None),
+        ("answering `true` for one", True),
+    ):
+        _boards.clear()
+        numberless = _issue_payload(7)
+        if planted is None:
+            del numberless["repository"]["issueOrPullRequest"]["number"]
+        else:
+            numberless["repository"]["issueOrPullRequest"]["number"] = planted
+        reported = with_host(
+            _Host({"Board": _board_payload_for(_page_of(FIELD_NODES)), "Item": numberless}),
+            lambda: unavailable(lambda: read_item(7)),
+        )
+        check(
+            f"an answer {label} is a failed call, not a subscript on nothing",
+            reported is not None and "no number" in reported,
+            f"got {reported!r}",
+        )
+    # ⛔ Every shape the port passes, which is text. ⚠️ Through `ran`, so a shape
+    # that raises reddens a line rather than killing the run. The non-ASCII
+    # decimal digit is the one `isdecimal` admits and the host does not resolve,
+    # so normalising is what makes the reference below one the host can read.
+    read_shapes = [
+        ran(lambda handed=handed: item_number(handed))
+        for handed in (12, "12", "  12  ", "١١", {"number": 13})
+    ]
     check(
-        "`item_number` and `link_for_close` reach the host at all",
-        item_number(12) == 12 and item_number({"number": 13}) == 13
-        and link_for_close(14) == "Closes #14",
+        "the identifier operation reads a number out of every shape the port passes",
+        read_shapes == [12, 12, 12, 11, 13],
+        f"read {read_shapes!r}",
     )
+    # ⛔ One per shape that carries no number this can read, the arm each falls
+    # out of being its own, for the reason the sibling kind's suite states.
+    refusals = {
+        label: refused(lambda handed=handed: item_number(handed))
+        for label, handed in (
+            ("text that is no number", "not-a-number"),
+            ("a mapping with no `number`", {}),
+            ("a mapping whose `number` is a word", {"number": "abc"}),
+            ("a bool", True),
+            ("a value of another shape", 3.0),
+            ("zero", 0),
+            ("a negative", -13),
+            ("a mapping carrying zero", {"number": 0}),
+            ("text carrying a negative", "-13"),
+        )
+    }
+    check(
+        "every shape carrying no readable number is refused, naming the operation",
+        set(refusals.values()) == {"tracker.operations.item_number"},
+        f"reported {refusals!r}",
+    )
+    composed = [ran(lambda handed=handed: link_for_close(handed))
+                for handed in (14, "١١")]
+    check(
+        "the closing reference carries a number the host can resolve, not the argument",
+        composed == ["Closes #14", "Closes #11"],
+        f"composed {composed!r}",
+    )
+    check(
+        "and names itself where what it was handed carries no number",
+        refused(lambda: link_for_close("not-a-number")) == "tracker.operations.link_for_close",
+        f"reported {refused(lambda: link_for_close('not-a-number'))!r}",
+    )
+
     silent = _Host({})
     with_host(silent, lambda: (item_number(12), link_for_close(12)))
     check("without making a host call", silent.calls == [], f"called {silent.calls}")
+
+    # --- `link_dependency`: which object each half of the write addresses -----
+    #
+    # ⛔ The two halves run opposite ways and nothing held them for this kind: the
+    # id is looked up on the **blocker** and the relation is posted on the
+    # **blocked** item. Swap them and the call still succeeds, recording a real
+    # relation the wrong way round — and the readiness gate reading it then starts
+    # the item that is actually blocked. ⚠️ Asserted off the calls as sent rather
+    # than off the names, because the posted path sits behind a flag.
+    _boards.clear()
+    own_repo = str(configuration.get("host.repo") or "")
+    written = _Host({})
+    with_host(written, lambda: link_dependency(11, 12))
+    posted = [args for args in written.sent if args[:1] == ["api"] and "--method" in args]
+    looked_up = [
+        args for args in written.sent if args[:1] == ["api"] and "--jq" in args
+    ]
+    check(
+        "the relation is posted on the blocked item and the id read off the blocker",
+        len(posted) == 1 and len(looked_up) == 1
+        and relation.blocked_by_path(own_repo, 11) in posted[0]
+        and relation.issue_path(own_repo, 12) in looked_up[0],
+        f"posted {posted!r} after looking up {looked_up!r}",
+    )
+
+    # --- `read_blockers`: the source the readiness gate's blocker check has ---
+    #
+    # ⛔ The relation is a fact about the issues and not about the card, so this
+    # reads REST while every other read here reads the query interface. What the
+    # cases below hold is the three things a gate would be wrong about: which
+    # repository a blocker is in, which state word it carries, and whether the
+    # answer is the first page or all of them.
+    _boards.clear()
+    elsewhere = "another-owner/another-name"
+    recorded = _Host({
+        "api --paginate": _dependencies_page([
+            (12, "closed", own_repo, "completed"),
+            (13, "open", elsewhere, None),
+            (14, "closed", own_repo, "not_planned"),
+        ]),
+    })
+    answered = with_host(recorded, lambda: read_blockers(11))
+    blockers = answered.get("blockers") if isinstance(answered, dict) else None
+
+    # ⛔ Every field read with `.get` and never by subscript. ⚠️ Measured on this
+    # block's own first form: a plant that dropped a field killed the run with a
+    # `KeyError` where a verdict belongs, which is the shape the suite beside this
+    # one records -- an assertion about a missing field cannot be the thing that
+    # cannot survive it.
+    def field(name: str) -> list:
+        return [entry.get(name) for entry in blockers or [{}]]
+
+    check(
+        "`read_blockers` answers every recorded blocker with the host's own state word",
+        list(zip(field("number"), field("state")))
+        == [(12, "closed"), (13, "open"), (14, "closed")],
+        f"answered {blockers!r}",
+    )
+    check(
+        "and the repository each blocker is in, which a bare number loses",
+        field("repo") == [own_repo, elsewhere, own_repo],
+        f"answered {field('repo')!r}",
+    )
+    # ⛔ The reason beside the state, which is the half a closed state loses: #12
+    # and #14 are both `closed` and only one of them produced anything, and § 5's
+    # bar is what the dependency produced. An implementation dropping this answers
+    # the two identically.
+    check(
+        "and the host's own reason for a closed state, so an abandoned blocker is "
+        "not an achieved one",
+        field("state_reason") == ["completed", None, "not_planned"],
+        f"answered {field('state_reason')!r}",
+    )
+    # ⛔ The answer's keys, exactly, at **both** levels -- and that is the arm this
+    # case was rewritten for. The first form asserted that a hardcoded set of
+    # verdict words was absent from the top level, which `{"number","blockers"}`
+    # cannot contain and an empty dict satisfies: near-vacuous, and blind to the
+    # place a verdict would actually be derived, which is the entry. Reproduced by
+    # making the shared shaping derive one and watching the old assertion pass.
+    # ⚠️ What is asserted is that the two levels carry these fields and no
+    # others, so an added key reddens whichever level grew it.
+    check(
+        "and nothing beyond the fields the operation states, at either level",
+        set(answered or {}) == {"number", "blockers"}
+        and all(
+            set(entry) == {"number", "state", "state_reason", "title", "url", "repo"}
+            for entry in blockers or [{}]
+        ),
+        f"answered {sorted(answered or {})!r} over "
+        f"{sorted((blockers or [{}])[0])!r}",
+    )
+    # ⛔ The paging flag is asserted on the **call**, not inferred from the answer:
+    # the fake merges nothing, so an implementation reading one page would pass
+    # every case above while shortening a real answer. ⚠️ Measured as the residue
+    # of this fake rather than hidden -- what the client does with the flag is the
+    # client's, and this holds that the flag is there to be acted on.
+    paged = [call for call in recorded.calls if call.startswith("api")]
+    check(
+        "and asks for every page rather than the first",
+        paged == ["api --paginate"],
+        f"called {paged!r}",
+    )
+    # ⛔ The endpoint itself, as a literal. ⚠️ The direction case below compares
+    # the call against the production helper, so it holds which object each half
+    # addresses and says nothing about the address -- an endpoint renamed to
+    # something that does not exist passed every case here, measured. ⚠️ The
+    # sibling kind shares this helper and states the literal in its own suite, so
+    # a rename reddens in both: one assertion per kind, which is what the shared
+    # helper cannot give.
+    read = [args for args in recorded.sent if args[:2] == ["api", "--paginate"]]
+    check(
+        "at the endpoint this host keeps the relation on, written out here once",
+        read == [["api", "--paginate", f"repos/{own_repo}/issues/11/dependencies/blocked_by"]],
+        f"called {read!r}",
+    )
+    # ⛔ An answer the shared grammar cannot read is a failed outcome and not a
+    # traceback, which is the contract § 3 states. Two shapes, because the client's
+    # own help says each page is a separate array and an outer wrapper is opt-in --
+    # so both are shapes its merging could become.
+    for label, planted in (
+        ("an object where an array belongs", {"total_count": 1}),
+        ("an array whose entry is not an item", ["#13"]),
+    ):
+        malformed = _Host({"api --paginate": planted})
+        reported = with_host(malformed, lambda: unavailable(lambda: read_blockers(11)))
+        check(
+            f"and {label} is a failed call naming the call that made it",
+            # ⚠️ The path through the production helper rather than as a literal:
+            # the case above is what holds the literal, and spelling it here too
+            # would make an endpoint rename redden three cases by one route.
+            reported is not None and relation.blocked_by_path(own_repo, 11) in reported,
+            f"got {reported!r}",
+        )
+    # ⛔ The guard, in the direction that matters: the path is the issues one,
+    # which answers for a pull request, so a blocker list read with a pull request
+    # number is an answer about the wrong object.
+    guarded = _Host({"Item": _issue_payload(11, typename="PullRequest")})
+    reported = with_host(guarded, lambda: unavailable(lambda: read_blockers(11)))
+    check(
+        "a pull request number is refused before the relation is read",
+        reported is not None and "PullRequest" in reported
+        and guarded.calls == ["Item"],
+        f"got {reported!r} after {guarded.calls}",
+    )
+    # ⛔ And a value that is not a number at all is refused as a configuration
+    # rather than let out as a `ValueError`, every operation here routing through
+    # the same guard. The port catches the contract's own exceptions and nothing
+    # else, so this is the difference between a reported refusal and a traceback.
+    # ⚠️ The shapes are the ones `int()` accepts and an item number is not, that
+    # being the guard's first form: a bool addresses item 1, a float addresses its
+    # floor, a padded string addresses the number inside it, and a superscript
+    # answers `isdigit` and then raises in `int` -- while the refusal's own
+    # message says a value that is not a number addresses nothing.
+    for handed in ("not-a-number", True, 1.9, " 11 ", "²"):
+        shapeless = _Host({})
+        reported = with_host(
+            shapeless, lambda handed=handed: refused(lambda: read_blockers(handed))
+        )
+        check(
+            f"{handed!r} is refused as an item number, before any call",
+            reported == "tracker.operations.read_item" and shapeless.calls == [],
+            f"reported {reported!r} after {shapeless.calls}",
+        )
+    check(
+        "while the two shapes a number does arrive in are accepted",
+        all(
+            isinstance(
+                (with_host(_Host({}), lambda handed=handed: read_blockers(handed))
+                 or {}).get("number"),
+                int,
+            )
+            for handed in (11, "11")
+        ),
+        "an integer or a string of digits was refused",
+    )
+    # ⛔ The repository address is matched whole, and this is the arm that holds
+    # it: the guard's first form tested the arity of a split and was dead for
+    # every input containing a slash, so a truncated or unexpected address came
+    # back as a plausible-looking repository instead of as nothing. ⚠️ Asserted
+    # through the shared module directly -- it is a pure shaping with no host in
+    # it, and the alternative is a fixture per malformed address.
+    misread = [
+        address for address in (
+            "https://api.example.invalid/repos",
+            "https://api.example.invalid/",
+            "https://api.example.invalid/repos/o/n/issues/13",
+        )
+        if relation.blocker({"repository_url": address})["repo"] is not None
+    ]
+    check(
+        "an address this host did not write answers no repository rather than a guess",
+        not misread
+        and relation.blocker(
+            {"repository_url": "https://api.example.invalid/repos/o/n/"}
+        )["repo"] == "o/n",
+        f"read a repository out of {misread!r}",
+    )
 
     # --- `set_state`: the column, by name, read before written --------------
     #
@@ -1167,6 +1543,39 @@ def self_test() -> int:
         answered["advanced"] is False and answered["state"] == "CLOSED",
         f"answered {answered!r}",
     )
+    # ⛔ Asked with text, which is how the port passes every argument -- so the
+    # number in the answer is the host's own and the typed query variable is built
+    # from it rather than from what the caller spelled. ⚠️ Every case above hands
+    # an integer, where an echo and a read are the same value.
+    host = _Host({
+        "Board": _board_payload_for(_page_of(FIELD_NODES)),
+        "Item": _issue_payload(7, status="Merged"),
+        "ClosedBy": merged_answer,
+    })
+    as_text = with_host(host, lambda: advance_on_merge("7"))
+    check(
+        "and asked with text it answers the host's own number, not the argument",
+        isinstance((as_text or {}).get("number"), int)
+        and (as_text or {}).get("number") == 7,
+        f"answered {(as_text or {}).get('number')!r}",
+    )
+    # ⛔ And the variable goes out **typed**, which is the observable the sibling
+    # kind does not have: the client picks its flag off the value's own type, so a
+    # query variable built from the argument's text would be sent as an untyped
+    # one against an `Int!` and refused by the host. ⚠️ Asserted on the flag and
+    # not on the rendered value, which is identical either way.
+    sent = [args for args in host.sent if "ClosedBy" in " ".join(args)]
+    typed = [
+        args[index - 1]
+        for args in sent
+        for index, part in enumerate(args)
+        if part.startswith("number=")
+    ]
+    check(
+        "and the query variable for it is sent typed rather than as text",
+        typed == ["-F"],
+        f"sent {typed!r} out of {sent!r}",
+    )
     # ⛔ A repository the credential cannot see answers `repository: null`, and a
     # null is not an absent key -- so a default on the lookup does not apply to it
     # and the plain form raises an attribute error where this operation's own
@@ -1221,5 +1630,11 @@ def self_test() -> int:
     if failures:
         print(f"\n{failures} assertion(s) did not hold.")
     return 1 if failures else 0
+
+
+# ⛔ An entry point, for the reason the hosted tracker's suite beside this one
+# states: a run that asserts nothing exits zero and reads as a held mechanism.
+if __name__ == "__main__":
+    sys.exit(self_test())
 
 

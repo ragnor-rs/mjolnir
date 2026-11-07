@@ -538,6 +538,56 @@ a capability difference at all — the API answering them is one API. What proje
 differing in is which mechanism carries the type, the estimate and the template, which is a facet
 below and already has a home of its own.
 
+### Reading a dependency back, per tracker, and the one tracker that cannot
+
+⚠️ **The read half is newer than the survey**, and this section is bounded the way the `set_field`
+paragraph above is bounded: the table at the top of this section records what the **copies** did,
+and no copy was measured reading a dependency back. ⛔ **So the write half is not restated here** —
+it is that table's `link_dependency` row and the Jira reference section below, and ⚠️ **the first
+form of this section copied both of them**, which is the defect it is the remedy for one layer
+down. A row below that needs the write form points at it rather than repeating it.
+
+⛔ **Why it is here at all**: § 5 carries a blocker predicate in the shared library and, until this
+was written, nothing stated **where a blocker is recorded** — so the check had no source, and the
+honest reading of a tracker that cannot be asked was indistinguishable from a tracker with nothing
+to report. The rule is now
+[`schema.md § 3 → An edge is a relation`](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)
+and the operations are `link_dependency` and `read_blockers`.
+
+| Tracker | How a dependency reads back | Source |
+|---|---|---|
+| plain issues, and a board | one endpoint, read on the *blocked* item — the same one the write posts to, the board holding no relation of its own. **Every page**, under the same silent ceiling the search rows below record, and the client merges them only when the paging flag is passed. ⚠️ **The entries are issues and carry their own repository address**, which is the half a bare number loses: a relation is recordable across repositories and a board draws cards from more than one, so a blocker read as `#13` resolves against the wrong backlog and the wrong `#13` answers perfectly. ⛔ **And the state word is not the whole state**: this host records *why* an item closed, so an item abandoned rather than finished is `closed` with a reason that says so — and § 5's bar is what the dependency produced | a live host |
+| Jira | **no call of its own**: the links arrive with the item. The sense is read from which side an entry carries and never from the type's wording — the inversion the reference section below measured, where the write is the other chance to invert it — and each entry holds the project's own status word *and* the tracker's category behind it, with the blocker's own summary and address beside them. ⛔ **And this is the tracker that cannot answer *why* a blocker closed**: a resolution is not in a link payload and the read makes no call, so a blocker abandoned and one finished arrive in the category that means neither. ⚠️ A reader here has the category and not what the dependency produced, which is the half § 5's bar is about | a live site, through a different interface |
+| Trello | ⛔ **absent.** There is no relation object to read, there being none to write either, so § 5's blocker predicate reports *unanswered* on this tracker. ⚠️ Never *no blockers*: a prose edge in two card descriptions is readable by a person and is not a verdict a gate may pass on | the published reference |
+
+⛔ **The absence is the row worth reading**, and it is why the predicate's stated behaviour is
+*unanswered* rather than a pass —
+[`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)
+is where that is stated. A gate that treated *cannot be asked* as *nothing to report* would start
+every item on that tracker whose dependency had not landed, which is § 2's absence-of-signal rule
+arriving at a readiness gate. ⚠️ **No count of the trackers that answer is given here**, for the
+reason this document gives about every other count: the kinds are built one work item at a time, and
+which implementations carry a capability is declared by implementing it rather than listed anywhere.
+
+**The measurement that forced the ruling, taken in this repository's own backlog.** Sixty-eight
+dependency edges were stated as prose in issue bodies while the configured readiness list carried
+the blocker predicate with nothing to read; the host's dependency relations were available and
+carried three of the sixty-eight. All sixty-eight are relations now. ⛔ **So the prose line and the
+relation were two statements of one fact** — the defect this toolkit exists to delete, in its own
+backlog — and what settled it is not *delete every sentence naming another item*: some of those
+sentences carried what a relation cannot express, that two items were decided together or that one
+sits below another in an order without blocking it. ⚠️ **Which is why the ruling separates the edge
+from the reasoning about the edge** rather than banning prose, and why its test is what a gate would
+answer rather than what a sentence looks like.
+
+⚠️ **One shape this left behind, measured in this repository's own carriers rather than reasoned
+about**: two project-local roles had written a tracker's own field name and endpoint path into their
+prose, and the naming sweep was green over both — it forbids a tracker's *name* and these are a
+level down from it, the tracker's vocabulary. That is now its own check, recorded with the sweep in
+[`single-source-of-truth.md`](single-source-of-truth.md#the-second-sweep-naming-no-other-project).
+⚠️ **And the check's own first form over-reached in the other direction**, which is recorded there
+too.
+
 ### What building the board's implementation measured
 
 The survey above read the copies; these are the host's own answers, measured while the
@@ -2067,7 +2117,7 @@ on the surface instead of being discovered by whoever loses one.
 one of them only decidable as far as the artifact's fields. Which end of that split the carrier
 holds, and what it does not reach, is the reach of a check and belongs where every other check's
 reach does —
-[`docs/single-source-of-truth.md`](single-source-of-truth.md#the-bookkeeping-roles-two-derivations-and-the-round-trip-that-is-the-resumability-arm).
+[`docs/single-source-of-truth.md`](single-source-of-truth.md#the-bookkeeping-roles-derivations-and-the-round-trip-that-is-the-resumability-arm).
 
 ## The memory store is derived from the working directory
 

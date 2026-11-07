@@ -301,6 +301,13 @@ a capability is absent: the labels, the assignee, and the relations below.
 
 **Relations are recorded through `link_dependency`, in the tracker, never as a line of prose in the
 body** — except where that capability is absent, which is the one case its fallback allows.
+[`§ 3 → An edge is a relation`](../../config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)
+is the rule and this role is where it is performed; the gate that reads what this writes is
+`read_blockers`, so an edge written as a sentence is an edge no gate can see.
+
+⛔ **What the body keeps instead is the reasoning about the edge, and it is written rather than
+dropped** — which half is which, and the test between them, are that section's and are not restated
+here.
 
 ⛔ **Restate the direction in plain language before writing it.** "B cannot ship until A is done"
 means B is blocked by A. Terse phrasing is ambiguous in both readings, and a misread direction costs

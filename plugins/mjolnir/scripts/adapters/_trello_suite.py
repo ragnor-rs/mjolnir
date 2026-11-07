@@ -623,6 +623,50 @@ def self_test() -> int:
         reported == "tracker.operations.item_number",
         f"reported {reported!r}",
     )
+    # ⛔ Text is one of the shapes the port passes, and the first form went
+    # straight to a lookup on it -- an `AttributeError` from the one operation
+    # that cannot fail for any other reason. ⚠️ Through `number`, which reports a
+    # refusal as a value, so a shape that raises reddens a line.
+    check(
+        "a number arriving as text is read as a number, the port passing every value so",
+        (number("7"), number("  7  ")) == (7, 7),
+        f"read {(number('7'), number('  7  '))!r}",
+    )
+    check(
+        "and text carrying no number is refused rather than reaching a lookup",
+        refused(lambda: item_number("not-a-number")) == "tracker.operations.item_number",
+        f"reported {refused(lambda: item_number('not-a-number'))!r}",
+    )
+    # ⛔ And every shape that reaches neither arm, which is the terminal refusal
+    # the sibling kinds carry and this one stopped short of: the arms above
+    # excluded a bool from the first and text from the second, and what they
+    # excluded reached the lookup -- the same failure, made reachable by the
+    # guard added to prevent it. ⚠️ The bool is here because it is an `int`.
+    shapes = {
+        label: refused(lambda handed=handed: item_number(handed))
+        for label, handed in (
+            ("a bool", True),
+            ("a float", 3.0),
+            ("nothing", None),
+            ("a list", [1]),
+            ("zero, which names no card on a board counting from one", 0),
+            ("a negative", -13),
+            ("a card whose short id is zero", {"id": "c", "idShort": 0}),
+        )
+    }
+    check(
+        "and so is every shape that is neither a card nor an identifier",
+        set(shapes.values()) == {"tracker.operations.item_number"},
+        f"reported {shapes!r}",
+    )
+    # ⚠️ And a card whose own short id is a bool is a card with none: keyed on an
+    # `int` alone it would answer a lookup for card 1 with another card.
+    check(
+        "a card whose short id is `true` carries no number, not number one",
+        refused(lambda: item_number({"id": "card-1", "idShort": True}))
+        == "tracker.operations.item_number",
+        f"reported {refused(lambda: item_number({'id': 'card-1', 'idShort': True}))!r}",
+    )
     silent = host()
     with_host(silent, lambda: (item_number(7), item_number({"idShort": 8})))
     check("and none of that reaches the host", silent.calls == [], f"called {silent.calls}")
@@ -743,6 +787,21 @@ def self_test() -> int:
         "while one node below it is an answer, so the guard is the ceiling and not the size",
         isinstance(answered, dict) and answered.get("number") == 1,
         f"got {answered!r}",
+    )
+
+    # ⚠️ And a card whose own short id is `true` is not the card numbered one.
+    # A bool is an `int`, so the index keyed on a type test alone would file it
+    # under 1 and answer a lookup for card 1 with it -- the one direction a
+    # by-number index fails silently, because the answer is a real card.
+    boolean = host({"cards": [
+        dict(_card(1, "a card the host answered oddly", short=False), idShort=True),
+        _card(2, "a second card"),
+    ]})
+    reported = with_host(boolean, lambda: unavailable(lambda: read_item(1)))
+    check(
+        "a card whose short id is `true` is not filed as card one",
+        reported is not None and "no card numbered 1" in reported,
+        f"got {reported!r}",
     )
 
     missing = host()
