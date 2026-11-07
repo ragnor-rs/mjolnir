@@ -268,14 +268,11 @@ LINK_TYPE_TOKENS = [
     # and named no other tracker's.
     (re.compile(r"(?<![\w-])issuelinks(?![\w-])"),
      "the field a hosted tracker carries its links in"),
-    # A metadata key a link type's description sits under, **with that
-    # description after it**. ⛔ The key alone is not the test and the pair is not
-    # either: each word is ordinary English in front of a colon, and requiring
-    # both in one region admitted the shape a carrier actually writes -- one key
-    # per line of a fence, or per paragraph. What makes it decidable is the value,
-    # which is a link type's own wording and nothing a sentence carries.
+    # A metadata key a link type's description sits under, with that description
+    # after it, for the reason recorded with this check's other limits in the
+    # document the docstring above names.
     (re.compile(
-        r"(?<![\w-])\"?(?:inward|outward)\"?\s*:\s*\"?\s*"
+        r"(?<![\w-])[\"']?(?:inward|outward)[\"']?\s*:\s*[\"']?\s*"
         r"(?:is\s+blocked\s+by|blocks)(?![\w-])", re.I),
      "a link type's own metadata key, with its wording"),
 ]
@@ -2416,9 +2413,7 @@ VIOLATIONS = [
     ("no link type is named in the strict set",
      "the field a hosted tracker keeps its links in",
      _plant_in_a_carrier("\nThe links arrive under `issuelinks` with the item.\n")),
-    # ⛔ One per shape a carrier would write it in, because the pair-in-one-region
-    # form admitted every one of these but the first: a span, one key per line of
-    # a fence, a key alone in its own paragraph, and the quoted form.
+    # ⛔ One per shape a carrier would write it in.
     ("no link type is named in the strict set", "a link type's key and wording in one span",
      _plant_in_a_carrier(
          "\nThe type states `inward: is blocked by, outward: blocks` either way.\n")),
@@ -2432,6 +2427,12 @@ VIOLATIONS = [
     ("no link type is named in the strict set", "the same, with the keys quoted",
      _plant_in_a_carrier(
          "\nSend `{\"inward\": \"is blocked by\"}` as the type.\n")),
+    # ⚠️ The single-quoted spelling, which the first form of this arm read past:
+    # it matched a double quote only, so the whole family a carrier writes in
+    # YAML or in a script fell out of the arm.
+    ("no link type is named in the strict set", "the same, single-quoted",
+     _plant_in_a_carrier(
+         "\n```python\nlink = {'inward': 'is blocked by'}\n```\n")),
     ("no link type is named in the strict set",
      "a link type's own wording, as the whole of a span",
      _plant_in_a_carrier("\nThe type reads `is blocked by` in that direction.\n")),
@@ -2622,9 +2623,7 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
      _plant_in_a_carrier(
          "\nAn item is blocked by another when the relation says so, never when a "
          "sentence does.\n")),
-    # ⛔ The green side of the metadata arm, and the refusal it exists against:
-    # either side of a link type is an ordinary English word in front of a colon,
-    # so the key alone decides nothing and the value is what the arm reads.
+    # ⛔ The green side of the metadata arm, whose reason the document names.
     ("no link type is named in the strict set",
      "a link type's metadata key as an English word, with an ordinary value",
      _plant_in_a_carrier("\nThe map reads `inward: toward the centre` and no more.\n")),

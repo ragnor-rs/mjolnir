@@ -130,8 +130,9 @@ def blocker(entry: dict) -> dict:
     # assumed to be a string. A host answer is outside this procedure, and an
     # entry carrying a number where a word belongs reached the operator as an
     # attribute error -- which is the traceback the port states three answers
-    # instead of. ⚠️ The identifier, the title and the address are carried as the
-    # host stated them, nothing here comparing on them.
+    # instead of. ⚠️ The title and the address are carried as the host stated them,
+    # nothing here comparing on either; what the identifier is held to is
+    # `blockers_of`'s, before this runs.
     address = REPOSITORY_URL.search(_word(entry.get("repository_url")))
     return {
         "number": entry.get("number"),
@@ -158,7 +159,7 @@ def blockers_of(answered, path: str) -> list[dict]:
     that each page is a separate array and that an outer wrapper is opt-in. So the
     shapes that behaviour could become are held here rather than iterated over: a
     body that is not an array at all, an array whose entries are not items, and an
-    entry carrying no readable state. ⚠️ Measured on the shapes rather than on the
+    entry carrying no field § 5 could apply a bar to. ⚠️ Measured on the shapes rather than on the
     client: unmerged pages reach the reader as a parse error and a wrapped object
     reaches it as an attribute error on a string, each arriving where the port
     states an outcome and no traceback.
@@ -184,10 +185,10 @@ def blockers_of(answered, path: str) -> list[dict]:
         )
     # ⛔ And an entry § 5 could not apply a bar to is refused rather than shaped:
     # the state, because an empty string there is a blocker reported as neither
-    # open nor closed, and the identifier, because § 5's own bullet says neither
-    # bar can be applied to a reading that does not say which blocker is which.
-    # Either is an unreadable field dressed as an answer, in the function whose
-    # whole contract above is that it never does that.
+    # open nor closed, and the identifier, because a bar is applied to a named
+    # item and nothing names this one. Either is an unreadable field dressed as an
+    # answer, in the function whose whole contract above is that it never does
+    # that.
     # ⚠️ The cost is stated rather than glossed: it refuses the **list**, so one
     # unreadable entry among nine makes the predicate unanswered for an item whose
     # other blockers were perfectly readable. That is the direction § 2's rule
@@ -198,7 +199,12 @@ def blockers_of(answered, path: str) -> list[dict]:
         for field, readable in (
             ("number", isinstance(entry.get("number"), int)
              and not isinstance(entry.get("number"), bool)),
-            ("state", isinstance(entry.get("state"), str)),
+            # ⛔ A word, and not merely a string: the empty one is what the arm's
+            # own reason names -- a blocker reported as neither open nor closed --
+            # and the first form of this admitted it, which made that reason a
+            # claim about a refusal nothing performed.
+            ("state", isinstance(entry.get("state"), str)
+             and bool(entry.get("state").strip())),
         )
         if not readable
     ]
@@ -206,8 +212,8 @@ def blockers_of(answered, path: str) -> list[dict]:
         index, field = unusable[0]
         raise port.HostUnavailable(
             f"`{path}` answered an item at position {index} whose `{field}` is "
-            f"{type(answered[index].get(field)).__name__}, so § 5 could not be "
-            "applied to that blocker. An unreadable entry is not the same as an "
-            "item with no recorded blocker."
+            f"{answered[index].get(field)!r}, so § 5 could not be applied to that "
+            "blocker. An unreadable entry is not the same as an item with no "
+            "recorded blocker."
         )
     return [blocker(entry) for entry in answered]

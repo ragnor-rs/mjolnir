@@ -2117,7 +2117,7 @@ on the surface instead of being discovered by whoever loses one.
 one of them only decidable as far as the artifact's fields. Which end of that split the carrier
 holds, and what it does not reach, is the reach of a check and belongs where every other check's
 reach does —
-[`docs/single-source-of-truth.md`](single-source-of-truth.md#the-bookkeeping-roles-two-derivations-and-the-round-trip-that-is-the-resumability-arm).
+[`docs/single-source-of-truth.md`](single-source-of-truth.md#the-bookkeeping-roles-derivations-and-the-round-trip-that-is-the-resumability-arm).
 
 ## The memory store is derived from the working directory
 

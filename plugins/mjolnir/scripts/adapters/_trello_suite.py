@@ -623,6 +623,20 @@ def self_test() -> int:
         reported == "tracker.operations.item_number",
         f"reported {reported!r}",
     )
+    # ⛔ Text is one of the shapes the port passes, and the first form went
+    # straight to a lookup on it -- an `AttributeError` from the one operation
+    # that cannot fail for any other reason. ⚠️ Through `number`, which reports a
+    # refusal as a value, so a shape that raises reddens a line.
+    check(
+        "a number arriving as text is read as a number, the port passing every value so",
+        (number("7"), number("  7  ")) == (7, 7),
+        f"read {(number('7'), number('  7  '))!r}",
+    )
+    check(
+        "and text carrying no number is refused rather than reaching a lookup",
+        refused(lambda: item_number("not-a-number")) == "tracker.operations.item_number",
+        f"reported {refused(lambda: item_number('not-a-number'))!r}",
+    )
     silent = host()
     with_host(silent, lambda: (item_number(7), item_number({"idShort": 8})))
     check("and none of that reaches the host", silent.calls == [], f"called {silent.calls}")

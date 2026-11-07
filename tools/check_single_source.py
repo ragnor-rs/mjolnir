@@ -107,6 +107,10 @@ DIRECTIVE = (BINDING, "⚠️")
 # a fragment that resolves against a path that does not is a dead link with a
 # green gate.
 CITATION = re.compile(r"\]\((?P<path>[^)\s#]*" + re.escape(SURFACE_NAME) + r")#(?P<anchor>[^)\s]+)\)")
+# Any citation into a markdown file's heading, which is the form above widened
+# off the surface's own name: a document citing another document resolves the
+# same way and was held by nothing.
+DOCUMENT_CITATION = re.compile(r"\]\((?P<path>[^)\s#]+\.md)#(?P<anchor>[^)\s]+)\)")
 
 # The two homes a ruling's outcome may have. `the skill` is permitted only
 # alongside one of them, for a role whose outcome is split between the surface
@@ -315,6 +319,25 @@ class Tree:
                 out.append((path, target, match.group("anchor")))
         return out
 
+    def document_citations(self) -> list[tuple[str, str, str]]:
+        """The same, for a citation from one document into **another document**.
+
+        ⛔ A separate reader because `CITATION` is scoped to the surface's own
+        file name, so every citation between two documents was held by nothing.
+        ⚠️ Measured: a ruling's link to the measurement it rests on went dead
+        when the heading it named was renamed in the same change, and no run saw
+        it.
+        """
+        out = []
+        for path in self.prose:
+            for match in DOCUMENT_CITATION.finditer(self.text.get(path, "")):
+                target = os.path.normpath(
+                    os.path.join(os.path.dirname(path), match.group("path"))
+                ).replace(os.sep, "/")
+                if target in self.text and target != SURFACE:
+                    out.append((path, target, match.group("anchor")))
+        return out
+
 
 # --- the checks ------------------------------------------------------------
 #
@@ -418,6 +441,32 @@ def check_no_citation_names_a_container(tree: Tree) -> list[str]:
                 f"{path}: cites `{cited}`, whose whole content is in its subsections, so the "
                 "citation resolves to a heading and nothing else. One of these states the "
                 f"fact: {' · '.join(subs)}."
+            )
+    return problems
+
+
+def check_citations_between_documents_resolve(tree: Tree) -> list[str]:
+    """A citation from one document into another resolves to a heading of it.
+
+    ⛔ The surface's own citations are held one check up; this is every other
+    one. A document here records a measurement and the records beside it cite
+    that section rather than restating it, which is the discipline that keeps one
+    statement of a fact — and a citation to a heading that no longer exists turns
+    that discipline into a fact stated nowhere a reader can reach.
+    """
+    found = tree.document_citations()
+    problems = []
+    if not found:
+        problems.append(
+            "No document cites another document's heading, so this check holds nothing. "
+            "Either the citation form changed or the records stopped citing."
+        )
+    for path, target, cited in found:
+        if cited not in {a for _, _, a in headings(tree.text[target])}:
+            problems.append(
+                f"{path}: cites `{target}#{cited}`, which is not a heading of that "
+                "document. The link renders and resolves to nothing, so the fact it "
+                "stands in for is stated nowhere a reader reaches."
             )
     return problems
 
@@ -633,6 +682,7 @@ def check_the_footprint_covers_what_is_walked(tree: Tree) -> list[str]:
 CHECKS = [
     ("every document has a role", check_every_document_has_a_role),
     ("citations resolve", check_citations_resolve),
+    ("citations between documents resolve", check_citations_between_documents_resolve),
     ("no orphan section", check_no_orphan_section),
     ("outcomes live in the surface or a work item", check_outcomes_live_in_one_of_two_places),
     ("binding statements cite the surface", check_binding_statements_cite_the_surface),
@@ -678,6 +728,20 @@ def _plant_broken_anchor(tree: Tree) -> Tree:
         lambda m: f"]({m.group('path')}#planted-anchor-that-does-not-exist)",
         tree.text[READER],
         count=1,
+    )
+    return tree
+
+
+def _plant_broken_anchor_between_documents(tree: Tree) -> Tree:
+    """A record's citation of another record's heading, pointed at nothing.
+
+    ⛔ Planted in the rulings record rather than in the reader, because that is
+    where the live instance was: a ruling cites the measurement it rests on, and
+    the heading was renamed in the same change that cited it.
+    """
+    path, _target, anchor = tree.document_citations()[0]
+    tree.text[path] = tree.text[path].replace(
+        f"#{anchor})", "#planted-anchor-no-document-has)", 1
     )
     return tree
 
@@ -987,6 +1051,8 @@ VIOLATIONS = [
     ("every document has a role", "a glob that matches nothing", _plant_glob_matching_nothing),
     ("citations resolve", "an anchor that does not exist", _plant_broken_anchor),
     ("citations resolve", "a valid anchor on a wrong path", _plant_broken_path),
+    ("citations between documents resolve", "a record citing a heading no document has",
+     _plant_broken_anchor_between_documents),
     ("no orphan section", "a section nothing motivates", _plant_orphan_section),
     ("no orphan section", "a subsection nothing motivates", _plant_orphan_subsection),
     ("no citation names a container", "a citation of a container section", _plant_citation_of_a_container),

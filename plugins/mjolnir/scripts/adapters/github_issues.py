@@ -12,8 +12,8 @@ What it implements, and what it deliberately does not:
     `DELIBERATELY_ABSENT` below, with the reason beside each there rather than
     here. ⛔ No count of them is carried: the list is closed and stated once, in
     § 3, and a number here would be wrong the next time it grows. ⚠️ **The first
-    form of this bullet said *except the checklist ones*** and was wrong -- a
-    fourth operation was absent beside them and the sentence read as covering it.
+    form of this bullet said *except the checklist ones*** and was wrong --
+    `set_field` was absent beside them and the sentence read as covering it.
     Found by the suite beside this module asserting the relation rather than the
     sentence, which is why the set lives in a tuple now and the suite reads it
     from there.
@@ -51,9 +51,8 @@ What it implements, and what it deliberately does not:
     first**, which is what makes the pull-request guard there cover them rather
     than cover one. ⚠️ Measured: an earlier draft claimed that coverage while
     `comment` and `link_dependency` went straight to the host, so both could
-    write against a pull request. The two that make no call at all --
-    `item_number` and `link_for_close` -- are named as such where they are
-    defined.
+    write against a pull request. The ones that make no call at all are named as
+    such where they are defined.
 
 Every call goes through `gh`, which holds the credential and the host's base URL,
 so an enterprise host needs no key here. The configuration arrives from the port
@@ -219,7 +218,7 @@ def read_item(number: int) -> dict:
     request* rather than refusing: measured on this repository, asking for item
     111 returned pull request 111 with `state: MERGED`. Every operation here that
     takes a number resolves it through this function, which is what makes one
-    guard cover all of them -- two of them write, so the alternative was a
+    guard cover all of them. The writes among them are why: the alternative was a
     comment posted on a pull request and a dependency relation recorded against
     one, neither of them erroring.
 
@@ -258,9 +257,10 @@ def read_item(number: int) -> dict:
     if not isinstance(item.get("number"), int):
         raise port.HostUnavailable(
             f"`gh issue view {addressed}` answered with no number, so what it "
-            "answered for could not be established. Every operation here reads "
-            "its own identifier back off this answer, and a subscript on a "
-            "missing one is the traceback § 3 states an outcome instead of."
+            "answered for could not be established. Every operation here that "
+            "takes a number reads its own identifier back off this answer, and a "
+            "subscript on a missing one is the traceback § 3 states an outcome "
+            "instead of."
         )
     url = item.get("url")
     if not url:
@@ -427,7 +427,7 @@ def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
     return read_item(int(tail))
 
 
-def item_number(item: dict | int) -> int:
+def item_number(item: dict | int, *, operation: str = "item_number") -> int:
     """The identifier the branch name and the pull request carry.
 
     ⚠️ Makes **no host call**, so the pull-request guard does not apply: an
@@ -450,7 +450,7 @@ def item_number(item: dict | int) -> int:
     if isinstance(item, dict):
         return int(item["number"])
     raise port.ConfigError(
-        "tracker.operations.item_number",
+        f"tracker.operations.{operation}",
         f"was handed {item!r}, which carries no item number. This operation reads "
         "an identifier out of what it was given and makes no call, so there is "
         "nothing to resolve a value of another shape against.",
@@ -651,7 +651,7 @@ def link_for_close(number: int) -> str:
     never resolve and nothing reports that it did not. ⚠️ Measured on a non-ASCII
     decimal digit, which `isdecimal` admits and the host does not.
     """
-    return f"Closes #{item_number(number)}"
+    return f"Closes #{item_number(number, operation='link_for_close')}"
 
 
 # What closed an item, and whether that thing merged. ⚠️ The state word alone

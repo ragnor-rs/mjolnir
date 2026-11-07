@@ -783,7 +783,7 @@ READ_FIELDS = (
 )
 
 
-def _held_to_project(key: str) -> tuple[str, str]:
+def _held_to_project(key: str, *, operation: str = "read_item") -> tuple[str, str]:
     """A key, held to its shape and to this project. ⛔ Before any call.
 
     Two refusals, and the second is this tracker's own guard. A key that is not
@@ -795,7 +795,7 @@ def _held_to_project(key: str) -> tuple[str, str]:
     found = ITEM_KEY.match(str(key).strip())
     if not found:
         raise ConfigError(
-            "tracker.operations.read_item",
+            f"tracker.operations.{operation}",
             f"was asked for `{key!r}`, which is not an item key. An identifier on "
             "this tracker is the project's key and the item's number, and this "
             "value is put into a request path -- so anything else would address "
@@ -813,7 +813,7 @@ def _held_to_project(key: str) -> tuple[str, str]:
     return found.group("project"), found.group("number")
 
 
-def _addressed(key: str) -> str:
+def _addressed(key: str, *, operation: str = "read_item") -> str:
     """The key a request path carries: held to its shape, and canonical.
 
     ⛔ **Every path this module builds goes through here and never through the
@@ -826,7 +826,7 @@ def _addressed(key: str) -> str:
 
     ⚠️ Costs no call. The shape is the whole of what it reads.
     """
-    project, number = _held_to_project(key)
+    project, number = _held_to_project(key, operation=operation)
     return f"{project}-{number}"
 
 
@@ -1221,7 +1221,7 @@ def transitions(key: str) -> list[dict]:
     Measured on a live site, one type offered three of the project's nine
     statuses and another offered all nine.
     """
-    answer = _call("GET", f"/issue/{_addressed(key)}/transitions") or {}
+    answer = _call("GET", f"/issue/{_addressed(key, operation='transitions')}/transitions") or {}
     return list(answer.get("transitions") or [])
 
 
@@ -1455,25 +1455,29 @@ def link_dependency(blocked: str, blocked_by: str) -> dict:
     write: a key from another project would record a real relation in somebody
     else's backlog and answer as though it had worked.
     """
-    read_item(blocked)
-    read_item(blocked_by)
+    # ⛔ The keys the body and the answer carry are the ones the reads answered
+    # with, not the arguments. ⚠️ A **body** and not a path, which is why the
+    # sweep that routed every path through `_addressed` did not reach this one:
+    # the same two-halves defect, one field shape over.
+    on_blocked = read_item(blocked)["key"]
+    on_blocker = read_item(blocked_by)["key"]
     _call(
         "POST",
         "/issueLink",
         body={
             "type": {"name": BLOCKS},
-            "inwardIssue": {"key": blocked_by},
-            "outwardIssue": {"key": blocked},
+            "inwardIssue": {"key": on_blocker},
+            "outwardIssue": {"key": on_blocked},
         },
     )
     return {
-        "blocked": blocked,
-        "blocked_by": blocked_by,
+        "blocked": on_blocked,
+        "blocked_by": on_blocker,
         "type": BLOCKS,
         # ⚠️ Carried in the answer because the two are what a reader has to check
         # the direction against, and they run opposite ways.
-        "reads": f"{blocked} {INWARD_READS} {blocked_by}, {blocked_by} "
-        f"{OUTWARD_READS} {blocked}",
+        "reads": f"{on_blocked} {INWARD_READS} {on_blocker}, {on_blocker} "
+        f"{OUTWARD_READS} {on_blocked}",
     }
 
 
@@ -1565,7 +1569,10 @@ def advance_on_merge(key: str) -> dict:
         if moved:
             break
     return {
-        "key": key,
+        # ⛔ The item's own key, not the argument's spelling, which is this
+        # module's rule and was left unapplied here while the two functions above
+        # were being fixed for it.
+        "key": item["key"],
         "status": item["status"],
         "state": item["state"],
         "advanced": bool(moved) and moved.get("by") != me,

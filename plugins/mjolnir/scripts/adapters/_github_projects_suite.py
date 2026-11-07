@@ -896,6 +896,46 @@ def self_test() -> int:
             f"sent {written!r}",
         )
 
+    # ⛔ The answer's own number, which every operation here that takes one reads
+    # back off it: a subscript on a missing one is the traceback § 3 states an
+    # outcome instead of, and this kind had the guard the sibling grew.
+    _boards.clear()
+    numberless = _issue_payload(7)
+    del numberless["repository"]["issueOrPullRequest"]["number"]
+    reported = with_host(
+        _Host({"Board": _board_payload_for(_page_of(FIELD_NODES)), "Item": numberless}),
+        lambda: unavailable(lambda: read_item(7)),
+    )
+    check(
+        "an answer carrying no number is a failed call, not a subscript on nothing",
+        reported is not None and "no number" in reported,
+        f"got {reported!r}",
+    )
+    # ⛔ Every shape the port passes, which is text. ⚠️ Through `ran`, so a shape
+    # that raises reddens a line rather than killing the run. The non-ASCII
+    # decimal digit is the one `isdecimal` admits and the host does not resolve,
+    # so normalising is what makes the reference below one the host can read.
+    read_shapes = [
+        ran(lambda handed=handed: item_number(handed))
+        for handed in (12, "12", "  12  ", "١١", {"number": 13})
+    ]
+    check(
+        "the identifier operation reads a number out of every shape the port passes",
+        read_shapes == [12, 12, 12, 11, 13],
+        f"read {read_shapes!r}",
+    )
+    check(
+        "and refuses a shape carrying no number rather than raising from a subscript",
+        refused(lambda: item_number("not-a-number")) == "tracker.operations.item_number",
+        f"reported {refused(lambda: item_number('not-a-number'))!r}",
+    )
+    composed = ran(lambda: link_for_close("١١"))
+    check(
+        "the closing reference carries a number the host can resolve, not the argument",
+        composed == "Closes #11",
+        f"composed {composed!r}",
+    )
+
     check(
         "`item_number` and `link_for_close` reach the host at all",
         item_number(12) == 12 and item_number({"number": 13}) == 13

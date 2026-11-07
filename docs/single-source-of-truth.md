@@ -715,10 +715,14 @@ exempted the whole directory and so would have read straight past it.
   plant that contributed no region at all. ⛔ **And the phrase in a carrier's prose is held by the
   code-region scope and the whole-region position *together*, by neither alone** — measured, the
   earlier record of it having claimed each mechanism held its own exemption.
-- **The sides of a link type are refused as a pair and never one at a time.** Each of those words
-  is ordinary English in front of a colon, and the first form of that arm refused a span reading
-  *inward: toward the centre* as a tracker's metadata key with no tracker vocabulary in it. A link
-  type object carries both; a sentence carries one.
+- **A side of a link type is refused only with that type's own wording after it.** Each of those
+  words is ordinary English in front of a colon, so the key decides nothing: the first form of that
+  arm refused a span reading *inward: toward the centre* as a tracker's metadata key with no tracker
+  vocabulary in it, and the form after it required both sides **in one region**, which admitted
+  every shape a carrier writes — a region being one span, or one line of a fence. What is decidable
+  is the value. ⚠️ **The quote around that value is matched in either spelling**, the first form of
+  this arm reading a double quote only, so the single-quoted family a carrier writes in YAML or in
+  Python fell out of it whole.
 - **A wording's own trailing punctuation comes off both ends of a region before the phrase group is
   matched**, so that a literal quoted at the end of a sentence is still read as that literal. ⚠️
   **The characters stripped are more than that reason needs** — the set is the `PUNCTUATION`

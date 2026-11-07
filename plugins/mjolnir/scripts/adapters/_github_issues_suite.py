@@ -3,8 +3,8 @@
 
 ⛔ **Scoped to the relation between two work items**, plus the operations this
 change's own rule reaches beyond it: the number in an answer is the host's and not
-the argument, so the merge confirmation's typed query variable, the assignment that
-wrote before it read, and the two operations that make no call and therefore
+the argument, so the assignment that wrote before it read, the writes that
+addressed the argument, and the operations that make no call and therefore
 normalise nothing are all here. The **uncovered** side of that scope is derived and
 printed by every run: the run subtracts what it covers from what the module
 implements, so an operation added to the module moves the statement instead of
@@ -71,6 +71,8 @@ COVERED = {
     "comment",
     "item_number",
     "link_for_close",
+    "set_labels",
+    "set_state",
 }
 
 # The item under test and the two it is related to. ⛔ Distinct integers, and the
@@ -312,12 +314,17 @@ def self_test() -> int:
         ("an object where an array belongs", {"total_count": 1}),
         ("an array whose entry is not an item", ["#13"]),
         # ⛔ One per field § 5 needs to apply a bar at all: the state, or an entry
-        # answered as neither open nor closed, and the identifier, since neither
-        # bar can be applied to a reading that does not say which blocker is which.
+        # answered as neither open nor closed, and the identifier, for the reason
+        # the shared grammar states.
         ("an item whose state is not a word",
          [dict(_recorded([(13, "open", A_REPO, None)])[0], state=None)]),
         ("an item whose number is not a number",
          [dict(_recorded([(13, "open", A_REPO, None)])[0], number=None)]),
+        # ⚠️ The empty word, which is a string and is what the arm's own reason
+        # names: a blocker reported as neither open nor closed. The first form of
+        # the arm tested the type alone and admitted it.
+        ("an item whose state is the empty word",
+         [dict(_recorded([(13, "open", A_REPO, None)])[0], state="  ")]),
     ):
         malformed = _Host({"/dependencies/blocked_by": planted})
         reported = with_host(malformed, lambda: unavailable(lambda: read_blockers(BLOCKED)))
@@ -469,11 +476,11 @@ def self_test() -> int:
         ),
         "an integer or a string of digits was refused",
     )
-    # ⛔ One operation beyond the relation, and it is here because this change's
-    # own rule reaches it: the number in an answer is the host's, so the operation
-    # that builds a **typed query variable** from its argument is the other half of
-    # that rule and nothing else held it. ⚠️ Every case this kind had handed an
-    # integer, where an echo and a read are the same value.
+    # ⛔ Beyond the relation, and here because this change's own rule reaches it:
+    # the number in an answer is the host's, so an operation building a query
+    # variable or a path from its argument is the other half of that rule and
+    # nothing else held it. ⚠️ Every case this kind had handed an integer, where an
+    # echo and a read are the same value.
     confirming = _Host({"closedByPullRequestsReferences": {
         "data": {"repository": {"issue": {
             "state": "CLOSED",
@@ -571,15 +578,23 @@ def self_test() -> int:
                         for args in written),
         f"sent {written!r}",
     )
-    noted = _Host()
-    with_host(noted, lambda: under_test.comment(f"0{BLOCKED}", "a note"))
-    posted = [args for args in noted.sent if args[:2] == ["issue", "comment"]]
-    check(
-        "and so does the comment",
-        posted and all(str(BLOCKED) in args and f"0{BLOCKED}" not in args
-                       for args in posted),
-        f"sent {posted!r}",
-    )
+    # ⛔ One per write, because each builds its own call and the rule is per call.
+    # ⚠️ `set_labels` asks for a label the fixture does not carry: asking for the
+    # ones it has returns on the operation's own short-circuit before any write.
+    for operation, call, mark in (
+        ("comment", lambda: under_test.comment(f"0{BLOCKED}", "a note"), "--body"),
+        ("set_state", lambda: under_test.set_state(f"0{BLOCKED}", status="closed"), "close"),
+        ("set_labels", lambda: under_test.set_labels(f"0{BLOCKED}", ["infra"]), "--add-label"),
+    ):
+        writing = _Host()
+        with_host(writing, call)
+        wrote = [args for args in writing.sent if mark in args]
+        check(
+            f"and so does `{operation}`",
+            bool(wrote) and all(str(BLOCKED) in args and f"0{BLOCKED}" not in args
+                                for args in wrote),
+            f"sent {writing.sent!r}",
+        )
 
     # --- the operation set, against what the surface states -------------------
     #

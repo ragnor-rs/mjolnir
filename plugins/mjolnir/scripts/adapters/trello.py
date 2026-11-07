@@ -780,8 +780,20 @@ def item_number(item: dict | int) -> int:
     percent-encoded wherever the title is not ASCII, and a split on the dash
     would take a title's own digits on an answer whose slug begins with a year.
     """
-    if isinstance(item, int):
+    if isinstance(item, int) and not isinstance(item, bool):
         return item
+    # ⛔ Text is one of the shapes the port passes, and the first form went
+    # straight to `.get` on it -- an `AttributeError` from the one operation that
+    # cannot fail for any other reason. The sibling kinds carry the same guard.
+    if isinstance(item, str):
+        if item.strip().isdecimal():
+            return int(item.strip())
+        raise ConfigError(
+            "tracker.operations.item_number",
+            f"was handed {item!r}, which carries no card number. This operation "
+            "reads an identifier out of what it was given and makes no call, so "
+            "there is nothing to resolve a value of another shape against.",
+        )
     short = item.get("idShort")
     if isinstance(short, int):
         return short

@@ -769,7 +769,7 @@ def read_item(number: int) -> dict:
     repository -- a merged pull request's number answers `__typename:
     PullRequest`, `state: MERGED`, a word no `statuses` list contains. Every
     operation here that takes a number resolves it through this function, which is
-    what makes one guard cover all of them; three of them write.
+    what makes one guard cover all of them, the writes among them being why.
 
     ⚠️ A number the repository does not have answers `null` **and** a `NOT_FOUND`
     error, so it arrives as a failed call rather than here. The `null` arm below is
@@ -814,6 +814,14 @@ def read_item(number: int) -> dict:
             "number has the wrong identifier, which is a different fault from an "
             "item that does not exist."
         )
+    # ⛔ And the answer's own number, which every operation here that takes one
+    # reads back off this answer: the sibling kind's guard, for its reason.
+    if not isinstance(found.get("number"), int):
+        raise HostUnavailable(
+            f"the host answered for #{number} in {owner}/{name} with no number, so "
+            "what it answered for could not be established. A subscript on a "
+            "missing one is the traceback § 3 states an outcome instead of."
+        )
     card = _card(found, number)
     fields = (
         values_by_field(_whole(card.get("fieldValues"), f"the fields of #{number}'s card"))
@@ -840,7 +848,7 @@ def read_item(number: int) -> dict:
     }
 
 
-def item_number(item: dict | int) -> int:
+def item_number(item: dict | int, *, operation: str = "item_number") -> int:
     """The identifier the branch name and the pull request carry.
 
     ⚠️ Makes **no host call**, so the pull-request guard does not apply: an `int`
@@ -848,7 +856,22 @@ def item_number(item: dict | int) -> int:
     pull request body carry the issue's number, and the card is addressed by id
     only inside this module.
     """
-    return item if isinstance(item, int) else int(item["number"])
+    # ⛔ Every shape the port passes, which includes text: the first form
+    # subscripted anything that was not an `int`, so the ordinary CLI argument
+    # came back as a `TypeError` -- from the one operation that cannot fail for
+    # any other reason. The refusal is the sibling kind's, for its reason.
+    if isinstance(item, int) and not isinstance(item, bool):
+        return item
+    if isinstance(item, str) and item.strip().isdecimal():
+        return int(item.strip())
+    if isinstance(item, dict):
+        return int(item["number"])
+    raise ConfigError(
+        f"tracker.operations.{operation}",
+        f"was handed {item!r}, which carries no item number. This operation "
+        "reads an identifier out of what it was given and makes no call, so "
+        "there is nothing to resolve a value of another shape against.",
+    )
 
 
 # --- searching the board ----------------------------------------------------
@@ -1407,7 +1430,7 @@ def link_for_close(number: int) -> str:
     composes a string out of the number it was given and asserts nothing about what
     that number names.
     """
-    return f"Closes #{number}"
+    return f"Closes #{item_number(number, operation='link_for_close')}"
 
 
 CLOSED_BY_QUERY = """
