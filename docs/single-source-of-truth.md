@@ -125,6 +125,7 @@ file it came from fails in both directions. Every check below is one of the firs
 | 7 | The footprint report covers every file the checks walk | the report's own coverage | computed |
 | 8 | Every **other** anchored link into a markdown heading resolves — between two documents, out of the schema into one, and within a document | every document with a role, the schema included | computed |
 | 9 | This table carries one numbered row per check in the script, in the script's own order | the ordinals, not what a row says | computed |
+| 10 | No document ends inside a fenced block | every document with a role, the schema included | computed |
 
 Check 2 is the one that does the most work, because it runs in the direction nobody remembers to
 check by hand: a section added to the schema with nothing recording why it has that shape fails
@@ -324,11 +325,18 @@ Stated, because an unstated limit reads later as coverage.
   correctly to it**, and so does a row whose scope or kind has gone stale: that half is a reader's.
   ⚠️ **And which table it reads is positional** — the first of its shape in this document, this
   being the gate the document opens with — so reordering the sections moves what check 9 holds.
-- **A heading inside the three regions check 8's scan reads and the heading scan does not.** That
-  scan skips a `~~~` fence, a four-space block, an HTML comment and a code span, where the heading
-  reader skips only a ``` fence. ⛔ **So an anchor that is not a heading is citable inside those
-  three**, and check 8 will not refuse a citation of it. ⚠️ Kept apart deliberately: merging them
-  would change what checks 2 and 6 read, which is a different question from what check 8 refuses.
+- **A heading inside the regions the citation scan reads and the heading scan does not.** Checks 1
+  and 8 both skip a `~~~` fence, an HTML comment and a code span — anything that **shows** markdown
+  rather than being it — where the heading reader skips a backtick fence and nothing else. ⛔ **So
+  an anchor that is not a heading is citable inside those**, and neither check will refuse a
+  citation of it. ⚠️ Kept apart deliberately: merging them would change which sections checks 2 and
+  6 read, which is a different question from what a citation resolves against.
+- **A citation inside a four-space code block, which both checks read as live.** ⛔ **The arm was
+  written and taken back out**: four spaces is a code block only where it is not a list
+  continuation, and without a list parser the arm dropped five live citations written as
+  continuation lines of nested list items — a real citation going unchecked, which is the silent
+  direction and the worse one. ⚠️ A fenced example is the form to use in these documents; an
+  indented one is read as a citation.
 - **Whatever is not committed.** Every check here reads the working tree, which is not what a
   commit takes. ⚠️ Measured on the change that added this bullet: edits staged by a merge were
   verified green, then edited again and left out of the commit, so the gate's verdict was about a

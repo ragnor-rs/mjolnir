@@ -184,11 +184,20 @@ def headings(text: str) -> list[tuple[int, str, str]]:
 
 
 SHOWN_RATHER_THAN_WRITTEN = re.compile(
-    # A fence of either delimiter, a comment, an indented block, a code span.
+    # A fence of either delimiter, an HTML comment, a code span.
+    # ⛔ **The code-span arm is held to one line**, which is the one place this
+    # must not be greedy: a span may cross a wrap in markdown, but an odd
+    # backtick anywhere then pairs with the next one a paragraph away and
+    # swallows every citation between them -- measured, a citation in ordinary
+    # prose going unread and its subsection reported as motivated by nothing.
+    # ⛔ **And an indented block is deliberately not an arm.** Four spaces is a
+    # code block only where it is not a list continuation, which needs a list
+    # parser -- and without one the arm dropped five live citations written as
+    # continuation lines, which is the silent direction. A citation inside a
+    # four-space block is read as live; the record states that residue.
     r"^(?P<fence>[ \t]*(?:```|~~~)).*?(?:^[ \t]*(?P=fence)[^\n]*$|\Z)"
     r"|<!--.*?(?:-->|\Z)"
-    r"|^(?: {4}|\t)[^\n]*$"
-    r"|(?P<ticks>`+)(?:(?!(?P=ticks)).)*(?P=ticks)",
+    r"|(?P<ticks>`+)(?:(?!(?P=ticks))[^\n])*(?P=ticks)",
     re.S | re.M,
 )
 # A fragment the host resolves that names no heading: a line range.
@@ -200,11 +209,18 @@ def shown_spans(text: str) -> list[tuple[int, int]]:
 
     ⛔ So that a link quoted as an example is not read as a live citation, the way
     `outline` already refuses a `## Title` inside a fence. ⚠️ Wider than that scan
-    by three constructs, each measured as a false refusal of the reader below: a
-    `~~~` fence, a four-space block, an HTML comment and a code span. ⛔ **The two
-    are not merged**, and the cost is stated: `outline` reads a heading inside the
-    three `fenced_spans` never saw, so an anchor that is not one is citable and
-    the reader here will not refuse a citation of it.
+    by three constructs, each measured as a false refusal: a `~~~` fence, a
+    four-space block, an HTML comment and a code span. ⛔ **Both citation readers
+    use it**, the surface's own included -- that one carried the same refusal for
+    as long as it has existed, and leaving it would have been this check holding
+    one standard and its sibling another.
+
+    ⛔ **It is not merged with `outline`**, and the cost is stated: that scan
+    reads a heading inside the three constructs above, so an anchor that is not
+    one is citable and neither reader will refuse a citation of it. Merging them
+    would change which sections `no orphan section` and `no citation names a
+    container` read, which is a different question from what a citation resolves
+    against.
     """
     return [match.span() for match in SHOWN_RATHER_THAN_WRITTEN.finditer(text)]
 
@@ -357,10 +373,19 @@ class Tree:
         return keys
 
     def citations(self) -> list[tuple[str, str, str]]:
-        """(citing document, link target resolved from it, anchor)."""
+        """(citing document, link target resolved from it, anchor).
+
+        ⛔ Skipping what is **shown** rather than written, the same scan the
+        reader below uses: a citation of the surface quoted as an example is not
+        a citation, and this reader refused one for as long as it has existed.
+        """
         out = []
         for path in ROLES:
-            for match in CITATION.finditer(self.text.get(path, "")):
+            text = self.text.get(path, "")
+            shown = shown_spans(text)
+            for match in CITATION.finditer(text):
+                if any(start <= match.start() < end for start, end in shown):
+                    continue
                 target = os.path.normpath(
                     os.path.join(os.path.dirname(path), match.group("path"))
                 ).replace(os.sep, "/")
@@ -736,6 +761,37 @@ def coarse_citations(tree: Tree) -> list[tuple[str, list[str], list[tuple[str, i
     ]
 
 
+def check_no_document_leaves_a_fence_open(tree: Tree) -> list[str]:
+    """No document ends inside a fenced block.
+
+    ⛔ Here because it happened and nothing noticed: a sentence naming a fence got
+    hard-wrapped so that the delimiter opened a line, which the heading reader
+    reads as a fence being opened -- and every heading after it in that document
+    stopped existing. ⚠️ **No check went red.** The checks that read headings read
+    the *target's*, so citations into that document still resolved; what the
+    collapse broke was a plant, by raising rather than by failing.
+
+    ⛔ The test is the fence scan's own leftover rather than a count of
+    delimiters: an unclosed fence is what that scan reports, and a count would
+    disagree with it the moment either changes.
+    """
+    problems = []
+    for path in [SURFACE] + list(tree.prose):
+        text = tree.text[path]
+        opened = [
+            index for index, line in enumerate(text.splitlines())
+            if line.lstrip().startswith("```")
+        ]
+        if len(opened) % 2:
+            problems.append(
+                f"{path}: line {opened[-1] + 1} opens a fence nothing closes, so "
+                "every heading below it is read as fenced and stops being a "
+                "heading. ⚠️ Most often a wrap that put the delimiter at the "
+                "start of a line in ordinary prose."
+            )
+    return problems
+
+
 def check_the_record_has_a_row_per_check(tree: Tree) -> list[str]:
     """The record's own table carries one numbered row per check, in order.
 
@@ -814,6 +870,7 @@ CHECKS = [
     # references -- which is what the first form of this did.
     ("citations between documents resolve", check_citations_between_documents_resolve),
     ("the record has a row per check", check_the_record_has_a_row_per_check),
+    ("no document leaves a fence open", check_no_document_leaves_a_fence_open),
 ]
 
 
@@ -921,15 +978,36 @@ def _plant_citation_of_a_repeated_heading(tree: Tree) -> Tree:
     off the tree rather than written here, so the plant follows a rename instead
     of asserting a spelling.
     """
-    where, repeated = next(
-        (path, slug)
-        for path in tree.prose
-        for _level, _title, slug in headings(tree.text[path])
-        if slug.endswith("-1")
+    found = next(
+        (
+            (path, slug)
+            for path in tree.prose
+            for _level, _title, slug in headings(tree.text[path])
+            if slug.endswith("-1")
+        ),
+        None,
     )
+    if found is None:
+        raise AssertionError(
+            "no document repeats a heading, so this plant could not be built -- "
+            "which is a plant to rewrite, never a check that held."
+        )
+    where, repeated = found
     tree.text[RULINGS] += (
         "\n\n[the second of a repeated heading]"
         f"({os.path.relpath(where, os.path.dirname(RULINGS))}#{repeated})\n"
+    )
+    return tree
+
+
+def _plant_a_wrapped_fence_delimiter(tree: Tree) -> Tree:
+    """The live instance: prose naming a fence, wrapped so the delimiter opens a line.
+
+    ⛔ Planted into the record rather than the reader, because that is where it
+    happened -- a bullet about which scan reads a fence, hard-wrapped.
+    """
+    tree.text[RECORD] += (
+        "\n\nThe heading reader skips only a\n```\nfence, and nothing else.\n"
     )
     return tree
 
@@ -967,8 +1045,17 @@ def _plant_citation_shown_as_an_example(tree: Tree) -> Tree:
     tree.text[RULINGS] += (
         "\n\nWrite `](#an-anchor-nothing-has)` for that.\n"
         "\n~~~\n[x](single-source-of-truth.md#nothing-has-this)\n~~~\n"
-        "\n    [x](single-source-of-truth.md#nor-this)\n"
         "\n<!-- [x](single-source-of-truth.md#nor-this-either) -->\n"
+    )
+    return tree
+
+
+def _plant_surface_citation_shown_as_an_example(tree: Tree) -> Tree:
+    """The green side of the surface reader: the form quoted rather than written."""
+    tree.text[RULINGS] += (
+        f"\n\nWrite `]({SURFACE_NAME}#an-anchor-nothing-has)` for that.\n"
+        f"\n~~~\n[x](../{SURFACE}#nothing-has-this)\n~~~\n"
+        f"\n<!-- [x](../{SURFACE}#nor-this-either) -->\n"
     )
     return tree
 
@@ -1298,6 +1385,8 @@ VIOLATIONS = [
      _plant_broken_anchor_within_a_document),
     ("the record has a row per check", "a check appended with no row in the record",
      _plant_a_check_with_no_row),
+    ("no document leaves a fence open", "a wrap that opens a line with a fence delimiter",
+     _plant_a_wrapped_fence_delimiter),
     ("no orphan section", "a section nothing motivates", _plant_orphan_section),
     ("no orphan section", "a subsection nothing motivates", _plant_orphan_subsection),
     ("no citation names a container", "a citation of a container section", _plant_citation_of_a_container),
@@ -1326,6 +1415,8 @@ EXEMPTIONS = [
      _plant_citation_shown_as_an_example),
     ("citations between documents resolve", "a line range, which the host resolves",
      _plant_citation_of_a_line_range),
+    ("citations resolve", "the surface's own citation shown as an example",
+     _plant_surface_citation_shown_as_an_example),
 ]
 
 
