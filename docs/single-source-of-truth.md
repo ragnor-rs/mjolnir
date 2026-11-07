@@ -123,6 +123,7 @@ file it came from fails in both directions. Every check below is one of the firs
 | 5 | Every configuration's top-level key set equals the one the schema declares | top level only | computed |
 | 6 | No citation names a **container** — a section whose whole content is in its subsections | every citation, in every document with a role | computed |
 | 7 | The footprint report covers every file the checks walk | the report's own coverage | computed |
+| 8 | Every **other** anchored link into a markdown heading resolves — between two documents, out of the schema into one, and within a document | every document with a role, the schema included | computed |
 
 Check 2 is the one that does the most work, because it runs in the direction nobody remembers to
 check by hand: a section added to the schema with nothing recording why it has that shape fails
@@ -305,12 +306,18 @@ Stated, because an unstated limit reads later as coverage.
   marker, which is the *quoting* failure, and it is what makes the line-start form the sound one. A
   table cell is not part of that argument — the check excludes cells by a separate condition the
   grammar does not reach — so the residue here is a reviewer's.
-- **A link between two carriers, and a link from the reader.** Check 1 resolves a citation of the
-  surface, which is what its pattern matches. A relative link from one skill to another, and a row
-  in the README pointing at a carrier directory, resolve against nothing — so renaming a carrier
-  and updating this script's role map leaves every such link dead and the build green. ⚠️ Measured
-  by doing exactly that: the one path that fails loudly is the role map itself, and the rest fail
-  in silence.
+- **A link with no anchor on it, and a link to a directory.** Check 1 resolves a citation of the
+  surface and check 8 every other anchored one, so what is left is the link that names no heading:
+  a row in the README pointing at a carrier directory resolves against nothing — so renaming a
+  carrier and updating this script's role map leaves such a link dead and the build green.
+  ⚠️ Measured by doing exactly that: the one path that fails loudly is the role map itself, and the
+  rest fail in silence.
+- **A markdown file no role claims, on either end of check 8.** That check holds a link whose
+  target is already in the role map, so a citation into an untracked document, or out of one, is
+  skipped in silence rather than refused — the same residue check 0's loud-residue argument leaves,
+  one check over. ⚠️ **And it reddens when its own set empties**, which is that argument's other
+  half: a tree whose documents stopped citing each other is reported rather than passing as a tree
+  with nothing to check.
 - **Whatever is not committed.** Every check here reads the working tree, which is not what a
   commit takes. ⚠️ Measured on the change that added this bullet: edits staged by a merge were
   verified green, then edited again and left out of the commit, so the gate's verdict was about a
@@ -720,9 +727,10 @@ exempted the whole directory and so would have read straight past it.
   arm refused a span reading *inward: toward the centre* as a tracker's metadata key with no tracker
   vocabulary in it, and the form after it required both sides **in one region**, which admitted
   every shape a carrier writes — a region being one span, or one line of a fence. What is decidable
-  is the value. ⚠️ **The quote around that value is matched in either spelling**, the first form of
-  this arm reading a double quote only, so the single-quoted family a carrier writes in YAML or in
-  Python fell out of it whole.
+  is the value. ⚠️ **The quote around that value is matched in either spelling, and through a
+  backslash**, the form before this one reading an unescaped double quote only: the single-quoted
+  family a carrier writes in YAML or in Python fell out of the arm whole, and so did the escaped
+  one a carrier writes inside a shell string.
 - **A wording's own trailing punctuation comes off both ends of a region before the phrase group is
   matched**, so that a literal quoted at the end of a sentence is still read as that literal. ⚠️
   **The characters stripped are more than that reason needs** — the set is the `PUNCTUATION`

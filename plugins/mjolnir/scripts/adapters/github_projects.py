@@ -814,13 +814,14 @@ def read_item(number: int) -> dict:
             "number has the wrong identifier, which is a different fault from an "
             "item that does not exist."
         )
-    # ⛔ And the answer's own number, which every operation here that takes one
-    # reads back off this answer: the sibling kind's guard, for its reason.
-    if not isinstance(found.get("number"), int):
+    # ⛔ And the answer's own number, which every operation here that calls the
+    # host reads back off this answer: the sibling kind's guard, for its reason.
+    # ⚠️ A bool is an `int`, so the arm says so, as the identifier arms below do.
+    answered = found.get("number")
+    if not isinstance(answered, int) or isinstance(answered, bool):
         raise HostUnavailable(
             f"the host answered for #{number} in {owner}/{name} with no number, so "
-            "what it answered for could not be established. A subscript on a "
-            "missing one is the traceback § 3 states an outcome instead of."
+            "what it answered for could not be established."
         )
     card = _card(found, number)
     fields = (
@@ -848,7 +849,7 @@ def read_item(number: int) -> dict:
     }
 
 
-def item_number(item: dict | int, *, operation: str = "item_number") -> int:
+def item_number(item: dict | int | str, *, operation: str = "item_number") -> int:
     """The identifier the branch name and the pull request carry.
 
     ⚠️ Makes **no host call**, so the pull-request guard does not apply: an `int`
@@ -864,8 +865,15 @@ def item_number(item: dict | int, *, operation: str = "item_number") -> int:
         return item
     if isinstance(item, str) and item.strip().isdecimal():
         return int(item.strip())
-    if isinstance(item, dict):
-        return int(item["number"])
+    # ⛔ A mapping only where it carries a number this can read, which is the
+    # sibling kind's arm for its reason: the subscript was unconditional, so an
+    # item answering no `number` arrived as a `KeyError` and one answering a word
+    # as a `ValueError`. The inner value is held exactly as an argument is.
+    inner = item.get("number") if isinstance(item, dict) else None
+    if isinstance(inner, int) and not isinstance(inner, bool):
+        return inner
+    if isinstance(inner, str) and inner.strip().isdecimal():
+        return int(inner.strip())
     raise ConfigError(
         f"tracker.operations.{operation}",
         f"was handed {item!r}, which carries no item number. This operation "
@@ -1426,9 +1434,15 @@ def link_for_close(number: int) -> str:
     on merge. Returned rather than written, because the body belongs to the role
     opening the pull request.
 
-    ⚠️ Makes **no host call**, so the pull-request guard does not apply here -- it
-    composes a string out of the number it was given and asserts nothing about what
-    that number names.
+    ⚠️ Makes **no host call**, so the pull-request guard does not apply here --
+    this composes a string out of the number it was given and asserts nothing
+    about what that number names.
+
+    ⛔ **The number is held to a decimal integer anyway**, which is the one thing
+    this can get wrong silently: every other operation's bad argument comes back
+    as a refusal from the host, while this one composes a reference the host will
+    never resolve and nothing reports that it did not. It is the sibling kind's
+    arm, for its reason, and it is the one failure this operation has.
     """
     return f"Closes #{item_number(number, operation='link_for_close')}"
 

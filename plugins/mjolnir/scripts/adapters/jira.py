@@ -1570,8 +1570,7 @@ def advance_on_merge(key: str) -> dict:
             break
     return {
         # ⛔ The item's own key, not the argument's spelling, which is this
-        # module's rule and was left unapplied here while the two functions above
-        # were being fixed for it.
+        # module's rule.
         "key": item["key"],
         "status": item["status"],
         "state": item["state"],

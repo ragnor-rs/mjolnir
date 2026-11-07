@@ -272,8 +272,8 @@ LINK_TYPE_TOKENS = [
     # after it, for the reason recorded with this check's other limits in the
     # document the docstring above names.
     (re.compile(
-        r"(?<![\w-])[\"']?(?:inward|outward)[\"']?\s*:\s*[\"']?\s*"
-        r"(?:is\s+blocked\s+by|blocks)(?![\w-])", re.I),
+        r"(?<![\w-])(?:\\?[\"'])?(?:inward|outward)(?:\\?[\"'])?\s*:\s*"
+        r"(?:\\?[\"'])?\s*(?:is\s+blocked\s+by|blocks)(?![\w-])", re.I),
      "a link type's own metadata key, with its wording"),
 ]
 
@@ -2427,12 +2427,12 @@ VIOLATIONS = [
     ("no link type is named in the strict set", "the same, with the keys quoted",
      _plant_in_a_carrier(
          "\nSend `{\"inward\": \"is blocked by\"}` as the type.\n")),
-    # ⚠️ The single-quoted spelling, which the first form of this arm read past:
-    # it matched a double quote only, so the whole family a carrier writes in
-    # YAML or in a script fell out of the arm.
     ("no link type is named in the strict set", "the same, single-quoted",
      _plant_in_a_carrier(
          "\n```python\nlink = {'inward': 'is blocked by'}\n```\n")),
+    ("no link type is named in the strict set", "the same, escaped inside a shell string",
+     _plant_in_a_carrier(
+         "\nRun `curl -d \"{\\\"inward\\\": \\\"is blocked by\\\"}\"` to post it.\n")),
     ("no link type is named in the strict set",
      "a link type's own wording, as the whole of a span",
      _plant_in_a_carrier("\nThe type reads `is blocked by` in that direction.\n")),

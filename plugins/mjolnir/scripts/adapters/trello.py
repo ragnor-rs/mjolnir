@@ -524,7 +524,10 @@ def _board_payload(board: str) -> dict:
         "by_number": {
             int(card["idShort"]): card
             for card in cards
+            # ⚠️ A bool is an `int`, so the test says so: `true` there would key
+            # this map at 1 and answer a lookup for card 1 with another card.
             if isinstance(card.get("idShort"), int)
+            and not isinstance(card.get("idShort"), bool)
         },
     }
 
@@ -766,7 +769,7 @@ def read_item(number: int) -> dict:
     return _shaped(card, board, checklists=_checklists(index["id"]))
 
 
-def item_number(item: dict | int) -> int:
+def item_number(item: dict | int | str) -> int:
     """The identifier the branch name and the pull request carry.
 
     ⚠️ Makes **no host call**, so an `int` is returned as given.
@@ -794,8 +797,21 @@ def item_number(item: dict | int) -> int:
             "reads an identifier out of what it was given and makes no call, so "
             "there is nothing to resolve a value of another shape against.",
         )
+    # ⛔ And every other shape, which is the sibling kinds' terminal refusal and
+    # was the arm this function stopped short of: the two arms above excluded a
+    # `bool` from the first and text from the second, and what they excluded then
+    # reached the lookup below -- the same `AttributeError` one shape over, made
+    # reachable by the guard added to prevent it.
+    if not isinstance(item, dict):
+        raise ConfigError(
+            "tracker.operations.item_number",
+            f"was handed {item!r}, which is neither a card nor an identifier. "
+            "This operation reads an identifier out of what it was given and "
+            "makes no call, so there is nothing to resolve a value of another "
+            "shape against.",
+        )
     short = item.get("idShort")
-    if isinstance(short, int):
+    if isinstance(short, int) and not isinstance(short, bool):
         return short
     if isinstance(short, str) and short.isdigit():
         return int(short)

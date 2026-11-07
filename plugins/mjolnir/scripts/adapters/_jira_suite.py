@@ -1395,17 +1395,25 @@ def self_test() -> int:
     # outcome for. ⚠️ Asserted on a write, which is the half that stayed raw while
     # the read was being fixed: the read then agreed with the guard and the write
     # did not, which is worse than both of them failing together.
-    # ⛔ One per operation that puts a key anywhere in a call, because each builds
-    # its own and the rule is per call: a sweep that fixed the read alone left the
-    # writes raw, and only this operation's own case would have caught it.
-    for operation, call in (
-        ("comment", lambda: comment(f"  {key(1)}  ", "a note")),
-        ("transitions", lambda: under_test.transitions(f"  {key(1)}  ")),
-        ("set_state", lambda: under_test.set_state(f"  {key(1)}  ", status="<in flight>")),
-        ("set_labels", lambda: under_test.set_labels(f"  {key(1)}  ", ["one"])),
-        ("assign", lambda: under_test.assign(f"  {key(1)}  ")),
-        ("advance_on_merge", lambda: under_test.advance_on_merge(f"  {key(1)}  ")),
-        ("link_dependency", lambda: link_dependency(f"  {key(1)}  ", key(2))),
+    # ⛔ One per operation that puts a key in a call of its own, because each
+    # builds its own and the rule is per call: a sweep that fixed the read alone
+    # left the writes raw, and only this operation's own case would have caught
+    # it. ⚠️ **Each row names the call it must have made**, because these read the
+    # item first and some of them return on a short-circuit before writing -- so
+    # a run asserting only that *some* path is clean would be satisfied by the
+    # read and say nothing about the write it is here for.
+    for operation, call, mark in (
+        ("comment", lambda: comment(f"  {key(1)}  ", "a note"), "/comment"),
+        ("transitions", lambda: under_test.transitions(f"  {key(1)}  "), "/transitions"),
+        ("set_state", lambda: under_test.set_state(f"  {key(1)}  ", status="<in flight>"),
+         "/transitions"),
+        ("set_field", lambda: set_field(f"  {key(1)}  ", "Priority", "High"), f"/issue/{key(1)}"),
+        ("set_labels", lambda: under_test.set_labels(f"  {key(1)}  ", ["one"]),
+         f"/issue/{key(1)}"),
+        ("assign", lambda: under_test.assign(f"  {key(1)}  "), "/assignee"),
+        ("advance_on_merge", lambda: under_test.advance_on_merge(f"  {key(1)}  "),
+         f"/issue/{key(1)}"),
+        ("link_dependency", lambda: link_dependency(f"  {key(1)}  ", key(2)), "/issueLink"),
     ):
         addressed = host()
         with_host(addressed, call)
@@ -1413,20 +1421,25 @@ def self_test() -> int:
         bodies = [str(what["body"]) for _, what in addressed.sent]
         check(
             f"`{operation}` carries the key the guard read, in every path and body",
-            bool(paths) and not any("  " in where for where in paths + bodies),
+            any(mark in where for where in paths)
+            and not any("  " in where for where in paths + bodies),
             f"sent {paths!r} with {bodies!r}",
         )
     # ⛔ And every answer keyed on an item names the item's own key, not the
-    # spelling it was asked with. ⚠️ One per operation that answers with one: the
-    # rule was applied to two of them and left off the third.
-    for operation, call in (
-        ("read_blockers", lambda: read_blockers(f"  {key(1)}  ")),
-        ("comment", lambda: comment(f"  {key(1)}  ", "a note")),
-        ("advance_on_merge", lambda: under_test.advance_on_merge(f"  {key(1)}  ")),
+    # spelling it was asked with. ⚠️ One per operation and per **field**, the
+    # field being why: the one operation that answers with two keys carries
+    # neither of them under `key`, so a loop reading that name alone would have
+    # reported it covered.
+    for operation, call, field in (
+        ("read_blockers", lambda: read_blockers(f"  {key(1)}  "), "key"),
+        ("comment", lambda: comment(f"  {key(1)}  ", "a note"), "key"),
+        ("advance_on_merge", lambda: under_test.advance_on_merge(f"  {key(1)}  "), "key"),
+        ("link_dependency", lambda: link_dependency(f"  {key(1)}  ", key(2)), "blocked"),
+        ("link_dependency", lambda: link_dependency(key(2), f"  {key(1)}  "), "blocked_by"),
     ):
-        answered_key = (with_host(host(), call) or {}).get("key")
+        answered_key = (with_host(host(), call) or {}).get(field)
         check(
-            f"`{operation}` answers with the item's own key",
+            f"`{operation}` answers with the item's own key, under `{field}`",
             answered_key == key(1),
             f"answered {answered_key!r}",
         )

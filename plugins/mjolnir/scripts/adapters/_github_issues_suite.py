@@ -3,8 +3,8 @@
 
 ⛔ **Scoped to the relation between two work items**, plus the operations this
 change's own rule reaches beyond it: the number in an answer is the host's and not
-the argument, so the assignment that wrote before it read, the writes that
-addressed the argument, and the operations that make no call and therefore
+the argument, so the assignment that wrote before it read, the operations that
+build a call out of their argument, and the ones that make no call and therefore
 normalise nothing are all here. The **uncovered** side of that scope is derived and
 printed by every run: the run subtracts what it covers from what the module
 implements, so an operation added to the module moves the statement instead of
@@ -325,6 +325,23 @@ def self_test() -> int:
         # the arm tested the type alone and admitted it.
         ("an item whose state is the empty word",
          [dict(_recorded([(13, "open", A_REPO, None)])[0], state="  ")]),
+        # ⚠️ A bool is an `int`, so a number answered as one names no item while
+        # passing a type test.
+        ("an item whose number is `true`",
+         [dict(_recorded([(13, "open", A_REPO, None)])[0], number=True)]),
+        # ⚠️ And this host numbers from one, so neither of these names an item.
+        ("an item numbered zero",
+         [dict(_recorded([(13, "open", A_REPO, None)])[0], number=0)]),
+        ("an item numbered below zero",
+         [dict(_recorded([(13, "open", A_REPO, None)])[0], number=-13)]),
+        # ⛔ The reason, which the shaping lowers and takes to `None` -- this
+        # host's spelling of *closed, and nothing says why*. An unreadable one
+        # would arrive at a gate as a blocker that finished, which is the one
+        # reading § 5's bar must not be handed by accident.
+        ("an item whose closed reason is not a word",
+         [dict(_recorded([(13, "closed", A_REPO, "completed")])[0], state_reason=7)]),
+        ("an item whose closed reason is the empty word",
+         [dict(_recorded([(13, "closed", A_REPO, "completed")])[0], state_reason="  ")]),
     ):
         malformed = _Host({"/dependencies/blocked_by": planted})
         reported = with_host(malformed, lambda: unavailable(lambda: read_blockers(BLOCKED)))
@@ -521,19 +538,25 @@ def self_test() -> int:
         not [args for args in taken.sent if "--add-assignee" in args],
         f"sent {taken.sent!r}",
     )
-    numberless = _Host({"issue view": {
-        "title": "an answer with no number",
-        "url": f"https://e.invalid/{A_REPO}/issues/{BLOCKED}",
-        "state": "OPEN", "labels": [], "assignees": [], "body": "",
-    }})
-    reported = with_host(
-        numberless, lambda: unavailable(lambda: read_blockers(BLOCKED))
-    )
-    check(
-        "an answer carrying no number is a failed call, not a subscript on nothing",
-        reported is not None and "no number" in reported,
-        f"got {reported!r}",
-    )
+    # ⚠️ One per shape the guard holds: no number at all, and `true` for one --
+    # which is an `int`, so it passed a type test while naming no item.
+    for label, answered in (
+        ("carrying no number", {}),
+        ("answering `true` for one", {"number": True}),
+    ):
+        numberless = _Host({"issue view": dict({
+            "title": "an answer with no number",
+            "url": f"https://e.invalid/{A_REPO}/issues/{BLOCKED}",
+            "state": "OPEN", "labels": [], "assignees": [], "body": "",
+        }, **answered)})
+        reported = with_host(
+            numberless, lambda: unavailable(lambda: read_blockers(BLOCKED))
+        )
+        check(
+            f"an answer {label} is a failed call, not a subscript on nothing",
+            reported is not None and "no number" in reported,
+            f"got {reported!r}",
+        )
     # ⛔ The identifier operation makes no call, so what it is handed is all it
     # has. ⚠️ A string is the shape the port passes, and the first form
     # subscripted it -- a traceback from the one operation that cannot fail for
@@ -552,17 +575,39 @@ def self_test() -> int:
         read_shapes == [BLOCKED, BLOCKED, BLOCKED, 11, BLOCKED],
         f"read {read_shapes!r}",
     )
-    reported = refused(lambda: under_test.item_number("not-a-number"))
+    # ⛔ One per shape that carries no number it can read, the arm each falls out
+    # of being its own: text that is not decimal, a mapping carrying no `number`
+    # at all, one carrying a word there, a bool -- which is an `int` -- and a
+    # shape that reaches neither arm. ⚠️ The mapping was subscripted whatever it
+    # held, so the mapping rows came back as a `KeyError` and a `ValueError` from
+    # the operation whose only stated failure is this refusal.
+    refusals = {
+        label: refused(lambda handed=handed: under_test.item_number(handed))
+        for label, handed in (
+            ("text that is no number", "not-a-number"),
+            ("a mapping with no `number`", {}),
+            ("a mapping whose `number` is a word", {"number": "abc"}),
+            ("a bool", True),
+            ("a value of another shape", 3.0),
+        )
+    }
     check(
-        "and refuses a shape carrying no number rather than raising from a subscript",
-        reported == "tracker.operations.item_number",
-        f"reported {reported!r}",
+        "and every shape carrying no readable number is refused, naming the operation",
+        set(refusals.values()) == {"tracker.operations.item_number"},
+        f"reported {refusals!r}",
     )
-    composed = ran(lambda: under_test.link_for_close("١١"))
+    composed = [ran(lambda handed=handed: under_test.link_for_close(handed))
+                for handed in (14, "١١")]
     check(
         "the closing reference carries a number the host can resolve, not the argument",
-        composed == "Closes #11",
+        composed == ["Closes #14", "Closes #11"],
         f"composed {composed!r}",
+    )
+    check(
+        "and names itself where what it was handed carries no number",
+        refused(lambda: under_test.link_for_close("not-a-number"))
+        == "tracker.operations.link_for_close",
+        f"reported {refused(lambda: under_test.link_for_close('not-a-number'))!r}",
     )
     # ⛔ And every write addresses the number the host answered with. ⚠️ Asked
     # with a **zero-padded** decimal, which is the observable shape: the guard

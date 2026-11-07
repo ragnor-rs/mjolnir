@@ -879,9 +879,15 @@ def self_test() -> int:
     # of the argument and of the host's integer differ -- with an unpadded
     # argument the two render identically and a case cannot tell the mechanism
     # from its absence.
+    # ⛔ One per write, because each builds its own call and the rule is per call,
+    # and ⚠️ **each row names the call it must have made**: these read the item
+    # first, so an assertion satisfied by *some* clean call would be satisfied by
+    # the read and say nothing about the write it is here for.
     for operation, call, mark in (
         ("assign", lambda: assign("011"), "--add-assignee"),
         ("comment", lambda: comment("011", "a note"), "--body"),
+        ("set_labels", lambda: set_labels("011", ["infra"]), "--add-label"),
+        ("link_dependency", lambda: link_dependency("011", 12), "dependencies/blocked_by"),
     ):
         _boards.clear()
         padded = _Host({
@@ -889,28 +895,37 @@ def self_test() -> int:
             "Item": _issue_payload(11),
         })
         with_host(padded, call)
-        written = [args for args in padded.sent if mark in args]
+        written = [args for args in padded.sent
+                   if any(mark in str(arg) for arg in args)]
         check(
             f"`{operation}` addresses the host's own number, not the argument's spelling",
-            bool(written) and all("11" in args and "011" not in args for args in written),
-            f"sent {written!r}",
+            bool(written) and all("011" not in str(args) for args in written)
+            and all("11" in str(args) for args in written),
+            f"sent {padded.sent!r}",
         )
 
-    # ⛔ The answer's own number, which every operation here that takes one reads
-    # back off it: a subscript on a missing one is the traceback § 3 states an
-    # outcome instead of, and this kind had the guard the sibling grew.
-    _boards.clear()
-    numberless = _issue_payload(7)
-    del numberless["repository"]["issueOrPullRequest"]["number"]
-    reported = with_host(
-        _Host({"Board": _board_payload_for(_page_of(FIELD_NODES)), "Item": numberless}),
-        lambda: unavailable(lambda: read_item(7)),
-    )
-    check(
-        "an answer carrying no number is a failed call, not a subscript on nothing",
-        reported is not None and "no number" in reported,
-        f"got {reported!r}",
-    )
+    # ⛔ The answer's own number, which this kind had no guard on: the sibling
+    # kind's, for its reason. ⚠️ One per shape the guard holds, the bool because
+    # it is an `int` and passed a type test while naming no item.
+    for label, planted in (
+        ("carrying no number", None),
+        ("answering `true` for one", True),
+    ):
+        _boards.clear()
+        numberless = _issue_payload(7)
+        if planted is None:
+            del numberless["repository"]["issueOrPullRequest"]["number"]
+        else:
+            numberless["repository"]["issueOrPullRequest"]["number"] = planted
+        reported = with_host(
+            _Host({"Board": _board_payload_for(_page_of(FIELD_NODES)), "Item": numberless}),
+            lambda: unavailable(lambda: read_item(7)),
+        )
+        check(
+            f"an answer {label} is a failed call, not a subscript on nothing",
+            reported is not None and "no number" in reported,
+            f"got {reported!r}",
+        )
     # ⛔ Every shape the port passes, which is text. ⚠️ Through `ran`, so a shape
     # that raises reddens a line rather than killing the run. The non-ASCII
     # decimal digit is the one `isdecimal` admits and the host does not resolve,
@@ -924,23 +939,41 @@ def self_test() -> int:
         read_shapes == [12, 12, 12, 11, 13],
         f"read {read_shapes!r}",
     )
+    # ⛔ One per shape that carries no number this can read, because the arm each
+    # falls out of is its own: text that is not decimal, a mapping carrying no
+    # `number` at all, one carrying a word there, a bool -- which is an `int` and
+    # was returned as an identifier -- and the shapes that reach neither arm. The
+    # first form subscripted every mapping, so the mapping rows were a `KeyError`
+    # and a `ValueError` from the operation whose only stated failure is this
+    # refusal.
+    refusals = {
+        label: refused(lambda handed=handed: item_number(handed))
+        for label, handed in (
+            ("text that is no number", "not-a-number"),
+            ("a mapping with no `number`", {}),
+            ("a mapping whose `number` is a word", {"number": "abc"}),
+            ("a bool", True),
+            ("a value of another shape", 3.0),
+        )
+    }
     check(
-        "and refuses a shape carrying no number rather than raising from a subscript",
-        refused(lambda: item_number("not-a-number")) == "tracker.operations.item_number",
-        f"reported {refused(lambda: item_number('not-a-number'))!r}",
+        "every shape carrying no readable number is refused, naming the operation",
+        set(refusals.values()) == {"tracker.operations.item_number"},
+        f"reported {refusals!r}",
     )
-    composed = ran(lambda: link_for_close("١١"))
+    composed = [ran(lambda handed=handed: link_for_close(handed))
+                for handed in (14, "١١")]
     check(
         "the closing reference carries a number the host can resolve, not the argument",
-        composed == "Closes #11",
+        composed == ["Closes #14", "Closes #11"],
         f"composed {composed!r}",
     )
-
     check(
-        "`item_number` and `link_for_close` reach the host at all",
-        item_number(12) == 12 and item_number({"number": 13}) == 13
-        and link_for_close(14) == "Closes #14",
+        "and names itself where what it was handed carries no number",
+        refused(lambda: link_for_close("not-a-number")) == "tracker.operations.link_for_close",
+        f"reported {refused(lambda: link_for_close('not-a-number'))!r}",
     )
+
     silent = _Host({})
     with_host(silent, lambda: (item_number(12), link_for_close(12)))
     check("without making a host call", silent.calls == [], f"called {silent.calls}")

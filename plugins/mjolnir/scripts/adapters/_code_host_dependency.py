@@ -159,10 +159,10 @@ def blockers_of(answered, path: str) -> list[dict]:
     that each page is a separate array and that an outer wrapper is opt-in. So the
     shapes that behaviour could become are held here rather than iterated over: a
     body that is not an array at all, an array whose entries are not items, and an
-    entry carrying no field § 5 could apply a bar to. ⚠️ Measured on the shapes rather than on the
-    client: unmerged pages reach the reader as a parse error and a wrapped object
-    reaches it as an attribute error on a string, each arriving where the port
-    states an outcome and no traceback.
+    entry carrying no field § 5 could apply a bar to. ⚠️ Measured on the shapes
+    rather than on the client: unmerged pages reach the reader as a parse error
+    and a wrapped object reaches it as an attribute error on a string, each
+    arriving where the port states an outcome and no traceback.
 
     ⚠️ The path is named in the refusal so a reader can reproduce the call. It is
     the whole of what this function knows about where the answer came from --
@@ -185,10 +185,12 @@ def blockers_of(answered, path: str) -> list[dict]:
         )
     # ⛔ And an entry § 5 could not apply a bar to is refused rather than shaped:
     # the state, because an empty string there is a blocker reported as neither
-    # open nor closed, and the identifier, because a bar is applied to a named
-    # item and nothing names this one. Either is an unreadable field dressed as an
-    # answer, in the function whose whole contract above is that it never does
-    # that.
+    # open nor closed; the identifier, for § 5's own reason; and the reason,
+    # because the shaping below lowers it and takes the empty answer to `None` --
+    # which is this host's spelling of *closed, and nothing says why*, so an
+    # unreadable reason would arrive at a gate as a blocker that finished. Each
+    # is an unreadable field dressed as an answer, in the function whose whole
+    # contract above is that it never does that.
     # ⚠️ The cost is stated rather than glossed: it refuses the **list**, so one
     # unreadable entry among nine makes the predicate unanswered for an item whose
     # other blockers were perfectly readable. That is the direction § 2's rule
@@ -197,23 +199,37 @@ def blockers_of(answered, path: str) -> list[dict]:
         (index, field)
         for index, entry in enumerate(answered)
         for field, readable in (
+            # ⚠️ Positive, because this host numbers from one: `0` and a negative
+            # name no item, so either is a reading that does not say which
+            # blocker is which just as a missing one is.
             ("number", isinstance(entry.get("number"), int)
-             and not isinstance(entry.get("number"), bool)),
+             and not isinstance(entry.get("number"), bool)
+             and entry.get("number") > 0),
             # ⛔ A word, and not merely a string: the empty one is what the arm's
             # own reason names -- a blocker reported as neither open nor closed --
             # and the first form of this admitted it, which made that reason a
             # claim about a refusal nothing performed.
             ("state", isinstance(entry.get("state"), str)
              and bool(entry.get("state").strip())),
+            # ⚠️ Absent is readable and is the open case; what is refused is a
+            # value of another shape, which the shaping below would lower into
+            # the same `None` an absent one becomes.
+            ("state_reason", entry.get("state_reason") is None
+             or (isinstance(entry.get("state_reason"), str)
+                 and bool(entry.get("state_reason").strip()))),
         )
         if not readable
     ]
     if unusable:
         index, field = unusable[0]
+        # ⚠️ The value and not its type, the type having been what made a
+        # readable-looking entry unreadable -- bounded, because it is a host's
+        # answer and an operator's message is not the place for an unbounded one.
+        shown = repr(answered[index].get(field))
         raise port.HostUnavailable(
             f"`{path}` answered an item at position {index} whose `{field}` is "
-            f"{answered[index].get(field)!r}, so § 5 could not be applied to that "
-            "blocker. An unreadable entry is not the same as an item with no "
-            "recorded blocker."
+            f"{shown if len(shown) <= 80 else shown[:77] + '...'}, so § 5 could "
+            "not be applied to that blocker. An unreadable entry is not the same "
+            "as an item with no recorded blocker."
         )
     return [blocker(entry) for entry in answered]

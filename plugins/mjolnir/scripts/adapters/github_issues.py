@@ -10,13 +10,10 @@ What it implements, and what it deliberately does not:
 
   * **Not every operation § 3 states**, and the ones it leaves are named once in
     `DELIBERATELY_ABSENT` below, with the reason beside each there rather than
-    here. ⛔ No count of them is carried: the list is closed and stated once, in
-    § 3, and a number here would be wrong the next time it grows. ⚠️ **The first
-    form of this bullet said *except the checklist ones*** and was wrong --
-    `set_field` was absent beside them and the sentence read as covering it.
-    Found by the suite beside this module asserting the relation rather than the
-    sentence, which is why the set lives in a tuple now and the suite reads it
-    from there.
+    here. ⛔ No count of them is carried and no subset is named: the list is
+    closed and stated once, in § 3, and either shape here would be wrong the next
+    time it grows. What happened when this bullet named one is recorded with the
+    list itself.
   * **`set_state` writes `open` or `closed` and refuses any other word.** A
     project whose `statuses` name a third state has written something plain
     issues cannot hold, and that is a statement the surface has to answer rather
@@ -254,11 +251,15 @@ def read_item(number: int) -> dict:
         "issue", "view", str(addressed), "--repo", _repo(),
         "--json", "number,title,body,state,labels,assignees,url",
     ])
-    if not isinstance(item.get("number"), int):
+    # ⚠️ A bool is an `int`, so the arm says so: `true` in that field passed a
+    # type test and propagated as this item's identifier, into every path and
+    # every write composed from it.
+    answered = item.get("number")
+    if not isinstance(answered, int) or isinstance(answered, bool):
         raise port.HostUnavailable(
             f"`gh issue view {addressed}` answered with no number, so what it "
             "answered for could not be established. Every operation here that "
-            "takes a number reads its own identifier back off this answer, and a "
+            "calls the host reads its own identifier back off this answer, and a "
             "subscript on a missing one is the traceback § 3 states an outcome "
             "instead of."
         )
@@ -427,7 +428,7 @@ def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
     return read_item(int(tail))
 
 
-def item_number(item: dict | int, *, operation: str = "item_number") -> int:
+def item_number(item: dict | int | str, *, operation: str = "item_number") -> int:
     """The identifier the branch name and the pull request carry.
 
     ⚠️ Makes **no host call**, so the pull-request guard does not apply: an
@@ -447,8 +448,16 @@ def item_number(item: dict | int, *, operation: str = "item_number") -> int:
         return item
     if isinstance(item, str) and item.strip().isdecimal():
         return int(item.strip())
-    if isinstance(item, dict):
-        return int(item["number"])
+    # ⛔ A mapping only where it carries a number this can read. The first form
+    # subscripted every one of them, so an item answering no `number` arrived as
+    # a `KeyError` and one answering a word as a `ValueError` -- the traceback the
+    # two arms above were given a refusal for, from the same operation. The inner
+    # value is held exactly as an argument is, the bool excluded with it.
+    inner = item.get("number") if isinstance(item, dict) else None
+    if isinstance(inner, int) and not isinstance(inner, bool):
+        return inner
+    if isinstance(inner, str) and inner.strip().isdecimal():
+        return int(inner.strip())
     raise port.ConfigError(
         f"tracker.operations.{operation}",
         f"was handed {item!r}, which carries no item number. This operation reads "
