@@ -800,16 +800,16 @@ def item_number(item: dict | int | str) -> int:
             f"was handed {item!r}, which is neither a card nor a card number. "
             "This operation reads an identifier out of what it was given and "
             "makes no call, so there is nothing to resolve another shape "
-            "against, and a board counts its cards from one.",
+            "against.",
         )
     short = item.get("idShort")
     if isinstance(short, int) and not isinstance(short, bool) and short > 0:
         return short
-    if isinstance(short, str) and short.isdigit() and int(short) > 0:
+    if isinstance(short, str) and short.isdecimal() and int(short) > 0:
         return int(short)
     for key in ("url", "shortUrl"):
         found = CARD_NUMBER_IN_URL.search(str(item.get(key) or ""))
-        if found:
+        if found and int(found.group("number")) > 0:
             return int(found.group("number"))
     raise ConfigError(
         "tracker.operations.item_number",

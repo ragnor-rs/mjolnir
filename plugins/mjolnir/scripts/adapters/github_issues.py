@@ -237,9 +237,13 @@ def read_item(number: int) -> dict:
     """
     # ⚠️ Decimal digits, for the reason the sibling kind's guard states: a
     # superscript answers `isdigit` and then raises in `int`.
+    # ⚠️ Positive, for `item_number`'s own reason. A negative reaches the client
+    # as a flag rather than an argument.
     addressed = number if isinstance(number, int) and not isinstance(number, bool) else None
     if addressed is None and isinstance(number, str) and number.isdecimal():
         addressed = int(number)
+    if addressed is not None and addressed <= 0:
+        addressed = None
     if addressed is None:
         raise port.ConfigError(
             "tracker.operations.read_item",
@@ -256,7 +260,8 @@ def read_item(number: int) -> dict:
     # type test and propagated as this item's identifier, into every path and
     # every write composed from it.
     answered = item.get("number")
-    if not isinstance(answered, int) or isinstance(answered, bool):
+    if not isinstance(answered, int) or isinstance(answered, bool) \
+            or answered <= 0:
         raise port.HostUnavailable(
             f"`gh issue view {addressed}` answered with no number, so what it "
             "answered for could not be established. Every operation here that "
@@ -419,7 +424,7 @@ def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
         args += ["--label", label]
     url = _gh(args, parse=False)
     tail = url.rstrip("/").rsplit("/", 1)[-1]
-    if not tail.isdigit():
+    if not tail.isdecimal() or int(tail) <= 0:
         # A keyed refusal rather than a bare `ValueError` out of `int()`: the
         # host answered, so this is its answer not matching its documented shape.
         raise port.HostUnavailable(

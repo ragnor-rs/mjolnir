@@ -789,9 +789,12 @@ def read_item(number: int) -> dict:
     # would have accepted are the cases in this kind's suite. ⛔ `isdecimal` and
     # not `isdigit`: a superscript answers `isdigit` and then raises in `int`,
     # which is the traceback this guard exists to replace.
+    # ⚠️ Positive, for `item_number`'s own reason.
     addressed = number if isinstance(number, int) and not isinstance(number, bool) else None
     if addressed is None and isinstance(number, str) and number.isdecimal():
         addressed = int(number)
+    if addressed is not None and addressed <= 0:
+        addressed = None
     if addressed is None:
         raise ConfigError(
             "tracker.operations.read_item",
@@ -820,7 +823,8 @@ def read_item(number: int) -> dict:
     # host reads back off this answer: the sibling kind's guard, for its reason.
     # ⚠️ A bool is an `int`, so the arm says so, as the identifier arms below do.
     answered = found.get("number")
-    if not isinstance(answered, int) or isinstance(answered, bool):
+    if not isinstance(answered, int) or isinstance(answered, bool) \
+            or answered <= 0:
         raise HostUnavailable(
             f"the host answered for #{number} in {owner}/{name} with no number, so "
             "what it answered for could not be established."
@@ -1208,7 +1212,7 @@ def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
         args += ["--label", label]
     url = _gh(args, parse=False)
     tail = str(url).rstrip("/").rsplit("/", 1)[-1]
-    if not tail.isdigit():
+    if not tail.isdecimal() or int(tail) <= 0:
         raise HostUnavailable(
             f"`gh issue create` answered `{url!r}`, whose last path segment is not "
             "a number, so the created item cannot be addressed."

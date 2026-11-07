@@ -195,52 +195,24 @@ SHOWN_RATHER_THAN_WRITTEN = re.compile(
     # parser -- and without one the arm dropped five live citations written as
     # continuation lines, which is the silent direction. A citation inside a
     # four-space block is read as live; the record states that residue.
-    r"^(?P<fence>[ \t]*(?:```|~~~)).*?(?:^[ \t]*(?P=fence)[^\n]*$|\Z)"
-    r"|<!--.*?(?:-->|\Z)"
+    r"^[ \t]*(?P<fence>```|~~~).*?(?:^[ \t]*(?P=fence)[^\n]*$|\Z)"
+    r"|<!--.*?-->"
     r"|(?P<ticks>`+)(?:(?!(?P=ticks))[^\n])*(?P=ticks)",
     re.S | re.M,
 )
 # A fragment the host resolves that names no heading: a line range.
-A_LINE_RANGE = re.compile(r"^L\d+(?:-L?\d+)?$")
+A_LINE_RANGE = re.compile(r"^L\d+(?:C\d+)?(?:-L?\d+(?:C\d+)?)?$")
 
 
 def shown_spans(text: str) -> list[tuple[int, int]]:
     """(start, end) offsets of every region that **shows** markdown rather than being it.
 
     ⛔ So that a link quoted as an example is not read as a live citation, the way
-    `outline` already refuses a `## Title` inside a fence. ⚠️ Wider than that scan
-    by three constructs, each measured as a false refusal: a `~~~` fence, a
-    four-space block, an HTML comment and a code span. ⛔ **Both citation readers
-    use it**, the surface's own included -- that one carried the same refusal for
-    as long as it has existed, and leaving it would have been this check holding
-    one standard and its sibling another.
-
-    ⛔ **It is not merged with `outline`**, and the cost is stated: that scan
-    reads a heading inside the three constructs above, so an anchor that is not
-    one is citable and neither reader will refuse a citation of it. Merging them
-    would change which sections `no orphan section` and `no citation names a
-    container` read, which is a different question from what a citation resolves
-    against.
+    `outline` already refuses a `## Title` inside a fence. ⛔ **Both citation
+    readers use it**, the surface's own included. ⚠️ Not merged with `outline`,
+    and what that costs is the record's own residue bullet.
     """
     return [match.span() for match in SHOWN_RATHER_THAN_WRITTEN.finditer(text)]
-
-
-def fenced_spans(text: str) -> list[tuple[int, int]]:
-    """The subset `outline` reads, kept so the two scans can be compared."""
-    spans: list[tuple[int, int]] = []
-    at = 0
-    opened: int | None = None
-    for line in text.splitlines(keepends=True):
-        if line.lstrip().startswith("```"):
-            if opened is None:
-                opened = at
-            else:
-                spans.append((opened, at + len(line)))
-                opened = None
-        at += len(line)
-    if opened is not None:
-        spans.append((opened, at))
-    return spans
 
 
 def split_row(line: str) -> list[str]:
@@ -386,6 +358,8 @@ class Tree:
             for match in CITATION.finditer(text):
                 if any(start <= match.start() < end for start, end in shown):
                     continue
+                if A_LINE_RANGE.match(match.group("anchor")):
+                    continue
                 target = os.path.normpath(
                     os.path.join(os.path.dirname(path), match.group("path"))
                 ).replace(os.sep, "/")
@@ -432,7 +406,7 @@ class Tree:
         ⛔ A separate reader because that pattern is scoped to the surface's own
         file name. Which links that leaves to this one is the record's row.
         ⚠️ Measured: a ruling's link to the measurement it rests on went dead
-        when the heading it named was renamed, and every run since was green.
+        when the heading it named was renamed, and no run saw it.
         """
         out = []
         for path, target, found, _match in self._document_citations():
@@ -793,45 +767,48 @@ def check_no_document_leaves_a_fence_open(tree: Tree) -> list[str]:
 
 
 def check_the_record_has_a_row_per_check(tree: Tree) -> list[str]:
-    """The record's own table carries one numbered row per check, in order.
+    """The record's table is this script's checks, in order and under its names.
 
     ⛔ Here because nothing held it and a check was **inserted** rather than
-    appended: the record numbers its rows by this script's own list and refers
-    to them by that number throughout, so an insertion renumbered every later
-    reference and the run stayed green. ⚠️ **It holds the ordinals and not what a
-    row says** — a row describing the wrong check reads correctly to this check
-    and is a reader's to catch — so what it answers is whether the record was
-    touched at all when the list grew.
+    appended: the record numbers its rows by this list's order and refers to them
+    by that number throughout, so an insertion renumbered every later reference
+    and the run stayed green. ⚠️ **The name is why the row is held and not only
+    the ordinal**: keyed on the number alone, an insertion *with* a row appended
+    matched the ordinals again and this check went green while every row below
+    the insertion described the wrong thing.
 
-    ⚠️ The table is the **first** of its shape in that document, the record being
-    written one gate to a section with this gate's first. ⛔ Stated rather than
-    derived: there is no marker in the prose tying a table to a script, so a
-    reordering of that document moves what this reads.
+    ⚠️ The limits are the record's own row-9 residue bullet.
     """
-    rows = []
+    if RECORD not in tree.text:
+        return [f"{RECORD}: claimed by no role, so this gate is recorded nowhere."]
+    rows: list[tuple[str, str]] = []
     found = False
     for line in tree.text[RECORD].splitlines():
-        if line.startswith("| # | Check |"):
-            if rows or found:
+        if line.startswith("| # | Name | Check |"):
+            if found:
                 break
             found = True
             continue
-        if found and line.startswith("|---"):
+        if found and set(line) <= set("|-: \t"):
             continue
         if found:
             if not line.startswith("|"):
                 break
-            rows.append(split_row(line)[0])
+            cells = split_row(line)
+            rows.append((cells[0], cells[1].strip("`")))
     if not found:
         return [f"{RECORD}: carries no check table, so this gate is recorded nowhere."]
-    wanted = [str(index) for index in range(len(CHECKS))]
+    wanted = [(str(index), name) for index, (name, _check) in enumerate(CHECKS)]
     if rows == wanted:
         return []
+    missing = [name for _n, name in wanted if name not in {r for _n, r in rows}]
     return [
-        f"{RECORD}: the check table's rows are {rows or 'none'} where this "
-        f"script's list states {wanted}. ⛔ A check is appended and given a row; "
-        "inserted, it renumbers every reference that document makes to the rows "
-        "after it, and each of those references goes silently wrong."
+        f"{RECORD}: the check table reads {rows or 'nothing'} where this script's "
+        f"list states {wanted}."
+        + (f" Recorded nowhere: {missing}." if missing else "")
+        + " ⛔ A check is appended and given a row; inserted, it renumbers every "
+        "reference that document makes to the rows after it, and each of those "
+        "references goes silently wrong."
     ]
 
 
@@ -1000,6 +977,54 @@ def _plant_citation_of_a_repeated_heading(tree: Tree) -> Tree:
     return tree
 
 
+def _record_table(tree: Tree) -> tuple[list[str], list[int]]:
+    """The record's own check table: its lines, and the indices of its rows.
+
+    ⛔ **The rows that run on from the header, and no further.** Keyed on the
+    whole file instead, a mutation landed in another gate's table and the check
+    stayed green -- a plant reddening nothing, which is what it is for.
+    ⛔ And refusing rather than raising where the table is not there, so a plant
+    that cannot be built says so.
+    """
+    lines = tree.text[RECORD].splitlines(keepends=True)
+    header = next(
+        (i for i, line in enumerate(lines)
+         if line.startswith("| # | Name | Check |")),
+        None,
+    )
+    rows = []
+    if header is not None:
+        for index in range(header + 1, len(lines)):
+            if not lines[index].startswith("|"):
+                break
+            if split_row(lines[index])[0].isdigit():
+                rows.append(index)
+    if len(rows) < 2:
+        raise AssertionError(
+            "the record carries no check table with rows in it, so a plant over "
+            "that table could not be built -- which is a plant to rewrite, never "
+            "a check that held."
+        )
+    return lines, rows
+
+
+def _plant_a_row_naming_another_check(tree: Tree) -> Tree:
+    """The insertion, read from the record's side: rows that slid by one.
+
+    ⛔ The ordinals still run 0..n, which is why keying on them alone left this
+    green: what moved is which check each row names.
+    """
+    lines, rows = _record_table(tree)
+    first, second = rows[0], rows[1]
+    names = [split_row(lines[at])[1] for at in (first, second)]
+    for at, swapped in zip((first, second), reversed(names)):
+        cells = split_row(lines[at])
+        cells[1] = swapped
+        lines[at] = "| " + " | ".join(cells) + " |\n"
+    tree.text[RECORD] = "".join(lines)
+    return tree
+
+
 def _plant_a_wrapped_fence_delimiter(tree: Tree) -> Tree:
     """The live instance: prose naming a fence, wrapped so the delimiter opens a line.
 
@@ -1020,17 +1045,7 @@ def _plant_a_check_with_no_row(tree: Tree) -> Tree:
     something about the plant. Taking the last row away is the same disagreement
     the live defect was, read from the other side.
     """
-    lines = tree.text[RECORD].splitlines(keepends=True)
-    header = next(i for i, line in enumerate(lines) if line.startswith("| # | Check |"))
-    # ⚠️ The rows that **run on** from that header, and no further: keyed on the
-    # whole file instead, the mutation landed in another gate's table and this
-    # check stayed green -- a plant reddening nothing, which is what it is for.
-    rows = []
-    for index in range(header + 1, len(lines)):
-        if not lines[index].startswith("|"):
-            break
-        if split_row(lines[index])[0].isdigit():
-            rows.append(index)
+    lines, rows = _record_table(tree)
     tree.text[RECORD] = "".join(lines[:rows[-1]] + lines[rows[-1] + 1:])
     return tree
 
@@ -1045,6 +1060,7 @@ def _plant_citation_shown_as_an_example(tree: Tree) -> Tree:
     tree.text[RULINGS] += (
         "\n\nWrite `](#an-anchor-nothing-has)` for that.\n"
         "\n~~~\n[x](single-source-of-truth.md#nothing-has-this)\n~~~\n"
+        "\n```\n[x](single-source-of-truth.md#nor-inside-a-backtick-fence)\n```\n"
         "\n<!-- [x](single-source-of-truth.md#nor-this-either) -->\n"
     )
     return tree
@@ -1375,8 +1391,8 @@ VIOLATIONS = [
     ("citations resolve", "an anchor that does not exist", _plant_broken_anchor),
     ("citations resolve", "a valid anchor on a wrong path", _plant_broken_path),
     # ⛔ One per citer this check reaches and the one above it does not, each
-    # selecting by its own family: keyed on reader order instead, two of them
-    # selected one citation and left the third family held by nothing.
+    # selecting by its own family: keyed on reader order instead, two selected
+    # one citation and left a family held by nothing.
     ("citations between documents resolve", "a record citing a heading no document has",
      _plant_broken_anchor_between_documents),
     ("citations between documents resolve", "the surface citing a heading no document has",
@@ -1385,6 +1401,8 @@ VIOLATIONS = [
      _plant_broken_anchor_within_a_document),
     ("the record has a row per check", "a check appended with no row in the record",
      _plant_a_check_with_no_row),
+    ("the record has a row per check", "a row whose name is another check's",
+     _plant_a_row_naming_another_check),
     ("no document leaves a fence open", "a wrap that opens a line with a fence delimiter",
      _plant_a_wrapped_fence_delimiter),
     ("no orphan section", "a section nothing motivates", _plant_orphan_section),
@@ -1456,9 +1474,11 @@ def self_test(tree: Tree) -> int:
                 )
                 failures += 1
         mutations[name].append((label, changed))
+    unplanted: dict[str, list[str]] = {}
     for name, label, plant in EXEMPTIONS:
-        before = by_name[name](tree)
-        if by_name[name](plant(tree.copy())) == before:
+        if name not in unplanted:
+            unplanted[name] = by_name[name](tree)
+        if by_name[name](plant(tree.copy())) == unplanted[name]:
             print(f"  green on               {name}: {label}")
         else:
             print(f"  WENT RED               {name}: {label}")

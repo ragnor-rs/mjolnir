@@ -270,11 +270,7 @@ def self_test() -> int:
         field("state_reason") == ["completed", None, "not_planned"],
         f"answered {field('state_reason')!r}",
     )
-    # ⛔ Stripped as well as lowered, which the arms above read these fields for:
-    # the readability test strips, so a padded word passes it -- and shaped by
-    # lowering alone it would arrive matching none of this host's own words,
-    # which is the unreadable reason the arm exists against wearing a readable
-    # one's clothes.
+    # ⛔ Stripped as well as lowered, for the shaping's own stated reason.
     padded = _Host({"/dependencies/blocked_by": [
         dict(_recorded([(13, "closed", A_REPO, "completed")])[0],
              state="  CLOSED  ", state_reason="  COMPLETED  ")
@@ -282,8 +278,8 @@ def self_test() -> int:
     shaped = (with_host(padded, lambda: read_blockers(BLOCKED)) or {}).get("blockers")
     check(
         "a padded state and reason arrive as the host's own words, not as padding",
-        [(entry["state"], entry["state_reason"]) for entry in shaped or [{}]]
-        == [("closed", "completed")],
+        [(entry.get("state"), entry.get("state_reason"))
+         for entry in shaped or []] == [("closed", "completed")],
         f"answered {shaped!r}",
     )
     check(
@@ -589,9 +585,8 @@ def self_test() -> int:
         f"read {read_shapes!r}",
     )
     # ⛔ One per shape that carries no number it can read, the arm each falls out
-    # of being its own. ⚠️ The mapping was subscripted whatever it held, so two
-    # of these reached a `KeyError` and a `ValueError` from the operation whose
-    # only stated failure is this refusal.
+    # of being its own. ⚠️ The mapping rows reached a `KeyError` and a
+    # `ValueError` from the operation whose only stated failure is this refusal.
     refusals = {
         label: refused(lambda handed=handed: under_test.item_number(handed))
         for label, handed in (

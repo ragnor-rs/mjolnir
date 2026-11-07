@@ -230,9 +230,15 @@ def blockers_of(answered, path: str) -> list[dict]:
         # answer and an operator's message is not the place for an unbounded one.
         shown = repr(answered[index].get(field))
         if len(shown) > 80:
-            # ⚠️ Not through a trailing backslash, which would read as an escape
-            # rather than as the mark that something was cut.
-            shown = shown[:77].rstrip("\\") + "..."
+            # ⚠️ Cut at a whole escape, never inside one: a half-written `\x`
+            # reads as an escape rather than as the mark that something was cut.
+            cut = 77
+            while cut and (len(shown[:cut]) - len(shown[:cut].rstrip("\\"))) % 2:
+                cut -= 1
+            while cut and re.search(r"\\x[0-9a-fA-F]?$|\\[uU][0-9a-fA-F]*$",
+                                    shown[:cut]):
+                cut -= 1
+            shown = shown[:cut] + "..."
         raise port.HostUnavailable(
             f"`{path}` answered an item at position {index} whose `{field}` is "
             f"{shown}, so § 5 could not be applied to that blocker. An unreadable "

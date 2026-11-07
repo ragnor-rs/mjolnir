@@ -113,19 +113,23 @@ the property and cannot be fooled by a reword; **forbidding** checks assert a na
 not appear, and are sound when the thing forbidden is stable; **quoting** a sentence back at the
 file it came from fails in both directions. Every check below is one of the first two.
 
-| # | Check | Scope | Kind |
-|---|---|---|---|
-| 0 | Every markdown document that may cite the schema has a declared role in the script | root `*.md`, `docs/**`, `plugins/**` | forbidding |
-| 1 | Every citation of the schema resolves — **both its path and its fragment** | every document with a role | computed |
-| 2 | Every schema heading below the title is cited by at least one document | every level the schema uses, container sections excepted | computed |
-| 3 | Every ruling's outcome cell resolves, and the section it names — by number or by heading — agrees with its link | the `Outcome lives in` column | computed |
-| 4 | A ⛔ statement carries a citation naming a **section** | documents that explain or record | forbidding |
-| 5 | Every configuration's top-level key set equals the one the schema declares | top level only | computed |
-| 6 | No citation names a **container** — a section whose whole content is in its subsections | every citation, in every document with a role | computed |
-| 7 | The footprint report covers every file the checks walk | the report's own coverage | computed |
-| 8 | Every **other** anchored link into a markdown heading resolves — between two documents, out of the schema into one, and within a document | every document with a role, the schema included | computed |
-| 9 | This table carries one numbered row per check in the script, in the script's own order | the ordinals, not what a row says | computed |
-| 10 | No document ends inside a fenced block | every document with a role, the schema included | computed |
+The `Name` column is the script's own name for the check, matched against the run's list rather than
+described: a row keyed on its number alone said nothing about *which* check it was, so a check
+inserted rather than appended renumbered every reference below and the run stayed green.
+
+| # | Name | Check | Scope | Kind |
+|---|---|---|---|---|
+| 0 | `every document has a role` | Every markdown document that may cite the schema has a declared role in the script | root `*.md`, `docs/**`, `plugins/**` | forbidding |
+| 1 | `citations resolve` | Every citation of the schema resolves — **both its path and its fragment** | every document with a role | computed |
+| 2 | `no orphan section` | Every schema heading below the title is cited by at least one document | every level the schema uses, container sections excepted | computed |
+| 3 | `outcomes live in the surface or a work item` | Every ruling's outcome cell resolves, and the section it names — by number or by heading — agrees with its link | the `Outcome lives in` column | computed |
+| 4 | `binding statements cite the surface` | A ⛔ statement carries a citation naming a **section** | documents that explain or record | forbidding |
+| 5 | `configurations match the surface` | Every configuration's top-level key set equals the one the schema declares | top level only | computed |
+| 6 | `no citation names a container` | No citation names a **container** — a section whose whole content is in its subsections | every citation, in every document with a role | computed |
+| 7 | `the footprint covers what is walked` | The footprint report covers every file the checks walk | the report's own coverage | computed |
+| 8 | `citations between documents resolve` | Every **other** anchored link into a markdown heading resolves — between two documents, out of the schema into one, and within a document | every document with a role, the schema included | computed |
+| 9 | `the record has a row per check` | This table's rows are the script's checks, in its own order and under its own names | the number and the name, not what the remaining cells say | computed |
+| 10 | `no document leaves a fence open` | No document ends inside a fenced block | every document with a role, the schema included | computed |
 
 Check 2 is the one that does the most work, because it runs in the direction nobody remembers to
 check by hand: a section added to the schema with nothing recording why it has that shape fails
@@ -318,19 +322,21 @@ Stated, because an unstated limit reads later as coverage.
   skipped in silence rather than refused — the same residue check 0's loud-residue argument leaves,
   one check over. ⚠️ **And it reddens when its own set empties**, which is that argument's other
   half: a tree whose documents stopped citing each other is reported rather than passing as a tree
-  with nothing to check.
-- **What a row of this table *says*.** Check 9 holds the ordinals and the count, which is what
-  catches a check inserted rather than appended — the live instance, where the insertion renumbered
-  every reference below it and the run stayed green. ⛔ **A row describing the wrong check reads
-  correctly to it**, and so does a row whose scope or kind has gone stale: that half is a reader's.
-  ⚠️ **And which table it reads is positional** — the first of its shape in this document, this
-  being the gate the document opens with — so reordering the sections moves what check 9 holds.
-- **A heading inside the regions the citation scan reads and the heading scan does not.** Checks 1
-  and 8 both skip a `~~~` fence, an HTML comment and a code span — anything that **shows** markdown
-  rather than being it — where the heading reader skips a backtick fence and nothing else. ⛔ **So
-  an anchor that is not a heading is citable inside those**, and neither check will refuse a
-  citation of it. ⚠️ Kept apart deliberately: merging them would change which sections checks 2 and
-  6 read, which is a different question from what a citation resolves against.
+  with nothing to check. ⚠️ **And a line range is accepted without being resolved** — `#L12` is
+  a fragment the host answers and no heading carries, so refusing it would refuse a working
+  link, and a line that has gone is not caught.
+- **What the remaining cells of this table say.** Check 9 holds each row's number and its
+  name against the script's list, which is what catches a check inserted rather than appended.
+  ⛔ **A row whose scope or kind has gone stale reads correctly to it**: that half is a
+  reader's. ⚠️ **And it finds the table by that header spelling, in file order** — this being
+  the gate the document opens with — so rewording the header or reordering the sections sends
+  it to another gate's table.
+- **A heading inside a region the citation scan skips and the heading scan does not.** Checks 1
+  and 8 skip what **shows** markdown rather than being it; the heading reader skips a backtick
+  fence and nothing else. ⛔ **So an anchor that is not a heading is citable in the rest**, and
+  neither check will refuse a citation of it. ⚠️ Kept apart deliberately: merging them would
+  change which sections checks 2 and 6 read, which is a different question from what a citation
+  resolves against.
 - **A citation inside a four-space code block, which both checks read as live.** ⛔ **The arm was
   written and taken back out**: four spaces is a code block only where it is not a list
   continuation, and without a list parser the arm dropped five live citations written as
@@ -3878,9 +3884,9 @@ indented block or a quotation is not the check it claims to be, and each of thos
 false red rather than a hypothesis. The width check plants a line of each unbreakable kind,
 because its exclusion list is where it would quietly stop holding anything. The single-authority
 check plants a container cited through its subsection, which is the carve-out checks 2 and 6
-share, and — for check 8, every one of whose failures is a refusal of a link that resolves — a
-citation of the host's repeated-heading suffix beside the form shown as an example rather than
-written. The audit-trail check plants the carve-out that is its whole scope — a violation the change
+share, and plants checks 1 and 8's green side, where a refusal of a link that resolves is the way
+either one fails a reader.
+The audit-trail check plants the carve-out that is its whole scope — a violation the change
 did not write — beside a landed record and a live-status line, each of which carries a date and has
 to pass. The end-to-end
 register check plants the three ways a change may be written down and the change that is outside

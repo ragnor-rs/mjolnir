@@ -899,13 +899,11 @@ def self_test() -> int:
                    if any(mark in str(arg) for arg in args)]
         # ⛔ The number per **argument**, not as a substring of the whole vector:
         # over the repr, `11` inside an unrelated argument satisfies a call that
-        # carries no item number at all, which is weaker than the membership form
-        # it replaced. The mark is matched over the repr because one of these is
-        # a path segment; the number is not.
+        # carries no item number at all.
         addressed_by = [
             args for args in written
-            if any(arg == "11" or f"/11/" in arg or arg.endswith("/11")
-                   or arg == "#11" for arg in args)
+            if any(str(arg) in ("11", "#11") or "/11/" in str(arg)
+                   or str(arg).endswith("/11") for arg in args)
         ]
         check(
             f"`{operation}` addresses the host's own number, not the argument's spelling",
