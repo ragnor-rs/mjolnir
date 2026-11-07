@@ -272,8 +272,8 @@ LINK_TYPE_TOKENS = [
     # after it, for the reason recorded with this check's other limits in the
     # document the docstring above names.
     (re.compile(
-        r"(?<![\w-])(?:\\?[\"'])?(?:inward|outward)(?:\\?[\"'])?\s*:\s*"
-        r"(?:\\?[\"'])?\s*(?:is\s+blocked\s+by|blocks)(?![\w-])", re.I),
+        r"(?<![\w-])(?:\\*[\"'])?(?:inward|outward)(?:\\*[\"'])?\s*:\s*"
+        r"(?:\\*[\"'])?\s*(?:is\s+blocked\s+by|blocks)(?![\w-])", re.I),
      "a link type's own metadata key, with its wording"),
 ]
 
@@ -2433,6 +2433,12 @@ VIOLATIONS = [
     ("no link type is named in the strict set", "the same, escaped inside a shell string",
      _plant_in_a_carrier(
          "\nRun `curl -d \"{\\\"inward\\\": \\\"is blocked by\\\"}\"` to post it.\n")),
+    # ⚠️ One backslash per layer: the shell string adds the first and the carrier
+    # that holds the command adds the second, which is the spelling a hook
+    # definition in this tree would actually carry.
+    ("no link type is named in the strict set", "the same, as a JSON carrier holds it",
+     _plant_in_a_carrier(
+         "\nRun `curl -d \"{\\\\\"inward\\\\\": \\\\\"is blocked by\\\\\"}\"`.\n")),
     ("no link type is named in the strict set",
      "a link type's own wording, as the whole of a span",
      _plant_in_a_carrier("\nThe type reads `is blocked by` in that direction.\n")),

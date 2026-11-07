@@ -897,11 +897,21 @@ def self_test() -> int:
         with_host(padded, call)
         written = [args for args in padded.sent
                    if any(mark in str(arg) for arg in args)]
+        # ⛔ The number per **argument**, not as a substring of the whole vector:
+        # over the repr, `11` inside an unrelated argument satisfies a call that
+        # carries no item number at all, which is weaker than the membership form
+        # it replaced. The mark is matched over the repr because one of these is
+        # a path segment; the number is not.
+        addressed_by = [
+            args for args in written
+            if any(arg == "11" or f"/11/" in arg or arg.endswith("/11")
+                   or arg == "#11" for arg in args)
+        ]
         check(
             f"`{operation}` addresses the host's own number, not the argument's spelling",
-            bool(written) and all("011" not in str(args) for args in written)
-            and all("11" in str(args) for args in written),
-            f"sent {padded.sent!r}",
+            bool(written) and addressed_by == written
+            and all("011" not in str(args) for args in written),
+            f"sent {[args for args in written]!r}",
         )
 
     # ⛔ The answer's own number, which this kind had no guard on: the sibling
@@ -939,13 +949,8 @@ def self_test() -> int:
         read_shapes == [12, 12, 12, 11, 13],
         f"read {read_shapes!r}",
     )
-    # ⛔ One per shape that carries no number this can read, because the arm each
-    # falls out of is its own: text that is not decimal, a mapping carrying no
-    # `number` at all, one carrying a word there, a bool -- which is an `int` and
-    # was returned as an identifier -- and the shapes that reach neither arm. The
-    # first form subscripted every mapping, so the mapping rows were a `KeyError`
-    # and a `ValueError` from the operation whose only stated failure is this
-    # refusal.
+    # ⛔ One per shape that carries no number this can read, the arm each falls
+    # out of being its own, for the reason the sibling kind's suite states.
     refusals = {
         label: refused(lambda handed=handed: item_number(handed))
         for label, handed in (
@@ -954,6 +959,10 @@ def self_test() -> int:
             ("a mapping whose `number` is a word", {"number": "abc"}),
             ("a bool", True),
             ("a value of another shape", 3.0),
+            ("zero", 0),
+            ("a negative", -13),
+            ("a mapping carrying zero", {"number": 0}),
+            ("text carrying a negative", "-13"),
         )
     }
     check(

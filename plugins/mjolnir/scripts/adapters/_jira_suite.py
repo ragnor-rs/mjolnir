@@ -1398,32 +1398,32 @@ def self_test() -> int:
     # ⛔ One per operation that puts a key in a call of its own, because each
     # builds its own and the rule is per call: a sweep that fixed the read alone
     # left the writes raw, and only this operation's own case would have caught
-    # it. ⚠️ **Each row names the call it must have made**, because these read the
-    # item first and some of them return on a short-circuit before writing -- so
-    # a run asserting only that *some* path is clean would be satisfied by the
-    # read and say nothing about the write it is here for.
-    for operation, call, mark in (
-        ("comment", lambda: comment(f"  {key(1)}  ", "a note"), "/comment"),
-        ("transitions", lambda: under_test.transitions(f"  {key(1)}  "), "/transitions"),
+    # it. ⛔ **Each row names the fake's own route for the call it must have
+    # made**, never a path substring: every one of these reads the item first and
+    # the read's path is a prefix of three of the writes', so a row keyed on a
+    # substring was satisfied by the read -- and `set_labels` short-circuits
+    # before writing, which made one row pass having written nothing at all.
+    for operation, call, route_name in (
+        ("comment", lambda: comment(f"  {key(1)}  ", "a note"), "comment"),
+        ("transitions", lambda: under_test.transitions(f"  {key(1)}  "), "transitions"),
         ("set_state", lambda: under_test.set_state(f"  {key(1)}  ", status="<in flight>"),
-         "/transitions"),
-        ("set_field", lambda: set_field(f"  {key(1)}  ", "Priority", "High"), f"/issue/{key(1)}"),
-        ("set_labels", lambda: under_test.set_labels(f"  {key(1)}  ", ["one"]),
-         f"/issue/{key(1)}"),
-        ("assign", lambda: under_test.assign(f"  {key(1)}  "), "/assignee"),
-        ("advance_on_merge", lambda: under_test.advance_on_merge(f"  {key(1)}  "),
-         f"/issue/{key(1)}"),
-        ("link_dependency", lambda: link_dependency(f"  {key(1)}  ", key(2)), "/issueLink"),
+         "transition"),
+        ("set_field", lambda: set_field(f"  {key(1)}  ", "Priority", "High"), "update"),
+        ("set_labels", lambda: under_test.set_labels(f"  {key(1)}  ", ["one"]), "update"),
+        ("assign", lambda: under_test.assign(f"  {key(1)}  "), "assignee"),
+        ("advance_on_merge", lambda: under_test.advance_on_merge(f"  {key(1)}  "), "issue"),
+        ("link_dependency", lambda: link_dependency(f"  {key(1)}  ", key(2)), "link"),
     ):
         addressed = host()
         with_host(addressed, call)
-        paths = [what["path"] for _, what in addressed.sent]
-        bodies = [str(what["body"]) for _, what in addressed.sent]
+        own = addressed.sent_for(route_name)
+        every = [what["path"] for _, what in addressed.sent] + [
+            str(what["body"]) for _, what in addressed.sent]
         check(
-            f"`{operation}` carries the key the guard read, in every path and body",
-            any(mark in where for where in paths)
-            and not any("  " in where for where in paths + bodies),
-            f"sent {paths!r} with {bodies!r}",
+            f"`{operation}` carries the key the guard read, in its `{route_name}`"
+            " call and in every other it made",
+            bool(own) and not any("  " in where for where in every),
+            f"sent {[(name, what['path']) for name, what in addressed.sent]!r}",
         )
     # ⛔ And every answer keyed on an item names the item's own key, not the
     # spelling it was asked with. ⚠️ One per operation and per **field**, the

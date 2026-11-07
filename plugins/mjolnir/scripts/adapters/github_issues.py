@@ -214,10 +214,11 @@ def read_item(number: int) -> dict:
     one number sequence on this host, and the issue lookup *answers for a pull
     request* rather than refusing: measured on this repository, asking for item
     111 returned pull request 111 with `state: MERGED`. Every operation here that
-    takes a number resolves it through this function, which is what makes one
-    guard cover all of them. The writes among them are why: the alternative was a
-    comment posted on a pull request and a dependency relation recorded against
-    one, neither of them erroring.
+    **calls the host** resolves its number through this function, which is what
+    makes one guard cover all of them; the two that make no call are named as
+    such where they are defined. The writes among them are why: the alternative
+    was a comment posted on a pull request and a dependency relation recorded
+    against one, neither of them erroring.
 
     The `url` path is what separates the two; the state word cannot, because a
     reopened pull request and an open issue both read `OPEN`. ⚠️ An answer
@@ -444,20 +445,19 @@ def item_number(item: dict | int | str, *, operation: str = "item_number") -> in
     not an `int`, so the ordinary CLI shape came back as a `TypeError` -- a
     traceback from the one operation that cannot fail for any other reason.
     """
-    if isinstance(item, int) and not isinstance(item, bool):
-        return item
-    if isinstance(item, str) and item.strip().isdecimal():
-        return int(item.strip())
-    # ⛔ A mapping only where it carries a number this can read. The first form
+    # ⛔ Positive, because this host numbers from one, which the shared
+    # dependency grammar's own arm reads them for: `#0` and a negative name no
+    # item, and `link_for_close` below would compose a reference out of either.
+    # ⚠️ A mapping only where it carries a number this can read: the first form
     # subscripted every one of them, so an item answering no `number` arrived as
     # a `KeyError` and one answering a word as a `ValueError` -- the traceback the
-    # two arms above were given a refusal for, from the same operation. The inner
-    # value is held exactly as an argument is, the bool excluded with it.
-    inner = item.get("number") if isinstance(item, dict) else None
-    if isinstance(inner, int) and not isinstance(inner, bool):
-        return inner
-    if isinstance(inner, str) and inner.strip().isdecimal():
-        return int(inner.strip())
+    # arms above were given a refusal for, from the same operation.
+    for handed in (item, item.get("number") if isinstance(item, dict) else None):
+        if isinstance(handed, int) and not isinstance(handed, bool) and handed > 0:
+            return handed
+        if isinstance(handed, str) and handed.strip().isdecimal() \
+                and int(handed.strip()) > 0:
+            return int(handed.strip())
     raise port.ConfigError(
         f"tracker.operations.{operation}",
         f"was handed {item!r}, which carries no item number. This operation reads "

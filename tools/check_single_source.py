@@ -50,6 +50,8 @@ SURFACE = "plugins/mjolnir/config/schema.md"
 SURFACE_NAME = os.path.basename(SURFACE)
 READER = "README.md"
 RULINGS = "docs/divergences-and-rulings.md"
+# The document that records what each gate checks, this one included.
+RECORD = "docs/single-source-of-truth.md"
 
 # A document either explains the surface, records how a divergence was settled, or
 # carries procedure for one role. The first two may not state a rule; procedure
@@ -181,15 +183,34 @@ def headings(text: str) -> list[tuple[int, str, str]]:
     return [(level, title, slug) for _at, level, title, slug in outline(text)]
 
 
-def fenced_spans(text: str) -> list[tuple[int, int]]:
-    """(start, end) character offsets of every fenced block.
+SHOWN_RATHER_THAN_WRITTEN = re.compile(
+    # A fence of either delimiter, a comment, an indented block, a code span.
+    r"^(?P<fence>[ \t]*(?:```|~~~)).*?(?:^[ \t]*(?P=fence)[^\n]*$|\Z)"
+    r"|<!--.*?(?:-->|\Z)"
+    r"|^(?: {4}|\t)[^\n]*$"
+    r"|(?P<ticks>`+)(?:(?!(?P=ticks)).)*(?P=ticks)",
+    re.S | re.M,
+)
+# A fragment the host resolves that names no heading: a line range.
+A_LINE_RANGE = re.compile(r"^L\d+(?:-L?\d+)?$")
 
-    ⛔ So that a link **shown** as an example is not read as a live citation, the
-    way `outline` already refuses a `## Title` inside a fence. ⚠️ The surface's
-    own citation reader is not given this: it is a property that reader has
-    always had, with no instance in this tree, and widening it is a change to
-    what that check reaches rather than to what this one does.
+
+def shown_spans(text: str) -> list[tuple[int, int]]:
+    """(start, end) offsets of every region that **shows** markdown rather than being it.
+
+    ⛔ So that a link quoted as an example is not read as a live citation, the way
+    `outline` already refuses a `## Title` inside a fence. ⚠️ Wider than that scan
+    by three constructs, each measured as a false refusal of the reader below: a
+    `~~~` fence, a four-space block, an HTML comment and a code span. ⛔ **The two
+    are not merged**, and the cost is stated: `outline` reads a heading inside the
+    three `fenced_spans` never saw, so an anchor that is not one is citable and
+    the reader here will not refuse a citation of it.
     """
+    return [match.span() for match in SHOWN_RATHER_THAN_WRITTEN.finditer(text)]
+
+
+def fenced_spans(text: str) -> list[tuple[int, int]]:
+    """The subset `outline` reads, kept so the two scans can be compared."""
     spans: list[tuple[int, int]] = []
     at = 0
     opened: int | None = None
@@ -349,17 +370,21 @@ class Tree:
     def _document_citations(self):
         """(citing document, target, anchor, the match) for every one it holds.
 
-        ⛔ The match is carried so the plant below mutates the citation this
-        reader selected rather than the first text that looks like it: an
-        anchor's own spelling occurs more than once in eight of these documents,
-        and a replacement keyed on the anchor alone can land on another citation
-        or on a line that is not one.
+        ⛔ The match is carried so a plant mutates the citation this reader
+        selected rather than the first text that looks like it: an anchor's own
+        spelling occurs more than once in these documents, and a replacement
+        keyed on the anchor alone can land on another citation or on a line that
+        is not one.
         """
         for path in [SURFACE] + list(self.prose):
             text = self.text.get(path, "")
-            fenced = fenced_spans(text)
+            shown = shown_spans(text)
             for match in DOCUMENT_CITATION.finditer(text):
-                if any(start <= match.start() < end for start, end in fenced):
+                if any(start <= match.start() < end for start, end in shown):
+                    continue
+                # ⚠️ A line range is a fragment this host resolves and no
+                # heading carries, so refusing it would refuse a working link.
+                if A_LINE_RANGE.match(match.group("anchor")):
                     continue
                 named = match.group("path")
                 # ⛔ The citing document itself where no path is named, which is
@@ -380,11 +405,9 @@ class Tree:
         """A citation into a markdown heading that `CITATION` does not hold.
 
         ⛔ A separate reader because that pattern is scoped to the surface's own
-        file name, so a citation between two documents, out of the surface into
-        one, or within a document, was held by nothing. ⚠️ Measured: a ruling's
-        link to the measurement it rests on went dead when the heading it named
-        was renamed, and no run saw it -- one of the two instances for eighteen
-        later commits that each touched these documents and each went green.
+        file name. Which links that leaves to this one is the record's row.
+        ⚠️ Measured: a ruling's link to the measurement it rests on went dead
+        when the heading it named was renamed, and every run since was green.
         """
         out = []
         for path, target, found, _match in self._document_citations():
@@ -501,9 +524,7 @@ def check_no_citation_names_a_container(tree: Tree) -> list[str]:
 def check_citations_between_documents_resolve(tree: Tree) -> list[str]:
     """Every citation into a markdown heading that `citations resolve` misses.
 
-    ⛔ That check is scoped to a link whose path ends in the surface's own file
-    name; this is every other anchored link — between two documents, out of the
-    surface into one, and within a document. A document here records a
+    ⛔ Which links those are is the record's own row. A document here records a
     measurement and the records beside it cite that section rather than
     restating it, which is the discipline that keeps one statement of a fact —
     and a citation to a heading that no longer exists turns that discipline into
@@ -715,6 +736,49 @@ def coarse_citations(tree: Tree) -> list[tuple[str, list[str], list[tuple[str, i
     ]
 
 
+def check_the_record_has_a_row_per_check(tree: Tree) -> list[str]:
+    """The record's own table carries one numbered row per check, in order.
+
+    ⛔ Here because nothing held it and a check was **inserted** rather than
+    appended: the record numbers its rows by this script's own list and refers
+    to them by that number throughout, so an insertion renumbered every later
+    reference and the run stayed green. ⚠️ **It holds the ordinals and not what a
+    row says** — a row describing the wrong check reads correctly to this check
+    and is a reader's to catch — so what it answers is whether the record was
+    touched at all when the list grew.
+
+    ⚠️ The table is the **first** of its shape in that document, the record being
+    written one gate to a section with this gate's first. ⛔ Stated rather than
+    derived: there is no marker in the prose tying a table to a script, so a
+    reordering of that document moves what this reads.
+    """
+    rows = []
+    found = False
+    for line in tree.text[RECORD].splitlines():
+        if line.startswith("| # | Check |"):
+            if rows or found:
+                break
+            found = True
+            continue
+        if found and line.startswith("|---"):
+            continue
+        if found:
+            if not line.startswith("|"):
+                break
+            rows.append(split_row(line)[0])
+    if not found:
+        return [f"{RECORD}: carries no check table, so this gate is recorded nowhere."]
+    wanted = [str(index) for index in range(len(CHECKS))]
+    if rows == wanted:
+        return []
+    return [
+        f"{RECORD}: the check table's rows are {rows or 'none'} where this "
+        f"script's list states {wanted}. ⛔ A check is appended and given a row; "
+        "inserted, it renumbers every reference that document makes to the rows "
+        "after it, and each of those references goes silently wrong."
+    ]
+
+
 def check_the_footprint_covers_what_is_walked(tree: Tree) -> list[str]:
     """The report shrinking in silence is the one way it can lie.
 
@@ -749,6 +813,7 @@ CHECKS = [
     # renumbers every check after it and silently falsifies every one of those
     # references -- which is what the first form of this did.
     ("citations between documents resolve", check_citations_between_documents_resolve),
+    ("the record has a row per check", check_the_record_has_a_row_per_check),
 ]
 
 
@@ -792,16 +857,23 @@ def _plant_broken_anchor(tree: Tree) -> Tree:
     return tree
 
 
-def _plant_broken_anchor_between_documents(tree: Tree) -> Tree:
-    """A record's citation of another record's heading, pointed at nothing.
+def _break_the_citation(tree: Tree, wanted) -> Tree:
+    """Point the first citation `wanted` accepts at a heading nothing has.
 
-    ⛔ Planted into the first citation the reader itself holds, and by that
-    match's own span: the live instances were a ruling's link to the measurement
-    it rests on and a document's link to a reader's section, and the plant has
-    to be the mutation the reader sees rather than a text replacement that may
-    land elsewhere.
+    ⛔ By the match's own span, and ⛔ **refusing rather than passing where the
+    form it was written for is not in the tree**: a plant that cannot be built
+    says so, where `next` alone would end the run on a traceback.
     """
-    path, _target, _anchor, match = next(tree._document_citations())
+    found = next(
+        (held for held in tree._document_citations() if wanted(*held)), None
+    )
+    if found is None:
+        raise AssertionError(
+            "this plant's own citation form is not in the tree, so the plant "
+            "could not be built -- which is a plant to rewrite, never a check "
+            "that held."
+        )
+    path, _target, _anchor, match = found
     tree.text[path] = (
         tree.text[path][:match.start()]
         + f"]({match.group('path') or ''}#planted-anchor-no-document-has)"
@@ -810,62 +882,102 @@ def _plant_broken_anchor_between_documents(tree: Tree) -> Tree:
     return tree
 
 
-def _plant_broken_anchor_out_of_the_surface(tree: Tree) -> Tree:
-    """The surface's own citation of a document's heading, pointed at nothing.
+def _plant_broken_anchor_between_documents(tree: Tree) -> Tree:
+    """One document's citation of another's heading, pointed at nothing.
 
-    ⛔ Its own plant because the surface is the one citer neither reader covered
-    and the plant above does not reach it: that one takes the first citation in
-    reader order, which reddens whether or not the surface is in the walk.
+    ⛔ Held to a **named path in a document other than the surface**, which is
+    the live instance this check was written for: the other two plants select by
+    the other two families, and keyed on reader order alone this one selected
+    the same citation as the within-document plant and asserted it twice.
     """
-    first = next(
-        match for path, _target, _anchor, match in tree._document_citations()
-        if path == SURFACE and match.group("path")
+    return _break_the_citation(
+        tree, lambda path, _t, _a, match: match.group("path") and path != SURFACE
     )
-    tree.text[SURFACE] = (
-        tree.text[SURFACE][:first.start()]
-        + f"]({first.group('path')}#planted-anchor-no-document-has)"
-        + tree.text[SURFACE][first.end():]
+
+
+def _plant_broken_anchor_out_of_the_surface(tree: Tree) -> Tree:
+    """The surface's own citation of a document's heading, pointed at nothing."""
+    return _break_the_citation(
+        tree, lambda path, _t, _a, match: path == SURFACE and match.group("path")
     )
-    return tree
 
 
 def _plant_broken_anchor_within_a_document(tree: Tree) -> Tree:
     """A document's link to a heading of its own, pointed at nothing.
 
-    ⛔ Its own plant for the same reason: a rename kills `](#a-heading)` in the
-    citing document exactly as it kills a cross-file one, and the form matches
-    neither pattern unless the path is optional.
+    ⛔ A rename kills this form exactly as it kills a cross-file one, and it
+    matches neither pattern unless the path is optional.
     """
-    path, _target, _anchor, first = next(
-        found for found in tree._document_citations() if not found[3].group("path")
-    )
-    tree.text[path] = (
-        tree.text[path][:first.start()]
-        + "](#planted-anchor-no-document-has)"
-        + tree.text[path][first.end():]
-    )
-    return tree
+    return _break_the_citation(tree, lambda _p, _t, _a, match: not match.group("path"))
 
 
 def _plant_citation_of_a_repeated_heading(tree: Tree) -> Tree:
     """The green side: a citation of the host's `-1` suffix, which resolves.
 
-    ⛔ Written because every way this check can be wrong is a false refusal, and
-    the repeated heading is the one form it would reject for a reason that looks
-    like a rule -- these documents carry fifteen copies of one heading, and a
-    citation of the second of them is correct and resolves only through the
-    suffix. ⚠️ The anchor is read off the tree rather than written here, so the
-    plant follows a rename instead of asserting a spelling.
+    ⛔ Written because a false refusal is the failure a reader cannot route
+    around, and the repeated heading is the form this check would reject for a
+    reason that looks like a rule: a citation of the second heading of a given
+    title is correct and resolves only through the suffix. ⚠️ The anchor is read
+    off the tree rather than written here, so the plant follows a rename instead
+    of asserting a spelling.
     """
     where, repeated = next(
         (path, slug)
         for path in tree.prose
         for _level, _title, slug in headings(tree.text[path])
-        if slug.endswith("-1") and path != RULINGS
+        if slug.endswith("-1")
     )
     tree.text[RULINGS] += (
         "\n\n[the second of a repeated heading]"
         f"({os.path.relpath(where, os.path.dirname(RULINGS))}#{repeated})\n"
+    )
+    return tree
+
+
+def _plant_a_check_with_no_row(tree: Tree) -> Tree:
+    """A row taken out of the record, which is a check the record does not carry.
+
+    ⛔ The mutation is to the **record** rather than to `CHECKS`, because the
+    list is this module's own and a plant that appended to it would be asserting
+    something about the plant. Taking the last row away is the same disagreement
+    the live defect was, read from the other side.
+    """
+    lines = tree.text[RECORD].splitlines(keepends=True)
+    header = next(i for i, line in enumerate(lines) if line.startswith("| # | Check |"))
+    # ⚠️ The rows that **run on** from that header, and no further: keyed on the
+    # whole file instead, the mutation landed in another gate's table and this
+    # check stayed green -- a plant reddening nothing, which is what it is for.
+    rows = []
+    for index in range(header + 1, len(lines)):
+        if not lines[index].startswith("|"):
+            break
+        if split_row(lines[index])[0].isdigit():
+            rows.append(index)
+    tree.text[RECORD] = "".join(lines[:rows[-1]] + lines[rows[-1] + 1:])
+    return tree
+
+
+def _plant_citation_shown_as_an_example(tree: Tree) -> Tree:
+    """The green side: the form quoted rather than written, which is not a link.
+
+    ⛔ Each of these was measured as a refusal of this reader before the scan was
+    widened, and the first is the one that bites: this script's own prose writes
+    that spelling, so the record of this gate would have reddened the gate.
+    """
+    tree.text[RULINGS] += (
+        "\n\nWrite `](#an-anchor-nothing-has)` for that.\n"
+        "\n~~~\n[x](single-source-of-truth.md#nothing-has-this)\n~~~\n"
+        "\n    [x](single-source-of-truth.md#nor-this)\n"
+        "\n<!-- [x](single-source-of-truth.md#nor-this-either) -->\n"
+    )
+    return tree
+
+
+def _plant_citation_of_a_line_range(tree: Tree) -> Tree:
+    """The green side: a fragment the host resolves that names no heading."""
+    tree.text[RULINGS] += (
+        "\n\n[a line of the reader](single-source-of-truth.md#L12)\n"
+        "\n[a span of it](single-source-of-truth.md#L12-L20)\n"
     )
     return tree
 
@@ -1175,15 +1287,17 @@ VIOLATIONS = [
     ("every document has a role", "a glob that matches nothing", _plant_glob_matching_nothing),
     ("citations resolve", "an anchor that does not exist", _plant_broken_anchor),
     ("citations resolve", "a valid anchor on a wrong path", _plant_broken_path),
-    # ⛔ One per citer this check reaches and the one above it does not, because
-    # the three are three widenings and a plant on any one of them reddens with
-    # the other two reverted.
+    # ⛔ One per citer this check reaches and the one above it does not, each
+    # selecting by its own family: keyed on reader order instead, two of them
+    # selected one citation and left the third family held by nothing.
     ("citations between documents resolve", "a record citing a heading no document has",
      _plant_broken_anchor_between_documents),
     ("citations between documents resolve", "the surface citing a heading no document has",
      _plant_broken_anchor_out_of_the_surface),
     ("citations between documents resolve", "a document citing a heading of its own that is gone",
      _plant_broken_anchor_within_a_document),
+    ("the record has a row per check", "a check appended with no row in the record",
+     _plant_a_check_with_no_row),
     ("no orphan section", "a section nothing motivates", _plant_orphan_section),
     ("no orphan section", "a subsection nothing motivates", _plant_orphan_subsection),
     ("no citation names a container", "a citation of a container section", _plant_citation_of_a_container),
@@ -1208,6 +1322,10 @@ EXEMPTIONS = [
     ("no orphan section", "a container cited through its subsection", _plant_uncited_container),
     ("citations between documents resolve", "a citation of the host's repeated-heading suffix",
      _plant_citation_of_a_repeated_heading),
+    ("citations between documents resolve", "the form shown as an example rather than written",
+     _plant_citation_shown_as_an_example),
+    ("citations between documents resolve", "a line range, which the host resolves",
+     _plant_citation_of_a_line_range),
 ]
 
 
@@ -1221,12 +1339,32 @@ def self_test(tree: Tree) -> int:
     for name in uncovered:
         print(f"  NO PLANTED VIOLATION   {name}")
     failures = len(uncovered)
+    # ⛔ What each plant actually changed, kept so two of them cannot be one.
+    # ⚠️ Measured: two plants written for two different widenings of one check
+    # both selected the first citation in reader order, so they mutated the same
+    # bytes -- each reddening the check, the pair asserting one widening twice,
+    # and the third left held by nothing while the run printed two red lines.
+    mutations: dict[str, list[tuple[str, dict[str, str]]]] = {}
     for name, label, plant in VIOLATIONS:
-        if by_name[name](plant(tree.copy())):
+        planted = plant(tree.copy())
+        if by_name[name](planted):
             print(f"  red on                 {name}: {label}")
         else:
             print(f"  STAYED GREEN           {name}: {label}")
             failures += 1
+        changed = {
+            path: text for path, text in planted.text.items()
+            if text != tree.text.get(path)
+        }
+        for other, before in mutations.setdefault(name, []):
+            if before == changed:
+                print(
+                    f"  SAME AS ANOTHER PLANT  {name}: {label} changes exactly what "
+                    f"`{other}` changes, so one of the two is asserting nothing of "
+                    "its own"
+                )
+                failures += 1
+        mutations[name].append((label, changed))
     for name, label, plant in EXEMPTIONS:
         before = by_name[name](tree)
         if by_name[name](plant(tree.copy())) == before:

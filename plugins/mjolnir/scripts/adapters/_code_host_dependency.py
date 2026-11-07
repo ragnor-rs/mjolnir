@@ -136,8 +136,11 @@ def blocker(entry: dict) -> dict:
     address = REPOSITORY_URL.search(_word(entry.get("repository_url")))
     return {
         "number": entry.get("number"),
-        "state": _word(entry.get("state")).lower(),
-        "state_reason": _word(entry.get("state_reason")).lower() or None,
+        # ⚠️ Stripped as well as lowered, which is what the arms in `blockers_of`
+        # read them for: a padded word passes a readability test that strips and
+        # would arrive here matching none of this host's own words.
+        "state": _word(entry.get("state")).strip().lower(),
+        "state_reason": _word(entry.get("state_reason")).strip().lower() or None,
         "title": entry.get("title"),
         "url": entry.get("html_url"),
         "repo": f"{address['owner']}/{address['name']}" if address else None,
@@ -226,10 +229,13 @@ def blockers_of(answered, path: str) -> list[dict]:
         # readable-looking entry unreadable -- bounded, because it is a host's
         # answer and an operator's message is not the place for an unbounded one.
         shown = repr(answered[index].get(field))
+        if len(shown) > 80:
+            # ⚠️ Not through a trailing backslash, which would read as an escape
+            # rather than as the mark that something was cut.
+            shown = shown[:77].rstrip("\\") + "..."
         raise port.HostUnavailable(
             f"`{path}` answered an item at position {index} whose `{field}` is "
-            f"{shown if len(shown) <= 80 else shown[:77] + '...'}, so § 5 could "
-            "not be applied to that blocker. An unreadable entry is not the same "
-            "as an item with no recorded blocker."
+            f"{shown}, so § 5 could not be applied to that blocker. An unreadable "
+            "entry is not the same as an item with no recorded blocker."
         )
     return [blocker(entry) for entry in answered]

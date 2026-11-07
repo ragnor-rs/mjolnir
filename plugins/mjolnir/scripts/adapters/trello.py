@@ -774,8 +774,8 @@ def item_number(item: dict | int | str) -> int:
 
     ⚠️ Makes **no host call**, so an `int` is returned as given.
 
-    ⛔ **Two arms, in this order, and both are measured.** The reference
-    documents `idShort` on a card, so it is read where the answer carries one; a
+    ⛔ **Two readings of a card, in this order, and both are measured.** The
+    reference documents `idShort` on a card, so it is read where it carries one; a
     real interface over this tracker answers a card with no short-id field at all
     -- which is the survey's own row -- and a `fields=` narrowed read is the same
     shape, so the URL is parsed where it does not. ⚠️ The URL's number is the
@@ -783,37 +783,29 @@ def item_number(item: dict | int | str) -> int:
     percent-encoded wherever the title is not ASCII, and a split on the dash
     would take a title's own digits on an answer whose slug begins with a year.
     """
-    if isinstance(item, int) and not isinstance(item, bool):
-        return item
-    # ⛔ Text is one of the shapes the port passes, and the first form went
-    # straight to `.get` on it -- an `AttributeError` from the one operation that
-    # cannot fail for any other reason. The sibling kinds carry the same guard.
-    if isinstance(item, str):
-        if item.strip().isdecimal():
+    # ⛔ An identifier, which the port passes as text as readily as an `int`, and
+    # positive because this tracker counts from one. ⚠️ Every shape that is not
+    # a card refuses **here**: the first form went straight to `.get` on text --
+    # an `AttributeError` from the one operation that cannot fail for any other
+    # reason -- and the arm written for that pushed a `bool` into the same
+    # lookup, each shape the arms excluded having nowhere else to land.
+    if not isinstance(item, dict):
+        if isinstance(item, int) and not isinstance(item, bool) and item > 0:
+            return item
+        if isinstance(item, str) and item.strip().isdecimal() \
+                and int(item.strip()) > 0:
             return int(item.strip())
         raise ConfigError(
             "tracker.operations.item_number",
-            f"was handed {item!r}, which carries no card number. This operation "
-            "reads an identifier out of what it was given and makes no call, so "
-            "there is nothing to resolve a value of another shape against.",
-        )
-    # ⛔ And every other shape, which is the sibling kinds' terminal refusal and
-    # was the arm this function stopped short of: the two arms above excluded a
-    # `bool` from the first and text from the second, and what they excluded then
-    # reached the lookup below -- the same `AttributeError` one shape over, made
-    # reachable by the guard added to prevent it.
-    if not isinstance(item, dict):
-        raise ConfigError(
-            "tracker.operations.item_number",
-            f"was handed {item!r}, which is neither a card nor an identifier. "
+            f"was handed {item!r}, which is neither a card nor a card number. "
             "This operation reads an identifier out of what it was given and "
-            "makes no call, so there is nothing to resolve a value of another "
-            "shape against.",
+            "makes no call, so there is nothing to resolve another shape "
+            "against, and a board counts its cards from one.",
         )
     short = item.get("idShort")
-    if isinstance(short, int) and not isinstance(short, bool):
+    if isinstance(short, int) and not isinstance(short, bool) and short > 0:
         return short
-    if isinstance(short, str) and short.isdigit():
+    if isinstance(short, str) and short.isdigit() and int(short) > 0:
         return int(short)
     for key in ("url", "shortUrl"):
         found = CARD_NUMBER_IN_URL.search(str(item.get(key) or ""))

@@ -649,6 +649,9 @@ def self_test() -> int:
             ("a float", 3.0),
             ("nothing", None),
             ("a list", [1]),
+            ("zero, which names no card on a board counting from one", 0),
+            ("a negative", -13),
+            ("a card whose short id is zero", {"id": "c", "idShort": 0}),
         )
     }
     check(

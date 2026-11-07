@@ -270,6 +270,22 @@ def self_test() -> int:
         field("state_reason") == ["completed", None, "not_planned"],
         f"answered {field('state_reason')!r}",
     )
+    # ⛔ Stripped as well as lowered, which the arms above read these fields for:
+    # the readability test strips, so a padded word passes it -- and shaped by
+    # lowering alone it would arrive matching none of this host's own words,
+    # which is the unreadable reason the arm exists against wearing a readable
+    # one's clothes.
+    padded = _Host({"/dependencies/blocked_by": [
+        dict(_recorded([(13, "closed", A_REPO, "completed")])[0],
+             state="  CLOSED  ", state_reason="  COMPLETED  ")
+    ]})
+    shaped = (with_host(padded, lambda: read_blockers(BLOCKED)) or {}).get("blockers")
+    check(
+        "a padded state and reason arrive as the host's own words, not as padding",
+        [(entry["state"], entry["state_reason"]) for entry in shaped or [{}]]
+        == [("closed", "completed")],
+        f"answered {shaped!r}",
+    )
     check(
         "and nothing beyond the fields the operation states, at either level",
         set(answered or {}) == {"number", "blockers"}
@@ -334,10 +350,7 @@ def self_test() -> int:
          [dict(_recorded([(13, "open", A_REPO, None)])[0], number=0)]),
         ("an item numbered below zero",
          [dict(_recorded([(13, "open", A_REPO, None)])[0], number=-13)]),
-        # ⛔ The reason, which the shaping lowers and takes to `None` -- this
-        # host's spelling of *closed, and nothing says why*. An unreadable one
-        # would arrive at a gate as a blocker that finished, which is the one
-        # reading § 5's bar must not be handed by accident.
+        # ⛔ And the reason, for the arm's own stated reason.
         ("an item whose closed reason is not a word",
          [dict(_recorded([(13, "closed", A_REPO, "completed")])[0], state_reason=7)]),
         ("an item whose closed reason is the empty word",
@@ -538,8 +551,8 @@ def self_test() -> int:
         not [args for args in taken.sent if "--add-assignee" in args],
         f"sent {taken.sent!r}",
     )
-    # ⚠️ One per shape the guard holds: no number at all, and `true` for one --
-    # which is an `int`, so it passed a type test while naming no item.
+    # ⚠️ One per shape the guard holds, the bool among them because it is an
+    # `int` and passed a type test while naming no item.
     for label, answered in (
         ("carrying no number", {}),
         ("answering `true` for one", {"number": True}),
@@ -576,11 +589,9 @@ def self_test() -> int:
         f"read {read_shapes!r}",
     )
     # ⛔ One per shape that carries no number it can read, the arm each falls out
-    # of being its own: text that is not decimal, a mapping carrying no `number`
-    # at all, one carrying a word there, a bool -- which is an `int` -- and a
-    # shape that reaches neither arm. ⚠️ The mapping was subscripted whatever it
-    # held, so the mapping rows came back as a `KeyError` and a `ValueError` from
-    # the operation whose only stated failure is this refusal.
+    # of being its own. ⚠️ The mapping was subscripted whatever it held, so two
+    # of these reached a `KeyError` and a `ValueError` from the operation whose
+    # only stated failure is this refusal.
     refusals = {
         label: refused(lambda handed=handed: under_test.item_number(handed))
         for label, handed in (
@@ -589,6 +600,10 @@ def self_test() -> int:
             ("a mapping whose `number` is a word", {"number": "abc"}),
             ("a bool", True),
             ("a value of another shape", 3.0),
+            ("zero, which names no item on a host counting from one", 0),
+            ("a negative", -13),
+            ("a mapping carrying zero", {"number": 0}),
+            ("text carrying a negative", "-13"),
         )
     }
     check(

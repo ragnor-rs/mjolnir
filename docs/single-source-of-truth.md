@@ -124,6 +124,7 @@ file it came from fails in both directions. Every check below is one of the firs
 | 6 | No citation names a **container** — a section whose whole content is in its subsections | every citation, in every document with a role | computed |
 | 7 | The footprint report covers every file the checks walk | the report's own coverage | computed |
 | 8 | Every **other** anchored link into a markdown heading resolves — between two documents, out of the schema into one, and within a document | every document with a role, the schema included | computed |
+| 9 | This table carries one numbered row per check in the script, in the script's own order | the ordinals, not what a row says | computed |
 
 Check 2 is the one that does the most work, because it runs in the direction nobody remembers to
 check by hand: a section added to the schema with nothing recording why it has that shape fails
@@ -306,18 +307,28 @@ Stated, because an unstated limit reads later as coverage.
   marker, which is the *quoting* failure, and it is what makes the line-start form the sound one. A
   table cell is not part of that argument — the check excludes cells by a separate condition the
   grammar does not reach — so the residue here is a reviewer's.
-- **A link with no anchor on it, and a link to a directory.** Check 1 resolves a citation of the
-  surface and check 8 every other anchored one, so what is left is the link that names no heading:
-  a row in the README pointing at a carrier directory resolves against nothing — so renaming a
-  carrier and updating this script's role map leaves such a link dead and the build green.
-  ⚠️ Measured by doing exactly that: the one path that fails loudly is the role map itself, and the
-  rest fail in silence.
+- **A link with no anchor on it.** What no check reaches is the link that names no heading: a row
+  in the README pointing at a carrier directory resolves against nothing — so renaming a carrier
+  and updating this script's role map leaves such a link dead and the build green. ⚠️ Measured by
+  doing exactly that: the one path that fails loudly is the role map itself, and the rest fail in
+  silence.
 - **A markdown file no role claims, on either end of check 8.** That check holds a link whose
   target is already in the role map, so a citation into an untracked document, or out of one, is
   skipped in silence rather than refused — the same residue check 0's loud-residue argument leaves,
   one check over. ⚠️ **And it reddens when its own set empties**, which is that argument's other
   half: a tree whose documents stopped citing each other is reported rather than passing as a tree
   with nothing to check.
+- **What a row of this table *says*.** Check 9 holds the ordinals and the count, which is what
+  catches a check inserted rather than appended — the live instance, where the insertion renumbered
+  every reference below it and the run stayed green. ⛔ **A row describing the wrong check reads
+  correctly to it**, and so does a row whose scope or kind has gone stale: that half is a reader's.
+  ⚠️ **And which table it reads is positional** — the first of its shape in this document, this
+  being the gate the document opens with — so reordering the sections moves what check 9 holds.
+- **A heading inside the three regions check 8's scan reads and the heading scan does not.** That
+  scan skips a `~~~` fence, a four-space block, an HTML comment and a code span, where the heading
+  reader skips only a ``` fence. ⛔ **So an anchor that is not a heading is citable inside those
+  three**, and check 8 will not refuse a citation of it. ⚠️ Kept apart deliberately: merging them
+  would change what checks 2 and 6 read, which is a different question from what check 8 refuses.
 - **Whatever is not committed.** Every check here reads the working tree, which is not what a
   commit takes. ⚠️ Measured on the change that added this bullet: edits staged by a merge were
   verified green, then edited again and left out of the commit, so the gate's verdict was about a
@@ -727,10 +738,8 @@ exempted the whole directory and so would have read straight past it.
   arm refused a span reading *inward: toward the centre* as a tracker's metadata key with no tracker
   vocabulary in it, and the form after it required both sides **in one region**, which admitted
   every shape a carrier writes — a region being one span, or one line of a fence. What is decidable
-  is the value. ⚠️ **The quote around that value is matched in either spelling, and through a
-  backslash**, the form before this one reading an unescaped double quote only: the single-quoted
-  family a carrier writes in YAML or in Python fell out of the arm whole, and so did the escaped
-  one a carrier writes inside a shell string.
+  is the value. ⚠️ **The quote around that value is matched in either spelling, and through any
+  number of backslashes** — the shell string and the JSON carrier holding that string each add one.
 - **A wording's own trailing punctuation comes off both ends of a region before the phrase group is
   matched**, so that a literal quoted at the end of a sentence is still read as that literal. ⚠️
   **The characters stripped are more than that reason needs** — the set is the `PUNCTUATION`
@@ -3860,8 +3869,10 @@ check plants replies that must stay green — a check that flags an arrow inside
 indented block or a quotation is not the check it claims to be, and each of those was a measured
 false red rather than a hypothesis. The width check plants a line of each unbreakable kind,
 because its exclusion list is where it would quietly stop holding anything. The single-authority
-check plants a container cited through its subsection, which is the one carve-out checks 2 and 6
-share. The audit-trail check plants the carve-out that is its whole scope — a violation the change
+check plants a container cited through its subsection, which is the carve-out checks 2 and 6
+share, and — for check 8, every one of whose failures is a refusal of a link that resolves — a
+citation of the host's repeated-heading suffix beside the form shown as an example rather than
+written. The audit-trail check plants the carve-out that is its whole scope — a violation the change
 did not write — beside a landed record and a live-status line, each of which carries a date and has
 to pass. The end-to-end
 register check plants the three ways a change may be written down and the change that is outside

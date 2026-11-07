@@ -768,8 +768,10 @@ def read_item(number: int) -> dict:
     number names, and the two share one sequence here. Measured on a live
     repository -- a merged pull request's number answers `__typename:
     PullRequest`, `state: MERGED`, a word no `statuses` list contains. Every
-    operation here that takes a number resolves it through this function, which is
-    what makes one guard cover all of them, the writes among them being why.
+    operation here that **calls the host** resolves its number through this
+    function, which is what makes one guard cover all of them, the writes among
+    them being why; the two that make no call are named as such where they are
+    defined.
 
     ⚠️ A number the repository does not have answers `null` **and** a `NOT_FOUND`
     error, so it arrives as a failed call rather than here. The `null` arm below is
@@ -781,8 +783,8 @@ def read_item(number: int) -> dict:
     # contract's own exceptions, so a non-numeric argument reached the operator as
     # a traceback where § 3 states three answers and none of them is one -- the
     # same contract this module's own dispatch was repaired for. ⚠️ Every
-    # operation here routes through this function, so the refusal covers all of
-    # them rather than one.
+    # operation here that calls the host routes through this function, so the
+    # refusal covers all of those rather than one.
     # ⚠️ Decimal digits rather than whatever `int()` accepts, and the shapes it
     # would have accepted are the cases in this kind's suite. ⛔ `isdecimal` and
     # not `isdigit`: a superscript answers `isdigit` and then raises in `int`,
@@ -861,19 +863,14 @@ def item_number(item: dict | int | str, *, operation: str = "item_number") -> in
     # subscripted anything that was not an `int`, so the ordinary CLI argument
     # came back as a `TypeError` -- from the one operation that cannot fail for
     # any other reason. The refusal is the sibling kind's, for its reason.
-    if isinstance(item, int) and not isinstance(item, bool):
-        return item
-    if isinstance(item, str) and item.strip().isdecimal():
-        return int(item.strip())
-    # ⛔ A mapping only where it carries a number this can read, which is the
-    # sibling kind's arm for its reason: the subscript was unconditional, so an
-    # item answering no `number` arrived as a `KeyError` and one answering a word
-    # as a `ValueError`. The inner value is held exactly as an argument is.
-    inner = item.get("number") if isinstance(item, dict) else None
-    if isinstance(inner, int) and not isinstance(inner, bool):
-        return inner
-    if isinstance(inner, str) and inner.strip().isdecimal():
-        return int(inner.strip())
+    # ⛔ The sibling kind's arms, for their reasons: positive, no bool, and a
+    # mapping only where it carries a number this can read.
+    for handed in (item, item.get("number") if isinstance(item, dict) else None):
+        if isinstance(handed, int) and not isinstance(handed, bool) and handed > 0:
+            return handed
+        if isinstance(handed, str) and handed.strip().isdecimal() \
+                and int(handed.strip()) > 0:
+            return int(handed.strip())
     raise ConfigError(
         f"tracker.operations.{operation}",
         f"was handed {item!r}, which carries no item number. This operation "
