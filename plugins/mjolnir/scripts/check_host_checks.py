@@ -202,13 +202,20 @@ class Definition:
         return f"<Definition {self.path} name={self.name!r}>"
 
 
-def _sequence(value) -> list[str]:
+def _sequence(value, key: str) -> list[str]:
     """A host key's value as the list of strings it states, in either shape.
 
     A host writes `branches: [main]` and `branches:` with a block sequence under
     it to mean one thing, and a single pattern as a bare scalar. ⛔ A shape that
     is neither is raised rather than coerced: a mapping read as a one-element
     list is the plausible-looking wrong answer this whole file is against.
+
+    ⛔ **The key is named in the refusal and is required of every caller**, which
+    `Definition`'s own contract already promised -- one reason per fact, naming
+    the key rather than the file alone. ⚠️ Measured by review: an unreadable
+    path value reported *states {'a': 1}, which is neither a pattern nor a list
+    of them* against the file, with neither the key nor the dimension in it, and
+    the note was unactionable for the person who had to go and look.
     """
     if value is None:
         return []
@@ -218,7 +225,9 @@ def _sequence(value) -> list[str]:
         isinstance(member, (str, int, float, bool)) for member in value
     ):
         return [str(member) for member in value]
-    raise Unstatable(f"states {value!r}, which is neither a pattern nor a list of them")
+    raise Unstatable(
+        f"states `{key}:` as {value!r}, which is neither a pattern nor a list of them"
+    )
 
 
 def read_definition(text: str | Exception, path: str) -> Definition:
@@ -446,9 +455,9 @@ def _derive(block, found: Definition):
                         f"{dimension} cannot be compared against what the facet states"
                     )
             if "types" in value:
-                types = frozenset(_sequence(value["types"]))
+                types = frozenset(_sequence(value["types"], "types"))
             if "branches" in value:
-                refs = _sequence(value["branches"]) or [ANY_REF]
+                refs = _sequence(value["branches"], "branches") or [ANY_REF]
             written = [key for key in PATH_KEYS if key in value]
             if len(written) > 1:
                 killed.add("paths")
@@ -459,9 +468,23 @@ def _derive(block, found: Definition):
                     f"what the run watches cannot be compared against what the facet states"
                 )
             elif written:
-                filtered = (
-                    PATH_KEYS[written[0]], tuple(_sequence(value[written[0]])),
-                )
+                globs = tuple(_sequence(value[written[0]], written[0]))
+                # ⛔ A path key carrying no glob kills the dimension rather than
+                # being compared as a filter that names nothing. ⚠️ Measured by
+                # review: read as a filter, such a file is drift **no edit
+                # clears** -- the entry that would match it states a filter with
+                # an empty list, which the reader refuses at that key in either
+                # sense, so there is no configuration that agrees with the file.
+                if not globs:
+                    killed.add("paths")
+                    found.unstatable.append(
+                        f"filters `{event}` on `{written[0]}:` with no glob in it, and § 2 "
+                        f"states each sense of a filter as a list of globs -- an entry has no "
+                        f"form for a filter naming none, so what the run covers cannot be "
+                        f"compared against what the facet states"
+                    )
+                else:
+                    filtered = (PATH_KEYS[written[0]], globs)
         elif value is not None:
             raise Unstatable(f"states `{event}` as {value!r}, which this reader cannot walk")
         for ref in refs:
@@ -1426,12 +1449,28 @@ def _plant_both_path_keys_on_one_event(subject: Subject) -> Subject:
     )
 
 
+def _plant_a_path_key_with_no_glob(subject: Subject) -> Subject:
+    """A path key written blank, which no entry has a form for.
+
+    ⛔ An absence and never drift, which is the half that was measured wrong:
+    read as a filter naming nothing, such a file is drift **no edit clears** --
+    the entry that would agree with it states an empty list, and the reader
+    refuses that at the key in either sense.
+    """
+    return _edit("first.yml", "  pull_request:\n",
+                 "  pull_request:\n    paths-ignore:\n")(
+        _edit("first.yml", "    branches: [main]\n",
+              "    branches: [main]\n    paths-ignore:\n")(subject)
+    )
+
+
 def _plant_events_filtered_one_sense_each(subject: Subject) -> Subject:
     """One event watching and the other excluding: one filter for the whole block (§ 2).
 
-    ⚠️ Not the same plant as the one below, and the difference is what it
-    asserts: the globs agree here and only the sense differs, so a reading that
-    compared the lists and not the sense would call this block uniform.
+    ⚠️ Not the same plant as `_plant_events_filtered_differently`, and the
+    difference is what it asserts: the globs agree here and only the sense
+    differs, so a reading that compared the lists and not the sense would call
+    this block uniform.
     """
     return _edit("first.yml", "  pull_request:\n",
                  "  pull_request:\n    paths: [docs/**]\n")(
@@ -1510,6 +1549,7 @@ ABSENCES = [
     ("a definition that could not be opened", _plant_a_definition_that_cannot_be_opened),
     ("an event block filtered on `branches-ignore`", _plant_an_ignore_filter),
     ("one event block stating both senses of one filter", _plant_both_path_keys_on_one_event),
+    ("a path key carrying no glob at all", _plant_a_path_key_with_no_glob),
     ("one workflow filtering its events one sense each", _plant_events_filtered_one_sense_each),
     ("one workflow filtering its events differently", _plant_events_filtered_differently),
     ("an entry stating no `triggers`", _plant_an_entry_stating_no_triggers),
@@ -1588,9 +1628,14 @@ def _plant_an_excluding_filter_both_sides_state(subject: Subject) -> Subject:
     ⛔ Asserted on its own terms, because a dimension can be made to agree by
     not being read: with the sense dropped from the comparison this plant is
     green and so is every violation beside it, and only the pair tells the two
-    apart. ⚠️ **Verified by disabling the reading**: with the host's excluding
-    key put back in `UNSTATABLE`, this plant goes **undetermined** rather than
-    red, which is the arm the exemption loop asserts separately.
+    apart.
+
+    ⚠️ **Verified by disabling the reading rather than by argument.** With the
+    host's excluding key put back in `UNSTATABLE`, this plant goes
+    **undetermined** rather than red -- the arm the exemption loop asserts
+    separately -- and three of the four violations above go green with it,
+    every one whose file carries that key. The fourth still reddens, its
+    divergence being on the entry's side alone.
     """
     return _entry(0, paths=dict(AN_EXCLUDING_FILTER))(
         _excludes_in_the_file("docs/**")(subject)
@@ -1809,6 +1854,21 @@ def self_test() -> int:
             print(f"  STAYED GREEN           {name}: {label}")
             failures += 1
 
+    # ⛔ What an absence note has to *name*, which the loop below only counts:
+    # `Definition`'s own contract is one reason per fact naming the key rather
+    # than the file alone, and a value no reader can walk reported neither the
+    # key nor the dimension — unactionable for whoever had to go and look.
+    unreadable = _edit(
+        "first.yml", "  pull_request:\n", "  pull_request:\n    paths-ignore:\n      a: 1\n",
+    )(subject.copy())
+    said = "  ".join(sorted(set(undeterminable(unreadable)) - absent))
+    if "`paths-ignore:`" in said:
+        print("  named the key           absent: a path value no reader can walk")
+    else:
+        print("  NAMED NO KEY            absent: a path value no reader can walk")
+        print(f"                         - {said}")
+        failures += 1
+
     for label, plant in ABSENCES:
         planted = plant(subject.copy())
         reported = set(undeterminable(planted)) - absent
@@ -1854,6 +1914,35 @@ def self_test() -> int:
             failures += 1
         else:
             print(f"  green on               exempt: {label}")
+
+    # ⛔ What the violation loop above cannot assert: **what the report says.**
+    # It asks whether a new line appeared in the named check and never what is
+    # in it, so the sense word `_shown_filter` exists to put there is held by
+    # nothing. ⚠️ Measured by review: with the two phrases transposed -- an
+    # excluding filter reported as the paths a run watches and the reverse --
+    # every plant stayed red and the suite stayed green, while the shipped line
+    # described each side as the other.
+    for label, plant, says in (
+        ("an entry excluding what the file does not",
+         _plant_an_excluding_filter_the_file_does_not_carry,
+         ("host.checks[0] states the paths it excludes",
+          "filters on nothing")),
+        ("a file excluding what the entry does not",
+         _plant_an_excluding_filter_the_entry_does_not_carry,
+         ("states no `paths`", "filters on the paths it excludes")),
+        ("one filter in two senses", _plant_two_senses_of_one_filter,
+         ("states the paths it watches", "states the paths it excludes")),
+    ):
+        found = set(
+            check_every_entrys_paths_are_its_workflows_own(plant(subject.copy()))
+        ) - baseline["every entry's paths are its workflow's own"]
+        line = "  ".join(sorted(found))
+        if all(phrase in line for phrase in says):
+            print(f"  said                   reported: {label}")
+        else:
+            print(f"  SAID THE OTHER SENSE   reported: {label}")
+            print(f"                         - {line}")
+            failures += 1
 
     over = assert_the_reader_is_linear()
     for line in over:

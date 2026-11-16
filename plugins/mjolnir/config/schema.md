@@ -889,9 +889,8 @@ host:
       mirrors: "<local command>"   # the local command whose verdict this run duplicates
       command_root: "<name>"       # § 1's root it runs in; omitted where that is the code root
       triggers: "<event>(<types>) -> <ref>"  # what starts it; a list when there is more than one
-      paths: ["…"]                 # the paths it watches; omitted where it runs on every change
-      paths:                       # or the same key in its other sense, never a second key
-        excluding: ["…"]           # every change but one whose every path this list matches
+      paths: ["…"]                 # the paths it watches, or the other sense below; omitted where
+                                   # the workflow runs on every change
 ```
 
 Independent of the tracker. A project may keep its cards in one system and its code in another.
@@ -1046,9 +1045,7 @@ host:
         - job: "<the job's id, as the workflow file spells it>"
           mirrors: "<local command>"
           command_root: "<name>"   # § 1's root this job's command runs in
-          paths: ["…"]         # this job's own filter; omitted where the job carries none
-          paths:               # and its other sense, as on the entry above
-            excluding: ["…"]
+          paths: ["…"]         # this job's own filter, in either sense; omitted where it carries none
 ```
 
 **The form is for a project whose workflows are not the toolkit's to reshape.** One project in the

@@ -26,10 +26,10 @@ Three things it deliberately does not do:
     globs and nothing further, so which of them this module can answer about is
     its own judgement, erring towards refusing a pattern. ⛔ **Which sense a
     filter is in is not this module's judgement at all** — it is the value's
-    shape, normalised once by the reader, and read here off the record. ⛔ **It enumerates no events**: § 2 states that vocabulary is
-    the host's and that the facet holds no name against it, so an event this
-    module has never seen is not this change's event rather than a trigger it
-    may refuse.
+    shape, normalised once by the reader, and read here off the record.
+    ⛔ **It enumerates no events**: § 2 states that vocabulary is the host's and
+    that the facet holds no name against it, so an event this module has never
+    seen is not this change's event rather than a trigger it may refuse.
   * **It never reads the host.** Which runs exist for a commit, whether one
     executed steps and how it concluded are § 2's four preconditions, answered
     from live state by the role that asks. This module answers the half the
@@ -183,6 +183,16 @@ def _glob(pattern: str) -> re.Pattern[str] | None:
     `**` into *anything but a separator* and the pattern then matches nothing a
     directory deep -- a filter that admits no path reads exactly like a filter
     that excludes this change.
+
+    ⛔ **`**/` carries its separator and is therefore optional**, which is the
+    host's own reading -- *zero or more directories* -- and not a refinement of
+    it. ⚠️ Measured by review on the watching sense: translated as `.*/` the
+    pattern requires a separator, so `**/*.md` matched nothing at the root of
+    the repository and a change to one file there answered *out of scope* -- a
+    green for a run the host does make, which is the direction this module's
+    own glob rule refuses to err in. ⚠️ The excluding sense had it the other
+    way round for the same input, which is what makes this the translation's
+    defect rather than either sense's.
     """
     if any(character in pattern for character in UNPARSEABLE_IN_A_GLOB):
         return None
@@ -191,6 +201,10 @@ def _glob(pattern: str) -> re.Pattern[str] | None:
     while index < len(pattern):
         character = pattern[index]
         if character == "*":
+            if pattern.startswith("**/", index):
+                out.append("(?:.*/)?")
+                index += 3
+                continue
             if pattern.startswith("**", index):
                 out.append(".*")
                 index += 2
@@ -799,7 +813,11 @@ FILTERED = [{
 # with a record built here: the shape is the statement, so a fixture that handed
 # this module a record would assert the comparison and leave the reader's own
 # walk -- including every refusal § 2 carries -- out of it.
-EXCLUDING = [{
+#
+# ⛔ Named for the fixture it is and not for the sense, because `config.EXCLUDING`
+# is the key's one spelling: a second `EXCLUDING` in this file would be one name
+# meaning a configuration here and a key one module over.
+EXCLUDING_FILTER = [{
     "workflow": "A workflow",
     "mirrors": "a-mirrored-command",
     "triggers": "pull_request -> *",
@@ -865,7 +883,14 @@ def self_test() -> int:
         if not condition:
             failures.append(label)
 
-    surface = _surface_text()
+    # ⛔ Flattened, because every assertion below quotes a sentence out of a
+    # document that is hard-wrapped at a stated width: a phrase that crosses a
+    # line break is **there** and a substring search says it is not, so an
+    # assertion that moved with a reword would read as a rule that had been
+    # deleted. ⚠️ Measured on this suite -- the first form of the sense
+    # assertion below quoted eleven words that the surface happens to wrap in
+    # the middle of, and it failed against a surface stating exactly them.
+    surface = " ".join(_surface_text().split())
 
     print("the grammar this module carries is the surface's")
     # ⛔ The first of these is the one that matters most: it asserts that this
@@ -917,11 +942,18 @@ def self_test() -> int:
     # taken on trust, for the reason the any-ref spelling is: the key is the
     # reader's constant and renaming it there would turn this arm off, while the
     # asymmetry is a judgement this module would otherwise be making for itself.
+    # ⛔ Against the sentence that states the rule and not against the fence
+    # that illustrates it. ⚠️ Measured by review: the first form of this
+    # assertion matched `excluding: [` and that text occurs **once**, inside an
+    # example — so rewriting that example as a block sequence, which § 2 itself
+    # says a host may write, reddened this module with the rule untouched, and
+    # moving the rule to another key while leaving the stale example behind kept
+    # it green. Both directions wrong, from one string in the wrong place.
     check(
         f"§ 2 states the excluding sense under `{config.EXCLUDING}`",
-        f"{config.EXCLUDING}: [" in surface,
+        f"a mapping under `{config.EXCLUDING}:` is the other" in surface,
         "the key the reader normalises that sense from is not one the surface "
-        "writes, so the shape this module reads is held to nothing",
+        "states as the rule, so the shape this module reads is held to nothing",
     )
     check(
         "§ 2 states that an excluding filter excludes a change only where every path matches",
@@ -1196,8 +1228,39 @@ def self_test() -> int:
         check(f"{label} is {expected}", got["verdict"] == expected,
               f"answered {got['verdict']!r} -- {got['because']}")
 
+    # ⛔ `**/` carries its separator and the host reads it as *zero or more
+    # directories*, so a root-level path is inside it. ⚠️ Measured by review as
+    # the one translation defect that answers green for a run the host makes:
+    # read as requiring a separator, `**/*.md` matched nothing at the root.
+    # ⛔ Asserted in **both** senses, because the same translation answers
+    # opposite ways under each and only the pair holds the glob rather than one
+    # sense's arm.
+    for label, checks, paths, expected in (
+        ("a root-level path inside a `**/` filter",
+         [{"workflow": "A workflow", "mirrors": "a-mirrored-command",
+           "triggers": "pull_request -> *", "paths": ["**/*.md"]}],
+         ["a-file.md"], REACHED),
+        ("a path a directory deep inside the same filter",
+         [{"workflow": "A workflow", "mirrors": "a-mirrored-command",
+           "triggers": "pull_request -> *", "paths": ["**/*.md"]}],
+         ["a-tree/a-file.md"], REACHED),
+        ("a root-level path a `**/` filter excludes",
+         [{"workflow": "A workflow", "mirrors": "a-mirrored-command",
+           "triggers": "pull_request -> *",
+           "paths": {config.EXCLUDING: ["**/*.md"]}}],
+         ["a-file.md"], OUT_OF_SCOPE),
+        ("a path outside a `**/` filter in either sense",
+         [{"workflow": "A workflow", "mirrors": "a-mirrored-command",
+           "triggers": "pull_request -> *", "paths": ["**/*.md"]}],
+         ["a-file.txt"], OUT_OF_SCOPE),
+    ):
+        got = covers(_a_configuration(checks), "a-mirrored-command",
+                     A_PULL_REQUEST, "main", None, paths)
+        check(f"{label} is {expected}", got["verdict"] == expected,
+              f"answered {got['verdict']!r} -- {got['because']}")
+
     print("\nwhat the other sense of a filter reaches")
-    excluding = _a_configuration(EXCLUDING)
+    excluding = _a_configuration(EXCLUDING_FILTER)
     for label, paths, expected in (
         ("a path the list does not name", ["another-tree/a-file"], REACHED),
         # ⛔ The asymmetry § 2 states, and the one case that decides whether this
@@ -1274,18 +1337,31 @@ def self_test() -> int:
     # job excludes a subtree of it, so a change inside that subtree is out of
     # scope on the job's filter alone.
     mixed = _a_configuration(EACH_SENSE)
-    for label, paths, expected in (
+    for label, paths, expected, says in (
         ("a path the workflow watches and the job excludes",
-         ["a-tree/one/a-file"], OUT_OF_SCOPE),
+         ["a-tree/one/a-file"], OUT_OF_SCOPE, "every path this change touches"),
         ("a path the workflow watches and the job does not exclude",
-         ["a-tree/two/a-file"], REACHED),
+         ["a-tree/two/a-file"], REACHED, None),
         ("a path outside the workflow's own filter", ["another-tree/a-file"],
-         OUT_OF_SCOPE),
+         OUT_OF_SCOPE, "admits no path"),
     ):
         got = covers(mixed, "a-mirrored-command", A_PULL_REQUEST, "main", None,
                      paths)
         check(f"{label} is {expected}", got["verdict"] == expected,
               f"answered {got['verdict']!r} -- {got['because']}")
+        # ⛔ The sense in the reason, read at **each** level rather than at the
+        # workflow's alone. ⚠️ Measured by review: the one-level fixture above
+        # asserts this only where `level` is the workflow, so taking the sense
+        # from the wrong level passed — and these two levels are in opposite
+        # senses, which is the only shape that tells the two reads apart.
+        if says is not None:
+            check(
+                f"and its reason names the sense that level's filter is in",
+                says in got["because"],
+                f"said {got['because']!r}, which describes the other sense -- "
+                "the level that excluded this change and the level the sense "
+                "was read from are not the same one",
+            )
 
     print("\na pattern no consumer can parse")
     for label, entry in (

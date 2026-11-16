@@ -241,7 +241,7 @@ the same runs, and a rule written in one role's skill is a second authority for 
 second of the four:** one copy of this role had those preconditions and the other four treated
 silence as success.
 
-Which runs should exist, which local command each one mirrors, and which paths each watches are
+Which runs should exist, which local command each one mirrors, and which paths each covers are
 `host.checks`'s to state ([`§ 2`](../../config/schema.md#2-code-host)) — ⛔ **never this file's, and
 never derived from what the host happens to report.** A run's name does not say which command it
 duplicates. ⛔ **And the facet is read through the one consumer, never by eye:**

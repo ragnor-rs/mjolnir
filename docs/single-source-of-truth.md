@@ -2331,7 +2331,8 @@ asks the host nothing — the configuration and the files beside it are the whol
 it can be a host check at all.
 
 What it holds: the **name** an entry is keyed on, the **triggers** that start the run, the **paths**
-it watches — each in both directions, because neither shows from the other's output, and a rename is
+a run covers and in which of the two senses — each in both directions, because neither shows from
+the other's output, and a rename is
 at once an entry naming a run the host does not make and a run no entry names, which is this gate's
 acceptance case. And the **jobs** an entry names where it states that form, one way only: a job the
 file defines and no member names is the ordinary case rather than drift
@@ -2368,15 +2369,19 @@ figures and a number in this paragraph is wrong by the next plant.
 
 - **Violations that must redden**: a rename read from each end, an entry naming no definition, a
   definition no entry names, a trigger each side states and the other does not, a type clause and a
-  ref the file does not state, a path filter on each side alone, two spellings of one filter, a job
-  no file defines, and a top-level key named as a job. And on the runner dimension, each on a
+  ref the file does not state, a path filter on each side alone, two spellings of one filter, an
+  excluding filter on each side alone, one filter written in the two senses, two excluding filters
+  spelled differently, a job no file defines, and a top-level key named as a job. And on the runner
+  dimension, each on a
   planted statement the files were first put in agreement with: a job on another label, a job
   naming none, a job on another budget, a job with nothing bounding it, a workflow in another
   group, a group that cancels nothing in progress and so retires nothing, and a workflow with no
   group at all.
 - **Absences that must be reported and must *not* arrive as drift**: a host kind whose definitions
   are not files, a definition stating no name, one that is not valid YAML, one that could not be
-  opened, an event block filtered on a key no pattern can state, a workflow filtering its events
+  opened, an event block filtered on a key no pattern can state, one stating both senses of a path
+  filter at once, one whose path key carries no glob, a workflow filtering its events in one sense
+  each, a workflow filtering its events
   differently from one another, an entry stating no `triggers`, a trigger the grammar does not
   parse, a job filter the host kind carries nowhere, and — on the runner dimension — a label
   chosen when the run starts, a set of labels where the facet states one, a budget the host
@@ -2771,8 +2776,9 @@ and the suite asserts that too — the per-kind label is the host's and is nowhe
 a report that invented one would be this module supplying the fact the facet exists to have stated.
 
 What it holds: a trigger's three parts against the change's own — the event, the type of it and the
-ref — the path filters at the two levels the surface states them at, and the four answers ranked.
-The kind is **computed**: a pattern, a path and an answer.
+ref — the path filters at the two levels the surface states them at and in whichever of its two
+senses each level is written in, and the four answers ranked. The kind is **computed**: a pattern, a
+path and an answer.
 
 ⛔ **The trigger grammar is not this module's and the suite asserts that first** —
 [§ 2](../plugins/mjolnir/config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref)'s
@@ -2792,10 +2798,14 @@ absence.
 ⚠️ **Three of the four answers read as *run it here*, and the suite asserts each separately**
 rather than asserting that the fourth is absent. An empty facet, a command no entry mirrors, an
 entry stating no trigger, a trigger whose event or ref does not fire, a type clause the change's
-own type is outside, a change whose type or paths were never stated, a filter admitting nothing the
-change touches and a pattern the surface's form does not cover are eight distinct states, and
+own type is outside, a change whose type or paths were never stated, a watching filter admitting
+nothing the change touches, an excluding filter naming every path it touches, and a pattern the
+surface's form does not cover are each a state of its own, and
 [§ 2](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is) gives them
-three different answers because their remedies differ. ⛔ The one direction that is not fail-closed
+three different answers because their remedies differ. ⛔ **No count of them is written here**, for
+the reason no count of the plants below is: a figure in this paragraph is wrong by the next state
+the facet gains, and this one had gone stale exactly that way. ⛔ The one direction that is not
+fail-closed
 is a command two entries mirror, where `reached` outranks the rest; that is asserted too, because
 reading the first entry found would report *out of scope* on the strength of whichever entry
 happens to be written above.

@@ -4160,6 +4160,24 @@ def _path_filter(node: dict, where: str) -> dict | None:
     well -- an `excluding:` written blank is the same text as one somebody meant
     to fill in, and a mapping is never read as the absence of the key above it.
     """
+    # ⛔ The sense's key one level too high, refused where it is written rather
+    # than loading as silence. ⚠️ Measured by review: a key no consumer reads
+    # sits on an entry and the level then reports **no filter**, so the facet
+    # over-claims coverage and the project's own statement is discarded without
+    # a word -- which is the refusal `paths` itself carries for a mapping
+    # carrying an unknown key, applied one level up where the same mistake is
+    # likelier. ⚠️ The host's own spelling is **not** refused here: its names
+    # are the drift check's and this reader carries none of them, and a stray
+    # one is caught there whenever the file it describes states a filter.
+    if EXCLUDING in node:
+        raise ConfigError(
+            f"{where[:-len('.paths')]}.{EXCLUDING}" if where.endswith(".paths") else where,
+            f"states `{EXCLUDING}` beside `paths` rather than inside it, and § 2 "
+            "makes the sense the **value's** shape: a filter's excluding sense "
+            f"is `paths:` carrying a mapping under `{EXCLUDING}`. Written at this "
+            "level it is a key no consumer reads, so the level would report no "
+            "filter at all and the run would read as covering every change.",
+        )
     if "paths" not in node:
         return None
     value = node["paths"]
@@ -4168,7 +4186,12 @@ def _path_filter(node: dict, where: str) -> dict | None:
     # watching sense or as nothing at all: § 2 states one spelling per sense, so
     # a key nothing reads is a filter the project wrote and no consumer applies.
     if isinstance(value, dict):
-        unknown = sorted(key for key in value if key != EXCLUDING)
+        # ⚠️ Sorted by how each key is *shown* and never by the key itself: a
+        # mapping's keys need not be strings, and YAML resolves a bare `on:`,
+        # `yes:` or a numeral to one that is not -- measured by review, two such
+        # keys beside each other left this line raising `TypeError` out of the
+        # loader, which is a stated refusal arriving as a crash.
+        unknown = sorted((key for key in value if key != EXCLUDING), key=repr)
         if unknown or not value:
             raise ConfigError(
                 where,
@@ -4183,28 +4206,41 @@ def _path_filter(node: dict, where: str) -> dict | None:
             )
         return {
             EXCLUDING: True,
-            "globs": _globs(value[EXCLUDING], f"{where}.{EXCLUDING}"),
+            "globs": _globs(value[EXCLUDING], f"{where}.{EXCLUDING}", omittable=False),
         }
-    return {EXCLUDING: False, "globs": _globs(value, where)}
+    return {EXCLUDING: False, "globs": _globs(value, where, omittable=True)}
 
 
-def _globs(value, where: str) -> list[str]:
+def _globs(value, where: str, omittable: bool) -> list[str]:
     """The globs one sense of a § 2 path filter states, held to being a list of them.
 
     ⛔ One list rule for both senses, called from each rather than written
     twice: an empty list and a blank glob are refused identically whichever key
     they are written under, and a rule that reached one sense only would read as
     a statement about the other.
+
+    ⚠️ `omittable` is the one thing that is **not** the same at the two keys,
+    and it is the message rather than the rule: `paths` may be left out and the
+    level then bounds nothing, while `excluding` inside a stated mapping may not
+    -- a mapping carrying no key is refused one level up. Measured by review as
+    a refusal telling its reader to do the thing the next rule forbids.
     """
     if not isinstance(value, list) or not value:
         raise ConfigError(
             where,
             f"is {value!r}; § 2 states each sense of a path filter as a list of "
-            "globs, or the key omitted where that level carries none. A single "
-            "glob written as a string is read as a list of its characters by "
-            "anything that walks it, and an empty list is the key written blank "
-            "-- which § 2 refuses rather than reading as the absence it looks "
-            "like.",
+            "globs"
+            + (
+                ", or the key omitted where that level carries none"
+                if omittable else
+                ", and this key is inside a mapping that states the sense -- so "
+                "leaving it out is not the absence of a filter but a mapping "
+                "carrying no key, which § 2 refuses one level up"
+            )
+            + ". A single glob written as a string is read as a list of its "
+            "characters by anything that walks it, and an empty list is the key "
+            "written blank -- which § 2 refuses rather than reading as the "
+            "absence it looks like.",
         )
     for position, pattern in enumerate(value):
         if not isinstance(pattern, str) or not pattern.strip():
@@ -10841,6 +10877,59 @@ def self_test() -> int:
         "covers and covered for every change it skips",
     )
 
+    # ⛔ What the plants over a filter **mapping** cannot assert, and the reason
+    # `_refusal_said` exists: a mapping is refused at `host.checks[0].paths` by
+    # the sense's own rule *and* by the shape rule it replaced -- the list rule
+    # refuses anything that is not a list, at the same key -- so the key those
+    # plants compare is no evidence about which of the two fired. ⚠️ Measured by
+    # review: with the mapping arm removed, four of the nine printed the same
+    # green. What tells them apart is the refusal naming the offending key,
+    # which only the sense's rule can do.
+    for label, written, named in (
+        ("a key § 2 does not state", {"ignoring": ["a-tree/**"]}, "'ignoring'"),
+        ("the sense beside a second key",
+         {EXCLUDING: ["a-tree/**"], "watching": ["a-tree/**"]}, "'watching'"),
+        ("no key at all", {}, "no key at all"),
+    ):
+        said = _refusal_said(_a_path_filter_of(dict(written))(_a_valid_example()))
+        check(
+            f"a filter mapping carrying {label} is refused by the sense's own rule",
+            named in said and EXCLUDING in said,
+            f"refused with {said!r}, which names neither the key it found nor "
+            f"the sense -- so the shape rule beside it would satisfy the plant",
+        )
+    # ⛔ And the one difference between the two keys, which is the message and
+    # not the rule: `paths` may be omitted and the level then bounds nothing,
+    # while `excluding` inside a stated mapping may not. ⚠️ Measured by review as
+    # a refusal telling its reader to do what the next rule refuses.
+    inner = _refusal_said(_a_path_filter_of({EXCLUDING: []})(_a_valid_example()))
+    outer = _refusal_said(_a_path_filter_of([])(_a_valid_example()))
+    check(
+        "the inner key's refusal does not offer the omission the outer one allows",
+        "or the key omitted" in outer and "or the key omitted" not in inner
+        and "carrying no key" in inner,
+        f"the two senses were refused with one message -- inner {inner!r}",
+    )
+    # ⚠️ And the keys that are not mistyped at all, which the three above cannot
+    # reach: the sense's key written one level too high, where a reader that took
+    # only the keys it knows reported **no filter** and discarded what the
+    # project wrote.
+    for label, at, mutate in (
+        ("on an entry", f"host.checks[0].{EXCLUDING}",
+         _a_path_filter_of(None, instead={EXCLUDING: ["a-tree/**"]})),
+        ("on a job", f"host.checks[0].jobs[0].{EXCLUDING}",
+         _a_job_list_of([{"job": "a-job", "mirrors": "a-mirrored-command",
+                          EXCLUDING: ["a-tree/**"]}])),
+    ):
+        broken = _refused(mutate(_a_valid_example()))
+        check(
+            f"the sense's key written {label} rather than inside `paths` is refused",
+            broken == at,
+            f"refused {broken!r}, expected {at!r} -- written there it is a key "
+            f"no consumer reads, so the level reports no filter and the run "
+            f"reads as covering every change",
+        )
+
     # The collision the key exists for, still impossible from inside an entry:
     # two workflows naming one job, each mirroring a different command. ⛔ A
     # reader that keyed anything on the job name would answer both with one
@@ -12213,6 +12302,13 @@ def _planted_violations():
          _a_path_filter_of({EXCLUDING: ["a-tree/**"], "watching": ["a-tree/**"]})),
         ("a filter mapping carrying no key at all", "host.checks[0].paths",
          _a_path_filter_of({})),
+        # ⚠️ Two unknown keys of **different kinds**, which a mapping reaches
+        # through YAML alone -- a bare `on:`, `yes:` or a numeral resolves to
+        # something that is not a string. Measured by review as a stated refusal
+        # arriving as a `TypeError` out of the loader instead.
+        ("a filter mapping whose unknown keys are not all strings",
+         "host.checks[0].paths",
+         _a_path_filter_of({1: ["a-tree/**"], "ignoring": ["a-tree/**"]})),
         ("an excluding filter written with nothing after it",
          "host.checks[0].paths.excluding", _a_path_filter_of({EXCLUDING: None})),
         ("an excluding filter written as an empty list",
@@ -13811,7 +13907,7 @@ def _a_job_list_of(jobs):
     return mutate
 
 
-def _a_path_filter_of(paths):
+def _a_path_filter_of(paths, instead: dict | None = None):
     """An entry whose own `paths` is the stated value.
 
     ⚠️ `None` is a plant here and not a no-op: the key is written with nothing
@@ -13819,13 +13915,22 @@ def _a_path_filter_of(paths):
     are the same value once a mapping is parsed. A reader asking for the value
     rather than for the key reads the first as the second -- measured on this
     change, where the filter was held by its value and `paths:` passed blank.
+
+    ⚠️ `instead` writes keys onto the entry **without** a `paths` beside them,
+    which is the one shape this helper could not otherwise state: the sense's
+    own key written one level too high, where there is no `paths` for a reader
+    to refuse on.
     """
 
     def mutate(data: dict) -> dict:
         checks = data.setdefault("host", {}).setdefault("checks", [])
         if not checks or not isinstance(checks[0], dict):
             checks.insert(0, {"workflow": "Planted", "mirrors": "a-mirrored-command"})
-        checks[0]["paths"] = paths
+        if instead is None:
+            checks[0]["paths"] = paths
+        else:
+            checks[0].pop("paths", None)
+            checks[0].update(instead)
         return data
 
     return mutate
