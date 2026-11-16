@@ -416,7 +416,7 @@ That register is a rule rather than a check, and nothing mechanical reads it: a 
 held by whoever writes it. The one thing a check does hold over a role's output is that no work is
 named and left undone, which is a property of the work rather than of the writing — stated with the
 gate's other limits in
-[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#what-it-deliberately-does-not-check).
+[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-reply-defers-nothing-held-in-the-session-not-on-the-gate).
 
 ## License
 

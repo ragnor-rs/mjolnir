@@ -270,6 +270,17 @@ SHOWN_RATHER_THAN_WRITTEN = re.compile(
 )
 # A fragment the host resolves that names no heading: a line range.
 A_LINE_RANGE = re.compile(r"^L\d+(?:C\d+)?(?:-L?\d+(?:C\d+)?)?$")
+# A link that leaves this repository's own tree: an absolute address.
+# ⛔ **Not resolvable here, and refusing it is wrong rather than strict.** Such a
+# link names a **ref** -- `blob/main/…` is a claim about the integration branch,
+# not about this tree -- so a reader holding it against this tree's headings
+# would refuse a working link on a branch and admit a dead one after a rename
+# somewhere else. ⚠️ Measured as a refusal of a link whose path *and* fragment
+# both resolve: joined onto a document's own directory it became `https:/…`, one
+# slash eaten by the path normaliser, and the message then said the path was
+# dead. The sibling reader answered green on the same line, which is two readers
+# disagreeing about one citation.
+AN_ABSOLUTE_LINK = re.compile(r"^[a-z][a-z0-9+.-]*://", re.I)
 
 
 @_cache
@@ -474,6 +485,8 @@ class Tree:
                     continue
                 if A_LINE_RANGE.match(match.group("anchor")):
                     continue
+                if AN_ABSOLUTE_LINK.match(match.group("path")):
+                    continue
                 target = os.path.normpath(
                     os.path.join(os.path.dirname(path), match.group("path"))
                 ).replace(os.sep, "/")
@@ -495,11 +508,16 @@ class Tree:
             for match in DOCUMENT_CITATION.finditer(text):
                 if any(start <= match.start() < end for start, end in shown):
                     continue
-                # ⚠️ A line range is a fragment this host resolves and no
-                # heading carries, so refusing it would refuse a working link.
                 if A_LINE_RANGE.match(match.group("anchor")):
                     continue
                 named = match.group("path")
+                # ⚠️ For the reason stated beside the pattern. This reader was
+                # green on the shape its sibling refused, the path group not
+                # matching an address with a scheme in it -- so the carve-out is
+                # written here too rather than left as an accident of two
+                # patterns, which is what let the two disagree.
+                if named and AN_ABSOLUTE_LINK.match(named):
+                    continue
                 # ⛔ The citing document itself where no path is named, which is
                 # the `](#a-heading)` form, and the resolved path otherwise.
                 target = path if not named else os.path.normpath(
@@ -888,7 +906,11 @@ def check_the_record_has_a_row_per_check(tree: Tree) -> list[str]:
     matched the ordinals again and this check went green while every row below
     the insertion described the wrong thing.
 
-    ⚠️ The limits are the record's own row-9 residue bullet.
+    ⚠️ The limits are the record's own residue bullet for this check, which it
+    names rather than numbers. ⛔ **Cited by name and not by ordinal**, this
+    being the check whose subject is that an ordinal says nothing about which
+    check it is: a pointer keyed on *row 9* is the same defect one direction
+    over, pointing from the mechanism into the record, and nothing holds it.
     """
     if RECORD not in tree.text:
         return [f"{RECORD}: claimed by no role, so this gate is recorded nowhere."]
@@ -976,10 +998,8 @@ CHECKS = [
     ("no citation names a container", check_no_citation_names_a_container),
     ("the footprint covers what is walked", check_the_footprint_covers_what_is_walked),
     # ⛔ Appended rather than placed beside the citation check it is the sibling
-    # of. The record that states this gate numbers its rows by this list's own
-    # order and refers to them by that number in its prose, so an insertion
-    # renumbers every check after it and silently falsifies every one of those
-    # references -- which is what the first form of this did.
+    # of, for the reason `check_the_record_has_a_row_per_check` states and this
+    # does not restate -- the check whose whole subject is that ordinal.
     ("citations between documents resolve", check_citations_between_documents_resolve),
     ("the record has a row per check", check_the_record_has_a_row_per_check),
     ("no document leaves a fence open", check_no_document_leaves_a_fence_open),
@@ -1172,6 +1192,22 @@ def _plant_a_wrapped_fence_delimiter(tree: Tree) -> Tree:
     return tree
 
 
+def _plant_an_absolute_link_to_the_surface(tree: Tree) -> Tree:
+    """The green side: an address the host resolves against a ref this has not got.
+
+    ⛔ Measured as a refusal of a link whose path **and** fragment both resolve:
+    joined onto the citing document's directory it became `https:/…`, one slash
+    eaten by the path normaliser. ⚠️ Both readers are planted from here, because
+    the pair disagreed about this one shape and only one of them refused it.
+    """
+    tree.text[RULINGS] += (
+        "\n\nThe section, by its address on the host: "
+        "[schema § 2](https://github.com/ragnor-rs/mjolnir/blob/main/"
+        f"{SURFACE}#2-code-host).\n"
+    )
+    return tree
+
+
 def _plant_an_unclosed_tilde_fence(tree: Tree) -> Tree:
     """The same collapse under the other delimiter, which the count never saw.
 
@@ -1280,6 +1316,22 @@ def _plant_citation_of_a_line_range(tree: Tree) -> Tree:
     tree.text[RULINGS] += (
         "\n\n[a line of the reader](single-source-of-truth.md#L12)\n"
         "\n[a span of it](single-source-of-truth.md#L12-L20)\n"
+        # ⚠️ The column form too, which the pattern admits and no plant reached.
+        "\n[a span within two lines](single-source-of-truth.md#L12C5-L14C3)\n"
+    )
+    return tree
+
+
+def _plant_a_line_range_into_the_surface(tree: Tree) -> Tree:
+    """The same carve-out in the **other** reader, which had no plant at all.
+
+    ⛔ The carve-out is written at two call sites and only one of them was ever
+    asserted: a citation of the surface with a line-range fragment goes through
+    the reader scoped to the surface's own name, and the plant beside this one
+    makes a *document* citation, which never enters it.
+    """
+    tree.text[RULINGS] += (
+        f"\n\n[a span of the surface](../{SURFACE}#L120-L140)\n"
     )
     return tree
 
@@ -1638,6 +1690,12 @@ EXEMPTIONS = [
      _plant_citation_of_a_line_range),
     ("citations resolve", "the surface's own citation shown as an example",
      _plant_surface_citation_shown_as_an_example),
+    ("citations resolve", "a line range into the surface, which the host resolves",
+     _plant_a_line_range_into_the_surface),
+    ("citations resolve", "an absolute address the host resolves against a ref",
+     _plant_an_absolute_link_to_the_surface),
+    ("citations between documents resolve", "the same absolute address, read by the sibling",
+     _plant_an_absolute_link_to_the_surface),
     ("no document leaves a fence open", "a block showing a bare fence delimiter",
      _plant_a_shown_fence_delimiter),
     ("the record has a row per check", "the table's own shape shown as an example",
