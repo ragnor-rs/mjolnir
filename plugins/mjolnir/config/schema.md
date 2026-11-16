@@ -347,8 +347,9 @@ than a reason to trust it.
   and who ran the plan. The finishing role answers those about its own pass, records them, and
   ⛔ **says in the merge ask that this project maps no reviewing leg**, which is the one fact that
   changes what the person is deciding. ⚠️ **No question changes hands**: the ask was already the
-  finishing role's, which is why §13 is still right to refuse that question as a configured check —
-  a check a project could answer is a merge licensed by configuration.
+  finishing role's. ⛔ **And neither half is a `done:` check a project could configure** — §13
+  refuses both, because a check an adopter answers is either a route's own thoroughness turned down
+  by configuration or a merge licensed by it.
 - ⛔ **An absent finishing role is where the route ends**, not a leg to hand past: nothing else opens
   a change, so implemented work stops there. The starting role says so in its reply, since a route
   that ends silently is the defect this section exists to close.
@@ -2826,13 +2827,14 @@ reads it off is a claim rather than an attestation. ⚠️ **Stated rather than 
 the stronger reading is the one a reader takes**, and a mechanism credited with a guarantee it does
 not have is one nobody checks.
 
-⚠️ **The independence a guard reading another leg's record would have had was never this guard's to
-claim.** [§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)'s absent-leg rule
-moves an unmapped leg's question to the role that follows it — so in any project mapping no
-reviewing role the merging pass already wrote the record its own merge was held on, and nothing
-measured which projects were in that state. ⛔ **The surface states the guarantee the mechanism has
-rather than the one it would prefer**, which is § 2's rule about a run that said nothing, arriving
-where the subject is a guard rather than a check.
+⚠️ **The independence a guard reading some other leg's record would have had is available to no
+guard here.** Where a project maps no reviewing role there is no other leg to have written
+anything — [§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) puts the record in
+the finishing pass's own hands — so whatever a guard reads in that configuration is a record the
+merging pass wrote. ⛔ **A guarantee that holds only in some configurations is not a guarantee**,
+and nothing measures which configuration a given project is in. ⛔ **So the surface states the one
+the mechanism has rather than the one it would prefer**, which is § 2's rule about a run that said
+nothing, arriving where the subject is a guard rather than a check.
 
 ⛔ **What holds the `answered by` column is the authorship rule and not this guard.** A pass writing
 a person's name against an answer that person did not give has fabricated an attestation, and that
@@ -4300,15 +4302,20 @@ absence states itself, and without that statement a decision and an oversight re
 
 **The role that walks this is the finishing one**, at [`skills/finish/`](../skills/finish/), and it
 is that role that **writes** the record a person's answer leaves. ⛔ **The list is not the reviewing
-role's to define**: that role records the verdicts it produced and the answers to its own two
-questions, which are not checks on this list, and a role that decided for itself what any of it
-added up to would be the gate and the record at once.
+role's to define**: that role records the verdicts it produced and the answers it gave about its own
+pass — the depth it read at, and that it ran the plan — which are not checks on this list, and a
+role that decided for itself what any of it added up to would be the gate and the record at once.
 
-⚠️ **Whether a person is going to look at the diff is not a check on this list.** The reviewing role
-asks that every pass, as procedure with no setting — along with who runs the change's own plan — so
-a project configuring it here would be asking one question twice, with the two statements allowed to
-disagree. What belongs here is a check a machine *cannot* answer about the work itself, not the
-inspection of the diff.
+⚠️ **How thoroughly the change was read is not a check on this list.** The reviewing leg settles
+that about itself and records it, by
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask), so a project configuring it
+here would be making a route's own thoroughness into something an adopter can turn down. What
+belongs here is a check a machine *cannot* answer about the work itself, not the inspection of the
+diff.
+
+⛔ **Nor is the merge ask a check on this list**, which is the same rule from the other end: it is
+procedure no project configures, and an entry here would let a configuration answer the one question
+that licenses the irreversible act.
 
 ### In progress is not done, and a role that stops mid-list says what is left
 

@@ -351,9 +351,10 @@ exists for that repository and number. The other copy's hook is not the second h
 holds every merge behind an unconditional ask that reads no record and that no review can silence.
 The ruling is that **procedure produces a record and enforcement reads it** — which the first pair
 is an instance of and the second is the case for, since enforcement reading nothing is what leaves
-the asking to procedure. The role asks whether a person is going to look whether or not a hook is
-installed, and says which of the two situations it was in; what refuses an act on the strength of
-that record is #16's.
+the asking to procedure. The reviewing role records how deeply it read whether or not a hook is
+installed, and says which of the two situations it was in; the one question a person answers is the
+merge ask, which the finishing role puts and the guard reads, and what refuses an act on the
+strength of that record is #16's.
 
 **What one or two copies knew and the rest lost** — the wording § 2 above is careful about, because
 no single copy holds this whole list:
@@ -362,7 +363,7 @@ no single copy holds this whole list:
 |---|---|---|
 | **The hand-over** — instructions somebody can follow, each item an act and an observation, with what is already known and which checkout a service is bound to | 1 of 5 | A summary of what would have been checked, handed to someone starting cold |
 | **A document the change contradicts and does not update** is a finding against that change | 1, and a different one | A change landing against a stated behaviour nothing records any more |
-| **The declinable inspection** — whether a person is going to look is asked, and the answer is what licenses a merge with nobody's eyes on the diff | 1 | Merging unasked, and holding a change nobody intends to look at — the same failure in two directions |
+| **The inspection is disclosed rather than assumed** — what the reviewing pass read, and did not, is recorded and carried into the one ask that licenses the merge | 1 | Merging unasked, and holding a change nobody intends to look at — the same failure in two directions. ⚠️ The copy that had it asked a second question, *is anyone going to look*, which this toolkit retired: the disclosure is what the person is owed, and the merge ask is where they answer |
 | **An empty check list has causes worth telling apart** | 1 | Absence of signal read as green. ⚠️ [schema § 2](../plugins/mjolnir/config/schema.md#2-code-host) bars the *conclusion* and enumerates different causes, so a workflow configured to skip an uninspected change is in neither it nor the role |
 | **A local run of a command the host already ran adds nothing**, and its complement: a check no workflow mirrors is the one that *must* run locally | 2, each stating it in procedure **and** enforcing it in a hook | Either a shared machine spent twice for one answer, or a tier nothing ever runs |
 
