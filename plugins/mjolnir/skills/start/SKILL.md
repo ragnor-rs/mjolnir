@@ -1,6 +1,6 @@
 ---
 name: start
-description: Take a work item — the next one this project's ordering makes available, or one named on the invocation — run the readiness gate whole, claim it, and cut its branch into its own tree. Use when asked to start an issue, take the next item, pick up the next piece of work, or cut a branch for an item.
+description: Take a work item — the next one this project's ordering makes available, or one named on the invocation — run the readiness gate whole, claim it, cut its branch into its own tree, and then begin the work itself in the same pass rather than waiting to be asked. Use when asked to start an issue, take the next item, pick up the next piece of work, or cut a branch for an item.
 argument-hint: "[<item number or item url>]"
 ---
 
@@ -8,11 +8,17 @@ argument-hint: "[<item number or item url>]"
 
 Four things happen in one pass and in this order: the configuration is **resolved** and said out
 loud, the item is **chosen**, the gate runs **whole**, and the claim is taken **by publishing the
-item's ref**. The work itself does not belong to this role — but ⛔ **naming the leg *after* the
-work does**, because that is the one leg of the route no role owns:
+item's ref**. ⛔ **And then this role enters the work itself, as its last act** — the work is not
+this role's to *do*, and entering it is:
 [`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
-states what *implemented* means and that the session holding the item enters the finishing role on
-it, and step 6 is where this role says so.
+makes the work a leg of the route and names this role as what enters it, which step 7 performs.
+⚠️ **The two readings of *does not belong to this role* are what that distinction is for**: one
+means this file does not say how to implement an item, which is true, and the other means the pass
+ends at the reply, which is the defect § The loop was written against.
+
+⛔ **Naming the leg *after* the work belongs here too**, that being the other leg no role owns: the
+same section states what *implemented* means and that the session holding the item enters the
+finishing role on it, and step 6 is where this role says so.
 
 ⛔ **The gate and the claim are the whole of what this role is for, so neither is skipped for an
 item somebody asked for by name.** An item named on the invocation changes which item, and nothing
@@ -358,3 +364,34 @@ first sentence, then the facts, with a table where the content enumerates.
   ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): an orphaned claim, a
   stop whose remedy is a decision, an item whose type has no prefix, an ordering that could not be
   read. Nothing is noted for later — the pass is not finished while a question it raised is open.
+
+## 7. Begin the work
+
+⛔ **The reply is not the end of the pass: the work begins in the same turn, and nobody is asked to
+start it.** [`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
+makes *the work itself* a leg entered by **this role, as its last act**, on a tree cut and entered —
+which steps 4 and 5 have just produced. ⚠️ **A role that waits to be asked is a role that is skipped
+whenever nobody asks**, which is that section's own rule, and it binds this leg exactly as it binds
+the finishing one.
+
+⛔ **So there is no hand-back here**: no *ready to start?*, no *shall I begin?*, and no reply whose
+last line offers the work rather than reporting it under way. ⚠️ **The reply register forbids it
+independently** ([`§ 8`](../../config/schema.md#the-reply-to-the-person-running-a-role)) — a reply
+that names work the turn does not do hands the turn back, and the work this pass just claimed is
+work the turn can do.
+
+**Where the pass does stop, it stops before this step rather than in it**, and the stops are the
+ones already stated above: a gate that refused and an orphaned claim on a *named* item are reached
+before the claim is taken, and ⚠️ **a tree that could not be entered is reached after it** — step 5
+states that one, and it is why this step is not written as *the claim was published, so proceed*.
+⛔ **What none of them is, is a pause for permission.** A pass that reaches this step has a
+published ref and a tree it is standing in, and a session that then asked whether to use them holds
+a claim it is not working — which is the orphaned claim step 4 treats as a fault, produced
+deliberately.
+
+⚠️ **What the work is bounded by is the item, not this file.** The item's stated acceptance
+condition is what the work is driven to — § The loop's *implemented* — and this role names it
+rather than restating how any project's work is done. ⛔ **And nothing is carved out of it for
+later** ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): the leg after this
+one is entered on the condition **answered**, so a pass that implements part of an item has not
+reached the next leg and does not hand to it.
