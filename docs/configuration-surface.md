@@ -2805,4 +2805,175 @@ because both read as the obvious one:
 
 The second is the sharper trap: a facet whose purpose is to let a project rule what is already
 happening to it cannot take *already ruled* as its admission test. What would add the missing one is
-a project found doing it, and #13 is where the role that would observe it is answered.
+a project found doing it, and the section below is where that was looked for end to end.
+
+## Seven deploying carriers read in full, and the provisional ruling they revise
+
+Ruling (10) was settled on **one** copy read in full and the rest read structurally, and it says so
+on its own face. It was also settled against an incomplete set: a carrier whose name contains no
+form of the word *deploy* was outside the survey altogether, in the project that already had a
+second deploying carrier beside it. ⛔ **Both halves are closed here** — every deploying carrier the
+readiness run enumerates under this role was read end to end, and the set is seven carriers across
+five of the six projects.
+
+| | the carriers | lines | what reaching the target invokes |
+|---|---|---|---|
+| A | two, split by environment, and one of them named after neither the role nor the environment | 228, 336 | a dispatch with typed inputs; and a tag push **handed to a person**, with no dispatch form at all |
+| B | one carrier covering four targets, two of them machines that run no release at all | 298 | the project's own command, beside three more it sources first |
+| C | two, split by environment | 139, 222 | a hosted build, configured by a file the service executes — **no script in the repository** |
+| E | one | 69 | the project's own command |
+| F | one, whose second target the command refuses by name | 381 | the project's own command |
+| D | none | — | — |
+
+⚠️ **The line range the item predicted held and the shape of it did not.** The carriers run 69 to
+381 lines, and the two longest are not the two most irreversible: the longest of them all deploys to
+a stack on the machine it runs on, and its length is verification and board bookkeeping rather than
+rails.
+
+### What the full read confirmed
+
+**Every clause of the provisional ruling but one survived**, and the one that did not is the clause
+about a script. Held against all seven:
+
+| the clause | what the carriers say |
+|---|---|
+| confirm intent and name the target | **7 of 7** |
+| an explicit go, *for this deploy* | **7 of 7**, and two state outright that an earlier go does not carry |
+| read-only preflight | **6 of 7**; the seventh's first write precedes its own gate, for a reason it states |
+| verify, rather than reading the exit status | **5 of 7** say so in their own words, three of them from an incident |
+| report what was rebuilt, and what failed with its log tail | **7 of 7** |
+| hosts, services, secrets, build steps and tier selection stay local | **nothing contradicted it** |
+
+⛔ **The boundary clause is the one a full read could have falsified and did not**, and the clause
+itself is
+[`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls).
+Every host address, service name, credential path, image reference, container name, queue, health
+endpoint and suite invocation in all seven is the project's own, and no two projects' are alike:
+what a reader would have to learn to share any of it is the project.
+
+### What it revises, and why each revision is the measurement rather than a preference
+
+⛔ **«A project whose deploy is one script keeps that script» describes four of seven carriers.**
+Two have no script in the repository at all — one's deploy is a configuration a hosted service
+executes, the other's is a run the host makes — and one of the four sources three further commands
+before the one it is named for. ⚠️ **The build-side reading of the same projects had already found
+this from the other direction**
+([*Where a deploy lives*](build-surface.md#where-a-deploy-lives)), and what the carrier-side reading
+adds is the third shape: a target a project rules **a person performs**, which is not the absent
+case of a capability but a decision, stated beside the reason — the act spends a version for ever.
+Hence the three shapes at
+[`schema.md § 33 → The three shapes a target is reached by`](../plugins/mjolnir/config/schema.md#the-three-shapes-a-target-is-reached-by).
+
+⛔ **«An explicit go for a live environment» understates what the copies do, and the key had to be
+written in the negative.** Five of seven ask on **every** target, including every staging
+environment in the survey; the two that make a target free to run name a stack the session is the
+only user of, and say so. So *not production* is not the test, and a key naming what **is** live
+would be silent on precisely the target nobody has thought about — which is
+[`§ 21`](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)'s
+inversion, made again one facet over at
+[`§ 33 → Which target, and what makes one live`](../plugins/mjolnir/config/schema.md#which-target-and-what-makes-one-live).
+⚠️ **What liveness decides is whether the ask is put at all**, which is the only test
+[`§ The loop`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
+admits for one — and it reads the two free targets exactly as their own copies state them, *fine to
+run freely* rather than *asked and proceeded on silence*. ⚠️ **One rail is unconditional beside it
+and stays so**:
+[`§ 29`](../plugins/mjolnir/config/schema.md#a-dispatch-is-the-only-write-and-it-carries-its-own-go)'s
+refusal sits on the operation and reads no facet, so a dispatch carries a go wherever it is made —
+and ⛔ **no target in the survey is both dispatching and not live**, so that pairing is the two rails
+composing rather than a case anybody was measured in.
+
+⛔ **The go has to name something a gate can read back, which one project enforces mechanically** —
+the binding at
+[`schema.md § 29 → A dispatch is the only write`](../plugins/mjolnir/config/schema.md#a-dispatch-is-the-only-write-and-it-carries-its-own-go).
+Four of the seven state what the question must carry — the version, the flags, the target, the batch
+— and in one of them the record is only written when the answer names the version, with a guard
+refusing the act without it. ⚠️ **That is that binding measured a second time**, in a project
+whose act is a tag push rather than a dispatch, which is what makes it a property of the act rather
+than of the port.
+
+⛔ **The preflight clause survives and the ordering around it had to be stated.** Six write nothing
+before the go; one advances a long-lived branch first, because the run it is about to start asserts
+the released commit is contained in that branch and refuses otherwise — with the version already
+spent. ⚠️ **That copy names the window it opens and rules out the obvious repair** — a failed
+release is not fixed by moving the branch back — so what the surface does is place the write outside
+the preflight and ask for the window to be named:
+[`§ 33 → What runs before the target is confirmed`](../plugins/mjolnir/config/schema.md#what-runs-before-the-target-is-confirmed-and-what-it-may-not-do).
+⚠️ **And the thing about to be invoked is established first**, which two copies measure from
+opposite ends: a secrets file absent, which one stops on and points at a template; and a workflow
+present on the dispatched ref and absent from the host's own registry, which is refused by the host
+with a message naming neither the ref nor the file.
+
+⛔ **The tracker write is absent from the provisional ruling and is in six of the seven carriers**,
+and where it is stated now is
+[`schema.md § 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes).
+Each writes exactly one forward edge, and three projects write **two different** ones from two
+targets — so which status a deploy advances to is a property of the target rather than of the
+project, which is the second reason the facet is a list.
+
+⚠️ **The role an item must already hold is derived rather than configured, and it is right for all
+seven.** It is the status immediately before the advance in
+[`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)'s own
+order, including in the project whose ladder has no deployed status and whose one target steps an
+item straight from code landed to finished. ⛔ **What would make it a key is a project whose batch is
+drawn from further back**, and none was found.
+
+### The batch, and the two assemblies that lose an item
+
+⛔ **No copy advances an item on its status alone, and two name the failure in their own words**: a
+card that moved while its code never reached the branch. Each narrows the status list by a test of
+its own — owned commits on the integration branch, a fix version with the commits verified in the
+log, a milestone, a commit list — which is why
+[`schema.md § 33 → The batch`](../plugins/mjolnir/config/schema.md#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong)
+makes the narrowing a command and states what it is asked rather than how it answers.
+
+⛔ **And two of the seven narrow by a *range* rather than by membership**, which is the finding this
+reading owes the reverse-edge facet. A batch computed from *what changed since the last deploy*
+answers **no** for an item whose code landed earlier — so an item that stepped back out of a later
+role, whose code is in the branch and has been for weeks, is in no batch and in no batch report.
+⚠️ **Both of those copies describe the symptom and neither reaches the cause**: one's own table
+carries a row for *a merged pull request in neither the list nor a later one*, with an instruction
+to say it out loud. Hence the rule at
+[`§ 33 → The batch`](../plugins/mjolnir/config/schema.md#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong),
+which states what the command is asked rather than how it answers, and the limit beside it: nothing
+here checks the command, which is
+[`§ 12`](../plugins/mjolnir/config/schema.md#12-ordering)'s position for its own.
+
+### What the reading settles about the trigger that was left out
+
+[`§ 32`](../plugins/mjolnir/config/schema.md#32-a-status-that-moves-backwards) left one case out —
+a deploy that fails after the advance was already written — on a **structural** reading of these
+same carriers. ⛔ **The full read settles it the stronger way: the state is unreachable by
+construction.** Every one of the six that advances an item writes the advance *after* the deploy it
+advances on has been verified, so there is no point at which a failure meets an advance already
+made. One of them states the prohibition outright — a card is never moved back a column by that
+skill — and another assigns the reverse move to the person who ordered the work.
+
+⚠️ **So nothing is added to the trigger set, and what would add it is a project whose advance runs
+first.** The criterion is unchanged; what changed is that the absence now rests on seven carriers
+read end to end rather than on their shape.
+
+### What a deploy verifies, which is the half the copies spend their length on
+
+⛔ **The invocation's own answer is not the delivery, and the measured failures are not alike.** A
+build the service reported successful shipped one of two halves, because the configuration it was
+pointed at was the wrong one and the service reported success anyway. A container reported healthy
+was mid-load and refusing every request, its liveness check deliberately saying nothing about
+readiness. A suite exited zero having deselected the cases that needed material. ⚠️ **Three
+incidents, three projects, one shape** — which is what makes
+[`§ 33 → What a deploy verifies`](../plugins/mjolnir/config/schema.md#what-a-deploy-verifies-and-what-it-reports)
+a rule rather than three cautions.
+
+⛔ **A command finishing is not a step finishing**, stated by three copies about work a command
+queues and exits ahead of, each with its own reading to judge progress by. And ⛔ **the report names
+what it could not establish** — every skipped scenario, every item left behind, every step still
+running, and what the deploy left standing — which is
+[`§ 11`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)'s rule with
+this role's own list under it.
+
+⚠️ **And one thing the facet deliberately does not settle**, so that it reads as a boundary rather
+than an omission: whether the target list is a project's or a code root's, which is the open item
+this reading was blocked for and which depends on it. The list sits at the top level, where a
+project with one code root and a project with several write the same thing, and the question of
+which root a target belongs to is answered where that item lands it —
+[`§ 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes)
+says so at the key.

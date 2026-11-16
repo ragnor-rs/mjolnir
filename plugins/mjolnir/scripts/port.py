@@ -79,6 +79,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import os
 import re
@@ -114,6 +115,31 @@ OPERATION_NAME = re.compile(r"^`(?P<name>[a-z][a-z0-9_]*)`$")
 # name a writer that does not exist.
 PROCEDURE = "procedure"
 NEVER = "never"
+
+# The writer the deploying role asks as (§ 4.2, § 33). ⛔ A third constant rather
+# than a widening of `PROCEDURE`: the two are different answers to *who may write
+# this status*, and a guard that treated them as one would let any role write a
+# status the project reserved for the deploy. ⚠️ Held to the surface by the
+# self-test exactly as the two above are.
+DEPLOY = "deploy"
+
+# What a role is taken to be asking as where it says nothing. ⛔ `procedure`, so
+# that every caller written before a deploying role existed is held exactly as it
+# was -- which is what makes the parameter an addition rather than a change to
+# what any existing ask means.
+ASKED_AS = PROCEDURE
+
+# ⛔ The writers a role in this procedure may ask as, and the whole of them. § 4.2
+# states it in as many words: `procedure` is what every role but one asks as and
+# `deploy` is the only other. The rest of that set names parties this procedure
+# is not -- a merge's automation, the person who ordered the work, a mechanical
+# path test -- so a caller naming one would be claiming to be somebody, which is
+# the fabricated attestation the record rules out one section over.
+#
+# ⚠️ Without this the parameter inverts the guard it was added to: any caller
+# could write any status by naming that status's own writer, and the one writer
+# the guard refuses outright would be the only one left refusing.
+ASKABLE_AS = (PROCEDURE, DEPLOY)
 
 # § 32's key, spelled out for the reason the two writers above are and held to
 # the surface by the self-test the same way: a refusal naming a key the surface
@@ -837,11 +863,29 @@ class Port:
         Three answers, never a traceback: the fallback where the capability is
         absent, the result where it is present, and a `failed` outcome naming the
         host's own words where the call did not go through.
+
+        ⛔ **A fourth is the arguments not fitting the operation**, which was a
+        traceback until a § 33 plant surfaced it: the invocation passes whatever
+        it was handed, so an operation asked for with too few of them reached the
+        implementation and raised out of here — past the contract this docstring
+        states. ⚠️ **Raised as a `ConfigError` and not answered as an outcome**:
+        it is the *caller* that is wrong rather than the tracker, so there is no
+        fallback to give and nothing about the item to report.
         """
         fallback = self._stated(operation)
         adapter = self.adapter
         if adapter is None or not adapter.implements(operation):
             return Outcome(operation, performed=False, detail=fallback)
+        try:
+            inspect.signature(adapter.operations[operation]).bind(*args, **kwargs)
+        except TypeError as error:
+            raise ConfigError(
+                f"{self.spec.prefix}.operations.{operation}",
+                f"was asked for with arguments it does not take: {error}. The "
+                "invocation passes every value as written, so what each operation "
+                "takes and in what order is the contract's -- read the port's own "
+                "report rather than guessing at the list.",
+            ) from None
         # ⛔ The configuration goes to the implementation here, every time, and
         # the implementation keeps none of its own. An adapter that resolved the
         # project itself would read it from the working directory -- which § 2
@@ -905,7 +949,7 @@ class Port:
         return statuses[0]
 
     def _refused_by_writer(
-        self, writer: str | None, move: str, **about
+        self, writer: str | None, move: str, asked_as: str = ASKED_AS, **about
     ) -> Outcome | None:
         """§ 4.2's writer guard, in one statement for both directions.
 
@@ -916,8 +960,36 @@ class Port:
         the move to, so a refusal that handed it to somebody would name a writer
         that does not exist.
 
-        `None` where the procedure may write; the refusal otherwise.
+        ⛔ **`asked_as` is the writer the caller is asking as, and it is carried
+        rather than worked out here.** § 4.2 states the ask carries it: a port
+        that derived who was asking would be answering a question about the
+        session rather than about the procedure. ⚠️ **`never` stays refused
+        whatever a caller asks as** -- it is the one writer that is not a party
+        the move may be handed to, so a role claiming it would be claiming to be
+        the absence of a writer.
+
+        `None` where the caller may write; the refusal otherwise.
         """
+        # ⛔ First, and before the configured writer is read at all: a caller
+        # asking as a party this procedure is not has made a claim rather than a
+        # request, and reading the configuration next would answer it.
+        if asked_as not in ASKABLE_AS:
+            return Outcome(
+                "set_state",
+                performed=False,
+                refused=True,
+                writer=writer,
+                # ⚠️ No count of the askable set is written into this message,
+                # which is the defect the review of this very commit found six of
+                # elsewhere: the join below *is* the list, and a figure beside it
+                # is a second statement free to disagree.
+                detail=f"Refused: this ask is made as `{asked_as}`, which is not a "
+                "writer a role in this procedure may ask as (§ 4.2). What it may "
+                f"be made as is {' and '.join(f'`{word}`' for word in ASKABLE_AS)}"
+                "; the rest of that set names parties this procedure is not, so "
+                "naming one would be claiming to be somebody rather than asking.",
+                **about,
+            )
         if writer == NEVER:
             return Outcome(
                 "set_state",
@@ -931,21 +1003,29 @@ class Port:
                 "write would read as that person speaking.",
                 **about,
             )
-        if writer != PROCEDURE:
+        if writer != asked_as:
+            asker = (
+                "the procedure" if asked_as == PROCEDURE else f"the `{asked_as}` role"
+            )
             return Outcome(
                 "set_state",
                 performed=False,
                 refused=True,
                 writer=writer,
                 detail=f"Refused: {move} is "
-                f"written by `{writer}` here, not by the procedure. The move is "
+                f"written by `{writer}` here, not by {asker}. The move is "
                 "reported for that writer to make rather than made.",
                 **about,
             )
         return None
 
-    def advance_to(self, role: str, *args, **kwargs) -> Outcome:
+    def advance_to(self, role: str, *args, as_writer: str = ASKED_AS, **kwargs) -> Outcome:
         """Ask for an advance to a status **role**, never to a status word.
+
+        `as_writer` is the writer the caller is asking as (§ 4.2), defaulting to
+        the procedure — so every role but the deploying one asks exactly as it
+        did before that role existed, and a project reserving a status for the
+        deploy is still refused every other asker.
 
         What comes back is a report rather than an exception wherever the
         configuration is a legitimate one: no status here maps the role, which is
@@ -987,6 +1067,7 @@ class Port:
         refusal = self._refused_by_writer(
             status.get("writer"),
             f"the `{role}` status (`{status.get('name')}`)",
+            asked_as=as_writer,
             to_role=role,
         )
         if refusal is not None:
@@ -1007,12 +1088,17 @@ class Port:
         outcome.to_role = role
         return outcome
 
-    def revert_to(self, trigger: str, *args, **kwargs) -> Outcome:
+    def revert_to(self, trigger: str, *args, as_writer: str = ASKED_AS, **kwargs) -> Outcome:
         """Step an item **back**, on a trigger this project rules (§ 32).
 
         ⛔ **The target role is the configuration's and never the caller's.** A
         role naming where to step back to would be deriving the edge § 32 says
         is configured; what a role states here is what it observed.
+
+        `as_writer` is `advance_to`'s, carried here for the reason § 32 gives for
+        every other half of this guard: the reverse is checked **exactly** as the
+        forward one is, so a parameter one direction grew and the other did not
+        is the drift one shared guard exists to prevent.
 
         What comes back is a report rather than an exception wherever the
         configuration is a legitimate one: this project rules no reverse edge for
@@ -1091,6 +1177,7 @@ class Port:
             entry.get("writer"),
             f"the step back to the `{role}` status (`{status.get('name')}`) on "
             f"`{trigger}`",
+            asked_as=as_writer,
             trigger=trigger,
             to_role=role,
         )
@@ -1297,6 +1384,42 @@ def _any_example() -> config.Config:
     naming a tracker.
     """
     return _loaded()[os.path.basename(_examples()[0])]
+
+
+def _needing_two_arguments() -> str:
+    """An available operation of this project's tracker that takes two arguments.
+
+    ⛔ Found rather than named, which is every fixture here's rule: an operation
+    spelled out would be this suite naming a capability, and a rename would leave
+    the arm asserting about an operation the port no longer states. ⚠️ Raises
+    where every available operation takes one argument or none -- there is then
+    nothing to ask for short, and an arm built on a fallback would assert
+    whatever the fallback happened to be.
+    """
+    answering = load(config.REPO_ROOT, TRACKER, check_paths=False)
+    adapter = answering.adapter
+    for name in sorted(answering.stated):
+        if adapter is None or not adapter.implements(name):
+            continue
+        # ⚠️ **Required** and not merely declared: an operation whose second
+        # parameter carries a default binds with one argument and goes out to the
+        # host, so an arm built on *declared* count asserted a failed call
+        # instead of a refusal -- measured, on the first spelling of this helper.
+        required = [
+            parameter
+            for parameter in inspect.signature(adapter.operations[name]).parameters.values()
+            if parameter.default is inspect.Parameter.empty
+            and parameter.kind
+            in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
+        ]
+        if len(required) > 1:
+            return name
+    raise ConfigError(
+        f"{TRACKER}.operations",
+        "no available operation of this project's tracker requires more than one "
+        "argument, so the too-few-arguments arm has nothing to ask for and would "
+        "assert nothing.",
+    )
 
 
 def _with_statuses(statuses: list[dict]) -> config.Config:
@@ -1813,6 +1936,80 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         advanced.result != a_role,
         f"received the role `{a_role}` where its status word belongs",
     )
+
+    # § 4.2's writer carried on the ask, in both directions and on both sides.
+    # ⛔ The green arm is the one no refusal above reaches: a status a project
+    # reserves for the deploy is **writable** by the role that asks as the
+    # deploy, and without this arm the whole parameter could be deleted with the
+    # refusals still red and this suite still green.
+    def _asking(writer: str, as_writer: str) -> Outcome:
+        return Port(
+            _with_statuses([{"name": "a status", "role": a_role, "writer": writer}]),
+            spec,
+            adapter=Adapter(
+                {"set_state": lambda *a, **k: k.get("status", "<no status>")}
+            ),
+            stated=stated,
+        ).advance_to(a_role, as_writer=as_writer)
+
+    # ⛔ Every member of the askable set, derived from the set rather than
+    # written out: a word added to it would otherwise be refused by nothing in
+    # the refusing loop below — which is derived as the complement — and asserted
+    # by nothing here, so it would be askable with no arm on either side.
+    for askable in ASKABLE_AS:
+        allowed = _asking(askable, askable)
+        check(
+            f"an ask made as `{askable}` reaches the status that writer writes",
+            allowed.performed and not allowed.refused,
+            f"got {str(allowed)!r}",
+        )
+    as_the_deploy = _asking(DEPLOY, DEPLOY)
+    check(
+        f"a status written by `{DEPLOY}` is advanced by the role asking as it",
+        as_the_deploy.performed and not as_the_deploy.refused,
+        f"got {str(as_the_deploy)!r}",
+    )
+    check(
+        "and the implementation is handed the mapped word on that route too",
+        as_the_deploy.result == "a status",
+        f"the implementation received {as_the_deploy.result!r}",
+    )
+    # ⛔ Both wrong pairings, because one of them alone would pass a guard that
+    # simply stopped reading the writer: the procedure asking for the deploy's
+    # status, and the deploy asking for the procedure's.
+    for writer, asker in ((DEPLOY, PROCEDURE), (PROCEDURE, DEPLOY)):
+        wrong = _asking(writer, asker)
+        check(
+            f"a status written by `{writer}` is refused an ask made as `{asker}`",
+            wrong.refused and wrong.writer == writer and writer in wrong.detail,
+            f"got {str(wrong)!r}",
+        )
+    # ⛔ And `never` is refused whatever a caller claims to be, which is the arm
+    # a parameter like this invites getting wrong: it is the writer that is not a
+    # party, so there is nobody for a caller to claim to be.
+    for asker in ASKABLE_AS:
+        claimed = _asking(NEVER, asker)
+        check(
+            f"a `{NEVER}` status stays refused an ask made as `{asker}`",
+            claimed.refused and "no other writer" in claimed.detail,
+            f"got {str(claimed)!r}",
+        )
+    # ⛔ The askable set itself, in both directions — and the refusing direction
+    # is what keeps the parameter from inverting the guard: a caller naming a
+    # status's own writer would otherwise write that party's status, which is the
+    # one thing § 4.2's writer exists to stop. ⚠️ Planted on the status whose
+    # writer **matches** what the caller claims, because that is the pairing a
+    # guard reading the configuration first would let through.
+    for asker in [w for w in config.facts_for("writer") if w not in ASKABLE_AS]:
+        claiming = _asking(asker, asker)
+        check(
+            f"an ask made as `{asker}` is refused whatever the status says",
+            claiming.refused
+            and not claiming.performed
+            and asker in claiming.detail
+            and "may ask as" in claiming.detail,
+            f"got {str(claiming)!r}",
+        )
     # ⛔ The forward direction carries the role as a field too, on every answer it
     # gives. ⚠️ Asserted on the **report** and over all three answers, because the
     # way this fails is one direction being given the fields while the other keeps
@@ -1926,6 +2123,24 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
                 and "no other writer" in outcome.detail,
                 f"got {str(outcome)!r}",
             )
+    # ⛔ The ask's own writer reaches this direction too, which is § 32's rule
+    # that the reverse is checked **exactly** as the forward one is — and without
+    # this arm the parameter could be deleted from `revert_to` alone with every
+    # refusal above still red.
+    reversed_by_the_deploy = Port(
+        _with_reversals(
+            [a_status],
+            [{"trigger": a_trigger, "to_role": a_role, "writer": DEPLOY}],
+        ),
+        spec,
+        adapter=answering,
+        stated=stated,
+    ).revert_to(a_trigger, as_writer=DEPLOY)
+    check(
+        f"a step backwards written by `{DEPLOY}` goes through for that asker",
+        reversed_by_the_deploy.performed and not reversed_by_the_deploy.refused,
+        f"got {str(reversed_by_the_deploy)!r}",
+    )
     reverting = Port(
         _with_reversals(
             [a_status],
@@ -2530,10 +2745,14 @@ def self_test() -> int:
                 False,
                 f"registering it for the second port was refused: {refused_at}",
             )
-    # The two sentinels this module spells out, held to the surface so that
-    # renaming one there reddens the build instead of silently turning a refusal
-    # into the wrong words.
-    for sentinel in (PROCEDURE, NEVER):
+    # The sentinels this module spells out, held to the surface so that renaming
+    # one there reddens the build instead of silently turning a refusal into the
+    # wrong words. ⛔ `deploy` is here for the same reason and not because it is
+    # a third of the same kind: it is the one writer **besides** the procedure
+    # that a role in this procedure asks as, so a rename on the surface would
+    # leave the deploying role asking as a writer no project can configure and
+    # being refused on every item.
+    for sentinel in (PROCEDURE, NEVER, DEPLOY):
         check(
             f"the surface still states `{sentinel}` in its `writer` set",
             sentinel in config.facts_for("writer"),
@@ -2687,6 +2906,75 @@ def self_test() -> int:
                     "outcome and not a failure"
                 )
 
+        # ⛔ The two halves of the status-move route, asserted through the script
+        # rather than through the methods above: the guard § 4.2 states lives
+        # inside `advance_to`, so what has to be held is that **no invocation
+        # reaches the implementation around it**. ⚠️ The refusal is the arm that
+        # matters -- without it the flag beside it is a second route rather than
+        # the only one, and both would read green.
+        def _ran(*flags: str) -> subprocess.CompletedProcess:
+            return subprocess.run(
+                [
+                    sys.executable, os.path.abspath(__file__),
+                    "--skills-root", config.REPO_ROOT, *flags,
+                ],
+                capture_output=True, text=True, env=dict(bare, PATH=""), timeout=60,
+            )
+
+        try:
+            named = _ran("--invoke", "set_state", "--argument", "1")
+            by_role = _ran("--advance-to", "initial", "--argument", "1")
+            # ⛔ An operation asked for with arguments it does not take, which
+            # was a traceback out of `invoke` until the arm below was written.
+            # ⚠️ The operation is read off this port's own report rather than
+            # named, so the arm survives a renamed capability: what is wanted is
+            # any available operation taking more than one argument.
+            short = _ran("--invoke", _needing_two_arguments(), "--argument", "1")
+        except subprocess.TimeoutExpired:
+            check(
+                "the status-move route answered at all, rather than hanging",
+                False,
+                "a child did not return within its bound",
+            )
+        else:
+            check(
+                "naming `set_state` on the invocation is refused, pointing at the role",
+                named.returncode == 2 and "--advance-to" in named.stderr,
+                f"exited {named.returncode} saying {named.stderr.strip()[:160]!r}",
+            )
+            check(
+                "and the refusal says why rather than only that it refused",
+                "writer guard" in named.stderr,
+                f"said {named.stderr.strip()[:160]!r}",
+            )
+            # ⚠️ Asserted on the answer's shape and not on the move going
+            # through: whether this project maps the role, and whether its host
+            # is reachable, are facts about the configuration this arm must not
+            # depend on. What is held is that the flag reaches the guarded route
+            # and comes back as an outcome.
+            try:
+                moved = json.loads(by_role.stdout)
+            except ValueError:
+                moved = None
+            check(
+                "asking by role reaches the guarded route and answers as an outcome",
+                isinstance(moved, dict) and moved.get("operation") == "set_state",
+                f"answered {by_role.stdout.strip()[:160]!r}",
+            )
+            check(
+                "and no traceback reaches the person running it either",
+                "Traceback (most recent call last)" not in by_role.stderr,
+                f"stderr carried {by_role.stderr.strip()[:160]!r}",
+            )
+            check(
+                "an operation asked for with too few arguments is a refusal, not a "
+                "traceback",
+                "Traceback (most recent call last)" not in short.stderr
+                and "arguments it does not take" in short.stdout,
+                f"stderr carried {short.stderr.strip()[:120]!r}, "
+                f"stdout {short.stdout.strip()[:160]!r}",
+            )
+
     if failures:
         print(f"\n{failures} assertion(s) did not hold.")
     return 1 if failures else 0
@@ -2739,6 +3027,22 @@ def main(argv: list[str]) -> int:
         "takes them. Always passed as text",
     )
     parser.add_argument(
+        "--advance-to",
+        metavar="ROLE",
+        help="ask for an advance to one of § 4.2's status **roles**, never to a "
+        "status word: the port resolves the role to the word this project mapped "
+        "and § 4.2's writer guard decides. ⛔ This is the only route that reaches "
+        "that guard -- `--invoke set_state` names the operation underneath it and "
+        "is refused for exactly that reason",
+    )
+    parser.add_argument(
+        "--as-writer",
+        metavar="WRITER",
+        default=ASKED_AS,
+        help="which of § 4.2's writers the ask is made as. Defaults to the "
+        "procedure, which is what every role but § 33's deploying one asks as",
+    )
+    parser.add_argument(
         "--no-check-paths",
         action="store_true",
         help="resolve without testing that the configured code root exists",
@@ -2761,6 +3065,59 @@ def main(argv: list[str]) -> int:
     # *is* the only writer. Without this the day-log role was told to call five
     # operations and left to compose a path by hand, which is the one thing its
     # own text forbids.
+    # ⛔ The status move is asked for by **role**, through its own flag, and the
+    # operation underneath it is refused by name. Without this refusal § 4.2's
+    # writer guard is reachable from no invocation and avoidable from every one:
+    # `--invoke set_state` goes straight to the implementation with a status word
+    # the caller chose, which is the indirection § 3 forbids a role and the guard
+    # § 33's advance rests on. ⚠️ It refuses rather than silently rerouting --
+    # the two take different arguments, and a reroute would guess which.
+    if args.invoke == "set_state" and not args.advance_to:
+        print(
+            "Refused: `set_state` is reached through `--advance-to <role>`, which "
+            "resolves § 4.2's role to the status word this project mapped and is "
+            "where that section's writer guard sits. Naming the operation instead "
+            "would write a status word the caller chose, past the guard.",
+            file=sys.stderr,
+        )
+        return 2
+    if args.advance_to:
+        if args.ports:
+            print(
+                "Refused: `--advance-to` moves one item on one port, so it is not "
+                "asked of every port at once.",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            answering = load(
+                args.skills_root,
+                args.port,
+                root=args.root,
+                check_paths=not args.no_check_paths,
+            )
+            outcome = answering.advance_to(
+                args.advance_to, *args.argument, as_writer=args.as_writer
+            )
+        except ConfigError as error:
+            print(
+                json.dumps(
+                    refusal_report(args.port, "set_state", error),
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+            return 1
+        print(
+            json.dumps(
+                invocation_report(answering.name, "set_state", outcome),
+                indent=2,
+                ensure_ascii=False,
+                default=str,
+            )
+        )
+        return 0 if outcome.performed else 1
+
     if args.invoke:
         if args.ports:
             print(

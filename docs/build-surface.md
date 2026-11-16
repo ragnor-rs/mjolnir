@@ -439,8 +439,8 @@ than designed.
 
 ## Where a deploy lives
 
-[#13](https://github.com/ragnor-rs/mjolnir/issues/13) leaves the deploy script project-local and
-expects a script. Measured, the shapes are three:
+[#13](https://github.com/ragnor-rs/mjolnir/issues/13) left the deploy script project-local and
+expected a script. Measured, the shapes are three:
 
 | | the deploy | the targets, and which are live |
 |---|---|---|
@@ -467,6 +467,16 @@ workflow dispatch, which is the host's. ⛔ **Neither is a gap**, by
 a dispatch and a configured pipeline are both reached by a command, which is what the boundary
 already says configuration carries. What the measurement rules out is an assumption of a **file**,
 in two of six.
+
+✅ **The facet that reads this is now
+[`schema § 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes)**,
+and the reading above is one of the two it rests on — this page read what each project *builds and
+deploys with*, and the carrier side read what each project's deploy *role* says it does
+([the second reading](configuration-surface.md#seven-deploying-carriers-read-in-full-and-the-provisional-ruling-they-revise)).
+⚠️ **The two agree on the shapes and count different things**: a project here and a carrier there,
+so the figures are not comparable and neither is restated in the other. ⛔ **What the carrier side
+added is a third shape this page could not see** — a target a project rules a *person* performs,
+which looks from the build side exactly like a tag push nobody automated.
 
 ## The toolchain version is a non-goal, and the boundary is where that is stated
 

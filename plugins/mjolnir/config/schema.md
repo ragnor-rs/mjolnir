@@ -1983,10 +1983,26 @@ state its tracker has no room for, and that refusal is a defect in the text rath
 capability that is absent.
 
 ⛔ **The writer is what makes this correct rather than merely configurable.** The procedure asks
-the port to advance to a *role*, and is **refused** when the configured writer is not
-`procedure`. Of the others, `automation` fires off a merge, `deploy` belongs to the deploy role,
-`orderer` is the person who ordered the work, and `sweep` is a mechanical path-based test needing
-no judgement.
+the port to advance to a *role*, **as a writer**, and is **refused** where the configured writer is
+not the one asking. Of the set, `procedure` is what every role but one asks as, `deploy` is
+[§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes)'s role and the only other one anything
+here asks as, `automation` fires off a merge, `orderer` is the person who ordered the work, and
+`sweep` is a mechanical path-based test needing no judgement.
+
+⚠️ **The ask carries the writer rather than the port deriving it from the caller**, which is the
+same reason [§ 32](#32-a-status-that-moves-backwards)'s reverse move is asked for and never
+discovered: a port that worked out who was asking would be answering a question about the session
+rather than about the procedure. ⛔ **The default is `procedure`**, so a role that names no writer
+is held exactly as every role was before a deploying one existed.
+
+⛔ **Those are the whole of what an ask may be made as, refused before the configured writer is read
+at all.** The rest of the set names parties this procedure is not — a merge's automation,
+the person who ordered the work, a mechanical path test — so an ask naming one is a **claim to be
+somebody** rather than a request, which is the fabrication
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) rules out one section over.
+⚠️ **Without that refusal the carried writer inverts the guard it is part of**: any caller could
+write any status by naming that status's own writer, and `never` would be the only word still
+refusing anything.
 
 `never` is the strictest real case: a project whose tracker credential is a person's own account,
 where every write reads as that person speaking, so the procedure writes nothing at all and
@@ -6518,10 +6534,13 @@ reader — the mapping became a consumer and the reading became a function of it
 themselves stayed written out in each role that makes one. ⚠️ **More than one role carried the same
 client invocation and more are specified to need it**: the finishing role waiting for a pull
 request's runs and reading a failed one's log, the reviewing role doing both and re-dispatching
-once a resolution is in, a deploying role dispatching with typed inputs and verifying a delivery
-from the log rather than from a conclusion, and a guard asking whether the host's checks are
-answering at all. ⛔ **One call written once per reader is the drift the role copies already paid
-for**, and the readers that do not exist yet are the cheapest ones to not write it in.
+once a resolution is in, [§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes)'s deploying
+role dispatching with typed inputs and verifying a delivery from the log rather than from a
+conclusion, and a guard asking whether the host's checks are answering at all. ⛔ **One call written
+once per reader is the drift the role copies already paid for**, and a reader that does not exist
+yet is the cheapest one to not write it in — ⚠️ **which the deploying role is now the evidence for
+rather than the prediction of**: it reaches all three operations through this port and carries no
+client.
 
 ⛔ **The second defect is the one [§ 2](#the-facet-against-the-hosts-own-definitions) already
 refuses one key over.** A manual dispatch with typed inputs, a run listing keyed on a commit, a
@@ -6642,14 +6661,18 @@ cannot be stretched to cover a dispatch it was not given for. ⚠️ **A rail wh
 is one a reader assumes covers the case it does not**, which is why both are here rather than
 either being discovered.
 
-⛔ **Every dispatch carries a go here, and the narrowing to a live target alone is not this
-section's.** Which targets are live is **configured and never inferred from a name**, and no facet
-on this surface states which **deploy targets** are — § 21's allowlist names machines a session
-reaches and answers nothing about a run's target. Until a facet does, the strict reading holds — a
-guard that asked only where this surface could already tell would be silent on precisely the
-project that names its deploy after an environment. ⚠️ **That is [§ 7](#which-direction-a-guard-fails-in)'s
-direction and [§ 21](#the-machines-named-are-the-ones-that-are-not-live)'s inversion**: what is
-named is what is *not* live, and nothing is named here, so everything asks.
+⛔ **Every dispatch carries a go here, and the narrowing to a live target alone is still not this
+section's.** Which targets are live is **configured and never inferred from a name**, and
+[§ 33](#which-target-and-what-makes-one-live) is where that is now stated — § 21's allowlist names
+machines a session reaches and answers nothing about a run's target. ⚠️ **The reading here is
+unchanged by it**: this refusal sits on the operation and reads no facet, so every dispatch carries
+a go, and a guard that asked only where the surface could already tell would be silent on precisely
+the project that names its deploy after an environment. ⛔ **Which target the role itself asks about
+is a different question and § 33's**, and the two composing is what leaves a dispatch to a target
+nobody calls live still carrying one. ⚠️ **That is
+[§ 7](#which-direction-a-guard-fails-in)'s direction and
+[§ 21](#the-machines-named-are-the-ones-that-are-not-live)'s inversion**, which § 33 makes for the
+same reason one key over: what is named is what is *not* live.
 
 ⛔ **A dispatch that went through is not a delivery, and what a run delivered is read from its
 log.** A green conclusion says the job ended, which is a fact about the run rather than about the
@@ -7073,10 +7096,12 @@ third-party account, and an environment whose quota is the one that caps through
 the key carries a target and never a reason's vocabulary
 ([the measurement](../../../docs/build-surface.md#the-tiers-what-each-needs-and-which-are-asked-for)).
 
-⚠️ **The target vocabulary is not this facet's.** What a deploy target *is* on this surface is
-#63's, which is open and disagrees with itself; so an entry here is a name, held to being a
-non-empty one and to nothing else. ⛔ **A facet that settled it in passing would be the second
-statement of a decision nobody has made.**
+⚠️ **The target vocabulary is not this facet's.** The entity a deploy aims at is
+[§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes)'s and whether that list is a project's
+or a code root's is #63's, which is open; so an entry here is a name, held to being a non-empty one
+and to nothing else. ⛔ **A facet that resolved one of its entries against that list in passing
+would be the second statement of a decision nobody has made** — and the names a tier is refused
+against were measured on a project whose tiers and whose deploys were read apart.
 
 ⚠️ **The role that launches a tier is #128's**, and the refusal is that role's to perform. What is
 configuration here is the list; what this reader owes that role is one reading of it, which is why a
@@ -7191,11 +7216,11 @@ nobody decided** — measured on one project, where the tracker's own automation
 code-landed status off every closing merge and so steps an already-deployed item back with no rule
 anywhere and nothing reporting it.
 
-⚠️ **No role asks it yet, and this is written that way rather than in the indicative.** The ask
-exists on the port and the roles that would make it are the ones that read an item's role — the
-deploy role of #13 and the advance of #44 — neither of which is built, and there is no invocation
-that reaches either direction's guard. So what is stated here is the rule a reverse move is held
-to, and the first role to make one is the first to be held to it.
+⚠️ **The forward half of that pair now has a caller and the reverse half still has none.**
+[§ 33](#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong)'s role reads an item's role
+where it advances it and is held to the rule below; what no role does is **ask for a step back**, so
+the reverse direction's guard is still reached by no invocation and what is stated for it is the
+rule rather than a report of one being made.
 
 **The trigger set is closed on what the survey measured a project's work actually doing**, ruled or
 not, which is what makes it a vocabulary rather than a guess
@@ -7213,6 +7238,15 @@ performs is a word here whether or not that project has a rule for it and whethe
 this procedure observes it, and whether *this* project configures it is a separate question its own
 `[]` answers.
 
+✅ **That absence was reached structurally and has since been read**, which is the one thing a
+structural absence owes: every deploying carrier in the survey was read in full for
+[§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes), and the case is **unreachable by
+construction** rather than merely unruled — each of them writes its advance after the deploy it
+advances on has been verified, so there is no state in which a failure meets an advance already
+written. ⛔ **So the word stays out on a stronger reading than the one that kept it out**, and what
+would admit it is a project whose advance runs first
+([the measurement](../../../docs/configuration-surface.md#seven-deploying-carriers-read-in-full-and-the-provisional-ruling-they-revise)).
+
 ⛔ **A `to_role` no status maps is refused with the key named**, which is a reader's refusal rather
 than a role's report: § 4.2's absent-role case is a legitimate configuration met against an item,
 and this one is written in the file. ⛔ **Two entries for one trigger are refused the same way**,
@@ -7223,15 +7257,16 @@ entries leave the move undefined.
 read for it.** § 4.2's writer answers who advances *into* a status on the forward route, which is a
 different act from stepping back into it — and ⚠️ **the two legitimately differ**, the measured case
 being a status a deploy writes and the person who ordered the work sends back. ⛔ **It is checked
-exactly as the forward one is**: the procedure is refused where the writer is anybody else, `never`
-refuses with no writer to hand the move to, and each refusal **names the writer** (§ 4.2).
+exactly as the forward one is**: the ask is refused where the configured writer is not the one
+asking, `never` refuses with no writer to hand the move to, and each refusal **names the writer**
+(§ 4.2).
 
 ⛔ **Only the role moves.** The item's own text is not rewritten by a reverse move, and that half is
 performed: the move writes the state and asks for nothing else on the item. A move that edited the
 body would make the reversal a second author of the item, which is
 [§ An artifact states what is true now](#an-artifact-states-what-is-true-now) answered by the wrong
 party. ⚠️ **Naming what the step back contradicts in the body is the role's obligation and not the
-port's**, so it rests on the same unbuilt roles as the ask above rather than on anything here.
+port's**, so it rests on whichever role comes to ask for a step back rather than on anything here.
 
 ⛔ **A role reads an item's role where it *acts* on it, and never from a value read earlier in the
 pass.** A reversal can land between a read and a use, and the direction that errs in is a batch
@@ -7239,6 +7274,250 @@ assembled from a role the item no longer holds — the same wrong answer as the 
 reached without any configuration being wrong. ⚠️ **It reaches a role that acts and not one that
 reports**: a reading carried across the steps of one pass in order to *say where the work stands* is
 this rule's subject only once something is written on the strength of it.
+
+## 33. The deploy targets, and what reaching one invokes
+
+```yaml
+deploy:                        # the targets this project deploys to; required
+  - name: staging
+    not_live: false
+    invoke: command
+    command: "<the whole command>"
+    command_root: api          # § 1's name for the root it runs in; omitted where it is the code root
+    requires: ["<a precondition the command does not check itself>"]
+    advances: deployed
+    batch: "<a command answering which of the items handed to it this deploy carries>"
+  - name: local
+    not_live: true
+    invoke: command
+    command: "<the whole command>"
+    advances: none
+```
+
+The vocabulary an entry draws on, stated under the key it belongs to — the device
+[§ 32](#32-a-status-that-moves-backwards) already uses, because a member of a list sits at no path a
+marker can reach:
+
+```yaml
+deploy:
+    name:         "<the word a deploy of this target is asked for by>"
+    not_live:     false
+    invoke:       command | dispatch | by_hand
+    command:      "<the whole command, where the shape is `command`>"
+    command_root: "<a name § 1's `command_roots` declares>"
+    workflow:     "<a name § 2's `checks` is keyed on, where the shape is not `command`>"
+    ref:          "<the ref a dispatch is made against>"
+    inputs:       "<the typed inputs this target always sends, as a mapping>"
+    requires:     "<§ 16's list, cited there and not restated>"
+    advances:     "<one of § 4.2's own roles, read there — or `none`>"
+    batch:        "<a command printing one item identifier per line>"
+```
+
+**[§ 29](#29-the-hosts-run-operations) states what a role may do with a run and
+[§ 4.2](#42-status--an-ordered-set-of-name-role-writer) states who may write a status; this section
+states what a *target* is, so that both have something to be about.** ⛔ **It states no host, no
+service, no credential, no build step and no health check** — each is
+[the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s middle column read
+against this role, measured over seven deploying carriers in five projects and found to be local in
+every one
+([the measurement](../../../docs/configuration-surface.md#seven-deploying-carriers-read-in-full-and-the-provisional-ruling-they-revise)).
+
+⛔ **The key is required, so a configuration written before this facet existed stops loading** —
+[§ 1](#the-surface-is-resolved-beside-the-configuration)'s case of a change that makes a key
+required, whose two duties are discharged in the same commit rather than here: the absent form is
+`[]`, written into every configuration this repository carries, and **the record this lands with
+says that configurations outside this repository are now refused** until each writes the key.
+⚠️ **`[]` is the behaviour the procedure already had** — no target to name, so the role stops with
+this key named and nothing is deployed.
+
+⛔ **A list and not a block, because every fact measured was a target's rather than a project's.**
+Three of the five projects carrying this role carry more than one target, and no two of a project's
+targets agree on what is invoked, what it advances, or whether it is live — so a project-level
+answer would be wrong for one of its own targets wherever it had two.
+
+⚠️ **Two questions about this list are deliberately left where they already are, and naming them is
+what keeps this from being a second answer to either.** Whether the list is a *project's* or a
+**code root's** is #63's, which depends on this item and states the question in those words; the
+list here sits at the top level, where a project with one code root and a project with several are
+the same configuration. And the filter that decides which subset of a grouping a given target
+advances is #44's, which this facet carries no vocabulary for: what an entry states is the role it
+advances **to**, and the rest is read where that item lands it.
+
+### Which target, and what makes one live
+
+⛔ **A target is live unless the configuration says it is not, and the key is written in the
+negative for that reason.** `not_live` is the inversion
+[§ 21](#the-machines-named-are-the-ones-that-are-not-live) already makes for the machines a session
+opens a shell on, and it is made here for the same failure in a different place: a key naming what
+*is* live goes quiet the day somebody adds a target and does not classify it, and the target added
+and not classified is the one nobody has thought about.
+
+⛔ **And it is required of every entry rather than defaulted.** A default is marked on the surface
+or it is a second copy of a rule in a reader ([§ The file itself](#the-file-itself)), and a marker
+inside the entry fence above would sit on a path whose parent is a list — so the choice is a stated
+key or a rule written twice. ⚠️ **The strict direction costs an adopter one word per target and
+catches the case the whole key exists for**: a project that never looked and a project that decided
+read identically otherwise, which is [§ 2](#2-code-host)'s absence-of-signal rule.
+
+⛔ **What `not_live` decides is whether the deploy is the person's act, which is the only test
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) admits for an ask.** A live
+target is reached by an act somebody cannot take back, so the go is asked for **per deploy, for
+this deploy**, with a previous one clearing nothing — ⚠️ **measured as the part every surveyed copy
+had**, and asked unconditionally by five of the seven. A target the entry states is not live is a
+stack the session is the only user of: the act is nobody else's, and ⛔ **a question there is the
+interruption § The loop retired** rather than a rail. ⚠️ **Which is exactly what the two copies
+carrying such a target say** — in as many words, that it is fine to run freely.
+
+⛔ **One exception, and it is the act's rather than this facet's**: a `dispatch` carries a go
+wherever it is made, because [§ 29](#a-dispatch-is-the-only-write-and-it-carries-its-own-go)'s
+refusal sits on the operation and reads nothing here. ⚠️ **No target in the survey is both
+dispatching and not live**, so this is the two rails composing rather than a measured case.
+
+⚠️ **The two copies that make a target free to run name a machine the session is the only user
+of**, which is what the word has to mean here: every staging environment in the survey is asked
+about, so *not production* is not the test and the surface does not offer it as one.
+
+### The three shapes a target is reached by
+
+⛔ **`invoke` states which, and a project whose deploy is one script is one case of the table below
+rather than the case.** Measured across the carriers: most reach their target by a command, one by a
+dispatch and one by handing the commands over — while some have no script in the repository at all,
+their deploy being a configuration a hosted service executes or a run the host makes, and one that
+does runs several commands rather than the one it is named for. ⚠️ **No count is written here**, the
+table being the statement and the figures the measurement's.
+
+| `invoke` | what the role does | what the entry states |
+|---|---|---|
+| `command` | runs it, in the root `command_root` names | `command`, and `command_root` where it is not the code root |
+| `dispatch` | asks [§ 29](#the-run-operations-and-what-each-absence-does) for one, against `ref`, sending `inputs` | `workflow`, `ref`, `inputs` |
+| `by_hand` | runs nothing, names the workflow, the ref and every input, and **reports no deploy made** | `workflow`, `ref`, `inputs` |
+
+⛔ **`by_hand` is a project's ruling about who may perform the act and never the port's absent
+case.** § 29 already states what a role does where `dispatch` is unavailable, and the words are the
+same; what differs is that this is configured — the one copy carrying it states that the act spends
+a version for ever and so belongs to a person, and a role that dispatched it anyway would be
+overriding that project's own rule with a capability. ⚠️ **One target in the survey, and it is the
+most irreversible one in it**, which is the whole of the evidence and is stated rather than rounded
+up.
+
+⛔ **`inputs` is the inputs this target *always* sends, and an input a person chooses is asked for
+and named in the go instead.** Measured on the one dispatching target, where the host's own default
+for an input is the wrong one: unsent, the run builds the branch production serves from a workflow
+dispatched off another, and reports success throughout. ⚠️ **So the hazard is an input omitted
+rather than an input mistyped**, which is why the always-sent set is configuration and the rest is
+not.
+
+⛔ **A command is stated whole and the procedure supplies no part of it**, by
+[the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls), and the root it runs in
+is [§ 1](#a-command-root-is-not-a-code-root)'s rather than a second statement here. ⚠️ **A
+`command_root` this project does not declare is refused at the load**, exactly as § 17's list is.
+
+⛔ **A key an entry states that the shape never reads is refused with its own name, in both
+directions** — a key the shape wants and the entry leaves out, and a key the entry carries and the
+shape never looks at. ⚠️ **The second is the one a reader is tempted to tolerate**, and tolerating
+it leaves a ref beside a command that takes none: a fact written exactly where somebody would expect
+it to be read. ⛔ **And a key this section does not declare at all is refused the same way**, by the
+rule [§ 1](#a-command-root-is-not-a-code-root) already states for a named root's blocks.
+
+### What runs before the target is confirmed, and what it may not do
+
+⛔ **The preflight writes nothing.** It reads the tree, the target's stated preconditions and
+whatever the project's own command checks for itself, and it stages nothing, checks nothing out and
+touches no machine — ⚠️ **which one copy states as a rule about a shared workspace** rather than as
+caution: several sessions stand in one checkout, and a deploy needs no working tree of its own.
+
+⛔ **`requires` is [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s
+list and this facet writes no second grammar for it**, which is the division § 17 already has with
+the same section. What a target's entry does with it is **name** it: a precondition the command does
+not check itself — a credential file the repository may not hold, a client library, a provisioned
+host. ⛔ **An absent one is a stop naming it, and never an empty file written over a working one**:
+a store that is by construction outside the repository is
+[§ 28](#28-a-configured-value-a-repository-may-not-hold)'s shape, and the same rule applies one
+facet over — a missing source is a named absence.
+
+⛔ **What is about to be invoked is established before the target is confirmed, and a stop here is
+earlier than the go rather than later.** A command that is not there, a `command_root` that cannot
+be entered, a workflow the host's registry does not carry: each stops the deploy with the thing
+named. ⚠️ **The registry case is measured and is not the file being absent** — a renamed workflow
+present on the dispatched ref and absent from the host's own registry is refused by the host, so
+presence on the ref is necessary and not sufficient.
+
+⚠️ **One copy's first irreversible write precedes its own gate, and it is stated here rather than
+ruled out.** That target advances a long-lived branch before anything else runs, because the run it
+is about to start asserts the released commit is contained in that branch and refuses otherwise —
+with the version already spent. ⛔ **That write is the project's step and not the preflight**, and
+what the surface asks of it is what that copy already does: the window it opens is named, and a
+failed deploy is not repaired by moving the branch back.
+
+### The batch, and the two ways of assembling one that are wrong
+
+⛔ **`advances` is one of [§ 4.2](#42-status--an-ordered-set-of-name-role-writer)'s roles, or
+`none`, and a role no status maps is refused with the key named.** That is
+[§ 32](#32-a-status-that-moves-backwards)'s refusal for its own `to_role`, in the same position and
+for the same reason: an advance to a role this project has no status for is a move with nowhere to
+land, and it is refused where it is written rather than met against an item. ⚠️ **Six of the seven
+carriers advance an item and two targets state outright that they must not**, so `none` is a
+measured value and not a courtesy.
+
+⛔ **The writer is not checked here, and leaving it to the port is the rule rather than an
+omission.** § 4.2's guard is on the ask, it names the writer in its refusal, and `never` is a
+legitimate configuration in which the move is **reported** rather than made — so a reader that
+demanded `writer: deploy` would refuse the one project whose credential is a person's own account,
+on a target it really does deploy.
+
+⛔ **The role an item must already hold is derived and not a second key**: it is the status
+immediately before `advances` in § 4.2's own order, that set being ordered for exactly this.
+⚠️ **Measured right for every one of the seven**, including the project whose ladder has no
+deployed status at all and whose one target therefore steps an item straight from code-landed to
+terminal. ⛔ **What would make it a key is a project whose batch is drawn from further back**, and
+none was found.
+
+⛔ **`batch` is a command, and the batch is what it returns intersected with what the tracker says
+now.** The command is handed the identifiers and answers which of them this deploy carries; the
+item's role is read from the tracker **where it is advanced** and never from a value read earlier,
+which is [§ 32](#32-a-status-that-moves-backwards)'s rule met by its first caller. An identifier the
+command returns whose role is something else is **named and not advanced**.
+
+⛔ **The command is asked whether an item's code is in what is being deployed, and never what
+changed since the last deploy.** A range answers *no* for an item whose code landed earlier and
+whose role has since moved back — which is precisely the item
+[§ 32](#32-a-status-that-moves-backwards) exists to catch, and ⚠️ **two of the seven carriers
+assemble their batch that way**, each naming the symptom in its own text without reaching the cause.
+
+⛔ **Neither half alone is the batch, and each omission is a measured failure.** The tracker's
+answer alone advances an item whose code never reached what was deployed — named in two copies as a
+card that moved without its code landing. The command's answer alone advances an item the tracker no
+longer holds in that role. ⚠️ **And nothing here checks the command**, which is
+[§ 12](#12-ordering)'s position for its own: what the surface can do is state what the command is
+asked, and what the role does is **say that the command is the batch's only source of candidates**,
+so that *nothing owed* and *nobody looked* are not one sentence.
+
+### What a deploy verifies, and what it reports
+
+⛔ **What the deploy returned is not what it delivered.** A command that exited zero, a build the
+host reported successful and a run that concluded green are each a fact about the invocation —
+[§ 29](#a-dispatch-is-the-only-write-and-it-carries-its-own-go) states this for a dispatch and it is
+no different for a command. ⚠️ **Five of the seven carriers say so in their own words**, three of
+them from an incident: a green build that shipped half of what it was asked for, a container
+reported healthy while it was refusing every request, and a suite that exited zero having run less
+than it looks like.
+
+⛔ **What is verified is the project's and is named rather than described.** A tier
+[§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) classifies as needing a deploy
+is what several of these copies run after one, and which tiers a change launches is not this role's
+to decide — what this role owes is to **report which ran, by name**, and to report a tier that
+skipped as *the gate did not run* rather than as *the gate passed*.
+
+⛔ **A command finishing is not a step finishing, and a step still in flight is neither done nor
+failed.** Three copies state it, each about work a command queues and exits ahead of; the report
+says what was still running and on what readings. ⛔ **And a step that failed holds the items
+resting on it** rather than the deploy, which is the same split one direction over.
+
+⛔ **The report names what it could not establish**, which is
+[§ 11](#a-report-names-what-it-could-not-establish)'s rule and is not restated here. ⚠️ **What this
+role adds to it is the list**: every item the batch left behind and why, every verification that was
+skipped rather than passed, every step still running, and what the deploy left standing — a spent
+version, a branch ahead of what the target serves, work queued behind the command that queued it.
 
 ## What the toolkit installs into a project, and what takes it out
 
