@@ -1136,6 +1136,11 @@ is advice a careful reviewer would give in any of the six, held where one projec
 reach it and no other's. Hence the statement as procedure in
 [`schema.md § The loop → What earns a test`](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable).
 
+⚠️ **A further rule stands in that subsection and is deliberately not a row above**, because no file
+of the six carried it: what a test is **derived from** was settled against the published work rather
+than against these copies ([the reading](test-first-for-a-model-writer.md)). So the table is what the
+six projects had, and never the subsection's own inventory.
+
 **Why the surface, and not either of the two homes it was weighed against.** The discipline is read
 by two legs — the implementing one, which no role owns, and the reviewing role — and
 [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--ten-roles) already settles
