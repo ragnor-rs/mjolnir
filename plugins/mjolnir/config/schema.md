@@ -1632,7 +1632,8 @@ operations the survey reached and says which it did not.
 | `read_item` | the item's own facts: its body, its state, its fields | the role proceeds on what its argument and its branch already state, and the report names what could not be read |
 | `set_state` | a move to a **role**, never to a status word (§ 4.2) — an advance, or the step backwards [§ 32](#32-a-status-that-moves-backwards) rules | the move is reported for whoever does make it; § 4.2's writer refusal is the second, stricter reason the same move is not made |
 | `item_number` | the identifier the branch name and the pull request carry | the number is read from the argument the role was given, and a role with neither stops rather than inventing one |
-| `link_dependency` | one item recorded as blocked by another | the dependency is written into both items' bodies as prose — which of the two statements survives is #69's |
+| `link_dependency` | one item recorded as blocked by another | the dependency is written into both items' bodies as prose, which is the one case [`An edge is a relation`](#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it) below admits prose carrying an edge at all |
+| `read_blockers` | the items one item is recorded as blocked by, each with its own state — ⛔ never a verdict about whether the item may start, the bar being § 5's and not a tracker's | § 5's `no_open_blockers` has no source, so it reports **no answer** and never *no blockers*, by § 2's rule that absence of signal is not an answer; and a prose edge `link_dependency`'s fallback wrote is read for the report rather than for the verdict |
 | `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
@@ -1740,6 +1741,40 @@ Procedure rather than configuration, and there is no setting that turns it off �
 placement authorship has under § 6 and the reply's register under § 8, stated inside the axis it
 would otherwise be a value of. A project that could configure this would be choosing whether its
 own tracker is allowed to hold two statements of one job.
+
+### An edge is a relation, and a body keeps the reasoning about it
+
+⛔ **A dependency between two work items is written through `link_dependency` and read through
+`read_blockers`, and never as a line of prose in a body** — wherever the tracker has the relation.
+One statement, in the one place a check can read, and the gate that reads it is
+[§ 5](#5-readiness-gate--an-ordered-predicate-list)'s `no_open_blockers`.
+
+**What prose keeps is the reasoning about the edge**, which no relation carries: that two items were
+decided in one pass, that one sits below another in an order without blocking it, that a pair was
+settled together. ⚠️ Those are not edges, so a body stating one is not a second statement of
+anything — which is why the rule is not *delete every sentence naming another item*.
+
+⛔ **The test is what a gate would answer.** Delete the relation: if a readiness verdict changes, the
+sentence was the edge, and the relation is its only home. If nothing changes, it was reasoning, and
+the body is its only home. ⚠️ **An edge stated in both places is the defect either way round**, and
+the surviving copy is the relation — a sentence is free to be reworded into disagreeing with the
+graph, and nothing reports that it has.
+
+Where the tracker has **no** relation, `link_dependency`'s stated fallback writes the edge into both
+bodies and `read_blockers` is absent, so the gate reports *no answer*. ⛔ **A prose edge a role can
+see is still not a verdict it may pass on**: a gate that matched a work-item reference in a body
+would be a gate reading a sentence, and one rewording makes it answer wrongly while staying green —
+§ 2's absence-of-signal rule reached from the other side. It is read for the **report** and never
+for the pass.
+
+⚠️ **Procedure rather than configuration, and there is no key that turns it off** — the placement
+[`§ 4.2`](#42-status--an-ordered-set-of-name-role-writer) gives the status word and
+[`§ 4.6`](#46-priority) the priority word, for the reason this section is inside the port's own axis
+rather than a value of it. The measurement behind it is in
+[`docs/configuration-surface.md`](../../../docs/configuration-surface.md), which is also where each
+tracker's own form for both halves is recorded, the absence included. ⛔ **And no tracker's own name
+for the relation reaches a role**: the procedure names the two operations above, which is the same
+rule that keeps a tracker's name out of a carrier.
 
 ## 4. Work-item facets
 
@@ -2266,9 +2301,35 @@ or quiet:
 
 - ⛔ **The list runs whole.** An item with four problems hears about four, rather than being
   bounced once per round trip.
+- ⛔ **`no_open_blockers` reads [`§ 3`](#the-operations-and-what-an-absent-capability-does)'s
+  `read_blockers` and nothing else** — never a line of a body, never a title, never a work-item
+  reference matched in prose. The rule that puts the edge there is
+  [`§ 3 → An edge is a relation`](#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it),
+  and this is the check it exists for. ⛔ **Where that capability is absent the check reports
+  *unanswered*, never *no blockers*** — [§ 11](#a-report-names-what-it-could-not-establish)'s rule,
+  and the failure direction that matters: a tracker that cannot be asked reads exactly like a
+  tracker with nothing to report. ⚠️ **And that is why this check is *not* refused where its source
+  is absent**, unlike a check whose input is a facet a project **states** — where a configuration
+  carrying the check and not the facet is a contradiction the reader can see. A capability is not
+  stated: [§ 3](#who-declares-a-capability) puts it in the adapter and forbids a project from
+  restating it, so nothing read at configuration time knows whether this predicate will have a
+  source, and the honest answer arrives per item instead. ⛔ **Which is left to a project to read
+  for itself**: configuring this check on a tracker whose adapter has no such capability is a gate
+  that answers *unanswered* for every item forever, and no reader will say so.
+  ⛔ **And [§ 12](#12-ordering)'s ordering is not a second source
+  for it.** That facet's whole output is identifiers, most takeable first — it carries no blocker,
+  no state and nothing about what a blocker produced — so a verdict taken from an item's *presence*
+  in that list is a verdict derived from the backlog's shape, which § 12 states an ordering does not
+  answer and which the bullet below makes impossible anyway: neither bar can be applied to a reading
+  that does not say which blocker is which. ⚠️ **An ordering command may well read the same
+  relations**, and that changes nothing: what a project's command computed is not a fact the
+  procedure can see, so a role that skipped the operation would be trusting a coincidence.
+
 - **A dependency's bar depends on what the dependency produced.** A code dependency is satisfied
   when its code is on the integration branch; a non-code dependency only when it is finished.
-  Requiring the stronger bar of both stops every dependent item.
+  Requiring the stronger bar of both stops every dependent item. ⚠️ **So the bar is this list's and
+  never the tracker's**: `read_blockers` answers with each blocker's own state and no verdict, since
+  which of the two bars a given blocker is held to is a fact about what it produced.
 
 - **Some failures are not defects.** An item that is correct and merely early, or one whose
   board automation did not fire, stops without being flagged. A gate that flags those flags an

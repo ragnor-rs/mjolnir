@@ -623,6 +623,62 @@ def self_test() -> int:
         reported == "tracker.operations.item_number",
         f"reported {reported!r}",
     )
+    # ⛔ Text is one of the shapes the port passes, and the first form went
+    # straight to a lookup on it -- an `AttributeError` from the one operation
+    # that cannot fail for any other reason. ⚠️ Through `number`, which reports a
+    # refusal as a value, so a shape that raises reddens a line.
+    check(
+        "a number arriving as text is read as a number, the port passing every value so",
+        (number("7"), number("  7  ")) == (7, 7),
+        f"read {(number('7'), number('  7  '))!r}",
+    )
+    check(
+        "and text carrying no number is refused rather than reaching a lookup",
+        refused(lambda: item_number("not-a-number")) == "tracker.operations.item_number",
+        f"reported {refused(lambda: item_number('not-a-number'))!r}",
+    )
+    # ⛔ And every shape that reaches neither arm, which is the terminal refusal
+    # the sibling kinds carry and this one stopped short of: the arms above
+    # excluded a bool from the first and text from the second, and what they
+    # excluded reached the lookup -- the same failure, made reachable by the
+    # guard added to prevent it. ⚠️ The bool is here because it is an `int`.
+    shapes = {
+        label: refused(lambda handed=handed: item_number(handed))
+        for label, handed in (
+            ("a bool", True),
+            ("a float", 3.0),
+            ("nothing", None),
+            ("a list", [1]),
+            ("zero, which names no card on a board counting from one", 0),
+            ("a negative", -13),
+            ("a card whose short id is zero", {"id": "c", "idShort": 0}),
+            # ⚠️ A superscript answers `isdigit` and then raises in `int`, which
+            # is the traceback the decimal test exists to replace -- and the
+            # string arm is where this kind reads a short id the host sent as
+            # text, so the arm and the shape have to meet.
+            ("a card whose short id is a superscript digit", {"id": "c", "idShort": "²"}),
+            # ⚠️ And the URL arm, which this kind reads when a card carries no
+            # short-id field at all: a slug numbered zero names no card either,
+            # and the arm used to answer `0` from it.
+            ("a card whose URL numbers it zero",
+             {"url": "https://example.invalid/c/abc1234/0-a-card"}),
+            ("a card whose short link numbers it zero",
+             {"shortUrl": "https://example.invalid/c/abc1234/0"}),
+        )
+    }
+    check(
+        "and so is every shape that is neither a card nor an identifier",
+        set(shapes.values()) == {"tracker.operations.item_number"},
+        f"reported {shapes!r}",
+    )
+    # ⚠️ And a card whose own short id is a bool is a card with none: keyed on an
+    # `int` alone it would answer a lookup for card 1 with another card.
+    check(
+        "a card whose short id is `true` carries no number, not number one",
+        refused(lambda: item_number({"id": "card-1", "idShort": True}))
+        == "tracker.operations.item_number",
+        f"reported {refused(lambda: item_number({'id': 'card-1', 'idShort': True}))!r}",
+    )
     silent = host()
     with_host(silent, lambda: (item_number(7), item_number({"idShort": 8})))
     check("and none of that reaches the host", silent.calls == [], f"called {silent.calls}")
@@ -745,6 +801,21 @@ def self_test() -> int:
         f"got {answered!r}",
     )
 
+    # ⚠️ And a card whose own short id is `true` is not the card numbered one.
+    # A bool is an `int`, so the index keyed on a type test alone would file it
+    # under 1 and answer a lookup for card 1 with it -- the one direction a
+    # by-number index fails silently, because the answer is a real card.
+    boolean = host({"cards": [
+        dict(_card(1, "a card the host answered oddly", short=False), idShort=True),
+        _card(2, "a second card"),
+    ]})
+    reported = with_host(boolean, lambda: unavailable(lambda: read_item(1)))
+    check(
+        "a card whose short id is `true` is not filed as card one",
+        reported is not None and "no card numbered 1" in reported,
+        f"got {reported!r}",
+    )
+
     missing = host()
     reported = with_host(missing, lambda: unavailable(lambda: read_item(99)))
     check(
@@ -756,6 +827,34 @@ def self_test() -> int:
         "after one re-read, which is what a card filed seconds ago needs",
         missing.calls.count("cards") == 2,
         f"called {missing.calls}",
+    )
+    # ⛔ And what the read is **handed**, which this kind had no guard on while
+    # the three sibling kinds did. ⚠️ `int()` of each of these answers a number:
+    # `True` and `1.9` both floor to one, so the operation that resolves an
+    # address answered **card one** for a shape naming no card at all -- the
+    # silent direction, and the one `item_number` beside it already refuses.
+    for label, handed in (
+        ("`true`, which is an `int` and names no card", True),
+        ("a float, which floors onto a real card", 1.9),
+        ("zero, a board counting its cards from one", 0),
+        ("a negative", -13),
+        ("text that is no number", "not-a-number"),
+    ):
+        guarded = host()
+        reported = with_host(guarded, lambda handed=handed: refused(lambda: read_item(handed)))
+        check(
+            f"{label} is refused as a card number, before the board is read",
+            reported == "tracker.operations.read_item" and guarded.calls == [],
+            f"reported {reported!r} after {guarded.calls}",
+        )
+    # ⚠️ And the shapes a number does arrive in are still read, the port passing
+    # every value from an invocation as text.
+    accepted = [got(with_host(host(), lambda handed=handed: read_item(handed)), "number")
+                for handed in (1, "1", "  1  ")]
+    check(
+        "while an integer, a string of digits and a padded one are read",
+        accepted == [1, 1, 1],
+        f"read {accepted!r}",
     )
 
     # --- `set_state`: the list, by name, read before written ----------------

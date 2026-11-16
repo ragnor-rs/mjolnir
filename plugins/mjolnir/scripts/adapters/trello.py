@@ -5,20 +5,28 @@ The third implementation, and the first one whose tracker is not the code host.
 Everything the two beside it get for free -- one number sequence shared with the
 pull requests, a relation between two items, a keyword that closes an item on
 merge -- is either absent here or means something else, so this is the module
-that makes the capability query carry weight rather than answer yes fifteen
-times.
+that makes the capability query carry weight rather than answer yes to
+everything § 3 states.
 
 What it implements, and what it deliberately does not:
 
-  * **Every operation § 3 states except three.** ⛔ No count of them is carried
+  * **Not every operation § 3 states.** ⛔ No count of the absences is carried
     here -- the module next door states why and this one does not restate it: the
     list is closed and stated once, in § 3, and a number here would be wrong the
-    next time it grows. The three are named once in `DELIBERATELY_ABSENT` below:
-    there is no relation between two cards, no reference that closes a card when
-    a branch lands, and therefore no automation to confirm off a merge. ⛔ Each
-    of those is a property of the tracker and not a shortcut here -- the card
-    moves because the procedure moves it, through `set_state`, which is exactly
-    what `advance_on_merge`'s stated fallback says to do.
+    next time it grows. They are named once in `DELIBERATELY_ABSENT` below: there
+    is no relation between two cards, so neither writing one nor reading one back
+    has anything to address; no reference that closes a card when a branch lands;
+    and therefore no automation to confirm off a merge. ⛔ Each of those is a
+    property of the tracker and not a shortcut here -- the card moves because the
+    procedure moves it, through `set_state`, which is exactly what
+    `advance_on_merge`'s stated fallback says to do.
+  * **So this is the tracker where a readiness gate's blocker predicate has no
+    source at all.** `read_blockers` is absent, and § 5 answers that with
+    *unanswered* rather than *no blockers* -- the honest reading, and the one a
+    board's own gate cannot improve on. ⚠️ A dependency written into two card
+    descriptions by `link_dependency`'s fallback is still prose: a role may report
+    it and no check may pass on it, which is § 3's own rule about the edge rather
+    than a limit of this module.
   * **The three checklist operations are present, and this is the first
     implementation where they are.** Both implementations beside this one leave
     them absent because an issue has no check-item object; a card has one, so the
@@ -516,7 +524,10 @@ def _board_payload(board: str) -> dict:
         "by_number": {
             int(card["idShort"]): card
             for card in cards
+            # ⚠️ A bool is an `int`, so the test says so: `true` there would key
+            # this map at 1 and answer a lookup for card 1 with another card.
             if isinstance(card.get("idShort"), int)
+            and not isinstance(card.get("idShort"), bool)
         },
     }
 
@@ -578,6 +589,33 @@ def _label_named(name: str, *, key: str, again: bool = False) -> dict:
     return _one(board["labels"].get(str(name), []), str(name), what="labels", key=key, board=board)
 
 
+def _a_card_number(number) -> int:
+    """The card number a value names, or a refusal naming the operation.
+
+    ⛔ **In the shape the three sibling kinds use, and here because this one had
+    none**: `int()` of what it was handed answered **card one** for `True` and
+    for `1.9`, so the operation that resolves an address answered silently about
+    a card nobody asked for. A bool is an `int`, so the arm says so.
+
+    ⛔ **And positive, a board counting its cards from one** -- which is what
+    `item_number` beside this refuses `0` and a negative for, by the same
+    reading. ⚠️ Left to the index lookup instead, a number naming no card cost
+    two board reads and then arrived as *the board holds no such card*, which is
+    an answer about the board where the fault is in the argument.
+    """
+    wanted = number if isinstance(number, int) and not isinstance(number, bool) else None
+    if wanted is None and isinstance(number, str) and number.strip().isdecimal():
+        wanted = int(number.strip())
+    if wanted is None or wanted <= 0:
+        raise ConfigError(
+            "tracker.operations.read_item",
+            f"was asked for `{number!r}`, which is not a card number. A number "
+            "here is the card's own count on its board, which is digits, and a "
+            "board counts its cards from one.",
+        )
+    return wanted
+
+
 def _card_for(number: int, *, again: bool = False) -> dict:
     """The card a number names on the configured board.
 
@@ -587,15 +625,8 @@ def _card_for(number: int, *, again: bool = False) -> dict:
     is re-read once before refusing -- a card filed seconds ago is absent from an
     index built before it existed, and `create_item` depends on exactly that.
     """
+    wanted = _a_card_number(number)
     board = _board(again=again)
-    try:
-        wanted = int(number)
-    except (TypeError, ValueError):
-        raise ConfigError(
-            "tracker.operations.read_item",
-            f"was asked for `{number!r}`, which is not a card number. A number "
-            "here is the card's own count on its board, which is digits.",
-        ) from None
     if wanted in board["by_number"]:
         return board["by_number"][wanted]
     if not again:
@@ -748,6 +779,11 @@ def read_item(number: int) -> dict:
     can arrive dressed as an item -- which is the opposite of the two
     implementations beside this one and is why neither's guard is copied here.
     """
+    # ⛔ The argument is read before the board is. ⚠️ Resolved inside the index
+    # lookup alone, a shape naming no card was refused only after a whole board
+    # had been fetched for it -- and the refusal is about the argument, so it is
+    # answerable before any call and the suite holds that it is.
+    _a_card_number(number)
     board = _board()
     index = _card_for(number)
     card = _call(
@@ -758,13 +794,13 @@ def read_item(number: int) -> dict:
     return _shaped(card, board, checklists=_checklists(index["id"]))
 
 
-def item_number(item: dict | int) -> int:
+def item_number(item: dict | int | str) -> int:
     """The identifier the branch name and the pull request carry.
 
     ⚠️ Makes **no host call**, so an `int` is returned as given.
 
-    ⛔ **Two arms, in this order, and both are measured.** The reference
-    documents `idShort` on a card, so it is read where the answer carries one; a
+    ⛔ **Two readings of a card, in this order, and both are measured.** The
+    reference documents `idShort` on a card, so it is read where it carries one; a
     real interface over this tracker answers a card with no short-id field at all
     -- which is the survey's own row -- and a `fields=` narrowed read is the same
     shape, so the URL is parsed where it does not. ⚠️ The URL's number is the
@@ -772,16 +808,33 @@ def item_number(item: dict | int) -> int:
     percent-encoded wherever the title is not ASCII, and a split on the dash
     would take a title's own digits on an answer whose slug begins with a year.
     """
-    if isinstance(item, int):
-        return item
+    # ⛔ An identifier, which the port passes as text as readily as an `int`, and
+    # positive because this tracker counts from one. ⚠️ Every shape that is not
+    # a card refuses **here**: the first form went straight to `.get` on text --
+    # an `AttributeError` from the one operation that cannot fail for any other
+    # reason -- and the arm written for that pushed a `bool` into the same
+    # lookup, each shape the arms excluded having nowhere else to land.
+    if not isinstance(item, dict):
+        if isinstance(item, int) and not isinstance(item, bool) and item > 0:
+            return item
+        if isinstance(item, str) and item.strip().isdecimal() \
+                and int(item.strip()) > 0:
+            return int(item.strip())
+        raise ConfigError(
+            "tracker.operations.item_number",
+            f"was handed {item!r}, which is neither a card nor a card number. "
+            "This operation reads an identifier out of what it was given and "
+            "makes no call, so there is nothing to resolve another shape "
+            "against, and a board counts its cards from one.",
+        )
     short = item.get("idShort")
-    if isinstance(short, int):
+    if isinstance(short, int) and not isinstance(short, bool) and short > 0:
         return short
-    if isinstance(short, str) and short.isdigit():
+    if isinstance(short, str) and short.isdecimal() and int(short) > 0:
         return int(short)
     for key in ("url", "shortUrl"):
         found = CARD_NUMBER_IN_URL.search(str(item.get(key) or ""))
-        if found:
+        if found and int(found.group("number")) > 0:
             return int(found.group("number"))
     raise ConfigError(
         "tracker.operations.item_number",
@@ -1369,17 +1422,25 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "checklist_read": checklist_read,
     "checklist_write": checklist_write,
     "checklist_item_delete": checklist_item_delete,
-    # ⛔ The three operations this tracker has nothing to implement against are
-    # named once, below, and read from there by the suite.
+    # ⛔ The operations this tracker has nothing to implement against are named
+    # once, below, and read from there by the suite.
 })
 
-# The three the module docstring argues are absent because the tracker has
-# nothing to implement them against: there is no relation between two cards, no
-# reference that closes one when a branch lands, and so no automation to confirm
-# off a merge. ⛔ Written once, here, and read by the suite rather than restated
-# in it: a fourth absence would otherwise be an operation nobody noticed going
-# missing.
-DELIBERATELY_ABSENT = ("link_dependency", "link_for_close", "advance_on_merge")
+# The ones the module docstring argues are absent because the tracker has
+# nothing to implement them against: there is no relation between two cards, so
+# neither half of a dependency has an object to address; no reference that closes
+# one when a branch lands, and so no automation to confirm off a merge.
+# ⛔ Written once, here, and read by the suite rather than restated in it: one
+# more absence would otherwise be an operation nobody noticed going missing.
+# ⚠️ No count, for the reason the docstring gives: this tuple grew by one the
+# first time the port stated a read half for the dependency, and a number in this
+# comment would have been wrong while the suite stayed green.
+DELIBERATELY_ABSENT = (
+    "link_dependency",
+    "read_blockers",
+    "link_for_close",
+    "advance_on_merge",
+)
 
 
 def self_test() -> int:

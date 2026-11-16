@@ -29,8 +29,12 @@ cited.
 python3 .claude/skills/close-out/scripts/plan-status.py
 ```
 
-Takes about a second: the whole graph arrives in one GraphQL call (`Issue.blockedBy`), which
-returns what polling `dependencies/blocked_by` per issue returns. ⛔ **Read its report before
+Takes about a second: the whole graph arrives in one call to the host's query interface, which
+returns what asking each item for its own blockers one at a time returns, at a fraction of the
+calls. ⚠️ **The spelling of that relation is the tracker's and stays in the script** — a
+dependency is a port operation with a form stated per tracker
+([`schema § 3`](../../../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)),
+and a role naming the field would be carrying one tracker's shape. ⛔ **Read its report before
 touching anything**, and ⛔ **do not re-derive any of its figures by hand** — a second derivation
 is a second answer.
 

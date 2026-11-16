@@ -30,7 +30,7 @@ directory's own basename, so nothing is declared twice.
 |---|---|
 | `<path>:<kind>` | the tracker kind to probe the port with, for a project that has written no configuration of its own. Omitted, the port is **not** probed and the run says so — it never guesses a kind |
 | `--adapter-item` | the work item that builds that kind's adapter. Omitted, the line reads `none passed` rather than vanishing |
-| `--migration-items` | the roots whose `blocked_by` closure is the critical path. Omitted, the section says no closure was walked |
+| `--migration-items` | the roots whose blocker closure is the critical path. Omitted, the section says no closure was walked |
 | `--candidate` | a configuration drafted for a target, validated against **that project's** skills root and written nowhere |
 | `--no-host` | drops the only network read — the closure and each adapter work item |
 

@@ -214,6 +214,10 @@ readiness:
   - { check: field_present, field: "<due date>", stop: "No due date." }
   - { check: field_present, field: "<estimate label>", stop: "No estimate." }
   - { check: label_absent, label: "<incomplete>", stop: "The item is marked incomplete." }
+  # ⚠️ This tracker has no relation between two cards, so the check has no source
+  # here and answers per § 5's own rule for that. Kept rather than dropped, because
+  # a project that drops it has said something stronger: that nothing here is ever
+  # blocked.
   - { check: no_open_blockers, stop: "An open blocker has to land first." }
   # § 27's map is what answers this, and `role` is the key looked up in it — the surface publishes
   # none of that map's keys, so the entry names the role rather than the gate guessing one.

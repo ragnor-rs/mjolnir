@@ -8,11 +8,11 @@ of those were copy-pasted around rather than resolved.
 
 What it implements, and what it deliberately does not:
 
-  * **Every operation § 3 states except the three checklist ones.** A task list on
+  * **Not every operation § 3 states; the checklist ones are absent.** A task list on
     an issue is markdown inside the body -- there is no check-item object to read,
-    tick or delete -- so the three stated fallbacks are already the right
-    behaviour and implementing them against body text would dress a fallback up
-    as a capability. The same absence as the plain-issues implementation beside
+    tick or delete -- so their stated fallbacks are already the right behaviour
+    and implementing them against body text would dress a fallback up as a
+    capability. The same absence as the plain-issues implementation beside
     this one, and for the same reason rather than by copying it.
   * **`set_state` writes the board's column and never the issue's own state.**
     That is what the tracker holds: a card's status is a single-select value, and
@@ -48,6 +48,11 @@ What it implements, and what it deliberately does not:
   * **`link_dependency` posts a relation on the *blocked* item, keyed on the
     blocker's internal id** -- the same REST shape plain issues take, because a
     board is a view over issues and the dependency is a fact about the issues.
+  * **`read_blockers` reads that relation back, paged whole**, and answers with
+    each blocker's **issue** state rather than its column: a column is the
+    project's own vocabulary (§ 4.2), and the readiness gate reading this needs a
+    fact every project shares. It decides nothing -- which bar a blocker is held
+    to depends on what it produced, and that is the gate's question.
   * **`advance_on_merge` confirms and never asserts.** Two automations can move a
     card -- the host closing the issue off a merged pull request's closing
     reference, and the board's own workflow setting a column when an issue closes
@@ -90,6 +95,8 @@ if _SCRIPTS not in sys.path:
 
 import config  # noqa: E402
 import port  # noqa: E402
+
+from adapters import _code_host_dependency as relation  # noqa: E402
 from port import ConfigError, HostUnavailable  # noqa: E402
 
 KIND = "github-projects"
@@ -232,7 +239,15 @@ def _subprocess_gh(args: list[str], parse: bool):
         return done.stdout.strip()
     if not done.stdout.strip():
         raise HostUnavailable(f"`{shown}` answered with nothing where a body was expected")
-    return json.loads(done.stdout)
+    # ⛔ A body that is not one document is refused rather than parsed, for the
+    # reason `_code_host_dependency.blockers_of` states.
+    try:
+        return json.loads(done.stdout)
+    except ValueError as error:
+        raise HostUnavailable(
+            f"`{shown}` answered something that is not one JSON document "
+            f"({error}). An unreadable answer is not the same as a clean one."
+        ) from None
 
 
 def _subprocess_probe(args: list[str]):
@@ -753,15 +768,42 @@ def read_item(number: int) -> dict:
     number names, and the two share one sequence here. Measured on a live
     repository -- a merged pull request's number answers `__typename:
     PullRequest`, `state: MERGED`, a word no `statuses` list contains. Every
-    operation here that takes a number resolves it through this function, which is
-    what makes one guard cover all of them; three of them write.
+    operation here that **calls the host** resolves its number through this
+    function, which is what makes one guard cover all of them, the writes among
+    them being why; the two that make no call are named as such where they are
+    defined.
 
     ⚠️ A number the repository does not have answers `null` **and** a `NOT_FOUND`
     error, so it arrives as a failed call rather than here. The `null` arm below is
     the one that stays correct if that stops being true.
     """
     owner, name = _repo().split("/")
-    answer = _graphql(ITEM_QUERY, owner=owner, name=name, number=int(number))
+    # ⛔ Refused as a configuration rather than let out as a `ValueError`. The
+    # port passes every value from an invocation as text and catches only the
+    # contract's own exceptions, so a non-numeric argument reached the operator as
+    # a traceback where § 3 states three answers and none of them is one -- the
+    # same contract this module's own dispatch was repaired for. ⚠️ Every
+    # operation here that calls the host routes through this function, so the
+    # refusal covers all of those rather than one.
+    # ⚠️ Decimal digits rather than whatever `int()` accepts, and the shapes it
+    # would have accepted are the cases in this kind's suite. ⛔ `isdecimal` and
+    # not `isdigit`: a superscript answers `isdigit` and then raises in `int`,
+    # which is the traceback this guard exists to replace.
+    # ⚠️ Positive, for `item_number`'s own reason.
+    addressed = number if isinstance(number, int) and not isinstance(number, bool) else None
+    if addressed is None and isinstance(number, str) and number.isdecimal():
+        addressed = int(number)
+    if addressed is not None and addressed <= 0:
+        addressed = None
+    if addressed is None:
+        raise ConfigError(
+            "tracker.operations.read_item",
+            f"was handed {number!r}, which is not an item number. This tracker "
+            "numbers its items, and a value that is not one addresses nothing -- "
+            "so it is refused here rather than reaching the host as a query it "
+            "cannot answer.",
+        )
+    answer = _graphql(ITEM_QUERY, owner=owner, name=name, number=addressed)
     found = (answer.get("repository") or {}).get("issueOrPullRequest")
     if found is None:
         raise HostUnavailable(
@@ -776,6 +818,16 @@ def read_item(number: int) -> dict:
             "the host numbers both in one sequence. A role holding a pull request "
             "number has the wrong identifier, which is a different fault from an "
             "item that does not exist."
+        )
+    # ⛔ And the answer's own number, which every operation here that calls the
+    # host reads back off this answer: the sibling kind's guard, for its reason.
+    # ⚠️ A bool is an `int`, so the arm says so, as the identifier arms below do.
+    answered = found.get("number")
+    if not isinstance(answered, int) or isinstance(answered, bool) \
+            or answered <= 0:
+        raise HostUnavailable(
+            f"the host answered for #{number} in {owner}/{name} with no number, so "
+            "what it answered for could not be established."
         )
     card = _card(found, number)
     fields = (
@@ -803,7 +855,7 @@ def read_item(number: int) -> dict:
     }
 
 
-def item_number(item: dict | int) -> int:
+def item_number(item: dict | int | str, *, operation: str = "item_number") -> int:
     """The identifier the branch name and the pull request carry.
 
     ⚠️ Makes **no host call**, so the pull-request guard does not apply: an `int`
@@ -811,7 +863,24 @@ def item_number(item: dict | int) -> int:
     pull request body carry the issue's number, and the card is addressed by id
     only inside this module.
     """
-    return item if isinstance(item, int) else int(item["number"])
+    # ⛔ Every shape the port passes, which includes text: the first form
+    # subscripted anything that was not an `int`, so the ordinary CLI argument
+    # came back as a `TypeError` -- from the one operation that cannot fail for
+    # any other reason. The refusal is the sibling kind's, for its reason.
+    # ⛔ The sibling kind's arms, for their reasons: positive, no bool, and a
+    # mapping only where it carries a number this can read.
+    for handed in (item, item.get("number") if isinstance(item, dict) else None):
+        if isinstance(handed, int) and not isinstance(handed, bool) and handed > 0:
+            return handed
+        if isinstance(handed, str) and handed.strip().isdecimal() \
+                and int(handed.strip()) > 0:
+            return int(handed.strip())
+    raise ConfigError(
+        f"tracker.operations.{operation}",
+        f"was handed {item!r}, which carries no item number. This operation "
+        "reads an identifier out of what it was given and makes no call, so "
+        "there is nothing to resolve a value of another shape against.",
+    )
 
 
 # --- searching the board ----------------------------------------------------
@@ -1143,7 +1212,7 @@ def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
         args += ["--label", label]
     url = _gh(args, parse=False)
     tail = str(url).rstrip("/").rsplit("/", 1)[-1]
-    if not tail.isdigit():
+    if not tail.isdecimal() or int(tail) <= 0:
         raise HostUnavailable(
             f"`gh issue create` answered `{url!r}`, whose last path segment is not "
             "a number, so the created item cannot be addressed."
@@ -1241,7 +1310,7 @@ def comment(number: int, body: str) -> dict:
     """
     item = read_item(number)
     _gh(
-        ["issue", "comment", str(number), "--repo", _repo(), "--body", body],
+        ["issue", "comment", str(item["number"]), "--repo", _repo(), "--body", body],
         parse=False,
     )
     return {"number": item["number"], "url": item["url"], "commented": True}
@@ -1260,7 +1329,7 @@ def set_labels(number: int, labels: list[str]) -> dict:
     current = {label["name"] for label in item["labels"]}
     if wanted == current:
         return item
-    args = ["issue", "edit", str(number), "--repo", _repo()]
+    args = ["issue", "edit", str(item["number"]), "--repo", _repo()]
     for label in sorted(wanted - current):
         args += ["--add-label", label]
     for label in sorted(current - wanted):
@@ -1276,12 +1345,12 @@ def assign(number: int, who: str = "@me") -> dict:
     one account it cannot say **which** session holds the item, so a claim does not
     rest on it -- that is § 10's, and `assign`'s own stated fallback says as much.
     """
-    read_item(number)
+    item = read_item(number)
     _gh(
-        ["issue", "edit", str(number), "--repo", _repo(), "--add-assignee", who],
+        ["issue", "edit", str(item["number"]), "--repo", _repo(), "--add-assignee", who],
         parse=False,
     )
-    return read_item(number)
+    return read_item(item["number"])
 
 
 def link_dependency(blocked: int, blocked_by: int) -> dict:
@@ -1305,17 +1374,58 @@ def link_dependency(blocked: int, blocked_by: int) -> dict:
     had worked.
     """
     repo = _repo()
-    read_item(blocked)
-    read_item(blocked_by)
+    # ⛔ The numbers in the answer are the host's and never the arguments, for
+    # `read_blockers`'s reason one function down.
+    blocked_item, blocker_item = read_item(blocked), read_item(blocked_by)
     blocker_id = _gh(
-        ["api", f"repos/{repo}/issues/{blocked_by}", "--jq", ".id"], parse=False
+        ["api", relation.issue_path(repo, blocker_item["number"]), "--jq", ".id"],
+        parse=False,
     )
     _gh([
         "api", "--method", "POST",
-        f"repos/{repo}/issues/{blocked}/dependencies/blocked_by",
+        relation.blocked_by_path(repo, blocked_item["number"]),
         "-F", f"issue_id={blocker_id}",
     ])
-    return {"blocked": blocked, "blocked_by": blocked_by, "blocker_id": int(blocker_id)}
+    return {
+        "blocked": blocked_item["number"],
+        "blocked_by": blocker_item["number"],
+        "blocker_id": int(blocker_id),
+    }
+
+
+def read_blockers(number: int) -> dict:
+    """The items this one is recorded as blocked by, each with its own state.
+
+    The read half of `link_dependency`, on the same endpoint and the same object:
+    the board holds no relation of its own, so this reads the issue's own
+    dependencies rather than anything on the card.
+
+    ⛔ **Every page, not the first one**, for the reason
+    `_code_host_dependency.blockers_of` states -- the same silent ceiling the card
+    reads pay a cursor-follower to avoid.
+
+    ⚠️ **Read through `read_item` first**, so the pull-request guard covers this
+    too: the path is the issues one, which answers for a pull request as well.
+
+    ⛔ The address, the shape of one entry and the refusal on an answer neither
+    can be read from come from the module this implementation shares with the
+    plain-issues one: both kinds reach the same host, and two copies of one
+    grammar are two statements allowed to disagree.
+
+    ⛔ **The number in the answer is the host's and never the argument.** The port
+    passes every value from an invocation as text, so echoing the argument put a
+    string beside blocker entries carrying integers -- one answer, two types for
+    one field name. ⚠️ The guard read above already holds the host's own integer.
+    """
+    item = read_item(number)
+    # ⚠️ The path takes the host's own number too, not the argument: `read_item`
+    # normalises one and leaving the other raw had the two halves of one call
+    # addressing different things.
+    path = relation.blocked_by_path(_repo(), item["number"])
+    return {
+        "number": item["number"],
+        "blockers": relation.blockers_of(_gh(["api", "--paginate", path]), path),
+    }
 
 
 def link_for_close(number: int) -> str:
@@ -1325,11 +1435,17 @@ def link_for_close(number: int) -> str:
     on merge. Returned rather than written, because the body belongs to the role
     opening the pull request.
 
-    ⚠️ Makes **no host call**, so the pull-request guard does not apply here -- it
-    composes a string out of the number it was given and asserts nothing about what
-    that number names.
+    ⚠️ Makes **no host call**, so the pull-request guard does not apply here --
+    this composes a string out of the number it was given and asserts nothing
+    about what that number names.
+
+    ⛔ **The number is held to a decimal integer anyway**, which is the one thing
+    this can get wrong silently: every other operation's bad argument comes back
+    as a refusal from the host, while this one composes a reference the host will
+    never resolve and nothing reports that it did not. It is the sibling kind's
+    arm, for its reason, and it is the one failure this operation has.
     """
-    return f"Closes #{number}"
+    return f"Closes #{item_number(number, operation='link_for_close')}"
 
 
 CLOSED_BY_QUERY = """
@@ -1367,28 +1483,33 @@ def advance_on_merge(number: int) -> dict:
     """
     item = read_item(number)
     owner, name = _repo().split("/")
+    # ⛔ The number the query and the answer carry is the host's, off the read
+    # above, rather than the argument: the port passes every value as text, so
+    # `int()` here would be a second normalisation of the thing the guard already
+    # normalised -- and the one in `read_item` is the one that refuses.
+    addressed = item["number"]
     # ⚠️ `or {}` rather than a default on `get`: the host answers `repository:
     # null` for a repository this credential cannot see, and a default only
     # applies where the key is **absent** -- so the plain form raises an attribute
     # error on the null, which is a traceback where this operation's own refusal
     # belongs. The same form `read_item` takes, for the same reason.
-    answer = _graphql(CLOSED_BY_QUERY, owner=owner, name=name, number=int(number))
+    answer = _graphql(CLOSED_BY_QUERY, owner=owner, name=name, number=addressed)
     issue = (answer.get("repository") or {}).get("issue")
     if issue is None:
         raise HostUnavailable(
-            f"the host answered null for #{number} in {owner}/{name} when asked "
+            f"the host answered null for #{addressed} in {owner}/{name} when asked "
             "what closed it, so the automation's work could not be read."
         )
     merged = [
         node
         for node in _whole(
             issue.get("closedByPullRequestsReferences"),
-            f"the pull requests that closed #{number}",
+            f"the pull requests that closed #{addressed}",
         )
         if node.get("merged")
     ]
     return {
-        "number": number,
+        "number": addressed,
         "advanced": str(issue.get("state", "")).lower() == "closed" and bool(merged),
         "state": issue.get("state"),
         "status": item["status"],
@@ -1411,16 +1532,17 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "set_labels": set_labels,
     "assign": assign,
     "link_dependency": link_dependency,
+    "read_blockers": read_blockers,
     "link_for_close": link_for_close,
     "advance_on_merge": advance_on_merge,
-    # ⛔ The three operations this tracker has nothing to implement against are
-    # named once, below, and read from there by the suite.
+    # ⛔ The operations this tracker has nothing to implement against are named
+    # once, below, and read from there by the suite.
 })
 
-# The three the module docstring argues are absent because the tracker has
-# nothing to implement them against. ⛔ Written once, here, and read by the
-# self-test's completeness check rather than restated in it: a fourth absence
-# would otherwise be an operation nobody noticed going missing.
+# The ones the module docstring argues are absent because the tracker has nothing
+# to implement them against. ⛔ Written once, here, and read by the self-test's
+# completeness check rather than restated in it: an absence added here would
+# otherwise be an operation nobody noticed going missing.
 DELIBERATELY_ABSENT = ("checklist_read", "checklist_write", "checklist_item_delete")
 
 

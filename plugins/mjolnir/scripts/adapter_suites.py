@@ -23,15 +23,19 @@ a store's vocabulary out of the shared procedure is this sentence and the review
 that reads it, not a gate, and a claim to the contrary would be the kind of
 unheld assertion the surface spends its refusals on.
 
-⚠️ **An implementation with no suite is reported, not failed.** The first one
-built was proved against the live tracker this repository runs on, and a runner
-that reddened for it would be refusing a decision somebody made. What *is* a
+⚠️ **An implementation with no suite is reported, not failed**, which is a
+decision about what this runner is for rather than about any one implementation:
+whether a module has a suite beside it is that module's item's to answer, and a
+runner that reddened would be refusing somebody's decision. ⚠️ The run says which
+implementations are in that state, so whether the branch below is reachable is
+read off a run rather than claimed here. What *is* a
 failure is finding no implementation at all: that is a runner holding nothing
 while reporting green, which is the one shape every check here is written against.
 
 ⛔ **There is no `--self-test`, deliberately.** The sibling scripts carry one
 because their job is something else and the suite is a mode; this script's job
-*is* running suites, and its own holding is the count below.
+*is* running suites. ⚠️ **And what holds this runner is the refusals in `main`
+below** rather than the line it prints, which is a report and asserts nothing.
 
 Usage:
     adapter_suites.py             run every installed implementation's suite

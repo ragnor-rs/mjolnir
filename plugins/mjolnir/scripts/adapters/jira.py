@@ -10,12 +10,12 @@ supposed to move off happens somewhere this tracker cannot see.
 
 What it implements, and what it deliberately does not:
 
-  * **Every operation § 3 states except four.** ⛔ No count of them is carried --
-    the list is closed and stated once, in § 3, and a number here would be wrong
-    the next time it grows. The four are named once in `DELIBERATELY_ABSENT`
-    below: this tracker has no check-item object of its own, so the three
-    checklist operations are prose in the description, which is precisely what
-    their stated fallbacks already say to do; and ⛔ **no closing keyword
+  * **Not every operation § 3 states.** ⛔ No count of them is carried -- the
+    list is closed and stated once, in § 3, and a number here would be wrong the
+    next time it grows. They are named once in `DELIBERATELY_ABSENT` below: this
+    tracker has no check-item object of its own, so the three checklist
+    operations are prose in the description, which is precisely what their
+    stated fallbacks already say to do; and ⛔ **no closing keyword
     exists**, so `link_for_close` has nothing to compose. A text that closed an
     item on merge would be this adapter inventing a mechanism the tracker does
     not have, and the stated fallback -- the item moves separately -- is the
@@ -50,6 +50,14 @@ What it implements, and what it deliberately does not:
     `inwardIssue` is the issue that **blocks**. Read the wording and you file the
     dependency on the wrong item, and it reads as success. ⛔ So the direction is
     asserted by a round trip in the suite rather than by reading the call.
+  * **`read_blockers` makes no call of its own.** The links arrive with the item,
+    so the read half of that dependency is `read_item`'s answer narrowed to one
+    side of one link type -- which is also why the project guard and the
+    direction rule above hold here without being restated. ⚠️ Each blocker comes
+    back with the project's own status word *and* the tracker's category behind
+    it, and no verdict: which bar a blocker is held to depends on what it
+    produced, and that is the readiness list's question rather than this
+    module's.
   * **A body is a document, not a string.** This tracker's own interface takes
     rich text as a structured document, so `create_item`, `comment` and a write
     to a text field all go through one narrow renderer and one narrow reader.
@@ -775,7 +783,7 @@ READ_FIELDS = (
 )
 
 
-def _held_to_project(key: str) -> tuple[str, str]:
+def _held_to_project(key: str, *, operation: str = "read_item") -> tuple[str, str]:
     """A key, held to its shape and to this project. ⛔ Before any call.
 
     Two refusals, and the second is this tracker's own guard. A key that is not
@@ -787,7 +795,7 @@ def _held_to_project(key: str) -> tuple[str, str]:
     found = ITEM_KEY.match(str(key).strip())
     if not found:
         raise ConfigError(
-            "tracker.operations.read_item",
+            f"tracker.operations.{operation}",
             f"was asked for `{key!r}`, which is not an item key. An identifier on "
             "this tracker is the project's key and the item's number, and this "
             "value is put into a request path -- so anything else would address "
@@ -803,6 +811,23 @@ def _held_to_project(key: str) -> tuple[str, str]:
             "backlog, with every write landing there.",
         )
     return found.group("project"), found.group("number")
+
+
+def _addressed(key: str, *, operation: str = "read_item") -> str:
+    """The key a request path carries: held to its shape, and canonical.
+
+    ⛔ **Every path this module builds goes through here and never through the
+    argument.** The guard above matches on a stripped value, so a padded key
+    passes it and then reached a path raw -- the guard holding one value while the
+    call addressed another, which is the defect the code-host kinds normalise
+    their numbers against. ⚠️ Worse than a misaddress on a live site: a path
+    carrying a space raises inside the client, below every exception the port
+    states an outcome for.
+
+    ⚠️ Costs no call. The shape is the whole of what it reads.
+    """
+    project, number = _held_to_project(key, operation=operation)
+    return f"{project}-{number}"
 
 
 def _links_of(issue: dict) -> dict:
@@ -821,10 +846,27 @@ def _links_of(issue: dict) -> dict:
         kind = (link.get("type") or {}).get("name")
         inward, outward = link.get("inwardIssue"), link.get("outwardIssue")
         side = inward or outward or {}
+        status = ((side.get("fields") or {}).get("status") or {})
         entry = {
             "key": side.get("key"),
             "type": kind,
-            "status": ((side.get("fields") or {}).get("status") or {}).get("name"),
+            "status": status.get("name"),
+            # ⚠️ Both, and apart, for `_shaped`'s own reason one field over: the
+            # word is this project's vocabulary (§ 4.2) and the category is the
+            # tracker's three-way behind it. A readiness check needs the half
+            # every project on this tracker shares, and a role advancing a state
+            # needs the word -- so neither is derived from the other here.
+            "state": (status.get("statusCategory") or {}).get("key"),
+            # ⚠️ Carried because a role reporting a blocker would otherwise need a
+            # second call per entry to name it, which the code-host entries do not
+            # — the link payload already holds the summary, and the address is
+            # composed from the key exactly as `_shaped` composes an item's own.
+            # ⛔ **And the address only where there is a key to compose it from**,
+            # by the rule the shared code-host grammar states for a repository
+            # address: a guess at a segment is a link a role prints and a person
+            # clicks, while `None` says the answer did not state one.
+            "title": (side.get("fields") or {}).get("summary"),
+            "url": f"{_site()}/browse/{side['key']}" if side.get("key") else None,
         }
         if kind == BLOCKS and inward:
             blocked_by.append(entry)
@@ -915,7 +957,7 @@ def read_item(key: str, *, fields: list[str] | None = None) -> dict:
     costs a catalogue read the first time and nothing after. The item's own facts
     are always read.
     """
-    _held_to_project(key)
+    addressed = _addressed(key)
     asked = READ_FIELDS
     named = None
     if fields:
@@ -924,12 +966,12 @@ def read_item(key: str, *, fields: list[str] | None = None) -> dict:
             for name in fields
         ]
         asked = asked + "," + ",".join(ids)
-    issue = _call("GET", f"/issue/{key}", params={"fields": asked})
+    issue = _call("GET", f"/issue/{addressed}", params={"fields": asked})
     if not isinstance(issue, dict) or not issue.get("key"):
         raise HostUnavailable(
-            f"`GET {API}/issue/{key}` answered with no key, so whether that item "
-            "is there could not be established. An unreadable answer is not the "
-            "same as a clean one."
+            f"`GET {API}/issue/{addressed}` answered with no key, so whether that "
+            "item is there could not be established. An unreadable answer is not "
+            "the same as a clean one."
         )
     if fields:
         named = _named_values(issue, list(fields))
@@ -1179,7 +1221,7 @@ def transitions(key: str) -> list[dict]:
     Measured on a live site, one type offered three of the project's nine
     statuses and another offered all nine.
     """
-    answer = _call("GET", f"/issue/{key}/transitions") or {}
+    answer = _call("GET", f"/issue/{_addressed(key, operation='transitions')}/transitions") or {}
     return list(answer.get("transitions") or [])
 
 
@@ -1238,7 +1280,7 @@ def set_state(key: str, *, status: str) -> dict:
     # invented would be written onto the item as though somebody had chosen it,
     # so a screen with a required field comes back as a failure naming the
     # transition -- which is the remedy being a person's rather than a default's.
-    _call("POST", f"/issue/{key}/transitions", body={"transition": {"id": move.get("id")}})
+    _call("POST", f"/issue/{_addressed(key)}/transitions", body={"transition": {"id": move.get("id")}})
     return read_item(key)
 
 
@@ -1320,7 +1362,7 @@ def set_field(key: str, field: str, value) -> dict:
         shaped = str(value)
         _hold_to_policy("set_field", **{field: shaped})
     read_item(key)
-    _call("PUT", f"/issue/{key}", body={"fields": {found["id"]: shaped}})
+    _call("PUT", f"/issue/{_addressed(key)}", body={"fields": {found["id"]: shaped}})
     return read_item(key)
 
 
@@ -1333,7 +1375,7 @@ def comment(key: str, body: str) -> dict:
     """
     _hold_to_policy("comment", body=body)
     item = read_item(key)
-    posted = _call("POST", f"/issue/{key}/comment", body={"body": as_document(body)}) or {}
+    posted = _call("POST", f"/issue/{_addressed(key)}/comment", body={"body": as_document(body)}) or {}
     return {
         "key": item["key"],
         "url": item["url"],
@@ -1355,7 +1397,7 @@ def set_labels(key: str, labels: list[str]) -> dict:
     item = read_item(key)
     if set(item["labels"]) == set(wanted):
         return item
-    _call("PUT", f"/issue/{key}", body={"fields": {"labels": wanted}})
+    _call("PUT", f"/issue/{_addressed(key)}", body={"fields": {"labels": wanted}})
     return read_item(key)
 
 
@@ -1392,7 +1434,7 @@ def assign(key: str, who: str = "@me") -> dict:
         # depending on whether it wrote would make a role's handling of the
         # result depend on a fact it did not ask about.
         return item
-    _call("PUT", f"/issue/{key}/assignee", body={"accountId": account})
+    _call("PUT", f"/issue/{_addressed(key)}/assignee", body={"accountId": account})
     return read_item(key)
 
 
@@ -1413,26 +1455,77 @@ def link_dependency(blocked: str, blocked_by: str) -> dict:
     write: a key from another project would record a real relation in somebody
     else's backlog and answer as though it had worked.
     """
-    read_item(blocked)
-    read_item(blocked_by)
+    # ⛔ The keys the body and the answer carry are the ones the reads answered
+    # with, not the arguments. ⚠️ A **body** and not a path, which is why the
+    # sweep that routed every path through `_addressed` did not reach this one:
+    # the same two-halves defect, one field shape over.
+    on_blocked = read_item(blocked)["key"]
+    on_blocker = read_item(blocked_by)["key"]
     _call(
         "POST",
         "/issueLink",
         body={
             "type": {"name": BLOCKS},
-            "inwardIssue": {"key": blocked_by},
-            "outwardIssue": {"key": blocked},
+            "inwardIssue": {"key": on_blocker},
+            "outwardIssue": {"key": on_blocked},
         },
     )
     return {
-        "blocked": blocked,
-        "blocked_by": blocked_by,
+        "blocked": on_blocked,
+        "blocked_by": on_blocker,
         "type": BLOCKS,
         # ⚠️ Carried in the answer because the two are what a reader has to check
         # the direction against, and they run opposite ways.
-        "reads": f"{blocked} {INWARD_READS} {blocked_by}, {blocked_by} "
-        f"{OUTWARD_READS} {blocked}",
+        "reads": f"{on_blocked} {INWARD_READS} {on_blocker}, {on_blocker} "
+        f"{OUTWARD_READS} {on_blocked}",
     }
+
+
+def read_blockers(key: str) -> dict:
+    """The items this one is recorded as blocked by, each with its own state.
+
+    The read half of `link_dependency`, and ⛔ **it makes no call of its own**: the
+    links arrive with the item, so this is `read_item`'s own answer narrowed to
+    one side of one link type rather than a second request that could disagree
+    with it. The project guard and the direction rule therefore both hold here
+    without being restated.
+
+    ⛔ **Which side is a blocker is `_links_of`'s reading and not this
+    function's.** The sense is read from which side an entry carries, never from
+    the link type's wording -- the inversion this tracker is sharpest about -- so
+    narrowing here is a key lookup and nothing more.
+
+    ⛔ **No verdict.** Each blocker comes back with the project's own status word
+    and the tracker's category behind it, because which bar a blocker is held to
+    depends on what it produced and that is § 5's question.
+
+    ⚠️ **And what this tracker cannot answer here is *why* a blocker closed**, which
+    the code-host entries carry. The resolution is not in a link payload, and this
+    operation makes no call of its own -- so a blocker abandoned and one finished
+    both arrive in the category that means neither, and the honest answer is that
+    the field is absent rather than empty. ⛔ A reader of a blocker on this tracker
+    therefore has the category and not what it produced, which is § 2's
+    absence-of-signal rule stated where it bites rather than left to be found.
+
+    ⛔ **An answer that did not carry the links at all is a failed call, never an
+    item with no blocker.** `_shaped` sets the key only where the field was there,
+    so reading it with a default answered the same for an unread field and an
+    empty one -- absence of signal turned into *no blockers*, which is the failure
+    the code-host path in this toolkit is guarded against and the one a readiness
+    gate cannot survive.
+    """
+    item = read_item(key)
+    if "blocked_by" not in item:
+        raise HostUnavailable(
+            f"the answer for {key} carried no links field, so what it is blocked "
+            "by could not be read. An unreadable answer is not the same as an "
+            "item with no recorded blocker."
+        )
+    # ⛔ The key in the answer is the item's own and never the argument, which is
+    # the rule the code-host paths carry for their numbers: every value from an
+    # invocation arrives as text, and a key echoed back is the caller's spelling
+    # rather than the tracker's.
+    return {"key": item["key"], "blockers": list(item["blocked_by"])}
 
 
 def advance_on_merge(key: str) -> dict:
@@ -1460,7 +1553,7 @@ def advance_on_merge(key: str) -> dict:
     """
     item = read_item(key)
     me = str((_site_facts()["me"] or {}).get("accountId") or "")
-    issue = _call("GET", f"/issue/{key}", params={"expand": "changelog", "fields": "status"})
+    issue = _call("GET", f"/issue/{_addressed(key)}", params={"expand": "changelog", "fields": "status"})
     history = ((issue or {}).get("changelog") or {}).get("histories") or []
     moved = None
     for entry in history:
@@ -1476,7 +1569,9 @@ def advance_on_merge(key: str) -> dict:
         if moved:
             break
     return {
-        "key": key,
+        # ⛔ The item's own key, not the argument's spelling, which is this
+        # module's rule.
+        "key": item["key"],
         "status": item["status"],
         "state": item["state"],
         "advanced": bool(moved) and moved.get("by") != me,
@@ -1499,17 +1594,18 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "set_labels": set_labels,
     "assign": assign,
     "link_dependency": link_dependency,
+    "read_blockers": read_blockers,
     "advance_on_merge": advance_on_merge,
-    # ⛔ The four operations this tracker has nothing to implement against are
-    # named once, below, and read from there by the suite.
+    # ⛔ The operations this tracker has nothing to implement against are named
+    # once, below, and read from there by the suite.
 })
 
-# The four the module docstring argues are absent because the tracker has nothing
-# to implement them against: there is no check-item object, so the three
-# checklist operations are prose in the description -- which is what their
-# fallbacks already say -- and no keyword in a pull request closes an item here,
-# so `link_for_close` has nothing to compose. ⛔ Written once, here, and read by
-# the suite rather than restated in it: a fifth absence would otherwise be an
+# The ones the module docstring argues are absent because the tracker has nothing
+# to implement them against: there is no check-item object, so the checklist
+# operations are prose in the description -- which is what their fallbacks already
+# say -- and no keyword in a pull request closes an item here, so
+# `link_for_close` has nothing to compose. ⛔ Written once, here, and read by the
+# suite rather than restated in it: an absence added here would otherwise be an
 # operation nobody noticed going missing.
 DELIBERATELY_ABSENT = (
     "link_for_close",

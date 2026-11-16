@@ -71,7 +71,8 @@ no check reaches — whether the gate a generated workflow installs is the gate 
 stated with it.
 
 `plugins/mjolnir/scripts/check_reply_defers_nothing.py` holds that a role's reply names no work the
-turn does not do, and it is the one here that does not run on the gate at all. It is in
+turn does not do, and what runs on the gate is its own assertion suite rather than a reading of any
+reply — a reply being the one artifact a change does not carry. It is in
 [its own section](#the-reply-defers-nothing-held-in-the-session-not-on-the-gate) too, and for the
 same reason: whatever holds a claim here states what it leaves alone. ⚠️ **A sibling that held
 three properties of file prose was retired on 2026-10-20**, with the ruling and the measurement
@@ -113,16 +114,23 @@ the property and cannot be fooled by a reword; **forbidding** checks assert a na
 not appear, and are sound when the thing forbidden is stable; **quoting** a sentence back at the
 file it came from fails in both directions. Every check below is one of the first two.
 
-| # | Check | Scope | Kind |
-|---|---|---|---|
-| 0 | Every markdown document that may cite the schema has a declared role in the script | root `*.md`, `docs/**`, `plugins/**` | forbidding |
-| 1 | Every citation of the schema resolves — **both its path and its fragment** | every document with a role | computed |
-| 2 | Every schema heading below the title is cited by at least one document | every level the schema uses, container sections excepted | computed |
-| 3 | Every ruling's outcome cell resolves, and the section it names — by number or by heading — agrees with its link | the `Outcome lives in` column | computed |
-| 4 | A ⛔ statement carries a citation naming a **section** | documents that explain or record | forbidding |
-| 5 | Every configuration's top-level key set equals the one the schema declares | top level only | computed |
-| 6 | No citation names a **container** — a section whose whole content is in its subsections | every citation, in every document with a role | computed |
-| 7 | The footprint report covers every file the checks walk | the report's own coverage | computed |
+The `Name` column is the script's own name for the check, matched against the run's list rather than
+described: a row keyed on its number alone said nothing about *which* check it was, so a check
+inserted rather than appended renumbered every reference below and the run stayed green.
+
+| # | Name | Check | Scope | Kind |
+|---|---|---|---|---|
+| 0 | `every document has a role` | Every markdown document that may cite the schema has a declared role in the script | root `*.md`, `docs/**`, `plugins/**` | forbidding |
+| 1 | `citations resolve` | Every citation of the schema resolves — **both its path and its fragment** | every document with a role | computed |
+| 2 | `no orphan section` | Every schema heading below the title is cited by at least one document | every level the schema uses, container sections excepted | computed |
+| 3 | `outcomes live in the surface or a work item` | Every ruling's outcome cell resolves, and the section it names — by number or by heading — agrees with its link | the `Outcome lives in` column | computed |
+| 4 | `binding statements cite the surface` | A ⛔ statement carries a citation naming a **section** | documents that explain or record | forbidding |
+| 5 | `configurations match the surface` | Every configuration's top-level key set equals the one the schema declares | top level only | computed |
+| 6 | `no citation names a container` | No citation names a **container** — a section whose whole content is in its subsections | every citation, in every document with a role | computed |
+| 7 | `the footprint covers what is walked` | The footprint report covers every file the checks walk | the report's own coverage | computed |
+| 8 | `citations between documents resolve` | Every **other** anchored link into a markdown heading resolves — between two documents, out of the schema into one, and within a document | every document with a role, the schema included | computed |
+| 9 | `the record has a row per check` | This table's rows are the script's checks, in its own order and under its own names | the number and the name, not what the remaining cells say | computed |
+| 10 | `no document leaves a fence open` | No document ends inside a fenced block | every document with a role, the schema included | computed |
 
 Check 2 is the one that does the most work, because it runs in the direction nobody remembers to
 check by hand: a section added to the schema with nothing recording why it has that shape fails
@@ -190,8 +198,8 @@ nothing was reporting it.
   than noticed when a window runs short. Check 7 is what stops the report shrinking in silence:
   a file the checks read and the footprint skips is a cost reported by nothing. ⚠️ The marker
   count is of the emoji form anywhere in the file, code spans included, and the advisory marker
-  **without** its variation selector is not counted — which is what keeps the tree's one bare
-  instance, a script's output quoted inside a code span, out of a count of directives.
+  **without** its variation selector is not counted — a bare codepoint being a script's output
+  quoted rather than a directive.
 - **A count of coarse citations** — every citation naming a section that states something itself
   *and* has subsections, grouped by section with the documents that cite it. Check 6 holds the
   decidable end of this and nothing holds the rest.
@@ -305,12 +313,47 @@ Stated, because an unstated limit reads later as coverage.
   marker, which is the *quoting* failure, and it is what makes the line-start form the sound one. A
   table cell is not part of that argument — the check excludes cells by a separate condition the
   grammar does not reach — so the residue here is a reviewer's.
-- **A link between two carriers, and a link from the reader.** Check 1 resolves a citation of the
-  surface, which is what its pattern matches. A relative link from one skill to another, and a row
-  in the README pointing at a carrier directory, resolve against nothing — so renaming a carrier
-  and updating this script's role map leaves every such link dead and the build green. ⚠️ Measured
-  by doing exactly that: the one path that fails loudly is the role map itself, and the rest fail
-  in silence.
+- **A link with no anchor on it.** What no check reaches is the link that names no heading: a row
+  in the README pointing at a carrier directory resolves against nothing — so renaming a carrier
+  and updating this script's role map leaves such a link dead and the build green. ⚠️ Measured by
+  doing exactly that: the one path that fails loudly is the role map itself, and the rest fail in
+  silence.
+- **A markdown file no role claims, on either end of check 8.** That check holds a link whose
+  target is already in the role map, so a citation into an untracked document, or out of one, is
+  skipped in silence rather than refused — the same residue check 0's loud-residue argument leaves,
+  one check over. ⚠️ **And it reddens when its own set empties**, which is that argument's other
+  half: a tree whose documents stopped citing each other is reported rather than passing as a tree
+  with nothing to check. ⚠️ **And two fragments are accepted without being resolved, by both
+  citation readers rather than by this one** — `#L12`, a fragment the host answers and no heading
+  carries, so refusing it would refuse a working link while a line that has gone is not caught;
+  and an absolute address, which names a **ref** this tree has not got, so holding it against
+  these headings would refuse a working link on a branch and admit a dead one after a rename
+  elsewhere.
+- **What the remaining cells of this table say.** Check 9 holds each row's number and its
+  name against the script's list, which is what catches a check inserted rather than appended.
+  ⛔ **A row whose scope or kind has gone stale reads correctly to it**: that half is a
+  reader's. ⚠️ **And a row carrying no name cell is refused rather than compared**, which is a
+  document to report on and not a verdict about any check.
+- **A heading inside a region the citation scan skips and the heading scan does not.** ⚠️ **The
+  two scans now share one fence walker**, so this residue is narrower than it was: a fenced
+  block is the same bytes to both, under either delimiter and at any delimiter length. ⛔ **What
+  remains is the rest of what *shows* markdown** — an HTML comment, a code span — which the
+  citation readers skip and the heading reader does not, so an anchor that is not a heading is
+  citable there and neither check will refuse a citation of it.
+- **A citation inside a four-space code block, which both checks read as live.** ⛔ **The arm was
+  written and taken back out**: four spaces is a code block only where it is not a list
+  continuation, and without a list parser the arm dropped five live citations written as
+  continuation lines of nested list items — a real citation going unchecked, which is the silent
+  direction and the worse one. ⚠️ A fenced example is the form to use in these documents; an
+  indented one is read as a citation.
+- **Every script in the tree, this gate's own included.** The globs reach markdown, so a module's
+  comments are not held to citing the surface, are not measured in the footprint, and are not
+  read for an outcome — and the file that carries this gate's whole grammar is the largest such
+  body of prose in the repository. ⚠️ **Stated as a scope and not as an oversight**, the same
+  reading the names sweep takes one gate over: a carrier's own text is strict and the `scripts/`
+  beside it is implementation. ⛔ What that costs is real and is this bullet: a rule a module's
+  comment states is a rule no mechanism holds to one authority, and the only reader is whoever is
+  reading the module.
 - **Whatever is not committed.** Every check here reads the working tree, which is not what a
   commit takes. ⚠️ Measured on the change that added this bullet: edits staged by a merge were
   verified green, then edited again and left out of the commit, so the gate's verdict was about a
@@ -325,11 +368,18 @@ Stated, because an unstated limit reads later as coverage.
   states: the reader refuses a block that omits a key its own kind requires, per kind and at
   configuration time, which is a different question from this check's key-set comparison and
   answers nothing about an undeclared key.
+- **Every `yaml` fence on the surface is a declaration to it**, and it has no way to tell one that
+  states the key set from one showing what *not* to write. ⚠️ The consequence runs the wrong way
+  and is the reason this is recorded rather than guarded: a counter-example block would make every
+  configuration refuse for lacking the key it is warning about, and the remedy a reader would be
+  pointed at is to add that key to all of them. There is no such block today, so the residue is
+  the shape of a future edit and not a live defect — and the surface already carries a marker
+  convention for a fence's own reader, which is where a fix would go.
 - **Issues and pull requests.** Not from *this* workflow, which holds no credential — reading
   that store needs a token scope, and per [#50](https://github.com/ragnor-rs/mjolnir/issues/50)
-  this one is granted none. ⚠️ It is not unreachable in principle, and this document used to say
-  it was: the gate on the change below does read it, with a scope of its own. What stays true
-  here is the trade, not the impossibility. The lettering of projects A–F in the documentation
+  this one is granted none. ⚠️ It is not unreachable in principle: the gate on the change below
+  does read it, with a scope of its own. What stays true here is the trade, not the
+  impossibility. The lettering of projects A–F in the documentation
   rests on the same reason [#19](https://github.com/ragnor-rs/mjolnir/issues/19) records.
 - **Configurations outside the globs.** A configuration added where `CONFIG_GLOBS` does not look
   is skipped. Check 0's loud-residue argument covers documents; for configurations the guard
@@ -348,9 +398,10 @@ stop the rest holding nothing. ⛔ No count of either group is carried here or i
 first form of both sentences carried one, and the check the sweep grew next made it wrong.
 
 Three scopes, and no count of the checks in each. The repository-wide one looks for what identifies
-someone else's project; the strict one — the carrier roots, never the whole tree — looks for a
-value, a tracker or a stack in text that is supposed to be procedure; and the third is **every
-tracked configuration**, this project's own and the examples, which is where a value of
+someone else's project; the strict one — the carrier roots, never the whole tree — looks for
+anything a role's text may not carry at all, a value and a tracker and a stack among them; and
+the third is **every tracked configuration**, this project's own and the examples, which is where
+a value of
 [§ 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)'s class
 would be checked in. A carrier is a skill, a command or a hook (schema § 7), so the
 strict set is matched by *shape* — `plugins/*/skills/`, `commands/`, `.claude/hooks/` and so on —
@@ -371,11 +422,19 @@ rather than from a hand-kept list of roots.
 | 10 | No role is resolved by asking who is running — the spellings that resolve the current user and nothing else, each one a form English does not also use ([schema § 27](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map)) | the strict set | forbidding |
 | 11 | No tracked configuration carries a value under a key the surface marks `# private` — a chat thread's name, a calendar's own name, a person, a path on somebody's machine ([schema § 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)) | every tracked configuration | forbidding |
 | 12 | No invocation of the host client **for a run** — its own `run` subcommand, a dispatch, a pull request's runs, and the endpoints behind all three, in a command line, in a list of quoted words, or split across a continuation. The client itself stays permitted, being how a pull request is opened, read and merged ([schema § 29](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)) | the strict set | forbidding |
+| 13 | No tracker's own vocabulary for a **dependency** — the field an edge is carried in, the endpoint it is posted to, the sides and the wording of a link call. This is check 6 one level down: a role writing one of these names a tracker's *shape* without naming the tracker, which check 6 passed while it was the same defect. ⚠️ Matched in code regions only, by rule 1 and more load-bearingly than anywhere else here — a link type's wording is also an ordinary English phrase, and a shipped role explains the direction of a dependency in exactly those words ([schema § 3 → An edge is a relation](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)) | the strict set | forbidding |
 
-⚠️ **A row takes the next number and never one already in the table.** The first form of the row
-above was inserted in the middle, which left the two rows after it naming checks that had moved —
-read as positions in the script the numbers were then wrong, and silently. ⛔ **What a reader
-resolves a row by is what it says**, and the number is this table's own ordering.
+⚠️ **A row takes the next number and never one already in the table.** The first form of the
+host-client row, 12, was inserted in the middle, which left the rows after it naming checks that
+had moved — read as positions in the script the numbers were then wrong, and silently. ⛔ **What a
+reader resolves a row by is what it says**, and the number is this table's own ordering. ⚠️ **The
+row is named rather than pointed at**, this paragraph having said *the row above* until a later
+row was appended over it, which is the same defect one document in.
+
+Nothing holds this table against that script's own list, unlike the table this document's first
+gate carries: the check that compares a table to a list reads one table, under one header. So a
+row here that has gone stale is a reader's to catch, and that asymmetry is recorded rather than
+left to be discovered.
 
 Check 5 is the one that makes the shape-matched strict set safe: a carrier in a directory the
 shapes do not reach — `plugins/other/skils/`, one letter out — would otherwise be swept by nothing
@@ -397,8 +456,18 @@ check 0's argument one scope over.
    value stands alone in its span, so a sentence that merely contains the word is not one: a
    status vocabulary of `open` and `closed` does not forbid the word "opening", which the day-log
    skill uses freely. ⚠️ The wrap is not part of the value — this repository hard-wraps its prose
-   at about 95 columns and most forbidden values are multi-word, so newlines are normalised away
-   before matching. A fenced block's own backticks are removed first, for the same reason as
+   at `language.prose_width` and most forbidden values are multi-word, so newlines are normalised
+   away before matching. ⛔ **Per paragraph, and that scope is load-bearing**: the single-backtick
+   form is paired, so flattening a whole file let one unbalanced delimiter re-pair every span
+   after it — measured, a stray backtick at the top of a shipped carrier stopped most of its
+   regions being
+   read as values while the region count barely moved, which is hidden coverage and not a red. A
+   paragraph is the widest scope a wrapped span needs, since a hard wrap never crosses a blank
+   line, and the narrowest that bounds what one stray delimiter costs. ⚠️ **What it gives up**: a
+   span whose delimiters sit either side of a blank line is no longer read — markdown does not
+   carry one either, and nothing else measurably changed, list items, table rows, headings,
+   indented continuations and whitespace-only separators all reading as before.
+   A fenced block's own backticks are removed first, for the same reason as
    rule 1: they would shift the pairing of every span after them. ⚠️ **A ``…`` span is removed on
    the same ground and by the same means** — split on, never paired, since a paired form matches
    one span's closer against the next span's opener and takes every value between them out of the
@@ -680,6 +749,49 @@ exempted the whole directory and so would have read straight past it.
   fail on them, because a shape for a carrier kind this repository has not adopted is not a
   defect. What is held instead: check 4 fails if the strict set empties altogether, and check 5
   fails on a carrier sitting outside every shape.
+- **A dependency described in words, and one tracker's link type spelled as an ordinary noun.**
+  Check 13's list is closed like check 7's and errs the same way: it holds the spellings whose
+  *shape* is decidable, plus a wording held only where it is the whole of a code span, which is
+  where a literal stands alone. ⛔ What it cannot reach is a role writing *post the
+  relation on the blocked item, keyed on the blocker's internal id* in a sentence: that is a sweep
+  for every word, and what holds it instead is
+  [schema § 3](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)
+  being the single statement of the rule, with the two operations the only thing a role names.
+  ⚠️ **The name that is also an English phrase is held in one position only** — as the whole of a
+  code region, which is rule 2's own test applied to a name rather than to a value. ⛔ The first
+  form matched it anywhere in a region and refused shapes a shipped carrier plausibly
+  holds: a commit subject quoted in a span, an example item body inside a fence, and an example of
+  what this port's own answer carries. Each is a sentence and none is a role naming a tracker, so
+  each is now asserted on the green side. ⛔ **And the strict scope is the rule's own rather
+  than forbearance** — the implementations behind the port must name every one of these to speak to
+  their trackers at all, and `docs/` records which tracker spells which, so a tree-wide sweep
+  would forbid the one place the shape belongs and the evidence for why. ⚠️ **Each green side is
+  asserted as a problem-set delta rather than by watching a plant redden**, which is the host-run
+  exemptions'
+  form one check over and the only one that isolates a plant here: disabling a scope
+  reddens the *unplanted* tree, so a whole-tree reading cannot tell a plant that was swept from a
+  plant that contributed no region at all. ⛔ **And the phrase in a carrier's prose is held by the
+  code-region scope and the whole-region position *together*, by neither alone** — measured, the
+  earlier record of it having claimed each mechanism held its own exemption.
+- **A side of a link type is refused only with that type's own wording after it.** Each of those
+  words is ordinary English in front of a colon, so the key decides nothing: the first form of that
+  arm refused a span reading *inward: toward the centre* as a tracker's metadata key with no tracker
+  vocabulary in it, and the form after it required both sides **in one region**, which admitted
+  every shape a carrier writes — a region being one span, or one line of a fence. What is decidable
+  is the value. ⚠️ **The quote around that value is matched in either spelling, and through any
+  number of backslashes** — the shell string and the JSON carrier holding that string each add one.
+- **A wording's own trailing punctuation comes off both ends of a region before the phrase group is
+  matched**, so that a literal quoted at the end of a sentence is still read as that literal. ⚠️
+  **The characters stripped are more than that reason needs** — the set is the `PUNCTUATION`
+  constant, read there rather than listed here — so a span whose content is the wording followed by
+  any of them is refused as the wording. ⛔ Stated rather than narrowed: the shape is a sentence
+  written inside a code span, which rule 1 already reads as code.
+- **Which of a wording's forms the arm holds is not derivable from the arm.** The group carries the
+  full wording alone; the bare participle and the plain verb are deliberately outside it, the verb
+  because a role may quote a status word or a capability of that spelling and the participle
+  because it is the same phrase one word short. ⛔ Nothing reddens if either is added back, no plant
+  or exemption being a whole region equal to one — which is the residue this bullet is the record
+  of.
 - **Issues and pull requests**, for the same reason check 3 above cannot read issue state: that
   store is not a file, the workflow holds no credential, and a reviewer covers it.
 
@@ -866,11 +978,12 @@ rather than passing it.
 
 ⚠️ No count of the scripts is carried here. The two above hold a document claim and are what this
 document was written for; the rest hold a module, a shape or a rule — the configuration reader
-`plugins/mjolnir/scripts/config.py`, whose own checks are its work item's; the prose-width sweep,
-which reads the same documents and holds none of their content; the reply hook recorded
-two sections on; and the port contract recorded in this one. Each carries its own workflow and
-its own `host.checks` entry, for the reason the sweep above does: one entry states one mirrored
-command.
+`plugins/mjolnir/scripts/config.py`, whose own checks are its work item's; the day-log carrier
+`plugins/mjolnir/scripts/day_log.py`, whose are likewise its own and which this document records
+nowhere else; the prose-width sweep, which reads the same documents and holds none of their
+content; the reply hook recorded two sections on; and the port contract recorded in this one. Each
+carries its own workflow and its own `host.checks` entry, for the reason the sweep above does: one
+entry states one mirrored command.
 
 `plugins/mjolnir/scripts/port.py --self-test` runs in the `Port contract` workflow. It is not a
 document check, and it is recorded here because its subject is the same discipline — it holds a
@@ -899,6 +1012,25 @@ so for the second port it unmade the other port's table and asserted nothing.
 One check is the half the per-port lookup cannot see: an operation table sitting under a section no
 `# port:` marker names is refused on the surface, that being an operation list no port reads and no
 adapter is held to.
+
+⛔ **And one check runs the file as a script, in a subprocess, which is the only form that can see
+the defect it was written for.** The contract states *three answers, never a traceback* — the stated
+fallback where a capability is absent, the result where it is present, and a `failed` outcome
+naming the host's own words where a call did not go through, which is
+[schema § 3](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)'s
+rule that no absence is an error and that a host which did not answer is not a tracker that
+cannot. ⚠️ **That stopped holding on the one path a role actually uses**, measured by invoking an
+operation against a pull request number: the
+pull-request guard's own message arrived as a traceback. The cause is that an implementation does
+`import port`, so running the file as a script loads it twice — once as the entry point and once
+under its own name — and the contract's exception becomes two unrelated classes, which the `except`
+in the invoking code cannot bridge. ⛔ **Every in-process assertion was green over it and had to
+be**, a suite importing the file as a module having one class, which is why the fix is the script's
+own dispatch and the case is a subprocess. The failure is provoked with no host and no credential:
+the client is absent from the path handed to the child, so the first call out raises from inside an
+implementation. ⚠️ **The verdict is read off what was printed and not off the exit status** — a
+reported failure and a traceback both exit non-zero, so a status assertion would have passed before
+the fix.
 
 The kinds are the same two as above. Reading the operation list and the fallback text out of the
 surface is **computed** — a reworded fallback travels, and a table that states the list twice, or
@@ -1188,8 +1320,8 @@ constant wherever it was moved*: planting the bound to a negative took both offs
 it, the arm then fired on a ref older than its own creation, and most of the block stayed green on a
 mechanism that was broken. ⚠️ **The tell was the mutation count and not any failure**, which is why
 the table below is run rather than reasoned about: a self-referential assertion reads as a passing
-check and as a reached mechanism at the same time. The offsets are now 36 seconds, the interval the
-defect was measured at, and an hour.
+check and as a reached mechanism at the same time. The offsets are constants of the suite's own now
+— the interval the defect was measured at, and an hour.
 
 | what was disabled | what the suite did | restored |
 |---|---|---|
@@ -3728,7 +3860,7 @@ What it holds:
 - **Whether a replayable file would replay.** What is asserted is that the calls are found and
   classified; actually applying them is a write, which this role does not do and no suite here
   performs on its behalf.
-- **Whether the environment is standing.** [Schema § 1](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
+- **Whether the environment is standing.** [Schema § What the procedure models](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
   keeps that off the surface, so there is no command for a suite to run and the reading is the
   project's own script's — what is asserted is that its absence is reported as a reading not taken,
   and that a project pointing at one is handed the pointer's own value.
@@ -3772,43 +3904,22 @@ first phase names it — *Assert each check can fail, then …* — and a run wi
 to name, so it says only what it holds. ⛔ A step name is not evidence that a suite plants: both
 families plant, and the run prints what it planted.
 
-⚠️ **The checks that plant the green side as well as the red are the ones whose scope has a hole
-in it by design**, and each hole is an exclusion somebody wrote on purpose. The reply-register
-check plants replies that must stay green — a check that flags an arrow inside a fenced block, an
-indented block or a quotation is not the check it claims to be, and each of those was a measured
-false red rather than a hypothesis. The width check plants a line of each unbreakable kind,
-because its exclusion list is where it would quietly stop holding anything. The single-authority
-check plants a container cited through its subsection, which is the one carve-out checks 2 and 6
-share. The audit-trail check plants the carve-out that is its whole scope — a violation the change
-did not write — beside a landed record and a live-status line, each of which carries a date and has
-to pass. The end-to-end
-register check plants the three ways a change may be written down and the change that is outside
-every judged tree, and asserts its fixture's premises first for the same reason. The executed-count
-check plants an unset floor and a tree declaring no case — the two guards in its rule — beside two
-cases nothing was written to let through. The enforcement check plants the whole of the common
-case — a project where nothing is exclusive, which must answer nothing for any call — beside the
-reads that share a path with a merge and must not be refused for it. The spend check plants both of
-its halves by hand — every shape a denied command arrives in against every shape that merely names
-it, which is the correction it was extracted carrying. The live check plants the same two halves
-one guard over and a third beside them: a machine the project named as not live, which must pass
-silently, and which is the green side its own inversion rests on. The context check plants the
-exemption that is its own hole — a command a role is forbidden to truncate, which must pass the
-refusing arm and the replacing one alike — verified by taking the exemption away and watching both
-act, and beside it a read of a file that changed, which must not be refused. The install step
-plants a project
-that asks for no artifact at all, which must write nothing and report nothing, and a value stated
-empty, which must satisfy an artifact's needs rather than wait forever on it — and, since the
-registry holds one, a project stating no title form, which must get no gate and no entry while the
-same fixture stating one gets both. The title form's own suite plants a project stating no form,
-whose every title must get *no answer* rather than either verdict. The sweep over landed trees
-plants both directions of **every** arm it has rather than of the holes alone — a must-remove
-beside each must-keep — because a sweep that removes nothing passes a red-side-only suite whole,
-and the half that would then be untested is the half that deletes files. The restoring role's own
-suite inverts that pair: what it plants is a state a sweep would have **written** into — a store
-that is not there, a transcript that is not there, a working file that is missing — and the
-assertion is that the tree is unchanged afterwards, so there the green side is the whole rule and
-the plant exists to prove the snapshot can see a write at all. ⛔ A red-only suite says
-nothing about any of them.
+⚠️ **The checks that plant the green side as well as the red are the ones whose scope has a
+hole in it by design**, and each hole is an exclusion somebody wrote on purpose. ⛔ **Which
+checks those are, and what each one plants, is not written down here** — the same rule as the
+counts above, one column over: an inventory of plants in prose is a copy of every one of those
+suites' own exclusion lists, and each run prints what it planted. A suite that gains a hole gains
+a plant for it, and this document would be wrong from that commit onwards with nothing saying so.
+
+Two of them are worth stating, because neither is derivable from a run. The sweep over landed
+trees plants both directions of **every** arm it has rather than of the holes alone — a
+must-remove beside each must-keep — because a sweep that removes nothing passes a red-side-only
+suite whole, and the half that would then be untested is the half that deletes files. And the
+restoring role's suite inverts the pair: what it plants is a state a sweep would have **written**
+into — a store that is not there, a transcript that is not there, a working file that is
+missing — and the assertion is that the tree is unchanged afterwards, so there the green side is
+the whole rule and the plant exists to prove the snapshot can see a write at all. A red-only
+suite says nothing about any of them.
 **A green plant naming an exclusion is verified by switching that exclusion off** and watching it
 redden — one that cannot fail is one nobody checked — while a plant naming an omission has nothing
 to switch off, and what it asserts is that a grammar stayed narrow. ⚠️ A suite that keeps the two
