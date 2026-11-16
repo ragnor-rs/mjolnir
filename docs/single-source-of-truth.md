@@ -2689,18 +2689,22 @@ of the two by the margin this whole document is about.
 - **Whether a place a guard took was actually given back.** Nothing in a workflow observes a
   session, and a machine whose session died mid-call has a lease no event will ever reach. The
   `ttl` is what bounds that, and it bounds it to a window rather than closing it.
-- **Whether the answer in a record is true.** The guard reads that the review question was asked and
-  answered and who answered it. *Nobody is going to look* is an answer, *unanswered* is an answer,
-  and a person who writes one without having decided it has satisfied this check. ⛔ That is the
-  decidable end of the rule on purpose:
+- **Whether the answer in a record is true.** The guard reads that the merge ask was put and
+  answered, and who the record says answered it. *Later* is an answer, *unanswered* is an answer,
+  and a pass that writes one without having asked has satisfied this check. ⛔ That is the decidable
+  end of the rule on purpose:
   [schema § 7](../plugins/mjolnir/config/schema.md#what-a-hook-refuses-and-the-record-it-reads)
-  holds whether the question reached a person, because whether a person read a diff is not a
-  property a machine can establish.
+  holds whether the question was put, because whether a person weighed what they were shown is not
+  a property a machine can establish.
 - **Whether the answerer is somebody other than the session.** This procedure's roles authenticate
   as the same credential a person reviews with, so a record the session wrote and a record a person
-  wrote are indistinguishable on the host. What the record buys is that the question was asked at
-  all, and the reviewing role's own rule that a pass it ran is evidence and never approval is
-  procedure rather than something this reads.
+  wrote are indistinguishable on the host. ⚠️ **And the key the guard reads is the merge ask, which
+  the merging pass itself writes** — so the pass that produces the record is the pass the guard then
+  holds. ⛔ That is stated on the surface rather than papered over, and it is not new: the
+  absent-reviewing-role rule already put the merging pass on both ends of it in every project
+  mapping no reviewing leg, and nothing measured which projects those were. What the record buys is
+  that the question was put at all; what holds the `answered by` column is the authorship rule
+  rather than this check.
 - **A merge performed by anything but a shell command.** The guard reads a `Bash` command. A merge
   through the host's web interface, through another client, or by an automation rule on the host
   itself reaches no event here. ⚠️ That is the same reach the boundary hook has, and the reason the

@@ -2872,10 +2872,15 @@ would be silent on precisely the target nobody has thought about — which is
 [`§ 21`](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)'s
 inversion, made again one facet over at
 [`§ 33 → Which target, and what makes one live`](../plugins/mjolnir/config/schema.md#which-target-and-what-makes-one-live).
-⚠️ **What liveness decides is therefore what an unanswered ask means and not whether one is made**,
-which is also what leaves
+⚠️ **What liveness decides is whether the ask is put at all**, which is the only test
+[`§ The loop`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
+admits for one — and it reads the two free targets exactly as their own copies state them, *fine to
+run freely* rather than *asked and proceeded on silence*. ⚠️ **One rail is unconditional beside it
+and stays so**:
 [`§ 29`](../plugins/mjolnir/config/schema.md#a-dispatch-is-the-only-write-and-it-carries-its-own-go)'s
-strict reading standing rather than narrowing it.
+refusal sits on the operation and reads no facet, so a dispatch carries a go wherever it is made —
+and ⛔ **no target in the survey is both dispatching and not live**, so that pairing is the two rails
+composing rather than a case anybody was measured in.
 
 ⛔ **The go has to name something a gate can read back, which one project enforces mechanically** —
 the binding at

@@ -410,9 +410,11 @@ step 6's verdict, and the reply says so.
   check asks about is the local verdicts. ⚠️ **Where neither facet states a verdict the check is
   unanswered**, which is this list's own could-not-be-answered rule below rather than a pass.
 - ⛔ **A check whose answerer is a person is not this role's to answer, and reading the diff is not
-  an answer to it.** Read whatever record already exists — the reviewing role writes one for its own
-  two questions, [`skills/review/`](../review/), and those are not these checks — or hand the check
-  over with its own stop message and the state the change is in.
+  an answer to it.** Read whatever record already exists — the reviewing role writes one about its
+  own pass, [`skills/review/`](../review/), and that is a disclosure rather than an answer to any of
+  these checks — or hand the check over with its own stop message and the state the change is in.
+  ⚠️ **A `done:` check a person answers is not the merge ask either**, and a pass that read the merge
+  answer as covering one has merged on a check nobody answered.
 - ⛔ **And the answer that comes back is written down by this role, on the change, naming who
   answered and what they saw.** ⚠️ **This is the step that is easy to drop**, because the answer
   arrives in conversation and reads as received: a verdict living only in this reply is one the next
@@ -474,17 +476,27 @@ turn off are
   and a person asked before they are established is being asked to license exactly the damage those
   two exist to catch. ⚠️ **None of the four is irreversible**, so nothing is spent by establishing
   them first; a failure among them withdraws the question instead of answering it.
-- ⛔ **It is not the reviewing role's questions**, which are that role's step 9 and its 4a: those ask
-  who reads the change, how far that reading goes, and who runs the plan. This one asks whether the
-  change goes in now, and it is asked by whoever is about to merge.
-- ⛔ **Read that role's record rather than asking for it again**, and say what it holds in the same
-  message as the ask — ⚠️ **including where it records that a reading was declined, quoted rather
-  than summarised.** The person deciding the merge is the person owed what was and was not read; an
-  ask that presents a green gate and omits that nobody read the diff has collected permission for
-  something else.
-- ⛔ **Where the project maps no reviewing role, this ask carries that leg's question too**, and says
-  that the project installs none. The absent-leg rule moves the asker and never the question, so a
-  pass that drops it has made an unmapped role into a reason nobody was asked at all.
+- ⛔ **This is the only question the route puts to a person about its own verification**, so nothing
+  of that kind is asked beside it. The reviewing leg answers its own — the depth it read at, and the
+  plan it ran — and records both rather than stopping for anybody; § The loop states why. ⚠️ **A
+  pass that adds a second verification ask has reintroduced the defect this one exists to close**,
+  measured as a person's own merge authorization left standing behind a further key. ⚠️ **An ask a
+  different section owns is not that** — a spend the person pays for, a dispatch needing their go —
+  and each is made where its own section puts it.
+- ⛔ **Read the reviewing leg's record and say what it holds in the same message as the ask** —
+  ⚠️ **quoted rather than summarised, and the depth with it.** The person deciding the merge is the
+  person owed what was and was not read; an ask that presents a green gate and omits that nobody
+  read the diff has collected permission for something else. ⛔ **That disclosure is what replaced
+  the retired question about who reads the change**, so dropping it leaves the person deciding on
+  less than the old route gave them.
+- ⛔ **Where the project maps no reviewing role, this ask says so**, and this pass answers that
+  leg's own questions about itself and records them before asking. ⚠️ **What moves is the record and
+  never the ask** — there is one ask either way — and a pass that merely notes the absence without
+  writing the record has left the person nothing to decide on.
+- ⚠️ **An ask does not always reach a person as a prompt.** What it becomes depends on how the
+  session is configured to handle one, and the other outcome is a decision taken on their behalf
+  from what they have already said. ⛔ **So say where the change stands in the message *before*
+  asking**, rather than asking and waiting for a prompt that may never arrive.
 - ⛔ **Nothing answering is not a yes.** An ask that reached no person leaves the change open and the
   reply says it is waiting — [`§ 2`](../../config/schema.md#2-code-host)'s rule that absence of
   signal is not an answer, arriving where it is irreversible.
@@ -496,15 +508,17 @@ turn off are
   is not re-asked from scratch in the next. The form and the one command that writes it are
   [`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)'s, which the
   reviewing role's step 9 names; this role writes `merge_now` under the same keying.
+- ⛔ **The answer is recorded as it came back, and `--by` names whoever actually gave it.** ⚠️ **A
+  person's name written against an answer they did not give is a fabricated attestation**, and
+  [`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads) states that no guard
+  can catch one — the column being written by this very pass. ⛔ **So an answer that has not been
+  given is not paraphrased out of anything the person said earlier**: it is asked for.
 - ⛔ **A guard may refuse the merge call itself, and it is not argued with or edited to get past.**
-  Where one is installed it reads the reviewing leg's record and refuses a merge for which the
-  review question has none
+  Where one is installed it reads this very question's record and refuses a merge that has none
   ([`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)), and its refusal
-  already names what would unblock it. ⚠️ **Where the question went to nobody, the answer is still
-  recorded as unanswered** rather than left absent: by
-  [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
-  silence there narrows the assurance and does not hold the change, and a record nobody wrote is
-  what the guard reads as the question never having been asked.
+  already names what would unblock it. ⚠️ **That the guard reads the answer this pass writes is
+  stated on the surface rather than hidden**: what it establishes is that the ask was put, which is
+  the decidable end of it, and never that a person answered.
 
 ⛔ **The method is named in the merge call and read from the configuration, never inferred** —
 [`§ 2 → How a pull request lands`](../../config/schema.md#how-a-pull-request-lands), which states
@@ -683,9 +697,13 @@ sentence, then the facts, with a table where the content enumerates.
 - which of step 8's four pre-merge establishments held, and what each found — the dependents, the
   base, the tree, and whether the tracker answered;
 - **how the merge ask was answered**, where that answer was recorded, and ⛔ **what the reviewing
-  role's record said was read and not read** — including a declined reading, and including that this
-  ask carried the reviewing leg's question where the project maps no reviewing role; ⛔ **an ask
-  nothing answered is reported as unanswered** and the change as still open;
+  role's record said was read and not read** — the depth quoted rather than summarised, a reading
+  nothing could take named with what stopped it, and the fact that this pass wrote that record
+  itself where the project maps no reviewing role; ⛔ **an ask nothing answered is reported as
+  unanswered** and the change as still open;
+- ⛔ **that this was the only verification question put to a person**, said plainly — a reply that
+  leaves it implicit is one a reader cannot tell from a pass that quietly asked more — together with
+  any ask another section owned that this pass also made, named with its section;
 - the method the merge was performed with and that it was read rather than inferred, with what the
   host was found to permit; and which of the three `delete_branch` arms applied, so that a remote
   ref still standing reads as the configuration rather than as a deletion that failed;

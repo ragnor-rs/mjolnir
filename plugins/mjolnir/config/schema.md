@@ -343,9 +343,13 @@ than a reason to trust it.
 **A leg whose role a project does not map, stated per leg rather than generally:**
 
 - ⚠️ **An absent reviewing role skips that leg**, and the first finishing pass continues into the
-  second. ⛔ **What it never skips is the question that leg asks** — the asker moves to the finishing
-  role rather than the question disappearing, which is also why §13 is right to refuse the same
-  question as a configured check.
+  second. ⛔ **What it never skips is the record that leg writes** — what was read, at what depth,
+  and who ran the plan. The finishing role answers those about its own pass, records them, and
+  ⛔ **says in the merge ask that this project maps no reviewing leg**, which is the one fact that
+  changes what the person is deciding. ⚠️ **No question changes hands**: the ask was already the
+  finishing role's. ⛔ **And neither half is a `done:` check a project could configure** — §13
+  refuses both, because a check an adopter answers is either a route's own thoroughness turned down
+  by configuration or a merge licensed by it.
 - ⛔ **An absent finishing role is where the route ends**, not a leg to hand past: nothing else opens
   a change, so implemented work stops there. The starting role says so in its reply, since a route
   that ends silently is the defect this section exists to close.
@@ -354,28 +358,51 @@ than a reason to trust it.
   **No leg treats that reading as authority to skip a question**, by the first bullet.
 
 ⛔ **The route stops to ask where an act is the person's, and asks rather than deciding** — in the
-form [*Nothing is deferred*](#nothing-is-deferred) fixes, which is not restated here. The asks this
-section adds are the two below; ⚠️ **they are not the only ones a pass makes**, the reviewing role
-carrying its own, and no count of a pass's asks is written here.
+form [*Nothing is deferred*](#nothing-is-deferred) fixes, which is not restated here. ⛔ **This
+section adds exactly one, and it is the last act before the irreversible one:**
 
-- **How far the reviewing pass goes**, asked by the reviewing role before it reads the change and
-  after the conversation it reads first — which is not optional, and is what makes the question
-  answerable. ⛔ **The depth is what is asked and never whether the gate runs**: the host's own runs
-  are driven to an answer whatever comes back, and §13's list is the finishing role's either way, so
-  the shallowest answer is a person declining a reading rather than a change admitted unread.
 - **Whether the merge happens now**, asked by the finishing role once everything that would have
   stopped the merge is established and before the merge itself. ⚠️ **Later is an answer rather than
   a failure**: the change stays open, the item stays where it is, and the reply says which.
 
-⛔ **Silence may narrow the work and never license an act, and that is what settles each ask's
-no-answer case.** An ask does not always reach a person. Where the answer would only have reduced
-what a role does, the role proceeds at its fullest and says the question went unanswered; where the
-answer would license something irreversible, silence is not a yes and nothing happens. ⚠️ **So these
-two asks differ in their silence on purpose**, and neither is the deferral the section below
-forbids: nothing is noted for later in either case.
+⚠️ **A stop is not an ask.** A gate that refused, a predicate nothing could answer, a claim another
+session holds — each of those halts the route and reports, and none of them is a question the route
+had the standing to decide for itself.
 
-⛔ **Neither ask is configuration**, for the reason §6 gives for authorship: a project that could
-turn one off is a project whose loop merges unasked. ⛔ **And both answers are recorded rather than
+⚠️ **Other sections add asks of their own, and each is held to the same test as this one** — a
+spend the person pays for
+([§ 19 → What an approval is per](#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs)),
+a dispatch that does not happen without their go
+([§ 29 → A dispatch is the only write](#a-dispatch-is-the-only-write-and-it-carries-its-own-go)),
+a judgement on the host that is theirs to record
+because this route holds the credential that would otherwise clear its own finding. ⛔ **What none
+of those is, and what this section retired, is a question about how thoroughly this route works
+before it reaches the person's act.**
+
+⛔ **Every question narrower than that one is answered by the role that needs it, and recorded.**
+⚠️ **Measured on this repository**: a route that also asked how deep the reading goes, who runs the
+plan, and whether anybody intends to read the diff put a person's own merge authorization behind
+three further keys — and the pass holding one of those answers tried to derive another from it,
+which is the shape of a fabricated attestation rather than of an answer. ⛔ **The questions did not
+disappear, their answerer changed**: the reviewing leg reads at its own standing depth and runs the
+plan itself, and records both, because the merge ask is required to disclose what was and was not
+read. What it no longer does is stop for a person first.
+
+⛔ **The test of whether something may be asked is whether the act is the person's**, and not
+whether their answer would be useful. The merge is theirs. How thoroughly this route works before
+reaching it is the route's own business, and a route that cannot settle that without an
+interruption is unfinished rather than careful.
+
+⛔ **Silence may narrow the work and never license an act, and that is what settles the ask's
+no-answer case.** An ask does not always reach a person, and this one would license something
+irreversible: silence is not a yes, nothing happens, the change stays open and the reply says so.
+⚠️ **That is not the deferral the section below forbids** — nothing is noted for later. ⚠️ **And
+the same rule governs the answers a role now gives itself**, in the other direction: those narrow
+what the role does rather than licensing anything, so the role proceeds at its fullest and records
+the answer it gave.
+
+⛔ **The ask is not configuration**, for the reason §6 gives for authorship: a project that could
+turn it off is a project whose loop merges unasked. ⛔ **And the answer is recorded rather than
 reported**, by the division stated above — a record in a reply is one the next leg cannot read.
 
 ### Nothing is deferred
@@ -2811,32 +2838,59 @@ is the load-bearing half: a bare number names a different change in every reposi
 carries, so an answer recorded against one is an answer no guard can resolve, and the act stays
 refused however it was answered.
 
-The questions an answer is recorded for are the asks
-[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) and the reviewing role
-already state. ⛔ **This is the vocabulary a record is keyed by and not a second statement of those
-asks** — which of them a project's loop reaches, and what each one asks, is settled there:
+The questions an answer is recorded for are the one ask
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) states and the answers the
+reviewing leg gives about its own pass. ⛔ **This is the vocabulary a record is keyed by and not a
+second statement of either** — which of them a project's loop reaches, and what each one asks, is
+settled there:
 
 ```yaml
     recorded_answer:
-      question: review_depth | read_by_a_person | plan_run_by | merge_now
+      question: review_depth | plan_run_by | merge_now
 ```
+
+⛔ **A question outside that list is refused rather than written**, since a record under a name no
+guard resolves is a record that reads as absent at exactly the moment it matters. ⚠️ **That is what
+retires a question**: `read_by_a_person` was in this list, is not now, and an answer offered under it
+is refused with the list named.
 
 ⛔ **`unanswered` is an answer and is written down as one.** Silence may narrow the work and never
 license an act, by the section above, so a question nothing answered is recorded as unanswered —
 and a guard reading that as *no record* would hold a change nothing on the route resumes.
 
-⛔ **The guard on a merge refuses where `read_by_a_person` has no recorded answer.** That is the
-decidable end of *no person has read this*: whether a person read a diff is not a property a
-machine can establish, and whether one was **asked** is.
+⛔ **The guard on a merge refuses where the merge ask has no recorded answer.** That is the ask the
+route puts immediately before the act, so the answer that authorizes the merge and the answer the
+guard reads are one record rather than two.
+
+⚠️ **Keyed on anything else, a guard refuses a merge its own authorization already covers.**
+Measured on this repository: a person authorized a merge, the pass recorded that answer, and the
+guard refused — naming a key about a question nobody had been asked. ⛔ **A guard that a correct
+answer does not satisfy is the guard somebody edits**, which the rule below exists to prevent.
 
 ⛔ **A refusal names what would unblock it.** A guard whose refusal states only that it refused
 leaves the person running the role one route past it, which is editing the guard — and a guard
 edited to get past is a guard nobody ever has to satisfy again.
 
-⛔ **A guard never reads the answer written by the act it guards.** The merge ask is answered
-immediately before the merge, by the pass performing it, so a guard requiring that record would be
-satisfied by the very act it exists to hold. What it reads is the review question's answer, which
-another leg wrote.
+⛔ **What this guard establishes is that the ask was put and answered — never that a person answered
+it.** The `answered by` column is written by the same pass that writes the answer, so what a guard
+reads it off is a claim rather than an attestation. ⚠️ **Stated rather than left implied, because
+the stronger reading is the one a reader takes**, and a mechanism credited with a guarantee it does
+not have is one nobody checks.
+
+⚠️ **The independence a guard reading some other leg's record would have had is available to no
+guard here, under any configuration.** What it reads is the merge ask, and the merging pass is what
+writes that — ⚠️ **and the configuration that looks most like an exception is not one**: where a
+project maps no reviewing role there is no other leg to have written anything at all, since
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) puts that record in the
+finishing pass's own hands too. ⛔ **A guarantee available in no configuration is not one the
+surface claims**, and ⛔ **one that held in only some would not be either** — nothing measures which
+configuration a given project is in. ⛔ **So the surface states what the mechanism has rather than
+what it would prefer**, which is § 2's rule about a run that said nothing, arriving where the
+subject is a guard rather than a check.
+
+⛔ **What holds the `answered by` column is the authorship rule and not this guard.** A pass writing
+a person's name against an answer that person did not give has fabricated an attestation, and that
+is refused wherever it is reachable; this guard cannot check it and does not claim to.
 
 ```yaml
 # procedure: waive_review
@@ -4300,15 +4354,20 @@ absence states itself, and without that statement a decision and an oversight re
 
 **The role that walks this is the finishing one**, at [`skills/finish/`](../skills/finish/), and it
 is that role that **writes** the record a person's answer leaves. ⛔ **The list is not the reviewing
-role's to define**: that role records the verdicts it produced and the answers to its own two
-questions, which are not checks on this list, and a role that decided for itself what any of it
-added up to would be the gate and the record at once.
+role's to define**: that role records the verdicts it produced and the answers it gave about its own
+pass — the depth it read at, and what became of the plan — which are not checks on this list, and a
+role that decided for itself what any of it added up to would be the gate and the record at once.
 
-⚠️ **Whether a person is going to look at the diff is not a check on this list.** The reviewing role
-asks that every pass, as procedure with no setting — along with who runs the change's own plan — so
-a project configuring it here would be asking one question twice, with the two statements allowed to
-disagree. What belongs here is a check a machine *cannot* answer about the work itself, not the
-inspection of the diff.
+⚠️ **How thoroughly the change was read is not a check on this list.** The reviewing leg settles
+that about itself and records it, by
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask), so a project configuring it
+here would be making a route's own thoroughness into something an adopter can turn down. What
+belongs here is a check a machine *cannot* answer about the work itself, not the inspection of the
+diff.
+
+⛔ **Nor is the merge ask a check on this list**, which is the same rule from the other end: it is
+procedure no project configures, and an entry here would let a configuration answer the one question
+that licenses the irreversible act.
 
 ### In progress is not done, and a role that stops mid-list says what is left
 
@@ -6596,10 +6655,12 @@ either being discovered.
 ⛔ **Every dispatch carries a go here, and the narrowing to a live target alone is still not this
 section's.** Which targets are live is **configured and never inferred from a name**, and
 [§ 33](#which-target-and-what-makes-one-live) is where that is now stated — § 21's allowlist names
-machines a session reaches and answers nothing about a run's target. ⚠️ **What that facet decides is
-what an unanswered ask means and not whether one is made**, so the reading here is unchanged: every
-dispatch asks, and a guard that asked only where the surface could already tell would be silent on
-precisely the project that names its deploy after an environment. ⚠️ **That is
+machines a session reaches and answers nothing about a run's target. ⚠️ **The reading here is
+unchanged by it**: this refusal sits on the operation and reads no facet, so every dispatch carries
+a go, and a guard that asked only where the surface could already tell would be silent on precisely
+the project that names its deploy after an environment. ⛔ **Which target the role itself asks about
+is a different question and § 33's**, and the two composing is what leaves a dispatch to a target
+nobody calls live still carrying one. ⚠️ **That is
 [§ 7](#which-direction-a-guard-fails-in)'s direction and
 [§ 21](#the-machines-named-are-the-ones-that-are-not-live)'s inversion**, which § 33 makes for the
 same reason one key over: what is named is what is *not* live.
@@ -7289,14 +7350,19 @@ key or a rule written twice. ⚠️ **The strict direction costs an adopter one 
 catches the case the whole key exists for**: a project that never looked and a project that decided
 read identically otherwise, which is [§ 2](#2-code-host)'s absence-of-signal rule.
 
-⛔ **What `not_live` buys is not whether the go is asked for, which is every target's.** The ask is
-[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)'s and
-[§ 29](#a-dispatch-is-the-only-write-and-it-carries-its-own-go)'s and is made per deploy, for this
-deploy, with a previous go clearing nothing — ⚠️ **measured as the one part every surveyed copy
-had**, and asked unconditionally by five of the seven. What this key decides is **what silence
-means**: on a target that is not live the role proceeds at its fullest and says the question went
-unanswered, and on every other target silence is not a yes and nothing happens. ⚠️ **That is
-§ The loop's own split for an unanswered ask**, read against a key rather than restated.
+⛔ **What `not_live` decides is whether the deploy is the person's act, which is the only test
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) admits for an ask.** A live
+target is reached by an act somebody cannot take back, so the go is asked for **per deploy, for
+this deploy**, with a previous one clearing nothing — ⚠️ **measured as the part every surveyed copy
+had**, and asked unconditionally by five of the seven. A target the entry states is not live is a
+stack the session is the only user of: the act is nobody else's, and ⛔ **a question there is the
+interruption § The loop retired** rather than a rail. ⚠️ **Which is exactly what the two copies
+carrying such a target say** — in as many words, that it is fine to run freely.
+
+⛔ **One exception, and it is the act's rather than this facet's**: a `dispatch` carries a go
+wherever it is made, because [§ 29](#a-dispatch-is-the-only-write-and-it-carries-its-own-go)'s
+refusal sits on the operation and reads nothing here. ⚠️ **No target in the survey is both
+dispatching and not live**, so this is the two rails composing rather than a measured case.
 
 ⚠️ **The two copies that make a target free to run name a machine the session is the only user
 of**, which is what the word has to mean here: every staging environment in the survey is asked

@@ -113,22 +113,25 @@ one role writes and this one collects out of every change the batch carries. ⛔
 run in step 7**, never before the go — and a project whose `body_sections` is `[]` has nothing to
 collect, which is a stated configuration.
 
-## 5. Ask, once, for this deploy
+## 5. Ask, once, where the act is the person's
 
-⛔ **One question, every deploy, whatever the target.** The ask is
-[`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s and
-[`§ 29`](../../config/schema.md#a-dispatch-is-the-only-write-and-it-carries-its-own-go)'s, and
-⛔ **an earlier go clears nothing**: an approval obtained for another ref, another input or another
-batch is not one for this.
+⛔ **One question, for this deploy, and the entry's `not_live` is what decides whether it is put.**
+The test is
+[`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s —
+whether the act is the person's — and
+[`§ 33`](../../config/schema.md#which-target-and-what-makes-one-live) is where this role reads the
+answer. ⛔ **An earlier go clears nothing**: an approval obtained for another ref, another input or
+another batch is not one for this.
 
-**Show, in the question:** the target and whether the entry states it live, what is being deployed,
+| the entry says | what this step does |
+|---|---|
+| `not_live: false` | **asks**, and silence is not a yes: nothing happens, and the reply says the question went unanswered |
+| `not_live: true` | **does not ask** — the session is the only user of what it is about to touch, and a question there is the interruption § The loop retired |
+| any target reached by `dispatch` | **asks regardless**, because § 29's refusal sits on the operation and reads no facet |
+
+**Show, in the question:** the target and that the entry states it live, what is being deployed,
 every item in the batch, every candidate step 4 could not place, and every preparation step still
 owed.
-
-⛔ **What silence means is the entry's `not_live` and nothing else.** On a live target silence is
-not a yes and nothing happens; on a target the entry states is not live the deploy proceeds at its
-fullest and the reply says the question went unanswered. ⚠️ **That is § The loop's own split for an
-unanswered ask**, read against a key rather than decided here.
 
 ⛔ **A go that goes to the port carries what it is for.** Where the shape is `dispatch`, the port
 refuses a go that does not name this workflow, this ref and every input — and ⛔ **the words are

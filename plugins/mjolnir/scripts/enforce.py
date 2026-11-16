@@ -204,14 +204,25 @@ RECORD_COLUMNS = ["question", "answer", "answered by", "answered at"]
 
 # The question a merge is held on, and where the whole vocabulary comes from.
 # ⛔ The name is read out of the surface's own alternation rather than carried
-# here: a role recording `read-by-a-person` would satisfy nothing, and a guard
-# matching a spelling this file invented would be the second statement of a
-# vocabulary the surface already publishes.
+# here: a role recording `merge-now` would satisfy nothing, and a guard matching
+# a spelling this file invented would be the second statement of a vocabulary the
+# surface already publishes.
 #
 # ⚠️ The spelling below is the one the guard matches, and `--self-test` asserts
 # the surface still states it. That is the bargain every citation of the surface
 # makes: one name, held by a run rather than by whoever edits either file.
-MERGE_QUESTION = "read_by_a_person"
+#
+# ⛔ This is the ask the route puts to a person immediately before the merge, and
+# that is the point rather than an accident of which key was free. A guard keyed
+# on any other question refuses a merge the person has already authorized --
+# measured, and the reason the key moved here from `read_by_a_person`, which the
+# surface has since retired from the alternation entirely.
+#
+# ⚠️ What this guard therefore establishes is that the ask was put and answered,
+# never that a person answered it: the `answered by` cell is written by the same
+# pass that writes the answer. § 7 states that bound rather than implying the
+# stronger one, and what holds that cell honest is the authorship rule.
+MERGE_QUESTION = "merge_now"
 QUESTION_VOCABULARY = "recorded_answer.question"
 
 # A change named the way the record is keyed. ⛔ The repository is part of the
@@ -796,10 +807,13 @@ def merge_guard(config, command: str, *, host=None) -> dict:
     # copy of the plugin the session actually loaded.
     return _deny(
         f"This command merges {slug}#{number}, and no answer to `{MERGE_QUESTION}` is "
-        f"recorded on it ({RECORD_CITATION}). ⛔ The question is whether a person is going to "
-        "read this diff, and it is procedure rather than a setting — nobody is going to look "
-        "is an answer, and so is unanswered. What unblocks this is the answer written onto "
-        f"the change:\n  python3 {Path(__file__).resolve()} record \\\n"
+        f"recorded on it ({RECORD_CITATION}). ⛔ The question is whether this change goes in "
+        "now, put to a person once everything that would have stopped the merge is "
+        "established — and it is procedure rather than a setting, so *later* is an answer and "
+        "so is unanswered. ⛔ Ask it before recording it: an answer written on somebody's "
+        "behalf is a fabricated attestation, which is the one thing this record may not "
+        f"carry. What unblocks this is their answer written onto the change:\n"
+        f"  python3 {Path(__file__).resolve()} record \\\n"
         f"    --change {slug}#{number} --question {MERGE_QUESTION} \\\n"
         "    --given '<the answer as it came back>' --by '<who answered>'"
     )
@@ -2488,12 +2502,12 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         # --- the record ---------------------------------------------------
         out.append("")
         out.append("A recorded answer round-trips through the form the surface states:")
-        body = record_body(MERGE_QUESTION, "nobody is going to look | by their decision",
+        body = record_body(MERGE_QUESTION, "yes, merge it | nobody is going to read it",
                            "a-person", "2026-01-01T00:00:00Z")
         read = answers_in(body)
         check("exactly one answer is read back", len(read) == 1, repr(read)[:140])
         check("and the answer carrying a pipe survives it",
-              read and read[0]["answer"] == "nobody is going to look | by their decision",
+              read and read[0]["answer"] == "yes, merge it | nobody is going to read it",
               repr(read)[:140])
         check("and the question and the answerer come back as written",
               read and read[0]["question"] == MERGE_QUESTION
@@ -2517,11 +2531,19 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               write_record("7", MERGE_QUESTION, "yes", "a-person", "x")[1] == 2)
         # ⛔ The vocabulary is the surface's, so a near-miss spelling is refused
         # rather than written under a name no guard reads.
-        refused, status = write_record("an-owner/a-repository#7", "read-by-a-person", "yes",
+        refused, status = write_record("an-owner/a-repository#7", "merge-now", "yes",
                                        "a-person", "x")
         check("a question outside the surface's own list is refused", status == 2)
         check("and the refusal names the list it is not in",
               MERGE_QUESTION in refused, refused[:140])
+        # ⛔ A retired question is refused by the same arm and for the same
+        # reason, which is what retiring one means here: `read_by_a_person` was
+        # in the alternation, the surface has taken it out, and an answer still
+        # offered under it is a record no guard would ever resolve.
+        retired, status = write_record("an-owner/a-repository#7", "read_by_a_person", "yes",
+                                       "a-person", "x")
+        check("and a question the surface retired is refused like any other", status == 2,
+              retired[:140])
 
         # ⛔ The write arm reaches the host only through the runner handed to it,
         # and this is the one assertion that exercises the whole of it. ⚠️ Every
@@ -2535,14 +2557,14 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             return 0, "an-address-the-host-printed"
 
         printed, status = write_record("an-owner/a-repository#7", MERGE_QUESTION,
-                                       "nobody is going to look", "a-person",
+                                       "yes, merge it now", "a-person",
                                        "2026-01-01T00:00:00Z", run=_records)
         check("a well-formed record is written, and the arm says where", status == 0
               and "an-owner/a-repository#7" in printed, printed[:140])
         check("and what reached the host parses back as the answer that was given",
               len(sent) == 1
               and recorded_answer(sent, MERGE_QUESTION) is not None
-              and recorded_answer(sent, MERGE_QUESTION)["answer"] == "nobody is going to look",
+              and recorded_answer(sent, MERGE_QUESTION)["answer"] == "yes, merge it now",
               repr(sent)[:160])
         check("and the guard allows a merge on exactly that comment",
               guard_answer(_call("gh pr merge 7"), config=_a_config([]), now=1000.0,
@@ -2567,15 +2589,27 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             check(f"{label}: and the refusal names what would unblock it",
                   "--question" in reason(answered) and MERGE_QUESTION in reason(answered),
                   reason(answered)[:160])
-        recorded = [record_body(MERGE_QUESTION, "a person is reading it", "a-person",
+        recorded = [record_body(MERGE_QUESTION, "yes, merge it now", "a-person",
                                 "2026-01-01T00:00:00Z")]
-        check("allowed once the answer is on the change",
+        check("allowed once the person's own merge answer is on the change",
               guard_answer(_call("gh pr merge 7"), config=config, now=1000.0,
                            store=fresh("merge"), host=_a_host(comments=recorded)) == {})
-        other = [record_body("merge_now", "yes", "a-person", "2026-01-01T00:00:00Z")]
-        check("and still refused where only the merge ask was recorded, which this act writes",
+        # ⛔ The pair this guard turns on, and the state no fixture reproduced
+        # while the key was `read_by_a_person`: an answer under the retired
+        # question does not unblock the merge, and one under the live question
+        # does. ⚠️ A guard still reading the retired key passes the first of
+        # these and refuses the second -- which is the refusal that was measured
+        # on a person who had already authorized the merge, and the whole reason
+        # the key moved.
+        retired_only = [record_body("read_by_a_person", "nobody is going to look", "a-person",
+                                    "2026-01-01T00:00:00Z")]
+        check("and refused where only the retired question was answered",
               denied(guard_answer(_call("gh pr merge 7"), config=config, now=1000.0,
-                                  store=fresh("merge"), host=_a_host(comments=other))))
+                                  store=fresh("merge"), host=_a_host(comments=retired_only))))
+        check("and that refusal names the live question rather than the retired one",
+              MERGE_QUESTION in reason(guard_answer(
+                  _call("gh pr merge 7"), config=config, now=1000.0,
+                  store=fresh("merge"), host=_a_host(comments=retired_only))))
         check("a record that could not be read is refused, not read as absent",
               denied(guard_answer(_call("gh pr merge 7"), config=config, now=1000.0,
                                   store=fresh("merge"), host=_a_host(code=1))))

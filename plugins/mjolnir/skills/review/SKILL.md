@@ -146,52 +146,45 @@ decisions were respected. The acceptance check for this role is that the pass re
 
 ## 4. The review itself
 
-**4a. How far this pass goes, asked before the change is read.** ⛔ **Asked rather than assumed**,
-and ⛔ **asked before the diff is read** — a question put afterwards is a reading already spent, and
-the answer could then only license what has already happened. ⚠️ **It comes after step 3 and not
-before it**: the conversation is read whatever the answer here, and a question asked with none of
-that context is one nobody can answer well. That this leg asks at all, and the form the question
-takes, are
+**4a. How far this pass goes — decided here and recorded, never asked.** ⛔ **This role reads at the
+deepest reading available to it**, so the depth is a fact about what it did rather than a permission
+it collected. ⚠️ **It is settled after step 3 and not before it**: the conversation is read first at
+every depth, and a reading taken without that context is one nobody can weigh. That this leg asks a
+person nothing, and why, are
 [`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s.
 
-| the answer | what this role does about the diff | what it costs |
+| the depth recorded | what this role did about the diff | when it is that depth |
 |---|---|---|
-| **delegated**, the recommended answer | 4b whole, the project's own reviewing carrier beside this role's own read | the most window and wall-clock; the only answer carrying an independent check on this role's reading |
-| **quick** | 4b read by this role alone, with no delegated pass beside it | cheap; one reader, and no second lens on what that reader does not see |
-| **skip** | 4b is not run: the diff is not read here, and no finding is raised from a reading | cheapest; the change reaches the gate with nobody having read it, and the record says so |
+| **delegated** | 4b whole, the project's own reviewing carrier beside this role's own read | the standing case, wherever the project has a reviewing carrier |
+| **quick** | 4b read by this role alone, with no delegated pass beside it | where the project has no reviewing carrier of its own — ⚠️ a capability absent, reported the way [`§ 3`](../../config/schema.md#the-operations-and-what-an-absent-capability-does) reports one, never two depths silently collapsing into one |
+| **skip** | 4b did not run: the diff was not read here, and no finding is raised from a reading | ⛔ **only where something stopped the reading**, which is named in the record and in the reply — never a depth this role selects for cheapness |
 
-⛔ **This question governs 4b and nothing else. Steps 5 to 12 run unchanged on every answer** — the
-fixes, the change's own plan, the threads, the gate, step 9's questions and the record. ⚠️ **Step 5
-is not switched off by `skip`**: step 6 routes a failed plan item back into it and step 8 routes a
-red there, and neither of those findings comes from a reading of the diff.
+⛔ **The depth is not a person's to set, and this role does not stop to collect one.** § The loop
+rules that every question narrower than the merge is answered by the role that needs it: how
+thoroughly this route works before the merge is the route's own business, and the measured cost of
+asking was a person's own merge authorization left sitting behind a further key. ⛔ **What the person
+is owed is the record**, which step 9 writes and which the finishing role's merge ask is required to
+disclose.
 
-- ⛔ **There is no default here, because the question can only narrow what this role already owes.**
-  The deepest answer is this role's standing obligation, so an ask that reaches nobody leaves
-  **delegated** in force — not a default picked on the person's behalf but an obligation nobody
-  lifted, which is
-  [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s
-  rule that silence may narrow the work and never license an act. ⛔ **The reply says the question
-  went unanswered**, rather than reporting an answer nobody gave.
-- ⛔ **`skip` is a person declining a reading and is never a waiver.** This role waives nothing, so
-  step 8's machine tiers are still driven to an answer, and the answer here is **recorded under
-  step 9's rule** — ⛔ **written where the next leg reads, not only into the reply**, because the
-  finishing role is required to carry it into the merge ask.
-- ⛔ **Where 4b did not run, this role recommends a person's eyes at 9b and may not recommend
-  otherwise.** Step 9 states what makes a merge without them defensible, the diff read adversarially
-  among it — so a pass that never read the diff has no ground to tell anybody nobody needs to look.
-  The person may still decide otherwise, and that is their decision recorded rather than this
-  role's.
-- ⛔ **It is neither of step 9's questions, and answers neither.** 9a asks who *runs the plan*; 9b
-  asks whether a **person** is going to look, of a person about themselves. ⚠️ **9a is put at the
-  same moment as this one**, as two parts of one question: they decide the same thing about the same
-  pass, both must be asked before their own act, and asking them apart spends two interruptions on
-  one decision.
+⛔ **The depth governs 4b and nothing else. Steps 5 to 12 run unchanged at every depth** — the
+fixes, the change's own plan, the threads, the gate, and step 9's record. ⚠️ **Step 5 is not
+switched off by `skip`**: step 6 routes a failed plan item back into it and step 8 routes a red
+there, and neither of those findings comes from a reading of the diff.
+
+- ⛔ **`skip` is never a waiver and never a saving.** This role waives nothing, so step 8's machine
+  tiers are driven to an answer at every depth — and ⛔ **a `skip` is a stop reported with what
+  stopped it**, not an outcome this pass may simply arrive at. A pass that could read the diff and
+  did not has not reviewed the change.
+- ⛔ **Where 4b did not run, the record says so in those words and the reply leads with it.** Step 9
+  states what makes a merge without a person's eyes defensible — the diff read adversarially among
+  it — so a pass that never read the diff has nothing to offer the merge ask but the fact that it
+  did not read.
+- ⛔ **The depth is recorded, not merely reported** — ⛔ **written where the next leg reads, and not
+  only into the reply** — because the finishing role is required to carry it into the merge ask. A
+  depth that reached no record is a reading the merging leg cannot disclose.
 - ⚠️ **Delegated does not replace this role's own read.** The two measured reasons below are why a
-  delegated pass that found nothing is not a verdict, and a person choosing delegation does not
-  weaken either of them. ⚠️ **Where the project has no reviewing carrier of its own**, `delegated`
-  and `quick` are the same pass — reported as a capability absent, the way
-  [`§ 3`](../../config/schema.md#the-operations-and-what-an-absent-capability-does) reports one,
-  rather than two answers silently collapsing into one.
+  delegated pass that found nothing is not a verdict, and the depth being this role's to set rather
+  than a person's weakens neither of them.
 
 **4b. The diff.** ⛔ **Unless 4a came back `skip`, the diff is read here, whatever else also reads
 it.** Where the project has a reviewing carrier of its own it is invoked and its findings are taken
@@ -598,52 +591,54 @@ the person's call where the cost is theirs**, and the ask is recorded with the a
 other.** A green gate with an unticked plan is not a verified change, and a ticked plan with no gate
 answer is not one either.
 
-## 9. The two questions
+## 9. The two answers this role records
 
-⛔ **Two things are asked and never assumed, each at the moment of the act, and ⛔ neither is a way
-past a rule that has already refused something.** One copy carried both and separated them in a
-sentence worth keeping: *this question is who runs the items; that one is who looks at the result* —
-and **only the second is declinable**.
+⛔ **Two things are settled here and never assumed, each at the moment of the act, and ⛔ neither is
+a way past a rule that has already refused something.** One copy carried both and separated them in
+a sentence worth keeping: *this question is who runs the items; that one is who looks at the
+result*. ⛔ **Both are this role's own to answer**, by
+[`§ The loop → What carries the item forward`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask):
+the only act on this route that is a person's is the merge, so every question narrower than it is
+answered by the role that needs it and written down.
 
-**9a. Who runs the plan.** ⛔ **Asked before a single item of step 6 is executed**, which ⛔ **in
-practice means asked with 4a, as the second part of one question** — the two decide the same thing
-about the same pass, and put separately they spend two of a person's interruptions where one would
-do. The plan is the part of the verification a person might want to make themselves, and running it
-unasked spends that observation silently and in this role's favour.
+**9a. Who runs the plan — this role does.** ⛔ **Every item of step 6 is executed by this pass**,
+and the observation for each is this role's to produce. ⚠️ **It was an ask and is not one**: the
+plan is the part of the verification a person might have wanted to take themselves, and the measured
+cost of offering it was an interruption spent on a question this route can answer, ahead of the one
+it cannot.
 
-| the answer | what this role does |
-|---|---|
-| this role runs it | step 6 whole, then 9b |
-| the items are theirs | ⛔ **the machine tiers of step 8 run anyway**, then step 10 — nothing is ticked, nothing is recorded as inspected, and the pass ends there |
+⛔ **A plan this role could not run is a stop naming what stopped it, never a hand-over taken by
+default** — step 10. ⚠️ **The two records differ and only one of them is true**: *the items were
+somebody else's* and *the items could not be run here* are different facts, and a pass that writes
+the first because the second happened has handed over work nobody accepted.
 
-⛔ **The question covers the plan and never the machine tiers.** Handing a machine reading a machine
-to a person spends their attention on the one part that needed none of it, and the answer would
-decide whether the change's own suites were ever executed at all.
+⛔ **The answer covers the plan and never the machine tiers.** The machine tiers of step 8 are
+driven to an answer whatever becomes of the plan, and a pass reporting a plan it did not run has
+ticked nothing.
 
-**9b. Whether a person is going to look.** ⛔ **Asked every pass, never assumed in either
-direction**, in the form [*Nothing is
-deferred*](../../config/schema.md#nothing-is-deferred) states — the question, the options, what each
-costs, **and which this role recommends**. ⚠️ **Merging unasked and holding a change nobody intends
-to look at are the same failure**, and the question is the only thing that separates them.
+**9b. Whether a person is going to read the diff — not asked, and no longer recorded.** ⛔ **This
+role asks nobody whether they intend to look.** The question is gone from
+[`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)'s vocabulary rather than
+moved to another asker, and an answer offered under its old key is refused. ⚠️ **What replaced it is
+the disclosure**: the finishing role's merge ask states what this pass read and did not read, quoted
+from the record 4a and 9a wrote, and the person deciding the merge decides it knowing that.
 
-⛔ **The question is reached only once nothing has stopped the change.** Every thread answered, every
+⛔ **The record is reached only once nothing has stopped the change.** Every thread answered, every
 finding fixed, every plan item ticked by an observation, the host's runs an answer and green, no
-check reported unrun. *Nobody needs to look* is permission to skip a person's eyes and never
-permission to skip a check — a pass that asks early and treats the answer as authority has collected
-permission to wave a red through.
+check reported unrun. ⛔ **A shallow reading is never permission to skip a check** — a pass that
+settles its depth early and treats it as authority has licensed itself to wave a red through.
 
 ⛔ **A pass this session ran is evidence, never approval.** This role holds the same credential a
 person reviews with, so a review it posted itself is indistinguishable on the host from one it did
-not. ⛔ **So both grounds are stated rather than one**: what the checks say, *and* that no person has
-read the diff. What makes a merge without a person's eyes defensible is steps 3 to 6 having actually
-happened — the conversation read, the diff read adversarially, each finding reproduced, each item
-observed. A pass that ticked a plan without reading the diff has no review to merge on, and *nobody
-wanted to look* supplies none.
+not. ⛔ **So both grounds are recorded rather than one**: what the checks say, *and* at what depth
+this pass actually read. What makes a merge without a person's eyes defensible is steps 3 to 6
+having happened — the conversation read, the diff read adversarially, each finding reproduced, each
+item observed. A pass that ticked a plan without reading the diff has no review to merge on, and
+nothing this role writes supplies one.
 
-⚠️ **An ask does not always reach a person as a prompt.** What it becomes depends on how the session
-is configured to handle one, and the other outcome is a decision taken on their behalf from what
-they have already said. ⛔ **So say where the change stands in the message *before* asking**, rather
-than asking and waiting for a prompt that may never arrive.
+⚠️ **Merging unasked and merging on a review nobody disclosed are the same failure.** The merge ask
+is what separates them, and it belongs to the finishing role — so what this step owes that ask is a
+record honest enough to put in front of a person.
 
 ⛔ **Where a gate reads the answer, the question's own phrasing is the matched artifact.** Measured
 on one copy: its recorder keys the answer by repository and number, and its guard refuses the merge
@@ -652,10 +647,10 @@ the merge blocked no matter how it was answered. ⛔ **Name the change the way t
 repository included: a bare number names a different change in every repository the route carries.
 
 ⛔ **The answers are written where something else can read them, not only into this reply** —
-⛔ **this step's two, and 4a's depth answer with them.** The depth answer is here because this is
-the only rule in this file that says *where* an answer goes, and because the finishing role is
-required to carry it into the merge ask: a declined reading that reached no record is a declined
-reading the merging leg cannot disclose.
+⛔ **9a's, and 4a's depth with it.** The depth is recorded here because this is the only rule in
+this file that says *where* an answer goes, and because the finishing role is required to carry it
+into the merge ask: a reading that reached no record is a reading the merging leg cannot disclose,
+and a merge ask that cannot disclose it is one a person answers on less than they were owed.
 [`§ 11`](../../config/schema.md#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it)
 rules that the next role reads what this one wrote, and a window is summarised without being asked.
 ⛔ **So the answer goes where the next role and a hook can actually reach it** — which an artifact
@@ -674,14 +669,21 @@ and the question names which ask is being answered:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/enforce.py" record \
-  --change <owner>/<repository>#<number> --question read_by_a_person \
-  --given "<the answer as it came back>" --by "<who answered>"
+  --change <owner>/<repository>#<number> --question review_depth \
+  --given "<the depth this pass read at>" --by "<this role>"
 ```
 
-⚠️ **4a's depth answer and 9a's go through the same command under their own questions**, which § 7
+⚠️ **4a's depth and 9a's answer go through the same command under their own questions**, which § 7
 states the vocabulary for. ⛔ **An answer this role reports and does not record is the one failure
 this whole step exists to prevent**, and the guard on the merge is what makes it visible rather than
 silent.
+
+⛔ **`--by` names this role on both of these records, and never a person.** This role answered them,
+so naming anyone else is a fabricated attestation — and
+[`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads) states plainly that no
+guard can catch one, the column being written by whichever pass writes the answer. ⚠️ **So the rule
+is held where the record is written, which is here**, and it is the same rule in the other
+direction as the one that sends the merge ask to a person rather than letting this route answer it.
 
 ⚠️ **A host's mergeability field does not say whether an uninspected change can be merged** —
 measured on one reporting itself mergeable while its own state word said otherwise. ⛔ **Read the
@@ -691,12 +693,19 @@ file's
 ([`§ 2 → What a trigger states`](../../config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref))
 — so the runs are re-read afterwards rather than assumed to be the ones step 8 saw.
 
-## 10. Where the plan or the look is the person's
+## 10. Where the plan could not be run here
 
-An outcome, ⛔ **not a stop with a finding** and not a failed pass: the change is simply not verified
-yet, and reporting it as a failure misreads it. ⛔ **Nothing is ticked, nothing is recorded as
-inspected, and the pass ends there** — a pass that writes a verdict it did not produce is the one
-thing this step must not do.
+⛔ **Reached only where running it here was not possible**, and never because this pass preferred to
+hand it over: 9a makes the plan this role's to run. A tier this tree cannot stand up, a surface only
+a person can reach, an item whose observation needs access this role does not have — each is this
+step, ⛔ **and each is named as what it was.**
+
+⚠️ **The change is simply not verified yet**, which is neither a finding nor a failed pass, and
+reporting it as either misreads it. ⛔ **Nothing is ticked, nothing is recorded as inspected, and
+the pass ends there** — a pass that writes a verdict it did not produce is the one thing this step
+must not do. ⛔ **And the record says the plan could not be run here, with the reason**, never that
+somebody else was asked to run it: nobody was asked, and a record saying otherwise invents a
+hand-over that no person accepted.
 
 ⛔ **What is written is instructions somebody can follow, not a summary of what would have been
 checked.** They are about to do the work this role would have done, so they need what it would have
@@ -731,15 +740,17 @@ silence.
 
 | | |
 |---|---|
-| **This role** | conducts the review, reproduces and fixes what it finds, drives the change's plan, answers the threads, drives the host's runs to an answer, and **records** the verdicts and the answer to every ask it made — 4a's depth and step 9's two |
+| **This role** | conducts the review, reproduces and fixes what it finds, drives the change's plan, answers the threads, drives the host's runs to an answer, and **records** the verdicts together with the answers it gave about its own pass — 4a's depth and 9a's. ⛔ It puts no question to a person |
 | **The finishing role** | the merge, reading it back from state, the item's move through the port, and the tree released — [`skills/finish/`](../finish/) |
 | **A hook** | **refusing** an act on what the record says: a merge with no recorded answer, a local check the host has already run, a resource over its cap — [`§ 7 → What a hook refuses`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads), which also fixes the form an answer is recorded in and how it is keyed |
 
 ⛔ **The division is that procedure produces a record and enforcement reads it.** A role that
 assumes it owns the gate fights the hooks; a role that assumes a hook will stop it skips the record
-the hook reads. ⚠️ **So both questions of step 9 are asked whether or not a hook is installed** —
-where one is, the answer is what unblocks it; where none is, the answer is the whole of the record,
-and the reply says which of the two situations it was in.
+the hook reads. ⚠️ **So step 9's answers are recorded whether or not a hook is installed** — ⛔ and
+neither of them is what unblocks a merge here. The guard reads the merge ask, which is the finishing
+role's and a person's; what this role writes is the disclosure that ask is answered on. ⚠️ **Where
+no hook is installed the record is the whole of it**, and the reply says which of the two situations
+it was in.
 
 ⛔ **A hook that refuses something is not argued with and not edited to get past.** Report the
 refusal as it came back, including when it is this role's own act that was refused — and ⛔ **the
@@ -755,9 +766,9 @@ sentence, then the facts, with a table where the content enumerates. It is not h
 [`§ 8 → Prose line width`](../../config/schema.md#prose-line-width), which binds every surface this
 role writes to: the change's body, a review comment, and this reply.
 
-- the verdict, first line: green and waiting on a person · green and nobody is going to look ·
-  green and **the diff read by nobody, by the person's decision** · the plan handed over · held,
-  and why;
+- the verdict, first line: green and **read at depth `delegated`** · green and **read by this role
+  alone**, the project having no reviewing carrier · green and ⛔ **the diff not read, with what
+  stopped the reading** · the plan unrunnable here, with the reason · held, and why;
 - what was read in step 3, as counts, and which prior decisions were respected;
 - every finding, whether it was reproduced, whether it is firing, what was done about it, and the
   commit that did it;
@@ -768,8 +779,11 @@ role writes to: the change's body, a review comment, and this reply.
   did not run, said as not run** rather than omitted, with what it was waiting on, and every skip
   named apart from the count;
 - every environment failure, as such, and that it consumed no fix cycle;
-- how each ask was answered — 4a's depth and step 9's two — where each answer was recorded, and
-  ⛔ **any of them that nothing answered, said as unanswered** rather than reported as an answer;
+- what this role answered about its own pass — 4a's depth and 9a's — and where each was recorded;
+  ⛔ **and that no question about this pass's own thoroughness was put to a person**, said rather
+  than left to be noticed, since that ask is the finishing role's; ⚠️ **an ask another section owns
+  — a spend, a dispatch's go, a thread this role may not resolve — is reported as that one**, with
+  its section named, and is not this bullet;
 - whether any exclusive resource is still held, and by what;
 - on a hand-over: the instructions themselves, and plainly that nothing was ticked, nothing was
   recorded as inspected and nothing was merged;
@@ -795,10 +809,10 @@ enters it.
 - ⛔ **Held, handed over, or stopped on a refusal, this role enters nothing** and says what the
   change is waiting on instead. A pass that enters the merging leg on anything but a recorded
   review has handed a red forward dressed as a verdict.
-- ⛔ **An unanswered 9b is recorded as unanswered and does not hold the change.** By
+- ⛔ **Nothing this role records holds the change, and none of it waits on anybody.** By
   [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
-  silence may narrow the work and never license an act: no person reading the diff is less assurance
-  rather than more, so the record says nobody has read it and none is expected, and the leg is
-  entered. ⚠️ **Waiting here instead would strand the change where nothing resumes it** — no leg is
-  entered on *an open change with an unanswered question* — and the merging leg's own ask is where
-  silence does stop things, which is the one place it can stop them safely.
+  this leg puts no question to a person, so there is no answer for it to be waiting on: the depth it
+  read at and the plan it ran are written down and the next leg is entered. ⚠️ **Waiting here would
+  strand the change where nothing resumes it** — no leg is entered on *an open change with an
+  unanswered question* — and the merging leg's own ask is where silence does stop things, which is
+  the one place it can stop them safely.
