@@ -88,6 +88,11 @@ statuses: []
 # writes exactly this and the two have to read apart.
 reversals: []
 
+# § 33. Empty for the same reason, read one axis over: a project with no work item has nothing
+# for a batch to be made of, and a project with nothing to put anywhere has no target. ⚠️ Stated
+# rather than derived from the two empty lists above, by the rule this surface opens with.
+deploy: []
+
 readiness:
   # An empty gate is legitimate too: there is no item to gate.
   []

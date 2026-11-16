@@ -1252,6 +1252,29 @@ def _command_root_facet(data: dict, roots: dict[str, dict]) -> None:
             "not work at all.",
         )
 
+    # § 33's reference into the same union, and here for the same reason § 17's
+    # is: `deploy` is a project-level key, so a target legitimately names a root
+    # the view being validated does not carry -- refused per view, a correct
+    # configuration would be refused once per sibling root. ⛔ Everything else
+    # about an entry is `_validate_deploy`'s; what is left here is the one arm no
+    # view can answer.
+    targets = _absent_as(_get(data, "deploy"), [])
+    if not isinstance(targets, list):
+        return
+    for index, entry in enumerate(targets):
+        if not isinstance(entry, dict):
+            continue
+        stated = entry.get(COMMAND_ROOT_REF)
+        if not isinstance(stated, str) or stated in union:
+            continue
+        raise ConfigError(
+            f"deploy[{index}].{COMMAND_ROOT_REF}",
+            f"names the command root {stated!r}, which no code root declares. "
+            f"The project declares {', '.join(repr(k) for k in union) or 'none'} "
+            "(§ 1). A deploy whose root nothing carries is a stop naming the "
+            "root, never a command retried at the code root.",
+        )
+
 
 # § 4.8's keys on one grouping, read off the surface's own single-form fence
 # rather than listed here -- ⛔ the division `per_root` already has one section
@@ -2756,6 +2779,20 @@ class Config:
                 "tracker's own automation, which this reports nothing about "
                 "(§ 32)."
             )
+        # § 33, and the stated absence of a list for the reason § 32's above is:
+        # `[]` is the behaviour the procedure had before the facet existed, so
+        # what the key buys is the difference between a project that deploys
+        # nothing and one that never looked. ⛔ Reported as no target rather than
+        # as no deploy -- a project may well deploy by hand, which this reports
+        # nothing about, and that is the case the facet exists against.
+        if not self.get("deploy"):
+            out.append(
+                "No deploy target is stated (`deploy: []`), so the deploy role "
+                "stops with this key named and nothing here is deployed through "
+                "the procedure. ⛔ Not an absence of signal: the project states "
+                "it, and it says nothing about a deploy somebody makes by hand "
+                "(§ 33)."
+            )
         if not self.get("readiness"):
             out.append("The readiness gate is empty, so there is nothing to gate.")
         if not self.get("done"):
@@ -4134,6 +4171,229 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
 # consumer spelling the key itself would be a second reading of one form, free
 # to disagree with the walk every consumer loads the facet through.
 EXCLUDING = "excluding"
+
+
+def _validate_deploy(
+    data: dict, facts: dict, mapped_roles: set, workflows: set[str]
+) -> None:
+    """§ 33's entries, which no marker on the surface can reach.
+
+    Requiredness of the list itself is marked and answered before this runs;
+    what each entry has to *be* is here, which is the division § 31 and § 32
+    already have.
+
+    ⛔ **Every arm refuses rather than skipping**, and the direction is the one
+    this facet exists for: a target whose liveness a reader could not make sense
+    of is a target deployed without the one rail between a routine command and a
+    write somebody cannot take back.
+    """
+    targets = _absent_as(_get(data, "deploy"), [])
+    if not isinstance(targets, list):
+        raise ConfigError(
+            "deploy", "must be a list; `[]` where this project deploys nothing (§ 33)."
+        )
+    shapes = vocabulary(facts, "deploy.invoke", "a deploy invocation shape")
+    roles = vocabulary(facts, "role", "a deploy target's advance")
+    # ⛔ Read off the surface's own entry fence rather than listed here, which is
+    # the division § 4.8's key walk already has: a key added to that fence is
+    # accepted with no edit in this module, and a literal here would be a second
+    # statement of the fence free to disagree with it.
+    declared = {
+        path.split(".", 1)[1]
+        for path in facts["declared"]
+        if path.startswith("deploy.")
+    }
+    if not declared:
+        raise ConfigError(
+            "deploy",
+            "the surface declares no key under this one, so an entry could be "
+            "held to nothing. § 33 states the entry's keys in a fence of its own, "
+            "and a surface that has lost it is refused rather than read as "
+            "permitting anything.",
+        )
+    seen_names: dict[str, int] = {}
+    for index, entry in enumerate(targets):
+        where = f"deploy[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where, "must be a mapping; a target states at least a name, "
+                "whether it is live, and what reaching it invokes (§ 33)."
+            )
+        # ⛔ Refused with its own name, which is § 1's rule for a named root's
+        # blocks one facet over: a key this section does not declare is a fact
+        # about the target that nothing reads, written where somebody would
+        # expect it to be read.
+        for stated_key in entry:
+            if stated_key not in declared:
+                raise ConfigError(
+                    f"{where}.{stated_key}",
+                    "is a key § 33 does not declare on a deploy target, so it is "
+                    "a fact about the target that nothing reads. The keys it "
+                    f"declares are: {', '.join(sorted(declared))}.",
+                )
+        name = entry.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ConfigError(
+                f"{where}.name",
+                "required, and a non-empty string (§ 33). It is the word a deploy "
+                "of this target is asked for by.",
+            )
+        if name in seen_names:
+            raise ConfigError(
+                f"{where}.name",
+                f"is {name!r}, which deploy[{seen_names[name]}] already names "
+                "(§ 33). A deploy is asked for by this word, so two targets "
+                "carrying one name leave the ask undefined.",
+            )
+        seen_names[name] = index
+        # ⛔ Boolean, and read for neither truth nor presence -- § 1's rule for
+        # `code_root_runs_nothing`, arriving at the key where getting it wrong is
+        # worst. Read as truthy, `false` spelled as a word would make a live
+        # target not live; read as presence, the key written `false` would do it
+        # too, and the failure is silent in both directions.
+        if "not_live" not in entry:
+            raise ConfigError(
+                f"{where}.not_live",
+                "required (§ 33). A target is live unless the configuration says "
+                "it is not, and the key is required rather than defaulted because "
+                "a project that never looked and a project that decided read "
+                "identically otherwise.",
+            )
+        if not isinstance(entry["not_live"], bool):
+            raise ConfigError(
+                f"{where}.not_live",
+                f"is {entry['not_live']!r}; it must be `true` or `false` written "
+                "as a boolean (§ 33). A word read as truthy would make a live "
+                "target not live.",
+            )
+        shape = entry.get("invoke")
+        if shape is None:
+            raise ConfigError(f"{where}.invoke", "required (§ 33).")
+        if shape not in shapes:
+            raise ConfigError(
+                f"{where}.invoke",
+                f"is {shape!r}; the surface states {' | '.join(shapes)}.",
+            )
+        # ⛔ Both directions, per key: a key the shape needs and the entry does
+        # not state, and a key the entry states and the shape never reads. The
+        # second is the one a reader is tempted to tolerate, and tolerating it is
+        # how a project comes to carry a ref beside a command that takes none --
+        # a fact nothing reads, written where a reader would expect it to.
+        for key, read_by, required_by in (
+            ("command", {"command"}, {"command"}),
+            ("command_root", {"command"}, set()),
+            ("workflow", {"dispatch", "by_hand"}, {"dispatch", "by_hand"}),
+            ("ref", {"dispatch", "by_hand"}, {"dispatch", "by_hand"}),
+            ("inputs", {"dispatch", "by_hand"}, set()),
+        ):
+            if key in entry and shape not in read_by:
+                raise ConfigError(
+                    f"{where}.{key}",
+                    f"is stated beside `invoke: {shape}`, which never reads it "
+                    f"(§ 33). It is read by {' and '.join(sorted(read_by))}.",
+                )
+            if shape in required_by and key not in entry:
+                raise ConfigError(
+                    f"{where}.{key}", f"required where `invoke` is {shape!r} (§ 33)."
+                )
+        for key in ("command", "workflow", "ref"):
+            if key in entry and (
+                not isinstance(entry[key], str) or not entry[key].strip()
+            ):
+                raise ConfigError(
+                    f"{where}.{key}", f"must be a non-empty string (§ 33)."
+                )
+        if "command_root" in entry and (
+            not isinstance(entry["command_root"], str)
+            or not entry["command_root"].strip()
+        ):
+            raise ConfigError(
+                f"{where}.command_root",
+                "must be a non-empty name § 1's `command_roots` declares; omit it "
+                "where the command runs at the code root.",
+            )
+        if "workflow" in entry and entry["workflow"] not in workflows:
+            raise ConfigError(
+                f"{where}.workflow",
+                f"is {entry['workflow']!r}, which no `host.checks` entry names "
+                "(§ 2). A target naming a run this project does not state is a "
+                "dispatch at a workflow no consumer of the facet can read.",
+            )
+        if "inputs" in entry:
+            inputs = entry["inputs"]
+            if not isinstance(inputs, dict) or not inputs:
+                raise ConfigError(
+                    f"{where}.inputs",
+                    "must be a non-empty mapping of the inputs this target always "
+                    "sends (§ 33); omit it where there are none.",
+                )
+            for key in inputs:
+                if not isinstance(key, str) or not key.strip():
+                    raise ConfigError(
+                        f"{where}.inputs", "names an input that is not a string (§ 33)."
+                    )
+        # ⛔ § 16's list, cited rather than given a second grammar here -- the
+        # division § 17 already has with the same section. What this facet does
+        # with it is hold its shape and name it; evaluating a precondition is
+        # neither section's.
+        if "requires" in entry:
+            needed = entry["requires"]
+            if not isinstance(needed, list) or not needed:
+                raise ConfigError(
+                    f"{where}.requires",
+                    "must be a non-empty list of preconditions the invocation does "
+                    "not check itself (§ 16); omit it where there are none.",
+                )
+            for position, precondition in enumerate(needed):
+                if not isinstance(precondition, str) or not precondition.strip():
+                    raise ConfigError(
+                        f"{where}.requires[{position}]",
+                        "must be a non-empty string (§ 16).",
+                    )
+        advances = entry.get("advances")
+        # ⛔ The word is this facet's own and is **not** a member of a set the
+        # surface states -- § 33 writes it into the key's prose, exactly as § 32
+        # writes its `to_role` there, so there is nothing for the sentinel loop in
+        # the self-test to hold it to. Said here rather than left as a literal
+        # looking like one of the held ones.
+        if advances is None:
+            raise ConfigError(
+                f"{where}.advances",
+                "required (§ 33); `none` where this target writes nothing on an "
+                "item.",
+            )
+        if advances != "none":
+            if advances not in roles:
+                raise ConfigError(
+                    f"{where}.advances",
+                    f"is {advances!r}; the surface states {' | '.join(roles)}, or "
+                    "`none`.",
+                )
+            if advances not in mapped_roles:
+                raise ConfigError(
+                    f"{where}.advances",
+                    f"is {advances!r}, which no status in `statuses` maps (§ 33). "
+                    "An advance to a role this project has no status for is a move "
+                    "with nowhere to land, and it is refused here rather than met "
+                    "against an item.",
+                )
+            if "batch" not in entry:
+                raise ConfigError(
+                    f"{where}.batch",
+                    f"required where `advances` is {advances!r} (§ 33). The batch "
+                    "is what an advance is made over, and a target that advances "
+                    "with no way to assemble one would advance on the status "
+                    "alone -- which is the failure two of the surveyed copies "
+                    "guard against by name.",
+                )
+        if "batch" in entry and (
+            not isinstance(entry["batch"], str) or not entry["batch"].strip()
+        ):
+            raise ConfigError(
+                f"{where}.batch",
+                "must be a non-empty command, stated whole (§ 33); omit it where "
+                "this target carries no batch.",
+            )
 
 
 def _path_filter(node: dict, where: str) -> dict | None:
@@ -6263,6 +6523,16 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                 f"is {entry['writer']!r}; the surface states {' | '.join(writers)}.",
             )
 
+    # § 33. Read here rather than anywhere in this function, for the reason the
+    # block above is read after `statuses`: one of its refusals is about two keys
+    # agreeing -- a target advances to a role, and a role no status maps is a
+    # move with nowhere to land. ⛔ The **writer** is deliberately not read here:
+    # § 4.2's guard sits on the ask and names the writer, and `never` is a
+    # legitimate configuration in which the move is reported rather than made, so
+    # a reader demanding `writer: deploy` would refuse a project that really does
+    # deploy the target.
+    _validate_deploy(data, facts, mapped_roles, workflows)
+
     readiness = _absent_as(_get(data, "readiness"), [])
     if not isinstance(readiness, list):
         raise ConfigError("readiness", "must be a list; `[]` where there is no gate.")
@@ -7744,6 +8014,7 @@ MARKED_REQUIRED = [
     "context_guard.never_bound",
     "context_guard.unbounded",
     "day_log.evidence.chat.kind",
+    "deploy",
     "done",
     "e2e_register.carrier",
     "environment.inherits",
@@ -9693,6 +9964,15 @@ def self_test() -> int:
             status for status in _get(subset, "statuses")
             if status.get("role") != "terminal"
         ]
+        # ⛔ And the targets that advance to it go with it, because § 33 refuses
+        # an advance to a role no status maps -- so a fixture that dropped the
+        # status alone would be refused by *that* rule and would assert nothing
+        # about this one. ⚠️ The dependency is between two rules rather than
+        # inside either, which is why it is said here and not at either.
+        subset["deploy"] = [
+            entry for entry in _absent_as(subset.get("deploy"), [])
+            if entry.get("advances") != "terminal"
+        ]
         check(
             "a project mapping no terminal role has nothing for that rule to compare",
             _refused(subset) is None,
@@ -11355,6 +11635,7 @@ def self_test() -> int:
                 ("context_guard.unbounded", "no command's output is unbounded"),
                 ("context_guard.result_limit_chars", "no result is replaced"),
                 (EXEMPT_CLASSES_PATH, "no change is exempt from the loop"),
+                ("deploy", "no deploy target is stated"),
             ):
                 if config.get(path):
                     continue
@@ -11547,6 +11828,66 @@ def self_test() -> int:
         except ConfigError as error:
             failures += 1
             print(f"  FAIL  this repository's own {CONFIG_PATH}: {error}")
+
+    print("\n§ 33, the deploy targets -- and the green side every plant above reddens:")
+    # ⛔ The plants are all red by construction, so none of them says a correct
+    # target loads -- and the arm that matters most here is the one no refusal
+    # can reach: `not_live: false`. A reader that refused it, or read the key for
+    # presence, would redden nothing in the list above while making every live
+    # target in every adopter's file unconfigurable.
+    for label, overrides in (
+        ("a live target states its liveness as `false` and loads",
+         {"not_live": False}),
+        ("a target the session is the only user of loads", {"not_live": True}),
+        ("a target carrying none of the optional keys loads", {}),
+        ("a target handed to a person names a workflow and a ref and no command",
+         {"invoke": "by_hand", "command": _ABSENT, "ref": "a-ref",
+          "workflow": _a_workflow_the_example_states()}),
+        ("a target with a precondition the invocation does not check loads",
+         {"requires": ["a credential this repository may not hold"]}),
+    ):
+        loaded = _a_valid_example()
+        loaded["deploy"] = [_a_deploy_target(**overrides)]
+        refusal = _refused(loaded)
+        check(label, refusal is None, f"refused on {refusal!r}")
+
+    # ⛔ And the facet is **read back**, not merely validated: a role reads a
+    # target out of the resolved configuration, so a key the reader accepts and
+    # no reader renders is a key nothing holds. ⚠️ The example is found by the
+    # facet rather than named, which is every fixture here's rule.
+    carried = next(
+        (
+            data for data in (
+                _load_yaml(open(path, encoding="utf-8").read(), CONFIG_PATH)
+                for path in _examples()
+            )
+            if _absent_as(_get(data, "deploy"), [])
+        ),
+        None,
+    )
+    check(
+        "an example carries the facet, so the arms below have a subject",
+        carried is not None,
+        "no example states a deploy target",
+    )
+    if carried is not None:
+        with open(SURFACE, encoding="utf-8") as handle:
+            resolved = _resolve(carried, EXAMPLES, surface_facts(handle.read()), False)
+        targets = resolved.get("deploy")
+        check(
+            "the resolved configuration carries the targets the file states",
+            isinstance(targets, list)
+            and len(targets) == len(_get(carried, "deploy")),
+            f"carries {targets!r}",
+        )
+        check(
+            "and each target's own keys come back with it",
+            all(
+                isinstance(entry, dict) and {"name", "not_live", "invoke"} <= set(entry)
+                for entry in targets or []
+            ),
+            f"carries {targets!r}",
+        )
 
     print("\n§ 31, what a tier needs before it can run -- and the tier that has no answer:")
     # ⛔ The reading rather than the refusals, which the plants above hold. What
@@ -12037,6 +12378,92 @@ def _planted_violations():
         ("a reversal writer outside the vocabulary", "reversals[0].writer",
          at("reversals", [{"trigger": "merged_under_a_later_role",
                            "to_role": "initial", "writer": "the cat"}])),
+        # § 33's shape, one plant per arm — and the two that are about **two**
+        # keys rather than one are the last of the `advances` group: an advance
+        # to a role no status maps, which is § 32's agreement plant one facet
+        # over and built the same derived way, and an advance with no batch to
+        # make it over.
+        ("a deploy list that is not a list", "deploy", at("deploy", "everywhere")),
+        ("a deploy target that is not a block", "deploy[0]", at("deploy", ["staging"])),
+        ("a key § 33 declares on no target", "deploy[0].host",
+         at("deploy", [_a_deploy_target(host="a machine this surface may not hold")])),
+        ("a target with no name", "deploy[0].name",
+         at("deploy", [_a_deploy_target(name=_ABSENT)])),
+        ("a target name written blank", "deploy[0].name",
+         at("deploy", [_a_deploy_target(name="   ")])),
+        ("one name on two targets", "deploy[1].name",
+         at("deploy", [_a_deploy_target(), _a_deploy_target()])),
+        # ⛔ Both ways the liveness key fails to say anything, which is the pair
+        # § 1's identical rule for `code_root_runs_nothing` names: the key left
+        # out, and the key written as a word a truthy read would accept. ⚠️ The
+        # second is the one that ships a live target as not live.
+        ("a target saying nothing about being live", "deploy[0].not_live",
+         at("deploy", [_a_deploy_target(not_live=_ABSENT)])),
+        ("liveness written as a word rather than a boolean", "deploy[0].not_live",
+         at("deploy", [_a_deploy_target(not_live="yes")])),
+        ("a target with no invocation shape", "deploy[0].invoke",
+         at("deploy", [_a_deploy_target(invoke=_ABSENT)])),
+        ("an invocation shape outside its alternation", "deploy[0].invoke",
+         at("deploy", [_a_deploy_target(invoke="telepathy")])),
+        ("a command target with no command", "deploy[0].command",
+         at("deploy", [_a_deploy_target(command=_ABSENT)])),
+        ("a command written blank", "deploy[0].command",
+         at("deploy", [_a_deploy_target(command="   ")])),
+        # ⛔ Both directions of every per-shape key: one the shape needs and the
+        # entry leaves out, one the entry states and the shape never reads. The
+        # second direction is the one a reader is tempted to tolerate, and
+        # tolerating it leaves a ref beside a command that takes none — a fact
+        # written where a reader expects it to be read.
+        ("a dispatching target with no workflow", "deploy[0].workflow",
+         at("deploy", [_a_deploy_target(invoke="dispatch", command=_ABSENT,
+                                        ref="a-ref")])),
+        ("a dispatching target with no ref", "deploy[0].ref",
+         at("deploy", [_a_deploy_target(invoke="dispatch", command=_ABSENT,
+                                        workflow="a-workflow")])),
+        ("a command stated beside a shape that runs none", "deploy[0].command",
+         at("deploy", [_a_deploy_target(invoke="by_hand", workflow="a-workflow",
+                                        ref="a-ref")])),
+        ("a ref stated beside a command", "deploy[0].ref",
+         at("deploy", [_a_deploy_target(ref="a-ref")])),
+        ("inputs stated beside a command", "deploy[0].inputs",
+         at("deploy", [_a_deploy_target(inputs={"a": "b"})])),
+        ("a command root stated beside a dispatch", "deploy[0].command_root",
+         at("deploy", [_a_deploy_target(invoke="dispatch", command=_ABSENT,
+                                        workflow="a-workflow", ref="a-ref",
+                                        command_root="a-root")])),
+        # ⚠️ The workflow arm is planted on a name no entry of `host.checks`
+        # carries rather than on a blank one: a blank is refused by the shape
+        # rule above it under the same key, which reads green while asserting
+        # nothing about the agreement with § 2's own list.
+        ("a workflow no host check names", "deploy[0].workflow",
+         at("deploy", [_a_deploy_target(invoke="dispatch", command=_ABSENT,
+                                        workflow="a workflow nothing states",
+                                        ref="a-ref")])),
+        ("a command root no code root declares", "deploy[0].command_root",
+         at("deploy", [_a_deploy_target(command_root="a root nothing declares")])),
+        ("inputs that are not a mapping", "deploy[0].inputs",
+         at("deploy", [_a_deploy_target(
+             invoke="dispatch", command=_ABSENT, ref="a-ref",
+             workflow=_a_workflow_the_example_states(), inputs=["a"])])),
+        ("an inputs mapping carrying nothing", "deploy[0].inputs",
+         at("deploy", [_a_deploy_target(
+             invoke="dispatch", command=_ABSENT, ref="a-ref",
+             workflow=_a_workflow_the_example_states(), inputs={})])),
+        ("a requires list that is not a list", "deploy[0].requires",
+         at("deploy", [_a_deploy_target(requires="a credential")])),
+        ("a precondition written blank", "deploy[0].requires[0]",
+         at("deploy", [_a_deploy_target(requires=["   "])])),
+        ("a target with no advance stated", "deploy[0].advances",
+         at("deploy", [_a_deploy_target(advances=_ABSENT)])),
+        ("an advance outside the vocabulary", "deploy[0].advances",
+         at("deploy", [_a_deploy_target(advances="sideways", batch="a-command")])),
+        ("an advance no status maps", "deploy[0].advances",
+         at("deploy", [_a_deploy_target(advances=_a_role_no_status_maps(),
+                                        batch="a-command")])),
+        ("an advance with no batch to make it over", "deploy[0].batch",
+         at("deploy", [_a_deploy_target(advances=_a_role_some_status_maps())])),
+        ("a batch written blank", "deploy[0].batch",
+         at("deploy", [_a_deploy_target(batch="   ")])),
         ("a readiness list that is not a list", "readiness", at("readiness", "all")),
         ("a readiness entry that is not a block", "readiness[0]", at("readiness", ["x"])),
         ("a readiness entry with no check", "readiness[0].check",
@@ -14131,6 +14558,72 @@ def _a_role_no_status_maps() -> str:
         "target-no-status-maps plant has no role to aim at and would assert "
         "nothing. Plant it against an example that maps a subset.",
     )
+
+
+def _a_role_some_status_maps() -> str:
+    """A role the example `_a_valid_example` **does** map a status to (§ 4.2).
+
+    ⛔ The complement of `_a_role_no_status_maps` above, and derived for the same
+    reason: § 33's batch plant needs an advance that gets **past** the
+    role-no-status-maps branch, so a literal here is one example away from being
+    refused by that branch instead — which reads green under the same key while
+    asserting nothing about the rule it was written for.
+    """
+    for status in _absent_as(_get(_a_valid_example(), "statuses"), []):
+        if isinstance(status, dict) and status.get("role") in facts_for("role"):
+            return status["role"]
+    raise ConfigError(
+        "statuses",
+        "the example maps no role the surface states, so § 33's batch plant has "
+        "no advance to aim at and would assert nothing.",
+    )
+
+
+def _a_workflow_the_example_states() -> str:
+    """A workflow name `_a_valid_example`'s own `host.checks` carries (§ 2).
+
+    ⛔ Derived rather than written, for `_a_role_no_status_maps`'s reason: a
+    § 33 plant aimed past the workflow-agreement branch has to carry a name that
+    branch accepts, and a literal is one example away from being refused there
+    instead — green under a key that says nothing about the arm planted for.
+    """
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    stated = sorted(_workflows_anywhere(_a_valid_example(), facts))
+    if not stated:
+        raise ConfigError(
+            "host.checks",
+            "the example states no workflow, so § 33's input plants have no name "
+            "to carry past the workflow-agreement branch and would assert nothing.",
+        )
+    return stated[0]
+
+
+def _a_deploy_target(**overrides) -> dict:
+    """§ 33's smallest valid target, to break one key of at a time.
+
+    ⛔ Built here rather than borrowed from whichever example carries the facet,
+    for the reason every other fixture in this module is: a plant that broke one
+    key of a shipped file would stop asserting the moment that file grew a
+    second target, and the half of it that is a *plant* would be invisible.
+    ⚠️ It states no `workflow` and no `command_root`, so no arm of it depends on
+    what the example it is placed into happens to declare.
+    """
+    target = {
+        "name": "a-target",
+        "not_live": True,
+        "invoke": "command",
+        "command": "a-command",
+        "advances": "none",
+    }
+    target.update(overrides)
+    return {key: value for key, value in target.items() if value is not _ABSENT}
+
+
+# The sentinel `_a_deploy_target` reads as *leave this key out*, which `None`
+# cannot be: `None` is itself a value several arms refuse, and a fixture that
+# used it would plant the wrong violation under the right key.
+_ABSENT = object()
 
 
 def _a_chat_kind_that_reads_an_archive() -> str:

@@ -339,6 +339,13 @@ statuses:
 # criterion § 32 states and this comment does not restate.
 reversals: []
 
+# § 33. This repository deploys nothing. What it ships is a plugin served out of a directory
+# source, so a merge to the integration branch is the whole of how a change reaches whoever runs
+# it — there is no machine to put it on, no run that puts it there and no target to name. ⚠️ So
+# `[]`, which § 33 states as the behaviour the procedure already had: the deploy role stops with
+# this key named rather than choosing a target.
+deploy: []
+
 readiness:
   - { check: state_is, roles: [initial], stop: "The issue is already closed." }
   - { check: no_open_blockers, stop: "An issue this one depends on has not landed yet." }

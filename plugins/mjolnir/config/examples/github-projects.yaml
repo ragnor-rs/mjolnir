@@ -150,6 +150,22 @@ statuses:
 reversals:
   - { trigger: merged_under_a_later_role, to_role: code_landed, writer: automation }
 
+# § 33. One target, reached by the project's own command, and the plainest shape the facet has.
+# ⛔ The command is stated whole and this surface never looks inside it: which services it
+# rebuilds, which host it reaches and which credentials it reads are the command's.
+deploy:
+  - name: "<the environment this project serves from>"
+    not_live: false
+    invoke: command
+    command: "<the whole command, with its environment argument>"
+    requires: ["<a precondition the command does not check itself>"]
+    # ⚠️ `terminal` and not `deployed`, because this ladder has no deployed status — so the role
+    # the batch is drawn from is `code_landed`, § 4.2's own neighbour of this one, and an item
+    # steps straight from code landed to finished. The derivation § 33 states, met by a ladder
+    # that skips a rung rather than by the one it was written against.
+    advances: terminal
+    batch: "<a command answering which of the identifiers handed to it this deploy carries>"
+
 readiness:
   - { check: state_is, roles: [initial], stop: "The item is not in the starting state." }
   - { check: no_open_blockers, stop: "An open blocker has to land first." }

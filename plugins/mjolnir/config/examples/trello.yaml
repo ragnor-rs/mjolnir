@@ -209,6 +209,50 @@ statuses:
 reversals:
   - { trigger: acceptance_rejected, to_role: ready, writer: orderer }
 
+# § 33. The one example carrying the facet in full, because this is the project shape that forced
+# it: two targets, reached two different ways, advancing two different roles. ⛔ Every one of the
+# three `invoke` shapes is here, and none of them says what the deploy *does* — the workflow is a
+# name the host's own `checks` carries and the command is a string this surface never looks inside.
+deploy:
+  # ⚠️ Not named `production` and not named after anything: the name is what a deploy of this
+  # target is asked for by, and `not_live` is what says it is live. A reader that took the word
+  # for it would be inferring from a name, which is the one thing § 33 forbids outright.
+  - name: "<the shared environment work is published to>"
+    # Live, so silence on the go is not a yes and nothing happens.
+    not_live: false
+    invoke: dispatch
+    workflow: "Web checks"
+    # ⛔ The ref the dispatch is made against — which branch's copy of the workflow runs.
+    ref: "<the branch this target serves>"
+    # ⛔ And the input the run checks out, which is NOT the same fact: measured on the project
+    # this shape came from, where the host's own default for it is the other branch, so a run
+    # with the input unsent builds what the live target serves and reports success throughout.
+    inputs:
+      "<the input naming what the run builds>": "<the branch this target serves>"
+    advances: deployed
+    batch: "<a command answering which of the identifiers handed to it this deploy carries>"
+  - name: "<the environment a version is released to>"
+    not_live: false
+    # ⛔ Configured, not a capability that is missing: the act spends a version for ever, so this
+    # project rules that a person performs it. The role prepares, hands over the workflow and the
+    # ref, and reports no deploy made.
+    invoke: by_hand
+    workflow: "Build"
+    ref: "<the tag shape a release is cut as>"
+    advances: terminal
+    batch: "<a command answering which of the identifiers handed to it this release carries>"
+  # The third shape, and the one two targets in the survey make free to run: a command, in one of
+  # the command roots § 1 declares above, reaching a stack this session is the only user of.
+  - name: "<the stack on this machine>"
+    not_live: true
+    invoke: command
+    command: "<the whole command, with its target argument>"
+    command_root: api-service
+    # § 16's list, cited there: a precondition the command does not check itself.
+    requires: ["<the credential file this repository may not hold>"]
+    # ⛔ Nothing is written on an item for a deploy nobody outside this machine can see.
+    advances: none
+
 readiness:
   - { check: state_is, roles: [ready], stop: "The item has not been gated into committed work." }
   - { check: field_present, field: "<due date>", stop: "No due date." }

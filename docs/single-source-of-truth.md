@@ -104,7 +104,10 @@ Three were in the tree when the check was written, which is the argument for it:
   own, because every numbered section is a configuration facet opening with a `yaml` block and
   this is procedure — the same placement the authorship rule has under § 6.
 - Two rulings pointed at "the filing role's work item" and "the deploy role's work item" with no
-  number, so nothing could resolve whether the outcome had moved. They now name #7 and #13.
+  number, so nothing could resolve whether the outcome had moved. They named #7 and #13 next, and
+  ⚠️ **both have since moved on to a section of the surface**, which is the half the numbering was
+  there to make resolvable: a reader asking whether an outcome had been extracted could answer it,
+  and twice it has been.
 
 ## The three kinds, and why one of them is absent
 
@@ -2894,9 +2897,12 @@ why the port exists and what it leaves alone.
 single reading and the *conclusion* a single function, and left the calls themselves with each
 reader. ⚠️ **What the tree actually held was one call written twice** — `gh pr checks <number>
 --watch`, in the finishing role and in the reviewing role, which `git grep` over the base commit is
-the whole of the measurement — ⛔ **and the readers that do not exist yet are what makes the pattern
+the whole of the measurement — ⛔ **and the readers that did not exist yet are what makes the pattern
 rather than the pair**: a deploying role that dispatches and verifies from a log, and a guard asking
-whether the host's checks answer at all, would each have written it again. The second defect is the
+whether the host's checks answer at all, would each have written it again. ✅ **The first of those
+two has since been built** and reaches the dispatch, the log and the conclusion through this port
+with no client of its own, which is the prediction spent rather than still standing. The second
+defect is the
 one [§ 2](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions) refuses
 one key over: a dispatch with inputs, a listing keyed on a commit, a log retrieval and a gate on a
 run are each a host kind's shape rather than a universal.

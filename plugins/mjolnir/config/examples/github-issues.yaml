@@ -121,6 +121,12 @@ statuses:
 # nothing about a person reopening an issue by hand, which stays available and unruled.
 reversals: []
 
+# § 33. No deploy target. A two-state tracker with no status a deploy writes has nowhere to put
+# the advance, and this project's change reaches whoever runs it by landing rather than by being
+# put somewhere — so there is nothing to name. ⚠️ `[]` is the statement and not the silence: the
+# role stops with this key named, which is what distinguishes it from a project that never looked.
+deploy: []
+
 readiness:
   - { check: state_is, roles: [initial], stop: "The issue is already closed." }
   - { check: no_open_blockers, stop: "An issue this one depends on has not landed yet." }
