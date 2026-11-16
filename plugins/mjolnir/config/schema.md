@@ -1995,8 +1995,8 @@ discovered: a port that worked out who was asking would be answering a question 
 rather than about the procedure. ⛔ **The default is `procedure`**, so a role that names no writer
 is held exactly as every role was before a deploying one existed.
 
-⛔ **And those two are the whole of what an ask may be made as, refused before the configured writer
-is read at all.** The rest of the set names parties this procedure is not — a merge's automation,
+⛔ **Those are the whole of what an ask may be made as, refused before the configured writer is read
+at all.** The rest of the set names parties this procedure is not — a merge's automation,
 the person who ordered the work, a mechanical path test — so an ask naming one is a **claim to be
 somebody** rather than a request, which is the fabrication
 [§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) rules out one section over.

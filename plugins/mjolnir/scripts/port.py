@@ -979,11 +979,15 @@ class Port:
                 performed=False,
                 refused=True,
                 writer=writer,
+                # ⚠️ No count of the askable set is written into this message,
+                # which is the defect the review of this very commit found six of
+                # elsewhere: the join below *is* the list, and a figure beside it
+                # is a second statement free to disagree.
                 detail=f"Refused: this ask is made as `{asked_as}`, which is not a "
-                "writer a role in this procedure may ask as. § 4.2 states two — "
-                f"{' and '.join(f'`{word}`' for word in ASKABLE_AS)} — and the "
-                "rest of that set names parties this procedure is not, so naming "
-                "one would be claiming to be somebody rather than asking.",
+                "writer a role in this procedure may ask as (§ 4.2). What it may "
+                f"be made as is {' and '.join(f'`{word}`' for word in ASKABLE_AS)}"
+                "; the rest of that set names parties this procedure is not, so "
+                "naming one would be claiming to be somebody rather than asking.",
                 **about,
             )
         if writer == NEVER:
@@ -1948,6 +1952,17 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
             stated=stated,
         ).advance_to(a_role, as_writer=as_writer)
 
+    # ⛔ Every member of the askable set, derived from the set rather than
+    # written out: a word added to it would otherwise be refused by nothing in
+    # the refusing loop below — which is derived as the complement — and asserted
+    # by nothing here, so it would be askable with no arm on either side.
+    for askable in ASKABLE_AS:
+        allowed = _asking(askable, askable)
+        check(
+            f"an ask made as `{askable}` reaches the status that writer writes",
+            allowed.performed and not allowed.refused,
+            f"got {str(allowed)!r}",
+        )
     as_the_deploy = _asking(DEPLOY, DEPLOY)
     check(
         f"a status written by `{DEPLOY}` is advanced by the role asking as it",
