@@ -652,6 +652,18 @@ def self_test() -> int:
             ("zero, which names no card on a board counting from one", 0),
             ("a negative", -13),
             ("a card whose short id is zero", {"id": "c", "idShort": 0}),
+            # ⚠️ A superscript answers `isdigit` and then raises in `int`, which
+            # is the traceback the decimal test exists to replace -- and the
+            # string arm is where this kind reads a short id the host sent as
+            # text, so the arm and the shape have to meet.
+            ("a card whose short id is a superscript digit", {"id": "c", "idShort": "²"}),
+            # ⚠️ And the URL arm, which this kind reads when a card carries no
+            # short-id field at all: a slug numbered zero names no card either,
+            # and the arm used to answer `0` from it.
+            ("a card whose URL numbers it zero",
+             {"url": "https://example.invalid/c/abc1234/0-a-card"}),
+            ("a card whose short link numbers it zero",
+             {"shortUrl": "https://example.invalid/c/abc1234/0"}),
         )
     }
     check(
@@ -815,6 +827,34 @@ def self_test() -> int:
         "after one re-read, which is what a card filed seconds ago needs",
         missing.calls.count("cards") == 2,
         f"called {missing.calls}",
+    )
+    # ⛔ And what the read is **handed**, which this kind had no guard on while
+    # the three sibling kinds did. ⚠️ `int()` of each of these answers a number:
+    # `True` and `1.9` both floor to one, so the operation that resolves an
+    # address answered **card one** for a shape naming no card at all -- the
+    # silent direction, and the one `item_number` beside it already refuses.
+    for label, handed in (
+        ("`true`, which is an `int` and names no card", True),
+        ("a float, which floors onto a real card", 1.9),
+        ("zero, a board counting its cards from one", 0),
+        ("a negative", -13),
+        ("text that is no number", "not-a-number"),
+    ):
+        guarded = host()
+        reported = with_host(guarded, lambda handed=handed: refused(lambda: read_item(handed)))
+        check(
+            f"{label} is refused as a card number, before the board is read",
+            reported == "tracker.operations.read_item" and guarded.calls == [],
+            f"reported {reported!r} after {guarded.calls}",
+        )
+    # ⚠️ And the shapes a number does arrive in are still read, the port passing
+    # every value from an invocation as text.
+    accepted = [got(with_host(host(), lambda handed=handed: read_item(handed)), "number")
+                for handed in (1, "1", "  1  ")]
+    check(
+        "while an integer, a string of digits and a padded one are read",
+        accepted == [1, 1, 1],
+        f"read {accepted!r}",
     )
 
     # --- `set_state`: the list, by name, read before written ----------------

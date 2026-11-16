@@ -232,11 +232,19 @@ def blockers_of(answered, path: str) -> list[dict]:
         if len(shown) > 80:
             # ⚠️ Cut at a whole escape, never inside one: a half-written `\x`
             # reads as an escape rather than as the mark that something was cut.
+            # ⛔ The escape step runs **first** and the backslash step last, which
+            # is the order and not a preference: walking back out of a partial
+            # escape lands on the opening backslash, so a parity step taken
+            # before it leaves exactly the lone `\` this exists to prevent --
+            # measured, on three of five shapes.
+            # ⛔ And each width is the escape's own, never an open repetition: a
+            # `*` here reads a *whole* ` ` as unfinished and walks out of a
+            # complete escape, which is how the lone backslash was reached.
             cut = 77
-            while cut and (len(shown[:cut]) - len(shown[:cut].rstrip("\\"))) % 2:
+            while cut and re.search(r"\\x[0-9a-fA-F]?$|\\u[0-9a-fA-F]{0,3}$"
+                                    r"|\\U[0-9a-fA-F]{0,7}$", shown[:cut]):
                 cut -= 1
-            while cut and re.search(r"\\x[0-9a-fA-F]?$|\\[uU][0-9a-fA-F]*$",
-                                    shown[:cut]):
+            while cut and (len(shown[:cut]) - len(shown[:cut].rstrip("\\"))) % 2:
                 cut -= 1
             shown = shown[:cut] + "..."
         raise port.HostUnavailable(

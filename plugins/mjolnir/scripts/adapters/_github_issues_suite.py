@@ -472,12 +472,19 @@ def self_test() -> int:
     # below addressed the configured one, which is the two-halves-of-one-call
     # defect the answer's own number was normalised against. The other shapes are
     # the sibling's, for the sibling's reason.
+    # ⚠️ And the two this host numbers from one rules out, on the argument as
+    # well as on its own answer: `#0` and a negative name no item, and a negative
+    # reaches the client as a flag rather than as an argument.
     for handed in (
         "not-a-number",
         True,
         1.9,
         " 11 ",
         "²",
+        0,
+        -13,
+        "0",
+        "-13",
         f"https://github.com/{elsewhere}/issues/{BLOCKED}",
     ):
         shapeless = _Host()
@@ -549,9 +556,14 @@ def self_test() -> int:
     )
     # ⚠️ One per shape the guard holds, the bool among them because it is an
     # `int` and passed a type test while naming no item.
+    # ⚠️ And the two a host counting from one cannot mean: an answer of `0` or a
+    # negative names no item, and either shaped into this item's identifier would
+    # reach every path and every write composed from it.
     for label, answered in (
         ("carrying no number", {}),
         ("answering `true` for one", {"number": True}),
+        ("answering zero", {"number": 0}),
+        ("answering below zero", {"number": -13}),
     ):
         numberless = _Host({"issue view": dict({
             "title": "an answer with no number",

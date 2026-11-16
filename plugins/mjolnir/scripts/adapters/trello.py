@@ -589,6 +589,33 @@ def _label_named(name: str, *, key: str, again: bool = False) -> dict:
     return _one(board["labels"].get(str(name), []), str(name), what="labels", key=key, board=board)
 
 
+def _a_card_number(number) -> int:
+    """The card number a value names, or a refusal naming the operation.
+
+    ⛔ **In the shape the three sibling kinds use, and here because this one had
+    none**: `int()` of what it was handed answered **card one** for `True` and
+    for `1.9`, so the operation that resolves an address answered silently about
+    a card nobody asked for. A bool is an `int`, so the arm says so.
+
+    ⛔ **And positive, a board counting its cards from one** -- which is what
+    `item_number` beside this refuses `0` and a negative for, by the same
+    reading. ⚠️ Left to the index lookup instead, a number naming no card cost
+    two board reads and then arrived as *the board holds no such card*, which is
+    an answer about the board where the fault is in the argument.
+    """
+    wanted = number if isinstance(number, int) and not isinstance(number, bool) else None
+    if wanted is None and isinstance(number, str) and number.strip().isdecimal():
+        wanted = int(number.strip())
+    if wanted is None or wanted <= 0:
+        raise ConfigError(
+            "tracker.operations.read_item",
+            f"was asked for `{number!r}`, which is not a card number. A number "
+            "here is the card's own count on its board, which is digits, and a "
+            "board counts its cards from one.",
+        )
+    return wanted
+
+
 def _card_for(number: int, *, again: bool = False) -> dict:
     """The card a number names on the configured board.
 
@@ -598,15 +625,8 @@ def _card_for(number: int, *, again: bool = False) -> dict:
     is re-read once before refusing -- a card filed seconds ago is absent from an
     index built before it existed, and `create_item` depends on exactly that.
     """
+    wanted = _a_card_number(number)
     board = _board(again=again)
-    try:
-        wanted = int(number)
-    except (TypeError, ValueError):
-        raise ConfigError(
-            "tracker.operations.read_item",
-            f"was asked for `{number!r}`, which is not a card number. A number "
-            "here is the card's own count on its board, which is digits.",
-        ) from None
     if wanted in board["by_number"]:
         return board["by_number"][wanted]
     if not again:
@@ -759,6 +779,11 @@ def read_item(number: int) -> dict:
     can arrive dressed as an item -- which is the opposite of the two
     implementations beside this one and is why neither's guard is copied here.
     """
+    # ⛔ The argument is read before the board is. ⚠️ Resolved inside the index
+    # lookup alone, a shape naming no card was refused only after a whole board
+    # had been fetched for it -- and the refusal is about the argument, so it is
+    # answerable before any call and the suite holds that it is.
+    _a_card_number(number)
     board = _board()
     index = _card_for(number)
     card = _call(
@@ -800,7 +825,7 @@ def item_number(item: dict | int | str) -> int:
             f"was handed {item!r}, which is neither a card nor a card number. "
             "This operation reads an identifier out of what it was given and "
             "makes no call, so there is nothing to resolve another shape "
-            "against.",
+            "against, and a board counts its cards from one.",
         )
     short = item.get("idShort")
     if isinstance(short, int) and not isinstance(short, bool) and short > 0:

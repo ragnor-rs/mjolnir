@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import glob
 import os
+import functools
 import re
 import sys
 import textwrap
@@ -147,7 +148,72 @@ def anchor(heading: str) -> str:
     return text.replace(" ", "-")
 
 
-def outline(text: str) -> list[tuple[int, int, str, str]]:
+FENCE_DELIMITER = re.compile(r"^[ \t]*(?P<delim>`{3,}|~{3,})(?P<info>[^\n]*)$")
+
+# ⛔ Every reader below is a pure function of one document's text and every one of
+# them is asked the same question many times over -- the heading scan alone once
+# per citation. ⚠️ Cached because it was measured: uncached, one gate's run walked
+# the same documents often enough to take ten times as long as the scan itself
+# costs, which reads as a slow machine rather than as a reading repeated.
+_cache = functools.lru_cache(maxsize=None)
+
+
+@_cache
+def fences(text: str) -> tuple[tuple[int, int | None], ...]:
+    """(opening line index, closing line index or `None`) for every fenced block.
+
+    ⛔ **One fence walker, read by the heading scan, by `shown_spans` and by the
+    unclosed-fence check.** Each of those carried a grammar of its own and the
+    three disagreed, which is the defect this file exists against with the copies
+    inside the file that holds it: the heading scan toggled on any ```` ``` ````
+    line, the shown-region scan knew ```` ~~~ ```` as well, and the check counted
+    delimiters. ⚠️ Measured, all three at once: one stray ```` ~~~ ```` line took
+    a document's citations from sixty-four to nought with every check green,
+    because the scan that stopped reading and the check that would have said so
+    were looking for different characters.
+
+    ⛔ **A closer is the opener's own character, at least as long, and alone on
+    its line** -- the markdown rule, and the reason a four-backtick block showing
+    a bare ```` ``` ```` delimiter is one fence rather than three. A parity count
+    reads that correct document as unbalanced, which is a refusal of the exact
+    prose somebody documenting this check would write.
+    """
+    out: list[tuple[int, int | None]] = []
+    opened: tuple[int, str] | None = None
+    for index, line in enumerate(text.splitlines()):
+        match = FENCE_DELIMITER.match(line)
+        if not match:
+            continue
+        delim, info = match.group("delim"), match.group("info")
+        if opened is None:
+            # ⚠️ A backtick fence's info string may not carry a backtick, which
+            # is what makes ```` ```` ```` an opener and not an info string.
+            if delim[0] == "`" and "`" in info:
+                continue
+            opened = (index, delim)
+            continue
+        at, open_delim = opened
+        if delim[0] == open_delim[0] and len(delim) >= len(open_delim) \
+                and not info.strip():
+            out.append((at, index))
+            opened = None
+    if opened is not None:
+        out.append((opened[0], None))
+    return tuple(out)
+
+
+@_cache
+def fenced_lines(text: str) -> frozenset[int]:
+    """Every line index inside a fenced block, the delimiters included."""
+    lines = text.splitlines()
+    covered: set[int] = set()
+    for at, closed in fences(text):
+        covered.update(range(at, (closed if closed is not None else len(lines) - 1) + 1))
+    return frozenset(covered)
+
+
+@_cache
+def outline(text: str) -> tuple[tuple[int, int, str, str], ...]:
     """(line index, level, title, anchor) in document order, outside fenced blocks.
 
     Repeats carry the host's `-1`, `-2` suffixes, so a citation of the second
@@ -160,12 +226,9 @@ def outline(text: str) -> list[tuple[int, int, str, str]]:
     """
     out: list[tuple[int, int, str, str]] = []
     seen: dict[str, int] = {}
-    fenced = False
+    fenced = fenced_lines(text)
     for index, line in enumerate(text.splitlines()):
-        if line.lstrip().startswith("```"):
-            fenced = not fenced
-            continue
-        if fenced:
+        if index in fenced:
             continue
         match = re.match(r"^(#{1,6})\s+(.*)", line)
         if not match:
@@ -175,16 +238,22 @@ def outline(text: str) -> list[tuple[int, int, str, str]]:
         nth = seen.get(base, 0)
         seen[base] = nth + 1
         out.append((index, len(match.group(1)), title, base if nth == 0 else f"{base}-{nth}"))
-    return out
+    return tuple(out)
 
 
-def headings(text: str) -> list[tuple[int, str, str]]:
+@_cache
+def headings(text: str) -> tuple[tuple[int, str, str], ...]:
     """(level, title, anchor) in document order, outside fenced blocks."""
-    return [(level, title, slug) for _at, level, title, slug in outline(text)]
+    return tuple((level, title, slug) for _at, level, title, slug in outline(text))
 
 
 SHOWN_RATHER_THAN_WRITTEN = re.compile(
-    # A fence of either delimiter, an HTML comment, a code span.
+    # An HTML comment, and a code span. ⚠️ **The fenced block is not an arm
+    # here**: it is `fences` above, which every reader of a fence shares.
+    # ⛔ **The comment arm runs to the end of the document where nothing closes
+    # it**, which is not tidiness: a comment somebody left open shows nothing in
+    # the rendered document, so a citation inside it is a citation no reader can
+    # follow, and reading it as live refuses a link that is not there.
     # ⛔ **The code-span arm is held to one line**, which is the one place this
     # must not be greedy: a span may cross a wrap in markdown, but an odd
     # backtick anywhere then pairs with the next one a paragraph away and
@@ -195,8 +264,7 @@ SHOWN_RATHER_THAN_WRITTEN = re.compile(
     # parser -- and without one the arm dropped five live citations written as
     # continuation lines, which is the silent direction. A citation inside a
     # four-space block is read as live; the record states that residue.
-    r"^[ \t]*(?P<fence>```|~~~).*?(?:^[ \t]*(?P=fence)[^\n]*$|\Z)"
-    r"|<!--.*?-->"
+    r"<!--.*?(?:-->|\Z)"
     r"|(?P<ticks>`+)(?:(?!(?P=ticks))[^\n])*(?P=ticks)",
     re.S | re.M,
 )
@@ -204,15 +272,61 @@ SHOWN_RATHER_THAN_WRITTEN = re.compile(
 A_LINE_RANGE = re.compile(r"^L\d+(?:C\d+)?(?:-L?\d+(?:C\d+)?)?$")
 
 
-def shown_spans(text: str) -> list[tuple[int, int]]:
+@_cache
+def line_offsets(text: str) -> tuple[int, ...]:
+    """The start offset of every line, so a line reader and an offset reader agree."""
+    offsets, at = [], 0
+    for line in text.splitlines(keepends=True):
+        offsets.append(at)
+        at += len(line)
+    return tuple(offsets)
+
+
+@_cache
+def shown_spans(text: str) -> tuple[tuple[int, int], ...]:
     """(start, end) offsets of every region that **shows** markdown rather than being it.
 
     ⛔ So that a link quoted as an example is not read as a live citation, the way
     `outline` already refuses a `## Title` inside a fence. ⛔ **Both citation
-    readers use it**, the surface's own included. ⚠️ Not merged with `outline`,
-    and what that costs is the record's own residue bullet.
+    readers use it**, the surface's own included.
+
+    ⛔ **The fenced regions come from `fences`, which `outline` reads too**, so a
+    heading the one scan skips and a citation the other skips are the same bytes
+    by construction rather than by two groups of characters staying in step.
     """
-    return [match.span() for match in SHOWN_RATHER_THAN_WRITTEN.finditer(text)]
+    offsets = line_offsets(text)
+    lines = text.splitlines()
+    spans = []
+    for at, closed in fences(text):
+        stop = (offsets[closed] + len(lines[closed])
+                if closed is not None else len(text))
+        spans.append((offsets[at], stop))
+    for match in SHOWN_RATHER_THAN_WRITTEN.finditer(text):
+        if not any(start <= match.start() < stop for start, stop in spans):
+            spans.append(match.span())
+    return tuple(sorted(spans))
+
+
+@_cache
+def shown_lines(text: str) -> frozenset[int]:
+    """Every line index a shown region covers, for a reader that walks lines.
+
+    ⛔ Derived from `shown_spans` rather than from a scan of its own, for the
+    reason `fences` states: a second reading is a second grammar.
+
+    ⛔ **The spans are read once**, not per line. ⚠️ Measured: asked inside the
+    loop it is a scan of the whole document for every line of it, which took this
+    gate's run from three seconds to over five minutes -- the shape that looks
+    like a hang rather than a cost.
+    """
+    offsets = line_offsets(text)
+    lines = text.splitlines()
+    spans = shown_spans(text)
+    return frozenset({
+        index for index, start in enumerate(offsets)
+        if any(begin < start + max(len(lines[index]), 1) and start < end
+               for begin, end in spans)
+    })
 
 
 def split_row(line: str) -> list[str]:
@@ -751,14 +865,11 @@ def check_no_document_leaves_a_fence_open(tree: Tree) -> list[str]:
     """
     problems = []
     for path in [SURFACE] + list(tree.prose):
-        text = tree.text[path]
-        opened = [
-            index for index, line in enumerate(text.splitlines())
-            if line.lstrip().startswith("```")
-        ]
-        if len(opened) % 2:
+        for at, closed in fences(tree.text[path]):
+            if closed is not None:
+                continue
             problems.append(
-                f"{path}: line {opened[-1] + 1} opens a fence nothing closes, so "
+                f"{path}: line {at + 1} opens a fence nothing closes, so "
                 "every heading below it is read as fenced and stops being a "
                 "heading. ⚠️ Most often a wrap that put the delimiter at the "
                 "start of a line in ordinary prose."
@@ -783,19 +894,43 @@ def check_the_record_has_a_row_per_check(tree: Tree) -> list[str]:
         return [f"{RECORD}: claimed by no role, so this gate is recorded nowhere."]
     rows: list[tuple[str, str]] = []
     found = False
-    for line in tree.text[RECORD].splitlines():
-        if line.startswith("| # | Name | Check |"):
+    text = tree.text[RECORD]
+    shown = shown_lines(text)
+    for index, line in enumerate(text.splitlines()):
+        # ⛔ The header is read by its own first cells rather than by a literal
+        # prefix, so a table a formatter padded is still the table; and ⛔ a
+        # header inside a fence is a table being **shown**, which a reader that
+        # took the first line of the shape read as the record's own.
+        cells = split_row(line) if line.lstrip().startswith("|") else []
+        if index not in shown and [cell.strip() for cell in cells[:3]] \
+                == ["#", "Name", "Check"]:
             if found:
                 break
             found = True
             continue
-        if found and set(line) <= set("|-: \t"):
+        if not found:
             continue
-        if found:
-            if not line.startswith("|"):
-                break
-            cells = split_row(line)
-            rows.append((cells[0], cells[1].strip("`")))
+        # ⛔ A blank line ends the table. ⚠️ Measured: tested as a subset of the
+        # delimiter row's characters, the empty line passed the skip -- the empty
+        # set being a subset of every set -- so the scan ran on across a blank
+        # line and read the next table's rows as this gate's checks.
+        if not line.strip():
+            break
+        if not line.lstrip().startswith("|"):
+            break
+        # ⚠️ The delimiter row, which is non-empty by the arm above.
+        if set(line) <= set("|-: \t"):
+            continue
+        # ⛔ A row with no second cell is refused and never subscripted: a row
+        # somebody is part-way through writing is a document to report on, not a
+        # traceback where this gate's verdict belongs.
+        if len(cells) < 2:
+            return [
+                f"{RECORD}: line {index + 1} is a row of the check table carrying "
+                f"no name cell -- {line.strip()!r}. Every row of that table is a "
+                "check's number and its name."
+            ]
+        rows.append((cells[0], cells[1].strip("`")))
     if not found:
         return [f"{RECORD}: carries no check table, so this gate is recorded nowhere."]
     wanted = [(str(index), name) for index, (name, _check) in enumerate(CHECKS)]
@@ -1034,6 +1169,70 @@ def _plant_a_wrapped_fence_delimiter(tree: Tree) -> Tree:
     tree.text[RECORD] += (
         "\n\nThe heading reader skips only a\n```\nfence, and nothing else.\n"
     )
+    return tree
+
+
+def _plant_an_unclosed_tilde_fence(tree: Tree) -> Tree:
+    """The same collapse under the other delimiter, which the count never saw.
+
+    ⛔ Here because the check counted one delimiter and the scan that stops
+    reading knows two: one stray ```` ~~~ ```` line took this document's
+    citations from forty-seven to nought with every check green.
+    """
+    tree.text[RECORD] = "~~~\nprose the scan now reads as shown.\n" + tree.text[RECORD]
+    return tree
+
+
+def _plant_a_row_with_no_name_cell(tree: Tree) -> Tree:
+    """A row somebody is part-way through writing.
+
+    ⛔ The green side of this is a refusal and not a pass: what it must not be is
+    a traceback, which is what subscripting the second cell made it.
+    """
+    lines, rows = _record_table(tree)
+    lines.insert(rows[-1] + 1, "| 99 |\n")
+    tree.text[RECORD] = "".join(lines)
+    return tree
+
+
+def _plant_a_shown_fence_delimiter(tree: Tree) -> Tree:
+    """The green side of the fence check: a block that *shows* a bare delimiter.
+
+    ⛔ Measured as a refusal of the counting form: a four-backtick block holding
+    one ```` ``` ```` line is three delimiter lines and one fence, so parity read
+    a correct document as unbalanced -- and the prose it refuses is exactly what
+    somebody documenting this check would write.
+    """
+    tree.text[RECORD] += (
+        "\n\nA bare delimiter, shown rather than written:\n\n"
+        "````\n```\n````\n"
+    )
+    return tree
+
+
+def _plant_a_shown_check_table(tree: Tree) -> Tree:
+    """The green side of the record check: the table's own shape, shown.
+
+    ⛔ Measured as a refusal: the reader took the first line of that shape in
+    file order, so a document showing its own table was read as the record's.
+    """
+    tree.text[RECORD] = (
+        "How that table is written:\n\n"
+        "```\n| # | Name | Check |\n|---|---|---|\n| 0 | a check | what it does |\n```\n\n"
+    ) + tree.text[RECORD]
+    return tree
+
+
+def _plant_a_second_table_after_the_record(tree: Tree) -> Tree:
+    """The green side of the record check: another table, a blank line below it.
+
+    ⛔ Measured as a refusal: the blank line was tested as a subset of the
+    delimiter row's characters, and the empty set is a subset of every set, so
+    the scan ran on and read the next table's rows as this gate's checks.
+    """
+    lines, rows = _record_table(tree)
+    lines.insert(rows[-1] + 1, "\n| Column | Another |\n|---|---|\n| a | b |\n")
+    tree.text[RECORD] = "".join(lines)
     return tree
 
 
@@ -1405,6 +1604,10 @@ VIOLATIONS = [
      _plant_a_row_naming_another_check),
     ("no document leaves a fence open", "a wrap that opens a line with a fence delimiter",
      _plant_a_wrapped_fence_delimiter),
+    ("no document leaves a fence open", "a tilde fence nothing closes",
+     _plant_an_unclosed_tilde_fence),
+    ("the record has a row per check", "a row with no name cell",
+     _plant_a_row_with_no_name_cell),
     ("no orphan section", "a section nothing motivates", _plant_orphan_section),
     ("no orphan section", "a subsection nothing motivates", _plant_orphan_subsection),
     ("no citation names a container", "a citation of a container section", _plant_citation_of_a_container),
@@ -1435,7 +1638,23 @@ EXEMPTIONS = [
      _plant_citation_of_a_line_range),
     ("citations resolve", "the surface's own citation shown as an example",
      _plant_surface_citation_shown_as_an_example),
+    ("no document leaves a fence open", "a block showing a bare fence delimiter",
+     _plant_a_shown_fence_delimiter),
+    ("the record has a row per check", "the table's own shape shown as an example",
+     _plant_a_shown_check_table),
+    ("the record has a row per check", "a second table below a blank line",
+     _plant_a_second_table_after_the_record),
 ]
+
+
+def _tree_state(tree: Tree) -> tuple:
+    """Everything a plant can mutate, so *changed nothing* is answerable.
+
+    ⛔ Every field and not the documents alone: a plant that appends to the list
+    of globs matching no file changes no document, and a detector reading the
+    documents called it unplanted.
+    """
+    return (tree.text, tree.prose, tree.configs, tree.empty_globs)
 
 
 def run(tree: Tree) -> dict[str, list[str]]:
@@ -1454,17 +1673,44 @@ def self_test(tree: Tree) -> int:
     # bytes -- each reddening the check, the pair asserting one widening twice,
     # and the third left held by nothing while the run printed two red lines.
     mutations: dict[str, list[tuple[str, dict[str, str]]]] = {}
+    # ⛔ Each check's answer on the tree as it stands, read once: the red side is
+    # held to **differing** from it and never to being non-empty. ⚠️ Measured on
+    # the exemption half and missing from this one -- once a check is red for any
+    # reason, truthiness reports every plant for it as reddening, including a
+    # plant that mutated nothing.
+    unplanted: dict[str, list[str]] = {}
+    for name, label, plant in VIOLATIONS + EXEMPTIONS:
+        if name not in unplanted:
+            unplanted[name] = by_name[name](tree)
     for name, label, plant in VIOLATIONS:
-        planted = plant(tree.copy())
-        if by_name[name](planted):
-            print(f"  red on                 {name}: {label}")
-        else:
-            print(f"  STAYED GREEN           {name}: {label}")
+        # ⛔ A plant that cannot be built is reported, never raised: the helpers
+        # refuse rather than guess, and a traceback here ends the run with every
+        # assertion after it untaken -- a verdict about nothing, printed as none.
+        try:
+            planted = plant(tree.copy())
+        except AssertionError as refusal:
+            print(f"  PLANT COULD NOT BE BUILT {name}: {label} -- {refusal}")
             failures += 1
+            continue
         changed = {
             path: text for path, text in planted.text.items()
             if text != tree.text.get(path)
         }
+        # ⛔ Before the verdict, because the verdict is about the mutation: a
+        # substitution gone stale against an edit in the same pass changes no
+        # byte, and the check's unchanged answer then reads as a held mechanism.
+        # ⚠️ Compared over the **whole** tree and not its text alone: one plant
+        # mutates the list of globs that matched no file, and a detector reading
+        # the documents reported that plant as having changed nothing.
+        if _tree_state(planted) == _tree_state(tree):
+            print(f"  NOT PLANTED            {name}: {label} changed nothing, so "
+                  "this asserts the tree rather than the mechanism")
+            failures += 1
+        elif by_name[name](planted) != unplanted[name]:
+            print(f"  red on                 {name}: {label}")
+        else:
+            print(f"  STAYED GREEN           {name}: {label}")
+            failures += 1
         for other, before in mutations.setdefault(name, []):
             if before == changed:
                 print(
@@ -1474,14 +1720,22 @@ def self_test(tree: Tree) -> int:
                 )
                 failures += 1
         mutations[name].append((label, changed))
-    unplanted: dict[str, list[str]] = {}
     for name, label, plant in EXEMPTIONS:
-        if name not in unplanted:
-            unplanted[name] = by_name[name](tree)
-        if by_name[name](plant(tree.copy())) == unplanted[name]:
+        try:
+            planted = plant(tree.copy())
+        except AssertionError as refusal:
+            print(f"  PLANT COULD NOT BE BUILT {name}: {label} -- {refusal}")
+            failures += 1
+            continue
+        if _tree_state(planted) == _tree_state(tree):
+            print(f"  NOT PLANTED            {name}: {label} changed nothing, so "
+                  "this asserts the tree rather than the carve-out")
+            failures += 1
+        elif by_name[name](planted) == unplanted[name]:
             print(f"  green on               {name}: {label}")
         else:
-            print(f"  WENT RED               {name}: {label}")
+            print(f"  WENT RED               {name}: {label}: "
+                  f"{[p for p in by_name[name](planted) if p not in unplanted[name]]}")
             failures += 1
     if failures:
         print(

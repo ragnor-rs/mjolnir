@@ -915,9 +915,14 @@ def self_test() -> int:
     # ⛔ The answer's own number, which this kind had no guard on: the sibling
     # kind's, for its reason. ⚠️ One per shape the guard holds, the bool because
     # it is an `int` and passed a type test while naming no item.
+    # ⚠️ And the two a host counting from one cannot mean, for the sibling kind's
+    # reason: `0` and a negative name no item, and either shaped into this item's
+    # identifier reaches every path and every write composed from it.
     for label, planted in (
         ("carrying no number", None),
         ("answering `true` for one", True),
+        ("answering zero", 0),
+        ("answering below zero", -13),
     ):
         _boards.clear()
         numberless = _issue_payload(7)
@@ -1137,7 +1142,10 @@ def self_test() -> int:
     # floor, a padded string addresses the number inside it, and a superscript
     # answers `isdigit` and then raises in `int` -- while the refusal's own
     # message says a value that is not a number addresses nothing.
-    for handed in ("not-a-number", True, 1.9, " 11 ", "²"):
+    # ⚠️ And the two this host numbers from one rules out, on the argument as well
+    # as on its own answer above: `#0` and a negative name no item, and a negative
+    # reaches the client as a flag rather than as an argument.
+    for handed in ("not-a-number", True, 1.9, " 11 ", "²", 0, -13, "0", "-13"):
         shapeless = _Host({})
         reported = with_host(
             shapeless, lambda handed=handed: refused(lambda: read_blockers(handed))
@@ -1619,6 +1627,35 @@ def self_test() -> int:
         not writes(host),
         f"called {host.calls}",
     )
+    # ⛔ And the address the host answered with, which is read rather than
+    # trusted: the created item is addressed by the last segment of that URL, so
+    # a segment that is no item number is an item nobody can address afterwards.
+    # ⚠️ The shapes are the ones this guard holds and `int()` would not: a
+    # superscript answers `isdigit` and then raises, and `0` names no item on a
+    # host counting from one -- a decimal test alone admits both.
+    for label, answered in (
+        ("a segment that is no number", "https://example.invalid/issues/not-a-number"),
+        ("a superscript segment", "https://example.invalid/issues/²"),
+        ("a segment numbered zero", "https://example.invalid/issues/0"),
+        ("a segment numbered below zero", "https://example.invalid/issues/-13"),
+        ("no segment at all", "https://example.invalid/issues/"),
+    ):
+        _boards.clear()
+        shapeless = _Host({
+            "Board": _board_payload_for(_page_of(FIELD_NODES)),
+            "issue create": answered,
+            "Item": _issue_payload(31),
+            "AddCard": {"addProjectV2ItemById": {"item": {"id": "PVTI_card"}}},
+        })
+        reported = with_host(
+            shapeless,
+            lambda: unavailable(lambda: create_item("a title", "a body", ["port"])),
+        )
+        check(
+            f"a filing answered with {label} is a failed call, not a traceback",
+            reported is not None and "cannot be addressed" in reported,
+            f"got {reported!r}",
+        )
 
     # ⛔ The module left as the port found it. This suite binds a configuration
     # and resolves boards against a substituted host; a run inside a longer
