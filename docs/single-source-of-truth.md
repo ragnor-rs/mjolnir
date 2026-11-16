@@ -2332,10 +2332,10 @@ it can be a host check at all.
 
 What it holds: the **name** an entry is keyed on, the **triggers** that start the run, the **paths**
 a run covers and in which of the two senses — each in both directions, because neither shows from
-the other's output, and a rename is
-at once an entry naming a run the host does not make and a run no entry names, which is this gate's
-acceptance case. And the **jobs** an entry names where it states that form, one way only: a job the
-file defines and no member names is the ordinary case rather than drift
+the other's output, and a rename is at once an entry naming a run the host does not make and a run
+no entry names, which is this gate's acceptance case. And the **jobs** an entry names where it
+states that form, one way only: a job the file defines and no member names is the ordinary case
+rather than drift
 ([schema § 2](../plugins/mjolnir/config/schema.md#a-workflow-whose-jobs-mirror-more-than-one-command)).
 The kind is **computed**: two statements of one fact, compared. Where the host's definitions are not
 files a reader can open, the comparison is undeterminable whole and the run says so.
@@ -2372,24 +2372,23 @@ figures and a number in this paragraph is wrong by the next plant.
   ref the file does not state, a path filter on each side alone, two spellings of one filter, an
   excluding filter on each side alone, one filter written in the two senses, two excluding filters
   spelled differently, a job no file defines, and a top-level key named as a job. And on the runner
-  dimension, each on a
-  planted statement the files were first put in agreement with: a job on another label, a job
-  naming none, a job on another budget, a job with nothing bounding it, a workflow in another
-  group, a group that cancels nothing in progress and so retires nothing, and a workflow with no
-  group at all.
+  dimension, each on a planted statement the files were first put in agreement with: a job on
+  another label, a job naming none, a job on another budget, a job with nothing bounding it, a
+  workflow in another group, a group that cancels nothing in progress and so retires nothing, and
+  a workflow with no group at all.
 - **Absences that must be reported and must *not* arrive as drift**: a host kind whose definitions
   are not files, a definition stating no name, one that is not valid YAML, one that could not be
   opened, an event block filtered on a key no pattern can state, one stating both senses of a path
   filter at once, one whose path key carries no glob, a workflow filtering its events in one sense
-  each, a workflow filtering its events
-  differently from one another, an entry stating no `triggers`, a trigger the grammar does not
-  parse, a job filter the host kind carries nowhere, and — on the runner dimension — a label
-  chosen when the run starts, a set of labels where the facet states one, a budget the host
-  evaluates, a concurrency group it evaluates, and a concurrency group the file states on a job
-  rather than on the workflow. ⚠️ **That last one was a false drift before it was an absence**:
-  the host carries the key at both levels, and read at the workflow alone such a file comes back
-  as stating no group at all — so the comparison reported a correct project wrong, red forever,
-  the only clearing edit being to move a key the project put where it meant to.
+  each, a workflow filtering its events differently from one another, an entry stating no
+  `triggers`, a trigger the grammar does not parse, a job filter the host kind carries nowhere,
+  and — on the runner dimension — a label chosen when the run starts, a set of labels where the
+  facet states one, a budget the host evaluates, a concurrency group it evaluates, and a
+  concurrency group the file states on a job rather than on the workflow. ⚠️ **That last one was
+  a false drift before it was an absence**: the host carries the key at both levels, and read at
+  the workflow alone such a file comes back as stating no group at all — so the comparison reported
+  a correct project wrong, red forever, the only clearing edit being to move a key the project put
+  where it meant to.
 - **Subject readings**: nothing stated beside nothing defined, which is *no subject*; and an empty
   facet with definitions behind it, which is drift rather than a project standing down.
 - **Exemptions that must stay green**, among them a trigger list and a type clause in an order no
@@ -2805,10 +2804,9 @@ surface's form does not cover are each a state of its own, and
 three different answers because their remedies differ. ⛔ **No count of them is written here**, for
 the reason no count of the plants below is: a figure in this paragraph is wrong by the next state
 the facet gains, and this one had gone stale exactly that way. ⛔ The one direction that is not
-fail-closed
-is a command two entries mirror, where `reached` outranks the rest; that is asserted too, because
-reading the first entry found would report *out of scope* on the strength of whichever entry
-happens to be written above.
+fail-closed is a command two entries mirror, where `reached` outranks the rest; that is asserted
+too, because reading the first entry found would report *out of scope* on the strength of whichever
+entry happens to be written above.
 
 ⚠️ **Every plant was verified by breaking the branch it was written for**, one break per branch:
 a trigger's event read as always this change's, an omitted type clause read as a filter, a type
