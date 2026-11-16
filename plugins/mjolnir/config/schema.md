@@ -548,6 +548,48 @@ repository's own checks
 ⛔ **The same rule for a different artifact is #28's** — the checks a document role ships — and it is
 cited here rather than ruled a second time.
 
+⛔ **A test is read off what was asked for, never off the implementation it is about to judge.**
+What an assertion is derived from is the item's own acceptance statement, the interface the caller
+wants, the behaviour somebody described — and a test derived from the code instead asserts the
+behaviour that code **has**. ⚠️ **The failure is error propagation, and it is the one failure in
+this subsection measured on a model writer rather than argued from practice**: where the
+implementation is already wrong, the fault is copied into the assertion, after which the two agree
+and the defect is masked rather than revealed, so the suite reddens on nothing it was written to
+catch
+([the reading](../../../docs/test-first-for-a-model-writer.md#what-the-test-was-conditioned-on-moves-a-great-deal)).
+⛔ **And an assertion weakened until it passes fails this rule before it reaches the next one**: a
+case that prints what the code returned, or that asserts only that a call came back, has been
+derived from the run rather than from what was wanted, and the same reading measures that shape as
+the majority of what a model writer produces unprompted.
+
+⛔ **The ordering is not the rule, and a session is free to write the test second.** *Write the
+test first* is one way of guaranteeing the test was not derived from the implementation, and it is
+not the guarantee: a writer that already holds the implementation it intends — the ordinary state
+of a session that has read the code before writing anything — satisfies the sequence and has lost
+the only thing the sequence stood in for. ⚠️ **What the evidence separates is those two**: isolating
+the sequence as such moves nothing on either writer, while isolating what the test was conditioned
+on moves a great deal, so a rule written on the sequence would buy the appearance of this one and
+none of its effect
+([the reading](../../../docs/test-first-for-a-model-writer.md#what-the-model-writer-evidence-says)).
+⚠️ **This and *proved to bite* above are two rules and not one under two names** — that one plants a
+violation against a test that already exists and confirms the red, this one says where the test's
+content came from, and either can hold with the other broken.
+
+⚠️ **What this does not reach is named here, so that a reader can tell a boundary from a gap.** A
+red whose cause is a stub or an absent import rather than an absent behaviour is the rule above's
+and [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s, since a red's
+cause cannot be read off where the test came from. A test weakened, re-aimed or deleted in the same
+change that reddens it is a later act than the one this governs, and is a reviewer's finding with
+no mechanism behind it. And the **design** claim usually made for writing the test first — that
+wanting to call something that is not there is what exposes a bad interface — rests on an
+experience a model writer does not have, is unmeasured for one, and is deliberately not what this
+rules on
+([the gaps](../../../docs/test-first-for-a-model-writer.md#what-no-source-answers-for-a-model-writer)).
+⚠️ **And nothing decides any of it**, which is this rule's own boundary rather than an omission: no
+check reads where a test's text came from, the one record of what a session has already read is
+[§ 22](#22-what-enters-the-window-bounded-where-the-call-is-made)'s and is kept for deduplication,
+and the reader named at the top of this subsection is frequently the session that wrote the test.
+
 ⛔ **Assert values, never key sets.** A parity check written over key sets passes on the very defect
 it exists to catch: two structures whose keys agree and whose values do not. ⛔ **And a fixture
 thinner than the production shape tests the fixture** — a case whose input carries only the fields
