@@ -575,6 +575,46 @@ def self_test() -> int:
         finally:
             under_test.TRANSPORT = was
 
+    def with_client(answered, call):
+        """One level deeper than `with_host`, for the client's own refusals.
+
+        ⛔ **Because the seam's depth decides what it can test.** `with_host`
+        substitutes the transport, which hands back values already parsed — so
+        every refusal the client function raises for itself is above the fake
+        and none of them is ever executed: `gh` absent, a timeout, a non-zero
+        exit, an empty body, a body that is not one JSON document. The sibling
+        kind's suite has this seam for exactly these five, and this one did not.
+
+        `answered` is what the client prints, or an exception class to raise.
+        """
+        was = under_test.subprocess
+
+        class _Answered:
+            stdout = answered if isinstance(answered, str) else ""
+            stderr = "a reason the host gave"
+            returncode = 0
+
+        class _Client:
+            TimeoutExpired = was.TimeoutExpired
+            CalledProcessError = was.CalledProcessError
+
+            @staticmethod
+            def run(*arguments, **keywords):
+                if isinstance(answered, str):
+                    return _Answered()
+                if answered is was.TimeoutExpired:
+                    raise was.TimeoutExpired(cmd="gh", timeout=60)
+                if answered is was.CalledProcessError:
+                    raise was.CalledProcessError(
+                        returncode=1, cmd="gh", stderr="a reason the host gave")
+                raise answered()
+
+        under_test.subprocess = _Client
+        try:
+            return call()
+        finally:
+            under_test.subprocess = was
+
     # The fixture configuration, and the registry entry this module is.
     try:
         configuration = _example_configuration()
@@ -670,6 +710,40 @@ def self_test() -> int:
             "The option id is read from the board by name, never written here, and "
             "a status word like Todo carries no id at all.\n"
         ),
+    )
+
+    # --- the client's own refusals, which only the deeper seam reaches -------
+    #
+    # ⛔ One per refusal `_subprocess_gh` raises for itself. ⚠️ Every one of these
+    # was unreachable from this suite until the seam below it existed: the fake
+    # transport answers with values already parsed, so the parse, the exit code
+    # and the empty body never happened. Each is asserted to arrive as the
+    # contract's own exception carrying the command, which is what makes a failed
+    # call reproducible by hand rather than a traceback.
+    for label, answered, expected in (
+        ("`gh` is not on PATH", FileNotFoundError, "not on PATH"),
+        ("the call timed out", under_test.subprocess.TimeoutExpired, "timed out"),
+        ("the host answered non-zero", under_test.subprocess.CalledProcessError,
+         "a reason the host gave"),
+        ("an empty body where one was expected", "", "answered with nothing"),
+        ("a body that is not one JSON document", "not a document", "not one JSON document"),
+    ):
+        reported = with_client(
+            answered,
+            lambda: unavailable(lambda: under_test.TRANSPORT(["api", "x"], True)),
+        )
+        check(
+            f"the client refuses {label}, naming the command",
+            reported is not None and expected in reported and "gh api x" in reported,
+            f"got {reported!r}",
+        )
+    unparsed = with_client(
+        '  {"ok": 1}  ', lambda: ran(lambda: under_test.TRANSPORT(["api", "x"], False))
+    )
+    check(
+        "and a call asking for no parse gets the text back, stripped",
+        unparsed == '{"ok": 1}',
+        f"got {unparsed!r}",
     )
 
     # --- a board past one page, read whole ----------------------------------
@@ -1062,26 +1136,20 @@ def self_test() -> int:
     def field(name: str) -> list:
         return [entry.get(name) for entry in blockers or [{}]]
 
+    # ⛔ **What the shaping makes of a blocker is asserted once, and not here.**
+    # The state word, the reason beside it and the repository each blocker is in
+    # are `_code_host_dependency.blocker`'s, shared by this kind and the
+    # plain-issues one, and that kind's suite holds all three — a derivation
+    # asserted in two places being the class this change exists to delete, and
+    # the one its own review found reintroduced twice.
+    # ⚠️ **What is this suite's own is the transport**: that this kind's paged
+    # read arrives at that shaping at all, carrying every page, which is a
+    # different client and a different path composition from the sibling's.
     check(
-        "`read_blockers` answers every recorded blocker with the host's own state word",
-        list(zip(field("number"), field("state")))
-        == [(12, "closed"), (13, "open"), (14, "closed")],
+        "this kind's own read reaches the shared shaping, every page of it",
+        list(zip(field("number"), field("repo")))
+        == [(12, own_repo), (13, elsewhere), (14, own_repo)],
         f"answered {blockers!r}",
-    )
-    check(
-        "and the repository each blocker is in, which a bare number loses",
-        field("repo") == [own_repo, elsewhere, own_repo],
-        f"answered {field('repo')!r}",
-    )
-    # ⛔ The reason beside the state, which is the half a closed state loses: #12
-    # and #14 are both `closed` and only one of them produced anything, and § 5's
-    # bar is what the dependency produced. An implementation dropping this answers
-    # the two identically.
-    check(
-        "and the host's own reason for a closed state, so an abandoned blocker is "
-        "not an achieved one",
-        field("state_reason") == ["completed", None, "not_planned"],
-        f"answered {field('state_reason')!r}",
     )
     # ⛔ The answer's keys, exactly, at **both** levels -- and that is the arm this
     # case was rewritten for. The first form asserted that a hardcoded set of
