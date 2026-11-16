@@ -380,12 +380,14 @@ independently** ([`§ 8`](../../config/schema.md#the-reply-to-the-person-running
 that names work the turn does not do hands the turn back, and the work this pass just claimed is
 work the turn can do.
 
-**Where the pass does stop, and it is the same short list that stops every other step:** a gate that
-refused, an orphaned claim, a stop whose remedy is a decision — each of them already stated above as
-a stop, and each one reached *before* the claim is taken. ⛔ **Once the ref is published the stop
-list is empty**, which is the point of putting this step after step 6 rather than making it
-conditional: a claim held by a session that then asked permission to use it is the orphaned claim
-step 4 treats as a fault.
+**Where the pass does stop, it stops before this step rather than in it**, and the stops are the
+ones already stated above: a gate that refused and an orphaned claim on a *named* item are reached
+before the claim is taken, and ⚠️ **a tree that could not be entered is reached after it** — step 5
+states that one, and it is why this step is not written as *the claim was published, so proceed*.
+⛔ **What none of them is, is a pause for permission.** A pass that reaches this step has a
+published ref and a tree it is standing in, and a session that then asked whether to use them holds
+a claim it is not working — which is the orphaned claim step 4 treats as a fault, produced
+deliberately.
 
 ⚠️ **What the work is bounded by is the item, not this file.** The item's stated acceptance
 condition is what the work is driven to — § The loop's *implemented* — and this role names it
