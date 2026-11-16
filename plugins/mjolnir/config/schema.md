@@ -576,17 +576,18 @@ violation against a test that already exists and confirms the red, this one says
 content came from, and either can hold with the other broken.
 
 ⚠️ **What this does not reach is named here, so that a reader can tell a boundary from a gap.** A
-red whose cause is a stub or an absent import rather than an absent behaviour is the rule above's
-and [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s, since a red's
-cause cannot be read off where the test came from. A test weakened, re-aimed or deleted in the same
+red whose cause is a stub or an absent import rather than an absent behaviour is the rule above's,
+and where a project states a floor it is also
+[§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s — a red's cause
+cannot be read off where the test came from. A test weakened, re-aimed or deleted in the same
 change that reddens it is a later act than the one this governs, and is a reviewer's finding with
 no mechanism behind it. And the **design** claim usually made for writing the test first — that
 wanting to call something that is not there is what exposes a bad interface — rests on an
 experience a model writer does not have, is unmeasured for one, and is deliberately not what this
 rules on
 ([the gaps](../../../docs/test-first-for-a-model-writer.md#what-no-source-answers-for-a-model-writer)).
-⚠️ **And nothing decides any of it**, which is this rule's own boundary rather than an omission: no
-check reads where a test's text came from, the one record of what a session has already read is
+⚠️ **And nothing decides this rule**, which is its own boundary rather than an omission: no check
+reads where a test's text came from, the one record of what a session has already read is
 [§ 22](#22-what-enters-the-window-bounded-where-the-call-is-made)'s and is kept for deduplication,
 and the reader named at the top of this subsection is frequently the session that wrote the test.
 
