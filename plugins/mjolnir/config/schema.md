@@ -2828,13 +2828,15 @@ the stronger reading is the one a reader takes**, and a mechanism credited with 
 not have is one nobody checks.
 
 ⚠️ **The independence a guard reading some other leg's record would have had is available to no
-guard here.** Where a project maps no reviewing role there is no other leg to have written
-anything — [§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) puts the record in
-the finishing pass's own hands — so whatever a guard reads in that configuration is a record the
-merging pass wrote. ⛔ **A guarantee that holds only in some configurations is not a guarantee**,
-and nothing measures which configuration a given project is in. ⛔ **So the surface states the one
-the mechanism has rather than the one it would prefer**, which is § 2's rule about a run that said
-nothing, arriving where the subject is a guard rather than a check.
+guard here, under any configuration.** What it reads is the merge ask, and the merging pass is what
+writes that — ⚠️ **and the configuration that looks most like an exception is not one**: where a
+project maps no reviewing role there is no other leg to have written anything at all, since
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) puts that record in the
+finishing pass's own hands too. ⛔ **A guarantee available in no configuration is not one the
+surface claims**, and ⛔ **one that held in only some would not be either** — nothing measures which
+configuration a given project is in. ⛔ **So the surface states what the mechanism has rather than
+what it would prefer**, which is § 2's rule about a run that said nothing, arriving where the
+subject is a guard rather than a check.
 
 ⛔ **What holds the `answered by` column is the authorship rule and not this guard.** A pass writing
 a person's name against an answer that person did not give has fabricated an attestation, and that
@@ -4303,7 +4305,7 @@ absence states itself, and without that statement a decision and an oversight re
 **The role that walks this is the finishing one**, at [`skills/finish/`](../skills/finish/), and it
 is that role that **writes** the record a person's answer leaves. ⛔ **The list is not the reviewing
 role's to define**: that role records the verdicts it produced and the answers it gave about its own
-pass — the depth it read at, and that it ran the plan — which are not checks on this list, and a
+pass — the depth it read at, and what became of the plan — which are not checks on this list, and a
 role that decided for itself what any of it added up to would be the gate and the record at once.
 
 ⚠️ **How thoroughly the change was read is not a check on this list.** The reviewing leg settles
