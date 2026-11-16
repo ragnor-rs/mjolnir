@@ -889,7 +889,9 @@ host:
       mirrors: "<local command>"   # the local command whose verdict this run duplicates
       command_root: "<name>"       # § 1's root it runs in; omitted where that is the code root
       triggers: "<event>(<types>) -> <ref>"  # what starts it; a list when there is more than one
-      paths: ["…"]                 # path filters; omitted when the workflow runs on every change
+      paths: ["…"]                 # the paths it watches; omitted where it runs on every change
+      paths:                       # or the same key in its other sense, never a second key
+        excluding: ["…"]           # every change but one whose every path this list matches
 ```
 
 Independent of the tracker. A project may keep its cards in one system and its code in another.
@@ -1039,12 +1041,14 @@ host:
   checks:
     - workflow: "…"            # the key, as above — a workflow's name and never a job's
       triggers: "<pattern>"    # the workflow's own event block; a job carries none
-      paths: ["…"]             # the filter on that block; omitted where it carries none
+      paths: ["…"]             # the filter on that block, in either sense; omitted where it carries none
       jobs:                    # stated instead of `mirrors`, never beside it
         - job: "<the job's id, as the workflow file spells it>"
           mirrors: "<local command>"
           command_root: "<name>"   # § 1's root this job's command runs in
           paths: ["…"]         # this job's own filter; omitted where the job carries none
+          paths:               # and its other sense, as on the entry above
+            excluding: ["…"]
 ```
 
 **The form is for a project whose workflows are not the toolkit's to reshape.** One project in the
@@ -1098,7 +1102,8 @@ event block, and a member's is that job's own where the job carries one. ⛔ **N
 and neither overrides the other** — a command's run covers a change that is within both, and a
 level stating no filter bounds nothing. Making one the other's default would turn the effective
 filter into a derivation, which is the one thing a check comparing this facet to the workflow files
-could not then perform.
+could not then perform. **Which sense each level states it in is the subsection below's**, and the
+level rule holds whichever sense a level is written in.
 
 **`triggers` stays the entry's**, the event block being the workflow's and not any job's — types
 and all, the subsection above stating what one of them says and this form settling only the level
@@ -1111,6 +1116,62 @@ can tell its own artifact from the project's, while an appended job is a surgica
 the project edits too. The cost is the one ruled acceptable above — a checkout per command. ⚠️
 **Where the file it would write already exists, the installer stops and names it**, rather than
 appending to it or writing over it.
+
+### The two senses a path filter states, and why they are one key
+
+```yaml
+host:
+  checks:
+    - workflow: "…"
+      paths: ["…"]           # the paths this run watches
+    - workflow: "…"
+      paths:
+        excluding: ["…"]     # or every change but one whose every path this list matches
+```
+
+**A run's filter has two senses and a host writes both of them**: one names the paths a run
+watches, the other names the paths it does not and runs on everything else. ⛔ **The sense is the
+value's shape and never a second key** — a list is the watching sense and a mapping under
+`excluding:` is the other — so a level states exactly one of them and no consumer composes
+anything. ⚠️ **Measured as a fact the facet could not hold**: two workflows of one project in the
+migration set filter in the excluding sense and in no other, so neither entry could carry its
+filter at all and every consumer read both as running on every change.
+
+⛔ **Two keys would be two filters free to disagree**, which is the shape `mirrors` beside `jobs`
+is refused as one subsection up: a level stating both leaves each consumer choosing which to
+believe, and an effective filter composed from the pair is a derivation the check holding this
+facet to the workflow files could not then perform.
+
+⛔ **And a translation is not available.** The complement of a glob list is not a glob list, so an
+entry cannot restate an excluding filter as a watching one — which is why the facet carries the
+sense rather than leaving it to be converted where the filter is written.
+
+⛔ **The host's own key for it is not what this states.** That spelling is one key of one host
+kind, and [the event vocabulary rule above](#what-a-trigger-states-the-event-the-types-of-it-and-the-ref)
+keeps a host's names off this surface; what this facet owes is a way to say which paths a run
+covers, however a file spells it.
+
+**What each sense answers about a change**, and ⚠️ **the two are not mirror images** — the
+asymmetry is the host's own, stated rather than smoothed:
+
+| the filter states | the run covers this change when |
+|---|---|
+| the paths it **watches** | **at least one** path the change touches matches a glob of the list |
+| the paths it **excludes** | **not every** path it touches matches one — a single path outside the list is a change the run covers |
+
+⚠️ **So a change whose paths are not in hand is answered by neither sense.** Both readings are
+about the whole set of paths a change touches, which is the *no answer* the table of answers below
+already gives a filter it cannot match a change against.
+
+⛔ **An empty list is refused in either sense**, and so are a mapping carrying any key but
+`excluding`, a mapping carrying none, and an `excluding:` written with nothing after it — each
+refused with the key named, by the rule one subsection up that a key written blank is never read as
+the absence it looks like.
+
+**Both levels take either sense**, and the conjunction above is untouched: a command's run covers
+a change within the workflow's filter *and* the job's, each level read in whichever sense it
+states. ⚠️ **The two levels need not agree on the sense**, a host writing each level's filter in
+whichever one that level's own key is.
 
 ### Where the host's jobs run
 
@@ -1258,8 +1319,8 @@ cannot land.
 
 | Answer | What it is | What it is never |
 |---|---|---|
-| **reached** | an entry mirrors the command, a trigger of it fires on this change — its event, the type of that event, and its ref — and every stated path filter admits a path it touches, so this run is the one to read | green. How it concluded is the host's, under the four preconditions above, and this answer is one of their inputs rather than a summary of them |
-| **out of scope** | an entry mirrors it, and no trigger of it fires on this change or a filter admits no path the change touches — so the host legitimately runs nothing and the local verdict is the only one there is | a failure, and never something to wait for |
+| **reached** | an entry mirrors the command, a trigger of it fires on this change — its event, the type of that event, and its ref — and every stated path filter admits it, each in [the sense that level states](#the-two-senses-a-path-filter-states-and-why-they-are-one-key), so this run is the one to read | green. How it concluded is the host's, under the four preconditions above, and this answer is one of their inputs rather than a summary of them |
+| **out of scope** | an entry mirrors it, and no trigger of it fires on this change or a filter excludes it — no path it touches within a watching filter, or every path it touches inside an excluding one — so the host legitimately runs nothing and the local verdict is the only one there is | a failure, and never something to wait for |
 | **no answer** | nothing to read, or nothing to read it against: `checks: []`, no entry mirroring this command, an entry stating no trigger, or a change whose own event type or paths were not established against an entry that filters on them | coverage, by the absence rule above |
 | **unreadable** | an entry mirrors it and states a trigger or a filter no consumer can parse | an answer about the change. The remedy is the configuration, and a local run does not supply it |
 
@@ -1435,7 +1496,7 @@ not make and a run no entry names, so a comparison run one way reports half of i
 |---|---|---|---|
 | name | `workflow`, the only key anything is read by | the definition's own name, read from the file and never from a job | both |
 | triggers | one pattern per `(event, types, ref)` | the event block: its events, each one's types, each one's refs | both |
-| paths | `paths`, omitted where the run covers every change | the filter on that event block | both |
+| paths | `paths`, in either of [its two senses](#the-two-senses-a-path-filter-states-and-why-they-are-one-key) and omitted where the run covers every change | the filter on that event block, in whichever sense the block's own key states | both |
 | jobs | each member's `job`, where the entry states that form | the ids of the `jobs:` block, read inside it and never from the document | one |
 | runner | `host.runner`, where the project states it at all | each job's own runner label and budget, and the workflow's supersession group | one |
 
@@ -1494,6 +1555,13 @@ file would be editing what the host executes.
   compared on the part the facet can state: a workflow that fires on refs the facet cannot
   enumerate is as right as the facet lets it be, and reporting drift against it is red forever with
   no edit that clears it.
+- ⛔ **An event block stating both of the host's path keys**, each sense of one filter written
+  beside the other. [The subsection above](#the-two-senses-a-path-filter-states-and-why-they-are-one-key)
+  makes an entry's filter one sense or the other, so such a file states something no entry has a
+  form for — and comparing the half of it the facet can spell is drift reported against a file on
+  the strength of what was not read. ⚠️ **Both senses *are* compared**, each against the key its
+  own sense is written under, and it is only the pair in one block that leaves the dimension
+  unestablished.
 - ⚠️ **An entry stating no `triggers` leaves that dimension unstated**, and this is the one place
   the two keys part company: an omitted `paths` has a meaning stated above — the run covers every
   change — and an omitted `triggers` has none, so there is nothing for a comparison to hold the

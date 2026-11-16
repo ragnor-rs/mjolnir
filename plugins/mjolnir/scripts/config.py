@@ -4128,33 +4128,83 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
     hold_against_executed(stated_needs, carried=True)
 
 
-def _path_filter(node: dict, where: str) -> None:
-    """§ 2's path filter, held to being a list of globs where it is stated.
+# § 2's second sense of a path filter: the key the excluding form is written
+# under, and the one spelling of it. ⛔ Named here rather than in each consumer,
+# for the reason the trigger grammar is: the sense is the value's *shape*, so a
+# consumer spelling the key itself would be a second reading of one form, free
+# to disagree with the walk every consumer loads the facet through.
+EXCLUDING = "excluding"
+
+
+def _path_filter(node: dict, where: str) -> dict | None:
+    """§ 2's path filter as one record, in whichever of its two senses it states.
+
+    `None` where the level states none -- which § 2 makes the level bounding
+    nothing -- and otherwise `{EXCLUDING: bool, "globs": [...]}`. ⛔ The sense is
+    normalised **here and once**: both consumers of this facet read the record,
+    so neither carries a reading of the value's shape of its own, which is the
+    per-consumer reading the facet exists to delete one level up.
 
     Read by `host_checks.py`, which answers whether a mirroring run reaches a
-    change, and held to a shape for the reason § 13's `run` is: a single glob
-    written as a string is the natural mistake, and it stringifies into
-    something a comparison would walk character by character. ⚠️ Both levels go
-    through here, so the entry's filter and a job's are held identically -- a
-    shape rule that applied to one of them would be read as a statement about
-    the other.
+    change, and by the check holding the facet to the host's own definitions.
+    Held to a shape for the reason § 13's `run` is: a single glob written as a
+    string is the natural mistake, and it stringifies into something a
+    comparison would walk character by character. ⚠️ Both levels go through
+    here, so the entry's filter and a job's are held identically -- a shape rule
+    that applied to one of them would be read as a statement about the other.
 
     ⛔ The **key's presence** is what is read, not its value, which is § 2's rule
     for every key here whose absence is itself an answer: a filter omitted means
     the level carries none, while one written with nothing after it is the same
-    text as a filter somebody meant to write.
+    text as a filter somebody meant to write. ⚠️ That holds one level deeper as
+    well -- an `excluding:` written blank is the same text as one somebody meant
+    to fill in, and a mapping is never read as the absence of the key above it.
     """
     if "paths" not in node:
-        return
+        return None
     value = node["paths"]
+    # ⛔ The excluding sense is a mapping under one key, and a mapping stating
+    # anything else is refused with the key named rather than read as the
+    # watching sense or as nothing at all: § 2 states one spelling per sense, so
+    # a key nothing reads is a filter the project wrote and no consumer applies.
+    if isinstance(value, dict):
+        unknown = sorted(key for key in value if key != EXCLUDING)
+        if unknown or not value:
+            raise ConfigError(
+                where,
+                f"is {value!r}; § 2 states a path filter's excluding sense as a "
+                f"mapping carrying `{EXCLUDING}` and nothing else"
+                + (
+                    f", and this one carries {', '.join(repr(key) for key in unknown)}"
+                    if unknown else ", and this one carries no key at all"
+                )
+                + ". The sense is the value's shape, so a key no consumer reads "
+                "is a filter the project stated and nothing applies.",
+            )
+        return {
+            EXCLUDING: True,
+            "globs": _globs(value[EXCLUDING], f"{where}.{EXCLUDING}"),
+        }
+    return {EXCLUDING: False, "globs": _globs(value, where)}
+
+
+def _globs(value, where: str) -> list[str]:
+    """The globs one sense of a § 2 path filter states, held to being a list of them.
+
+    ⛔ One list rule for both senses, called from each rather than written
+    twice: an empty list and a blank glob are refused identically whichever key
+    they are written under, and a rule that reached one sense only would read as
+    a statement about the other.
+    """
     if not isinstance(value, list) or not value:
         raise ConfigError(
             where,
-            f"is {value!r}; § 2 states a path filter as a list of globs, or "
-            "omitted where that level carries none. A single glob written as a "
-            "string is read as a list of its characters by anything that walks "
-            "it, and an empty list is the key written blank -- which § 2 refuses "
-            "rather than reading as the absence it looks like.",
+            f"is {value!r}; § 2 states each sense of a path filter as a list of "
+            "globs, or the key omitted where that level carries none. A single "
+            "glob written as a string is read as a list of its characters by "
+            "anything that walks it, and an empty list is the key written blank "
+            "-- which § 2 refuses rather than reading as the absence it looks "
+            "like.",
         )
     for position, pattern in enumerate(value):
         if not isinstance(pattern, str) or not pattern.strip():
@@ -4164,6 +4214,7 @@ def _path_filter(node: dict, where: str) -> None:
                 "blank one matches nothing while reading as a filter somebody "
                 "wrote.",
             )
+    return list(value)
 
 
 # § 2's trigger grammar, in one place. The event, the types of it the workflow
@@ -4666,7 +4717,10 @@ def _entry_run(entry: dict, index: int, roots: dict[str, dict]) -> dict:
     """
     where = f"host.checks[{index}]"
     workflow = _entry_workflow(entry, where)
-    _path_filter(entry, f"{where}.paths")
+    # ⛔ The record and never the raw value, for both levels: § 2 makes the sense
+    # the value's shape, and a consumer handed the shape would be reading the
+    # facet a second time.
+    filters = _path_filter(entry, f"{where}.paths")
     # ⛔ The entry's and never a job's: § 2 puts the event block on the workflow,
     # so a `triggers` inside a `jobs` member is a key nothing states and nothing
     # would read.
@@ -4676,7 +4730,7 @@ def _entry_run(entry: dict, index: int, roots: dict[str, dict]) -> dict:
         "where": where,
         "workflow": workflow,
         "triggers": entry.get("triggers"),
-        "paths": entry.get("paths"),
+        "paths": filters,
         "jobs": entry.get("jobs") if "jobs" in entry else None,
         "commands": list(_entry_commands(entry, index, roots)),
     }
@@ -4820,14 +4874,13 @@ def _entry_commands(entry: dict, index: int, roots: dict[str, dict]):
                 "is required (§ 2): a job mirroring no local command is left out "
                 "of the list rather than written into it with nothing to mirror.",
             )
-        _path_filter(job, f"{at}.paths")
         yield record(
             _command(job["mirrors"], f"{at}.mirrors"),
             job.get(COMMAND_ROOT_REF),
             f"{at}.{COMMAND_ROOT_REF}",
             f"the `{name}` job of the `{workflow}` workflow",
             name,
-            job.get("paths"),
+            _path_filter(job, f"{at}.paths"),
         )
 
 
@@ -10749,6 +10802,45 @@ def self_test() -> int:
         "pattern no project wrote",
     )
 
+    # ⚠️ The green side of § 2's second sense, which the refusals above cannot
+    # assert: a filter in the excluding sense loads at **both** levels, and the
+    # record carries the sense rather than the shape. ⛔ Asserted on the record
+    # and not on the load alone: a walk that dropped the sense would load every
+    # one of these and hand both consumers a filter in the wrong direction.
+    excluding = _a_valid_example()
+    excluding["host"]["checks"] = [{
+        "workflow": "A planted workflow",
+        "triggers": "pull_request -> *",
+        "paths": {EXCLUDING: ["a-tree/**"]},
+        "jobs": [
+            {"job": "a-planted-job", "mirrors": "a-mirrored-command",
+             "paths": {EXCLUDING: ["a-tree/one/**"]}},
+            {"job": "a-watching-job", "mirrors": "another-mirrored-command",
+             "paths": ["a-tree/two/**"]},
+        ],
+    }]
+    broken = _refused(excluding)
+    walked = mirrored_runs(excluding) if broken is None else []
+    check(
+        "a path filter in the excluding sense loads at either level",
+        broken is None and len(walked) == 2,
+        f"refused {broken!r}",
+    )
+    check(
+        "and each record carries the sense its own level states",
+        broken is None
+        and walked[0]["paths"] == {
+            "workflow": {EXCLUDING: True, "globs": ["a-tree/**"]},
+            "job": {EXCLUDING: True, "globs": ["a-tree/one/**"]},
+        }
+        and walked[1]["paths"]["job"] == {
+            EXCLUDING: False, "globs": ["a-tree/two/**"],
+        },
+        f"carried {[record['paths'] for record in walked]!r}, and a consumer "
+        "handed the wrong sense answers out of scope for every change the run "
+        "covers and covered for every change it skips",
+    )
+
     # The collision the key exists for, still impossible from inside an entry:
     # two workflows naming one job, each mirroring a different command. ⛔ A
     # reader that keyed anything on the job name would answer both with one
@@ -12109,6 +12201,36 @@ def _planted_violations():
          "host.checks[0].jobs[0].paths",
          _a_job_list_of([{"job": "a-job", "mirrors": "a-mirrored-command",
                           "paths": []}])),
+        # § 2's excluding sense. ⛔ Every refusal above has its counterpart here,
+        # because the two senses go through one list rule: a shape refused under
+        # one key and admitted under the other would be the filter's own form
+        # stated twice, which is what carrying the sense in the value's shape
+        # exists to avoid.
+        ("a filter mapping carrying a key § 2 does not state",
+         "host.checks[0].paths", _a_path_filter_of({"ignoring": ["a-tree/**"]})),
+        ("a filter mapping carrying the sense and a second key",
+         "host.checks[0].paths",
+         _a_path_filter_of({EXCLUDING: ["a-tree/**"], "watching": ["a-tree/**"]})),
+        ("a filter mapping carrying no key at all", "host.checks[0].paths",
+         _a_path_filter_of({})),
+        ("an excluding filter written with nothing after it",
+         "host.checks[0].paths.excluding", _a_path_filter_of({EXCLUDING: None})),
+        ("an excluding filter written as an empty list",
+         "host.checks[0].paths.excluding", _a_path_filter_of({EXCLUDING: []})),
+        ("an excluding filter written as one glob rather than a list",
+         "host.checks[0].paths.excluding",
+         _a_path_filter_of({EXCLUDING: "a-tree/**"})),
+        ("a glob of an excluding filter written blank",
+         "host.checks[0].paths.excluding[1]",
+         _a_path_filter_of({EXCLUDING: ["a-tree/**", "  "]})),
+        ("a job's excluding filter written as an empty list",
+         "host.checks[0].jobs[0].paths.excluding",
+         _a_job_list_of([{"job": "a-job", "mirrors": "a-mirrored-command",
+                          "paths": {EXCLUDING: []}}])),
+        ("a job's filter mapping carrying a key § 2 does not state",
+         "host.checks[0].jobs[0].paths",
+         _a_job_list_of([{"job": "a-job", "mirrors": "a-mirrored-command",
+                          "paths": {"ignoring": ["a-tree/**"]}}])),
         ("a trigger written with nothing after it", "host.checks[0].triggers",
          _a_trigger_of(None)),
         ("a trigger list written empty", "host.checks[0].triggers",

@@ -1824,6 +1824,65 @@ the omission rule gives it; the one that does is the whole of the evidence that 
 having, and the second event kind rests on that same entry. What exercises the rest is the reader's
 planted violations and the example that illustrates the form.
 
+## The filter a workflow states in the inverse, and the sense the key could not carry
+
+The same facet again, and the one fact in a migration project's whole host block the surface could
+not hold. **Two of that project's workflows filter on the paths they *ignore* and on nothing else**
+— run on everything except a list — where `paths` stated only the including form. So neither entry
+could carry its filter at all, and every consumer read both as running on every change. The rule is
+[`schema.md § 2 → The two senses a path filter states`](../plugins/mjolnir/config/schema.md#the-two-senses-a-path-filter-states-and-why-they-are-one-key);
+what is here is the measurement and the arguments that settled the shape.
+
+**The direction it was wrong in is the safe one, which is why it was a gap and not a defect.** An
+entry with no filter reads as covering every change, so the coverage reading never reported a run
+as covering a change the host in fact skipped — it reported the opposite, waiting for a run that
+would not come. ⚠️ **The one reading that lost a verdict** is the guard that refuses a local check
+the host has already run: it could decline a local run the host skipped, and it lost that verdict
+to a command the project can still run with its escape.
+
+⛔ **And the drift check could not see any of it.** It compared `paths` in both directions against
+the workflow's own `paths:` key; a file stating the inverse key has no `paths:` for either side of
+that comparison, so an entry with no filter and a file with an inverse one **agreed** — the
+dimension reported as agreeing where nothing had been compared, which is the arm
+[ruling 18](divergences-and-rulings.md#4-the-rulings) forbids outright. The key sat in that check's own list of
+keys no entry has a form for, and ⚠️ **it was the one entry of that list a project could have done
+something about**: the others name refs the facet cannot enumerate, while this one named a sense the
+facet simply did not state.
+
+**Four questions, and the arguments that settled each.**
+
+| Question | Settled | The argument |
+|---|---|---|
+| Whether the sense is a second key | **No — it is the value's shape** | Two keys for one filter are two filters free to disagree, which is the shape `mirrors` beside `jobs` is refused as one subsection over: a level stating both leaves each consumer choosing, and an effective filter composed from the pair is a derivation the drift check could not then perform. A list is the watching sense and a mapping under `excluding:` is the other, so a level states exactly one |
+| Whether an entry could restate an excluding filter as a watching one | **No** | The complement of a glob list is not a glob list. A translation at the point the filter is written was the cheap answer and there is no translation to write, which is what forced the facet to carry the sense rather than the writer |
+| Whether the host's own key name belongs on the surface | **No** | It is one key of one host kind, and § 2 keeps the event vocabulary off this surface for the same reason. What the facet owes is a way to say which paths a run covers, however a file spells it — so the host's two spellings live in the reader of the host's own definitions and nowhere else |
+| Whether the two senses are each other's mirror image | **No, and the asymmetry is the host's** | A watching filter admits a change touching **one** path it matches; an excluding one excludes a change only where **every** path it touches matches. Mirrored, the consumer would answer *out of scope* for a change the run really makes — a green reported for a run nobody read |
+
+**What the three consumers answer now.** The reader normalises the sense once, so neither consumer
+reads the value's shape: a filter arrives as its sense and its globs, and ⛔ **a walk that dropped
+the sense would hand both of them a filter pointing the other way** — which is why the record and
+not the load is what this project's suites assert. The coverage reading answers *out of scope* for a
+change whose every path an excluding filter names. The drift check compares the sense before the
+globs, ⚠️ **because two filters listing the same globs in opposite senses agree on every character
+and cover complementary sets of changes** — the one pair a comparison of the lists alone calls
+identical.
+
+⛔ **One shape stays unestablished rather than compared: an event block stating both of the host's
+path keys**, which is
+[`schema.md § 2 → The facet against the host's own definitions`](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions)'s
+own list of what leaves a dimension unestablished. The host rejects such a file itself, so the
+entry beside it may be a correct statement
+of a run that never starts; which of the two keys the project meant is not a comparison's to pick,
+and reading the half the facet can spell would report drift on the strength of what was not read.
+
+⚠️ **What this repository can say about either sense is nothing, and the residue is the same one the
+level rule has.** No workflow here filters on paths at all — every entry of its own facet omits the
+key — so the sense is exercised by the reader's planted violations, by the drift check's planted
+definitions in each direction, and by the example that illustrates the form, and by no configuration
+this project runs on. ⛔ **The two entries that found the gap are in a repository this one cannot
+open**, so what landed here is the form and the checks; those entries state their filter where they
+live.
+
 ## A section one role writes and another runs
 
 The facet is [`schema § 20`](../plugins/mjolnir/config/schema.md#20-the-sections-a-pull-request-body-must-carry);
