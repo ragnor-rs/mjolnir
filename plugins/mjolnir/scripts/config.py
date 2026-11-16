@@ -4301,7 +4301,7 @@ def _validate_deploy(
                 not isinstance(entry[key], str) or not entry[key].strip()
             ):
                 raise ConfigError(
-                    f"{where}.{key}", f"must be a non-empty string (§ 33)."
+                    f"{where}.{key}", "must be a non-empty string (§ 33)."
                 )
         if "command_root" in entry and (
             not isinstance(entry["command_root"], str)
@@ -11853,8 +11853,15 @@ def self_test() -> int:
         ("a live target states its liveness as `false` and loads",
          {"not_live": False}),
         ("a target the session is the only user of loads", {"not_live": True}),
-        ("a target carrying none of the optional keys loads", {}),
-        ("a target handed to a person names a workflow and a ref and no command",
+        # ⚠️ Not a second spelling of the arm above it: the fixture's own
+        # defaults are a `command` target with nothing optional, and this one is
+        # the shape that carries the most -- a dispatch with a ref and inputs.
+        # Written as `{}` first, which asserted exactly what the previous arm did.
+        ("a dispatch carrying a ref and the inputs it always sends loads",
+         {"invoke": "dispatch", "command": _ABSENT, "ref": "a-ref",
+          "workflow": _a_workflow_the_example_states(),
+          "inputs": {"an-input": "a-value"}}),
+        ("a target handed to a person names a workflow, a ref and no command",
          {"invoke": "by_hand", "command": _ABSENT, "ref": "a-ref",
           "workflow": _a_workflow_the_example_states()}),
         ("a target with a precondition the invocation does not check loads",

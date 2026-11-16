@@ -1995,6 +1995,15 @@ discovered: a port that worked out who was asking would be answering a question 
 rather than about the procedure. ⛔ **The default is `procedure`**, so a role that names no writer
 is held exactly as every role was before a deploying one existed.
 
+⛔ **And those two are the whole of what an ask may be made as, refused before the configured writer
+is read at all.** The rest of the set names parties this procedure is not — a merge's automation,
+the person who ordered the work, a mechanical path test — so an ask naming one is a **claim to be
+somebody** rather than a request, which is the fabrication
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) rules out one section over.
+⚠️ **Without that refusal the carried writer inverts the guard it is part of**: any caller could
+write any status by naming that status's own writer, and `never` would be the only word still
+refusing anything.
+
 `never` is the strictest real case: a project whose tracker credential is a person's own account,
 where every write reads as that person speaking, so the procedure writes nothing at all and
 reports instead.
@@ -7370,17 +7379,18 @@ about, so *not production* is not the test and the surface does not offer it as 
 
 ### The three shapes a target is reached by
 
-⛔ **`invoke` states which, and a project whose deploy is one script is one of three cases rather
-than the case.** Measured across the seven carriers: four reach their target by a command, one by a
-dispatch, one by handing the commands to a person, and one of the four runs four commands rather
-than one — while two have no script in the repository at all, their deploy being a configuration a
-hosted service executes or a run the host makes.
+⛔ **`invoke` states which, and a project whose deploy is one script is one case of the table below
+rather than the case.** Measured across the carriers: most reach their target by a command, one by a
+dispatch and one by handing the commands over — while some have no script in the repository at all,
+their deploy being a configuration a hosted service executes or a run the host makes, and one that
+does runs several commands rather than the one it is named for. ⚠️ **No count is written here**, the
+table being the statement and the figures the measurement's.
 
 | `invoke` | what the role does | what the entry states |
 |---|---|---|
 | `command` | runs it, in the root `command_root` names | `command`, and `command_root` where it is not the code root |
 | `dispatch` | asks [§ 29](#the-run-operations-and-what-each-absence-does) for one, against `ref`, sending `inputs` | `workflow`, `ref`, `inputs` |
-| `by_hand` | runs nothing, names the workflow and the ref, and **reports no deploy made** | `workflow`, `ref` |
+| `by_hand` | runs nothing, names the workflow, the ref and every input, and **reports no deploy made** | `workflow`, `ref`, `inputs` |
 
 ⛔ **`by_hand` is a project's ruling about who may perform the act and never the port's absent
 case.** § 29 already states what a role does where `dispatch` is unavailable, and the words are the

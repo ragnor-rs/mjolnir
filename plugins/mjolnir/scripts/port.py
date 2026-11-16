@@ -129,6 +129,18 @@ DEPLOY = "deploy"
 # what any existing ask means.
 ASKED_AS = PROCEDURE
 
+# ⛔ The writers a role in this procedure may ask as, and the whole of them. § 4.2
+# states it in as many words: `procedure` is what every role but one asks as and
+# `deploy` is the only other. The rest of that set names parties this procedure
+# is not -- a merge's automation, the person who ordered the work, a mechanical
+# path test -- so a caller naming one would be claiming to be somebody, which is
+# the fabricated attestation the record rules out one section over.
+#
+# ⚠️ Without this the parameter inverts the guard it was added to: any caller
+# could write any status by naming that status's own writer, and the one writer
+# the guard refuses outright would be the only one left refusing.
+ASKABLE_AS = (PROCEDURE, DEPLOY)
+
 # § 32's key, spelled out for the reason the two writers above are and held to
 # the surface by the self-test the same way: a refusal naming a key the surface
 # has renamed sends somebody to edit a key that is not there.
@@ -958,6 +970,22 @@ class Port:
 
         `None` where the caller may write; the refusal otherwise.
         """
+        # ⛔ First, and before the configured writer is read at all: a caller
+        # asking as a party this procedure is not has made a claim rather than a
+        # request, and reading the configuration next would answer it.
+        if asked_as not in ASKABLE_AS:
+            return Outcome(
+                "set_state",
+                performed=False,
+                refused=True,
+                writer=writer,
+                detail=f"Refused: this ask is made as `{asked_as}`, which is not a "
+                "writer a role in this procedure may ask as. § 4.2 states two — "
+                f"{' and '.join(f'`{word}`' for word in ASKABLE_AS)} — and the "
+                "rest of that set names parties this procedure is not, so naming "
+                "one would be claiming to be somebody rather than asking.",
+                **about,
+            )
         if writer == NEVER:
             return Outcome(
                 "set_state",
@@ -1944,12 +1972,28 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
     # ⛔ And `never` is refused whatever a caller claims to be, which is the arm
     # a parameter like this invites getting wrong: it is the writer that is not a
     # party, so there is nobody for a caller to claim to be.
-    for asker in (PROCEDURE, DEPLOY):
+    for asker in ASKABLE_AS:
         claimed = _asking(NEVER, asker)
         check(
             f"a `{NEVER}` status stays refused an ask made as `{asker}`",
             claimed.refused and "no other writer" in claimed.detail,
             f"got {str(claimed)!r}",
+        )
+    # ⛔ The askable set itself, in both directions — and the refusing direction
+    # is what keeps the parameter from inverting the guard: a caller naming a
+    # status's own writer would otherwise write that party's status, which is the
+    # one thing § 4.2's writer exists to stop. ⚠️ Planted on the status whose
+    # writer **matches** what the caller claims, because that is the pairing a
+    # guard reading the configuration first would let through.
+    for asker in [w for w in config.facts_for("writer") if w not in ASKABLE_AS]:
+        claiming = _asking(asker, asker)
+        check(
+            f"an ask made as `{asker}` is refused whatever the status says",
+            claiming.refused
+            and not claiming.performed
+            and asker in claiming.detail
+            and "may ask as" in claiming.detail,
+            f"got {str(claiming)!r}",
         )
     # ⛔ The forward direction carries the role as a field too, on every answer it
     # gives. ⚠️ Asserted on the **report** and over all three answers, because the

@@ -14,7 +14,7 @@ not carry, did not verify and did not finish named in the reply.
 one of those is the project's, reached through what its target states and never learned here, by
 [`§ What the procedure models`](../../config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls).
 ⚠️ **Measured over every deploying carrier in the survey and found local in all of them**, which is
-why this role is short and the copies it replaces are not.
+why this role is short and the copies it was extracted from are not.
 
 ⛔ **The facet is [`§ 33`](../../config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes)
 and this file states none of it again.** A copy of a rule here is a second authority allowed to
@@ -139,8 +139,9 @@ never composed to satisfy it**, which would be filling in a form rather than hav
 
 ## 6. Invoke what the target states
 
-⛔ **One of three shapes, and this role chooses none of them** — the entry's `invoke` does
-([`§ 33`](../../config/schema.md#the-three-shapes-a-target-is-reached-by)).
+⛔ **Whichever shape `invoke` states, and this role chooses none of them**
+([`§ 33`](../../config/schema.md#the-three-shapes-a-target-is-reached-by)). ⚠️ **No count of them
+is written here**, the alternation being the statement.
 
 | the entry says | what happens here |
 |---|---|
@@ -177,9 +178,13 @@ What a run delivered is read from its **log**, through the port's own operation,
 
 ## 8. Advance the batch
 
-⛔ **Only the items step 4 put in the batch, and only once step 7 came out clean for each.** The
-move goes through the port, asked for as a **role** and never as a status word, and this role asks
-as the writer the deploy is:
+⛔ **An entry whose `advances` is `none` moves nothing, and this step does not run.** The batch is
+still reported — what the deploy carried is a fact about the deploy — and ⛔ **the reply says the
+target writes nothing on an item** rather than leaving a reader to read silence as a failed move.
+
+⛔ **Otherwise: only the items step 4 put in the batch, and only once step 7 came out clean for
+each.** The move goes through the port, asked for as a **role** and never as a status word, and this
+role asks as the writer the deploy is:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
