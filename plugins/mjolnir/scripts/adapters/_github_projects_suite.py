@@ -531,6 +531,23 @@ def self_test() -> int:
             return f"<{type(error).__name__}: {error}>"
         return None
 
+    def at(mapping, *keys):
+        """One nested value out of an answer, or None where any step is absent.
+
+        ⛔ **Because a subscript inside an assertion raises where the comparison
+        is written.** The regression these rows exist to catch is a shaping that
+        stops producing a key, so the direct form ends the run on a `KeyError`
+        exactly when the mechanism breaks -- a traceback where a verdict belongs,
+        which is the one shape this gate must never take. ⚠️ The sibling suite's
+        rows were corrected for this and these were left.
+        """
+        found = mapping
+        for key in keys:
+            if not isinstance(found, dict):
+                return None
+            found = found.get(key)
+        return found
+
     def ran(call):
         """A call expected to go through, with any exception reported as a value.
 
@@ -606,18 +623,21 @@ def self_test() -> int:
     fields = index_fields(FIELD_NODES)
     check(
         "a field's id is the one the board answered, resolved by its name",
-        fields["Status"]["id"] == "PVTSSF_status"
-        and fields["Status"]["options"]["In Progress"] == "aaaaaaa2",
+        at(fields, "Status", "id") == "PVTSSF_status"
+        and at(fields, "Status", "options", "In Progress") == "aaaaaaa2",
         f"resolved {fields.get('Status')!r}",
     )
     check(
         "and an iteration is resolved by its title, for the same reason",
-        fields["Sprint"]["iterations"] == {"Sprint 1": "iter-1"},
-        f"resolved {fields['Sprint']['iterations']!r}",
+        at(fields, "Sprint", "iterations") == {"Sprint 1": "iter-1"},
+        f"resolved {at(fields, 'Sprint', 'iterations')!r}",
     )
     check(
         "a host-managed column keeps its type, so a write into it can be refused",
-        fields["Labels"]["data_type"] == "LABELS" and fields["Estimate"]["data_type"] == NUMBER,
+        at(fields, "Labels", "data_type") == "LABELS"
+        and at(fields, "Estimate", "data_type") == NUMBER,
+        f"resolved {at(fields, 'Labels', 'data_type')!r} and "
+        f"{at(fields, 'Estimate', 'data_type')!r}",
     )
 
     # The sweep the first acceptance item asks for, with a plant per id shape so
@@ -661,7 +681,7 @@ def self_test() -> int:
     read = _paged(lambda cursor: pages[0 if cursor is None else int(cursor[1:]) + 1], what="pages")
     check(
         "a connection past one page is read whole, every page followed",
-        len(read) == 4 and read[-1]["name"] == "last",
+        len(read) == 4 and at(read[-1] if read else None, "name") == "last",
         f"read {len(read)} node(s)",
     )
     short = unavailable(
@@ -741,17 +761,18 @@ def self_test() -> int:
     values = values_by_field(_value_nodes())
     check(
         "two fields come back from one read, keyed by their own names",
-        values["Status"] == "Todo" and values["Estimate"] == 3.0 and values["Due"] == "2026-10-22",
+        at(values, "Status") == "Todo" and at(values, "Estimate") == 3.0
+        and at(values, "Due") == "2026-10-22",
         f"read {values!r}",
     )
     check(
         "every value type this module maps is read, the iteration included",
-        values["Title"] == "a card" and values["Sprint"] == "Sprint 1",
+        at(values, "Title") == "a card" and at(values, "Sprint") == "Sprint 1",
         f"read {values!r}",
     )
     check(
         "a value type nobody mapped is carried as unmapped rather than as absent",
-        values["Something new"] == {"unmapped": "ProjectV2ItemFieldUnknownValue"},
+        at(values, "Something new") == {"unmapped": "ProjectV2ItemFieldUnknownValue"},
         f"read {values.get('Something new')!r}",
     )
     documents = [
@@ -781,8 +802,8 @@ def self_test() -> int:
     shadowing = _Host({"Item": {"marker": "the override"}})
     check(
         "an override for one document does not answer a call for another it prefixes",
-        shadowing._answer_for("Items") is not shadowing.answers["Item"]
-        and shadowing._answer_for("Item") is shadowing.answers["Item"],
+        shadowing._answer_for("Items") is not at(shadowing.answers, "Item")
+        and shadowing._answer_for("Item") is at(shadowing.answers, "Item"),
         f"answered {shadowing._answer_for('Items')!r}",
     )
     check(
@@ -1383,20 +1404,22 @@ def self_test() -> int:
     answer = with_host(_Host({}, pages=search_pages), lambda: search_items())
     check(
         "a board past one page is searched whole, not to the first page's ceiling",
-        answer["scanned"] == len(cards) and len(answer["items"]) == 100,
-        f"scanned {answer['scanned']}",
+        at(answer, "scanned") == len(cards)
+        and len(at(answer, "items") or []) == 100,
+        f"scanned {at(answer, 'scanned')!r}",
     )
     check(
         "and the bound it reports is about the matches, which it can state exactly",
-        answer["at_limit"] is True and answer["limit"] == 100,
-        f"reported {answer['at_limit']!r}",
+        at(answer, "at_limit") is True and at(answer, "limit") == 100,
+        f"reported {at(answer, 'at_limit')!r} and {at(answer, 'limit')!r}",
     )
     check(
         "a draft card is carried with its kind and no number, rather than dropped",
-        any(entry["kind"] == "draft" and entry["number"] is None for entry in answer["items"])
-        or any(entry["kind"] == "draft" for entry in
-               with_host(_Host({}, pages=search_pages),
-                         lambda: search_items(terms="draft"))["items"]),
+        any(at(entry, "kind") == "draft" and at(entry, "number") is None
+            for entry in at(answer, "items") or [])
+        or any(at(entry, "kind") == "draft" for entry in
+               at(with_host(_Host({}, pages=search_pages),
+                            lambda: search_items(terms="draft")), "items") or []),
     )
     terms = with_host(
         _Host({}, pages=search_pages), lambda: search_items(terms="42 number")
@@ -1404,40 +1427,41 @@ def self_test() -> int:
     check(
         "every term is a substring of the title, in any order -- the recall a "
         "duplicate check wants",
-        [entry["number"] for entry in terms["items"]] == [42, 142],
-        f"matched {[entry['number'] for entry in terms['items']]}",
+        [at(entry, "number") for entry in at(terms, "items") or []] == [42, 142],
+        f"matched {[at(entry, 'number') for entry in at(terms, 'items') or []]}",
     )
     upper = with_host(
         _Host({}, pages=search_pages), lambda: search_items(terms="NUMBER 42")
     )
     check(
         "and the case of neither side decides it",
-        [entry["number"] for entry in upper["items"]] == [42, 142],
-        f"matched {[entry['number'] for entry in upper['items']]}",
+        [at(entry, "number") for entry in at(upper, "items") or []] == [42, 142],
+        f"matched {[at(entry, 'number') for entry in at(upper, 'items') or []]}",
     )
     nothing = with_host(
         _Host({}, pages=search_pages), lambda: search_items(terms="number 999")
     )
     check(
         "a term nothing carries answers empty, which is what makes the matching bite",
-        nothing["items"] == [] and nothing["scanned"] == len(cards),
-        f"matched {len(nothing['items'])} of {nothing['scanned']}",
+        at(nothing, "items") == [] and at(nothing, "scanned") == len(cards),
+        f"matched {len(at(nothing, 'items') or [])} of {at(nothing, 'scanned')!r}",
     )
     by_field = with_host(
         _Host({}, pages=search_pages), lambda: search_items(fields={"Status": "Todo"})
     )
     check(
         "a field's value with no terms at all is a query of its own",
-        by_field["scanned"] == len(cards) and len(by_field["items"]) == 100,
-        f"matched {len(by_field['items'])}",
+        at(by_field, "scanned") == len(cards)
+        and len(at(by_field, "items") or []) == 100,
+        f"matched {len(at(by_field, 'items') or [])}",
     )
     none_match = with_host(
         _Host({}, pages=search_pages), lambda: search_items(fields={"Status": "Merged"})
     )
     check(
         "and a column nothing is in answers empty rather than matching everything",
-        none_match["items"] == [],
-        f"matched {len(none_match['items'])}",
+        at(none_match, "items") == [],
+        f"matched {len(at(none_match, 'items') or [])}",
     )
     _boards.clear()
     reported = with_host(
@@ -1484,7 +1508,8 @@ def self_test() -> int:
     )
     check(
         "while an empty answer under a label it does have is an answer",
-        isinstance(real, dict) and real["items"] == [] and real["scanned"] == len(cards),
+        isinstance(real, dict) and at(real, "items") == []
+        and at(real, "scanned") == len(cards),
         f"got {real!r}",
     )
     _boards.clear()

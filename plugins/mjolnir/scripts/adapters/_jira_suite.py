@@ -1399,33 +1399,37 @@ def self_test() -> int:
     # builds its own and the rule is per call. ⛔ **Each row names the route the
     # operation's own call goes out on**, never a path substring: the read shares
     # a path prefix with the writes, so a row keyed on a substring was satisfied
-    # by the read. ⚠️ **And `how_many` is the rest of it**: a route an operation
-    # reaches twice -- the read and then its own -- says nothing with one.
-    for operation, call, route_name, how_many in (
-        ("comment", lambda: comment(f"  {key(1)}  ", "a note"), "comment", 1),
-        ("transitions", lambda: under_test.transitions(f"  {key(1)}  "), "transitions", 1),
+    # by the read. ⚠️ **And a route an operation reaches twice needs more than a
+    # count of calls on it**: this one's own call is a second read of the item,
+    # so *two reads happened* is satisfied by any second read -- a regression
+    # that read the item twice and never asked for the changelog included. ⛔ So
+    # the row names a parameter its own call carries and no other call on that
+    # route does, which identifies the call rather than counting it.
+    for operation, call, route_name, identifying in (
+        ("comment", lambda: comment(f"  {key(1)}  ", "a note"), "comment", None),
+        ("transitions", lambda: under_test.transitions(f"  {key(1)}  "), "transitions", None),
         ("set_state", lambda: under_test.set_state(f"  {key(1)}  ", status="<in flight>"),
-         "transition", 1),
-        ("set_field", lambda: set_field(f"  {key(1)}  ", "Priority", "High"), "update", 1),
-        ("set_labels", lambda: under_test.set_labels(f"  {key(1)}  ", ["one"]), "update", 1),
-        ("assign", lambda: under_test.assign(f"  {key(1)}  "), "assignee", 1),
-        # ⚠️ This one writes nothing on the fixture it is handed -- its own call
-        # is a second read of the item, for the changelog -- so what the row can
-        # hold is that call rather than a write, and it says which.
+         "transition", None),
+        ("set_field", lambda: set_field(f"  {key(1)}  ", "Priority", "High"), "update", None),
+        ("set_labels", lambda: under_test.set_labels(f"  {key(1)}  ", ["one"]), "update", None),
+        ("assign", lambda: under_test.assign(f"  {key(1)}  "), "assignee", None),
         ("advance_on_merge", lambda: under_test.advance_on_merge(f"  {key(1)}  "),
-         "issue", 2),
-        ("link_dependency", lambda: link_dependency(f"  {key(1)}  ", key(2)), "link", 1),
+         "issue", ("expand", "changelog")),
+        ("link_dependency", lambda: link_dependency(f"  {key(1)}  ", key(2)), "link", None),
     ):
         addressed = host()
         with_host(addressed, call)
         own = addressed.sent_for(route_name)
+        if identifying is not None:
+            parameter, value = identifying
+            own = [what for what in own if what["params"].get(parameter) == value]
         every = [what["path"] for _, what in addressed.sent] + [
             str(what["body"]) for _, what in addressed.sent]
         check(
             f"`{operation}` carries the key the guard read, in its `{route_name}`"
             " call and in every other it made",
-            len(own) >= how_many and not any("  " in where for where in every),
-            f"sent {[(name, what['path'], what['body']) for name, what in addressed.sent]!r}",
+            len(own) == 1 and not any("  " in where for where in every),
+            f"sent {[(name, what['path'], what['params'], what['body']) for name, what in addressed.sent]!r}",
         )
     # ⛔ And every answer keyed on an item names the item's own key, not the
     # spelling it was asked with. ⚠️ One per operation and per **field**, the

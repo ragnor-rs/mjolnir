@@ -780,11 +780,29 @@ def check_binding_statements_cite_the_surface(tree: Tree) -> list[str]:
     for path, kind in ROLES.items():
         if kind not in MAY_NOT_STATE_A_RULE:
             continue
-        for block in re.split(r"\n\s*\n", tree.text.get(path, "")):
+        text = tree.text.get(path, "")
+        # ⛔ **What *shows* markdown is skipped here too**, which this reader was
+        # the one statement reader not to do: a rule quoted inside a fence, or
+        # left in an HTML comment, is a document showing what a statement looks
+        # like, and refusing it refuses the prose somebody writes to explain
+        # this very check. ⚠️ Read by line, because a statement is a line.
+        shown = shown_lines(text)
+        offset = 0
+        for block in re.split(r"(\n\s*\n)", text):
+            at = text.count("\n", 0, offset)
+            offset += len(block)
+            if block.strip() == "" and "\n" in block:
+                continue
+            # ⚠️ A table row is excluded by the marker having to open the line,
+            # which every row in these documents does not do: they all carry the
+            # leading pipe. ⛔ The residue is the pipe-less row form, which
+            # markdown also admits and this reader does refuse -- recorded
+            # rather than guarded, a guard for it having been written, been
+            # unreachable, and read as covering the case for as long.
             statements = [
                 line
-                for line in block.splitlines()
-                if STATEMENT.match(line) and not line.lstrip().startswith("|")
+                for index, line in enumerate(block.splitlines())
+                if STATEMENT.match(line) and at + index not in shown
             ]
             if not statements:
                 continue
@@ -932,15 +950,16 @@ def check_the_record_has_a_row_per_check(tree: Tree) -> list[str]:
             continue
         if not found:
             continue
-        # ⛔ A blank line ends the table. ⚠️ Measured: tested as a subset of the
-        # delimiter row's characters, the empty line passed the skip -- the empty
-        # set being a subset of every set -- so the scan ran on across a blank
-        # line and read the next table's rows as this gate's checks.
-        if not line.strip():
-            break
+        # ⛔ **A line that is not a row ends the table, and that test comes
+        # first** -- the order is the mechanism here rather than any one arm.
+        # ⚠️ Measured: with the delimiter-row skip ahead of it, a blank line
+        # passed the skip, the empty set being a subset of every set, and the
+        # scan ran on across the blank line and read the next table's rows as
+        # this gate's checks. A guard for the blank line specifically was written
+        # and was redundant under this order, which is why there is not one.
         if not line.lstrip().startswith("|"):
             break
-        # ⚠️ The delimiter row, which is non-empty by the arm above.
+        # ⚠️ The delimiter row, which is a row and is not a check.
         if set(line) <= set("|-: \t"):
             continue
         # ⛔ A row with no second cell is refused and never subscripted: a row
@@ -1188,6 +1207,22 @@ def _plant_a_wrapped_fence_delimiter(tree: Tree) -> Tree:
     """
     tree.text[RECORD] += (
         "\n\nThe heading reader skips only a\n```\nfence, and nothing else.\n"
+    )
+    return tree
+
+
+def _plant_a_binding_statement_shown_as_an_example(tree: Tree) -> Tree:
+    """The green side: a rule a document is **showing**, in each shown form.
+
+    ⛔ Measured as a refusal of all three before the scan reached this reader,
+    which was the one statement reader not to use it: a document explaining what
+    a binding statement looks like was refused for containing one.
+    """
+    tree.text[READER] += (
+        "\n\nWhat one of those looks like:\n\n"
+        "```\n⛔ **A rule, shown.** It cites nothing, which is the point.\n```\n"
+        "\n~~~\n⛔ **The same, under the other delimiter.**\n~~~\n"
+        "\n<!--\n⛔ **And one left in a comment nobody renders.**\n-->\n"
     )
     return tree
 
@@ -1690,6 +1725,8 @@ EXEMPTIONS = [
      _plant_citation_of_a_line_range),
     ("citations resolve", "the surface's own citation shown as an example",
      _plant_surface_citation_shown_as_an_example),
+    ("binding statements cite the surface", "a statement shown as an example rather than written",
+     _plant_a_binding_statement_shown_as_an_example),
     ("citations resolve", "a line range into the surface, which the host resolves",
      _plant_a_line_range_into_the_surface),
     ("citations resolve", "an absolute address the host resolves against a ref",
