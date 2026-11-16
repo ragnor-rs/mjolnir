@@ -23,6 +23,15 @@ host:
       triggers:
         - "pull_request(opened, edited, synchronize, ready_for_review) -> main"
         - "pull_request_review(submitted) -> main"
+    # § 2's other sense of the same key, because this workflow's own event block filters on the
+    # paths it ignores rather than the ones it watches. One key, one sense per level: the
+    # complement of a glob list is not a glob list, so the filter cannot be restated as the form
+    # above and an entry carrying both would state two filters free to disagree.
+    - workflow: "Release notes"
+      mirrors: "npm run notes:check"
+      triggers: "pull_request -> main"
+      paths:
+        excluding: ["docs/**", "*.md"]
     # § 2's second form: one workflow whose jobs mirror a command each, because they share a
     # checkout and a build and the project did not write them to be split. Each job states the
     # filter its own run carries; the workflow's `on:` filter is the entry's, above the list.

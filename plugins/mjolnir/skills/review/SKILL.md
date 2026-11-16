@@ -469,7 +469,7 @@ carried this annotated twice, having got it wrong twice: *a review finding nothi
 about whether the suites pass*, and *nothing to commit is not the same as nothing to verify*. The
 other four skip straight to the host's answer, which is the defect that copy had corrected.
 
-Which runs should exist, which local command each one mirrors and which paths each watches are
+Which runs should exist, which local command each one mirrors and which paths each covers are
 `host.checks`'s to state ([`§ 2`](../../config/schema.md#2-code-host)) — ⛔ **never this file's, and
 never derived from what the host happens to report.** A run's name does not say which command it
 duplicates.
