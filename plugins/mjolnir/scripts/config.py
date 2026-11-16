@@ -11631,17 +11631,31 @@ def self_test() -> int:
                 ("host.checks", "the host runs no checks"),
                 ("checks_local", "no local check is stated"),
                 ("spend_guard.deny", "no command is denied as a spend"),
-                ("live_guard.session_tools", "no command opens a session elsewhere"),
-                ("context_guard.unbounded", "no command's output is unbounded"),
+                # ⚠️ Two of these were **wrong** while nothing read the column:
+                # the report says "on another machine" and "produces output
+                # nothing bounds", and the strings here paraphrased both. Found
+                # by making the match read them.
+                ("live_guard.session_tools", "no command opens a session on another machine"),
+                ("context_guard.unbounded", "no command produces output nothing bounds"),
                 ("context_guard.result_limit_chars", "no result is replaced"),
                 (EXEMPT_CLASSES_PATH, "no change is exempt from the loop"),
                 ("deploy", "no deploy target is stated"),
             ):
                 if config.get(path):
                     continue
+                # ⛔ The match is the **path and the prose together**, and the
+                # second half is what makes it an assertion. The prose column sat
+                # here unread while the arm matched the path alone, so an entry
+                # whose key is a substring of any other line passed with its own
+                # branch deleted -- measured on this change, where `deploy`
+                # matched the word *deployed* inside a neighbouring facet's
+                # reason and the plant stayed green. ⚠️ Compared case-blind,
+                # because every one of these lines opens a sentence.
+                said = [line.lower() for line in reported]
                 check(
                     f"and names `{path}` among them, the project stating it empty",
-                    any(path in line for line in reported),
+                    any(path in line for line in reported)
+                    and any(stated.lower() in line for line in said),
                     f"reported {reported!r}",
                 )
             # § 25's arms, which only a project running the memory third reaches
@@ -11850,6 +11864,25 @@ def self_test() -> int:
         loaded["deploy"] = [_a_deploy_target(**overrides)]
         refusal = _refused(loaded)
         check(label, refusal is None, f"refused on {refusal!r}")
+
+    # ⛔ The one arm the plant list above cannot hold, and it is held on the
+    # refusal's **text** rather than on its key. Two rules refuse
+    # `deploy[].command_root` — this facet's *the shape never reads it* and
+    # § 1's *no root declares it* — so the key says nothing about which fired,
+    # and with this facet's rule disabled the key-only plant stayed green.
+    beside_a_dispatch = _a_valid_example()
+    beside_a_dispatch["deploy"] = [
+        _a_deploy_target(
+            invoke="dispatch", command=_ABSENT, ref="a-ref",
+            workflow=_a_workflow_the_example_states(), command_root="a-root",
+        )
+    ]
+    said = _refusal_said(beside_a_dispatch)
+    check(
+        "a command root beside a dispatch is refused for the shape, not for the root",
+        "never reads it" in said and "no code root declares" not in said,
+        f"said {said!r}",
+    )
 
     # ⛔ And the facet is **read back**, not merely validated: a role reads a
     # target out of the resolved configuration, so a key the reader accepts and
@@ -12427,10 +12460,16 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(ref="a-ref")])),
         ("inputs stated beside a command", "deploy[0].inputs",
          at("deploy", [_a_deploy_target(inputs={"a": "b"})])),
-        ("a command root stated beside a dispatch", "deploy[0].command_root",
-         at("deploy", [_a_deploy_target(invoke="dispatch", command=_ABSENT,
-                                        workflow="a-workflow", ref="a-ref",
-                                        command_root="a-root")])),
+        # ⚠️ **`command_root` beside a dispatch is not planted here**, and the
+        # reason is measured rather than an omission: two rules refuse on that
+        # key — this facet's shape rule and § 1's does-any-root-declare-it rule —
+        # and the base example declares no command root, so a plant naming one
+        # would be refused by § 1's whichever this facet did. ⛔ With
+        # `_validate_deploy` disabled it stayed **green** on exactly that
+        # substitution. What holds it instead is the arm in the § 33 section
+        # below, which reads the refusal's own text.
+        # ⚠️ The arm below it *is* planted here, and is § 1's rule rather than
+        # this facet's: a root nothing declares, on the shape that reads the key.
         # ⚠️ The workflow arm is planted on a name no entry of `host.checks`
         # carries rather than on a blank one: a blank is refused by the shape
         # rule above it under the same key, which reads green while asserting

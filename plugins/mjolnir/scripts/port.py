@@ -79,6 +79,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import os
 import re
@@ -850,11 +851,29 @@ class Port:
         Three answers, never a traceback: the fallback where the capability is
         absent, the result where it is present, and a `failed` outcome naming the
         host's own words where the call did not go through.
+
+        ⛔ **A fourth is the arguments not fitting the operation**, which was a
+        traceback until a § 33 plant surfaced it: the invocation passes whatever
+        it was handed, so an operation asked for with too few of them reached the
+        implementation and raised out of here — past the contract this docstring
+        states. ⚠️ **Raised as a `ConfigError` and not answered as an outcome**:
+        it is the *caller* that is wrong rather than the tracker, so there is no
+        fallback to give and nothing about the item to report.
         """
         fallback = self._stated(operation)
         adapter = self.adapter
         if adapter is None or not adapter.implements(operation):
             return Outcome(operation, performed=False, detail=fallback)
+        try:
+            inspect.signature(adapter.operations[operation]).bind(*args, **kwargs)
+        except TypeError as error:
+            raise ConfigError(
+                f"{self.spec.prefix}.operations.{operation}",
+                f"was asked for with arguments it does not take: {error}. The "
+                "invocation passes every value as written, so what each operation "
+                "takes and in what order is the contract's -- read the port's own "
+                "report rather than guessing at the list.",
+            ) from None
         # ⛔ The configuration goes to the implementation here, every time, and
         # the implementation keeps none of its own. An adapter that resolved the
         # project itself would read it from the working directory -- which § 2
@@ -1333,6 +1352,42 @@ def _any_example() -> config.Config:
     naming a tracker.
     """
     return _loaded()[os.path.basename(_examples()[0])]
+
+
+def _needing_two_arguments() -> str:
+    """An available operation of this project's tracker that takes two arguments.
+
+    ⛔ Found rather than named, which is every fixture here's rule: an operation
+    spelled out would be this suite naming a capability, and a rename would leave
+    the arm asserting about an operation the port no longer states. ⚠️ Raises
+    where every available operation takes one argument or none -- there is then
+    nothing to ask for short, and an arm built on a fallback would assert
+    whatever the fallback happened to be.
+    """
+    answering = load(config.REPO_ROOT, TRACKER, check_paths=False)
+    adapter = answering.adapter
+    for name in sorted(answering.stated):
+        if adapter is None or not adapter.implements(name):
+            continue
+        # ⚠️ **Required** and not merely declared: an operation whose second
+        # parameter carries a default binds with one argument and goes out to the
+        # host, so an arm built on *declared* count asserted a failed call
+        # instead of a refusal -- measured, on the first spelling of this helper.
+        required = [
+            parameter
+            for parameter in inspect.signature(adapter.operations[name]).parameters.values()
+            if parameter.default is inspect.Parameter.empty
+            and parameter.kind
+            in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
+        ]
+        if len(required) > 1:
+            return name
+    raise ConfigError(
+        f"{TRACKER}.operations",
+        "no available operation of this project's tracker requires more than one "
+        "argument, so the too-few-arguments arm has nothing to ask for and would "
+        "assert nothing.",
+    )
 
 
 def _with_statuses(statuses: list[dict]) -> config.Config:
@@ -2810,6 +2865,12 @@ def self_test() -> int:
         try:
             named = _ran("--invoke", "set_state", "--argument", "1")
             by_role = _ran("--advance-to", "initial", "--argument", "1")
+            # ⛔ An operation asked for with arguments it does not take, which
+            # was a traceback out of `invoke` until the arm below was written.
+            # ⚠️ The operation is read off this port's own report rather than
+            # named, so the arm survives a renamed capability: what is wanted is
+            # any available operation taking more than one argument.
+            short = _ran("--invoke", _needing_two_arguments(), "--argument", "1")
         except subprocess.TimeoutExpired:
             check(
                 "the status-move route answered at all, rather than hanging",
@@ -2845,6 +2906,14 @@ def self_test() -> int:
                 "and no traceback reaches the person running it either",
                 "Traceback (most recent call last)" not in by_role.stderr,
                 f"stderr carried {by_role.stderr.strip()[:160]!r}",
+            )
+            check(
+                "an operation asked for with too few arguments is a refusal, not a "
+                "traceback",
+                "Traceback (most recent call last)" not in short.stderr
+                and "arguments it does not take" in short.stdout,
+                f"stderr carried {short.stderr.strip()[:120]!r}, "
+                f"stdout {short.stdout.strip()[:160]!r}",
             )
 
     if failures:
