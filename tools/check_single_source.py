@@ -68,6 +68,7 @@ ROLES = {
     "docs/working-on-the-toolkit.md": EXPLAINS,
     RULINGS: RECORDS,
     "docs/building-itself.md": RECORDS,
+    "docs/test-first-for-a-model-writer.md": RECORDS,
     "plugins/mjolnir/skills/day-report/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/file-work-item/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/finish/SKILL.md": PROCEDURE,
