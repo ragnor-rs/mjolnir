@@ -26,8 +26,10 @@ is the subsection an ordering rule would have extended.
 ⚠️ **An against-result is a result.** Support was one of the two outcomes this reading could have
 had, and it is not the one it had. What it found instead is a sharper rule than the one proposed,
 which is the useful outcome rather than a consolation: *the test is generated from the statement of
-intent and not from the implementation* is decidable, is what the evidence actually supports, and is
-violated by a routine the ordering rule would have passed.
+intent and not from the implementation* is what the evidence actually supports, and is violated by a
+routine the ordering rule would have passed. ⚠️ **Decidable in principle, and by nothing here** —
+the route table below states which mechanisms exist, and no mechanism in this toolkit decides it
+today, so a rule written on this would be held by a reading rather than by a check.
 
 ## The sources, and what each one measured on
 
@@ -39,12 +41,12 @@ within each group.
 
 | Source | Work it measured on | What it claims |
 |---|---|---|
-| Beck, *Test-Driven Development: By Example* (2002) | None — a practitioner's argument | The test is the first client of the interface, so writing it first exposes a bad one. This is the design claim the whole proposal rests on, and it is a claim rather than a measurement |
+| Beck, *Test-Driven Development: By Example* (2002) | No measurement — a human practitioner's argument about human practitioners | The test is the first client of the interface, so writing it first exposes a bad one. This is the design claim the whole proposal rests on, and it is a claim rather than a measurement |
 | Erdogmus, Morisio & Torchiano, *On the Effectiveness of the Test-First Approach to Programming*, IEEE TSE 31(3):226–237 (2005) | Undergraduate students, a small greenfield task | Test-first students wrote more tests, and writing more tests correlated with productivity. Quality showed no significant difference between the groups; minimum quality rose with test count **independently of the strategy** |
 | Nagappan, Maximilien, Bhat & Williams, *Realizing quality improvement through test driven development*, Empirical Software Engineering 13(3):289–302 (2008) | Professional teams on shipping products — three at one vendor, one at another | Defect density dropped 40% for one team and 60–90% for the others against comparable non-adopting teams, with a subjectively reported 15–35% increase in initial development time. ⚠️ Teams chose adoption themselves and were compared post hoc, so self-selection is uncontrolled |
-| Rafique & Mišić, *The Effects of Test-Driven Development on External Quality and Productivity: A Meta-Analysis*, IEEE TSE 39(6):835–856 (2013) | 27 studies, academic and industrial, pooled | A small positive effect on quality and little to no discernible effect on productivity, with effect sizes reported as Pearson's *r* and small. Both the quality gain and the productivity loss were larger in industrial studies, and the productivity drop was larger where the two groups' test effort differed most |
-| Fucci, Erdogmus, Turhan, Oivo & Juristo, *A Dissection of the Test-Driven Development Process: Does It Really Matter to Test-First or to Test-Last?*, IEEE TSE 43(7):597–614 (2017), preprint arXiv:1611.05994 | Controlled experiment sessions in academia and industry, with the process decomposed into dimensions rather than treated as one technique | **Sequencing had no important influence.** The count of test cases with failing assertions was nearly the same for test-first and incremental test-last writers; the authors attribute the benefits usually credited to test-first to fine-grained, uniform steps instead |
-| Santos *et al.*, *A family of experiments on test-driven development*, Empirical Software Engineering 26:42 (2021), preprint arXiv:2011.11942 | 12 experiments, 4 of them industrial, aggregated by meta-analysis | Novices reached slightly **higher** quality with iterative test-last than with test-first, and the task being developed largely determined quality |
+| Rafique & Mišić, *The Effects of Test-Driven Development on External Quality and Productivity: A Meta-Analysis*, IEEE TSE 39(6):835–856 (2013) | Human writers across 27 pooled studies, academic and industrial. ⚠️ The work differs by study and is not one task: the meta-analysis treats task **size** as a moderator and reports a positive correlation between it and the quality gain | A small positive effect on quality and little to no discernible effect on productivity, with effect sizes reported as Pearson's *r* and small. Both the quality gain and the productivity loss were larger in industrial studies, and the productivity drop was larger where the two groups' test effort differed most |
+| Fucci, Erdogmus, Turhan, Oivo & Juristo, *A Dissection of the Test-Driven Development Process: Does It Really Matter to Test-First or to Test-Last?*, IEEE TSE 43(7):597–614 (2017), preprint arXiv:1611.05994 | Human writers in controlled experiment sessions in academia and industry, each session's process decomposed into dimensions rather than treated as one technique | **Sequencing had no important influence.** The count of test cases with failing assertions was nearly the same for test-first and incremental test-last writers; the authors attribute the benefits usually credited to test-first to fine-grained, uniform steps instead |
+| Santos *et al.*, *A family of experiments on test-driven development*, Empirical Software Engineering 26:42 (2021), preprint arXiv:2011.11942 | Human writers, novices among them, across 12 experiments, 4 of them industrial, aggregated by meta-analysis. ⚠️ The experiments' tasks differ, and the family reports the task itself as largely determining quality | Novices reached slightly **higher** quality with iterative test-last than with test-first, and the task being developed largely determined quality |
 
 ### Model writers
 
@@ -148,20 +150,22 @@ and that is the clearest reason the ordering is the wrong thing to rule on.
 
 ## The four routes to satisfying the ordering without earning it
 
-The item enumerated four. Each has been observed on model writers, and each is checked against what
-this toolkit holds today. ⚠️ **The column is deliberately mostly empty**, and the rule it is read
-against — a test earns its place by covering a decision, and its red is confirmed by writing the
-violation first — refuses a change nowhere:
+The item enumerated four, and each is checked here against what this toolkit holds today. ⚠️ **The
+observation column names what has actually been measured on a model writer**, and for the last route
+that is the nearest measured analogue rather than the route itself — stated in the cell rather than
+left to read as the same thing. ⚠️ **The toolkit column is deliberately mostly empty**, and the rule
+it is read against — a test earns its place by covering a decision, and its red is confirmed by
+writing the violation first — refuses a change nowhere:
 [§ *What earns a test*](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable)
 states that nothing under it fails a change, which is the premise this column reports against rather
 than a defect it discovers.
 
 | Route | Observed as | What in this toolkit reaches it today |
 |---|---|---|
-| The test written to the implementation the writer already intends, so the ordering is nominal | The 25%-against-14% fault-detection split, whose treatment condition is a context blind to the implementation rather than a sequence; and the test generators that assert the behaviour the code has | **Nothing.** No check, hook or gate reads authorship order, context provenance, or what the session held when it wrote the assertion. The reviewing role reads a diff that adds a test against the surface's discipline, which is a reading by the same session that wrote it |
-| The assertion weakened until it passes, rather than the behaviour changed until it does | 80.2% of agent-authored test patches carrying a weak oracle or none; agent test files carrying more runtime-printing statements than assertions; and, under reinforcement learning, assertions defeated outright by exiting before they run or by returning the values parsed out of the test file | **Nothing holds an adopter's test.** Inside this repository one mechanism bites: every gate workflow mirrors its script's own self-test, which asserts each check reddens on each planted violation and stays green on each planted exemption. ⚠️ Its blind spot is the item's own: the plant and the assertion have the same author |
-| A red produced by a stub or an import error rather than by the behaviour being absent, so the red proves the file is missing | The benchmark residue — 243–395 tests failing on the old code against 37–106 passing on the new one — which is precisely a red that survives the fix | **Partially, and not here.** [§ 16](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran) makes a run reporting zero executed cases against a non-zero declaration a failure rather than a pass, and requires a skip count to carry what the skipped cases wanted. ⚠️ That holds a *skipped* case, never a red's cause — and this project states no executed count at all, so even that arm is absent here |
-| The test rewritten when it reddens later, which is the same move one step downstream | *Building to the test*: with the oracle in the loop the score reached near-perfect while the shipped library was dead or absent; and the 7 hand-found instances of test hacking in 800 gold-test runs, which is the rate when a person reads every run | **Nothing.** No check reads a test's history, and the suite runner reports an implementation with no suite rather than failing it. A test deleted, weakened or re-aimed in the same change that reddens it is a finding a reviewer may raise and no mechanism raises |
+| The test written to the implementation the writer already intends, so the ordering is nominal | The 25%-against-14% fault-detection split, whose treatment condition is a context blind to the implementation rather than a sequence; and the test generators that assert the behaviour the code has | **Nothing judges it**, which is narrower than nothing reading it. No check, hook or gate reads authorship order, and none judges where a test's text came from. ⚠️ One record of what a session held does exist — the per-session ledger of what has already been read, kept by the context guard under [§ 22](../plugins/mjolnir/config/schema.md#22-what-enters-the-window-bounded-where-the-call-is-made) for deduplication. It is read by no check, reaches no artifact a gate sees, and is where a provenance rule would be built if one were ever written. The reviewing role reads a diff that adds a test against the surface's discipline, which is a reading by the same session that wrote it |
+| The assertion weakened until it passes, rather than the behaviour changed until it does | 80.2% of agent-authored test patches carrying a weak oracle or none; agent test files carrying more runtime-printing statements than assertions; and, under reinforcement learning, assertions defeated outright by exiting before they run or by returning the values parsed out of the test file | **Nothing holds an adopter's test.** Inside this repository one mechanism bites: nearly every gate workflow mirrors a command ending in its own script's self-test, which asserts that each check reddens on each planted violation and stays green on each planted exemption. ⚠️ **Nearly**, and the exception is the instructive one — the runner whose whole job is running other people's suites ships no self-test by its own design statement, so the one gate that executes suites it did not write is the one with no plant of its own. ⚠️ And the mechanism's blind spot is the item's own: the plant and the assertion have the same author |
+| A red produced by a stub or an import error rather than by the behaviour being absent, so the red proves the file is missing | The benchmark residue — 243–395 tests failing on the old code against 37–106 passing on the new one — which is precisely a red that survives the fix | **Partially, and conditionally.** [§ 16](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran) makes a run reporting zero executed cases against a non-zero declaration a failure rather than a pass **where a floor is stated**, and refuses a skip count that does not carry what the skipped cases wanted. ⚠️ **The condition is the rule's own and not a qualification added here**: with no floor configured the counts are read, reported and judged by nothing. ⚠️ Either way it holds a *skipped* case rather than a red's cause — and whether the arm applies in this repository at all is what its `executed` facet states, which is read from the configuration rather than copied into a document |
+| The test rewritten when it reddens later, which is the same move one step downstream | ⚠️ **The nearest measured analogue rather than the route itself**, since both observations are on tests the writer did not author: *building to the test*, where the score reached near-perfect with the oracle in the loop while the shipped library was dead or absent, and the 7 hand-found instances of test hacking in 800 runs against supplied tests. A writer rewriting its **own** reddening test is the one of the four with no located measurement, which is itself a gap rather than a reassurance | **Nothing.** No check reads a test's history, and whether a suite has to exist at all is the gate record's own statement rather than this document's ([the record](single-source-of-truth.md#beside-the-contract-each-implementations-own-suite)). A test deleted, weakened or re-aimed in the same change that reddens it is a finding a reviewer may raise and no mechanism raises |
 
 ⚠️ **The one mechanism that does bite is worth naming precisely**, because it is the form a workable
 rule would most likely take here: the plant. A check in this repository is believed because its own
@@ -191,9 +195,12 @@ reviewing the diff that contains it — appears in no measurement located here.
 
 ## What a measurement on this repository's own history would have to compare
 
-Stated because the gap above cannot be closed from the literature, and because this repository is
+Stated because the gaps above cannot be closed from the literature, and because this repository is
 one of the few places the comparison is cheap: the loop already records, per item, a branch, a
-diff, a review and a gate.
+diff, a review and a gate. ⚠️ **The terms below reach the first two gaps and not the third**: they
+hold the writing leg constant and vary what the test was conditioned on, which is a measurement
+about the writer, while the reviewing-leg gap is about who reads the test afterwards — so it needs
+the second comparison named in its own row rather than a term of this one.
 
 | Term | What it would have to be |
 |---|---|
@@ -204,6 +211,7 @@ diff, a review and a gate.
 | Secondary outcome | Whether the test survived its own change unmodified, and whether the interface it was written against changed after it was written — the nearest decidable stand-in for the design claim |
 | Confound that has to be held | Item size and item kind. The human literature finds task type dominating quality in a family of 12 experiments, and this backlog's items range from a one-line refusal to a whole port |
 | Confound that cannot be held | Model version across the span of the history, and the fact that every item was authored by the same loop under the same instructions, so the comparison is within-writer and not between writers |
+| The second comparison, which is what the reviewing-leg gap needs | A pass where the writer that authored the test is also the reader that reviews the diff carrying it, against one where a different reader does. That is the condition this toolkit's route creates and the one no located study measures, and it varies **who reads** rather than what the test was conditioned on — so it is a comparison beside the terms above and not a term among them. The record it would be taken from is the same one: the review recorded against each change, and what it found |
 | Floor for an answer | Stated before collecting, not after. ⚠️ With the kind of effect the human meta-analysis reports — Pearson's *r* in the small range — a backlog of this size cannot distinguish a small effect from none, which is a reason to prefer the independence manipulation, whose measured effect is large |
 
 ## The human-reading candidate, answered
@@ -217,12 +225,12 @@ in the one currency this loop is short of.
 | Which leg it would be asked at | The implementing leg, before the implementation is believed — which is after the branch is cut and before the finishing role is entered, per [§ *What carries the item forward*](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask). It is a stop that asks, not a check a session answers about its own work, and that is the whole of its value: it is the one arm that does not have the author and the assertion in the same place |
 | What it costs per item | One interactive round on average and up to five for the measured benefit — 1.69 validation queries to reach a test consistent with the person's intent, for 90.40% of cases, in the interactive study. In the industrial filtered-then-reviewed deployment the reviewer accepted between 73% and roughly half of what reached review, so between one rejection in four and one per acceptance |
 | Whether the reading supports it | Yes, and from two independent directions: validating model-proposed tests before the code took pass@1 from 48.39% to 70.49% on one query, and the user study doubled correctness, 84% against 40% (p = 0.001). Independently, supplying human-written tests to a repository-scale agent is worth 26.3 points of resolution over self-generated ones, and the subset analysis attributes that gap to the validity of the test rather than to who resolved it |
-| What it does not fix | The three routes the table above marks *nothing*. A person reading the test catches a weak assertion and a test aimed at the intended implementation; it does not catch a test rewritten later, unless the person reads every change to it. The 7-in-800 figure is what exhaustive human reading of every run found, which is both what that arm catches and what it costs |
+| What it does not fix | Reading the test before the implementation is believed reaches the first two routes of the table above: a weak assertion is visible in the assertion, and a test aimed at an implementation the writer already intends is visible against the item's own statement of what it wants. It reaches neither of the other two. A red whose cause is a stub rather than an absent behaviour has to be **run** both ways to be caught and cannot be read; and a test rewritten once it reddens is a later change, caught only where the person reads every change to it. The 7-in-800 figure is what exhaustive human reading of every run found, which is both what that arm catches and what it costs |
 
 ⚠️ **The cost figure is the part to carry forward rather than the effect figure.** A stop that asks
-per item is a stop on every item, and this project's own configuration states a solo build with one
-identity behind every role — so the person it would ask is the person the loop exists to keep out of
-the per-item path.
+per item is a stop on every item, and where a project's role-to-person facet carries no map — a
+value read from the configuration rather than copied into this document — the person such a stop
+asks is the one person the loop exists to keep out of the per-item path.
 
 ## What this document does not decide
 
