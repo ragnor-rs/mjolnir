@@ -346,6 +346,14 @@ Stated, because an unstated limit reads later as coverage.
   continuation lines of nested list items — a real citation going unchecked, which is the silent
   direction and the worse one. ⚠️ A fenced example is the form to use in these documents; an
   indented one is read as a citation.
+- **Every script in the tree, this gate's own included.** The globs reach markdown, so a module's
+  comments are not held to citing the surface, are not measured in the footprint, and are not
+  read for an outcome — and the file that carries this gate's whole grammar is the largest such
+  body of prose in the repository. ⚠️ **Stated as a scope and not as an oversight**, the same
+  reading the names sweep takes one gate over: a carrier's own text is strict and the `scripts/`
+  beside it is implementation. ⛔ What that costs is real and is this bullet: a rule a module's
+  comment states is a rule no mechanism holds to one authority, and the only reader is whoever is
+  reading the module.
 - **Whatever is not committed.** Every check here reads the working tree, which is not what a
   commit takes. ⚠️ Measured on the change that added this bullet: edits staged by a merge were
   verified green, then edited again and left out of the commit, so the gate's verdict was about a
@@ -360,6 +368,13 @@ Stated, because an unstated limit reads later as coverage.
   states: the reader refuses a block that omits a key its own kind requires, per kind and at
   configuration time, which is a different question from this check's key-set comparison and
   answers nothing about an undeclared key.
+- **Every `yaml` fence on the surface is a declaration to it**, and it has no way to tell one that
+  states the key set from one showing what *not* to write. ⚠️ The consequence runs the wrong way
+  and is the reason this is recorded rather than guarded: a counter-example block would make every
+  configuration refuse for lacking the key it is warning about, and the remedy a reader would be
+  pointed at is to add that key to all of them. There is no such block today, so the residue is
+  the shape of a future edit and not a live defect — and the surface already carries a marker
+  convention for a fence's own reader, which is where a fix would go.
 - **Issues and pull requests.** Not from *this* workflow, which holds no credential — reading
   that store needs a token scope, and per [#50](https://github.com/ragnor-rs/mjolnir/issues/50)
   this one is granted none. ⚠️ It is not unreachable in principle: the gate on the change below
@@ -963,11 +978,12 @@ rather than passing it.
 
 ⚠️ No count of the scripts is carried here. The two above hold a document claim and are what this
 document was written for; the rest hold a module, a shape or a rule — the configuration reader
-`plugins/mjolnir/scripts/config.py`, whose own checks are its work item's; the prose-width sweep,
-which reads the same documents and holds none of their content; the reply hook recorded
-two sections on; and the port contract recorded in this one. Each carries its own workflow and
-its own `host.checks` entry, for the reason the sweep above does: one entry states one mirrored
-command.
+`plugins/mjolnir/scripts/config.py`, whose own checks are its work item's; the day-log carrier
+`plugins/mjolnir/scripts/day_log.py`, whose are likewise its own and which this document records
+nowhere else; the prose-width sweep, which reads the same documents and holds none of their
+content; the reply hook recorded two sections on; and the port contract recorded in this one. Each
+carries its own workflow and its own `host.checks` entry, for the reason the sweep above does: one
+entry states one mirrored command.
 
 `plugins/mjolnir/scripts/port.py --self-test` runs in the `Port contract` workflow. It is not a
 document check, and it is recorded here because its subject is the same discipline — it holds a
@@ -3888,44 +3904,22 @@ first phase names it — *Assert each check can fail, then …* — and a run wi
 to name, so it says only what it holds. ⛔ A step name is not evidence that a suite plants: both
 families plant, and the run prints what it planted.
 
-⚠️ **The checks that plant the green side as well as the red are the ones whose scope has a hole
-in it by design**, and each hole is an exclusion somebody wrote on purpose. The reply-register
-check plants replies that must stay green — a check that flags an arrow inside a fenced block, an
-indented block or a quotation is not the check it claims to be, and each of those was a measured
-false red rather than a hypothesis. The width check plants a line of each unbreakable kind,
-because its exclusion list is where it would quietly stop holding anything. The single-authority
-check plants a container cited through its subsection, which is the carve-out checks 2 and 6
-share, and plants both citation readers' green side, where a refusal of a link that resolves is
-the way either one fails a reader. The audit-trail check plants the carve-out that is its whole
-scope — a violation the change did not write — beside a landed record and a live-status line, each
-of which carries a date and has to pass. The end-to-end register check plants the three ways a
-change may be written down and the change that is outside every judged tree, and asserts its
-fixture's premises first for the same reason. The executed-count
-check plants an unset floor and a tree declaring no case — the two guards in its rule — beside two
-cases nothing was written to let through. The enforcement check plants the whole of the common
-case — a project where nothing is exclusive, which must answer nothing for any call — beside the
-reads that share a path with a merge and must not be refused for it. The spend check plants both of
-its halves by hand — every shape a denied command arrives in against every shape that merely names
-it, which is the correction it was extracted carrying. The live check plants the same two halves
-one guard over and a third beside them: a machine the project named as not live, which must pass
-silently, and which is the green side its own inversion rests on. The context check plants the
-exemption that is its own hole — a command a role is forbidden to truncate, which must pass the
-refusing arm and the replacing one alike — verified by taking the exemption away and watching both
-act, and beside it a read of a file that changed, which must not be refused. The install step
-plants a project
-that asks for no artifact at all, which must write nothing and report nothing, and a value stated
-empty, which must satisfy an artifact's needs rather than wait forever on it — and, since the
-registry holds one, a project stating no title form, which must get no gate and no entry while the
-same fixture stating one gets both. The title form's own suite plants a project stating no form,
-whose every title must get *no answer* rather than either verdict. The sweep over landed trees
-plants both directions of **every** arm it has rather than of the holes alone — a must-remove
-beside each must-keep — because a sweep that removes nothing passes a red-side-only suite whole,
-and the half that would then be untested is the half that deletes files. The restoring role's own
-suite inverts that pair: what it plants is a state a sweep would have **written** into — a store
-that is not there, a transcript that is not there, a working file that is missing — and the
-assertion is that the tree is unchanged afterwards, so there the green side is the whole rule and
-the plant exists to prove the snapshot can see a write at all. ⛔ A red-only suite says
-nothing about any of them.
+⚠️ **The checks that plant the green side as well as the red are the ones whose scope has a
+hole in it by design**, and each hole is an exclusion somebody wrote on purpose. ⛔ **Which
+checks those are, and what each one plants, is not written down here** — the same rule as the
+counts above, one column over: an inventory of plants in prose is a copy of every one of those
+suites' own exclusion lists, and each run prints what it planted. A suite that gains a hole gains
+a plant for it, and this document would be wrong from that commit onwards with nothing saying so.
+
+Two of them are worth stating, because neither is derivable from a run. The sweep over landed
+trees plants both directions of **every** arm it has rather than of the holes alone — a
+must-remove beside each must-keep — because a sweep that removes nothing passes a red-side-only
+suite whole, and the half that would then be untested is the half that deletes files. And the
+restoring role's suite inverts the pair: what it plants is a state a sweep would have **written**
+into — a store that is not there, a transcript that is not there, a working file that is
+missing — and the assertion is that the tree is unchanged afterwards, so there the green side is
+the whole rule and the plant exists to prove the snapshot can see a write at all. A red-only
+suite says nothing about any of them.
 **A green plant naming an exclusion is verified by switching that exclusion off** and watching it
 redden — one that cannot fail is one nobody checked — while a plant naming an omission has nothing
 to switch off, and what it asserts is that a grammar stayed narrow. ⚠️ A suite that keeps the two

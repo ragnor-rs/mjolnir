@@ -959,8 +959,11 @@ def check_the_record_has_a_row_per_check(tree: Tree) -> list[str]:
         # and was redundant under this order, which is why there is not one.
         if not line.lstrip().startswith("|"):
             break
-        # ⚠️ The delimiter row, which is a row and is not a check.
-        if set(line) <= set("|-: \t"):
+        # ⚠️ The delimiter row, which is a row and is not a check. ⛔ **A dash is
+        # required in it**, so a row whose cells are merely empty is compared and
+        # reported rather than skipped: `|   |   |` is a check's row with nothing
+        # in it, and skipping it read as a check the record carries.
+        if set(line) <= set("|-: \t") and "-" in line:
             continue
         # ⛔ A row with no second cell is refused and never subscripted: a row
         # somebody is part-way through writing is a document to report on, not a
@@ -971,7 +974,10 @@ def check_the_record_has_a_row_per_check(tree: Tree) -> list[str]:
                 f"no name cell -- {line.strip()!r}. Every row of that table is a "
                 "check's number and its name."
             ]
-        rows.append((cells[0], cells[1].strip("`")))
+        # ⚠️ The name's own markup is not part of it: a cell somebody wrote in
+        # bold or in italics names the same check, and holding the row to one
+        # punctuation makes the record's formatting load-bearing.
+        rows.append((cells[0], cells[1].strip("`*_ ")))
     if not found:
         return [f"{RECORD}: carries no check table, so this gate is recorded nowhere."]
     wanted = [(str(index), name) for index, (name, _check) in enumerate(CHECKS)]
@@ -1525,6 +1531,40 @@ def _plant_in_an_outcome_cell(tree: Tree, mutate) -> bool:
     return False
 
 
+def _plant_an_outcome_in_a_work_item(tree: Tree) -> Tree:
+    """The green side: the second home an outcome is allowed, on its own.
+
+    ⛔ Live in the table today and therefore covered **incidentally**, which is
+    not a plant: a carve-out nothing can fail is a carve-out nobody checked, and
+    this one is the arm that lets a ruling land before its facet is extracted.
+    """
+    _plant_in_an_outcome_cell(
+        tree,
+        lambda cell: "#4242, until extracted",
+    )
+    return tree
+
+
+def _plant_an_outcome_also_in_a_skill(tree: Tree) -> Tree:
+    """The green side: the surface, *and* the skill that carries the role.
+
+    ⛔ The one phrase permitted beside a home rather than instead of one, and
+    the residue reader is what makes that true — so it is planted beside a
+    surface citation rather than alone.
+    """
+    _plant_in_an_outcome_cell(
+        tree,
+        # ⚠️ Written the way the table writes it, which is the comma form and not
+        # a conjunction: the residue reader strips the phrase and punctuation,
+        # so an `and` between them is a home this check does not recognise —
+        # measured, by planting it.
+        lambda cell: (cell + ", " + OUTCOME_ALSO_IN_SKILL
+                      if OUTCOME_IN_SURFACE.search(cell)
+                      and OUTCOME_ALSO_IN_SKILL not in cell else None),
+    )
+    return tree
+
+
 def _plant_outcome_with_no_home(tree: Tree) -> Tree:
     _plant_in_an_outcome_cell(
         tree,
@@ -1727,6 +1767,10 @@ EXEMPTIONS = [
      _plant_surface_citation_shown_as_an_example),
     ("binding statements cite the surface", "a statement shown as an example rather than written",
      _plant_a_binding_statement_shown_as_an_example),
+    ("outcomes live in the surface or a work item", "the work-item home, on its own",
+     _plant_an_outcome_in_a_work_item),
+    ("outcomes live in the surface or a work item", "the skill named beside a home, not instead of one",
+     _plant_an_outcome_also_in_a_skill),
     ("citations resolve", "a line range into the surface, which the host resolves",
      _plant_a_line_range_into_the_surface),
     ("citations resolve", "an absolute address the host resolves against a ref",
