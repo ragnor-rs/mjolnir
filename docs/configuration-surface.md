@@ -3306,7 +3306,7 @@ second project unable to state its own procedure —
 [`schema.md § 35 → A rehearsal the project may not
 have`](../plugins/mjolnir/config/schema.md#a-rehearsal-the-project-may-not-have-and-what-reading-it-is-for).
 ⚠️ **What both copies agree on is the reading**: C's text says the guarded variant must report no
-divergence and that a guard which aborts stops the deploy, which is a verdict somebody has to have
+divergence and that a guard which aborts stops the deploy — a verdict that exists only once it is
 read. A role that ran the dry variant and parsed nothing performed a ritual.
 
 ### The prompt the session would have to answer on the applicant's behalf
