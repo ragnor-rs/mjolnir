@@ -497,9 +497,11 @@ branch_model:
   # It is also what the registered marketplace path points at, so leaving it alone keeps it
   # serving the procedure while a branch is in flight in a tree under it. ⚠️ Under rather than
   # beside, since the relocation below: what keeps that path serving main is that the trees are
-  # ignored and no reader of the marketplace descends into them, rather than where they sit.
-  # `.claude-plugin/marketplace.json` names `./plugins/mjolnir` outright, so discovery is
-  # manifest-driven, and both shipped gates enumerate with `git ls-files`.
+  # ignored and no reader of the marketplace descends into them, rather than where they sit —
+  # the plugin manifest names what it serves rather than scanning for it, and the gates under
+  # `tools/` enumerate through `git ls-files`, which skips an ignored path. ⛔ No count of either
+  # is written here: the readers are named where they are, and a number would be wrong by the
+  # next one.
   work_in_shared_checkout: never
   parallel_trees: true
   # One level under the agent harness's own managed root, which § 10 makes the placement rather

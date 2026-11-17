@@ -620,8 +620,8 @@ def a_work_tree(path: str, main_tree: str, tree_dir: str | Path | None = None) -
     return not here.startswith(main + os.sep)
 
 
-def tree_holds(path: str | Path, branch: str) -> bool:
-    """Whether this directory is a worktree of this repository with `branch` checked out.
+def tree_holds(root: str | Path, path: str | Path, branch: str) -> bool:
+    """Whether `path` is a tree **of this repository** with `branch` checked out.
 
     ⛔ **What makes a *named* tree evidence rather than an argument.** `--tree` on
     its own says which tree to remove and could name anything; read against the
@@ -631,9 +631,34 @@ def tree_holds(path: str | Path, branch: str) -> bool:
     ordinary release of one's own unlanded claim spends the override § 10 reserves
     for breaking somebody else's work -- the way an override stops meaning
     anything.
+
+    ⛔ **Both halves, because the branch name alone is not this repository's.**
+    ⚠️ **Reproduced while reviewing this function**: an unrelated repository with a
+    branch of the same name checked out answered *held here*, and a claim read that
+    way is released with no override at all -- the branch namespace being per
+    repository while a name is just a string. So the repository is compared too,
+    on the common directory rather than on the worktree's own, which is what a
+    linked worktree and its checkout share.
     """
     proc = git(path, "rev-parse", "--abbrev-ref", "HEAD", check=False)
-    return proc.returncode == 0 and proc.stdout.strip() == branch
+    if proc.returncode != 0 or proc.stdout.strip() != branch:
+        return False
+    return _same_repository(root, path)
+
+
+def _same_repository(root: str | Path, path: str | Path) -> bool:
+    """Whether two directories are the same repository, read through git.
+
+    ⚠️ The common directory is resolved against the directory it was read in: git
+    answers relatively where the question was asked at a repository's own root.
+    """
+    here = git(path, "rev-parse", "--git-common-dir", check=False)
+    mine = git(root, "rev-parse", "--git-common-dir", check=False)
+    if here.returncode != 0 or mine.returncode != 0:
+        return False
+    return os.path.realpath(
+        os.path.join(str(path), here.stdout.strip())
+    ) == os.path.realpath(os.path.join(str(root), mine.stdout.strip()))
 
 
 def tree_for_branch(
@@ -1533,7 +1558,7 @@ def release(
         # ⚠️ And the resolution takes the configured directory for the same reason arm 2 of
         # liveness does.
         held_here = tree_for_branch(root, branch, tree_dir) or (
-            tree if tree and tree_holds(tree, branch) else None
+            tree if tree and tree_holds(root, tree, branch) else None
         )
         if held.taken and not spent and not held_here:
             raise ClaimError(
@@ -2795,6 +2820,29 @@ def self_test() -> int:
         quiet = _message(lambda: release(one, "feature/item-8", tree_dir=str(configured)))
         suite.ok("and the directory alone resolves the tree, with no override spent",
                  quiet is None and not second.exists(), quiet or "")
+
+        # ⛔ The branch namespace is per repository and a name is a string. ⚠️ Reproduced while
+        # reviewing this reading rather than predicted: an unrelated repository with a branch of
+        # the same name checked out answered *held here*, which releases a claim with no override
+        # at all.
+        third = configured / "9-third"
+        take(one, "feature/item-9", str(third))
+        stranger = Path(tmp) / "stranger"
+        stranger.mkdir()
+        git(stranger, "init", "--quiet", "-b", "main")
+        for key, value in (("user.email", "s"), ("user.name", "S")):
+            git(stranger, "config", key, value)
+        (stranger / "f.txt").write_text("x\n")
+        git(stranger, "add", "f.txt")
+        git(stranger, "commit", "--quiet", "-m", "one")
+        git(stranger, "checkout", "--quiet", "-b", "feature/item-9")
+        suite.ok("⛔ another repository's tree holding the same branch name is not this claim's",
+                 not tree_holds(one, str(stranger), "feature/item-9"), str(stranger))
+        foreign = _message(lambda: release(one, "feature/item-9", str(stranger)))
+        suite.ok("so a release naming it is refused rather than taking the claim unopposed",
+                 foreign is not None and third.exists(), foreign or "")
+        suite.ok("while this repository's own tree, named, still answers",
+                 tree_holds(one, str(third), "feature/item-9"), str(third))
 
     print("\nreleasing somebody else's live claim:")
 
