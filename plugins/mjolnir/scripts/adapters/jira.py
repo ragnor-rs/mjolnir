@@ -1583,6 +1583,75 @@ def advance_on_merge(key: str) -> dict:
     }
 
 
+def grouping_items(value: str, *, grouping: dict) -> dict:
+    """The items this project holds in one grouping, by one bounded query.
+
+    ⛔ **One query rather than a read per item**, and the field is the
+    configuration's: § 4.8 says where a grouping is held here, so the clause is
+    built from that name and the host resolves it. ⚠️ The project bound is
+    `as_query`'s and not a narrowing of its own -- an unbounded query is refused
+    by this host outright, which is the same restriction every search here
+    carries.
+
+    ⛔ **Across every state**, which is what § 33 reads this set for: a release
+    held by an item somebody finished by hand is still a fact about the release,
+    and a set narrowed to the unfinished ones would answer *nothing is short*
+    for a release whose every item had moved.
+
+    ⛔ **A carrier with no field to query is refused with the key named**, which
+    is `set_field`'s answer for a type this module has no shape for: a grouping
+    this project keeps nowhere a query can reach is a defect in the text rather
+    than an operation that is missing.
+
+    ⚠️ **The cursor is followed under this module's own ceiling**, as a search is,
+    and reaching it is reported as `at_limit` rather than returned quietly -- a
+    release's set cut by a page bound and reported as whole is the one reading
+    the precondition above it cannot survive.
+    """
+    carrier = (grouping or {}).get("carrier")
+    if carrier == "field":
+        clause = {str((grouping or {}).get("field")): value}
+        labels: list[str] = []
+    elif carrier == "label":
+        clause = {}
+        labels = [f"{(grouping or {}).get('label_prefix') or ''}{value}"]
+    else:
+        raise ConfigError(
+            "work_item.grouping.carrier",
+            f"is {carrier!r}, and a grouping here is read by a query: a field this "
+            "project names, or a label. A carrier with nothing for a clause to "
+            "name is a configuration this implementation cannot address rather "
+            "than an operation it is missing.",
+        )
+    # ⛔ Built through the same composer every search uses, so the quoting and the
+    # project bound are one statement rather than two: a clause assembled here
+    # would be a second query grammar allowed to disagree about both.
+    jql = as_query(_project_key(), None, labels, clause or None)
+    found: list[dict] = []
+    token, pages, cut = None, 0, False
+    while True:
+        params = {"jql": jql, "maxResults": PAGE, "fields": READ_FIELDS}
+        if token:
+            params["nextPageToken"] = token
+        answer = _call("GET", "/search/jql", params=params) or {}
+        found += [_shaped(issue) for issue in answer.get("issues") or []]
+        pages += 1
+        token = answer.get("nextPageToken")
+        if answer.get("isLast") or not token:
+            break
+        if pages >= PAGES_AT_MOST:
+            cut = True
+            break
+    return {
+        "grouping": (grouping or {}).get("name"),
+        "value": value,
+        "jql": jql,
+        "pages": pages,
+        "at_limit": cut,
+        "items": found,
+    }
+
+
 ADAPTER = port.Adapter(binder=bind, operations={
     "read_item": read_item,
     "search_items": search_items,
@@ -1596,6 +1665,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "link_dependency": link_dependency,
     "read_blockers": read_blockers,
     "advance_on_merge": advance_on_merge,
+    "grouping_items": grouping_items,
     # ⛔ The operations this tracker has nothing to implement against are named
     # once, below, and read from there by the suite.
 })
@@ -1607,8 +1677,19 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # `link_for_close` has nothing to compose. ⛔ Written once, here, and read by the
 # suite rather than restated in it: an absence added here would otherwise be an
 # operation nobody noticed going missing.
+#
+# `mark_grouping_released` is the measured one, and it is the absence § 33's
+# fallback was written against: the grouping here is a **field's value** -- the
+# shape the example beside this module carries -- and a field value is not an
+# object anything can mark released. The step is a link handed to a person, every
+# release, which is what the surveyed copy of this procedure already does.
+# ⚠️ **What would change it is a project holding its release scope in this
+# tracker's own version object instead**, which is a different carrier and a
+# different endpoint; until one does, an implementation here would be answering
+# for a shape nothing measured.
 DELIBERATELY_ABSENT = (
     "link_for_close",
+    "mark_grouping_released",
     "checklist_read",
     "checklist_write",
     "checklist_item_delete",

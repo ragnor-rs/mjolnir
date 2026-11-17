@@ -184,6 +184,15 @@ deploy:
     command: "<the whole command, with its project and configuration arguments>"
     advances: terminal
     batch: "<a command answering which of the identifiers handed to it this deploy carries>"
+    # § 33's publishing half, and the grouping is named because this project carries two: the
+    # release scope and not the time box, which is the whole reason that facet is a collection.
+    grouping: release_scope
+    # ⛔ `none`, and this is the project the rule was written for: no status above maps § 4.2's
+    # `accepted` role, so there is no verdict for a precondition to read and a key naming one
+    # would be refused at load. This target publishes exactly as it did before the key existed.
+    requires_role: none
+    # Verifying a release branch does not publish the scope — the target below does.
+    publishes: false
   - name: "<the environment a verified release is shipped to>"
     not_live: false
     invoke: command
@@ -191,6 +200,14 @@ deploy:
     requires: ["<the dump the live step is refused without>"]
     advances: terminal
     batch: "<a command answering which of the identifiers handed to it this release carries>"
+    grouping: release_scope
+    requires_role: none
+    # ⛔ The one target here that marks the scope released, and the grouping's own writer is
+    # `never` above — so the mark is **reported** for the person holding the credential to make,
+    # exactly as every item move here is. ⚠️ Two writers, read independently: `closed_by` answers
+    # for the scope and `statuses` answers for its items, and a refusal on one says nothing about
+    # the other. Both happen to refuse here, which is this credential's fact rather than the rule.
+    publishes: true
 
 # § 4.8's grouping checks, and each names which grouping it asks about because this project
 # carries more than one (§ 5). ⛔ No entry below carries the project's own word for a grouping:

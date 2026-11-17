@@ -73,6 +73,8 @@ COVERED = {
     "link_for_close",
     "set_labels",
     "set_state",
+    "grouping_items",
+    "mark_grouping_released",
 }
 
 # The item under test and the two it is related to. ⛔ Distinct integers, and the
@@ -662,6 +664,139 @@ def self_test() -> int:
                                 for args in wrote),
             f"sent {writing.sent!r}",
         )
+
+    # --- § 33's publishing half: the milestone, by title ----------------------
+    #
+    # ⛔ Addressed by **title** and never by number: § 4.8's value is the word on
+    # the item, and this host's milestone number is its own. Every arm below is
+    # about which object a call reaches, which is this suite's own scope.
+    A_RELEASE = "a release"
+    HELD = [
+        {"title": A_RELEASE, "number": 3, "state": "open"},
+        {"title": "another release", "number": 4, "state": "closed"},
+    ]
+    MILESTONE = {"carrier": "native_milestone", "name": "grouping"}
+
+    def _with_milestones(held, *, listed=None, patched=None):
+        answers = {"/milestones?state=all": list(held)}
+        if listed is not None:
+            answers["issue list"] = listed
+        if patched is not None:
+            answers["milestones/"] = patched
+        return _Host(answers=answers)
+
+    # ⛔ A carrier plain issues have no object for is a **defect in the text**,
+    # refused with the key named -- `set_state`'s answer for a status word this
+    # tracker cannot hold, one facet over. ⚠️ Both operations, because each
+    # addresses the milestone and a guard on one would read as covering both.
+    for operation, call in (
+        ("grouping_items",
+         lambda: under_test.grouping_items(A_RELEASE, grouping={"carrier": "label"})),
+        ("mark_grouping_released",
+         lambda: under_test.mark_grouping_released(
+             A_RELEASE, grouping={"carrier": "label"})),
+    ):
+        where = with_host(_with_milestones(HELD), lambda: refused(call))
+        check(
+            f"`{operation}` on a carrier plain issues cannot hold is refused, "
+            "naming the key",
+            where == "work_item.grouping.carrier",
+            f"reported {where!r}",
+        )
+
+    # ⛔ The listing is asked across **both** states, which is this host's own
+    # trap: it defaults to the open ones, so a release already marked would come
+    # back absent and read as *no such milestone* rather than as already closed.
+    reading = _with_milestones(HELD, listed=[_issue(BLOCKED)])
+    read = with_host(reading, lambda: under_test.grouping_items(
+        "another release", grouping=MILESTONE))
+    asked = [args for args in reading.sent if any("milestones" in a for a in args)]
+    check(
+        "the milestone listing is asked across both states, so a marked release is "
+        "found rather than absent",
+        bool(asked)
+        and all("state=all" in " ".join(args) for args in asked)
+        and read.get("value") == "another release",
+        f"sent {asked!r}, read {read!r}",
+    )
+    # ⛔ And the items are asked for across both states too: a release held by an
+    # item somebody closed by hand is still a fact about the release, and a set
+    # narrowed to the open ones answers *nothing is short* for one whose every
+    # item had moved.
+    listed = [args for args in reading.sent if args[:2] == ["issue", "list"]]
+    check(
+        "the items in a milestone are asked for by its title, across both states",
+        bool(listed)
+        and all(
+            "--milestone" in args
+            and args[args.index("--milestone") + 1] == "another release"
+            and "all" in args
+            for args in listed
+        ),
+        f"sent {listed!r}",
+    )
+    # ⛔ A value no milestone answers to is refused **by name** and never answered
+    # with an empty set: an empty set is what a release holding nothing looks
+    # like, and § 33 reads a bar off that set.
+    missing = with_host(
+        _with_milestones(HELD, listed=[]),
+        lambda: refused(
+            lambda: under_test.grouping_items(
+                "a release nothing holds", grouping=MILESTONE)
+        ),
+    )
+    check(
+        "a grouping value no milestone answers to is refused, not answered with an "
+        "empty set",
+        missing == "work_item.grouping",
+        f"reported {missing!r}",
+    )
+    # ⛔ And an ambiguous fold is refused rather than resolved: closing the wrong
+    # release is not recoverable, so two titles a project cannot tell apart stop
+    # the ask.
+    ambiguous = with_host(
+        _with_milestones([
+            {"title": "A Release", "number": 5, "state": "open"},
+            {"title": "a release", "number": 6, "state": "open"},
+        ]),
+        lambda: refused(
+            lambda: under_test.mark_grouping_released("A RELEASE", grouping=MILESTONE)
+        ),
+    )
+    check(
+        "two milestones one value folds onto is refused rather than resolved",
+        ambiguous == "work_item.grouping",
+        f"reported {ambiguous!r}",
+    )
+    # ⛔ The mark is a PATCH on the milestone's **own** number, which is the half
+    # the title lookup exists to supply.
+    marking = _with_milestones(
+        HELD, patched={"title": A_RELEASE, "number": 3, "state": "closed"})
+    marked = with_host(marking, lambda: under_test.mark_grouping_released(
+        A_RELEASE, grouping=MILESTONE))
+    wrote = [args for args in marking.sent if "PATCH" in args]
+    check(
+        "marking a release PATCHes the milestone's own number, and says it marked it",
+        len(wrote) == 1
+        and f"repos/{A_REPO}/milestones/3" in wrote[0]
+        and "state=closed" in wrote[0]
+        and marked.get("marked") is True
+        and marked.get("already") is False,
+        f"sent {wrote!r}, answered {marked!r}",
+    )
+    # ⛔ Idempotent by reading first, which is `set_state`'s rule at the one object
+    # a deploy touches that is not an item: a run retried after a failure partway
+    # through would otherwise write a release twice.
+    again = _with_milestones(HELD)
+    answered = with_host(again, lambda: under_test.mark_grouping_released(
+        "another release", grouping=MILESTONE))
+    check(
+        "a release already marked is left alone and reported as already marked",
+        not [args for args in again.sent if "PATCH" in args]
+        and answered.get("marked") is False
+        and answered.get("already") is True,
+        f"sent {again.sent!r}, answered {answered!r}",
+    )
 
     # --- the operation set, against what the surface states -------------------
     #

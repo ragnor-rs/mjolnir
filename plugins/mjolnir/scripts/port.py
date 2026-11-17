@@ -146,6 +146,30 @@ ASKABLE_AS = (PROCEDURE, DEPLOY)
 # has renamed sends somebody to edit a key that is not there.
 REVERSALS = "reversals"
 
+# § 4.8's writer key and § 33's two publishing operations, spelled out for the
+# same reason and held to the surface the same way. ⛔ The **operation** names are
+# held to § 3's own table rather than carried as literals a renamed row could
+# leave matching nothing: `_stated` refuses a name the table has lost, so each of
+# these is named once and the refusal arrives under the key somebody would edit.
+CLOSED_BY = "closed_by"
+
+# § 4.8's key saying how the current grouping is identified, named here because
+# the refusal below is keyed on it. ⛔ **Nothing in this module reads the
+# tracker's own mark**, so the grouping's value arrives on the invocation under
+# either of that key's values -- and a caller handing none over is refused
+# against *this* key rather than against the operation's argument list, which is
+# where an unkeyed refusal would have sent somebody.
+CURRENT = "current"
+GROUPING_ITEMS = "grouping_items"
+MARK_RELEASED = "mark_grouping_released"
+
+# The operation a writer refusal is reported against where the caller named none.
+# ⛔ § 4.2's guard is shared by three directions now -- the advance, § 32's step
+# backwards and § 33's grouping close -- and the two status directions report
+# against the operation that would have written the status, so that stays the
+# default and the third names its own.
+WROTE_A_STATUS = "set_state"
+
 # The kind that addresses nothing, shared by every port: § 3's trackerless
 # configuration and § 26's project with no destination are the same statement one
 # port apart, and both get the adapter that implements nothing. Spelled out for
@@ -705,6 +729,83 @@ def load_adapters(spec: PortSpec | None = None) -> dict[str, Adapter]:
     return dict(registry)
 
 
+def _set_from(outcome: "Outcome") -> list:
+    """The items an answered `grouping_items` carried, or an empty set.
+
+    ⛔ **Empty where the operation did not perform, and the caller is told
+    separately.** An unread grouping and a grouping holding nothing are the same
+    list, so nothing here folds them together: the outcome itself carries which
+    it was, and the exit status is taken off that rather than off the length.
+
+    ⚠️ Both shapes an implementation may answer with: the list itself, or a
+    mapping carrying it under `items` beside the grouping's own value. The second
+    is what every implementation here returns, the value being a fact the role
+    reports; a bare list is accepted so that an implementation answering the
+    narrower thing is not refused for it.
+    """
+    if not outcome.performed:
+        return []
+    result = outcome.result
+    if isinstance(result, dict):
+        items = result.get("items")
+        return list(items) if isinstance(items, list) else []
+    return list(result) if isinstance(result, list) else []
+
+
+def _item_name(item: object) -> dict:
+    """What identifies one item in a report, and nothing else about it.
+
+    ⛔ **Compact by rule and not for tidiness.** § 33's precondition has to name
+    **every** item holding a release, and a report that carried each item whole
+    would put a backlog's worth of bodies into the window the deploy's reply is
+    written in -- which is § 22's hazard arriving through a report rather than
+    through a command. What a person acts on is the identifier, the title and
+    where the item stands.
+
+    ⚠️ **Every identifier shape the implementations answer with**, because the
+    operation returns the host's own field names (§ 3): a short number, a key, or
+    an opaque id. A reader that took one of them would name no item on two of
+    the trackers, and an unnamed item in a refusal is the first one somebody
+    cannot go and look at.
+    """
+    if not isinstance(item, dict):
+        return {"item": item}
+    named = {}
+    for key in ("number", "key", "id", "unread"):
+        if item.get(key) not in (None, ""):
+            named["item"] = item[key]
+            break
+    else:
+        named["item"] = None
+    for key in ("title", "name", "url"):
+        if isinstance(item.get(key), str) and item[key].strip():
+            named[key] = item[key]
+    return named
+
+
+def _item_word(item: object) -> str | None:
+    """The status word an item carries, or `None` where it carries none readable.
+
+    ⛔ **`status` before `state`, and both, because an implementation answers
+    with the host's own field names** (§ 3): where a tracker has a status field
+    of its own that is the word `statuses` maps, and where it has none the coarse
+    state *is* that word. A reader that took one of them would place every item
+    on one tracker and none on the other.
+
+    ⛔ **`None` rather than a guess**, which is what makes § 33's precondition
+    able to report an item it could not place: an item answering no readable word
+    is unanswered, and a release held by one of those reads exactly like a
+    release held by nothing unless the two are kept apart.
+    """
+    if not isinstance(item, dict):
+        return item if isinstance(item, str) and item.strip() else None
+    for key in ("status", "state"):
+        word = item.get(key)
+        if isinstance(word, str) and word.strip():
+            return word
+    return None
+
+
 class Outcome:
     """What the port did about one operation, or did not do and why.
 
@@ -741,6 +842,7 @@ class Outcome:
         failed: bool = False,
         to_role: str | None = None,
         trigger: str | None = None,
+        grouping: str | None = None,
     ):
         self.operation = operation
         self.performed = performed
@@ -751,6 +853,11 @@ class Outcome:
         self.failed = failed
         self.to_role = to_role
         self.trigger = trigger
+        # ⛔ § 33's third fact of the same kind: which grouping a close or its
+        # refusal was about. A field for `to_role`'s reason -- a deploy's report
+        # names the grouping it left open beside the items it did not move, and
+        # reading it out of `detail` would make a sentence into an interface.
+        self.grouping = grouping
 
     def __bool__(self) -> bool:
         return self.performed
@@ -949,7 +1056,12 @@ class Port:
         return statuses[0]
 
     def _refused_by_writer(
-        self, writer: str | None, move: str, asked_as: str = ASKED_AS, **about
+        self,
+        writer: str | None,
+        move: str,
+        asked_as: str = ASKED_AS,
+        operation: str = WROTE_A_STATUS,
+        **about,
     ) -> Outcome | None:
         """§ 4.2's writer guard, in one statement for both directions.
 
@@ -968,6 +1080,14 @@ class Port:
         the move may be handed to, so a role claiming it would be claiming to be
         the absence of a writer.
 
+        ⛔ **`operation` is which operation the refusal is reported against, and
+        the third direction is why it is a parameter.** § 33's grouping close is
+        a write to the grouping rather than to a status, so a refusal of it
+        reported against the status operation would send a reader to the wrong
+        half of the port -- and § 4.8 states that writer independently of the
+        one § 4.2 states for the items, so the two refusals have to be
+        distinguishable in a report that carries both.
+
         `None` where the caller may write; the refusal otherwise.
         """
         # ⛔ First, and before the configured writer is read at all: a caller
@@ -975,7 +1095,7 @@ class Port:
         # request, and reading the configuration next would answer it.
         if asked_as not in ASKABLE_AS:
             return Outcome(
-                "set_state",
+                operation,
                 performed=False,
                 refused=True,
                 writer=writer,
@@ -992,7 +1112,7 @@ class Port:
             )
         if writer == NEVER:
             return Outcome(
-                "set_state",
+                operation,
                 performed=False,
                 refused=True,
                 writer=writer,
@@ -1008,7 +1128,7 @@ class Port:
                 "the procedure" if asked_as == PROCEDURE else f"the `{asked_as}` role"
             )
             return Outcome(
-                "set_state",
+                operation,
                 performed=False,
                 refused=True,
                 writer=writer,
@@ -1192,6 +1312,199 @@ class Port:
         outcome.to_role = role
         return outcome
 
+    # -- § 33's publishing half: the grouping, and the bar its items are held to
+
+    def _valued(self, block: dict, given: tuple, operation: str) -> None:
+        """Refuse a publishing ask that handed over no value for the grouping.
+
+        ⛔ **Keyed on § 4.8's `current`, which is the key that is actually
+        unanswered.** Without this the ask falls through to `invoke`'s
+        argument-count refusal, which names the *operation* and sends a reader to
+        the port's contract to find out what a release is missing -- measured on
+        a `discoverable` grouping, where both this surface and the deploying role
+        say the value is read and nothing reads it.
+
+        ⛔ **And the refusal is the same under either value of that key**, which
+        is the honest statement rather than the convenient one: `stated` means
+        the value arrives on the invocation, and `discoverable` means a procedure
+        reads the tracker's own mark -- which **nothing here does**. So the
+        second arm is a stated limit and not a behaviour, and a caller under it
+        is told to supply the value rather than left to read an argument list.
+        """
+        if given:
+            return
+        # ⛔ Read straight off the block: `Config.grouping` answers with a mapping
+        # carrying the name it resolved under, or raises -- so a guard on one of
+        # these two reads and not the other would claim a state neither has.
+        raise ConfigError(
+            f"{config.GROUPING_KEY}.{CURRENT}",
+            f"is {block.get(CURRENT)!r} for the `{block.get('name')}` grouping, and "
+            f"`{operation}` "
+            "was asked for with no value for it. The grouping's own value -- which "
+            "release, which time box -- arrives on the invocation of the role that "
+            "needs it, and ⛔ nothing here reads the tracker's own mark, so that "
+            "holds under either value of this key. Hand the value over.",
+        )
+
+    def mark_released(
+        self, grouping: str | None = None, *args, as_writer: str = ASKED_AS, **kwargs
+    ) -> Outcome:
+        """Mark one of § 4.8's groupings released, as a writer (§ 33).
+
+        ⛔ **The writer read is § 4.8's `closed_by` and never § 4.2's.** They are
+        two writers on two objects, and a project states them apart: one measured
+        release is marked by hand while its items advance programmatically in the
+        same pass. A close that read the items' writer would be answering about
+        the wrong half, and the independence is the whole reason this is an
+        operation of its own rather than part of the advance.
+
+        What comes back is a report rather than an exception wherever the
+        configuration is a legitimate one: the configured writer is somebody
+        else, which is a refusal naming that writer; the writer is `never`, which
+        hands the close to nobody, there being no writer to hand it to; or the
+        mark goes through `mark_grouping_released` and its capability decides --
+        and ⛔ **the absence there is the measured one**, a tracker with no tool
+        for this at all, so § 3's fallback has the run name the step and carry on.
+
+        ⛔ **A project planning in no grouping raises rather than answering**, and
+        that is the reader's own refusal passed through: there is no grouping for
+        the ask to be about, which is a caller asking the wrong question rather
+        than a tracker that cannot answer it. ⚠️ The same is true of a name this
+        project does not carry, and of an ask naming none where it carries
+        several -- § 4.8 refuses all three where `grouping` is read.
+        """
+        # Named first, for the reason the two status directions name theirs: an
+        # operation the surface has renamed must stop the role rather than have
+        # it report a close against an operation that no longer exists.
+        self._stated(MARK_RELEASED)
+        block = self.config.grouping(grouping)
+        name = block.get("name")
+        refusal = self._refused_by_writer(
+            block.get(CLOSED_BY),
+            f"the `{name}` grouping (`{CLOSED_BY}`)",
+            asked_as=as_writer,
+            operation=MARK_RELEASED,
+            grouping=name,
+        )
+        if refusal is not None:
+            return refusal
+        # ⛔ After the writer guard and not before it, which is where `invoke`'s
+        # own argument refusal already landed: the guard answers about the
+        # configuration and comes back as an outcome, while this says the caller
+        # is wrong and raises. Ordering it first would turn a project whose
+        # grouping nobody may close into a caller error.
+        self._valued(block, args, MARK_RELEASED)
+        outcome = self.invoke(MARK_RELEASED, *args, grouping=block, **kwargs)
+        outcome.grouping = name
+        return outcome
+
+    def items_in(self, grouping: str | None = None, *args, **kwargs) -> Outcome:
+        """The items the tracker holds in one of § 4.8's groupings (§ 33).
+
+        ⛔ **A read, so no writer is consulted** -- which is why this is a method
+        at all rather than a bare `invoke`: what it resolves is the *block*, so
+        that an implementation is handed where the grouping is held rather than
+        re-reading § 4.8 for itself. ⚠️ The value of the grouping is the
+        caller's, by that facet's `current`: discoverable where the tracker marks
+        one, and arriving on the role's invocation where a project holds several
+        open at once.
+
+        ⛔ **A project planning in no grouping raises**, exactly as the close
+        above does and for the same reason: there is no grouping for the ask to
+        be about.
+        """
+        self._stated(GROUPING_ITEMS)
+        block = self.config.grouping(grouping)
+        self._valued(block, args, GROUPING_ITEMS)
+        outcome = self.invoke(GROUPING_ITEMS, *args, grouping=block, **kwargs)
+        outcome.grouping = block.get("name")
+        return outcome
+
+    def short_of(self, role: str, items: list) -> dict:
+        """Which of `items` have not reached a role, in § 4.2's own order (§ 33).
+
+        ⛔ **Here because the mapping is here.** § 4.2 puts role-to-word in the
+        port and nowhere else, and this answer needs it in both directions: the
+        role the target requires resolved to a word, and each item's own word
+        resolved back to a position. A role that compared words for itself would
+        be the second reader of `statuses` that section forbids.
+
+        ⛔ **The order is the project's own list order and nothing here reorders
+        it.** § 4.2 states the set is ordered for exactly this, so *short of* is
+        a position comparison against the configuration as written -- which also
+        means a project whose ladder puts a non-advancing role late has answered
+        that question for itself.
+
+        ⛔ **Three answers per item and never two.** An item whose word this
+        project maps is placed; an item carrying no readable word, or one whose
+        word no status maps, is **unanswered** -- never *short* and never
+        *satisfied*, by § 2's rule that absence of signal is not an answer. ⚠️ So
+        a caller reads `unanswered` as well as `short` before it concludes the
+        set is clear: a release held by an item nobody could place reads exactly
+        like one held by nothing.
+
+        ⚠️ **No verdict about the target.** What may be invoked is § 33's and the
+        role's; what this answers is which items are where.
+        """
+        self._stated(WROTE_A_STATUS)
+        ladder = [
+            status
+            for status in (self.config.get("statuses") or [])
+            if isinstance(status, dict) and status.get("role")
+        ]
+        status = self._mapped_status(role)
+        if status is None:
+            # ⛔ The reader refuses a `requires_role` no status maps at load with
+            # the key named, so this is the same unvalidated configuration the
+            # two status directions report on: a bar no item can ever clear.
+            return {
+                "role": role,
+                "status": None,
+                "placed": [],
+                "short": [],
+                "unanswered": [
+                    {**_item_name(item), "word": _item_word(item)} for item in items
+                ],
+                "detail": f"No status here maps the `{role}` role, so no item can "
+                "be placed against it and none is reported as having reached it. "
+                "The configuration reader refuses that bar where it is written.",
+            }
+        order = {entry["name"]: index for index, entry in enumerate(ladder)}
+        folded: dict[str, list[str]] = {}
+        for word in order:
+            folded.setdefault(str(word).casefold(), []).append(word)
+        bar = order[status["name"]]
+        placed, short, unanswered = [], [], []
+        for item in items:
+            word = _item_word(item)
+            # ⛔ Exact first, then case-insensitively, which is what every
+            # implementation's own `set_state` already does with the word this
+            # layer hands it -- and a fold matching two of this project's status
+            # words is **unanswered** rather than either of them.
+            matched = word if word in order else None
+            if matched is None and word is not None:
+                candidates = folded.get(str(word).casefold(), [])
+                matched = candidates[0] if len(candidates) == 1 else None
+            named = _item_name(item)
+            if matched is None:
+                unanswered.append({**named, "word": word})
+                continue
+            placed.append(
+                {**named, "status": matched, "role": ladder[order[matched]]["role"]}
+            )
+            if order[matched] < bar:
+                short.append(placed[-1])
+        return {
+            "role": role,
+            "status": status.get("name"),
+            "placed": placed,
+            "short": short,
+            "unanswered": unanswered,
+            "detail": f"{len(short)} of {len(items)} in the set are short of the "
+            f"`{role}` role (`{status.get('name')}`), and {len(unanswered)} could "
+            "not be placed at all.",
+        }
+
     # -- what this configuration cannot do, as a report and never as a fault
 
     def report(self) -> list[str]:
@@ -1262,10 +1575,11 @@ def invocation_report(name: str, operation: str, outcome: "Outcome") -> dict:
     `None` -- a day with no entry -- would otherwise read as one that did not run.
 
     ⛔ **And every fact a refusal or a move *names* is a field too.** § 4.2's
-    writer and § 32's trigger and target role are what a role acts on -- the
-    writer a refusal hands the move to, the items a batch report says stepped
-    back -- and a shape that carried them only inside `detail` would oblige every
-    reader to parse a sentence somebody may reword. ⚠️ **Both directions, which
+    writer, § 32's trigger and target role and § 33's grouping are what a role
+    acts on -- the writer a refusal hands the move to, the items a batch report
+    says stepped back, the grouping a release left open -- and a shape that
+    carried them only inside `detail` would oblige every reader to parse a
+    sentence somebody may reword. ⚠️ **Both directions, which
     is the half that goes missing**: a role named in an advance's prose and left
     null in its field is the same parse one direction over.
     """
@@ -1280,6 +1594,7 @@ def invocation_report(name: str, operation: str, outcome: "Outcome") -> dict:
         "writer": outcome.writer,
         "to_role": outcome.to_role,
         "trigger": outcome.trigger,
+        "grouping": outcome.grouping,
     }
 
 
@@ -1301,10 +1616,11 @@ def refusal_report(name: str, operation: str, error: ConfigError) -> dict:
         # ⛔ Present and null rather than absent: the shape is the same shape, and
         # a refusal that dropped three keys would be the second reader the
         # docstring above forbids. A `ConfigError` names a key and never a writer,
-        # a trigger or a role, so null is the honest value for all three.
+        # a trigger, a role or a grouping, so null is the honest value for each.
         "writer": None,
         "to_role": None,
         "trigger": None,
+        "grouping": None,
         "key": error.key,
     }
 
@@ -1437,6 +1753,23 @@ def _with_reversals(statuses: list[dict], reversals: list[dict]) -> config.Confi
     """
     configuration = _with_statuses(statuses)
     configuration.data[REVERSALS] = reversals
+    return configuration
+
+
+def _with_grouping(statuses: list[dict], groupings: dict[str, dict]) -> config.Config:
+    """A configuration carrying both halves § 33's publishing act is read across.
+
+    Both at once because neither answers alone: the grouping carries the writer
+    the close is held to and `statuses` carries the writer its items are held
+    to, and the point of the act is that those are two.
+
+    ⛔ **`groupings` is written onto the resolved attribute rather than into the
+    raw block.** § 4.8's two forms are resolved at load, so a fixture editing the
+    block would be a second resolver of that facet -- which is the drift the
+    reader's own resolution exists to prevent, arriving through a test.
+    """
+    configuration = _with_statuses(statuses)
+    configuration.groupings = dict(groupings)
     return configuration
 
 
@@ -2346,6 +2679,297 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         f"got {str(both.advance_to(a_role))!r}",
     )
 
+    # § 33's publishing half: the grouping marked, and the bar its items are held
+    # to. ⚠️ Every word here comes off the surface's own sets for the reason the
+    # two blocks above take theirs there.
+    a_grouping = "a-grouping"
+    marking = Adapter(
+        {MARK_RELEASED: lambda *a, **k: (k.get("grouping") or {}).get("name")}
+    )
+    # ⛔ The writer read is § 4.8's `closed_by` and never the status's, and this is
+    # the arm that proves it: the status below is one the deploy may write, so a
+    # close reading *its* writer would go through every refusal in this loop.
+    for writer in [w for w in config.facts_for("writer") if w != DEPLOY]:
+        outcome = Port(
+            _with_grouping(
+                [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+                {a_grouping: {CLOSED_BY: writer}},
+            ),
+            spec,
+            adapter=marking,
+            stated=stated,
+        ).mark_released(a_grouping, as_writer=DEPLOY)
+        check(
+            f"a grouping closed by `{writer}` is refused, naming the writer",
+            outcome.refused
+            and not outcome.performed
+            and outcome.writer == writer
+            and writer in outcome.detail
+            and outcome.grouping == a_grouping,
+            f"got {str(outcome)!r}",
+        )
+        check(
+            f"and the refusal is reported against `{MARK_RELEASED}`, not the status write",
+            outcome.operation == MARK_RELEASED,
+            f"reported against {outcome.operation!r}",
+        )
+        if writer == NEVER:
+            check(
+                f"and the `{NEVER}` arm hands the close to nobody",
+                "writer to make" not in outcome.detail
+                and "no other writer" in outcome.detail,
+                f"got {str(outcome)!r}",
+            )
+    # ⛔ The two writers honoured **independently**, which is the whole reason this
+    # is an operation of its own: one measured release is marked by hand while its
+    # items advance programmatically, in the same pass. ⚠️ A single arm asserting
+    # both halves, because the failure is them sharing an answer -- a port reading
+    # one writer for both would be green on either half alone.
+    split = Port(
+        _with_grouping(
+            [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+            {a_grouping: {CLOSED_BY: NEVER}},
+        ),
+        spec,
+        adapter=Adapter(
+            {
+                MARK_RELEASED: lambda *a, **k: "marked",
+                "set_state": lambda *a, **k: k.get("status", "<no status>"),
+            }
+        ),
+        stated=stated,
+    )
+    closed = split.mark_released(a_grouping, as_writer=DEPLOY)
+    advanced = split.advance_to(a_role, as_writer=DEPLOY)
+    check(
+        "a grouping nobody may close beside items the deploy may advance: the close "
+        "refuses and the advance goes through",
+        closed.refused
+        and not closed.performed
+        and advanced.performed
+        and not advanced.refused,
+        f"close {str(closed)!r}, advance {str(advanced)!r}",
+    )
+    # ⛔ And the close that is allowed is handed the resolved block, which is what
+    # keeps an implementation from re-reading § 4.8 for itself.
+    allowed = Port(
+        _with_grouping(
+            [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+            {a_grouping: {CLOSED_BY: DEPLOY, "carrier": "label"}},
+        ),
+        spec,
+        adapter=marking,
+        stated=stated,
+    ).mark_released(a_grouping, "a value", as_writer=DEPLOY)
+    check(
+        f"a grouping closed by `{DEPLOY}` goes through, and the block reaches the "
+        "implementation",
+        allowed.performed and allowed.result == a_grouping,
+        f"got {str(allowed)!r}, the implementation received {allowed.result!r}",
+    )
+    # ⛔ The shared guard reaches this direction too: a caller asking as a party
+    # this procedure is not is refused before the configured writer is read, so the
+    # close cannot be had by naming its own writer.
+    claimed = Port(
+        _with_grouping(
+            [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+            {a_grouping: {CLOSED_BY: "orderer"}},
+        ),
+        spec,
+        adapter=marking,
+        stated=stated,
+    ).mark_released(a_grouping, as_writer="orderer")
+    check(
+        "a close asked for as a writer this procedure is not is refused for the ask",
+        claimed.refused and "may ask as" in claimed.detail,
+        f"got {str(claimed)!r}",
+    )
+    # ⛔ The capability absence, which is the measured one for this operation: a
+    # tracker with no tool for it at all. ⚠️ Not refused and not failed -- the
+    # stated fallback is what comes back, and § 33 has the run carry on.
+    unmarkable = Port(
+        _with_grouping(
+            [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+            {a_grouping: {CLOSED_BY: DEPLOY}},
+        ),
+        spec,
+        adapter=Adapter(),
+        stated=stated,
+    ).mark_released(a_grouping, "a value", as_writer=DEPLOY)
+    check(
+        "a tracker with no tool for marking a release comes back with the fallback",
+        not unmarkable.performed
+        and not unmarkable.refused
+        and not unmarkable.failed
+        and unmarkable.detail == stated[MARK_RELEASED],
+        f"got {str(unmarkable)!r}",
+    )
+    # ⛔ A publishing ask handed no value for the grouping is refused against
+    # § 4.8's `current`, which is the key that is actually unanswered. ⚠️ The arm
+    # that matters is `discoverable`: both this surface and the deploying role
+    # describe that value as read, nothing reads it, and without this refusal the
+    # ask fell through to the argument-count one -- which names the operation and
+    # sends a reader to the port's contract to find out what a release is missing.
+    currents = config.facts_for(f"{config.GROUPING_KEY}.{CURRENT}")
+    check(
+        f"the surface states the `{config.GROUPING_KEY}.{CURRENT}` set these arms read",
+        bool(currents),
+        f"states {currents!r}",
+    )
+    a_current = currents[0] if currents else None
+    for current in currents:
+        valueless = _refused(
+            lambda current=current: Port(
+                _with_grouping(
+                    [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+                    {a_grouping: {CLOSED_BY: DEPLOY, CURRENT: current}},
+                ),
+                spec,
+                adapter=marking,
+                stated=stated,
+            ).mark_released(a_grouping, as_writer=DEPLOY)
+        )
+        check(
+            f"a close on a `{current}` grouping with no value is refused, naming that key",
+            valueless == f"{config.GROUPING_KEY}.{CURRENT}",
+            f"reported {valueless!r}",
+        )
+    # ⛔ And the green side, which the refusal above cannot assert: a value handed
+    # over reaches the implementation. Without it the refusal could be refusing
+    # every ask and read as correct.
+    valued = Port(
+        _with_grouping(
+            [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+            # ⚠️ The word is the surface's own, as the loop above takes its own:
+            # a literal here would go on passing after a rename, the fixture's
+            # value being validated by nothing.
+            {a_grouping: {CLOSED_BY: DEPLOY, CURRENT: a_current}},
+        ),
+        spec,
+        adapter=marking,
+        stated=stated,
+    ).mark_released(a_grouping, "a value", as_writer=DEPLOY)
+    check(
+        "and a close carrying the grouping's own value goes through",
+        valued.performed and valued.result == a_grouping,
+        f"got {str(valued)!r}",
+    )
+    # ⛔ A project planning in no grouping raises rather than answering, in both
+    # publishing directions: there is no grouping for either ask to be about, and
+    # an answer would be this layer choosing one.
+    none_planned = _with_grouping(
+        [{"name": "a status", "role": a_role, "writer": DEPLOY}], {}
+    )
+    for direction in ("mark_released", "items_in"):
+        nothing = _refused(
+            lambda: getattr(
+                Port(none_planned, spec, adapter=marking, stated=stated), direction
+            )(a_grouping)
+        )
+        check(
+            f"`{direction}` on a project planning in no grouping is refused, naming the key",
+            nothing == f"{config.GROUPING_KEY}.carrier",
+            f"reported {nothing!r}",
+        )
+    # ⛔ An unread grouping is not an empty one, which is the distinction the
+    # precondition rests on: the set comes back empty either way and the outcome
+    # is what says which, so a caller reading the length alone would publish a
+    # release it never checked.
+    unreadable = Port(
+        _with_grouping(
+            [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+            {a_grouping: {CLOSED_BY: DEPLOY}},
+        ),
+        spec,
+        adapter=Adapter(),
+        stated=stated,
+    ).items_in(a_grouping, "a value")
+    readable = Port(
+        _with_grouping(
+            [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+            {a_grouping: {CLOSED_BY: DEPLOY}},
+        ),
+        spec,
+        adapter=Adapter({GROUPING_ITEMS: lambda *a, **k: {"items": []}}),
+        stated=stated,
+    ).items_in(a_grouping, "a value")
+    check(
+        "a grouping nothing could read and a grouping holding nothing give the same "
+        "set and different outcomes",
+        _set_from(unreadable) == _set_from(readable) == []
+        and not unreadable.performed
+        and readable.performed,
+        f"unread {str(unreadable)!r}, empty {str(readable)!r}",
+    )
+
+    # ⛔ The reported set is identities and never whole items, which is what keeps
+    # a release's own batch out of the window the reply is written in.
+    check(
+        "an item reaches a report by identity rather than whole",
+        _item_name({"number": 7, "title": "a title", "body": "a body"})
+        == {"item": 7, "title": "a title"},
+        f"named {_item_name({'number': 7, 'title': 'a title', 'body': 'a body'})!r}",
+    )
+
+    # § 33's precondition, which is the one answer here that is not an `Outcome`.
+    ladder = [
+        {"name": "first", "role": a_role, "writer": PROCEDURE},
+        {"name": "second", "role": another_role, "writer": DEPLOY},
+    ]
+    placing = Port(_with_statuses(ladder), spec, adapter=Adapter(), stated=stated)
+    verdict = placing.short_of(
+        another_role,
+        [
+            {"number": 1, "status": "first"},
+            {"number": 2, "status": "second"},
+            {"number": 3, "status": "FIRST"},
+            {"number": 4, "status": "a word nothing maps"},
+            {"number": 5},
+        ],
+    )
+    # ⛔ **Every** item short, and not the first: § 33 states the refusal names
+    # them all, the answer a person needs being what the release waits on.
+    check(
+        "the precondition names every item short of the role, not the first",
+        [entry.get("item") for entry in verdict["short"]] == [1, 3],
+        f"named {verdict['short']!r}",
+    )
+    check(
+        "an item already at or past the role is not short of it",
+        all(entry.get("item") != 2 for entry in verdict["short"]),
+        f"named {verdict['short']!r}",
+    )
+    # ⛔ Three answers and never two: a word no status maps, and an item carrying
+    # no readable word at all, are **unanswered** rather than either of the other
+    # two -- a release held by an item nobody could place reads exactly like one
+    # held by nothing.
+    check(
+        "an item whose word no status maps is unanswered, never short and never clear",
+        sorted(str(entry.get("item")) for entry in verdict["unanswered"]) == ["4", "5"],
+        f"named {verdict['unanswered']!r}",
+    )
+    check(
+        "and the placement is case-insensitive, as every implementation's own write is",
+        any(
+            entry.get("item") == 3 and entry.get("status") == "first"
+            for entry in verdict["placed"]
+        ),
+        f"placed {verdict['placed']!r}",
+    )
+    # ⛔ A bar no status maps places nothing and reports nothing as having cleared
+    # it, which is the configuration the reader refuses at load.
+    barless = Port(
+        _with_statuses([ladder[0]]), spec, adapter=Adapter(), stated=stated
+    ).short_of(another_role, [{"number": 1, "status": "first"}])
+    check(
+        "a precondition naming a role no status maps clears nothing and places nothing",
+        barless["status"] is None
+        and not barless["short"]
+        and not barless["placed"]
+        and len(barless["unanswered"]) == 1,
+        f"answered {barless!r}",
+    )
+
 
 def _hold_registration(check, spec: PortSpec) -> None:
     """Registration and discovery, against one port's own package.
@@ -3036,6 +3660,37 @@ def main(argv: list[str]) -> int:
         "is refused for exactly that reason",
     )
     parser.add_argument(
+        "--mark-released",
+        metavar="GROUPING",
+        nargs="?",
+        const="",
+        help="ask for one of § 4.8's groupings to be marked released, by the name "
+        "that facet keys it on -- omitted where the project carries one. The "
+        "writer read is § 4.8's `closed_by` and never a status's, and ⛔ this is "
+        "the only route that reaches that guard: `--invoke mark_grouping_released` "
+        "names the operation underneath it and is refused for the same reason the "
+        "status move's is",
+    )
+    parser.add_argument(
+        "--in-grouping",
+        metavar="GROUPING",
+        nargs="?",
+        const="",
+        help="the items the tracker holds in one of § 4.8's groupings, by the name "
+        "that facet keys it on -- omitted where the project carries one. The "
+        "grouping's own value goes in `--argument` where that facet says `stated`",
+    )
+    parser.add_argument(
+        "--short-of",
+        metavar="ROLE",
+        help="which items in a set have not reached one of § 4.2's **roles**, "
+        "which is § 33's precondition on a publishing target. The set is the one "
+        "`--in-grouping` names, or the identifiers given with `--argument` read "
+        "through `read_item` where no grouping is named -- § 33's two arms. The "
+        "answer places every item and names the ones it could not, and it ⛔ "
+        "carries no verdict about whether the target may be invoked",
+    )
+    parser.add_argument(
         "--as-writer",
         metavar="WRITER",
         default=ASKED_AS,
@@ -3081,6 +3736,142 @@ def main(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return 2
+    # ⛔ The same refusal for the grouping close, and for the same reason one
+    # direction over: § 4.8's `closed_by` guard sits inside `--mark-released`, so
+    # naming the operation would close a grouping past the one writer check the
+    # surface states for it. ⚠️ Independent of the status guard above rather than
+    # folded into it -- the two read different keys about different objects, and a
+    # single refusal would have had to pick one of them to name.
+    if args.invoke == MARK_RELEASED and args.mark_released is None:
+        print(
+            f"Refused: `{MARK_RELEASED}` is reached through `--mark-released "
+            "[<grouping>]`, which reads § 4.8's `closed_by` for that grouping and "
+            "is where its writer guard sits. Naming the operation instead would "
+            "mark a release past the guard -- and on the one project measured, "
+            "past a writer that is a person.",
+            file=sys.stderr,
+        )
+        return 2
+    if args.mark_released is not None:
+        if args.ports:
+            print(
+                "Refused: `--mark-released` marks one grouping on one port, so it "
+                "is not asked of every port at once.",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            answering = load(
+                args.skills_root,
+                args.port,
+                root=args.root,
+                check_paths=not args.no_check_paths,
+            )
+            outcome = answering.mark_released(
+                args.mark_released or None,
+                *args.argument,
+                as_writer=args.as_writer,
+            )
+        except ConfigError as error:
+            print(
+                json.dumps(
+                    refusal_report(args.port, MARK_RELEASED, error),
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+            return 1
+        print(
+            json.dumps(
+                invocation_report(answering.name, MARK_RELEASED, outcome),
+                indent=2,
+                ensure_ascii=False,
+                default=str,
+            )
+        )
+        return 0 if outcome.performed else 1
+
+    if args.in_grouping is not None or args.short_of:
+        if args.ports:
+            print(
+                "Refused: the publishing set and the bar it is held to are one "
+                "project's on one port, so neither is asked of every port at once.",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            answering = load(
+                args.skills_root,
+                args.port,
+                root=args.root,
+                check_paths=not args.no_check_paths,
+            )
+            read_grouping = None
+            if args.in_grouping is not None:
+                read_grouping = answering.items_in(
+                    args.in_grouping or None, *args.argument
+                )
+                # ⛔ An unread grouping is not an empty one. The capability's own
+                # fallback says what happens instead, and the exit status below
+                # carries it: a set nobody could read is never a set that cleared
+                # a bar (§ 2's absence-of-signal rule, § 3's stated fallback).
+                held = _set_from(read_grouping)
+            else:
+                # ⛔ Each identifier is read through the port's own `read_item`,
+                # and an item it could not answer about goes into the set
+                # **unread** rather than being dropped: § 33's precondition
+                # reports what it could not place, and an item quietly left out
+                # would make a held release read as a clear one.
+                held = []
+                for given in args.argument:
+                    read = answering.invoke("read_item", given)
+                    held.append(read.result if read.performed else {"unread": given})
+            answer = (
+                answering.short_of(args.short_of, held) if args.short_of else None
+            )
+        except ConfigError as error:
+            print(
+                json.dumps(
+                    refusal_report(
+                        args.port,
+                        WROTE_A_STATUS if args.short_of else GROUPING_ITEMS,
+                        error,
+                    ),
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+            return 1
+        # ⛔ The set is reported by **identity** and never whole, for `_item_name`'s
+        # reason: a release's own batch read through here would otherwise put every
+        # item's body into the window the reply is written in. ⚠️ What a role needs
+        # off this is which items the grouping holds and where each one stands,
+        # both of which the compact form carries.
+        reported = {
+            "port": answering.name,
+            "grouping": (
+                {
+                    key: value
+                    for key, value in invocation_report(
+                        answering.name, GROUPING_ITEMS, read_grouping
+                    ).items()
+                    if key != "result"
+                }
+                if read_grouping is not None
+                else None
+            ),
+            "set": [_item_name(item) for item in held],
+            "short_of": answer,
+        }
+        print(json.dumps(reported, indent=2, ensure_ascii=False, default=str))
+        # ⛔ Nonzero where the grouping could not be read, or where anything is
+        # short **or unanswered**: each of the three is a precondition a target
+        # has not cleared, and a set nobody could place is not a clear one.
+        if read_grouping is not None and not read_grouping.performed:
+            return 1
+        if answer is None:
+            return 0
+        return 0 if not (answer["short"] or answer["unanswered"]) else 1
     if args.advance_to:
         if args.ports:
             print(

@@ -1771,6 +1771,8 @@ operations the survey reached and says which it did not.
 | `read_blockers` | the items one item is recorded as blocked by, each with its own state — ⛔ never a verdict about whether the item may start, the bar being § 5's and not a tracker's | § 5's `no_open_blockers` has no source, so it reports **no answer** and never *no blockers*, by § 2's rule that absence of signal is not an answer; and a prose edge `link_dependency`'s fallback wrote is read for the report rather than for the verdict |
 | `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
+| `grouping_items` | the items the tracker holds in one of § 4.8's groupings, each with its own state — ⛔ never a verdict about whether the grouping may be published, the bar being [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s and not a tracker's | the publishing set cannot be read, so § 33's precondition reports **no answer** and never *nothing is short*, by § 2's rule that absence of signal is not an answer; the advance is made over the batch's own candidates and the report says the grouping went unread |
+| `mark_grouping_released` | one of § 4.8's groupings marked as published — the one write a release makes that is about the grouping rather than about an item in it | the run names the step and the grouping it is about, by the value this deploy read, **continues**, and the report records the grouping as still open; ⛔ never skipped in silence, and a grouping nothing marked is never reported as marked. ⚠️ **The address a person performs it at is the tracker's own and the procedure composes none** — the boundary's rule, so where the port cannot supply one the report names the grouping and not a link |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
 | `set_labels` | every label set in one call | one call per label, and a set that is left partial is reported rather than retried silently |
 | `set_field` | a value written onto the item where a facet states where it goes — § 4.3's estimate and § 4.6's priority wherever either carrier is not a label, § 4.5's date, and § 4.7's code root where its carrier is `field` | the value is reported for whoever does write it, and the gating role leaves the item where it stands: an item advanced without the commitment it was meant to carry reads as gated to every role after it |
@@ -2318,15 +2320,17 @@ one it picked, and a grouping is the one field whose wrong value is invisible on
 every other facet's wrong value reads as wrong where it is written.
 
 ⛔ **`closed_by` is [§ 4.2](#42-status--an-ordered-set-of-name-role-writer)'s writer argument one
-level up: a role that closes a grouping is refused where this is not `procedure`.** That
-vocabulary is read where § 4.2 states it rather than copied here, so a writer added there is
-accepted here with no second edit. The measured answer is a person: one project's grouping is
-archived by hand in the pass that cuts a release, which is `procedure` only where that pass *is*
-the procedure. ⚠️ **What holds it today is the configuration and the rule below, and no act** —
-every role mapped by this surface's loop acts on an item, none of them closes a grouping, so the
-refusal is stated for whichever role comes to and performed by nothing yet. The decidable half is
-held: the writer is checked against § 4.2's vocabulary where the configuration is read, and
-`closes_items` below is refused against the terminal status's own writer.
+level up: a role that closes a grouping is refused where this is not the writer that role asks
+as.** That vocabulary is read where § 4.2 states it rather than copied here, so a writer added
+there is accepted here with no second edit. The measured answer is a person: one project's grouping
+is archived by hand in the pass that cuts a release, which is a writer the procedure may be only
+where that pass *is* the procedure. ⚠️ **The act that reads it is
+[§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s**, which marks a
+grouping released and asks as `deploy` — so the refusal this key states is performed rather than
+reserved, and a project whose answer here is anything else gets the close **reported** for that
+writer to make. The decidable half is held where the configuration is read: the writer is checked
+against § 4.2's vocabulary, and `closes_items` below is refused against the terminal status's own
+writer.
 
 ⛔ **`closes_items` is a second question and not a restatement of the first, and where it is true
 the item's own terminal writer has to be the same actor.** [§ 4.2](#42-status--an-ordered-set-of-name-role-writer)
@@ -2415,14 +2419,19 @@ absence rather than resolving to silence.
 ⚠️ **Which of these keys has no reader yet, stated rather than left to be discovered.** § 1's
 rule that a key nothing reads is worse than no key reaches this facet while the roles that need a
 grouping are being written, so the division is named here instead of being found later.
-⛔ **`current` and `has_own_acceptance` are required and held to their vocabularies and are read by
-nothing else yet** — every other key in the fence is read where the configuration is read. That is
-a statement about this surface's own progress rather than about the keys: each is the answer to a
-question a role has to ask before it files an item or closes a grouping, and neither is derivable
-from the rest of the block. ⚠️ **The trigger is the role, not a date** — the filing role putting a
-new item somewhere, and whichever role comes to close a grouping, are where both are read — and a
-key still unread when those roles are written is § 1's retirement argument with a project's own
-answer behind it.
+⛔ **`has_own_acceptance` is required and held to its vocabulary and is read by nothing else yet**,
+and ⛔ **`current` is read in one direction only** — every other key in the fence is read where the
+configuration is read.
+[§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target) reads `current` to
+say *what is unanswered* when a publishing ask arrives with no value for the grouping, which is a
+refusal keyed on this key; ⛔ **what no reader performs is the `discoverable` arm's own read**, so
+the value arrives on the invocation under either value and that section states the limit. ⚠️ **That
+is a statement about this surface's own progress rather than about either key**: each is the answer
+to a question a role has to ask before it files an item or publishes a grouping, and neither is
+derivable from the rest of the block. ⚠️ **The trigger is the role, not a date** — the filing role
+putting a new item somewhere, and whichever role comes to read a tracker's own mark, are where the
+rest of each is read — and a key still unread when those roles are written is § 1's retirement
+argument with a project's own answer behind it.
 
 ## 5. Readiness gate — an ordered predicate list
 
@@ -7365,11 +7374,17 @@ deploy:                        # the targets this project deploys to; required
     requires: ["<a precondition the command does not check itself>"]
     advances: deployed
     batch: "<a command answering which of the items handed to it this deploy carries>"
+    grouping: release_scope    # § 4.8's name for the set this target publishes; `none` where it publishes none
+    requires_role: accepted    # § 4.2's role every item in that set must already hold; `none` where none is required
+    publishes: false           # whether reaching this target marks the grouping released
   - name: local
     not_live: true
     invoke: command
     command: "<the whole command>"
     advances: none
+    grouping: none
+    requires_role: none
+    publishes: false
 ```
 
 The vocabulary an entry draws on, stated under the key it belongs to — the device
@@ -7389,6 +7404,9 @@ deploy:
     requires:     "<§ 16's list, cited there and not restated>"
     advances:     "<one of § 4.2's own roles, read there — or `none`>"
     batch:        "<a command printing one item identifier per line>"
+    grouping:     "<a grouping § 4.8 carries, by the name that facet keys it on — or `none`>"
+    requires_role: "<one of § 4.2's own roles, read there — or `none`>"
+    publishes:    false
 ```
 
 **[§ 29](#29-the-hosts-run-operations) states what a role may do with a run and
@@ -7413,13 +7431,14 @@ Three of the five projects carrying this role carry more than one target, and no
 targets agree on what is invoked, what it advances, or whether it is live — so a project-level
 answer would be wrong for one of its own targets wherever it had two.
 
-⚠️ **Two questions about this list are deliberately left where they already are, and naming them is
-what keeps this from being a second answer to either.** Whether the list is a *project's* or a
-**code root's** is #63's, which depends on this item and states the question in those words; the
-list here sits at the top level, where a project with one code root and a project with several are
-the same configuration. And the filter that decides which subset of a grouping a given target
-advances is #44's, which this facet carries no vocabulary for: what an entry states is the role it
-advances **to**, and the rest is read where that item lands it.
+⚠️ **A question about this list is deliberately left where it already is, and naming it is what
+keeps this from being a second answer to it.** Whether the list is a *project's* or a **code
+root's** is #63's, which depends on this item and states the question in those words; the list here
+sits at the top level, where a project with one code root and a project with several are the same
+configuration. ⚠️ **The filter that decides which subset of a grouping a target advances is no
+longer among them**: it is
+[`Publishing a grouping`](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)
+below, and what an entry states for it is in the same fence as the rest.
 
 ### Which target, and what makes one live
 
@@ -7548,7 +7567,11 @@ immediately before `advances` in § 4.2's own order, that set being ordered for 
 ⚠️ **Measured right for every one of the seven**, including the project whose ladder has no
 deployed status at all and whose one target therefore steps an item straight from code-landed to
 terminal. ⛔ **What would make it a key is a project whose batch is drawn from further back**, and
-none was found.
+none was found. ⚠️ **`requires_role` is not that key and does not contradict this**: it is a bar
+over the publishing set rather than the role the batch is drawn from, and what it changes is whether
+a short item holds the whole target —
+[`Publishing a grouping`](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)
+states the distinction where it states the key.
 
 ⛔ **`batch` is a command, and the batch is what it returns intersected with what the tracker says
 now.** The command is handed the identifiers and answers which of them this deploy carries; the
@@ -7596,6 +7619,100 @@ resting on it** rather than the deploy, which is the same split one direction ov
 role adds to it is the list**: every item the batch left behind and why, every verification that was
 skipped rather than passed, every step still running, and what the deploy left standing — a spent
 version, a branch ahead of what the target serves, work queued behind the command that queued it.
+
+### Publishing a grouping, and the precondition that holds the whole target
+
+⛔ **Marking the grouping released and advancing its items are two acts rather than one, and what
+settles that is the writers.** One project's version is marked released by hand while its items are
+advanced programmatically in the same pass, so the grouping's writer there is `never` and the
+items' is not — and one act cannot carry two writers. The grouping's writer is
+[§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s `closed_by`, and each item's is the
+one [§ 4.2](#42-status--an-ordered-set-of-name-role-writer) states on the status `advances` names.
+⚠️ **Honoured independently, so a refusal on one half says nothing about the other**: the items
+move and the close is reported for whoever writes it, or the close is made and the moves are
+reported.
+
+**The publishing set** is what the precondition is read over and what the advance is narrowed to:
+
+| the entry says | the set is |
+|---|---|
+| `grouping: <a name § 4.8 carries>` | the items the tracker holds in that grouping, read through [§ 3](#the-operations-and-what-an-absent-capability-does)'s `grouping_items` |
+| `grouping: none` | the candidates `batch` is handed, which is the set [`The batch`](#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong) above already states |
+
+⛔ **Which grouping's *value* this is about — which release, which time box — arrives on the role's
+invocation, and ⚠️ that holds under either value of § 4.8's `current`.** That key states what the
+value could be read from: `stated` means it arrives, and `discoverable` means the tracker itself
+marks one and a procedure reads it. ⛔ **The second read is not performed here**, and that is a
+stated limit rather than a behaviour: a publishing ask handed no value is refused **against that
+key**, naming it, so a reader is sent to the thing that is unanswered instead of to an operation's
+argument list. ⚠️ **What would make it a behaviour is an operation that reads the mark**, which is a
+capability no tracker's own grouping has been measured carrying — and until one is, a target under
+`discoverable` is handed its value exactly as one under `stated` is.
+
+⚠️ **A target naming a grouping under a project whose carrier is `none` is refused with both keys
+named**, there being no set for the name to mean.
+
+⛔ **`requires_role` holds the whole target, and it is not the role an item must hold to be
+advanced.** Those are two statements about two sets and only this one is a key: the role an item is
+advanced *from* stays derived, and an item outside it is named and not advanced while the deploy
+goes ahead. This one has the opposite sign — **any** item in the publishing set short of the role
+named here, in § 4.2's own order, holds the target and nothing is invoked. ⛔ **The refusal names
+every such item rather than the first**, the answer a person needs being what the release is
+waiting on and not where the reader stopped.
+
+⚠️ **The procedure cannot produce that state, which is what makes this a precondition rather than a
+step.** § 4.2 maps the role to a status somebody else writes — the person who ordered the work,
+judging a change against the item's own criteria, or a lower environment's own deploy — so a target
+that tried harder would be refused all the same. It is
+[§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)'s `answered_by`
+one state later: a verdict somebody else records, blocking a step the procedure would otherwise
+take.
+
+⚠️ **Measured in both of its shapes, which is what makes it a role and not a flag.** One project's
+live target may carry only items a person has already accepted; another's refuses to run while any
+item whose code is on the integration branch has not reached the lower environment's own role.
+⛔ **And stated rather than derived from `advances`**: a project that states nothing here has no
+precondition, and deriving one would refuse a release nobody had ruled against — which is the
+behaviour every project carrying this facet before the key existed keeps.
+
+⛔ **`publishes` is the target's own fact and is never read off `not_live`.** A project's lower
+target advances a subset and marks nothing, and the one that publishes is the one whose entry says
+so; reading it off liveness would be inferring from what the go is asked for, which is the
+inference [`Which target`](#which-target-and-what-makes-one-live) writes its own key in the
+negative to prevent. ⚠️ **`publishes: true` beside `grouping: none` is refused with both keys
+named** — there is nothing for the mark to be about.
+
+⚠️ **This key is not [§ 34](#34-the-files-that-carry-a-version-and-what-cutting-a-release-writes)'s
+`publishes_packages`, and the two answer different questions about different acts.** That one says
+whether cutting a release spends an artifact nobody can take back, which is what makes the cut a
+person's; this one says whether reaching a target marks the grouping those items were planned into.
+⚠️ **A project may state either without the other**, and § 34 says in as many words that closing
+whatever a release corresponds to is not its question — ⛔ **which this subsection answers for a
+target rather than for a cut**: what marks the grouping here is a deploy, asking as `deploy`, and
+the subset a *release* closes is still vocabulary neither facet carries.
+
+⛔ **The capability absence on this half is the measured one, and it lands mid-deploy rather than
+mid-gate.** A tracker with no tool for marking a grouping released hands that step to a person
+every release, so the run names the step and the grouping, **continues**, and the report records the
+grouping as still open. § 3 states the fallback and this facet does not restate it; what this facet
+adds is that a deploy assuming the mark went through skips the one write that tells everybody else
+the release happened. ⚠️ **What it does not supply is where a person goes to do it**: an address is
+the tracker's own and
+[the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls) bars this procedure from
+composing one, so the report names the grouping and its value and stops there — which is a stated
+limit rather than a step half-done.
+
+⛔ **An item an automation has already advanced is left alone rather than written twice.** The move
+a merge's automation makes and the move this target makes are different edges, and an item already
+holding the role `advances` names — or one past it in § 4.2's order — is named and not written to.
+⚠️ **Read at the point it is advanced**, which is `The batch` above's rule met by its own caller: a
+reading taken before the invocation is one a step backwards can land behind.
+
+⚠️ **A project carrying no grouping publishes nothing and says so.** `grouping: none` on every
+target, `publishes: false`, and what the release writes is what this facet already wrote: the items
+the batch carried, advanced to the role the entry names. ⛔ **Which is not a deploy that writes
+nothing on the tracker at all** — the item advance is this facet's own and the absence of a
+grouping does not reach it — and the report says which of the two the project is.
 
 ## 34. The files that carry a version, and what cutting a release writes
 
