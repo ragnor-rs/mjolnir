@@ -583,3 +583,16 @@ context_guard:
   # ⛔ Outside all three repositories, not merely outside the one the change is in.
   sidecar_dir: "<the absolute path of a directory outside every checkout>"
   reread: refuse
+
+release:
+  # A product shipped continuously from its default branch: nothing in the repository carries a
+  # version, so there is no file to list and no version to cut. ⛔ `carrier: none` rather than
+  # `files: []`, which § 34 reads as a project that cuts releases and has not found its files yet.
+  carrier: none
+  absent_reason: >-
+    Nothing here is versioned for anybody outside the team: the service is deployed from its
+    default branch continuously, so no file carries a version, there is no changelog and no
+    package is published.
+  revisit_when: >-
+    Something outside this repository starts depending on a named version of it — a published
+    client library, or a consumer pinning what it talks to.

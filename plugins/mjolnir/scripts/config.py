@@ -2634,6 +2634,23 @@ class Config:
         self.get("host.pull_request_title")
         return host_pull_request_title(self.data)
 
+    def release(self) -> dict | None:
+        """§ 34's `release`, or `None` where no file here carries a version.
+
+        The facet's whole public face, and the carrier beside this module is its
+        one reader. ⚠️ `None` is the project's **stated** absence — nothing here
+        is versioned, so there is no file to edit and no version to cut, which is
+        a configuration rather than a gap and never a statement about whether
+        somebody cuts a release by hand.
+        """
+        if self.get("release.carrier") != "list":
+            return None
+        return {
+            "files": [dict(entry) for entry in self.get("release.files") or ()],
+            "publishes_packages": self.get("release.publishes_packages"),
+            "changelog_ci_owned": self.get("release.changelog_ci_owned"),
+        }
+
     def _report_roots(self) -> "list[tuple[str, Config]]":
         """(what to prefix a line with, the root to read it from).
 
@@ -2822,6 +2839,21 @@ class Config:
         # is not an answer, and zero executed is the failure this facet names, so
         # reporting it for a project that declared nothing would be the one wrong
         # answer available here.
+        # § 34, and reported for the reason § 15's is: a role that would have cut
+        # a version learns that this project writes none, rather than meeting a
+        # key that is not there. ⛔ Reported as no file carrying a version and
+        # never as nothing to release -- a project may well cut a release by
+        # hand, which this reports nothing about, and that is the case the facet
+        # exists against.
+        if self.get("release.carrier") == "none":
+            reason = self.get("release.absent_reason")
+            out.append(
+                "No file carries a version (`release.carrier: none`), so the "
+                "release role stops with this key named and nothing here is "
+                "versioned through the procedure. ⛔ Not a statement about "
+                "whether anybody cuts one by hand: "
+                f"{' '.join(str(reason).split())}"
+            )
         if self.get("executed.carrier") == "none":
             reason = self.get("executed.absent_reason")
             out.append(
@@ -4393,6 +4425,201 @@ def _validate_deploy(
                 f"{where}.batch",
                 "must be a non-empty command, stated whole (§ 33); omit it where "
                 "this target carries no batch.",
+            )
+
+
+# § 34's one capture, and the one name in this module that is a *grammar* rather
+# than a value a project states. ⛔ A literal here rather than read off the
+# surface, because there is nothing on the surface for it to be read off: the
+# capture's name is not a key, not a default and not a member of an alternation,
+# and the surface states it in the prose of the key it belongs to -- which is
+# § 33's position for its own `none`, said there for the same reason. ⚠️ What
+# holds the two together is the suite, which asserts the surface's own example
+# pattern carries this name.
+VERSION_CAPTURE = "version"
+
+
+def _validate_release(data: dict, facts: dict) -> None:
+    """§ 34's `files` entries, which no marker on the surface can reach.
+
+    The carrier's own alternation and the requiredness of the keys beside it are
+    marked and answered before this runs; what each entry of the list has to
+    *be* is here, which is the division §§ 31, 32 and 33 already have.
+
+    ⛔ **Every arm refuses rather than skipping**, and the direction is the one
+    this facet exists for: a file whose edit a reader could not make sense of is
+    a file a release either leaves at the old version or rewrites by a rule
+    nobody stated -- and the half-bumped tree that follows is what every later
+    reader believes.
+    """
+    if _get(data, "release.carrier") != "list":
+        # ⛔ The complement is **not** silence: a key stated beside `none` is
+        # refused below rather than ignored, by the same rule § 33 states for a
+        # key an invocation shape never reads. A file list under a carrier that
+        # reads none is a release somebody configured and nothing performs.
+        stated = [
+            key
+            for key in ("files", "publishes_packages", "changelog_ci_owned")
+            if key in _absent_as(_get(data, "release"), {})
+        ]
+        if stated:
+            raise ConfigError(
+                f"release.{stated[0]}",
+                "is stated while `release.carrier` is "
+                f"{_get(data, 'release.carrier')!r}, which reads none of it "
+                "(§ 34). A project that cuts no release states the carrier and "
+                "its reason; one that does states the carrier as `list`.",
+            )
+        return
+
+    kinds = vocabulary(facts, "release.files.kind", "a version-carrying file's edit")
+    # ⛔ Read off the surface's own entry fence rather than listed here, which is
+    # the division § 33's entry walk already has: a key added to that fence is
+    # accepted with no edit in this module, and a literal here would be a second
+    # statement of the fence free to disagree with it.
+    prefix = "release.files."
+    declared = {
+        path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)
+    }
+    if not declared:
+        raise ConfigError(
+            "release.files",
+            "the surface declares no key under this one, so an entry could be "
+            "held to nothing. § 34 states the entry's keys in a fence of its own, "
+            "and a surface that has lost it is refused rather than read as "
+            "permitting anything.",
+        )
+    files = _get(data, "release.files")
+    if not isinstance(files, list) or not files:
+        raise ConfigError(
+            "release.files",
+            "must be a non-empty, ordered list of the files that carry a version "
+            "(§ 34). A project whose files carry none states `carrier: none` with "
+            "its reason, which is a different fact from an empty list.",
+        )
+    ci_owned = _get(data, "release.changelog_ci_owned")
+    seen_paths: dict[str, int] = {}
+    for index, entry in enumerate(files):
+        where = f"release.files[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                "must be a mapping; an entry states at least the file and which "
+                "edit it takes (§ 34).",
+            )
+        for stated_key in entry:
+            if stated_key not in declared:
+                raise ConfigError(
+                    f"{where}.{stated_key}",
+                    "is a key § 34 does not declare on a version-carrying file, so "
+                    "it is a fact about the file that nothing reads. The keys it "
+                    f"declares are: {', '.join(sorted(declared))}.",
+                )
+        path = entry.get("path")
+        if not isinstance(path, str) or not path.strip():
+            raise ConfigError(
+                f"{where}.path",
+                "required, and a non-empty string (§ 34). It is the file the "
+                "version is written in, relative to the code root.",
+            )
+        if path in seen_paths:
+            raise ConfigError(
+                f"{where}.path",
+                f"is {path!r}, which release.files[{seen_paths[path]}] already "
+                "names (§ 34). Two entries over one file are two edits whose "
+                "order decides the result, and the second reads the first's "
+                "output rather than the file the project described.",
+            )
+        seen_paths[path] = index
+        kind = entry.get("kind")
+        if kind is None:
+            raise ConfigError(f"{where}.kind", "required (§ 34).")
+        if kind not in kinds:
+            raise ConfigError(
+                f"{where}.kind",
+                f"is {kind!r}; the surface states {' | '.join(kinds)}.",
+            )
+        # ⛔ Both directions, per key, which is § 33's rule for the same shape: a
+        # key the kind needs and the entry does not state, and a key the entry
+        # states and the kind never reads. The second is how a project comes to
+        # carry a `pattern` beside a changelog -- a fact nothing reads, written
+        # where a reader would expect it to be.
+        for key, read_by in (("pattern", {"regex"}), ("replace", {"regex"})):
+            if key in entry and kind not in read_by:
+                raise ConfigError(
+                    f"{where}.{key}",
+                    f"is stated beside `kind: {kind}`, which never reads it "
+                    f"(§ 34). It is read by {' and '.join(sorted(read_by))}.",
+                )
+            if kind in read_by and key not in entry:
+                raise ConfigError(
+                    f"{where}.{key}", f"required where `kind` is {kind!r} (§ 34)."
+                )
+            if key in entry and (
+                not isinstance(entry[key], str) or not entry[key].strip()
+            ):
+                raise ConfigError(
+                    f"{where}.{key}", "must be a non-empty string (§ 34)."
+                )
+        if kind == "regex":
+            # ⛔ The capture is what the role reads the version it is replacing
+            # out of, and § 34 makes a pattern without one refused where it is
+            # written: a pattern that matches without capturing leaves the role
+            # able to write a version and unable to say which one it replaced.
+            # ⚠️ Compiled, because an unparsable expression is a release that
+            # stops at the first file rather than at the load.
+            try:
+                compiled = re.compile(entry["pattern"])
+            except re.error as broken:
+                raise ConfigError(
+                    f"{where}.pattern",
+                    f"is not a regular expression this reader can compile: "
+                    f"{broken}. A pattern that cannot be compiled stops the "
+                    "release at the file it names rather than at the load (§ 34).",
+                ) from None
+            if VERSION_CAPTURE not in compiled.groupindex:
+                raise ConfigError(
+                    f"{where}.pattern",
+                    f"carries no `{VERSION_CAPTURE}` capture (§ 34). It is the "
+                    "only thing the role learns about this project's scheme, and "
+                    "a pattern matching the version without capturing it leaves "
+                    "the role unable to say which version it replaced.",
+                )
+        if kind == "changelog" and ci_owned:
+            raise ConfigError(
+                f"{where}.kind",
+                "is `changelog` while `release.changelog_ci_owned` is true, which "
+                "is a project asking for a file to be written and declaring that "
+                "it may not be (§ 34). Refused here rather than met with a "
+                "version already spent.",
+            )
+        # ⛔ Boolean, and read for neither truth nor presence -- § 1's rule for
+        # `code_root_runs_nothing`. Read as truthy, `false` spelled as a word
+        # would make a required file optional; read as presence, the key written
+        # `false` would do it too.
+        #
+        # ⚠️ **Absent is the strict reading, and that value is § 34's prose rather
+        # than a marker**: the key's parent is a list, so there is no path a
+        # default marker could hang on -- § 33's position for its own `none`, in
+        # the same place and for the same reason. What this module performs is
+        # therefore a value the surface states, which is said here so that a
+        # reader can tell it from a default this module chose.
+        if "optional" in entry and not isinstance(entry["optional"], bool):
+            raise ConfigError(
+                f"{where}.optional",
+                f"is {entry['optional']!r}; it must be `true` or `false` written "
+                "as a boolean (§ 34). A word read as truthy would make a file the "
+                "release depends on one it is free to skip.",
+            )
+    for key in ("publishes_packages", "changelog_ci_owned"):
+        value = _get(data, f"release.{key}")
+        if not isinstance(value, bool):
+            raise ConfigError(
+                f"release.{key}",
+                f"is {value!r}; it must be `true` or `false` written as a boolean "
+                "(§ 34). Each decides what the role does rather than what it "
+                "reads, so a word read as truthy would move the ask or the "
+                "changelog without anything saying so.",
             )
 
 
@@ -6532,6 +6759,10 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # a reader demanding `writer: deploy` would refuse a project that really does
     # deploy the target.
     _validate_deploy(data, facts, mapped_roles, workflows)
+    # § 34's entries, in the same position and for the same reason § 33's are: the
+    # carrier's alternation and the keys beside it are the surface's markers, and
+    # what a member of the list has to be is no marker's to reach.
+    _validate_release(data, facts)
 
     readiness = _absent_as(_get(data, "readiness"), [])
     if not isinstance(readiness, list):
@@ -8034,6 +8265,7 @@ MARKED_REQUIRED = [
     "people.carrier",
     f"{PRIVATE_KEY}.carrier",
     "readiness",
+    "release.carrier",
     "reversals",
     "roots.code",
     "session",
@@ -8118,6 +8350,14 @@ MARKED_REQUIRED_WHEN = [
     # under (§ 27).
     ("people.key", "people.carrier", "file"),
     ("people.source", "people.carrier", "file"),
+    # § 34's three, each meaningless where no file carries a version and each
+    # read by the role under the carrier that does: the ordered list, and the two
+    # switches that decide what the role *does* rather than what it reads. ⚠️
+    # `absent_reason` is not here, carrying the opposite condition, which the
+    # absent-capable marker on the carrier already states.
+    ("release.changelog_ci_owned", "release.carrier", "list"),
+    ("release.files", "release.carrier", "list"),
+    ("release.publishes_packages", "release.carrier", "list"),
     # § 28's two, and they are halves of one statement rather than two keys that
     # happen to share a condition: a pointer with no list is an overlay free to
     # supply anything, and a list with no pointer is a set of keys nothing
@@ -8247,6 +8487,7 @@ MARKED_ABSENT_CAPABLE = [
     "ordering",
     "people",
     PRIVATE_KEY,
+    "release",
     "test_tiers",
     "work_item.code_root",
     "work_item.due_date",
@@ -11929,6 +12170,114 @@ def self_test() -> int:
             f"carries {targets!r}",
         )
 
+    print("\n§ 34, the files that carry a version -- the green side, and the one surface arm:")
+    # ⛔ The plants are all red by construction, so none of them says a correct
+    # file list loads -- and the arms that matter most here are the two no
+    # refusal can reach: a file marked `optional` and missing, which the facet
+    # exists for, and a changelog entry beside a project that writes its own.
+    for label, overrides in (
+        ("a file the project does not have in every checkout loads",
+         {"files": [_a_release_file(optional=True)]}),
+        ("and the same file with the flag written `false` loads",
+         {"files": [_a_release_file(optional=False)]}),
+        # ⚠️ Not a spelling of the fixture's own default: `optional` omitted is
+        # the strict reading § 34 states in prose, and it has to load rather
+        # than be refused for saying nothing.
+        ("a file saying nothing about being optional loads",
+         {"files": [_a_release_file()]}),
+        ("a changelog beside a project that writes its own loads",
+         {"files": [_a_release_file(kind="changelog", pattern=_ABSENT,
+                                   replace=_ABSENT)]}),
+        ("a project whose changelog CI owns, stating no changelog entry, loads",
+         {"changelog_ci_owned": True}),
+        ("a project that publishes packages loads", {"publishes_packages": True}),
+        # ⚠️ The ordered list with every shape in it at once, which is the
+        # configuration § 34's own fence shows and the one an adopter copies.
+        ("the three-file list the surface shows loads",
+         {"files": [
+             _a_release_file(),
+             _a_release_file(path="a-changelog", kind="changelog",
+                             pattern=_ABSENT, replace=_ABSENT),
+             _a_release_file(path="a-readme", optional=True),
+         ]}),
+    ):
+        loaded = _a_valid_example()
+        loaded["release"] = _a_release_of(**overrides)
+        refusal = _refused(loaded)
+        check(label, refusal is None, f"refused on {refusal!r}")
+
+    # ⛔ The one arm the plant list cannot reach, the surface's entry fence being
+    # what it is about rather than a configuration: with no key declared under
+    # `release.files` an entry could be held to nothing, and a reader that read
+    # that as permitting anything would accept every malformed entry above.
+    # ⚠️ Planted on the derived set rather than on the surface's text, which is
+    # where `_code_roots`' sibling arm plants its own.
+    with open(SURFACE, encoding="utf-8") as handle:
+        blind = surface_facts(handle.read())
+    blind["declared"] = {
+        path for path in blind["declared"] if not path.startswith("release.files.")
+    }
+    refusal = None
+    try:
+        _validate_release({"release": _a_release_of()}, blind)
+    except ConfigError as refused:
+        refusal = refused.key
+    check(
+        "a surface that has lost § 34's entry fence is refused, with the key named",
+        refusal == "release.files",
+        f"reported {refusal!r}",
+    )
+
+    # ⛔ And the facet is **read back**, not merely validated: the role reads its
+    # file list out of the resolved configuration, so a key the reader accepts
+    # and no reader renders is a key nothing holds. ⚠️ The example is found by
+    # the facet rather than named, which is every fixture here's rule.
+    carried = next(
+        (
+            data for data in (
+                _load_yaml(open(path, encoding="utf-8").read(), CONFIG_PATH)
+                for path in _examples()
+            )
+            if _get(data, "release.carrier") == "list"
+        ),
+        None,
+    )
+    check(
+        "an example carries the facet, so the arms below have a subject",
+        carried is not None,
+        "no example states a file that carries a version",
+    )
+    if carried is not None:
+        with open(SURFACE, encoding="utf-8") as handle:
+            resolved = _resolve(carried, EXAMPLES, surface_facts(handle.read()), False)
+        files = resolved.get("release.files")
+        check(
+            "the resolved configuration carries the files the file states, in order",
+            isinstance(files, list)
+            and [entry.get("path") for entry in files]
+            == [entry.get("path") for entry in _get(carried, "release.files")],
+            f"carries {files!r}",
+        )
+        check(
+            "and each file's own keys come back with it",
+            all(
+                isinstance(entry, dict) and {"path", "kind"} <= set(entry)
+                for entry in files or []
+            ),
+            f"carries {files!r}",
+        )
+        # ⛔ The capture this module performs, held to the surface's own example
+        # pattern rather than to the constant alone: `VERSION_CAPTURE` is the one
+        # name here with nothing on the surface to be read off, so what ties the
+        # two together is this arm.
+        with open(SURFACE, encoding="utf-8") as handle:
+            shown = handle.read()
+        check(
+            "the surface's own example pattern carries the capture this reader requires",
+            f"(?P<{VERSION_CAPTURE}>" in shown,
+            f"the surface shows no `(?P<{VERSION_CAPTURE}>` capture",
+        )
+
     print("\n§ 31, what a tier needs before it can run -- and the tier that has no answer:")
     # ⛔ The reading rather than the refusals, which the plants above hold. What
     # these arms are for is the half § 31 commits the reader to that validation
@@ -12510,6 +12859,98 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(advances=_a_role_some_status_maps())])),
         ("a batch written blank", "deploy[0].batch",
          at("deploy", [_a_deploy_target(batch="   ")])),
+        # § 34's shape, one plant per arm. ⛔ Every one of them replaces the whole
+        # facet rather than editing the base example's, which is this list's rule
+        # for `_a_deploy_target` read one facet over: a plant that broke one key
+        # of a shipped file would stop asserting the moment that file's list grew
+        # a second entry, and the half of it that is a *plant* would be invisible.
+        #
+        # ⛔ The first is the arm the carrier's own alternation cannot reach: a
+        # project that states it cuts no release and then states the list anyway.
+        # The marker makes the list required under `list` and says nothing about
+        # the other direction, which would leave a release configured and nothing
+        # performing it.
+        ("a file list stated beside a carrier that reads none", "release.files",
+         at("release", {"carrier": "none", "absent_reason": "nothing is versioned",
+                        "files": [_a_release_file()]})),
+        ("a file list that is not a list", "release.files",
+         at("release", _a_release_of(files="a-build-file"))),
+        # ⚠️ The empty list is its own arm and not a spelling of the one above:
+        # § 34 makes `carrier: none` the way a project says no file carries a
+        # version, so `[]` is a project that cuts releases and has not found its
+        # files -- which must not read as the stated absence.
+        ("a file list carrying no file", "release.files",
+         at("release", _a_release_of(files=[]))),
+        ("a file entry that is not a block", "release.files[0]",
+         at("release", _a_release_of(files=["a-build-file"]))),
+        ("a key § 34 declares on no file", "release.files[0].encoding",
+         at("release", _a_release_of(
+             files=[_a_release_file(encoding="a fact about the file nothing reads")]))),
+        ("a file with no path", "release.files[0].path",
+         at("release", _a_release_of(files=[_a_release_file(path=_ABSENT)]))),
+        ("a path written blank", "release.files[0].path",
+         at("release", _a_release_of(files=[_a_release_file(path="   ")]))),
+        # ⛔ Two entries over one file, which is the arm about the list rather
+        # than about an entry: the second edit reads the first one's output
+        # instead of the file the project described.
+        ("one path edited twice", "release.files[1].path",
+         at("release", _a_release_of(
+             files=[_a_release_file(), _a_release_file()]))),
+        ("a file with no kind of edit", "release.files[0].kind",
+         at("release", _a_release_of(files=[_a_release_file(kind=_ABSENT)]))),
+        ("a kind outside its alternation", "release.files[0].kind",
+         at("release", _a_release_of(files=[_a_release_file(kind="rewrite")]))),
+        # ⛔ Both directions of every per-kind key, which is § 33's rule for the
+        # same shape: one the kind needs and the entry leaves out, one the entry
+        # states and the kind never reads. ⚠️ The second is the one a reader is
+        # tempted to tolerate, and tolerating it leaves a `pattern` beside a
+        # changelog -- a fact written exactly where somebody expects it read.
+        ("a regex file with no pattern", "release.files[0].pattern",
+         at("release", _a_release_of(files=[_a_release_file(pattern=_ABSENT)]))),
+        ("a regex file with no replacement", "release.files[0].replace",
+         at("release", _a_release_of(files=[_a_release_file(replace=_ABSENT)]))),
+        ("a pattern stated beside a changelog", "release.files[0].pattern",
+         at("release", _a_release_of(files=[_a_release_file(
+             kind="changelog", replace=_ABSENT)]))),
+        ("a replacement stated beside a changelog", "release.files[0].replace",
+         at("release", _a_release_of(files=[_a_release_file(
+             kind="changelog", pattern=_ABSENT)]))),
+        ("a pattern written blank", "release.files[0].pattern",
+         at("release", _a_release_of(files=[_a_release_file(pattern="   ")]))),
+        ("a replacement written blank", "release.files[0].replace",
+         at("release", _a_release_of(files=[_a_release_file(replace="   ")]))),
+        # ⛔ Compiled at the load, so an expression no engine can parse is refused
+        # where it is written rather than at the first file of a release that has
+        # already spent a version.
+        ("a pattern no engine can compile", "release.files[0].pattern",
+         at("release", _a_release_of(files=[_a_release_file(pattern="v(")]))),
+        # ⛔ And the capture, which is the only thing the role learns about a
+        # project's scheme. ⚠️ Planted on a pattern that **matches** the version
+        # without capturing it: a pattern matching nothing at all is a stop the
+        # carrier takes against the file, which says nothing about this arm.
+        ("a pattern matching the version without capturing it",
+         "release.files[0].pattern",
+         at("release", _a_release_of(files=[_a_release_file(pattern=r"v\d+")]))),
+        # ⛔ The pair § 34 refuses at the load: a project asking for the changelog
+        # to be written and declaring that it may not be.
+        ("a changelog entry beside a changelog CI owns", "release.files[0].kind",
+         at("release", _a_release_of(
+             changelog_ci_owned=True,
+             files=[_a_release_file(kind="changelog", pattern=_ABSENT,
+                                    replace=_ABSENT)]))),
+        # ⛔ Read for neither truth nor presence, which is § 1's rule for
+        # `code_root_runs_nothing` arriving at the three booleans this facet has.
+        # ⚠️ Each is planted as a word a truthy read would accept, that being the
+        # reading which fails silently.
+        ("a file's optionality written as a word rather than a boolean",
+         "release.files[0].optional",
+         at("release", _a_release_of(files=[_a_release_file(optional="yes")]))),
+        ("publishing written as a word rather than a boolean",
+         "release.publishes_packages",
+         at("release", _a_release_of(publishes_packages="yes"))),
+        ("the changelog's ownership written as a word rather than a boolean",
+         "release.changelog_ci_owned",
+         at("release", _a_release_of(changelog_ci_owned="yes"))),
         ("a readiness list that is not a list", "readiness", at("readiness", "all")),
         ("a readiness entry that is not a block", "readiness[0]", at("readiness", ["x"])),
         ("a readiness entry with no check", "readiness[0].check",
@@ -14664,6 +15105,43 @@ def _a_deploy_target(**overrides) -> dict:
     }
     target.update(overrides)
     return {key: value for key, value in target.items() if value is not _ABSENT}
+
+
+def _a_release_file(**overrides) -> dict:
+    """§ 34's smallest valid version-carrying file, to break one key of at a time.
+
+    ⛔ Built here rather than borrowed from whichever example carries the facet,
+    for `_a_deploy_target`'s reason: a plant that broke one key of a shipped file
+    would stop asserting the moment that file's list grew a second entry.
+    ⚠️ The `regex` kind, because it is the one with keys of its own -- the
+    `changelog` plants state the kind themselves.
+    """
+    entry = {
+        "path": "a-file",
+        "kind": "regex",
+        "pattern": f"v(?P<{VERSION_CAPTURE}>1)",
+        "replace": "v1",
+    }
+    entry.update(overrides)
+    return {key: value for key, value in entry.items() if value is not _ABSENT}
+
+
+def _a_release_of(**overrides) -> dict:
+    """§ 34's smallest facet that carries a list, for the arms above the entries.
+
+    ⛔ The carrier is `list` in every one of them: a plant that left it `none`
+    would be refused by the stated-beside-an-absent-carrier arm instead, which is
+    a different branch under a different key -- green while asserting nothing
+    about the one it was aimed at.
+    """
+    facet = {
+        "carrier": "list",
+        "files": [_a_release_file()],
+        "publishes_packages": False,
+        "changelog_ci_owned": False,
+    }
+    facet.update(overrides)
+    return {key: value for key, value in facet.items() if value is not _ABSENT}
 
 
 # The sentinel `_a_deploy_target` reads as *leave this key out*, which `None`

@@ -13,7 +13,7 @@ what carry the argument anyway.
 
 ## The survey found nine roles, not eight
 
-The loop's statement is [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--ten-roles),
+The loop's statement is [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles),
 and it now states ten — the tenth is the subsection below, which the survey found in every project's
 tooling and in no project's implementation. What the survey established about the nine it could read
 is the count: gating is a genuine ninth role rather than a variant.
@@ -165,7 +165,7 @@ completion that some reason about explicitly and others do not have.
 ## The axes, and why each is independent
 
 The axes are stated in
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--ten-roles) — which
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles) — which
 carries the list, and no count, so this document does not hold a copy of one. There are more than
 the three that are obvious. The measurements that forced each to be independent:
 
@@ -719,7 +719,7 @@ this repository's own roles are handed holds neither.
 ## What is an ordered list of named checks rather than procedure
 
 No count is given, for the reason [`schema.md § The
-loop`](../plugins/mjolnir/config/schema.md#the-loop--ten-roles) gives for the axes — a count
+loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles) gives for the axes — a count
 restated elsewhere drifts the moment one is added — and this section is the demonstration: it gained
 what counts as done after it was written, which would have made a number in the heading wrong while
 the gate stayed green.
@@ -1143,7 +1143,7 @@ six projects had, and never the subsection's own inventory.
 
 **Why the surface, and not either of the two homes it was weighed against.** The discipline is read
 by two legs — the implementing one, which no role owns, and the reviewing role — and
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--ten-roles) already settles
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles) already settles
 what follows: a rule read by two roles and written in one of their skills is a second authority for
 the other. Promoting these rules into the reviewing role's own text is therefore the option with a
 precedent against it rather than the cheap one, and it is ruling 11's reasoning arriving a second
@@ -1341,7 +1341,8 @@ repository's standing remedy — and the gate prints the live figure instead as 
 own run's output.
 
 What is stable enough to state without a number going stale: **a single role runs to thousands of
-tokens and carries dozens of ⛔ and ⚠️ markers, and the loop has ten roles.** A window largely
+tokens and carries dozens of ⛔ and ⚠️ markers, and there is one of them per leg the loop names**
+([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles)). A window largely
 spent on procedure before a line of anyone's code is read is what § 11 exists to notice, and the
 harness vendor's own guidance is that an over-long instructions file is not read selectively — it
 is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
@@ -2977,3 +2978,107 @@ project with one code root and a project with several write the same thing, and 
 which root a target belongs to is answered where that item lands it —
 [`§ 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes)
 says so at the key.
+
+## The release half: one copy that arrives as data
+
+Ruling (10) settled the deploying role and left a question beside it that the deploy survey could
+not answer: whether turning landed work into a released **version** is that role's terminal third
+or a role of its own. The item carrying it named the test and declined to apply it, the deploy
+ruling being provisional at the time. ⛔ **It is applied here, and the answer is a role of its
+own** — the facet it produced is
+[`schema.md § 34`](../plugins/mjolnir/config/schema.md#34-the-files-that-carry-a-version-and-what-cutting-a-release-writes).
+
+**The test is the preconditions, and they do not overlap.** A deploy names a target environment and
+is refused without an explicit go for a live one; a release names a version and is refused without
+landed work to carry it. ⚠️ **That is weak evidence on its own** and is stated as weak: two acts
+with different preconditions can still be two steps of one role, and what decides it is what the
+copies carry rather than what the distinction suggests.
+
+| | what the copy carries | where it lives | what it invokes |
+|---|---|---|---|
+| the deploy survey | seven carriers across five projects, each naming a **target** | a script, a hosted configuration, or a run the host makes | the project's own command, a dispatch, or an act handed to a person |
+| the release half | **one** copy, naming a **version** | a rules file, as **data** rather than as procedure | an ordered file list, a changelog insert, a tag and a publish |
+
+⛔ **The deciding fact is the second row's middle cell.** Every other process fact in the surveyed
+copies arrives as prose a role performs; this one arrives already written as an ordered list of
+`(path, kind, pattern, replace, optional)` — so what varies between projects here is a **file
+list** and not a sequence of steps, which is the shape
+[`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
+makes configuration rather than procedure.
+
+⚠️ **One copy is thin evidence for a facet, and that is stated rather than glossed**, exactly as
+ruling (31) states it for the grouping axis. What makes it admissible is that the copy carries the
+facet's whole shape already: every key the surface now declares is a key that copy writes, and no
+key was invented to round the list out.
+
+### The three switches, and the one of them that is not a key
+
+The same rules file carries three switches beside the file list: whether the release has a
+user-facing audience, whether it publishes packages, and whether CI owns the changelog. ⛔ **Two
+became keys and the third did not**, and the third is the one already answered one section over —
+the audience and register of an artifact a role writes are
+[`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project)'s,
+per artifact, so a key here would be a second statement of a fact the surface already holds.
+
+**What the two surviving switches buy is measured on what they change.** `changelog_ci_owned` is the
+sharper of them: it is an absence that changes what the procedure **does** rather than what it
+reads, because a role that wrote a file CI also writes produces a conflict on every single release
+rather than occasionally. ⚠️ **It is a project's statement about ownership and not a reading of the
+file**, which is why it is configured: a changelog CI writes and a changelog nobody writes look
+identical in a tree. The statement is
+[`schema.md § 34 → The changelog CI owns`](../plugins/mjolnir/config/schema.md#the-changelog-ci-owns-which-inverts-the-role).
+
+⛔ **`publishes_packages` decides whether the release is the person's act**, which is the only test
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
+admits for an ask — and the deploy survey already measured the same reasoning on its own most
+irreversible target, the one carrier that hands its act to a person outright because it spends a
+version for ever. ⚠️ **The tag is deliberately not what the ask is about**: a tag can be moved and a
+published artifact cannot, which is stated at the key rather than left as an omission —
+[`schema.md § 34 → What a release publishes`](../plugins/mjolnir/config/schema.md#what-a-release-publishes-and-what-this-section-does-not-carry).
+
+### The flag with a measurement behind it, and the default that inverts § 33's
+
+`optional` is the one key in the file list whose value was observed being *needed* rather than
+merely written: one of the three files that copy lists **does not exist** in the project it came
+from, and a release that errors on it is a release that cannot be cut.
+
+⛔ **Its absent reading is the strict one, which is the opposite of the ruling on `not_live` one
+section earlier, and the asymmetry is the whole of the argument.** There, a key read as absent
+would make a live target not live and the failure is silent; here, a file a project does not have
+and did not mark gets the release stopped with the file named, which is loud — so the strict
+direction costs an adopter nothing it cannot see. The statement is
+[`schema.md § 34 → The files a version is written in`](../plugins/mjolnir/config/schema.md#the-files-a-version-is-written-in-and-the-two-kinds-of-edit),
+and the deploy side of the contrast is
+[`schema.md § 33 → Which target`](../plugins/mjolnir/config/schema.md#which-target-and-what-makes-one-live).
+
+⚠️ **One thing had to be translated rather than accepted**, and it is the only place this facet
+does not take the copy's data as written: the copy spells its named capture in its own stack's
+dialect, and the expression here is the carrier's engine's. ⛔ **Stated rather than left to be
+discovered by a release that stops at its first file** — the rule is the one
+[`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project)
+already states for a branch slug, arriving at an expression, and the expression is compiled at the
+load so that a dialect mismatch is refused where it is written.
+
+### What the ordering buys, and the one guarantee the carrier does not make
+
+⛔ **The edit is all of it or none of it**, and that ordering is the facet's rather than an
+implementation detail of the carrier: a release with half its files bumped is worse than a release
+not cut, because the half that moved is what every later reader believes. ⚠️ The copy surveyed
+makes no such guarantee — its file edits run in sequence and a failure part of the way through
+leaves the tree mixed — so this is the measurement being **improved on** rather than reproduced,
+and the statement is at
+[`schema.md § 34 → The files a version is written in`](../plugins/mjolnir/config/schema.md#the-files-a-version-is-written-in-and-the-two-kinds-of-edit).
+
+⚠️ **What the carrier cannot promise is atomicity against a crash**, and it says so in its own
+report rather than claiming what a filesystem does not support: the write loop can be interrupted
+between two files. What is closed is the case a plan can close — a release that was never going to
+work being carried out part of the way — and the residue is named instead of being covered by a
+guarantee nothing performs.
+
+⚠️ **And two questions are left where they already are.** Which work a release carries is read where
+a deploy's batch is read, by
+[`schema.md § 33 → The batch`](../plugins/mjolnir/config/schema.md#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong)'s
+rule rather than by a second command; and closing whatever the release corresponds to is the
+grouping axis's question, the copy surveyed having closed a release and an iteration together one
+to one, which is one project's coincidence until a second shows it. The deploy side of the first is
+[the reading above](#the-batch-and-the-two-assemblies-that-lose-an-item).

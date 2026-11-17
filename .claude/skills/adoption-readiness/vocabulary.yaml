@@ -12,14 +12,15 @@
 # projects rather than derived from the surface — it is carrier basenames and no project's name —
 # and #104's decision 4 is where it gives way to each project's own `carriers:` block.
 
-# The ten roles of the loop, by the key a `carriers:` block uses for each.
+# The roles of the loop, by the key a `carriers:` block uses for each. No count is written here:
+# the length of this list is the statement, and a figure beside it would drift by the next role.
 #
-# ⚠️ The surface states the loop in prose (schema.md § "The loop — ten roles") and states no
+# ⚠️ The surface states the loop in prose (schema.md § "The loop — eleven roles") and states no
 # key per role, so this list is the only place the keys are written down — and the check holds
 # it to the surface both ways: the heading's count word and the number of `·`-separated phrases
-# in the paragraph under it must both equal the length of this list. An eleventh role added to
-# the surface reddens this check rather than being silently uncounted — which is what it did when
-# the tenth arrived, reported as the loop's size disagreeing three ways.
+# in the paragraph under it must both equal the length of this list. A role added to the surface
+# reddens this check rather than being silently uncounted — measured each of the two times it has
+# happened, reported both times as the loop's size disagreeing three ways.
 roles:
   - file
   - gate
@@ -27,6 +28,7 @@ roles:
   - finish
   - review
   - deploy
+  - release
   - day_log
   - session
   - load
@@ -35,7 +37,7 @@ roles:
 # How a carrier's own name maps to a role. Keyed by the carrier's basename — a skill directory,
 # a command file without its extension, a hook script.
 #
-# `role:` is one of the ten above. `class:` is for a carrier that is not one of them:
+# `role:` is one of the keys above. `class:` is for a carrier that is not one of them:
 #   beside   — a role that travels beside the loop without being part of it
 #   utility  — project-local tooling the loop does not contain
 #   guard    — a hook enforcing the loop rather than carrying a role (§ 7, #16)
@@ -64,7 +66,13 @@ carriers:
   deploy-stand:   { role: deploy }
   release:        { role: deploy }      # a deploy to production, where `deploy-stand` above is
                                         # the same role's deploy to staging under another name —
-                                        # one role under two carriers, split by environment (#13)
+                                        # one role under two carriers, split by environment (#13).
+                                        # ⚠️ Left as measured now that #36 has made cutting a
+                                        # release a role of its own: this entry is that project's
+                                        # carrier, read once, and reclassifying it would be
+                                        # asserting a measurement nobody has retaken. The shipped
+                                        # carrier of the new role is `cut-release` below, named
+                                        # apart from this word for exactly that reason.
   day-report:     { role: day_log }
   save:           { role: session }
   ship:           { role: session, partial: "commit third only — the shape #12 names" }
@@ -83,6 +91,10 @@ carriers:
   finish:         { role: finish }       # the reconciled finishing role (#10, shipped by #113)
   start:          { role: start }        # the starting half, still project-local (#9)
   review:         { role: review }       # the reconciled reviewing role (#11)
+  cut-release:    { role: release }      # the release role, shipped by #36 — and the one shipped
+                                         # carrier whose basename is not its role key, because
+                                         # the word `release` is already taken above by a
+                                         # surveyed carrier measured as a deploy
 
   design-prd:     { class: beside }     # turn raw sources into a specification (#29)
 

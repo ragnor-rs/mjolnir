@@ -238,11 +238,11 @@ key either way. The remedy is the same act in both cases — make the file match
 what is marked required and deleting what is marked retired — so what is given up is a diagnostic,
 not a behaviour, and no reader has to be told what to do with a revision it can no longer read.
 
-## The loop — ten roles
+## The loop — eleven roles
 
 File a work item · gate it into committed work · start it · finish it · review it · deploy ·
-log the day · keep the session's books · restore a session's context · produce deliverables. Two
-utilities travel beside the loop without being part of it.
+cut a release · log the day · keep the session's books · restore a session's context ·
+produce deliverables. Two utilities travel beside the loop without being part of it.
 
 ⚠️ **Keeping the session's books and restoring its context are one pair**, and the count moved to
 ten when the second of them was written: bookkeeping persists what happened at a boundary and
@@ -2831,7 +2831,7 @@ and not by a reader rejecting a configuration.
 ### What a hook refuses, and the record it reads
 
 ⛔ **A hook refuses an act on the strength of a record, never on a reading of the work.** The
-division is [§ The loop](#the-loop--ten-roles)'s — procedure produces a record and enforcement
+division is [§ The loop](#the-loop--eleven-roles)'s — procedure produces a record and enforcement
 reads it — and this subsection is the enforcement half of it: what a guard reads, what a refusal
 has to name, and what a project with nothing to guard gets.
 
@@ -4318,7 +4318,7 @@ done:
   refuse one of two correct configurations.
 - ⛔ **`answered_by: human` is not satisfiable by the procedure, and no amount of reading the diff
   satisfies it.** The answer is **recorded** where something else can read it and the record says
-  **who** answered — the division [§ The loop](#the-loop--ten-roles) already states: procedure
+  **who** answered — the division [§ The loop](#the-loop--eleven-roles) already states: procedure
   produces a record and enforcement reads it, so the record is written whether or not a hook
   refuses the merge on it.
   ⚠️ **It is the record and not the report**: a verdict that exists only in a role's reply is a
@@ -6701,7 +6701,7 @@ loop_exempt:
 # procedure: lines_changed
 ```
 
-Which changes never enter [§ The loop](#the-loop--ten-roles) at all — no work item, no gate, no
+Which changes never enter [§ The loop](#the-loop--eleven-roles) at all — no work item, no gate, no
 branch of their own, no change opened and no review — and which branch the ones that skip it are
 committed to instead.
 
@@ -7518,6 +7518,173 @@ resting on it** rather than the deploy, which is the same split one direction ov
 role adds to it is the list**: every item the batch left behind and why, every verification that was
 skipped rather than passed, every step still running, and what the deploy left standing — a spent
 version, a branch ahead of what the target serves, work queued behind the command that queued it.
+
+## 34. The files that carry a version, and what cutting a release writes
+
+```yaml
+release:
+  carrier: list | none         # required; absent_reason
+  files:                       # required_when: release.carrier = list
+    - path: "<the build file the version is declared in>"
+      kind: regex
+      pattern: 'version = "(?P<version>\d+\.\d+\.\d+)(-SNAPSHOT)?"'
+      replace: 'version = "{version}"'
+    - path: "<the changelog>"
+      kind: changelog
+    - path: "<a file quoting the current version to a reader>"
+      kind: regex
+      pattern: 'Latest: \*\*v(?P<version>\d+\.\d+\.\d+)'
+      replace: 'Latest: **v{version}'
+      optional: true
+  publishes_packages: false    # required_when: release.carrier = list
+  changelog_ci_owned: false    # required_when: release.carrier = list
+  absent_reason: "…"           # required where the carrier is none
+```
+
+The vocabulary an entry of `files` draws on, stated under the key it belongs to — the device
+[§ 32](#32-a-status-that-moves-backwards) and
+[§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes) already use, because a member of a
+list sits at no path a marker can reach:
+
+```yaml
+release:
+  files:
+    path:     "<the file, relative to the code root>"
+    kind:     regex | changelog
+    pattern:  "<a regular expression carrying a version capture, where the kind is `regex`>"
+    replace:  "<the matched span's replacement, `{version}` standing for the version being cut>"
+    optional: false            # omitted, the file must exist — stated below, not marked
+```
+
+**[§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes) states what a target is, so that a
+deploy has something to be about; this section states where a version is written, so that cutting
+one does.** ⛔ **The two are different roles and the preconditions are the test**: a deploy names a
+target environment and is refused without an explicit go for a live one, while a release names a
+**version** and is refused without landed work to carry it. ⚠️ **Weak evidence on its own**, which
+is why the ruling is recorded against the copy this facet was read out of rather than against the
+distinction
+([the measurement](../../../docs/configuration-surface.md#the-release-half-one-copy-that-arrives-as-data)).
+
+⛔ **It states no version scheme, no build file's syntax, no tag format, no package registry and no
+publishing command.** Each is [the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s
+middle column read against this role: the one copy this facet was extracted from arrives already
+written as data rather than as procedure, which is the evidence that what varies here is a
+project's file list and not its process.
+
+⛔ **The facet is absent-capable rather than required, which is where it differs from § 33's
+list.** A project that ships continuously cuts no version at all — no file carries one, so there is
+no list to state empty — and `carrier: none` with a stated reason is how it says so. ⚠️ **`files:
+[]` would be the wrong spelling of that**: it reads as a project that cuts releases and has not
+found the files yet, which is the case this facet most needs to tell apart from the other.
+
+### The files a version is written in, and the two kinds of edit
+
+⛔ **A version is written once, in as many files as carry it, and those files are configuration.**
+A role that knew a build file's syntax would be a role per stack, which is the thing this toolkit
+is not — so the role is handed `(path, kind, pattern, replace)` and performs the edit without
+reading what the file is for.
+
+| `kind` | what the edit is | what the entry states |
+|---|---|---|
+| `regex` | the matched span becomes `replace`, with `{version}` standing for the version being cut | `pattern` and `replace` |
+| `changelog` | the version's section is inserted at the head of the entries | neither |
+
+⛔ **The list is ordered, and the order is the project's.** Nothing here derives it: a project whose
+readme quotes a version its build file declares has a file that must be edited after the one it
+quotes, and a reader that sorted the list would decide that for it.
+
+⛔ **A key an entry states that its kind never reads is refused with its own name, in both
+directions** — a key the kind wants and the entry leaves out, and a key the entry carries and the
+kind never looks at. ⚠️ **The second is the one a reader is tempted to tolerate**, and tolerating it
+leaves a `pattern` beside a `changelog` entry: a fact written exactly where somebody would expect it
+to be read, and silently unread. ⛔ **And a key this section declares on no entry is refused the
+same way**, by the rule [§ 1](#a-command-root-is-not-a-code-root) already states for a named root's
+blocks.
+
+⛔ **`pattern` carries a capture named `version`, and a pattern without one is refused where it is
+written.** The capture is what the role reads the *current* version out of, which is the only thing
+it knows about a project's scheme — and a pattern that matches the version without capturing it
+leaves the role able to write a version and unable to say which one it replaced.
+
+⛔ **The expression is the carrier's own engine's, and the spelling of a named capture is therefore
+`(?P<version>…)` rather than any other dialect's.** ⚠️ **Stated rather than left to be discovered
+by a release that stops at its first file**: the copy this facet was read out of wrote the same
+capture in its own stack's spelling, which this surface **translates** rather than accepts — the
+rule [§ 8](#8-language-register-audience--per-artifact-not-per-project) already states for a slug,
+arriving at an expression. ⛔ **And it is compiled at the load**, so an expression no engine can
+parse is refused where it is written and never where a version has already been spent.
+
+⛔ **A pattern matching nothing in the file it names is a stop, and it stops before any file is
+written.** ⚠️ **That ordering is the rule rather than an implementation detail**: a release with
+half its files bumped is worse than a release not cut, because the half that moved is what every
+later reader believes.
+
+⛔ **An entry that says nothing about `optional` names a file that must exist, and that absent
+reading is stated here rather than marked.** The key's parent is a list, so there is no path a
+default marker could hang on — ⛔ **which is § 33's position for its own `none`**, written into the
+key's prose for the same reason and performed by the reader, which says in as many words that it is
+reading a value this section states.
+
+⚠️ **The strict direction is the opposite of § 33's ruling on `not_live`, and the asymmetry is the
+whole of the argument.** There, a key read as absent would make a live target not live and the
+failure is **silent**; here, a file this project does not have and did not mark gets the release
+**stopped with the file named**, which is loud — so a project that never looked finds out on its
+first release rather than never. ⚠️ **And the permissive reading would let a path typo pass as a
+file that happens not to exist**, which is the case the flag exists for read backwards: one of
+three files in the copy surveyed is absent in that project outright, and a release that errors on
+it is a release that cannot be cut.
+
+### The changelog CI owns, which inverts the role
+
+⛔ **Where `changelog_ci_owned` is true this role does not write the changelog, and says so rather
+than skipping silently.** It is an absence that changes what the procedure *does* rather than what
+it reads: a role that wrote the file anyway would produce a conflict on every single release, which
+is the one failure here that recurs by construction instead of by accident.
+
+⛔ **Said rather than skipped, because the two readings license different next steps.** A release
+whose reply does not mention the changelog reads as a release that wrote one, and the person who
+then looks for the entry CI has not written yet finds nothing and no account of why.
+
+⚠️ **The key is a project's statement about who owns the file and not a reading of the file.** A
+changelog CI writes and a changelog nobody writes look identical in a tree, and
+[§ 2](#2-code-host)'s rule that absence of signal is not an answer is why this is configured rather
+than inferred.
+
+⛔ **A `changelog` entry stated beside `changelog_ci_owned: true` is refused where it is written.**
+The pair is a project asking for the file to be written and declaring that it may not be, and
+refusing it at the load is earlier than meeting the contradiction with a version already spent.
+
+### What a release publishes, and what this section does not carry
+
+⛔ **`publishes_packages` decides whether the release is the person's act**, which is
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)'s only admitted test for an
+ask. A published package version cannot be reused, so the go is asked for **per release, for this
+release**, with a previous one clearing nothing — the same reasoning
+[§ 33](#the-three-shapes-a-target-is-reached-by) states for the one surveyed target that spends a
+version for ever and therefore belongs to a person.
+
+⚠️ **The tag is not what the ask is about, and that is stated rather than left as an omission.** A
+tag can be moved and a published artifact cannot, so a project that publishes nothing reaches no ask
+here — ⛔ **which is not a claim that a tag is reversible**, only that the irreversibility this
+surface asks about is measured on the registry rather than on the ref.
+
+**Three things this section deliberately does not carry, named so that a reader can tell a boundary
+from a gap:**
+
+- **The audience and the register the changelog entry is written in** are
+  [§ 8](#8-language-register-audience--per-artifact-not-per-project)'s, per artifact, and ⛔ **this
+  facet states no default for them.** An entry for a user-facing release and one for an internal
+  version are different texts; the copy this facet came from carried that as a switch beside the
+  file list, and it is a switch that section already answers for every artifact a role writes.
+- **Closing whatever the release corresponds to** is
+  [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s question and not this one's. In the
+  copy surveyed a release and an iteration closed together, one to one — ⚠️ **which is one
+  project's coincidence until a second one shows it**, so this facet carries no vocabulary for the
+  subset a release closes and the role reports what it did not close.
+- **Which work a release carries** is read where a deploy's batch is read, by
+  [§ 33 → The batch](#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong)'s rule rather
+  than by a second command here: ⛔ **the tracker's answer and the project's own command, neither
+  alone**, and this section states no key because the one it would state already exists.
 
 ## What the toolkit installs into a project, and what takes it out
 

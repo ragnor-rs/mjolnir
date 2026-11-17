@@ -7,7 +7,7 @@ alike any more, and the lines that differ are the corrections you paid for once 
 everywhere else. You find out which copy is wrong when it is already wrong.
 
 mjolnir is that process as **one shared procedure over per-project configuration** —
-[ten roles](plugins/mjolnir/config/schema.md#the-loop--ten-roles), from filing a work item to
+[ten roles](plugins/mjolnir/config/schema.md#the-loop--eleven-roles), from filing a work item to
 the day's log, reading whatever differs between your projects out of one file you write once.
 
 Installed as a Claude Code plugin. **No clone, no submodule, no symlink, and no copy of the
