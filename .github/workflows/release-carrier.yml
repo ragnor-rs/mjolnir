@@ -1,0 +1,42 @@
+name: Release carrier
+
+# The files a version is written in, read and edited once for the one role that cuts a release.
+# Held to the section of plugins/mjolnir/config/schema.md that states the facet; no copy of it is
+# carried here.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+#
+# ⚠️ This repository states `release.carrier: none`, so pointed at this tree the carrier answers
+# that no file here carries a version and exits without a subject. What this run holds is the
+# carrier's own suite against planted trees — which is the only place it can be held, since the
+# project the facet was measured on is not this one.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The carrier reads a configuration and edits files in a temporary tree
+# of the suite's own making; it reaches no host, no tracker and no registry.
+permissions: {}
+
+jobs:
+  release-carrier:
+    name: Release carrier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Pinned rather than relying on whatever the runner image ships, for the reason the sibling
+      # workflows pin it: the carrier runs on the shared reader, which needs the parser, and a
+      # check that silently stops running is the failure this job exists to catch.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` states this run mirrors.
+      - name: Hold the release carrier to the surface
+        run: python3 plugins/mjolnir/scripts/release.py --self-test

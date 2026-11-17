@@ -305,3 +305,13 @@ context_guard:
   unbounded: []
   never_bound: []
   reread: refuse
+
+# § 34, in the shape a project on its first day writes: nothing carries a version yet, and the
+# facet is stated rather than left out so that the reader reports a decision instead of a gap.
+release:
+  carrier: none
+  absent_reason: >-
+    Nothing here is versioned: there is no build file declaring one, no changelog and nothing
+    published, which is the ordinary state of a repository that has not cut a release.
+  revisit_when: >-
+    The first file in this repository comes to carry a version somebody outside it reads.
