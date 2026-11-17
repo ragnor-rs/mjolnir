@@ -12508,13 +12508,32 @@ def self_test() -> int:
     # as permitting anything would accept every malformed entry above.
     with open(SURFACE, encoding="utf-8") as handle:
         blind = surface_facts(handle.read())
+    stating_a_section = _a_body_section_of()(_a_valid_example())
     blind["declared"] = {
         path for path in blind["declared"] if not path.startswith("body_sections.")
     }
+    refusal = _refused(stating_a_section, facts=blind)
     check(
         "a surface that has lost § 20's entry fence is refused, with the key named",
-        _refused(_a_body_section_of()(_a_valid_example()), facts=blind) == "body_sections",
-        f"reported {_refused(_a_body_section_of()(_a_valid_example()), facts=blind)!r}",
+        refusal == "body_sections",
+        f"reported {refusal!r}",
+    )
+    # ⛔ And the alternation is a second fact about the same fence, refused on its
+    # own: the arm above empties the declared keys, which leaves the vocabulary
+    # answerable -- so a surface keeping the fence and losing the alternation is
+    # a state that arm cannot reach, and without this one a reader would hold a
+    # step's placement to nothing while reporting green.
+    with open(SURFACE, encoding="utf-8") as handle:
+        wordless = surface_facts(handle.read())
+    wordless["enums"] = {
+        path: value for path, value in wordless["enums"].items()
+        if not path.startswith("body_sections.")
+    }
+    refusal = _refused(stating_a_section, facts=wordless)
+    check(
+        "a surface that has lost § 20's alternation is refused, naming the surface",
+        refusal == os.path.relpath(SURFACE, PLUGIN_ROOT),
+        f"reported {refusal!r}",
     )
     # ⛔ And the facet is **read back**, not merely validated: the role collecting
     # a section reads these two keys out of the resolved configuration, so a key

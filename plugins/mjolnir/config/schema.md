@@ -5289,9 +5289,8 @@ batch carries, and then acts on. ⛔ **That is the test for membership and the o
 a project merely likes is a convention, and a convention enforced by a gate is this surface's own
 defect class arriving as continuous integration. ⚠️ **The measured instance is a deployment's own
 preparation** — what a change needs done to an environment before it can ship — collected by the
-role that deploys a batch and performed where this entry's `when` puts it; and what made it a facet
-rather than one project's workflow file is that the section was enforced by a gate and stated on no
-surface
+role that deploys a batch and performed where `when` puts it; and what made it a facet rather than
+one project's workflow file is that the section was enforced by a gate and stated on no surface
 ([the measurement](../../../docs/configuration-surface.md#a-section-one-role-writes-and-another-runs)).
 
 ⛔ **`[]` is the stated absence and means no section beyond § 6's**, by the rule this surface opens
@@ -7822,6 +7821,13 @@ an attestation about work that either happened or did not, which
 step folded into the go would go unasked on exactly the targets a session reaches most often.
 ⚠️ **A `before` step reached in that state also means the go is about a deploy that cannot happen**,
 which is the ask § The loop retired, arriving as a question nobody can answer usefully.
+
+⚠️ **No key states which root a step's own command runs in, and that is a stated limit rather than
+a default.** A step is the project's own text in a body rather than a configured command, so
+[§ 1](#a-command-root-is-not-a-code-root)'s names reach it through nothing — a section stating a
+command states where it runs, and a role that assumed the code root would be running a project's
+command somewhere the project never named. ⛔ **The target's own `command_root` is not that
+answer**: it places the invocation, which is a different command.
 
 ⛔ **Unanswered is never optimistically assumed, in either row.** Silence holds what the row says it
 holds, and [`What a deploy verifies`](#what-a-deploy-verifies-and-what-it-reports) above is where

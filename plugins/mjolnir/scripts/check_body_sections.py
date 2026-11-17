@@ -390,8 +390,14 @@ def collected(entries, body: str) -> list[dict]:
     ⛔ **Three readings and never two.** A body the gate would refuse is neither
     owed nor answered: reporting it as answered collects nothing out of a change
     that may state something, and reporting it as owed hands a role content it
-    could not identify. ⚠️ `unheld` is the one reading that says *ask the gate*,
-    and it is what an absent section, an empty one and a doubled one all read as.
+    could not identify. ⚠️ `unheld` is the one reading that says *ask the gate*.
+
+    ⛔ **And which bodies those are is asked of `verdict` above rather than
+    worked out again here.** The conditions it refuses on are its own and are not
+    listed again in this function: a second statement of them is a copy free to
+    disagree with the run that holds the change. ⚠️ **Measured on this
+    function's first version**, which restated them, left one out, and read a
+    body the gate refuses as a step owed.
 
     Each entry comes back carrying the keys the configuration stated -- where
     the step falls and who answers it -- so the collecting role reads them here
@@ -399,6 +405,7 @@ def collected(entries, body: str) -> list[dict]:
     """
     read: list[dict] = []
     for entry in entries or []:
+        triple = (entry["heading"], entry["nothing_needed"], entry["read_by"])
         found = sections(body, entry["heading"])
         stated = claims(found[0]) if len(found) == 1 else []
         read.append({
@@ -407,7 +414,7 @@ def collected(entries, body: str) -> list[dict]:
             "when": entry.get("when"),
             "answered_by": entry.get("answered_by"),
             "reading": (
-                "unheld" if len(found) != 1 or not stated
+                "unheld" if verdict(body, (triple,))
                 else "nothing" if answered_nothing(stated, entry["nothing_needed"])
                 else "owed"
             ),
@@ -729,6 +736,13 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
          f"A summary.\n\n## {first}\n\n## Something else\n\nx\n", "unheld"),
         ("a section the body states twice is unheld, never read off the first",
          f"## {first}\n\n{A_SECTION[1]}\n\n## {first}\n\nApply it.\n", "unheld"),
+        # ⛔ The arm this reading's first version got wrong: the gate refuses the
+        # *nothing* answer with something beside it, and a reading that restated
+        # the gate's conditions called it a step owed -- so a role would have run
+        # work out of a body that never landed, on the strength of content the
+        # gate says nobody may choose between.
+        ("the nothing answer with something beside it is unheld, never owed",
+         f"## {first}\n\n{A_SECTION[1]}\n\nApply it.\n", "unheld"),
     ):
         read = collected(owing, body)
         check(f"  {label}", read[0]["reading"] == wanted,

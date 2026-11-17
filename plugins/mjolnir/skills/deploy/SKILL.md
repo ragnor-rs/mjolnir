@@ -172,9 +172,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check_body_sections.py" --collect \
 
 - **It is no verdict about the change** and its status is not one: the gate is what holds a body,
   and a section it reports `unheld` is that run's answer to give rather than this one's.
-  ⛔ **An `unheld` section is reported and never read as answered** — an absent section, an empty
-  one and a doubled one all read that way, and each of them is a step this role cannot establish
-  either way ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)).
+  ⛔ **An `unheld` section is a step this role cannot establish either way**
+  ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)), reported as that
+  and never as answered — ⚠️ **and which bodies read that way is the gate's own list and is not
+  copied here**, a second statement of it in a role being free to disagree with the run.
 - **It exits 3 where the project states no section**, which is the stated absence and not a run
   that found nothing.
 - ⛔ **One change at a time, and every change in the batch.** A step is owed by one change, so a
@@ -185,7 +186,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check_body_sections.py" --collect \
 
 | the entry says | what this step does |
 |---|---|
-| `answered_by: procedure` | runs what the section states, in the root the target's own `command_root` names, and reports what it printed |
+| `answered_by: procedure` | runs what the section states, as the section states it, and reports what it printed — ⚠️ **no key places a step's own command**, so a section stating one states where it runs ([`§ 33`](../../config/schema.md#what-a-change-in-the-batch-owes-this-target-and-where-the-step-falls)) |
 | `answered_by: human` | ⛔ **asks**, showing the step, the change it came out of and the target — and ⛔ **silence is not a yes**: the step stays unperformed |
 
 - ⛔ **The ask here is not step 5's go and is put before it**, which is § 33's rule rather than this
