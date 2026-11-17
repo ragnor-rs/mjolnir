@@ -620,6 +620,22 @@ def a_work_tree(path: str, main_tree: str, tree_dir: str | Path | None = None) -
     return not here.startswith(main + os.sep)
 
 
+def tree_holds(path: str | Path, branch: str) -> bool:
+    """Whether this directory is a worktree of this repository with `branch` checked out.
+
+    ⛔ **What makes a *named* tree evidence rather than an argument.** `--tree` on
+    its own says which tree to remove and could name anything; read against the
+    branch it says the claim is held right here, wherever the directory sits.
+    ⚠️ **Which is what a project mid-relocation has**: a tree cut under the old
+    `tree_dir` answers neither reading in `a_work_tree`, so without this the
+    ordinary release of one's own unlanded claim spends the override § 10 reserves
+    for breaking somebody else's work -- the way an override stops meaning
+    anything.
+    """
+    proc = git(path, "rev-parse", "--abbrev-ref", "HEAD", check=False)
+    return proc.returncode == 0 and proc.stdout.strip() == branch
+
+
 def tree_for_branch(
     root: str | Path, branch: str, tree_dir: str | Path | None = None
 ) -> str | None:
@@ -1508,13 +1524,18 @@ def release(
         # and a release keyed on live would delete it in silence. That is the two-sessions-on-one
         # -item failure the claim exists to prevent, reintroduced through the other end.
         spent = held.liveness is not None and held.liveness.landed
-        # ⛔ `tree_for_branch` and not `doomed`: a `--tree` the caller named says which tree to
-        # remove and is no evidence that this machine holds the claim, which is what this guard
-        # asks. ⚠️ And it takes the configured directory for the same reason arm 2 of liveness
-        # does -- without it, a project whose trees are nested resolves none of them and every
-        # unlanded release is refused into `--force`, the override § 10 reserves for a claim held
-        # somewhere else.
-        if held.taken and not spent and not tree_for_branch(root, branch, tree_dir):
+        # ⛔ Not `doomed`: a `--tree` the caller named says which tree to remove, and on its own
+        # it is no evidence that this machine holds the claim -- which is what this guard asks.
+        # ⚠️ **Read against the branch it is evidence**, and that arm is what a project whose
+        # trees were cut under an older `tree_dir` has: such a tree answers neither reading in
+        # `a_work_tree`, so without it the ordinary release of one's own unlanded claim is refused
+        # into `--force`, the override § 10 reserves for a claim held somewhere else.
+        # ⚠️ And the resolution takes the configured directory for the same reason arm 2 of
+        # liveness does.
+        held_here = tree_for_branch(root, branch, tree_dir) or (
+            tree if tree and tree_holds(tree, branch) else None
+        )
+        if held.taken and not spent and not held_here:
             raise ClaimError(
                 f"refused: the claim on `{branch}` is not spent and is not held in a tree here.\n"
                 f"{held.report()}\n"
@@ -2754,14 +2775,26 @@ def self_test() -> int:
         # tree *here* is a person's call, and with the directory withheld every nested tree reads
         # that way -- which turns the ordinary release of one's own unlanded claim into the
         # override § 10 reserves for breaking somebody else's.
-        refused = _message(lambda: release(one, "feature/item-7", str(item_tree)))
+        # ⚠️ The named tree is a directory that does **not** hold the branch, so the arm below it
+        # cannot answer and this stays the withheld-directory case.
+        elsewhere = Path(one) / "not-the-tree"
+        elsewhere.mkdir()
+        refused = _message(lambda: release(one, "feature/item-7", str(elsewhere)))
         suite.ok("⛔ so the release of an unlanded claim is refused where the directory is withheld",
                  refused is not None and item_tree.exists(), refused or "")
-        quiet = _message(
-            lambda: release(one, "feature/item-7", str(item_tree), tree_dir=str(configured))
-        )
-        suite.ok("and goes through where it is handed over, with no override spent",
-                 quiet is None and not item_tree.exists(), quiet or "")
+        # ⛔ A named tree read against the branch answers the same question, which is what a
+        # project whose trees were cut under an older directory has — and a tree that does not
+        # hold the branch, above, is still refused.
+        by_name = _message(lambda: release(one, "feature/item-7", str(item_tree)))
+        suite.ok("while a named tree that does hold the branch is evidence the claim is held here",
+                 by_name is None and not item_tree.exists(), by_name or "")
+
+        # And the configured directory on its own, with no tree named at all.
+        second = configured / "8-another"
+        take(one, "feature/item-8", str(second))
+        quiet = _message(lambda: release(one, "feature/item-8", tree_dir=str(configured)))
+        suite.ok("and the directory alone resolves the tree, with no override spent",
+                 quiet is None and not second.exists(), quiet or "")
 
     print("\nreleasing somebody else's live claim:")
 

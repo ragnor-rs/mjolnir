@@ -3702,6 +3702,16 @@ other end. ⚠️ The residue is a claim squash-merged **and** then built on top
 of, which matches no row above except the weakest and so reads as live without the host's record to
 settle it. That errs towards refusing a start rather than towards taking a held claim.
 
+⛔ **And *held here* has two answers, the second being a tree the caller names read against the
+branch.** The first is the work-tree resolution
+[above](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it), keyed on the configured
+directory. ⚠️ **A named tree is evidence only once it is read**: on its own it says which tree to
+remove and could name anything, while a directory whose checked-out branch *is* this one says the
+claim is held on this machine wherever that directory sits. ⛔ **Which is what a project whose trees
+were cut under an older `tree_dir` has** — such a tree answers neither reading, so without this arm
+the ordinary release of one's own unlanded claim spends the override reserved for breaking somebody
+else's work, emptying it exactly as the row above does.
+
 ⛔ **A ref the host no longer carries is a free claim and still has a landed reading.** The two are
 different questions: *is this item claimed* is answered by the ref existing, and *has this work
 landed* is answered from the branch on this machine where the published ref is gone. ⚠️ **Measured
