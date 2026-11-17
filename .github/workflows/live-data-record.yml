@@ -1,0 +1,45 @@
+name: Live data record
+
+# A change against the record of what a live store was already made to be. Held to the section of
+# plugins/mjolnir/config/schema.md that states the rule; no copy of it is carried here.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+#
+# ⚠️ This repository states `deploy: []`, so pointed at this tree the check finds no live target
+# and holds nothing — which it reports as *no subject* rather than as a clean diff. What this run
+# holds is the check's own suite, whose last section builds a repository and makes one change in it
+# for real, because the in-memory arms say nothing about the diff.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The check runs the project's own listing command and reads a diff;
+# it reaches no store, no host and no tracker.
+permissions: {}
+
+jobs:
+  live-data-record:
+    name: Live data record
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # ⛔ The whole history, because the check reads a diff against the merge base and a
+          # shallow clone has none to find — which the check reports as *unchecked* rather than as
+          # a clean diff, so a shallow fetch here would redden every change rather than passing it.
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Pinned rather than relying on whatever the runner image ships, for the reason the sibling
+      # workflows pin it: the check runs on the shared reader, which needs the parser, and a check
+      # that silently stops running is the failure this job exists to catch.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` states this run mirrors.
+      - name: Hold a change to what a store already holds
+        run: python3 plugins/mjolnir/scripts/check_live_data_record.py --self-test
