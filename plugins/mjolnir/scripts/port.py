@@ -152,6 +152,14 @@ REVERSALS = "reversals"
 # leave matching nothing: `_stated` refuses a name the table has lost, so each of
 # these is named once and the refusal arrives under the key somebody would edit.
 CLOSED_BY = "closed_by"
+
+# § 4.8's key saying how the current grouping is identified, named here because
+# the refusal below is keyed on it. ⛔ **Nothing in this module reads the
+# tracker's own mark**, so the grouping's value arrives on the invocation under
+# either of that key's values -- and a caller handing none over is refused
+# against *this* key rather than against the operation's argument list, which is
+# where an unkeyed refusal would have sent somebody.
+CURRENT = "current"
 GROUPING_ITEMS = "grouping_items"
 MARK_RELEASED = "mark_grouping_released"
 
@@ -1306,6 +1314,38 @@ class Port:
 
     # -- § 33's publishing half: the grouping, and the bar its items are held to
 
+    def _valued(self, block: dict, given: tuple, operation: str) -> None:
+        """Refuse a publishing ask that handed over no value for the grouping.
+
+        ⛔ **Keyed on § 4.8's `current`, which is the key that is actually
+        unanswered.** Without this the ask falls through to `invoke`'s
+        argument-count refusal, which names the *operation* and sends a reader to
+        the port's contract to find out what a release is missing -- measured on
+        a `discoverable` grouping, where both this surface and the deploying role
+        say the value is read and nothing reads it.
+
+        ⛔ **And the refusal is the same under either value of that key**, which
+        is the honest statement rather than the convenient one: `stated` means
+        the value arrives on the invocation, and `discoverable` means a procedure
+        reads the tracker's own mark -- which **nothing here does**. So the
+        second arm is a stated limit and not a behaviour, and a caller under it
+        is told to supply the value rather than left to read an argument list.
+        """
+        if given:
+            return
+        # ⛔ Read straight off the block: `Config.grouping` answers with a mapping
+        # carrying the name it resolved under, or raises -- so a guard on one of
+        # these two reads and not the other would claim a state neither has.
+        raise ConfigError(
+            f"{config.GROUPING_KEY}.{CURRENT}",
+            f"is {block.get(CURRENT)!r} for the `{block.get('name')}` grouping, and "
+            f"`{operation}` "
+            "was asked for with no value for it. The grouping's own value -- which "
+            "release, which time box -- arrives on the invocation of the role that "
+            "needs it, and ⛔ nothing here reads the tracker's own mark, so that "
+            "holds under either value of this key. Hand the value over.",
+        )
+
     def mark_released(
         self, grouping: str | None = None, *args, as_writer: str = ASKED_AS, **kwargs
     ) -> Outcome:
@@ -1348,6 +1388,12 @@ class Port:
         )
         if refusal is not None:
             return refusal
+        # ⛔ After the writer guard and not before it, which is where `invoke`'s
+        # own argument refusal already landed: the guard answers about the
+        # configuration and comes back as an outcome, while this says the caller
+        # is wrong and raises. Ordering it first would turn a project whose
+        # grouping nobody may close into a caller error.
+        self._valued(block, args, MARK_RELEASED)
         outcome = self.invoke(MARK_RELEASED, *args, grouping=block, **kwargs)
         outcome.grouping = name
         return outcome
@@ -1369,6 +1415,7 @@ class Port:
         """
         self._stated(GROUPING_ITEMS)
         block = self.config.grouping(grouping)
+        self._valued(block, args, GROUPING_ITEMS)
         outcome = self.invoke(GROUPING_ITEMS, *args, grouping=block, **kwargs)
         outcome.grouping = block.get("name")
         return outcome
@@ -2713,7 +2760,7 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         spec,
         adapter=marking,
         stated=stated,
-    ).mark_released(a_grouping, as_writer=DEPLOY)
+    ).mark_released(a_grouping, "a value", as_writer=DEPLOY)
     check(
         f"a grouping closed by `{DEPLOY}` goes through, and the block reaches the "
         "implementation",
@@ -2748,7 +2795,7 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         spec,
         adapter=Adapter(),
         stated=stated,
-    ).mark_released(a_grouping, as_writer=DEPLOY)
+    ).mark_released(a_grouping, "a value", as_writer=DEPLOY)
     check(
         "a tracker with no tool for marking a release comes back with the fallback",
         not unmarkable.performed
@@ -2756,6 +2803,56 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         and not unmarkable.failed
         and unmarkable.detail == stated[MARK_RELEASED],
         f"got {str(unmarkable)!r}",
+    )
+    # ⛔ A publishing ask handed no value for the grouping is refused against
+    # § 4.8's `current`, which is the key that is actually unanswered. ⚠️ The arm
+    # that matters is `discoverable`: both this surface and the deploying role
+    # describe that value as read, nothing reads it, and without this refusal the
+    # ask fell through to the argument-count one -- which names the operation and
+    # sends a reader to the port's contract to find out what a release is missing.
+    currents = config.facts_for(f"{config.GROUPING_KEY}.{CURRENT}")
+    check(
+        f"the surface states the `{config.GROUPING_KEY}.{CURRENT}` set these arms read",
+        bool(currents),
+        f"states {currents!r}",
+    )
+    a_current = currents[0] if currents else None
+    for current in currents:
+        valueless = _refused(
+            lambda current=current: Port(
+                _with_grouping(
+                    [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+                    {a_grouping: {CLOSED_BY: DEPLOY, CURRENT: current}},
+                ),
+                spec,
+                adapter=marking,
+                stated=stated,
+            ).mark_released(a_grouping, as_writer=DEPLOY)
+        )
+        check(
+            f"a close on a `{current}` grouping with no value is refused, naming that key",
+            valueless == f"{config.GROUPING_KEY}.{CURRENT}",
+            f"reported {valueless!r}",
+        )
+    # ⛔ And the green side, which the refusal above cannot assert: a value handed
+    # over reaches the implementation. Without it the refusal could be refusing
+    # every ask and read as correct.
+    valued = Port(
+        _with_grouping(
+            [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+            # ⚠️ The word is the surface's own, as the loop above takes its own:
+            # a literal here would go on passing after a rename, the fixture's
+            # value being validated by nothing.
+            {a_grouping: {CLOSED_BY: DEPLOY, CURRENT: a_current}},
+        ),
+        spec,
+        adapter=marking,
+        stated=stated,
+    ).mark_released(a_grouping, "a value", as_writer=DEPLOY)
+    check(
+        "and a close carrying the grouping's own value goes through",
+        valued.performed and valued.result == a_grouping,
+        f"got {str(valued)!r}",
     )
     # ⛔ A project planning in no grouping raises rather than answering, in both
     # publishing directions: there is no grouping for either ask to be about, and
@@ -2786,7 +2883,7 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         spec,
         adapter=Adapter(),
         stated=stated,
-    ).items_in(a_grouping)
+    ).items_in(a_grouping, "a value")
     readable = Port(
         _with_grouping(
             [{"name": "a status", "role": a_role, "writer": DEPLOY}],
@@ -2795,7 +2892,7 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         spec,
         adapter=Adapter({GROUPING_ITEMS: lambda *a, **k: {"items": []}}),
         stated=stated,
-    ).items_in(a_grouping)
+    ).items_in(a_grouping, "a value")
     check(
         "a grouping nothing could read and a grouping holding nothing give the same "
         "set and different outcomes",

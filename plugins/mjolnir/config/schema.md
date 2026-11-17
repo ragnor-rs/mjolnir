@@ -2419,15 +2419,19 @@ absence rather than resolving to silence.
 ⚠️ **Which of these keys has no reader yet, stated rather than left to be discovered.** § 1's
 rule that a key nothing reads is worse than no key reaches this facet while the roles that need a
 grouping are being written, so the division is named here instead of being found later.
-⛔ **`has_own_acceptance` is required and held to its vocabulary and is read by nothing else yet** —
-every other key in the fence is read where the configuration is read, and `current` is read by
-[§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target), which resolves
-which grouping a deploy publishes and is handed the value on its invocation where this key says
-`stated`. That is a statement about this surface's own progress rather than about the key: it is
-the answer to a question a role has to ask before it files an item, and it is not derivable from
-the rest of the block. ⚠️ **The trigger is the role, not a date** — the filing role putting a new
-item somewhere is where it is read — and a key still unread when that role is written is § 1's
-retirement argument with a project's own answer behind it.
+⛔ **`has_own_acceptance` is required and held to its vocabulary and is read by nothing else yet**,
+and ⛔ **`current` is read in one direction only** — every other key in the fence is read where the
+configuration is read.
+[§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target) reads `current` to
+say *what is unanswered* when a publishing ask arrives with no value for the grouping, which is a
+refusal keyed on this key; ⛔ **what no reader performs is the `discoverable` arm's own read**, so
+the value arrives on the invocation under either value and that section states the limit. ⚠️ **That
+is a statement about this surface's own progress rather than about either key**: each is the answer
+to a question a role has to ask before it files an item or publishes a grouping, and neither is
+derivable from the rest of the block. ⚠️ **The trigger is the role, not a date** — the filing role
+putting a new item somewhere, and whichever role comes to read a tracker's own mark, are where the
+rest of each is read — and a key still unread when those roles are written is § 1's retirement
+argument with a project's own answer behind it.
 
 ## 5. Readiness gate — an ordered predicate list
 
@@ -7485,7 +7489,11 @@ immediately before `advances` in § 4.2's own order, that set being ordered for 
 ⚠️ **Measured right for every one of the seven**, including the project whose ladder has no
 deployed status at all and whose one target therefore steps an item straight from code-landed to
 terminal. ⛔ **What would make it a key is a project whose batch is drawn from further back**, and
-none was found.
+none was found. ⚠️ **`requires_role` is not that key and does not contradict this**: it is a bar
+over the publishing set rather than the role the batch is drawn from, and what it changes is whether
+a short item holds the whole target —
+[`Publishing a grouping`](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)
+states the distinction where it states the key.
 
 ⛔ **`batch` is a command, and the batch is what it returns intersected with what the tracker says
 now.** The command is handed the identifiers and answers which of them this deploy carries; the
@@ -7553,10 +7561,18 @@ reported.
 | `grouping: <a name § 4.8 carries>` | the items the tracker holds in that grouping, read through [§ 3](#the-operations-and-what-an-absent-capability-does)'s `grouping_items` |
 | `grouping: none` | the candidates `batch` is handed, which is the set [`The batch`](#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong) above already states |
 
-⛔ **Which value of that grouping is § 4.8's `current` and is read there rather than guessed here**:
-one the tracker marks as the open one is read off the tracker, and one a project holds several of at
-once arrives on the role's invocation. ⚠️ **A target naming a grouping under a project whose
-carrier is `none` is refused with both keys named**, there being no set for the name to mean.
+⛔ **Which grouping's *value* this is about — which release, which time box — arrives on the role's
+invocation, and ⚠️ that holds under either value of § 4.8's `current`.** That key states what the
+value could be read from: `stated` means it arrives, and `discoverable` means the tracker itself
+marks one and a procedure reads it. ⛔ **The second read is not performed here**, and that is a
+stated limit rather than a behaviour: a publishing ask handed no value is refused **against that
+key**, naming it, so a reader is sent to the thing that is unanswered instead of to an operation's
+argument list. ⚠️ **What would make it a behaviour is an operation that reads the mark**, which is a
+capability no tracker's own grouping has been measured carrying — and until one is, a target under
+`discoverable` is handed its value exactly as one under `stated` is.
+
+⚠️ **A target naming a grouping under a project whose carrier is `none` is refused with both keys
+named**, there being no set for the name to mean.
 
 ⛔ **`requires_role` holds the whole target, and it is not the role an item must hold to be
 advanced.** Those are two statements about two sets and only this one is a key: the role an item is

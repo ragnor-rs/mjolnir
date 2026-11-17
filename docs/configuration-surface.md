@@ -3081,13 +3081,18 @@ the field a project names. ⛔ **Marking one released does not.** A grouping hel
 value** — the commonest carrier in the survey — is not an object anything can close: there is no
 endpoint, and a board's iteration rolling over is a date passing rather than an act.
 
-⚠️ **So of the implementations behind the port, the set is readable on three and the mark is
-implementable on one**, and the one is the tracker whose grouping is a native object with a state of
-its own. ⛔ **The others declare the mark absent rather than implementing it against something
-else** — against an iteration's dates, or against a label that cannot be closed — which would be an
-implementation inventing a release out of a calendar. ⚠️ **No figure beyond those two is written
-here**, and the lists themselves are the implementations' own declarations rather than a table
-anything restates.
+⚠️ **So behind the port the set is readable wherever a tracker's grouping has a query that
+reaches it, and the mark only where that grouping is a native object with a state of its own.**
+⛔ **Neither side is written as a figure here**, and the reason is
+[`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability):
+each implementation declares what it does by implementing it, so a count over those declarations is
+a copy that drifts the day one of them grows the mark.
+
+⛔ **The implementations that cannot mark one declare the mark absent rather than implementing it
+against something else** — against an iteration's dates, or against a label that cannot be closed —
+which would be an implementation inventing a release out of a calendar, and
+[`schema.md § 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)
+states what an absence does instead.
 
 ⛔ **A carrier a given tracker has no object for is refused with the key named rather than reported
 absent**, which is

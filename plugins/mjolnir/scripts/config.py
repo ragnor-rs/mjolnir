@@ -12252,6 +12252,24 @@ def self_test() -> int:
         # environment's role, on a project planning in no grouping at all.
         ("a precondition read over the batch's candidates, with no grouping named, loads",
          {"requires_role": _a_role_some_status_maps(), "batch": "a-batch-command"}),
+        # ⛔ And the other arm of the same key, which is the shape this facet's
+        # first acceptance condition is written about: a precondition read over a
+        # **grouping's** items, with no `batch` on the target at all. ⚠️ Asserted
+        # because nothing else here reaches it — the arm above carries a batch and
+        # the two arms above that carry no precondition, so the combination the
+        # rule exists for was the one configuration no plant and no example held.
+        ("a precondition read over a grouping's items, with no batch, loads",
+         {"grouping": _a_grouping_the_example_plans_in(),
+          "requires_role": _a_role_some_status_maps()}),
+        # ⛔ And the whole publishing half at once, which is what an adopter
+        # writes on a release target: a grouping, a bar over it, an advance, a
+        # batch to make it over, and the mark.
+        ("a target carrying the publishing half whole loads",
+         {"grouping": _a_grouping_the_example_plans_in(),
+          "requires_role": _a_role_some_status_maps(),
+          "publishes": True,
+          "advances": _a_role_some_status_maps(),
+          "batch": "a-batch-command"}),
     ):
         loaded = _a_valid_example()
         loaded["deploy"] = [_a_deploy_target(**overrides)]

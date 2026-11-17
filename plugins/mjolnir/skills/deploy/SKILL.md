@@ -116,10 +116,14 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
   --in-grouping "<the entry's grouping>" --argument "<the grouping's own value>"
 ```
 
-- ⛔ **Which value is [`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s
-  `current`, and never a guess**: a grouping the tracker marks as the open one is read, and one a
-  project holds several of at once **arrives on this role's invocation** — so a target naming such a
-  grouping with no value handed over is a stop asking for it, not a pick.
+- ⛔ **The grouping's own value arrives on this role's invocation, and never by a guess** —
+  ⚠️ **under either value of
+  [`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s `current`,
+  because the read that key's other arm describes is performed by nothing**
+  ([`§ 33`](../../config/schema.md#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)
+  states that limit). So an invocation that named a grouping and no value is a **stop asking for the
+  value**, with the options where the project's own records name them — and the port refuses it
+  against that key rather than against an argument list, which is the message to report.
 - ⛔ **A grouping that could not be read is reported unread, never as holding nothing.** § 3's
   fallback for the operation says what happens instead, and ⚠️ **an unread set and an empty set are
   the same list** — which is why the reply says which it was rather than how long it was.
