@@ -244,8 +244,11 @@ branch_model:
   kind: worktree
   work_in_shared_checkout: never
   parallel_trees: true
-  # A sibling of the shared checkout. The leaf is `<number>-<slug>` and is derived, not stated.
-  tree_dir: "../<project>-trees"
+  # One level under the agent harness's own managed root, which is the only placement a session is
+  # moved into without a person answering a prompt (§ 10). `items/` rather than the root itself:
+  # the harness cuts its helpers' trees directly there, and one level down is what tells the two
+  # apart. The leaf is `<number>-<slug>` and is derived, not stated.
+  tree_dir: ".claude/worktrees/items"
   mechanics: null
   # Nothing is installed into a tree here, so nothing in one is written again by a rebuild: every
   # ignored file a tree holds is a file a removal would be the only copy of. The stated-empty form,

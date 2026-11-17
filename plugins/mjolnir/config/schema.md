@@ -3399,13 +3399,21 @@ directory does not work; and the prompt it raises cannot be answered by a headle
 which turns an unattended pass into a stall rather than a refusal.
 
 ⚠️ **One level under it rather than at its top, because the harness cuts its own trees there.** A
-tree a harness cuts for a helper goes directly under the managed root, so a project whose own trees
-sit beside them has no location left that tells the two apart —
+tree a harness cuts for a helper goes directly under the managed root — measured as the three
+per-agent trees of one review, cut there and outliving the merge — so a project whose own trees sit
+beside them has no location left that tells the two apart;
 [the work-tree reading below](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it) is
 keyed on this directory, and the discriminator may not be a name. ⛔ **The leaf is therefore at
-exactly one level under `tree_dir`**, and a registered worktree deeper than that is no work tree of
-this project's whoever cut it — which is also what a helper cut *from inside* a work tree looks
-like, the harness resolving its managed root against the tree the session is standing in.
+exactly one level under `tree_dir`**, and a registered worktree at any other depth is no work tree
+of this project's whoever cut it.
+
+⚠️ **The managed root is anchored on the primary checkout and not on the tree a session happens to
+stand in** — measured by asking this harness to move a session already standing in a tree into a
+worktree under *that tree's* own `.claude/worktrees/`, which it **refused by name**, stating the
+primary checkout's directory as the only place it would switch into. ⛔ **Which is why a relative
+`tree_dir` is resolved against the main checkout everywhere on this route**: the two anchors agree
+only there, and a carrier that joined the value to the caller's tree would compose a path the
+harness will not enter.
 
 ⛔ **Relative, and anchored on the checkout rather than on the caller.** An absolute value states
 one directory for every project that copies it, and two projects pointed at one tree directory read
@@ -4035,13 +4043,14 @@ which were — ⚠️ **which is why the branch-to-tree resolution two subsectio
 directory and not the other test**: one scope, asked by an enumeration here and by a single lookup
 there.
 
-⛔ **The depth is part of the scope and it is what a nested helper's tree costs.** A harness
-resolves its managed root against the repository holding the session's working directory, so a
-session standing in a work tree has its helpers cut *inside* that tree — at a depth below the leaf,
-registered in the same repository, and under the configured directory on any reading that is
-at-or-below rather than exactly one level. ⚠️ **Measured as residue rather than predicted**: three
-per-agent trees of one review outlived the merge with nothing reaping them, and the enumeration
-that was supposed to name them had already classified them as the project's own.
+⛔ **The depth is part of the scope rather than tidiness.** A tree a harness cuts for a helper goes
+directly under the managed root that `tree_dir` sits one level below, so *one level under
+`tree_dir`* is what separates the two populations and *at or below it* is what fails to — ⚠️
+**measured as residue rather than predicted**: three per-agent trees of one review outlived the
+merge with nothing reaping them, and the enumeration that was supposed to name them had already
+classified them as the project's own. ⚠️ **A worktree registered at any other depth under the
+directory is held out by the same comparison**, which is stated as what the rule does rather than
+as a placement this surface has measured a harness choosing.
 
 ⛔ **And a relative `tree_dir` is anchored on the main checkout, not on the tree the sweep runs
 in.** The role that cuts trees runs in that checkout, so the value is written relative to it — and
@@ -4063,11 +4072,10 @@ saying nothing.
 
 ⚠️ **A registered worktree the harness cut for a *helper* falls under the first row rather than
 needing one of its own** — such a tree is cut at that harness's managed root rather than one level
-under this project's tree directory, so the scope above answers it without a second rule. ⚠️ **That
-holds for the two placements a helper's tree takes and for the same reason**: directly at the
-managed root, which `tree_dir` sits one level below, and inside a work tree, which is a level deeper
-than any leaf. ⛔ **It is still named in the report**: a tree dropped silently is a tree nothing ever
-mentions, which is how three of them outlived a merge with nothing reaping them.
+under this project's tree directory, so the scope above answers it without a second rule, and it
+answers a tree at any other depth under that directory the same way. ⛔ **It is still named in the
+report**: a tree dropped silently is a tree nothing ever mentions, which is how three of them
+outlived a merge with nothing reaping them.
 
 ⚠️ **A registration whose directory is already gone is cleared rather than reported forever.**
 Nothing is at stake in one — the tree it names does not exist — and a sweep that left it standing

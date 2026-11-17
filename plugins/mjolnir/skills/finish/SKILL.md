@@ -642,8 +642,17 @@ entered its tree — which, under `work_in_shared_checkout: never`, is every ses
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" release \
-  --repo-root <code-root> --branch <branch> --tree <tree>
+  --repo-root <code-root> --branch <branch> --tree <tree> --tree-dir <tree-dir>
 ```
+
+⛔ **`--tree-dir` is `branch_model.tree_dir` as the configuration states it, and it is not
+optional here because the tree is named.** It is what the carrier's work-tree reading is keyed on
+([`§ 10`](../../config/schema.md#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it)):
+withheld, the reading falls back to *not nested below the checkout*, which answers *no tree here*
+for every project whose trees sit under the managed root — and the guard that refuses to break a
+claim neither landed nor held here then refuses the ordinary release of this session's own claim,
+naming the override reserved for somebody else's work. ⚠️ **`--tree` does not cover it**: that
+says which tree to remove, and the guard asks a different question.
 
 ⛔ **One command gives the claim up, and this role no more assembles it out of git calls than the
 starting role assembles the taking** — the order is the rule, and the command is re-runnable

@@ -593,13 +593,13 @@ def a_work_tree(path: str, main_tree: str, tree_dir: str | Path | None = None) -
     it is a tree **one level under `tree_dir` and no deeper**, that being where
     the leaf § 10 derives sits.
 
-    ⛔ **The depth is half the test rather than tidiness.** A harness resolves its
-    own managed root against the repository holding the session's working
-    directory, so a session standing in a work tree has its helpers cut *inside*
-    that tree -- under the configured directory on any at-or-below reading, and
-    at a depth no leaf has. Both placements a helper's tree takes are answered by
-    one comparison: directly at the managed root, which `tree_dir` sits one level
-    below, and inside a work tree, which is one level deeper than any leaf.
+    ⛔ **The depth is half the test rather than tidiness.** A harness cuts its
+    helpers' trees directly under the managed root that `tree_dir` sits one level
+    below -- measured as the three per-agent trees of one review, cut there and
+    left behind by it -- so *one level under* separates the two populations where
+    *at or below* does not. ⚠️ A worktree registered at any other depth under the
+    directory is held out by the same comparison, which is what the rule does
+    rather than a placement anything here has measured a harness choosing.
 
     ⚠️ **Where no directory is handed over the nesting reading is the fallback**,
     and § 10 states it as such: weaker in both directions -- blind to a project
@@ -2673,7 +2673,7 @@ def self_test() -> int:
         # ⚠️ Compared as real paths: the temporary directory is reached through a symlink on one
         # of the two platforms this runs on, and git reports the resolved path either way.
         found = tree_for_branch(one, "feature/item-7")
-        suite.ok("a tree cut outside the checkout, where `tree_dir` points, resolves",
+        suite.ok("a tree cut outside the checkout resolves under the fallback reading",
                  found is not None and os.path.realpath(found) == os.path.realpath(outside),
                  str(found))
         release(one, "feature/item-7", outside)
@@ -2686,7 +2686,8 @@ def self_test() -> int:
         nested = Path(one) / "helpers" / "one"
         nested.parent.mkdir(parents=True, exist_ok=True)
         git(one, "worktree", "add", str(nested), "-b", "feature/item-7", "HEAD")
-        suite.ok("⛔ and a tree nested below the checkout does not, whoever cut it",
+        suite.ok("⛔ and under that same reading a tree nested below the checkout does not, "
+                 "whoever cut it",
                  tree_for_branch(one, "feature/item-7") is None,
                  str(tree_for_branch(one, "feature/item-7")))
         # ⛔ The answer above has to come from the reading rather than from the tree being
@@ -2732,8 +2733,9 @@ def self_test() -> int:
                  not a_work_tree(str(beside), one, str(configured)),
                  str(beside))
 
-        # And a helper's tree cut from *inside* a work tree, which is where a harness puts one
-        # when the session asking for it is standing in the item's tree.
+        # And a worktree registered *inside* a work tree, which is the other direction the same
+        # comparison has to answer -- placed here rather than measured, the helper placement a
+        # harness was observed taking being the one above.
         within = item_tree / ".claude" / "worktrees" / "helper-two"
         within.parent.mkdir(parents=True, exist_ok=True)
         git(one, "worktree", "add", str(within), "-b", "chore/helper-two", "HEAD")

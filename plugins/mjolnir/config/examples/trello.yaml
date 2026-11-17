@@ -392,7 +392,10 @@ branch_model:
   kind: worktree
   work_in_shared_checkout: when_free
   parallel_trees: true
-  tree_dir: "../<project>-trees"
+  # One level under the agent harness's managed root (§ 10). ⚠️ Resolved against the root this
+  # block belongs to, which here is the outer checkout rather than the nested one — each root has
+  # its own managed directory, and a session standing in one of them resolves that one.
+  tree_dir: ".claude/worktrees/items"
   mechanics: ".claude/worktrees.md"
   # The stack writes its own volumes and logs into the tree, and bringing it up again writes them
   # back. The material the pointer copies in is not here, for the reason the removal is destructive

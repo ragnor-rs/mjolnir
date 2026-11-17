@@ -466,11 +466,17 @@ def unpushed(tree: str, ref_sha: str | None) -> tuple[list[str], list[str]]:
 # --------------------------------------------------------------------------------------------
 
 
-def _landed(root: str | Path, remote: str):
-    """The default reading: the claim's own, asked per branch."""
+def _landed(root: str | Path, remote: str, tree_dir: str | Path | None = None):
+    """The default reading: the claim's own, asked per branch.
+
+    ⚠️ **The tree directory goes with it**, so the reading this sweep reports is the same one every
+    other route takes: without it the claim's tree arm is blind, and a kept tree's reason loses the
+    sentence naming the session working in it. ⛔ Not the sweep's *verdict* -- that is `occupants`
+    one arm down, which reads the machine rather than the repository.
+    """
 
     def read(branch: str):
-        return claim.status(root, branch, remote)
+        return claim.status(root, branch, remote, tree_dir=tree_dir)
 
     return read
 
@@ -498,7 +504,7 @@ def sweep(
     is `claim.status` and not a reimplementation of it**, which is the whole of this module's
     relationship to *has this landed*.
     """
-    read = read if read is not None else _landed(root, remote)
+    read = read if read is not None else _landed(root, remote, tree_dir)
     occupants = occupants if occupants is not None else claim.foreign_occupants
     standing = standing if standing is not None else (lambda path: claim.standing_in(path, here))
     remove = remove if remove is not None else _remover(root, remote, delete_branch)
@@ -712,6 +718,11 @@ def _remover(root: str | Path, remote: str, delete_branch: str):
     ⛔ **Never forced.** Every refusal `claim.release` can raise here is a tree the sweep has
     already decided it may not remove, or a reading the sweep could not take; forcing past either
     is the automatic claim-breaking § 10 forbids, and there is nobody present to override it.
+
+    ⚠️ **And no tree directory is handed over, which is a statement rather than an omission**: the
+    two readings it feeds are both unreachable from here. The tree is always named, so nothing is
+    resolved from a branch; and the guard that asks whether a claim is held in a tree here is
+    short-circuited by `spent`, every branch this carrier releases having landed.
     """
 
     def run(branch: str, tree: str) -> tuple[str, str | None]:
@@ -1337,9 +1348,10 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         )
 
     # ⛔ The depth half of the same scope, in a world of its own because the arm above asserts a
-    # removal and this one plants something inside the tree that would be removed. What a harness
-    # cuts for a helper asked for *by a session standing in a work tree* lands inside that tree:
-    # under the configured directory on any at-or-below reading, and one level deeper than a leaf.
+    # removal and this one plants something inside the tree that would be removed. ⚠️ The tree is
+    # placed rather than measured: what a harness was observed doing is cutting helpers' trees at
+    # its managed root, and this is the other direction the same comparison has to answer -- a
+    # worktree registered under the configured directory at a depth no leaf has.
     with tempfile.TemporaryDirectory() as tmp:
         _origin, work = _world(tmp)
         inside = Path(work) / ".worktrees"
@@ -1353,7 +1365,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         mine = [t for t in seen if os.path.realpath(t.path) == os.path.realpath(tree)]
         theirs = [t for t in seen if os.path.realpath(t.path) == os.path.realpath(str(helper))]
         suite.ok(
-            "⛔ a helper's tree nested inside a work tree reads as outside the scope, being a "
+            "⛔ a worktree registered inside a work tree reads as outside the scope, being a "
             "level deeper than the leaf",
             len(theirs) == 1 and theirs[0].outside,
             str([(t.path, t.outside) for t in seen]),
@@ -1916,11 +1928,19 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             handed["args"][2] == "host",
             str(handed.get("args")),
         )
+        # ⛔ **Against what the reader answers and never against a literal.** The fixture copies a
+        # shipped example, so a literal here is a second copy of that example's value -- which
+        # went stale the first time the shipped placement moved, reddening this check on a change
+        # that had not touched the plumbing it holds. ⚠️ Not tautological: what is captured is
+        # what the carrier *handed over*, and a default or a path joined here would differ from
+        # the stated value however that value is spelled.
+        reader = shared_reader()
+        stated = reader.load(str(where), check_paths=False).get("branch_model.tree_dir")
         suite.ok(
             "⛔ and the tree directory as the project states it, for the sweep to anchor on the "
             "main checkout rather than on whichever tree this session is standing in",
-            handed["kwargs"]["tree_dir"] == "../<project>-trees",
-            str(handed.get("kwargs")),
+            handed["kwargs"]["tree_dir"] == stated and bool(stated),
+            f"{handed.get('kwargs')} vs {stated}",
         )
         suite.ok(
             "⛔ and the session's own directory, which is the one stop that protects a live tree",

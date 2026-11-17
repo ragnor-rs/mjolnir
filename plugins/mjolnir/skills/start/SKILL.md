@@ -221,10 +221,13 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" take \
   mid-task.
 - A cheap pre-filter avoids pointless attempts, asked about the work item rather than about one
   name:
-  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" status --repo-root <code-root> --item <number>`.
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" status --repo-root <code-root> --item <number>
+  --tree-dir <tree-dir>`.
   ⛔ **The code root is stated for this subcommand exactly as it is for `take`, and is never
   inherited from where the call is made** — the carrier requires it and refuses the call before
-  reading any ref, so a form abbreviated down to the item alone asks nothing at all.
+  reading any ref, so a form abbreviated down to the item alone asks nothing at all. ⚠️ **And the
+  tree directory for the same reason it is stated on `take`**: it is what the work-tree reading is
+  keyed on, so a filter asked without it cannot see that a candidate is held in a tree right here.
   ⛔ **Advisory, and it stays advisory even when it is asked correctly**: both ways of missing
   have been measured, and only one of them is a question a filter can be fixed to answer
   ([`§ 10`](../../config/schema.md#the-branch-name-a-claim-is-taken-on)). The attempt is the
