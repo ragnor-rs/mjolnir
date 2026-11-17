@@ -5264,6 +5264,21 @@ body_sections:              # the sections a body states, beyond what § 6 alrea
   - heading: "<the heading text, as a body spells it, in the repository's language (§ 8)>"
     read_by: "<what collects this section out of the change>"
     nothing_needed: "<the answer the section carries where the change needs nothing of it>"
+    when: before            # where the step falls against the collecting role's own act
+    answered_by: human      # whether the collecting role performs the step, or asks for it
+```
+
+The vocabulary an entry draws on, stated under the key it belongs to — the device
+[§ 32](#32-a-status-that-moves-backwards) and [§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes)
+already use, because a member of a list sits at no path a marker can reach:
+
+```yaml
+body_sections:
+    heading:        "<the heading text, as a body spells it, in the repository's language (§ 8)>"
+    read_by:        "<what collects this section out of the change>"
+    nothing_needed: "<the answer that closes the section with nothing in it>"
+    when:           before | after
+    answered_by:    human | procedure
 ```
 
 **A section belongs here when another role reads it.** [§ 6](#the-pull-request-title-and-body)
@@ -5274,8 +5289,9 @@ batch carries, and then acts on. ⛔ **That is the test for membership and the o
 a project merely likes is a convention, and a convention enforced by a gate is this surface's own
 defect class arriving as continuous integration. ⚠️ **The measured instance is a deployment's own
 preparation** — what a change needs done to an environment before it can ship — collected by the
-role that deploys a batch and run as the batch's first step; and what made it a facet rather than
-one project's workflow file is that the section was enforced by a gate and stated on no surface
+role that deploys a batch and performed where this entry's `when` puts it; and what made it a facet
+rather than one project's workflow file is that the section was enforced by a gate and stated on no
+surface
 ([the measurement](../../../docs/configuration-surface.md#a-section-one-role-writes-and-another-runs)).
 
 ⛔ **`[]` is the stated absence and means no section beyond § 6's**, by the rule this surface opens
@@ -5284,11 +5300,13 @@ about it, read identically otherwise. ⚠️ **A reader reports it as unavailabl
 installed for it** — which is the absence being a configuration rather than a gate that holds
 nothing, and the direction that matters, since a run asserting nothing reports green.
 
-**The keys, and what each is for.** ⛔ **All three are written on every entry**, stated here in
-prose rather than by the `# required` marker, for the reason
+**The keys, and what each is for.** ⛔ **Every key the fence states is written on every entry**,
+stated here in prose rather than by the `# required` marker, for the reason
 [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts) states a local check's
 `command` that way: a marker names a key at a path, and a member of a list sits at no path a marker
-or a condition can reach.
+or a condition can reach. ⛔ **And a key this section does not declare is refused with its own
+name**, by the rule [§ 33](#the-three-shapes-a-target-is-reached-by) states for a target's entry:
+a fact about the section that nothing reads, written where somebody would expect it to be read.
 
 - ⛔ **`heading` is the text and not the level.** Which level a body puts a section at, and how it
   cases the words, are formatting — so what is stated here is the words, and a body setting them as
@@ -5310,6 +5328,11 @@ or a condition can reach.
   invent some, and what a body then carries is a sentence written to satisfy a gate. ⛔ **And the
   answer is the whole of the section or it is not the answer** — a section stating it and then
   stating something else has said both, and the role collecting it would have to choose.
+- ⛔ **`when` is where the step falls against the act the collecting role exists to perform**, and
+  ⛔ **`answered_by` is whether that role performs the step or asks for it.** Both are read by
+  whatever `read_by` names, both are required of every entry, and
+  [`When a collected step is performed`](#when-a-collected-step-is-performed-and-who-answers-it)
+  below states what each value does and what an unanswered step holds.
 
 ⛔ **The open-items section is not one of these, and it is not stated here.**
 [§ Nothing is deferred](#nothing-is-deferred) requires it of every body and no key turns that off,
@@ -5325,6 +5348,62 @@ body is the state this facet exists to remove rather than to create. ⚠️ **Th
 event and not by a push**, so a body corrected in place is re-read with no new commit: the trigger
 carries the edit event, which is also why the check is a run of its own rather than a job inside a
 suite whose triggers do not.
+
+### When a collected step is performed, and who answers it
+
+⛔ **The step is carried by the change and by nothing else, which is this facet's own position
+rather than a new one.** A step a change owes an environment is discovered while the change is
+written, so the places that could otherwise hold it each hold it worse: an item's body is written
+before the work and states a prediction, a facet of the item
+([§ 4](#4-work-item-facets)) is written through `set_field`, which
+[§ 3](#the-operations-and-what-an-absent-capability-does) reports unavailable on a measured tracker,
+and [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s grouping is a *set* and therefore
+cannot say which change owes what. ⚠️ **Stated here because the question was put to the item and the
+grouping before this facet existed**
+([the measurement](../../../docs/configuration-surface.md#a-section-one-role-writes-and-another-runs)),
+and a question nobody answers in writing is one the next reader asks again.
+
+**`when`, and what each value holds.** ⛔ **The act named is the collecting role's own** — the one
+`read_by` exists to name — so this key is read without this section knowing what that act is:
+
+| `when` | the step is performed | and an unperformed one holds |
+|---|---|---|
+| `before` | before the act | **the act**, which does not happen |
+| `after` | after the act | **whatever rests on the act**, which has already happened |
+
+⛔ **Required of every entry rather than defaulted**, which is
+[§ 33](#which-target-and-what-makes-one-live)'s argument for `not_live` arriving one facet over: a
+step whose timing nobody stated is one the collector performs wherever is convenient, and the
+convenient place is after the act. ⚠️ **Measured as exactly that**: the step this facet was
+extracted from is a pair of schema changes that must reach a live database *before* the image
+carrying the code which reads them, and while this section described it as needed before the change
+could ship, the one role collecting it ran it after the invocation.
+
+**`answered_by`, and the ask.** ⛔ **`procedure` means the collecting role performs what the section
+states; `human` means it does not, and asks.** Silence is not a yes
+([§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)), so a `human` step nothing
+answered is an unperformed step and holds whatever its `when` says it holds.
+
+⛔ **Required rather than derived from `when`, and the correlation is stated rather than used.** The
+two measured steps are one `before`/`human` and one `after`/`procedure` — a correlation across two
+observations, which is not one axis collapsing into the other, and a value derived from it would be
+derived from two points that happen to agree. ⚠️ **What makes the key load-bearing is the first of
+those two**: the procedure holds no credential for the database that step is about, so a facet with
+no way to say *this one is a person's* leaves the measured instance expressible only as a step the
+collector would try to run itself.
+
+⛔ **An answered step is recorded with the answer, and never inferred from the act having
+succeeded.** What the collecting role reports is the step, the change it was collected out of, and
+the answer as it came back — ⚠️ **and no guard reads that record.** A deploy is not an event
+[§ 7](#what-a-hook-refuses-and-the-record-it-reads)'s hooks are addressed by, so this facet installs
+nothing that refuses one. ⛔ **Stated rather than left implied**, by the rule § 7 states about its
+own merge guard's reach: a mechanism credited with a guarantee it does not have is one nobody
+checks.
+
+⚠️ **A project needing none of this states it the way it already does.** `body_sections: []` is the
+whole-project absence and `nothing_needed` is the per-change one, so a project with no steps writes
+neither of these keys, sees no prompt and pays no round trip — ⛔ **and this facet adds no third way
+of saying nothing**, a second absence being a second thing to hold in step.
 
 ## 21. A command that could open a session on a live machine
 
@@ -7713,6 +7792,42 @@ target, `publishes: false`, and what the release writes is what this facet alrea
 the batch carried, advanced to the role the entry names. ⛔ **Which is not a deploy that writes
 nothing on the tracker at all** — the item advance is this facet's own and the absence of a
 grouping does not reach it — and the report says which of the two the project is.
+
+### What a change in the batch owes this target, and where the step falls
+
+⛔ **The steps are [§ 20](#20-the-sections-a-pull-request-body-must-carry)'s and this subsection
+states none of them again** — not the carrier, not the two keys, not the refusal. What is here is
+the one thing that section cannot state: what its `when` means against *this* role's act, which is
+the invocation [`The three shapes`](#the-three-shapes-a-target-is-reached-by) above names.
+
+| the entry says | performed | and an unperformed one |
+|---|---|---|
+| `when: before` | after the preflight and **before the invocation** | holds the whole target: nothing is invoked, and the run names the step and the change it was collected out of |
+| `when: after` | after the invocation's delivery has been read | holds **the advance of the items whose change owes it** — never the target, and never the grouping's mark |
+
+⛔ **The asymmetry is the act's irreversibility rather than a preference.** A deploy already made
+cannot be unmade, so an `after` step that held the publication would report a release the target is
+already serving as unreleased; what is still withholdable at that point is the move, which
+[`Publishing a grouping`](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)
+above already makes a separate act under a separate writer. ⚠️ **Measured on the inverse of the
+`before` case**: an item whose change is confined to a shared library can never satisfy its
+promotion gate on its own and is advanced by hand after the release — so what that step gates is one
+item's own move, which is the second row read on the case it came from.
+
+⛔ **A `human` step is asked for separately from the go, and before it.** Two facts make it a
+question of its own rather than a field of that one: a go is an authorization and a step's answer is
+an attestation about work that either happened or did not, which
+[§ 7](#what-a-hook-refuses-and-the-record-it-reads) already holds apart; and ⛔ **a target stating
+`not_live: true` is asked for no go at all** while its changes may still owe a `human` step, so a
+step folded into the go would go unasked on exactly the targets a session reaches most often.
+⚠️ **A `before` step reached in that state also means the go is about a deploy that cannot happen**,
+which is the ask § The loop retired, arriving as a question nobody can answer usefully.
+
+⛔ **Unanswered is never optimistically assumed, in either row.** Silence holds what the row says it
+holds, and [`What a deploy verifies`](#what-a-deploy-verifies-and-what-it-reports) above is where
+the report of it belongs: the step, the change, and the answer as it came back — ⛔ **never *the
+deploy succeeded, so the step must have been done*,** which is that subsection's own rule about what
+an invocation's outcome is a fact about.
 
 ## 34. The files that carry a version, and what cutting a release writes
 
