@@ -7746,26 +7746,27 @@ a second rule besides: `name` is the word a deploy is asked for by, so two roots
 have to hold their names apart across the project — which is [§ 1](#a-command-root-is-not-a-code-root)'s
 own rule for a command root's name, taken for the same reason a reference is written somewhere else.
 
-⛔ **What the key resolves is every reference an entry already made into a repository**, each of
-which was answered from a **union across repositories** while this was open:
+⛔ **Every reference an entry makes into a repository is resolved in the one this key names**, and
+⛔ **never against a union over the project's repositories** — which is the only other answer
+available, and is wrong in the direction that loads:
 
-| what the entry states | what it is now held to | what answered it before |
+| what the entry states | where it is read | what a union would admit |
 |---|---|---|
-| `workflow` | that root's own `checks` ([§ 2](#2-code-host)) | every root's names at once, so a target could name a workflow in a repository its own act never reaches |
-| `command_root` | that root's own `command_roots` ([§ 1](#a-command-root-is-not-a-code-root)) | the same union, so a name one repository declares was valid on a target in the other |
-| `code_root_runs_nothing` | that root's own flag, so a `command` target naming no `command_root` under a root that runs nothing is refused | nothing — the flag § 1 states against a command with nowhere to run could not reach a target at all |
-| `ref`, and the repository a dispatch is made against | that root's `host.repo`, named to [§ 29](#29-the-hosts-run-operations) as the root | nothing, which is the failure below |
+| `workflow` | that root's own `checks` ([§ 2](#2-code-host)) | a target naming a run in a repository its own act never reaches |
+| `command_root` | that root's own `command_roots` ([§ 1](#a-command-root-is-not-a-code-root)) | a name one repository declares, written on a target in the other |
+| `code_root_runs_nothing` | that root's own flag, so a `command` target naming no `command_root` under a root that runs nothing is refused | nothing at all — § 1's flag against a command with nowhere to run reaches a target through this key and through no other |
+| `ref`, and the repository a dispatch is made against | that root's `host.repo`, named to [§ 29](#29-the-hosts-run-operations) as the root | a dispatch made against whichever repository a project-level read answered with |
 
-⚠️ **The failure was not latent and the shipped two-root example is where it fired.** Its three
-targets name a workflow out of the first repository's checks, a workflow out of the second's, and a
-command root the first declares — and the first command this role's preflight runs is a stop on that
-project: the command root is stated per repository, two carry the block, and the reader refuses a
-project-level read of it rather than answering with the first. ⛔ **So the deploy role could not run
-at all there**, and the one value that resolves it was in no file.
+⚠️ **The last row is a stop rather than a wrong answer, which is why the key is required and not
+optional.** A command root is stated relative to one repository, so on a project with two the reader
+refuses a project-level read of the block rather than answering with the first — and resolving the
+entry's command is the **first** thing the deploying role does. ⛔ **A target with no repository
+named is therefore a role that cannot start**, measured on the two-root configuration this
+repository ships as an example.
 
-⚠️ **A project with one repository writes nothing new**, which is the whole of what this key changes
-for it: the name is refused on an entry, every reference resolves exactly where it resolved before,
-and the single form's one root is the root every target's act is in.
+⚠️ **A project with one repository writes nothing new**, which is the whole of what this key asks of
+it: the name is refused on an entry, every reference resolves where the one root is, and the single
+form's root is the root every target's act is in.
 
 ## 34. The files that carry a version, and what cutting a release writes
 

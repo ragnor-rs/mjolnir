@@ -586,11 +586,10 @@ test_tiers:
       # nothing holds the criterion to this tier's cases, there being no case files to hold it
       # to, so the selection is reported unheld. The remedy is case files, which is the register
       # facet's own `revisit_when` above.
-      # ⛔ The name is one `deploy` above states, word for word, which § 31 now resolves it
-      # against. ⚠️ This example carried a fourth name here — one no target of its own had —
-      # and the reader took it, because the entry was held to being a non-empty string
-      # while which repository a target's act was in went unstated. A tier refused on a word
-      # nothing deploys to reads as refused somewhere and runs against every target there is.
+      # ⛔ The name is one `deploy` above states, word for word, and § 31 resolves it against
+      # that list. ⚠️ A fourth name here would be refused rather than read as a target this
+      # project might acquire: a tier refused on a word nothing deploys to reads as refused
+      # somewhere and is run against every target there is.
       refused_on: ["<the environment a version is released to>"]
 
 spend_guard:

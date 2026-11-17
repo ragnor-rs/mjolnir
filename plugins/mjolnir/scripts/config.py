@@ -1271,11 +1271,11 @@ def _deploy_root_facet(data: dict, roots: dict[str, dict]) -> None:
     root -- a correct configuration refused for being read from the other side.
 
     ⛔ **And every reference resolved here is resolved against the one root the
-    entry names**, never against a union over the project's repositories. The
-    union was the only answer available while which repository a target's act is
-    in was unstated, and it is wrong in the direction that loads: a target could
-    name a workflow in one repository and a command root in the other, and the
-    reader had nothing to tell it apart from a target that named its own.
+    entry names**, never against a union over the project's repositories. A
+    union is the only other answer available and it is wrong in the direction
+    that loads: a target naming a workflow in one repository and a command root
+    in the other passes it, and nothing tells that target apart from one whose
+    references are all its own.
     """
     targets = _absent_as(_get(data, "deploy"), [])
     if not isinstance(targets, list):
@@ -10471,10 +10471,9 @@ def self_test() -> int:
         # ⛔ And a tier refused on one of the dropped targets goes with them, for
         # the same reason and one rule further out: § 31 resolves `refused_on`
         # against § 33's own names, so a fixture that removed a target and left
-        # the reference would be refused by *that* rule -- which is how this arm
-        # reddened when the reference was first resolved at all. ⚠️ Derived from
-        # what the filter above left rather than named, so an example that moves
-        # which target a tier refuses is still held.
+        # the reference is refused by *that* rule and asserts nothing about this
+        # one. ⚠️ Derived from what the filter above left rather than named, so
+        # an example that moves which target a tier refuses is still held.
         _keep_refusals_in(subset)
         check(
             "a project mapping no terminal role has nothing for that rule to compare",
