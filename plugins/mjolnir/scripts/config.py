@@ -6362,10 +6362,11 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
 
     # § 10. Where a tree is created is required under the mode that creates trees
     # and meaningless under the mode that does not, which is the shape
-    # `work_in_shared_checkout` already has. It is required rather than defaulted
-    # because the two measured placements -- beside the shared checkout and
-    # nested under the skills root -- are a project's fact, and a default would
-    # pick one of them for every project that did not notice the key.
+    # `work_in_shared_checkout` already has. ⚠️ It stays required rather than
+    # becoming a default now that § 10 rules the depth: the directory below the
+    # harness's managed root is still a project's own word, and a default would
+    # write a path into every configuration that did not notice the key -- which
+    # is the one value the work-tree reading is keyed on.
     if _get(data, "branch_model.kind") == "worktree" and not _get(
         data, "branch_model.tree_dir"
     ):

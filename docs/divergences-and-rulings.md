@@ -294,8 +294,12 @@ against the five projects' real evidence rather than by comparing the five texts
   a worktree by its resolved path and the harness names a transcript store after the working
   directory *as the session saw it*, so the two never meet and that tree's whole store is dropped.
 - **A store is globbed from the configured root alone**, so a tree cut outside that prefix is never
-  even a candidate — and `tree_dir` routinely puts trees beside a root rather than under it. Both
-  of these lose real minutes in the direction with no symptom but a low total.
+  even a candidate — and at the time this was measured `tree_dir` routinely put trees beside a root
+  rather than under it. Both of these lose real minutes in the direction with no symptom but a low
+  total. ⚠️ **The placement has since moved under the root** (§ 10: one level under the harness's
+  own managed directory, which is the only placement a session enters unasked), so a project on the
+  current rule has its trees inside the globbed prefix and loses nothing this way. The symlinked
+  ancestor above is untouched by that, and the figures here were taken under the old placement.
 - **Two patterns had already stopped matching what the harness injects.** A role installed as a
   plugin injects its preamble at the plugin's path, which one copy's `.claude/skills/` anchor
   cannot see; and a namespaced invocation changes the string, which no copy's pattern allowed for.

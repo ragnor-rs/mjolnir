@@ -415,6 +415,12 @@ the three that are obvious. The measurements that forced each to be independent:
      not generalise and stays behind the `mechanics` pointer; the **placement** is a path, and the
      two measurements differ in the value rather than in the steps — so it is a key,
      [`schema.md § 10 → Where a tree is created`](../plugins/mjolnir/config/schema.md#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it).
+     ⚠️ **The two placements above are what was measured, and the value has since been ruled
+     rather than left to each project**: one level under the agent harness's own managed directory,
+     that being the only placement a session is moved into without a person answering a prompt the
+     project cannot configure away. It stays a key — the depth is the rule, the directory is still
+     each project's to state, and a project carrying several code roots takes the prompt on the
+     roots it crosses.
      ⚠️ Until that key existed the two were one pointer, which left the location stated in no
      facet at all: every project that cut a tree carried its own standing convention, readable by
      the person running a role and by nothing shipped. The same subsection carries what was

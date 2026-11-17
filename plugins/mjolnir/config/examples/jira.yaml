@@ -359,9 +359,11 @@ branch_model:
   kind: worktree
   work_in_shared_checkout: never
   parallel_trees: true
-  # Beside the shared checkout; the leaf is the item's key and then its slug, derived — so a key
-  # carrying its own hyphens is the leading half of the leaf rather than a thing to parse back out.
-  tree_dir: "../<project>-trees"
+  # One level under the agent harness's managed root, which § 10 makes the placement: anywhere else
+  # a session is moved into needs a person to answer a prompt the project cannot configure away.
+  # The leaf is the item's key and then its slug, derived — so a key carrying its own hyphens is
+  # the leading half of the leaf rather than a thing to parse back out.
+  tree_dir: ".claude/worktrees/items"
   mechanics: null                      # a tree here needs nothing installed or copied
   regenerable: []                      # and so holds nothing a rebuild would write again
   exclusive_resources: []              # nothing local is held; the checks run on the host

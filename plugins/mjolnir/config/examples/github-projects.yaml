@@ -279,10 +279,12 @@ branch_model:
   # The shared checkout is worked in when it is free; a tree is taken when it is not.
   work_in_shared_checkout: when_free
   parallel_trees: true
-  # The other measured placement: nested under the skills root rather than beside it, which is
-  # what a project whose tree carries a second checkout inside it does. A path, never a step —
-  # the steps are the pointer below.
-  tree_dir: ".worktrees"
+  # Nested under the skills root, which is where § 10 puts every project's trees: one level under
+  # the agent harness's own managed root, that being the only placement a session enters without a
+  # person answering a prompt. ⚠️ This project's tree carries a second checkout inside it, so the
+  # depth matters twice — what the work-tree reading counts is the leaf's own level under this
+  # directory, not what the tree holds. A path, never a step — the steps are the pointer below.
+  tree_dir: ".claude/worktrees/items"
   mechanics: ".claude/worktrees.md"   # the tree's own setup and teardown steps
   # The non-empty shape, and the one the pointer above implies: a tree that has something installed
   # into it holds ignored files that running the install again writes back. ⚠️ The environment file

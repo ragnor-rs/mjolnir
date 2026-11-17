@@ -101,8 +101,16 @@ ref its own claim is published on. ⚠️ **Both read as *nothing to do*** until
 deciding it**:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" status --repo-root <code-root> --item <number>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" status --repo-root <code-root> --item <number> \
+  --tree-dir <tree-dir>
 ```
+
+⚠️ **`--tree-dir` is `branch_model.tree_dir` as the configuration states it, and withholding it
+costs this role a reading rather than a verdict**: it is what the work-tree test is keyed on
+([`§ 10`](../../config/schema.md#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it)),
+so without it the arm that sees a live session's tree is blind and a claim held in a tree on this
+machine reads as held nowhere — which is the one reading this role exists to put in front of
+somebody.
 
 ⛔ **The reply carries whichever reading came back**, and the readings are § 10's table rather than
 this file's to list. ⚠️ **`landed` is the one this step is most likely to meet and the one a

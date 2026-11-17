@@ -3301,7 +3301,7 @@ branch_model:
   kind: worktree | in_place                  # required
   work_in_shared_checkout: when_free | never   # read only under worktree; null under in_place
   parallel_trees: true                       # required
-  tree_dir: "<the directory a tree is cut under>"   # required under worktree; null under in_place
+  tree_dir: "<the directory a tree is cut under>"   # required under worktree; null under in_place; relative to the checkout, and under the agent harness's own managed root
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
   regenerable: ["<an ignored path a rebuild writes again>"]   # required_when: branch_model.kind = worktree
   exclusive_resources:           # [] where nothing in this project is exclusive; required
@@ -3387,6 +3387,46 @@ segment. The directory is a project's fact — one project nests its trees under
 a second checkout inside each, another makes them siblings of the shared checkout — and the leaf is
 not: a tree belongs to one item, so deriving it makes the whole path a function of the item.
 
+⛔ **The directory goes one level under the agent harness's own managed root, and that is not a
+preference.** A harness that moves a session's working directory holds that move to a location it
+manages — measured on `claude-code` 2.1.233, where the tool's own permission check answers *allow*
+for a path resolving under `<checkout>/.claude/worktrees/` and *ask* for every other path, and
+⛔ **the ask is returned before any permission rule is read**, so a project cannot clear it by
+configuring one. ⚠️ **Three properties of that reading are what the rule rests on**: the test is a
+**prefix** one, so a directory below the managed root qualifies and the leaf need not sit at its
+top; the managed root must exist and **must not be a symlink**, so pointing its name at a sibling
+directory does not work; and the prompt it raises cannot be answered by a headless run at all,
+which turns an unattended pass into a stall rather than a refusal.
+
+⚠️ **One level under it rather than at its top, because the harness cuts its own trees there.** A
+tree a harness cuts for a helper goes directly under the managed root — measured as the three
+per-agent trees of one review, cut there and outliving the merge — so a project whose own trees sit
+beside them has no location left that tells the two apart;
+[the work-tree reading below](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it) is
+keyed on this directory, and the discriminator may not be a name. ⛔ **The leaf is therefore at
+exactly one level under `tree_dir`**, and a registered worktree at any other depth is no work tree
+of this project's whoever cut it.
+
+⚠️ **The managed root is anchored on the primary checkout and not on the tree a session happens to
+stand in** — measured by asking this harness to move a session already standing in a tree into a
+worktree under *that tree's* own `.claude/worktrees/`, which it **refused by name**, stating the
+primary checkout's directory as the only place it would switch into. ⛔ **Which is why a relative
+`tree_dir` is resolved against the main checkout everywhere on this route**: the two anchors agree
+only there, and a carrier that joined the value to the caller's tree would compose a path the
+harness will not enter.
+
+⛔ **Relative, and anchored on the checkout rather than on the caller.** An absolute value states
+one directory for every project that copies it, and two projects pointed at one tree directory read
+each other's trees as their own. ⚠️ **And a relative value is resolved against the main checkout,
+never against the tree a role is standing in** — the role that cuts trees runs in the checkout,
+while the carriers that sweep them routinely run inside one.
+
+⚠️ **What the rule does not reach is a project carrying several code roots.** The managed root is
+resolved from the repository owning the session's working directory, so entering a tree of one root
+from a session standing in another resolves the wrong repository and the prompt returns. ⛔ **Stated
+rather than closed**: nothing here can move a session's permission root, and a project in that shape
+takes the prompt on the roots it crosses.
+
 ⛔ **The identifier leads, and the ordering is part of the rule rather than a readability choice.**
 An earlier form of this section made the leaf the identifier *alone*, on the ground that a title
 reworded between two starts would give one item two directories and the directory would stop
@@ -3470,14 +3510,27 @@ their own. With a nested tree holding the item's branch, the branch-to-tree reso
 reads answers with it: a finished helper's tree is removed as though it were the item's, and a live
 helper's instead demands the override this section reserves for breaking another session's work.
 
-⚠️ **The test is nesting and not a name**, for the reason the process case already gives: a
-directory name belongs to whichever harness ships it, so naming one puts a project's value in
-shared code. What is structural instead is each model's own answer to *where a work tree is*: the
-main checkout is the work tree under `in_place`, a tree cut at `tree_dir` is one under `worktree`,
-and a registered worktree **nested below the main checkout** is neither of those in either model.
-⛔ **A project whose trees did live inside its checkout names the tree explicitly**, which the
-starting role already requires and a release already accepts — so the resolution finds nothing
-there rather than finding the wrong thing, which is the direction that keeps a tree.
+⚠️ **The test is the configured directory and not a name**, for the reason the process case already
+gives: a directory name belongs to whichever harness ships it, so naming one puts a project's value
+in shared code. What is structural instead is each model's own answer to *where a work tree is*: the
+main checkout is the work tree under `in_place`, and under `worktree` it is a tree at
+**`tree_dir`, one level under it and no deeper** — the directory this project already states, and
+the leaf [the subsection above](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it)
+derives. A registered worktree anywhere else is neither of those in either model.
+
+⛔ **Nesting below the main checkout is what this reading used to be, and it is wrong in both
+directions.** The managed root a session can be moved into without a prompt is *inside* the
+checkout, so the old test answered *not a work tree* for every tree of a project that configured
+it — and it answered *a work tree* for a worktree somebody cut by hand beside the checkout, which
+no project cut at all. ⚠️ **Each direction was measured on the arm it breaks**, which is why this
+is a location test rather than a nesting one: the branch-to-tree resolution went blind to a live
+sibling's tree and refused every release of an unlanded claim, and the sweep one subsection down
+read every work tree as a helper's and pruned nothing.
+
+⚠️ **Where a caller has no configured directory to hand, the nesting reading is the fallback and
+says so.** It is weaker in both directions above, and it is kept rather than dropped so that a
+caller with nothing to resolve gets the older answer instead of an empty one — ⛔ **and no role on
+this route is such a caller**: every one of them has the configuration it was resolved from.
 
 ⚠️ **Where the session cannot leave, the skip is correct and the tree is somebody else's to
 remove.** A session that was pinned to a tree when it was launched has no exit to perform, and the
@@ -3648,6 +3701,19 @@ liveness deletes it in silence, which is the two-sessions-on-one-item failure ar
 other end. ⚠️ The residue is a claim squash-merged **and** then built on top
 of, which matches no row above except the weakest and so reads as live without the host's record to
 settle it. That errs towards refusing a start rather than towards taking a held claim.
+
+⛔ **And *held here* has two answers, the second being a tree the caller names read against the
+branch *and* against the repository.** The first is the work-tree resolution
+[above](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it), keyed on the configured
+directory. ⚠️ **A named tree is evidence only once it is read**: on its own it says which tree to
+remove and could name anything, while a directory whose checked-out branch *is* this one, in *this*
+repository, says the claim is held on this machine wherever that directory sits. ⛔ **Both halves,
+because a branch namespace is per repository and a name is only a string** — ⚠️ **reproduced while
+reviewing the reading**: an unrelated repository with a branch of the same name checked out answered
+*held here*, and a claim read that way is released with no override at all. ⛔ **Which is what a
+project whose trees were cut under an older `tree_dir` has** — such a tree answers neither reading,
+so without this arm the ordinary release of one's own unlanded claim spends the override reserved
+for breaking somebody else's work, emptying it exactly as the row above does.
 
 ⛔ **A ref the host no longer carries is a free claim and still has a landed reading.** The two are
 different questions: *is this item claimed* is answered by the ref existing, and *has this work
@@ -3979,14 +4045,25 @@ lookups exceed the reserve still outruns the event's limit. The reserve makes th
 instead of the ordinary one, and nothing here can close it from outside those calls.
 
 ⛔ **What the sweep may look at at all is `tree_dir`, and that is the scope rather than a
-shortcut.** A registered worktree under the directory this facet already states is this project's;
-one outside it is not, however it was made. ⚠️ **Measured from both directions in one review, and
-each direction is a defect the other test does not have.** Reading *nesting below the checkout*
-instead — which is the right question for a release pointed at one tree — makes a project whose
-`tree_dir` is **inside** its checkout read every one of its own trees as a helper's and prune
-nothing, while a worktree somebody cut by hand beside the checkout reads as a candidate and has its
-branch and its published ref deleted on a landed verdict. ⛔ **Neither is a tree this procedure
-cut**, and the configured directory is the only thing that knows which were.
+shortcut.** A registered worktree one level under the directory this facet already states is this
+project's; one anywhere else is not, however it was made. ⚠️ **Measured from both directions in one
+review, and each direction is a defect the other test does not have.** Reading *nesting below the
+checkout* instead makes a project whose `tree_dir` is **inside** its checkout read every one of its
+own trees as a helper's and prune nothing, while a worktree somebody cut by hand beside the checkout
+reads as a candidate and has its branch and its published ref deleted on a landed verdict. ⛔
+**Neither is a tree this procedure cut**, and the configured directory is the only thing that knows
+which were — ⚠️ **which is why the branch-to-tree resolution two subsections up reads the same
+directory and not the other test**: one scope, asked by an enumeration here and by a single lookup
+there.
+
+⛔ **The depth is part of the scope rather than tidiness.** A tree a harness cuts for a helper goes
+directly under the managed root that `tree_dir` sits one level below, so *one level under
+`tree_dir`* is what separates the two populations and *at or below it* is what fails to — ⚠️
+**measured as residue rather than predicted**: three per-agent trees of one review outlived the
+merge with nothing reaping them, and the enumeration that was supposed to name them had already
+classified them as the project's own. ⚠️ **A worktree registered at any other depth under the
+directory is held out by the same comparison**, which is stated as what the rule does rather than
+as a placement this surface has measured a harness choosing.
 
 ⛔ **And a relative `tree_dir` is anchored on the main checkout, not on the tree the sweep runs
 in.** The role that cuts trees runs in that checkout, so the value is written relative to it — and
@@ -4000,17 +4077,18 @@ saying nothing.
 
 | the tree | why, and what clears it |
 |---|---|
-| anything outside `tree_dir` | not a tree this procedure cut; named in the report and nobody's to act on |
+| anything not one level under `tree_dir` | not a tree this procedure cut; named in the report and nobody's to act on |
 | the main checkout | it is not a tree a claim was cut into, under either `kind` |
 | one another live session occupies | [the claim's own occupancy reading](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it) — another **session**, never another process |
 | one the oracle above objects to | nothing clears it automatically; the report names the paths so a person can |
 | the caller's own, while the caller stands in it | a **stop**, cleared by leaving and by nothing else — and where no exit is available the skip is correct and the tree is a later sweep's |
 
 ⚠️ **A registered worktree the harness cut for a *helper* falls under the first row rather than
-needing one of its own** — such a tree is cut wherever that harness puts them and not under this
-project's tree directory, so the scope above answers it without a second rule. ⛔ **It is still
-named in the report**: a tree dropped silently is a tree nothing ever mentions, which is how three
-of them outlived a merge with nothing reaping them.
+needing one of its own** — such a tree is cut at that harness's managed root rather than one level
+under this project's tree directory, so the scope above answers it without a second rule, and it
+answers a tree at any other depth under that directory the same way. ⛔ **It is still named in the
+report**: a tree dropped silently is a tree nothing ever mentions, which is how three of them
+outlived a merge with nothing reaping them.
 
 ⚠️ **A registration whose directory is already gone is cleared rather than reported forever.**
 Nothing is at stake in one — the tree it names does not exist — and a sweep that left it standing

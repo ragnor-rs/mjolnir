@@ -1483,6 +1483,7 @@ it on the event that opens a session.
 | 25 | The event hands the sweep the configured list, `delete_branch`, the tree directory resolved against the code root, and the session's directory | the arguments captured at the boundary | computed |
 | 26 | An entry naming nothing exempts nothing; an entry anchored at the root matches there and nowhere else | the matching rule alone | computed |
 | 27 | A tree whose contents could not be read is unestablished, never empty; an unreadable directory is not all-symlinks | a directory with its mode taken away | computed |
+| 28 | A worktree registered **inside** a work tree is outside the scope, being a level deeper than the leaf, while the work tree itself stays this project's — and that work tree is then kept, with the nested path named as a reader would want it | a real worktree cut inside a work tree, in a project whose tree directory is inside its checkout | computed |
 
 ⚠️ **Check 16 is the one that looks like bookkeeping and is not**, for the reason § 10 gives about
 a carrier the harness kills: what the check holds is that the timeout covers the budget **plus**
@@ -1518,9 +1519,14 @@ what one tree is allowed to cost, an inequality of one second being satisfiable 
   occasion, deliberately — asking per occasion is what produced the accumulation § 10 measures.
   What stands in for it is that nothing uncertain is ever removed, which is checks 1, 2, 3, 6 and 8
   together.
-- **The trees a harness cut for its own helpers.** Checks 10 and 19 hold that they are named and
-  left alone; reaping them is a different question with a different owner, and a sweep that removed
-  them would be removing trees whose branches it never read.
+- **The trees a harness cut for its own helpers.** Checks 10, 19 and 28 hold that they are named
+  and left alone: at the managed root the configured directory sits one level below, which is where
+  such a tree was measured, and at any other depth under that directory, which check 28 places
+  rather than measures. Reaping them is a different question with a different owner, and a sweep
+  that removed them would be removing trees whose branches it never read. ⚠️ **What check 28 also
+  records is the price**: a work tree holding a worktree of any kind is itself kept, that directory
+  being untracked content no rebuild writes again, so the accumulation moves up one level rather
+  than ending.
 - **Ignored files inside a submodule.** The superproject's status says nothing about them — a
   submodule holding only ignored content is clean — while the removal takes the submodule with the
   tree. ⛔ So the measured incident the oracle exists for is reachable again one directory deeper,
