@@ -109,6 +109,13 @@ VERSION_CAPTURE = config.VERSION_CAPTURE
 ENTRY_LEVEL = "## "
 
 
+# What the report hands the walk where there is no version being cut. ⚠️ It is a
+# stand-in and never a default: the report's own mode drops every arm that would
+# compare against it, so nothing here depends on the string -- which is why it
+# says what it is rather than looking like a version somebody might have meant.
+_NO_VERSION = "<no version is being cut>"
+
+
 def _entry_heading(version: str) -> str:
     return f"{ENTRY_LEVEL}{version}"
 
@@ -127,7 +134,7 @@ def _read(path: str) -> str | None:
         return handle.read()
 
 
-def _plan_entry(root: str, entry: dict, version: str) -> dict:
+def _plan_entry(root: str, entry: dict, version: str, reading: bool = False) -> dict:
     """What one file's edit would do, with nothing written.
 
     ⛔ Every field of the answer is stated whether or not the edit can be made,
@@ -135,6 +142,15 @@ def _plan_entry(root: str, entry: dict, version: str) -> dict:
     needs to know *which* file and *why* in the same breath, and a record that
     dropped its own path on the failing arm would name the problem and not the
     subject.
+
+    ⛔ **`reading` drops the arms that are about the version being cut**, which
+    is the one thing the report in this module needs and a plan must never have:
+    asked what a file carries *now*, there is no version being cut, so a
+    changelog already holding whatever version the caller passed is not a
+    finding about the file. ⚠️ Measured as a defect in this module rather than
+    argued: the report read a version out through a plan taken against a stand-in
+    version, and a project whose changelog happened to carry that version read
+    back as unreadable.
     """
     optional = bool(entry.get("optional", False))
     answer = {
@@ -162,7 +178,7 @@ def _plan_entry(root: str, entry: dict, version: str) -> dict:
 
     if entry["kind"] == "changelog":
         heading = _entry_heading(version)
-        if heading in text:
+        if heading in text and not reading:
             answer["because"] = (
                 f"already carries an entry for {version}, which is a release "
                 "somebody started; nothing here merges into it"
@@ -354,10 +370,12 @@ def _report(configuration: config.Config) -> dict:
     root = configuration.code_root()
     files = []
     for entry in stated["files"]:
-        # ⚠️ The version is read through the plan with a placeholder that is
-        # written nowhere: this arm reads and never writes, and a second reader
-        # of the same patterns would be a second rule about them.
-        reading = _plan_entry(root, entry, "0.0.0")
+        # ⚠️ The same walk the plan takes, in its reading mode: a second reader
+        # of the same patterns would be a second rule about them. ⛔ The mode is
+        # what keeps the version handed in from becoming a finding -- there is no
+        # version being cut here, so the stand-in below must reach no arm that
+        # compares against it.
+        reading = _plan_entry(root, entry, _NO_VERSION, reading=True)
         files.append({
             "path": reading["path"],
             "kind": reading["kind"],
@@ -595,6 +613,29 @@ def self_test() -> int:
           f"said {answer['report']!r}")
     check("and the plan still holds for the files that are not the changelog",
           answer["holds"], f"reported {answer['report']!r}")
+
+    print("\nWhat the report reads, and the version it must not treat as a finding:")
+    # ⛔ The arm against this module's own measured defect: the report walks the
+    # same patterns the plan does, and asked what a file carries *now* there is
+    # no version being cut -- so a changelog already holding whatever string the
+    # report hands the walk must not read back as unreadable. ⚠️ Planted on a
+    # changelog carrying the stand-in itself, which is the only value that can
+    # reach the arm at all.
+    root = _a_tree({
+        "CHANGELOG.md": f"# Changelog\n\n{_entry_heading(_NO_VERSION)}\n\nodd but legal\n",
+    })
+    answer = _report(_Stated(root, **log))
+    check("a changelog carrying the report's own stand-in still reads back",
+          answer["release"]["files"][0]["readable"],
+          f"read {answer['release']['files'][0]!r}")
+    check("and the version it reads back is the entry the file carries",
+          answer["release"]["files"][0]["current"] == _NO_VERSION,
+          f"read {answer['release']['files'][0]['current']!r}")
+    # ⚠️ The other direction, which is what keeps the mode from being a blanket
+    # exemption: a *plan* against a version the changelog already carries is
+    # still the stop it was.
+    check("while a plan against a version already there is still refused",
+          not plan(_Stated(root, **log), _NO_VERSION)["holds"], "the plan held")
 
     print("\nWhat a publishing project is told, and what the facet's absence is:")
     root = _a_tree({"build.txt": 'version = "1.0.0"\n'})

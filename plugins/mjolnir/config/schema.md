@@ -244,8 +244,8 @@ File a work item · gate it into committed work · start it · finish it · revi
 cut a release · log the day · keep the session's books · restore a session's context ·
 produce deliverables. Two utilities travel beside the loop without being part of it.
 
-⚠️ **Keeping the session's books and restoring its context are one pair**, and the count moved to
-ten when the second of them was written: bookkeeping persists what happened at a boundary and
+⚠️ **Keeping the session's books and restoring its context are one pair**, and the loop grew by one
+when the second of them was written: bookkeeping persists what happened at a boundary and
 [§ 24](#24-session-restore--the-readings-a-pass-is-resumed-from) restores it at the start of the
 next pass. ⛔ **A pair rather than one role with two modes**, because what each may do is opposite —
 one writes and the other is read-only — and a role free to do both would be free to restore by
@@ -7592,6 +7592,14 @@ reading what the file is for.
 ⛔ **The list is ordered, and the order is the project's.** Nothing here derives it: a project whose
 readme quotes a version its build file declares has a file that must be edited after the one it
 quotes, and a reader that sorted the list would decide that for it.
+
+⚠️ **Where a changelog's entry goes is positional and this section declares no key for it**, which
+is a stated limit rather than a gap: the entry is inserted above the first thing in the file that
+looks like an entry of the same level, and at the head of the file where there is none. ⛔ **So a
+changelog already carrying the version being cut is a stop naming it** — a release somebody started,
+which nothing here merges into. ⚠️ **One observation is behind the level the insert looks for**, so
+a key for it would be a facet invented rather than found; the trigger for stating one is a project
+whose changelog keeps its entries at another level.
 
 ⛔ **A key an entry states that its kind never reads is refused with its own name, in both
 directions** — a key the kind wants and the entry leaves out, and a key the entry carries and the
