@@ -182,6 +182,23 @@ def _steps(block: dict) -> list[dict]:
     return out
 
 
+def _dump(answer: dict) -> str:
+    """The command that took the dump, read out of the plan **by name**.
+
+    ⛔ By name and never by position. The sequence lives in `PREPARED` and a
+    reader that took `steps[0]` would be a second derivation of its order, free
+    to name the wrong command the day that list is reordered -- which is the
+    restated-derivation class a review reads a diff for.
+    """
+    for step in answer["steps"]:
+        if step["step"] == "backup.run":
+            return str(step["command"])
+    # ⚠️ Unreachable while `PREPARED` carries the dump, and reported rather than
+    # raised: this runs inside the message about a failed write, which is the one
+    # place a traceback would replace the fact a reader needs.
+    return "<the plan carries no dump>"
+
+
 def plan(configuration: config.Config, target: str) -> dict | None:
     """The whole ordering, with nothing run and nothing written, or `None`.
 
@@ -323,6 +340,12 @@ def apply(configuration: config.Config, target: str, go: str) -> dict | None:
     if answer is None:
         return None
     answer["written"] = False
+    # ⛔ A field of its own, because `written: False` is **two** outcomes and the
+    # invocation has to tell them apart: a write that was refused or failed, and a
+    # write this target states is the operator's. ⚠️ Without it, a target whose
+    # `apply_by` is `person` reported every deploy as a stop — measured, and
+    # firing on exactly the shape § 35 writes the key for.
+    answer["handed_over"] = False
     answer["ran"] = []
     path = _record_path(configuration, target)
     held = None
@@ -358,6 +381,7 @@ def apply(configuration: config.Config, target: str, go: str) -> dict | None:
     answer["go"] = go
     answer["rehearsal_read_as"] = held.get("rehearsal")
     if answer["apply_by"] == "person":
+        answer["handed_over"] = True
         answer["report"].insert(
             0,
             "⛔ **No write was made.** This target states that a person performs "
@@ -382,8 +406,8 @@ def apply(configuration: config.Config, target: str, go: str) -> dict | None:
             + ". ⛔ **What the store is left holding is unestablished by this "
             "module** and is named rather than omitted: the command may have "
             "written part of what it was asked for, and the verified dump is "
-            f"what a recovery reads. The dump was taken by: "
-            f"{answer['steps'][0]['command']} (§ 35).",
+            f"what a recovery reads. The dump was taken by: {_dump(answer)} "
+            "(§ 35).",
         )
         return answer
     answer["report"].insert(
@@ -708,6 +732,23 @@ def self_test() -> int:
         _a_block()["apply"] in " ".join(answer["report"]),
         f"reported {answer['report'][:1]!r}",
     )
+    # ⛔ **A hand-over is an outcome and not a stop**, which § 35 states and which
+    # the invocation has to agree with: a target whose write is the operator's
+    # reaches this on every single deploy, so reading it as a failure would report
+    # every such deploy as broken. ⚠️ Reproduced before the field existed —
+    # `written` was `False` for both a hand-over and a refused go, and the
+    # invocation read the two the same way and exited 1 for each.
+    check(
+        "the hand-over is marked as one, so the invocation does not read it as a stop",
+        answer.get("handed_over") is True and answer.get("stopped_at") is None,
+        f"answered {answer.get('handed_over')!r}",
+    )
+    refused = apply(by_hand, "a-target", "yes")
+    check(
+        "while a refused go on the same target is not marked handed over",
+        refused.get("handed_over") is not True,
+        f"answered {refused.get('handed_over')!r}",
+    )
     # ⛔ The go is asked either way, which is what `apply_by` does *not* decide:
     # a short go is refused before the hand-over is reached, so the key says who
     # runs the command and never whether it was approved.
@@ -868,8 +909,13 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(answer, indent=2, ensure_ascii=False))
     if args.action == "plan":
         return 0
+    # ⛔ A hand-over is excluded by name rather than by the absence of a stop: it
+    # is the outcome § 35 states for `apply_by: person`, so a status reading it as
+    # a failure would report every deploy to such a target as broken.
     stopped = answer.get("stopped_at") is not None or (
-        args.action == "apply" and answer.get("written") is False
+        args.action == "apply"
+        and answer.get("written") is False
+        and not answer.get("handed_over")
     )
     return 1 if stopped else 0
 

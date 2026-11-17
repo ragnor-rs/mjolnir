@@ -56,11 +56,9 @@ if HERE not in sys.path:
 import check_e2e_register as sibling  # noqa: E402 -- the one base derivation
 import config as reader  # noqa: E402 -- the one reader of the surface
 
-# ⛔ The diff filter, and the two letters it does **not** carry: a path the change
-# *adds* is a new write and is exactly what this rule permits, and a path it
-# copies is an addition under another name. What is forbidden is editing or
-# removing something already applied, which is `M`, `D` and the rename's own
-# removed side.
+# ⛔ The diff filter, and the letters it does **not** carry: a path the change
+# *adds* is a new write and is exactly what this rule permits. What is forbidden
+# is editing or removing something already applied, which is `M` and `D`.
 #
 # ⚠️ **The cost of the other reading is a false refusal, measured against a real
 # project's plausible listing command.** One surveyed carrier detects its pending
@@ -70,7 +68,17 @@ import config as reader  # noqa: E402 -- the one reader of the surface
 # exists for; without it, the command is simply harmless. ⛔ So the letter is left
 # out deliberately and the arm that holds it out is a planted listing command
 # naming a path the change adds, not a comparison against this string.
-FORBIDDEN_FILTER = "MDR"
+FORBIDDEN_FILTER = "MD"
+
+# ⛔ **Rename detection off, and this is the one flag the rule cannot be read
+# without.** A rename is a deletion of the released path spelled as something
+# else, and `git diff --name-only` reports one by its **destination alone** — so
+# with detection on, moving an applied write leaves the released path in no
+# answer and the change reads clean. ⚠️ Reproduced before this flag was added:
+# `--name-status` came back `R100 store/0001.sql store/0009.sql` while
+# `--name-only` printed the destination and nothing else, and the arm planting a
+# rename was green. Off, the same change reports the deletion `D` catches.
+NO_RENAMES = "--no-renames"
 
 
 class Unreadable(RuntimeError):
@@ -124,10 +132,10 @@ def _released(root: str, command: str) -> set[str]:
 
 
 def _rewritten(root: str, base: str) -> set[str]:
-    """Every path this change modifies or deletes, the rename's old side included."""
+    """Every path this change modifies or deletes, a rename counting as a deletion."""
     diff = subprocess.run(
         ["git", "-C", root, "-c", "core.quotePath=false", "diff", "--name-only",
-         f"--diff-filter={FORBIDDEN_FILTER}", base],
+         NO_RENAMES, f"--diff-filter={FORBIDDEN_FILTER}", base],
         capture_output=True, text=True, check=False,
     )
     if diff.returncode != 0:
@@ -420,6 +428,22 @@ def self_test() -> int:
     check(
         "a change deleting an applied write is red too",
         status == 1 and any("store/0002.sql" in line for line in report),
+        f"answered {status} {report!r}",
+    )
+    # ⛔ The evasion a deletion-and-addition is spelled as, and the one this check
+    # was first written blind to: `git diff --name-only` reports a rename by its
+    # **destination** alone, so the released path is in no answer and the change
+    # reads clean. ⚠️ Reproduced before the fix: `R100 store/0001.sql
+    # store/0009.sql` came back from `--name-status` while `--name-only` printed
+    # `store/0009.sql` and nothing else.
+    subprocess.run(["git", "-C", repo, "checkout", "-q", "--", "."], check=True,
+                   capture_output=True)
+    subprocess.run(["git", "-C", repo, "mv", "store/0001.sql", "store/0100.sql"],
+                   check=True, capture_output=True)
+    status, report = _run_against([_a_target()])
+    check(
+        "a change renaming an applied write is red, naming the path it was applied under",
+        status == 1 and any("store/0001.sql" in line for line in report),
         f"answered {status} {report!r}",
     )
 

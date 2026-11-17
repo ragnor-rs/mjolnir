@@ -7521,7 +7521,8 @@ deploy:
 [§ 35](#35-the-live-data-step-a-deploy-performs-and-the-rails-it-is-performed-under)'s** — the
 division this facet already has with § 16 over `requires` and with § 4.2 over `advances`. A target
 that writes to a live store carries the part of reaching it that cannot be undone, and ⚠️ **a target
-that does not omits the key**, which is five of the seven carriers read above.
+that does not omits the key**, which § 35 states is most of the carriers read above. ⛔ **The figure
+is stated there and not here**, a count written twice being a count two sections may disagree on.
 
 **[§ 29](#29-the-hosts-run-operations) states what a role may do with a run and
 [§ 4.2](#42-status--an-ordered-set-of-name-role-writer) states who may write a status; this section

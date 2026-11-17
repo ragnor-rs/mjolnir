@@ -4666,9 +4666,11 @@ def _validate_live_data_step(where: str, entry: dict, facts: dict) -> None:
     of is an irreversible write to somebody's live store performed under whatever
     the session improvised, which is the state § 33 gated and nothing guarded.
 
-    ⚠️ The block itself is **optional** -- five of the seven surveyed carriers
-    write no live data at all -- so an entry that omits it is a deploy exactly as
-    § 33 leaves it and nothing below runs.
+    ⚠️ The block itself is **optional**, most of the surveyed carriers writing no
+    live data at all, so an entry that omits it is a deploy exactly as § 33 leaves
+    it and nothing below runs. ⛔ **The figure is § 35's and is not carried here**:
+    a count in a reader is a copy of a measurement that lives in the record, and
+    the remedy for one is to delete it rather than to keep it in step.
     """
     if "live_data_step" not in entry:
         return
