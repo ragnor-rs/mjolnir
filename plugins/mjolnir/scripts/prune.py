@@ -205,14 +205,15 @@ def registered(root: str | Path, tree_dir: str | Path | None = None) -> list[Reg
     repository with nothing reaping them.
 
     ⛔ **`outside` is read against the project's own `tree_dir` and not against the checkout.**
-    Measured from both directions in one review: `claim.a_work_tree` answers *nesting below the
-    main checkout*, which is the right question for a release pointed at one tree and the wrong one
-    for a sweep that enumerates. Against it, a project whose `tree_dir` is **inside** its checkout
-    -- which § 10 names as a measured placement -- has every one of its work trees read as a
-    helper's and prunes nothing, while a worktree somebody cut by hand outside every tree directory
-    is read as a candidate and has its branch and published ref deleted on a landed verdict.
-    ⚠️ **The configured directory answers both**: a tree under it is this project's, whether or not
-    that directory is inside the checkout, and a tree outside it is nobody's business here.
+    Measured from both directions in one review: reading *nesting below the main checkout* instead
+    makes a project whose `tree_dir` is **inside** its checkout -- which § 10 now makes the
+    placement every project configures -- have every one of its work trees read as a helper's and
+    prune nothing, while a worktree somebody cut by hand outside every tree directory is read as a
+    candidate and has its branch and published ref deleted on a landed verdict.
+    ⚠️ **The configured directory answers both**: a tree one level under it is this project's,
+    whether or not that directory is inside the checkout, and a tree anywhere else is nobody's
+    business here. ⛔ **`claim.a_work_tree` is where that comparison lives**, this carrier holding
+    no second copy of it -- the release's single lookup and this enumeration ask one question.
 
     ⛔ **`-z`, because a newline in a path is otherwise a record boundary.** Git's own
     documentation recommends it for exactly that, and the consequence was not cosmetic: a truncated
@@ -264,16 +265,14 @@ def _entry(
     main = main_tree is not None and os.path.realpath(path) == os.path.realpath(main_tree)
     if main:
         outside = False
-    elif tree_dir is not None:
-        outside = not _under(_resolve(tree_dir, main_tree), path)
     else:
-        # ⚠️ **The fallback, for a caller that states no directory**, which the hook and the
-        # person-run arm never are: the helper-tree reading the claim already performs. Weaker
-        # than the configured answer in both directions — it cannot see a project whose trees are
-        # nested, and it admits a worktree somebody cut by hand — and it is the reading this
-        # carrier had before `tree_dir` was passed in, kept so that a caller with no configuration
-        # to hand gets the old answer rather than an empty sweep.
-        outside = main_tree is not None and not claim.a_work_tree(path, main_tree)
+        # ⛔ **One reading, asked here by an enumeration and one subsection up by a single
+        # lookup** — § 10's scope is the configured directory at exactly one level, and holding it
+        # in two places is holding two answers. ⚠️ **The fallback is inside that reading rather
+        # than beside it**: handed no directory, it answers *not nested below the checkout*, which
+        # is weaker in both directions and is what a caller with no configuration gets. Neither
+        # the hook nor the person-run arm is such a caller.
+        outside = main_tree is not None and not claim.a_work_tree(path, main_tree, tree_dir)
     return Registered(
         path=path,
         branch=branch,
@@ -284,40 +283,10 @@ def _entry(
     )
 
 
-def _resolve(tree_dir: str | Path | None, main_tree: str | None) -> str | None:
-    """`tree_dir` as a place, anchored on the **main checkout** and not on the caller's tree.
-
-    ⛔ **The anchor is the rule and getting it wrong is silent.** § 10's `tree_dir` is where trees
-    are cut relative to the checkout — `../<project>-trees` on the two measured placements — and
-    the role that cuts them runs in that checkout. This carrier does not: it runs on the event that
-    opens a session, and that session is routinely standing *in* one of the trees, where the
-    configuration resolves to the tree itself.
-    ⚠️ **Measured by running the shipped sweep on this repository**: joined to the tree rather than
-    to the checkout, `../mjolnir-wt` resolved to a directory one level too deep that does not
-    exist, so every real tree read as *outside* and the sweep became the no-op it exists to end.
-    """
-    if tree_dir is None:
-        return None
-    stated = str(tree_dir)
-    if os.path.isabs(stated) or main_tree is None:
-        return stated
-    return os.path.normpath(os.path.join(main_tree, stated))
-
-
-def _under(directory: str | Path | None, path: str) -> bool:
-    """Whether `path` is at or below `directory`, both resolved. False where there is no directory.
-
-    ⚠️ Realpaths on both sides, which is the one thing this comparison cannot skip: a tree
-    directory reached through a symlinked parent -- the ordinary shape of a temporary directory on
-    one of the two platforms measured -- compares unequal as text and equal as a place.
-    """
-    if directory is None:
-        return False
-    try:
-        here, root = os.path.realpath(path), os.path.realpath(str(directory))
-    except OSError:
-        return False
-    return here == root or here.startswith(root + os.sep)
+# ⛔ **The anchoring and the containment both live in `claim`**, which is where the work-tree
+# reading they serve lives: this carrier held its own copy of each, and a copy of a rule is a
+# second answer allowed to drift from the first. `claim.tree_root` carries the anchor and the
+# measurement behind it; the comparison is inside `claim.a_work_tree`.
 
 
 # --------------------------------------------------------------------------------------------
@@ -1314,7 +1283,9 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         try:
             # Standing in the tree, which is where this carrier's own session usually is.
             os.chdir(tree)
-            resolved = _resolve("../../trees", claim.git(work, "rev-parse", "--show-toplevel").stdout.strip())
+            resolved = claim.tree_root(
+                "../../trees", claim.git(work, "rev-parse", "--show-toplevel").stdout.strip()
+            )
             suite.ok(
                 "⛔ a relative tree directory resolves against the main checkout, not the caller",
                 os.path.realpath(resolved) == os.path.realpath(_trees(tmp)),
@@ -1333,7 +1304,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             os.chdir(here)
         suite.ok(
             "and an absolute directory is taken as stated, which is what the fixtures above pass",
-            _resolve(_trees(tmp), work) == _trees(tmp),
+            claim.tree_root(_trees(tmp), work) == _trees(tmp),
         )
 
     # ⛔ The other direction of the same scope, and the one a review found as a silent no-op: § 10
@@ -1363,6 +1334,49 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             "read as a helper's",
             not Path(tree).exists() and len(under.removed) == 1,
             under.report(),
+        )
+
+    # ⛔ The depth half of the same scope, in a world of its own because the arm above asserts a
+    # removal and this one plants something inside the tree that would be removed. What a harness
+    # cuts for a helper asked for *by a session standing in a work tree* lands inside that tree:
+    # under the configured directory on any at-or-below reading, and one level deeper than a leaf.
+    with tempfile.TemporaryDirectory() as tmp:
+        _origin, work = _world(tmp)
+        inside = Path(work) / ".worktrees"
+        inside.mkdir()
+        branch, tree = "feature/9-deep", str(inside / "9-deep")
+        claim.take(work, branch, tree)
+        helper = Path(tree) / ".claude" / "worktrees" / "helper"
+        helper.parent.mkdir(parents=True, exist_ok=True)
+        claim.git(work, "worktree", "add", str(helper), "-b", "chore/helper", "HEAD")
+        seen = registered(work, str(inside))
+        mine = [t for t in seen if os.path.realpath(t.path) == os.path.realpath(tree)]
+        theirs = [t for t in seen if os.path.realpath(t.path) == os.path.realpath(str(helper))]
+        suite.ok(
+            "⛔ a helper's tree nested inside a work tree reads as outside the scope, being a "
+            "level deeper than the leaf",
+            len(theirs) == 1 and theirs[0].outside,
+            str([(t.path, t.outside) for t in seen]),
+        )
+        suite.ok(
+            "while the work tree holding it is still this project's",
+            len(mine) == 1 and not mine[0].outside,
+            str([(t.path, t.outside) for t in seen]),
+        )
+        # ⚠️ And the consequence this project's own `regenerable` comment states: a tree still
+        # holding one is kept and the path reported, rather than removed with it inside. Measured
+        # here rather than asserted of the oracle -- the helper's directory is untracked content
+        # no rebuild writes again, which is the oracle's own reading and not a second rule.
+        held = sweep(work, [], "never", tree_dir=str(inside), occupants=lambda _p: [])
+        suite.ok(
+            "⛔ so the work tree is kept rather than removed with a helper's tree inside it",
+            Path(tree).exists() and not held.removed and helper.exists(),
+            held.report(),
+        )
+        suite.ok(
+            "and the report names the path a reader would want to rescue",
+            ".claude/worktrees/helper" in held.report(),
+            held.report(),
         )
         # And the fallback, which is what the sweep had before the directory was passed in: with
         # no directory stated the same tree reads as a helper's and is kept. Stated as the weaker

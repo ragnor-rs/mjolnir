@@ -488,14 +488,24 @@ branch_model:
   kind: worktree
   # Each session takes its own tree; the primary checkout is not where an issue's work happens.
   # It is also what the registered marketplace path points at, so leaving it alone keeps it
-  # serving the procedure while a branch is in flight beside it.
+  # serving the procedure while a branch is in flight in a tree under it. ⚠️ Under rather than
+  # beside, since the relocation below: what keeps that path serving main is that the trees are
+  # ignored and no reader of the marketplace descends into them, rather than where they sit.
+  # `.claude-plugin/marketplace.json` names `./plugins/mjolnir` outright, so discovery is
+  # manifest-driven, and both shipped gates enumerate with `git ls-files`.
   work_in_shared_checkout: never
   parallel_trees: true
-  # A sibling of the shared checkout rather than a directory inside it: that checkout is the
-  # registered marketplace path every session serves, so nesting a per-item tree under it would
-  # put one branch's working files inside the path that is supposed to be serving main. The leaf
-  # is the item's own number and then its title's slug, derived rather than stated here — § 10.
-  tree_dir: "../mjolnir-wt"
+  # One level under the agent harness's own managed root, which § 10 makes the placement rather
+  # than a preference: the harness answers *allow* for a session moved into a path below
+  # `.claude/worktrees/` and *ask* for anywhere else, and returns that ask before it reads any
+  # permission rule — so every entry into a sibling directory needed a person, measured on this
+  # repository for the length of time trees were cut at `../mjolnir-wt`. ⚠️ `items/` rather than
+  # the managed root itself, because the harness cuts its helpers' trees directly under that root:
+  # one level down is what keeps a tree this procedure cut apart from one it did not, which is the
+  # discriminator § 10 may not spell as a name. The leaf is the item's own number and then its
+  # title's slug, derived rather than stated here — § 10. ⚠️ Relative, so it resolves against this
+  # checkout and no other.
+  tree_dir: ".claude/worktrees/items"
   # Null because there is nothing to point at: a tree here needs no dependency install, no asset
   # copy, no port, no container, and nothing to tear down. The cheapest proof that a project
   # whose trees are free to create still has to state the model.
@@ -503,8 +513,10 @@ branch_model:
   # The two ignored paths a tree here acquires by being worked in, both written again by the next
   # run that needs them: the interpreter's byte-code cache, and the file the desktop drops into
   # any directory somebody opens. ⚠️ `.claude/worktrees/` is deliberately absent even though
-  # `.gitignore` names it: a tree a harness cut for a helper is not written back by anything, so a
-  # tree still holding one is kept and the path reported rather than removed with it inside.
+  # `.gitignore` names it, and the relocation above makes the reason wider rather than narrower:
+  # that path now holds this project's own trees as well as the ones a harness cut for a helper,
+  # and neither is written back by anything — so a tree still holding either is kept and the path
+  # reported rather than removed with it inside.
   regenerable:
     - "__pycache__"
     - ".DS_Store"

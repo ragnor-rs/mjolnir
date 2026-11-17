@@ -552,7 +552,31 @@ class Liveness:
     unestablished: list[str] = field(default_factory=list)
 
 
-def a_work_tree(path: str, main_tree: str) -> bool:
+def tree_root(tree_dir: str | Path | None, main_tree: str | None) -> str | None:
+    """`tree_dir` as a place, anchored on the **main checkout** and not on the caller's tree.
+
+    ⛔ **The anchor is the rule and getting it wrong is silent.** § 10's `tree_dir`
+    is where trees are cut relative to the checkout, and the role that cuts them
+    runs in that checkout. The carriers that read them do not: the sweep runs on
+    the event that opens a session, and that session is routinely standing *in*
+    one of the trees, where a relative value resolves to the tree itself.
+    ⚠️ **Measured by running the shipped sweep on this repository**: joined to the
+    tree rather than to the checkout, `../mjolnir-wt` resolved to a directory one
+    level too deep that does not exist, so every real tree read as *outside* and
+    the sweep became the no-op it exists to end.
+
+    ⚠️ **An absolute value is taken as written**, which § 10 names as the shape a
+    project may not copy: one directory for every project that states it.
+    """
+    if tree_dir is None:
+        return None
+    stated = str(tree_dir)
+    if os.path.isabs(stated) or main_tree is None:
+        return stated
+    return os.path.normpath(os.path.join(main_tree, stated))
+
+
+def a_work_tree(path: str, main_tree: str, tree_dir: str | Path | None = None) -> bool:
     """Is this registered worktree one a role could be working an item in?
 
     ⛔ **A tree the harness cut for a helper is not a work tree**, and § 10's
@@ -560,28 +584,45 @@ def a_work_tree(path: str, main_tree: str) -> bool:
     holding a directory from a session working in it, and this is a helper
     *tree*, registered in the repository by whatever spawned it.
 
-    ⚠️ **Nesting is the test, because naming is not available.** § 10 refuses a
-    list of process names for the process case -- a helper belongs to whichever
-    harness ships it, so naming one puts a project's value in shared code -- and
-    a directory name is the same value under a different spelling. What is
-    structural instead: the main checkout is a work tree under `in_place`, where
-    the branch is held in the checkout itself; a tree cut at `tree_dir` is one
-    under `worktree`, and that is a location outside the checkout's own tree. A
-    registered worktree *nested below* the main checkout is therefore neither, in
-    either model.
+    ⚠️ **The configured directory is the test, because naming is not available.**
+    § 10 refuses a list of process names for the process case -- a helper belongs
+    to whichever harness ships it, so naming one puts a project's value in shared
+    code -- and a directory name is the same value under a different spelling.
+    What is structural instead: the main checkout is a work tree under
+    `in_place`, where the branch is held in the checkout itself; under `worktree`
+    it is a tree **one level under `tree_dir` and no deeper**, that being where
+    the leaf § 10 derives sits.
 
-    ⚠️ **It fails in the direction that keeps a tree.** A project whose trees did
-    live inside its checkout would resolve none of them here and would name the
-    tree explicitly instead, which `take` already requires and `release` already
-    accepts -- a tree not found rather than the wrong tree removed.
+    ⛔ **The depth is half the test rather than tidiness.** A harness resolves its
+    own managed root against the repository holding the session's working
+    directory, so a session standing in a work tree has its helpers cut *inside*
+    that tree -- under the configured directory on any at-or-below reading, and
+    at a depth no leaf has. Both placements a helper's tree takes are answered by
+    one comparison: directly at the managed root, which `tree_dir` sits one level
+    below, and inside a work tree, which is one level deeper than any leaf.
+
+    ⚠️ **Where no directory is handed over the nesting reading is the fallback**,
+    and § 10 states it as such: weaker in both directions -- blind to a project
+    whose trees are nested, and admitting a worktree somebody cut by hand beside
+    the checkout -- and kept so a caller with nothing to resolve gets the older
+    answer rather than an empty one. ⛔ No role on this route is such a caller.
     """
     here, main = os.path.realpath(path), os.path.realpath(main_tree)
     if here == main:
         return True
+    configured = tree_root(tree_dir, main)
+    if configured is not None:
+        # ⚠️ Realpaths on both sides, which is the one thing this comparison cannot
+        # skip: a tree directory reached through a symlinked parent -- the ordinary
+        # shape of a temporary directory on this platform -- compares equal to
+        # nothing otherwise.
+        return os.path.dirname(here) == os.path.realpath(configured)
     return not here.startswith(main + os.sep)
 
 
-def tree_for_branch(root: str | Path, branch: str) -> str | None:
+def tree_for_branch(
+    root: str | Path, branch: str, tree_dir: str | Path | None = None
+) -> str | None:
     """The working tree holding this branch on this machine, or None.
 
     ⛔ A helper's tree is not an answer here. `git worktree list` reports every
@@ -590,10 +631,16 @@ def tree_for_branch(root: str | Path, branch: str) -> str | None:
     at a finished helper's tree it removed it as though it were the item's, and
     at a live one it demanded the override § 10 reserves for breaking another
     session's work. `a_work_tree` above states which is which.
+
+    ⚠️ **`tree_dir` is handed down rather than resolved here**, for the reason it
+    is a parameter at all one function up: this module reads no configuration, and
+    the directory is the project's own value. Omitted, the answer is the fallback
+    reading `a_work_tree` states -- which for a project whose trees are nested is
+    *no tree found*, and which is why every caller on the route passes it.
     """
     proc = git(root, "worktree", "list", "--porcelain")
-    # ⚠️ The first entry is the main worktree, which is what the nesting test is
-    # taken against -- rather than `root`, which may be any worktree of the
+    # ⚠️ The first entry is the main worktree, which is what the directory is
+    # anchored on -- rather than `root`, which may be any worktree of the
     # repository, including the one this process is standing in.
     main_tree: str | None = None
     path: str | None = None
@@ -605,7 +652,7 @@ def tree_for_branch(root: str | Path, branch: str) -> str | None:
         elif line.startswith("branch ") and line[len("branch ") :].strip() == REFS_PREFIX + branch:
             # A branch is checked out in at most one worktree, so this is the
             # only candidate and there is nothing further to read.
-            if path and main_tree and a_work_tree(path, main_tree):
+            if path and main_tree and a_work_tree(path, main_tree, tree_dir):
                 return path
             return None
     return None
@@ -799,6 +846,7 @@ def read_liveness(
     created_at: str | None = None,
     now: "datetime | None" = None,
     window: int = CUT_WINDOW_SECONDS,
+    tree_dir: str | Path | None = None,
 ) -> Liveness:
     """`created_at` is when *this* ref came into existence, read from the host's own record.
 
@@ -881,8 +929,11 @@ def read_liveness(
         # after every arm that could overturn it -- the host's record of a merge sits two arms
         # below, and an early return made it unreachable.
 
-    # Arm 2: a tree on this machine, with someone in it.
-    tree = tree_for_branch(root, branch)
+    # Arm 2: a tree on this machine, with someone in it. ⛔ The configured directory reaches this
+    # arm or the arm goes blind: for a project whose trees are nested, the fallback reading
+    # resolves none of them, and a live sibling's tree stops being visible here at all -- which is
+    # one of the two protections § 10 keeps against two sessions on one item.
+    tree = tree_for_branch(root, branch, tree_dir)
     if tree:
         occupied = process_in(tree)
         if occupied:
@@ -1049,7 +1100,11 @@ class Status:
 
 
 def status(
-    root: str | Path, branch: str, remote: str = "origin", integration: str | None = None
+    root: str | Path,
+    branch: str,
+    remote: str = "origin",
+    integration: str | None = None,
+    tree_dir: str | Path | None = None,
 ) -> Status:
     url = remote_url(root, remote)
     integration = integration_branch(root, remote, integration)
@@ -1062,7 +1117,11 @@ def status(
             taken=bool(sha),
             ref_sha=sha,
             holder=Holder(unestablished=["the project has no remote, so the claim is local-only"]),
-            liveness=read_liveness(root, remote, branch, integration, sha) if sha else None,
+            liveness=(
+                read_liveness(root, remote, branch, integration, sha, tree_dir=tree_dir)
+                if sha
+                else None
+            ),
             local_only=True,
         )
 
@@ -1095,7 +1154,9 @@ def status(
                 unestablished=["the ref does not exist on the host, so it records no actor"]
             ),
             liveness=(
-                read_liveness(root, remote, branch, integration, here) if here else None
+                read_liveness(root, remote, branch, integration, here, tree_dir=tree_dir)
+                if here
+                else None
             ),
             local_only=False,
         )
@@ -1107,7 +1168,9 @@ def status(
         taken=True,
         ref_sha=sha,
         holder=holder,
-        liveness=read_liveness(root, remote, branch, integration, sha, holder.since),
+        liveness=read_liveness(
+            root, remote, branch, integration, sha, holder.since, tree_dir=tree_dir
+        ),
         local_only=False,
     )
 
@@ -1180,12 +1243,16 @@ class ItemStatus:
 
 
 def status_for_item(
-    root: str | Path, item: str, remote: str = "origin", integration: str | None = None
+    root: str | Path,
+    item: str,
+    remote: str = "origin",
+    integration: str | None = None,
+    tree_dir: str | Path | None = None,
 ) -> ItemStatus:
     integration = integration_branch(root, remote, integration)
     local_only = not remote_url(root, remote)
     readings = [
-        (branch, status(root, branch, remote, integration))
+        (branch, status(root, branch, remote, integration, tree_dir))
         for branch, _ in refs_for_item(root, remote, item)
     ]
     return ItemStatus(item=str(item), readings=readings, local_only=local_only)
@@ -1348,6 +1415,7 @@ def release(
     force: bool = False,
     keep_ref: bool = False,
     here: str | None = None,
+    tree_dir: str | Path | None = None,
 ) -> str:
     """Give the claim up: the ref first, then the tree and the local branch.
 
@@ -1387,7 +1455,7 @@ def release(
     `status` reads a claim whose work has landed as spent whether or not its ref is still
     standing, so the item is free again either way and a kept ref holds nothing against anybody.
     """
-    doomed = tree or tree_for_branch(root, branch)
+    doomed = tree or tree_for_branch(root, branch, tree_dir)
     # ⛔ Before the ref deletion and not beside the tree removal: a refusal has to leave the claim
     # whole. Checked where `release` is entered, so a half-released claim is never this guard's.
     # ⚠️ `here` is the directory to answer about, for a caller acting on behalf of a session
@@ -1433,14 +1501,20 @@ def release(
             )
 
     if not force and remote_url(root, remote):
-        held = status(root, branch, remote, integration)
+        held = status(root, branch, remote, integration, tree_dir)
         # ⛔ The test is **landed or held here**, not *live*. Keying on live left the orphan case
         # open, and the orphan case includes a claim somebody took a minute ago: from any other
         # clone a fresh claim has no commits and no tree, so it reads as an orphaned candidate --
         # and a release keyed on live would delete it in silence. That is the two-sessions-on-one
         # -item failure the claim exists to prevent, reintroduced through the other end.
         spent = held.liveness is not None and held.liveness.landed
-        if held.taken and not spent and not tree_for_branch(root, branch):
+        # ⛔ `tree_for_branch` and not `doomed`: a `--tree` the caller named says which tree to
+        # remove and is no evidence that this machine holds the claim, which is what this guard
+        # asks. ⚠️ And it takes the configured directory for the same reason arm 2 of liveness
+        # does -- without it, a project whose trees are nested resolves none of them and every
+        # unlanded release is refused into `--force`, the override § 10 reserves for a claim held
+        # somewhere else.
+        if held.taken and not spent and not tree_for_branch(root, branch, tree_dir):
             raise ClaimError(
                 f"refused: the claim on `{branch}` is not spent and is not held in a tree here.\n"
                 f"{held.report()}\n"
@@ -1471,14 +1545,22 @@ def release(
 
 
 def claim_free(
-    root: str | Path, branch: str, remote: str = "origin", integration: str | None = None
+    root: str | Path,
+    branch: str,
+    remote: str = "origin",
+    integration: str | None = None,
+    tree_dir: str | Path | None = None,
 ) -> tuple[bool, str]:
     """§ 5's predicate. One statement of one question: is this ref taken.
 
     ⛔ Not `assignee_matches_role`, which asks whether the person on the item is the one the role
     acts for -- a different question on a different store, per § 10.
+
+    ⚠️ The verdict rests on `taken` alone, and the directory is still handed down: what it reaches
+    is the **report** a person reads under the verdict, which without it loses the tree arm and
+    says less about a claim than the same reading taken anywhere else on the route.
     """
-    held = status(root, branch, remote, integration)
+    held = status(root, branch, remote, integration, tree_dir)
     return (not held.taken), held.report()
 
 
@@ -2619,6 +2701,66 @@ def self_test() -> int:
         suite.ok("so the release that removed it as the item's tree removes nothing",
                  nested.exists(), said or "")
 
+    print("\nthe work tree is the configured directory, one level under it:")
+
+    # ⛔ The placement § 10 states: `tree_dir` inside the checkout, one level under the harness's
+    # own managed root, with that root also holding the trees a harness cuts for its helpers. The
+    # fixture spells no harness's directory -- the leaf names below are this project's own -- and
+    # every arm is a real registered worktree, because `git worktree list` is what misread them.
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+        managed = Path(one) / ".claude" / "worktrees"
+        configured = managed / "items"
+        item_tree = configured / "7-a-thing"
+        item_tree.parent.mkdir(parents=True, exist_ok=True)
+        take(one, "feature/item-7", str(item_tree))
+
+        found = tree_for_branch(one, "feature/item-7", str(configured))
+        suite.ok("⛔ a tree one level under the configured directory resolves, nested or not",
+                 found is not None and os.path.realpath(found) == os.path.realpath(item_tree),
+                 str(found))
+        suite.ok("⚠️ and handed no directory the fallback answers nothing, which § 10 states",
+                 tree_for_branch(one, "feature/item-7") is None,
+                 str(tree_for_branch(one, "feature/item-7")))
+
+        # A helper's tree at the managed root itself -- the directory `tree_dir` sits one level
+        # below, which is the placement that made a location test possible at all.
+        beside = managed / "helper-one"
+        git(one, "worktree", "add", str(beside), "-b", "chore/helper-one", "HEAD")
+        suite.ok("⛔ a tree at the managed root beside it is no work tree of this project's",
+                 not a_work_tree(str(beside), one, str(configured)),
+                 str(beside))
+
+        # And a helper's tree cut from *inside* a work tree, which is where a harness puts one
+        # when the session asking for it is standing in the item's tree.
+        within = item_tree / ".claude" / "worktrees" / "helper-two"
+        within.parent.mkdir(parents=True, exist_ok=True)
+        git(one, "worktree", "add", str(within), "-b", "chore/helper-two", "HEAD")
+        suite.ok("⛔ and one nested inside a work tree is not either, being a level deeper",
+                 not a_work_tree(str(within), one, str(configured)),
+                 str(within))
+
+        # ⛔ Each answer has to come from the reading rather than from an unregistered fixture:
+        # the scan is read directly, as the nesting case above reads it.
+        listed = git(one, "worktree", "list", "--porcelain").stdout
+        suite.ok("and the scan carried all three, so the reading is what told them apart",
+                 all(os.path.realpath(str(p)) in listed for p in (item_tree, beside, within)),
+                 listed)
+
+        # ⛔ The guard this feeds, both ways round: a claim that is neither landed nor held in a
+        # tree *here* is a person's call, and with the directory withheld every nested tree reads
+        # that way -- which turns the ordinary release of one's own unlanded claim into the
+        # override § 10 reserves for breaking somebody else's.
+        refused = _message(lambda: release(one, "feature/item-7", str(item_tree)))
+        suite.ok("⛔ so the release of an unlanded claim is refused where the directory is withheld",
+                 refused is not None and item_tree.exists(), refused or "")
+        quiet = _message(
+            lambda: release(one, "feature/item-7", str(item_tree), tree_dir=str(configured))
+        )
+        suite.ok("and goes through where it is handed over, with no override spent",
+                 quiet is None and not item_tree.exists(), quiet or "")
+
     print("\nreleasing somebody else's live claim:")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -3048,12 +3190,18 @@ def main(argv: list[str]) -> int:
             # than being dropped: one of `--tree-dir` and `--tree` is needed, which argparse states
             # as neither-required and the carrier states as a refusal naming both forms.
             node.add_argument("--tree", required=False)
-        if name == "take":
-            node.add_argument(
-                "--tree-dir",
-                default=None,
-                help="`branch_model.tree_dir` (§ 10); with --item and --title, derives --tree",
-            )
+        # ⛔ On all three and not on `take` alone. `take` derives the tree from it; the other two
+        # read it, because the work-tree test is keyed on the configured directory and a command
+        # that is handed none falls back to the weaker nesting reading -- which for a project whose
+        # trees are nested resolves no tree at all, taking the liveness arm and the release guard
+        # with it. ⚠️ Optional on each: the fallback is § 10's stated answer for a caller with
+        # nothing to resolve, not an error.
+        node.add_argument(
+            "--tree-dir",
+            default=None,
+            help="`branch_model.tree_dir` (§ 10); for `take`, with --item and --title, derives "
+            "--tree; for `release` and `status`, what the work-tree reading is keyed on",
+        )
         if name == "release":
             # ⛔ A person saying it, which is the only thing § 10 permits to break a live claim.
             node.add_argument(
@@ -3106,6 +3254,7 @@ def main(argv: list[str]) -> int:
                     args.integration,
                     force=args.force,
                     keep_ref=args.keep_ref,
+                    tree_dir=args.tree_dir,
                 )
             )
         else:
@@ -3117,9 +3266,17 @@ def main(argv: list[str]) -> int:
                 )
                 return 2
             if args.item:
-                print(status_for_item(args.repo_root, args.item, args.remote, args.integration).report())
+                print(
+                    status_for_item(
+                        args.repo_root, args.item, args.remote, args.integration, args.tree_dir
+                    ).report()
+                )
             elif args.branch:
-                print(status(args.repo_root, args.branch, args.remote, args.integration).report())
+                print(
+                    status(
+                        args.repo_root, args.branch, args.remote, args.integration, args.tree_dir
+                    ).report()
+                )
             else:
                 print("`status` needs `--item` or `--branch`.", file=sys.stderr)
                 return 2
