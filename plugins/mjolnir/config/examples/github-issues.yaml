@@ -169,6 +169,11 @@ body_sections:
     read_by: "the role that deploys a batch"
     # The green side, without which every change needing nothing would have to invent something.
     nothing_needed: "Nothing."
+    # Before the script, and not the procedure's to perform: what this section carries is work on
+    # a machine the procedure holds no credential for, so the deploy asks and nothing is invoked
+    # until the answer comes back.
+    when: before
+    answered_by: human
 
 carriers:
   day_log: skill

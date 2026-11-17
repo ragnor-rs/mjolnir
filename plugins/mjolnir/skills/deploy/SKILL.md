@@ -1,6 +1,6 @@
 ---
 name: deploy
-description: Put what has landed onto one of the project's own deploy targets and move the items it carried — the target read from configuration rather than from its name, a preflight that writes nothing, one go for this deploy, the project's own invocation, the delivery read from what the run printed rather than from how it exited, and a batch assembled from the tracker and narrowed by the project's own command, a release's grouping held to the role its items must already stand in, and the grouping marked released or the step handed to a person. Use when asked to deploy, to release, to ship to staging or production, to publish a batch, or to put the current branch on an environment.
+description: Put what has landed onto one of the project's own deploy targets and move the items it carried — the target read from configuration rather than from its name, a preflight that writes nothing, one go for this deploy, the project's own invocation, the delivery read from what the run printed rather than from how it exited, a batch assembled from the tracker and narrowed by the project's own command, the steps the batch's own changes owe performed where each one is placed — the ones owed before the script holding the invocation and the ones owed after it holding only the items resting on them — a release's grouping held to the role its items must already stand in, and the grouping marked released or the step handed to a person. Use when asked to deploy, to release, to ship to staging or production, to publish a batch, or to put the current branch on an environment.
 argument-hint: "[<the target's name>]"
 ---
 
@@ -93,9 +93,9 @@ what this step does is run it.
   ([`§ 10`](../../config/schema.md#exclusive-resources)). A refusal there is a place to come back
   for rather than a failure: the deploy is retried once one frees, and the reply says it waited.
 
-## 4. The batch, and what the item side of it is
+## 4. The batch, what the item side of it is, and what the changes owe
 
-⛔ **Two sources and neither alone is the batch**, by
+**4a. The batch.** ⛔ **Two sources and neither alone is the batch**, by
 [`§ 33 → The batch`](../../config/schema.md#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong):
 the entry's `batch` command names the candidates, and each candidate's **role is read from the
 tracker at the point it is advanced** in step 8 — never from a value read here.
@@ -151,11 +151,57 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
 - **A target stating `requires_role: none` has no precondition and this reads nothing**, which is a
   stated configuration rather than a check that passed.
 
-**And what the changes in the batch owe the target is collected here**, where
+**4b. What the changes in the batch owe this target**, where
 [`§ 20`](../../config/schema.md#20-the-sections-a-pull-request-body-must-carry) puts it: a section
-one role writes and this one collects out of every change the batch carries. ⛔ **Collected now and
-run in step 7**, never before the go — and a project whose `body_sections` is `[]` has nothing to
-collect, which is a stated configuration.
+one role writes and this one collects out of every change the batch carries. ⛔ **Collected here
+and performed where each entry's `when` puts it** —
+[`§ 33`](../../config/schema.md#what-a-change-in-the-batch-owes-this-target-and-where-the-step-falls)
+states which, and this file chooses neither. A project whose `body_sections` is `[]` has nothing to
+collect, which is a stated configuration rather than a change that owed nothing.
+
+⛔ **The reading is the gate's own and is never made by eye**, which is what the collecting mode of
+the shipped checker is for: whether a section states work or closes with the project's *nothing*
+answer turns on a normalisation — a list marker, a trailing period, the emphasis a body wraps a
+line in, its case — and a role reading the section itself is a second grammar, free to disagree with
+the run that held the same body on the host.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check_body_sections.py" --collect \
+  --body-file <the change's body, as the host holds it> --skills-root <the skills root>
+```
+
+- **It is no verdict about the change** and its status is not one: the gate is what holds a body,
+  and a section it reports `unheld` is that run's answer to give rather than this one's.
+  ⛔ **An `unheld` section is a step this role cannot establish either way**
+  ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)), reported as that
+  and never as answered — ⚠️ **and which bodies read that way is the gate's own list and is not
+  copied here**, a second statement of it in a role being free to disagree with the run.
+- **It exits 3 where the project states no section**, which is the stated absence and not a run
+  that found nothing.
+- ⛔ **One change at a time, and every change in the batch.** A step is owed by one change, so a
+  reading taken over fewer changes than the batch carries is a step nobody collected.
+
+**Then the `before` steps are performed, and this is the last thing that happens before the go.**
+⛔ **Nothing is invoked while one stands unperformed**, by § 33's own table:
+
+| the entry says | what this step does |
+|---|---|
+| `answered_by: procedure` | runs what the section states, as the section states it, and reports what it printed — ⚠️ **no key places a step's own command**, so a section stating one states where it runs ([`§ 33`](../../config/schema.md#what-a-change-in-the-batch-owes-this-target-and-where-the-step-falls)) |
+| `answered_by: human` | ⛔ **asks**, showing the step, the change it came out of and the target — and ⛔ **silence is not a yes**: the step stays unperformed |
+
+- ⛔ **The ask here is not step 5's go and is put before it**, which is § 33's rule rather than this
+  file's: a go authorizes an act and this answer attests work that either happened or did not, and
+  ⚠️ **a target stating `not_live: true` is asked for no go at all** while its changes may still owe
+  a `human` step.
+- ⛔ **A step left unanswered stops the deploy with the step and its change named**, and the reply
+  reports it as unperformed rather than as a deploy that failed. ⚠️ **Nothing is retried and nothing
+  is assumed**: the one thing this role must never do is read a step it could not get an answer
+  about as a step nobody needed.
+- ⛔ **A `procedure` step that failed stops the deploy too**, and for the same reason the row above
+  gives: what it was going to prepare is not there, and the invocation is what would discover that
+  on a live machine.
+- **The `after` steps are not performed here** and are carried to step 7, which is where § 33 puts
+  them — reported now so that step 5's ask shows what the deploy still owes once it has run.
 
 ## 5. Ask, once, where the act is the person's
 
@@ -174,8 +220,9 @@ another batch is not one for this.
 | any target reached by `dispatch` | **asks regardless**, because § 29's refusal sits on the operation and reads no facet |
 
 **Show, in the question:** the target and that the entry states it live, what is being deployed,
-every item in the batch, every candidate step 4 could not place, and every preparation step still
-owed.
+every item in the batch, every candidate step 4a could not place, and ⛔ **every `after` step the
+deploy will still owe once it has run** — the `before` ones having been performed or stopped on in
+step 4b, so a go reached at all is a go over a target nothing is holding.
 
 ⛔ **A go that goes to the port carries what it is for.** Where the shape is `dispatch`, the port
 refuses a go that does not name this workflow, this ref and every input — and ⛔ **the words are
@@ -197,7 +244,7 @@ is written here**, the alternation being the statement.
 § 21's — never saw it. ⛔ **Stated rather than relied on**: the go in step 5 is what stands in that
 place, which is why it is asked for every target.
 
-## 7. Verify, then run what step 4 collected
+## 7. Verify, then perform the `after` steps step 4b collected
 
 ⛔ **What came back is not what was delivered.** A command that exited zero, a build the host
 reported successful and a run that concluded green are each a fact about the invocation —
@@ -212,13 +259,27 @@ What a run delivered is read from its **log**, through the port's own operation,
   [`§ 31`](../../config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s
   classification and launching them is not this role's: ⛔ **report which ran, by name**, and report
   one that skipped as *the gate did not run* rather than as *the gate passed*.
-- **Then run the preparation step 4 collected**, in whatever order the project's own record gives.
+- **Then the `after` steps, and only those** — the `before` ones were performed in step 4b, and
+  ⛔ **a step placed `after` is never brought forward to here from there or the other way round**,
+  the place being the entry's own fact. In whatever order the project's own record gives, and
+  ⛔ **after the delivery has been read** rather than beside it: a step that prepares nothing for
+  the invocation has no reason to run before the invocation is known to have landed.
+- **The same two answerers as step 4b**, read off the entry: `procedure` runs what the section
+  states, and ⛔ **`human` asks** — ⚠️ **asked here even on a target stating `not_live: true`**,
+  since the go that would have carried the question is one such a target is never asked for.
   ⛔ **A command finishing is not a step finishing**: anything that queues work has barely started
   when the command exits, so it is judged on progress and reported as still running with the
   readings it was judged on.
-- ⛔ **A preparation step that failed holds the items resting on it** rather than the deploy. The
-  target is deployed either way; what is withheld is the move, and the reply says which items and
-  what they wait on.
+- ⛔ **An `after` step that failed, or that nothing answered, holds the items resting on it** rather
+  than the deploy — which is
+  [`§ 33`](../../config/schema.md#what-a-change-in-the-batch-owes-this-target-and-where-the-step-falls)'s
+  second row rather than this file's choice, the act being one nothing can take back. The target is
+  deployed either way; what is withheld is the move, and the reply says which items and what they
+  wait on.
+- ⛔ **The answer is recorded with the step and the change it came out of, and never inferred from
+  the deploy having succeeded.** What the record is here is the reply —
+  ⚠️ **no guard reads it**, which § 33 states rather than this file, so a reader weighing the
+  deploy is reading this role's own report and nothing stronger.
 
 ## 8. Advance the batch
 
@@ -226,9 +287,10 @@ What a run delivered is read from its **log**, through the port's own operation,
 still reported — what the deploy carried is a fact about the deploy — and ⛔ **the reply says the
 target writes nothing on an item** rather than leaving a reader to read silence as a failed move.
 
-⛔ **Otherwise: only the items step 4 put in the batch, and only once step 7 came out clean for
-each.** The move goes through the port, asked for as a **role** and never as a status word, and this
-role asks as the writer the deploy is:
+⛔ **Otherwise: only the items step 4a put in the batch, and only once step 7 came out clean for
+each** — which includes every `after` step that item's own change owes. The move goes through the
+port, asked for as a **role** and never as a status word, and this role asks as the writer the
+deploy is:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
@@ -242,7 +304,7 @@ writing a status word this role chose, which is what
 
 - ⛔ **Each item's current role is read where it is advanced**, which is
   [`§ 32`](../../config/schema.md#32-a-status-that-moves-backwards)'s rule and the reason a reading
-  taken in step 4 is not reused: a step backwards can land between the two.
+  taken in step 4a is not reused: a step backwards can land between the two.
 - An item whose role is not the one this target's advance is made from is **named and not moved**.
 - ⛔ **A refusal naming another writer is the configuration working**, not an obstacle: the move is
   reported for that writer to make, and nothing is written.
@@ -327,8 +389,14 @@ the facts, with a table where the content enumerates.
 - **the precondition, where the entry states one** — the role required, and ⛔ **every item short of
   it with the role it stands in**, plus every item the answer could not place. Where the entry
   states `requires_role: none`, that there was none rather than that one passed;
-- **every preparation step collected** — which change it came from, and whether it ran, is still
-  running with its readings, or is owed;
+- **every step collected out of a change** — the section it came from and which change, where its
+  entry placed it, who its entry says answers it, and whether it ran, is still running with its
+  readings, was answered, or is **unperformed**. ⛔ **Unanswered is reported as unanswered**, never
+  as a step nobody needed, and ⛔ **a section the collecting reading reported `unheld` is reported
+  as a step this role could not establish either way**;
+- ⛔ **what a `before` step stopped, where one did** — the step, the change, and that nothing was
+  invoked, which is not a deploy that failed; and ⛔ **which items an `after` step is holding**,
+  with what each waits on;
 - ⛔ **what was not verified**, named rather than omitted
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)): every skipped
   scenario, every tier that did not run, and everything a log did not cover;

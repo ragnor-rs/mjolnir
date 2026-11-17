@@ -3563,6 +3563,20 @@ missing three sections hears about three. The kinds are **computed** throughout:
 verdict over a body this suite wrote, and the one list the script carries — the sections — is
 empty in the copy that ships.
 
+**The opposite reading, and why it is in this file rather than in the role that needs it.** A
+collecting role asks which of a project's sections *this* change owes work under and which it closed
+with the configured answer — the gate's own grammar read the other way. ⛔ **Whether a section
+closed with *nothing* turns on a normalisation** — a list marker, a trailing period, the emphasis a
+body wraps a line in, its case — so a role deciding it by eye is a second grammar, and the direction
+its disagreement fails in is a step nobody collects. ⚠️ **It sits below the sentinel**, because it
+reads the configuration and a vendored copy may import nothing of this toolkit; what holds that is
+the arm asserting every import of the rendered half is in the standard library. ⛔ **Three readings
+and never two** — owed, closed with nothing, and `unheld` for a body the gate itself would refuse —
+and the arm that makes the reading worth having at all is the *nothing* answer written as an
+emphasised bullet without its period, which the grammar reads as the answer and an eye would call
+owed. ⚠️ **It is no verdict about the change**, and a project stating no section is answered on a
+status of its own.
+
 ⛔ **The grammar is shared with the gate on open items and the heading is not**, by
 [§ Nothing is deferred](../plugins/mjolnir/config/schema.md#nothing-is-deferred). How a section is
 found in a body is one implementation here, which that gate imports; the heading it looks for
@@ -3574,6 +3588,11 @@ installed in this tree and no body of this repository is held by one. The instal
 where the artifacts are exercised, against a fixture built from the example that states a section
 — and the generated workflow and its registered entry are then handed to the drift check, so the
 two statements of that run are held to each other exactly as every hand-written entry here is.
+⚠️ **The collecting reading's own command was run in this tree for the arm this tree can answer** —
+a project stating no section, which is the status that says so — and in a temporary skills root
+carrying a shipped example for the arm that reads one. ⛔ **What no run here covers is the role**:
+nothing is deployed from this repository, so what a deploy does with a step it collected is read on
+the surface rather than measured.
 
 ## What a pull request title opens with, derived once
 

@@ -365,6 +365,129 @@ def from_config(configuration) -> tuple:
     )
 
 
+# --- collecting a section out of one change --------------------------------
+#
+# ⛔ **The toolkit's own route, and deliberately not the vendored copy's.** The
+# half above the sentinel holds a body to the sections rendered into it; what a
+# collecting role needs is the opposite reading -- which of this project's
+# sections this change owes work under, and which it closed with nothing. The
+# reading lives below the sentinel because it reads the configuration, which the
+# vendored half must not depend on, and because an adopting repository's gate has
+# no use for it.
+
+
+def collected(entries, body: str) -> list[dict]:
+    """Each section this project states, read out of one change's body.
+
+    ⛔ **Through the same grammar the gate applies, which is the whole reason
+    this reading is here rather than in the role that collects.** Whether a
+    section closed with *nothing* is `answered_nothing` above's question -- it
+    normalises a list marker, a trailing period, the emphasis a body wraps a
+    line in and its case -- so a role deciding it by eye would be a second
+    grammar, free to disagree with the one the host's own run applied to the
+    same body and in the direction that collects no step.
+
+    ⛔ **Three readings and never two.** A body the gate would refuse is neither
+    owed nor answered: reporting it as answered collects nothing out of a change
+    that may state something, and reporting it as owed hands a role content it
+    could not identify. ⚠️ `unheld` is the one reading that says *ask the gate*.
+
+    ⛔ **And which bodies those are is asked of `verdict` above rather than
+    worked out again here.** The conditions it refuses on are its own and are not
+    listed again in this function: a second statement of them is a copy free to
+    disagree with the run that holds the change. ⚠️ **Measured on this
+    function's first version**, which restated them, left one out, and read a
+    body the gate refuses as a step owed.
+
+    Each entry comes back carrying the keys the configuration stated -- where
+    the step falls and who answers it -- so the collecting role reads them here
+    rather than going back to the configuration per section.
+    """
+    read: list[dict] = []
+    for entry in entries or []:
+        triple = (entry["heading"], entry["nothing_needed"], entry["read_by"])
+        found = sections(body, entry["heading"])
+        stated = claims(found[0]) if len(found) == 1 else []
+        read.append({
+            "heading": entry["heading"],
+            "read_by": entry["read_by"],
+            "when": entry.get("when"),
+            "answered_by": entry.get("answered_by"),
+            "reading": (
+                "unheld" if verdict(body, (triple,))
+                else "nothing" if answered_nothing(stated, entry["nothing_needed"])
+                else "owed"
+            ),
+            "stated": stated,
+        })
+    return read
+
+
+def _rendered_collection(read: list[dict]) -> str:
+    """What a collecting role is handed, one section per block."""
+    out = []
+    for section in read:
+        out.append(
+            f"{section['reading']}: {section['heading']!r} "
+            f"(when: {section['when']}, answered_by: {section['answered_by']}, "
+            f"read_by: {section['read_by']!r})"
+        )
+        out.extend(f"    {line}" for line in section["stated"])
+    return "\n".join(out)
+
+
+def collect(argv: list[str] | None = None) -> int:
+    """Print this project's sections as read out of one change's body.
+
+    ⛔ **It is no gate and its status is not a verdict about the change.** What
+    holds a body is `main` above, run by the host; this prints what one change
+    owes so that a role can act on it, and a section it reports `unheld` is the
+    gate's answer to give rather than this one's.
+    """
+    parser = argparse.ArgumentParser(
+        description="Read this project's body sections out of one change's body.",
+    )
+    parser.add_argument("--collect", action="store_true", help="the mode flag")
+    parser.add_argument(
+        "--body-file", required=True, help="the file the change's body is in"
+    )
+    parser.add_argument(
+        "--skills-root", default=".",
+        help="the directory the project's configuration is resolved from (§ 1)",
+    )
+    args = parser.parse_args(argv)
+
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import config  # noqa: PLC0415 -- the one reader of the surface, imported here
+
+    try:
+        loaded = config.load(args.skills_root, check_paths=False)
+    except Exception as error:  # noqa: BLE001 -- a stated configuration that did not resolve
+        print(
+            f"the configuration at {args.skills_root} did not resolve "
+            f"({type(error).__name__}: {error}), so no section was collected.",
+            file=sys.stderr,
+        )
+        return 2
+    entries = loaded.get("body_sections") or []
+    # ⛔ A stated absence and its own status, which is `title_form.py render`'s
+    # answer for a project stating no form: a project requiring no section owes
+    # no step, and that is not a run that found nothing.
+    if not entries:
+        print(
+            "This project states no body section, so a change owes no step through "
+            "this facet (§ 20's `[]`). Nothing was collected."
+        )
+        return 3
+    try:
+        body = read_body(args.body_file)
+    except Unreadable as exc:
+        print(f"no section was collected: {exc}", file=sys.stderr)
+        return 2
+    print(_rendered_collection(collected(entries, body)))
+    return 0
+
+
 # --- the self-test ---------------------------------------------------------
 
 # Fixture sections, and ⛔ **they live below the sentinel on purpose**: every
@@ -590,6 +713,72 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("a second render is byte-identical", render(two) == copy)
 
     print()
+    print("the collecting reading, which is the opposite question over the same grammar")
+    # ⚠️ Entries as the reader hands them over -- every key the facet declares,
+    # since what a collecting role reads off a section is `when` and
+    # `answered_by` beside the heading.
+    def _entry(triple, when, answered_by) -> dict:
+        heading, nothing, reader = triple
+        return {"heading": heading, "nothing_needed": nothing, "read_by": reader,
+                "when": when, "answered_by": answered_by}
+
+    owing = [_entry(A_SECTION, "before", "human"),
+             _entry(ANOTHER, "after", "procedure")]
+    first, second = A_SECTION[0], ANOTHER[0]
+    for label, body, wanted in (
+        ("work stated under the section is owed",
+         f"A summary.\n\n## {first}\n\nApply the two schema changes.\n", "owed"),
+        ("the nothing answer closes it",
+         f"A summary.\n\n## {first}\n\n{A_SECTION[1]}\n", "nothing"),
+        ("a section the body never states is unheld, never answered",
+         "A summary.\n", "unheld"),
+        ("a section stated with nothing under it is unheld",
+         f"A summary.\n\n## {first}\n\n## Something else\n\nx\n", "unheld"),
+        ("a section the body states twice is unheld, never read off the first",
+         f"## {first}\n\n{A_SECTION[1]}\n\n## {first}\n\nApply it.\n", "unheld"),
+        # ⛔ The arm this reading's first version got wrong: the gate refuses the
+        # *nothing* answer with something beside it, and a reading that restated
+        # the gate's conditions called it a step owed -- so a role would have run
+        # work out of a body that never landed, on the strength of content the
+        # gate says nobody may choose between.
+        ("the nothing answer with something beside it is unheld, never owed",
+         f"## {first}\n\n{A_SECTION[1]}\n\nApply it.\n", "unheld"),
+    ):
+        read = collected(owing, body)
+        check(f"  {label}", read[0]["reading"] == wanted,
+              f"read {read[0]['reading']!r} with {read[0]['stated']!r}")
+    read = collected(owing, f"## {first}\n\nApply the two schema changes.\n")
+    check("the lines the section states come back, for the role to name the step",
+          read[0]["stated"] == ["Apply the two schema changes."],
+          f"came back {read[0]['stated']!r}")
+    # ⛔ The two keys the collecting role acts on, read back rather than assumed
+    # present: a reading that dropped them would send every step down one arm.
+    check("where each step falls and who answers it come back as stated",
+          [(each["when"], each["answered_by"]) for each in read]
+          == [("before", "human"), ("after", "procedure")],
+          f"came back {[(e['when'], e['answered_by']) for e in read]}")
+    # ⛔ The arm that is the whole argument for this reading living here: the
+    # *nothing* answer written as an emphasised bullet with no period is the
+    # answer, by `answered_nothing` above -- and a role reading the section by
+    # eye is exactly what would call this one owed and run a step nobody owes.
+    check("the gate's own normalisation decides it, not the literal",
+          collected(owing, f"## {first}\n\n- **{A_SECTION[1].rstrip('.')}**\n")[0]
+          ["reading"] == "nothing",
+          "an emphasised bullet without its period did not read as the answer")
+    check("a project stating no section collects nothing", collected([], "A summary.\n") == [])
+    # ⚠️ Every section is read, never the first: the batch's own report names one
+    # change's sections together, and a reading that stopped would hide the step
+    # that falls on the other side of the deploy.
+    check("every section stated is read, in the order the configuration states them",
+          [each["heading"] for each in collected(owing, "A summary.\n")]
+          == [first, second],
+          "the reading did not cover every stated section")
+    rendered = _rendered_collection(collected(owing, f"## {first}\n\nApply it.\n"))
+    check("what a role is handed names the reading, the step's place and its answerer",
+          all(word in rendered for word in ("owed", "before", "human", "unheld")),
+          rendered)
+
+    print()
     print("the rendered copy carries no import the toolkit's own tree supplies")
     # ⛔ The property the vendoring rests on: the artifact runs in a checkout of
     # the *adopting* repository, where nothing of this toolkit is present. An
@@ -639,4 +828,11 @@ def _imports(text: str) -> set[str]:
 if __name__ == "__main__":
     if "--self-test" in sys.argv[1:]:
         sys.exit(self_test())
+    # ⛔ Dispatched here and not inside `main`, which is the half the install step
+    # vendors: the collecting reading needs the configuration, and a flag for it
+    # above the sentinel would ship an adopting repository a gate that imports
+    # this toolkit. Passed to the vendored copy the flag is refused by that
+    # parser, which is the direction this split has to fail in.
+    if "--collect" in sys.argv[1:]:
+        sys.exit(collect())
     sys.exit(main())
