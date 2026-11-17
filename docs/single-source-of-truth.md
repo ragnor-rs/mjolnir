@@ -3652,6 +3652,57 @@ command line carries a status of its own for it for the same reason.
 - **Whatever is not committed**, and **issues and pull requests**, for the reasons the checks above
   give: the workflow holds no credential.
 
+## The files a version is written in, and what a release carrier cannot promise
+
+`plugins/mjolnir/scripts/release.py --self-test` runs in the `Release carrier` workflow, with no
+credential and no network. ⛔ The rule is
+[schema § 34](../plugins/mjolnir/config/schema.md#34-the-files-that-carry-a-version-and-what-cutting-a-release-writes)
+and this document states none of it. What is recorded here is why there is a module at all, what
+its suite holds, and what it leaves alone.
+
+**One fact, and the module is where it is performed rather than where it is stated.** A role that
+knew a build file's syntax would be a role per stack, so the version patterns, the replacements and
+the file list are a project's and the editing is this module's — which is what lets the skill beside
+it carry no version pattern, no version-carrying path and no build-file syntax at all. ⛔ **That
+property is held by a grep over the carrier roots rather than by reading**, which is the fourth of
+the item's own acceptance checks.
+
+**What this repository is not a subject of.** `release.carrier` here is `none` — nothing in this
+tree is versioned for a consumer, the plugin being installed from the tree at its default branch —
+so pointed at this project the carrier answers that it has no subject and exits 3. ⚠️ **So the
+suite's behavioural arms are asserted against trees it builds itself**, which is the position
+[the title-form module](#what-a-pull-request-title-opens-with-derived-once) occupies for a facet
+this project also does not state, and is the only place they can be held.
+
+What it holds: the current version read out of each file's own capture; a plan that writes nothing;
+an apply that writes every file or none, asserted with the blocked file first *and* second, since a
+loop that wrote as it went would get one of those orders right; a file marked optional and missing
+skipped rather than erroring, and the same file unmarked stopping the plan with its name; a pattern
+matching nothing, and a file carrying two different versions, each a stop naming what it found; one
+version written twice moving in both places; a replacement carrying a brace and a backslash written
+literally, each of which has a mechanism that would otherwise eat it; the changelog's entry
+inserted above the entries, after a preamble, into an empty file and above a file's very first
+line; a changelog already carrying the version being cut stopping rather than merging; the
+changelog refused with its reason where the project states CI owns it; and the facet's stated
+absence coming back as no plan rather than as an empty one.
+
+⚠️ **Two of those arms are this module's own measured defects and are recorded as such.** The report
+read each file's current version through a plan taken against a stand-in version, so a changelog
+already holding that string read back as unreadable — closed by a reading mode, with an arm per
+direction so the mode cannot become a blanket exemption. And the changelog insert ran the new
+heading into the line above it on a file with no final newline, producing `# Changelog## 1.0.0`,
+and left a heading abutting a preamble that ended in a single newline — a heading the renderer does
+not read as one.
+
+⛔ **What the module does not promise, it names rather than covers**, which is
+[schema § 11 → A report names what it could not establish](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish):
+atomicity against a
+crash. The write loop can be interrupted between two files, so what is closed is a plan that was
+never going to work being carried out part of the way, and the residue is named instead of being
+hidden behind a guarantee nothing performs. ⚠️ **And nothing here holds the facet against a real
+project's files**, there being none in this tree — a release cut against a project that states one
+is the first exercise of that half, which is a limit of this record rather than of the rule.
+
 ## The bookkeeping role's derivations, and the round trip that is the resumability arm
 
 `plugins/mjolnir/scripts/save.py --self-test` runs in the `Save artifact` workflow, with no

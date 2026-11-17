@@ -7595,7 +7595,10 @@ quotes, and a reader that sorted the list would decide that for it.
 
 ⚠️ **Where a changelog's entry goes is positional and this section declares no key for it**, which
 is a stated limit rather than a gap: the entry is inserted above the first thing in the file that
-looks like an entry of the same level, and at the head of the file where there is none. ⛔ **So a
+looks like an entry of the same level, and after whatever precedes it where there is none —
+⛔ **with a blank line between, which is a property of the file rather than of the facet.** A
+heading abutting the line above it is a heading the renderer does not read as one, and a file whose
+last line carries no newline is otherwise run into by the entry. ⛔ **So a
 changelog already carrying the version being cut is a stop naming it** — a release somebody started,
 which nothing here merges into. ⚠️ **One observation is behind the level the insert looks for**, so
 a key for it would be a facet invented rather than found; the trigger for stating one is a project

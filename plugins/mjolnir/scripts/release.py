@@ -7,10 +7,11 @@ per stack, which is the thing this toolkit is not. So the skill carries no
 version pattern, no file path and no build-file syntax at all, and asks here
 instead.
 
-⛔ **It states no version scheme, no tag format, no registry and no publishing
-command.** Each is `../config/schema.md § What the procedure models`'s middle
-column read against this role; what this module owns is the part none of its
-readers should perform twice:
+⛔ **What this role states nothing about is `../config/schema.md § 34`'s own list,
+cited and not copied here** -- a list restated in a third place is a list free to
+disagree with the two that already hold it, which is a class the reviewing role
+reads a diff for. What this module owns is the part none of its readers should
+perform twice:
 
   * **Reading** the version each file currently carries, out of the `version`
     capture of that file's own pattern -- which is the only thing either this
@@ -237,10 +238,23 @@ def _applied(entry: dict, text: str, version: str) -> str:
             (i for i, line in enumerate(lines) if line.startswith(ENTRY_LEVEL)),
             len(lines),
         )
-        # ⚠️ A trailing newline on the inserted block in both positions, and the
-        # blank line after it: inserted at the head of a file whose first line is
-        # an entry, the heading would otherwise run into it.
-        return "".join(lines[:at] + [f"{heading}\n\n"] + lines[at:])
+        before = lines[:at]
+        # ⛔ **Whatever precedes the insert is made to end in a blank line**, and
+        # both halves of that are measured rather than tidiness. A file with no
+        # final newline had the heading run straight into the line above it --
+        # `# Changelog## 1.0.0` -- and a preamble ending in a single newline left
+        # the heading abutting it, which markdown does not render as a heading at
+        # all. ⚠️ Where there is nothing before the insert -- an empty file, or a
+        # file whose first line is already an entry -- neither arm fires and no
+        # leading blank line is added.
+        if before and not before[-1].endswith("\n"):
+            before[-1] += "\n"
+        if before and before[-1].strip():
+            before.append("\n")
+        # ⚠️ A trailing newline on the inserted block and a blank line after it:
+        # inserted above an entry that is already there, the heading would
+        # otherwise run into it.
+        return "".join(before + [f"{heading}\n\n"] + lines[at:])
     pattern = re.compile(entry["pattern"])
     replacement = entry["replace"].replace(PLACEHOLDER, version)
     # ⛔ A plain string and never a template: `re.sub` reads a backslash in its
@@ -588,11 +602,39 @@ def self_test() -> int:
           f"left {_read(os.path.join(root, 'CHANGELOG.md'))!r}")
 
     # ⛔ A changelog with no entry yet, which is where the positional insert has
-    # no line to go above: the entry goes at the head of the file.
+    # no line to go above: the entry goes after the preamble, with a blank line
+    # between. ⚠️ The blank line is the rule and not tidiness -- a heading
+    # abutting the line above it is a heading markdown does not render as one.
     root = _a_tree({"CHANGELOG.md": "# Changelog\n"})
     apply(_Stated(root, **log), "1.0.0")
-    check("a changelog with no entries yet gets one at the end of its preamble",
-          _read(os.path.join(root, "CHANGELOG.md")) == "# Changelog\n## 1.0.0\n\n",
+    check("a changelog with no entries yet gets one after its preamble",
+          _read(os.path.join(root, "CHANGELOG.md")) == "# Changelog\n\n## 1.0.0\n\n",
+          f"left {_read(os.path.join(root, 'CHANGELOG.md'))!r}")
+
+    # ⛔ The same file with no trailing newline, which is the measured defect this
+    # arm exists for: the inserted heading ran into the line above it and the
+    # file came out carrying `# Changelog## 1.0.0`. ⚠️ A file with no final
+    # newline is ordinary rather than exotic, and nothing in the facet lets a
+    # project say which kind it has.
+    root = _a_tree({"CHANGELOG.md": "# Changelog"})
+    apply(_Stated(root, **log), "1.0.0")
+    check("a changelog with no final newline is not run into by the new entry",
+          _read(os.path.join(root, "CHANGELOG.md")) == "# Changelog\n\n## 1.0.0\n\n",
+          f"left {_read(os.path.join(root, 'CHANGELOG.md'))!r}")
+
+    # ⚠️ And the two edges where there is no preamble to separate from: an empty
+    # file, and a file whose very first line is already an entry.
+    root = _a_tree({"CHANGELOG.md": ""})
+    apply(_Stated(root, **log), "1.0.0")
+    check("an empty changelog gets the entry and no leading blank line",
+          _read(os.path.join(root, "CHANGELOG.md")) == "## 1.0.0\n\n",
+          f"left {_read(os.path.join(root, 'CHANGELOG.md'))!r}")
+
+    root = _a_tree({"CHANGELOG.md": "## 1.0.0\n\nthe first one\n"})
+    apply(_Stated(root, **log), "1.1.0")
+    check("a changelog opening on an entry gets the new one above it",
+          _read(os.path.join(root, "CHANGELOG.md"))
+          == "## 1.1.0\n\n## 1.0.0\n\nthe first one\n",
           f"left {_read(os.path.join(root, 'CHANGELOG.md'))!r}")
 
     root = _a_tree({"CHANGELOG.md": "# Changelog\n\n## 1.1.0\n\nalready here\n"})
