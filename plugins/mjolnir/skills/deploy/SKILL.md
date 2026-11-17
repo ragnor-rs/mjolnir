@@ -47,6 +47,14 @@ gets the question, because the ask in step 5 is about *this deploy* and a target
 a deploy nobody named. ⚠️ **A target is not picked by what it is called**: whether it is live is the
 entry's own `not_live`, read there and never inferred, and the reply says which the entry stated.
 
+⛔ **And which repository the act is in is the entry's `code_root`**, by
+[`§ 33 → Which repository a target's act happens in`](../../config/schema.md#which-repository-a-targets-act-happens-in)
+— read off the target and ⛔ **never off the item, the branch or the first of § 1's roots**. Every
+call below that addresses a repository names it: the command root resolved in step 3, the workflow
+and the ref a dispatch is made against, and the runs read in step 7. ⚠️ **Where the project carries
+one repository the entry states none**, which is that subsection's own rule, and what every call
+names is the one root there is.
+
 What the item side of this is comes from the port, and its absences carry their own fallbacks:
 
 ```bash
@@ -69,7 +77,7 @@ what this step does is run it.
   than this role's:
 
   ```bash
-  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" \
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --root "<the entry's code_root>" \
     --command "<the entry's command>" --command-root "<the entry's command_root>"
   ```
 
@@ -79,6 +87,12 @@ what this step does is run it.
   is whether the workflow is one [`§ 2`](../../config/schema.md#2-code-host)'s `checks` carries and
   whether the host's own registry answers for it. ⛔ **Absent either way is a stop with the thing
   named**, and it comes **before** the target is confirmed rather than after.
+
+  ⚠️ **`--root` is what the entry's `code_root` is for and the flag is omitted where it states
+  none.** [§ 1](../../config/schema.md#a-command-root-is-not-a-code-root) states a command root
+  relative to one repository, so on a project with two the reader **refuses** a read of the block
+  that names no root — measured on the shipped two-root example, where this was the first command
+  of this step and it stopped, with the value that would have answered it in no file.
 - **Every `requires` the entry states is read.**
   [`§ 16`](../../config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
   states what that list is; what this step does is report each as present or **named as absent**.
@@ -197,6 +211,15 @@ is written here**, the alternation being the statement.
 § 21's — never saw it. ⛔ **Stated rather than relied on**: the go in step 5 is what stands in that
 place, which is why it is asked for every target.
 
+⛔ **Every call to the runs port names the entry's own repository**, which is the `--root` flag
+carrying what the entry's `code_root` states and omitted where it states none — the dispatch here,
+and the conclusion and the log read in step 7.
+[`§ 29`](../../config/schema.md#29-the-hosts-run-operations)'s kind sits in a block a root may
+narrow, and the slug a dispatch is made against is
+[`§ 1`](../../config/schema.md#a-projects-code-is-not-always-one-repository)'s per-root fact: on a
+project with two repositories, a dispatch naming neither would be made against whichever the port
+answered with.
+
 ## 7. Verify, then run what step 4 collected
 
 ⛔ **What came back is not what was delivered.** A command that exited zero, a build the host
@@ -307,8 +330,12 @@ the facts, with a table where the content enumerates.
   still open · handed over · stopped, and on what;
 - **the target by name, and whether the entry states it live** — ⛔ never the name alone, which says
   nothing a reader can check against the entry they meant;
-- what was resolved — the project, the configuration file, and the code root this target's
-  invocation runs against;
+- what was resolved — the project, the configuration file, and ⛔ **which of
+  [`§ 1`](../../config/schema.md#a-projects-code-is-not-always-one-repository)'s repositories this
+  target's act is in, read off the entry's own `code_root`** and named with the repository slug it
+  resolved to. ⚠️ **Where the project carries one, that it states none and there is one answer** —
+  a reply naming the project alone has said nothing about which half of a two-repository project
+  was written to;
 - **what was invoked**, in the shape the entry states, and for `by_hand` ⛔ **that no deploy was
   made** along with everything handed over;
 - **how the delivery was established** — what was read, and from where. ⛔ Never an exit status

@@ -2849,7 +2849,8 @@ about a script. Held against all seven:
 | read-only preflight | **6 of 7**; the seventh's first write precedes its own gate, for a reason it states |
 | verify, rather than reading the exit status | **5 of 7** say so in their own words, three of them from an incident |
 | report what was rebuilt, and what failed with its log tail | **7 of 7** |
-| hosts, services, secrets, build steps and tier selection stay local | **nothing contradicted it** |
+| hosts, services, secrets and build steps stay local | **nothing contradicted it** |
+| and tier selection with them | ⛔ **replaced rather than confirmed** — [`§ 31`](../plugins/mjolnir/config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) states which tiers a project has, what each needs, whether it is asked for, how its cases are selected and which targets refuse it; each tier's own **command** is what stayed local |
 
 ⛔ **The boundary clause is the one a full read could have falsified and did not**, and the clause
 itself is
@@ -2977,14 +2978,76 @@ running, and what the deploy left standing — which is
 [`§ 11`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)'s rule with
 this role's own list under it.
 
-⚠️ **And one thing the facet deliberately does not settle**, so that it reads as a boundary rather
-than an omission: whether the target list is a project's or a code root's, which is the open item
-this reading was blocked for and which depends on it. The list sits at the top level, where a
-project with one code root and a project with several write the same thing, and the question of
-which root a target belongs to is answered where that item lands it —
+⚠️ **And the two things the facet left open are both settled now**, each in its own reading below:
+whether the target list is a project's or a code root's is
+[`Which repository an act is in`](#which-repository-an-act-is-in-and-why-it-is-not-the-lists-own-axis),
+and which subset of a grouping a target advances is
+[`Publishing a release`](#publishing-a-release-the-two-writers-and-the-precondition-that-holds-a-target)
+after it. ⚠️ **Neither is a second survey**: both rest on the reading above and on the build side's,
+which is why each is a subsection rather than a page.
+
+### Which repository an act is in, and why it is not the list's own axis
+
+**The question** was whether `deploy` belongs to a project or to one of
+[`§ 1`](../plugins/mjolnir/config/schema.md#a-projects-code-is-not-always-one-repository)'s code
+roots, and the answer is **the list is the project's and the repository is the entry's**:
+[`§ 33 → Which repository a target's act happens in`](../plugins/mjolnir/config/schema.md#which-repository-a-targets-act-happens-in).
+⛔ **No reading was taken for it and none was needed** — the two already here answer it, and a third
+survey would have been evidence collected to confirm a shape rather than to choose one.
+
+⛔ **What rules out nesting is the axis, measured on six projects and a directory in none of them.**
+The build side read what each project's deploy *resolves against*
+([*Where a deploy lives*](build-surface.md#where-a-deploy-lives)): two take the environment as a
+required argument and resolve the host from a library beside them, one has its substitutions
+supplied by whoever triggers the hosted build, two resolve one target each, and the remaining one
+resolves against a **ref** whose default is the wrong one. ⚠️ **So a list keyed on the directory
+would be keyed on the one axis no project's targets divide on**, and the facet's own reason for
+being a list — every fact measured is a target's — reaches this fact exactly as it reaches the rest,
+which is where
 [`§ 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes)
-says so at the key. ⚠️ **The other one it left is settled below**, which is why this paragraph names
-one rather than two.
+states it.
+
+⛔ **And nesting would owe a second rule it cannot avoid.** `name` is the word a deploy is asked
+for by, so two roots' lists would still have to hold their names apart across the project — which is
+[`§ 1`](../plugins/mjolnir/config/schema.md#a-command-root-is-not-a-code-root)'s own rule for a
+command root's name, and for the same stated reason: the reference is written somewhere else, so one
+name answering in two places resolves into whichever repository was read first.
+
+⚠️ **The one project with two repositories is the one that exhibits the case**, which is what makes
+this a measurement rather than a guess. Its two roots share nothing but the host kind — disjoint
+check sets, a different number of long-lived branches each, and **a deploy that takes a ref on one
+side and no ref at all on the other** — and its second repository carries a deploying workflow of
+its own. ⛔ **That project's own instructions state the consequence as a rule**: no skill on its
+route drives the second repository, so its dispatch is by hand — recorded at
+[ruling (26)](divergences-and-rulings.md#4-the-rulings) rather than restated here.
+
+⛔ **What the key buys is four references that were answered from a union across repositories, and
+one that was answered by nothing** — the table at
+[`§ 33 → Which repository a target's act happens in`](../plugins/mjolnir/config/schema.md#which-repository-a-targets-act-happens-in)
+is where each is now held. Reproduced on the shipped two-root example, which carries three targets:
+
+| what was read | what it answered before | the probe |
+|---|---|---|
+| `workflow` | every root's check names at once | its first target names a workflow out of the first repository's checks and its second out of the second's, and each loaded against the union |
+| `command_root` | every root's declarations at once | its third target names a command root the **first** repository declares; moved to the second, which declares none, it still loaded |
+| `code_root_runs_nothing` | nothing | that first repository states it, and a command target with no root named loaded anyway |
+| the repository a dispatch is made against | nothing | — |
+
+⛔ **The last row is the one that was firing rather than latent.** The deploying role's preflight
+begins by resolving the entry's command through the reader, and on that project the call **stops**:
+[`§ 1`](../plugins/mjolnir/config/schema.md#a-command-root-is-not-a-code-root) states a command root
+relative to one repository, two carry the block, and the reader refuses a project-level read of it
+rather than answering with the first. ⚠️ **So the role could not run there at all**, and
+the one value that resolves the call — the name of the repository the act is in — was in no file
+this repository ships.
+
+⚠️ **Two of the shipped examples were wrong in a way nothing could catch**, found by the rule the
+ruling made possible rather than by reading them: each stated a
+[`§ 31`](../plugins/mjolnir/config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)
+tier refused on a target name its own `deploy` did not carry. ⛔ **A tier refused on a word nothing
+deploys to reads as refused somewhere and is run against every target there is** — which is why that
+facet's entries are now resolved against § 33's own names, a reference that section had deliberately
+left as a bare string while this question was open.
 
 ## Publishing a release: the two writers, and the precondition that holds a target
 
