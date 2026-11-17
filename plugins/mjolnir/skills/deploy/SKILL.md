@@ -1,6 +1,6 @@
 ---
 name: deploy
-description: Put what has landed onto one of the project's own deploy targets and move the items it carried — the target read from configuration rather than from its name, a preflight that writes nothing, one go for this deploy, the project's own invocation, the delivery read from what the run printed rather than from how it exited, and a batch assembled from the tracker and narrowed by the project's own command. Use when asked to deploy, to release, to ship to staging or production, to publish a batch, or to put the current branch on an environment.
+description: Put what has landed onto one of the project's own deploy targets and move the items it carried — the target read from configuration rather than from its name, a preflight that writes nothing, one go for this deploy, the project's own invocation, the delivery read from what the run printed rather than from how it exited, and a batch assembled from the tracker and narrowed by the project's own command, a release's grouping held to the role its items must already stand in, and the grouping marked released or the step handed to a person. Use when asked to deploy, to release, to ship to staging or production, to publish a batch, or to put the current branch on an environment.
 argument-hint: "[<the target's name>]"
 ---
 
@@ -35,7 +35,7 @@ from a sibling project with a configuration of its own, this role deploys **that
 configuration rather than a gap, and ⛔ **never an invitation to improvise a command**.
 
 ⚠️ **What the shell holds is reported by the starting role once per item** and is not re-read here;
-what this role does report is every value it could not establish, which is step 9.
+what this role does report is every value it could not establish, which is step 10.
 
 ## 2. Which target
 
@@ -106,6 +106,46 @@ tracker at the point it is advanced** in step 8 — never from a value read here
 - ⛔ **An entry whose `advances` is `none` still has a batch worth reporting** where the project
   states a command, and has none where it does not — in which case the reply says the deploy
   carried no readable set rather than that it carried nothing.
+
+**And where the entry names a grouping, the publishing set is read here too** — the set
+[`§ 33 → Publishing a grouping`](../../config/schema.md#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)
+narrows the advance to and holds the precondition over:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
+  --in-grouping "<the entry's grouping>" --argument "<the grouping's own value>"
+```
+
+- ⛔ **Which value is [`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s
+  `current`, and never a guess**: a grouping the tracker marks as the open one is read, and one a
+  project holds several of at once **arrives on this role's invocation** — so a target naming such a
+  grouping with no value handed over is a stop asking for it, not a pick.
+- ⛔ **A grouping that could not be read is reported unread, never as holding nothing.** § 3's
+  fallback for the operation says what happens instead, and ⚠️ **an unread set and an empty set are
+  the same list** — which is why the reply says which it was rather than how long it was.
+- ⛔ **An item in the batch the grouping does not hold is named and not advanced**, and an item the
+  grouping holds that the batch never named is named too: the batch stays the only source of
+  candidates, and the grouping is what narrows them.
+
+**And the precondition, where the entry states one** — ⛔ **read before step 5's go and not after
+it**, a release held by an unaccepted item being a release nobody should have been asked about:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
+  --short-of "<the entry's requires_role>" --in-grouping "<the entry's grouping>"
+```
+
+- ⛔ **Where the entry names no grouping the same question is asked over the batch's own
+  candidates** — `--short-of <role> --argument <each identifier>`, which is § 33's other arm and not
+  a weaker form of this one.
+- ⛔ **Anything short holds the whole target and nothing is invoked.** The reply names **every** such
+  item with the role it stands in, never the first, and ⛔ **the remedy is not this role's**: § 4.2
+  maps that role to a status somebody else writes, so the stop is reported and the deploy ends.
+- ⛔ **An item the answer could not place is a stop too**, by
+  [`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish): a release held by an
+  item nobody could place reads exactly like a release held by nothing.
+- **A target stating `requires_role: none` has no precondition and this reads nothing**, which is a
+  stated configuration rather than a check that passed.
 
 **And what the changes in the batch owe the target is collected here**, where
 [`§ 20`](../../config/schema.md#20-the-sections-a-pull-request-body-must-carry) puts it: a section
@@ -202,18 +242,65 @@ writing a status word this role chose, which is what
 - An item whose role is not the one this target's advance is made from is **named and not moved**.
 - ⛔ **A refusal naming another writer is the configuration working**, not an obstacle: the move is
   reported for that writer to make, and nothing is written.
+- ⛔ **An item the tracker already holds at the role this target advances to, or past it, is named
+  and left alone** — the move a merge's automation made and the move this target makes are different
+  edges, and writing the second over the first is the double transition
+  [`§ 33 → Publishing a grouping`](../../config/schema.md#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)
+  rules out. ⛔ **Which items those are is read and not judged**, by the same question the
+  precondition is asked with, aimed at this target's own `advances`:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
+    --short-of "<the entry's advances>" --argument "<each item in the batch>"
+  ```
+
+  Everything it reports **short** is an item to advance; everything it placed and did not report
+  short is already at that role or past it, and is named rather than written to. ⚠️ **An item it
+  could not place is advanced by nothing and reported unplaced** — the same direction the
+  precondition takes, for the same reason.
 - ⛔ **Nothing else about an item is touched.** Not its text, not a label, not a date — which is
   [`§ An artifact states what is true now`](../../config/schema.md#an-artifact-states-what-is-true-now)
   answered by the wrong party if it were.
 
-## 9. The reply
+## 9. Mark the grouping released, where the entry publishes one
+
+⛔ **A target whose `publishes` is `false` marks nothing, and this step does not run** — the reply
+says the target publishes no grouping rather than leaving silence to be read as a mark that failed.
+
+⛔ **Otherwise the mark goes through the port, and the writer read is
+[`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s `closed_by`
+and never a status's**:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
+  --mark-released "<the entry's grouping>" --argument "<the grouping's own value>" \
+  --as-writer deploy
+```
+
+⛔ **That flag is the only route to the mark, and naming the operation underneath it is refused** —
+the writer guard sits inside the resolution, exactly as step 8's does for a status.
+
+- ⛔ **The two writers are honoured independently**: a close refused for its writer says nothing
+  about the items, and items refused for theirs say nothing about the close. The reply reports both.
+- ⛔ **Where the capability is absent the run names the step and the grouping it is about, by the
+  value this deploy read, continues, and the reply records the grouping as still open.** That is
+  [`§ 3`](../../config/schema.md#the-operations-and-what-an-absent-capability-does)'s stated
+  fallback and ⛔ **never a grouping reported as marked**, nor a step dropped in silence — it is the
+  one write that tells everybody else the release happened. ⚠️ **No address is composed for it**:
+  where a person goes to mark it is the tracker's own fact, which
+  [`the boundary`](../../config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
+  bars this role from inventing.
+- ⛔ **After step 8 and not before it.** A grouping marked released over items that did not move is
+  a release announced for work the tracker still shows as unreleased.
+
+## 10. The reply
 
 Register and language are
 [`§ 8`](../../config/schema.md#the-reply-to-the-person-running-a-role)'s — the outcome first, then
 the facts, with a table where the content enumerates.
 
-- **the verdict, first sentence** — deployed · deployed with items held · handed over · stopped, and
-  on what;
+- **the verdict, first sentence** — deployed · deployed with items held · deployed with the grouping
+  still open · handed over · stopped, and on what;
 - **the target by name, and whether the entry states it live** — ⛔ never the name alone, which says
   nothing a reader can check against the entry they meant;
 - what was resolved — the project, the configuration file, and the code root this target's
@@ -222,9 +309,20 @@ the facts, with a table where the content enumerates.
   made** along with everything handed over;
 - **how the delivery was established** — what was read, and from where. ⛔ Never an exit status
   standing in for it;
-- **every item advanced**, and **every item in the batch that was not**, with what held it;
+- **every item advanced**, and **every item in the batch that was not**, with what held it —
+  ⛔ including every item left alone because the tracker already held it at or past that role;
 - **every candidate the batch command named that the tracker answered differently about**, and
   ⛔ **that the command is the batch's only source of candidates**;
+- **the grouping this target was scoped to, and whether it was read** — ⛔ never its length alone,
+  an unread set and an empty one being the same list; the value it was read at, and where that value
+  came from (the tracker's own mark, or this role's invocation);
+- **whether the grouping was marked released** — marked, **refused** with the writer named, or
+  ⛔ **still open with the step and the address handed over**, which is the capability absence and
+  not a failure. ⚠️ Reported beside the items' own outcome and never folded into it: the two writers
+  are read independently;
+- **the precondition, where the entry states one** — the role required, and ⛔ **every item short of
+  it with the role it stands in**, plus every item the answer could not place. Where the entry
+  states `requires_role: none`, that there was none rather than that one passed;
 - **every preparation step collected** — which change it came from, and whether it ran, is still
   running with its readings, or is owed;
 - ⛔ **what was not verified**, named rather than omitted

@@ -1542,6 +1542,76 @@ def self_test() -> int:
         f"reported {reported!r}",
     )
 
+    # § 33's publishing set, which on this tracker is the same board read with a
+    # different question asked of it. ⛔ The grouping's field is the
+    # configuration's and is resolved against the board, so a field this board
+    # does not carry is refused rather than answered with the cards that do not
+    # match it. ⚠️ The value comes off the fixture's own iteration field, which is
+    # the shape § 4.8's `carrier: field` describes here.
+    _boards.clear()
+    IN_A_FIELD = {"carrier": "field", "field": "Sprint", "name": "grouping"}
+    in_grouping = with_host(
+        _Host({}, pages=search_pages),
+        lambda: under_test.grouping_items("Sprint 1", grouping=IN_A_FIELD),
+    )
+    check(
+        "a grouping held in a field is read off the whole board, every page of it",
+        at(in_grouping, "scanned") == len(cards)
+        and len(at(in_grouping, "items") or []) == len(cards),
+        f"scanned {at(in_grouping, 'scanned')!r}, matched "
+        f"{len(at(in_grouping, 'items') or [])}",
+    )
+    check(
+        "and the set carries no bound of its own, a release's set never being cut",
+        "at_limit" not in (in_grouping if isinstance(in_grouping, dict) else {}),
+        f"answered {sorted(in_grouping) if isinstance(in_grouping, dict) else in_grouping!r}",
+    )
+    _boards.clear()
+    other_grouping = with_host(
+        _Host({}, pages=search_pages),
+        lambda: under_test.grouping_items("a release nothing is in", grouping=IN_A_FIELD),
+    )
+    check(
+        "a grouping value nothing carries answers empty, which is what makes the "
+        "filter bite",
+        at(other_grouping, "items") == [] and at(other_grouping, "scanned") == len(cards),
+        f"matched {len(at(other_grouping, 'items') or [])} of "
+        f"{at(other_grouping, 'scanned')!r}",
+    )
+    _boards.clear()
+    nowhere = with_host(
+        _Host({}, pages=search_pages),
+        lambda: refused(
+            lambda: under_test.grouping_items(
+                "Sprint 1",
+                grouping={"carrier": "field", "field": "Nowhere", "name": "grouping"},
+            )
+        ),
+    )
+    check(
+        "a grouping held in a field the board does not have is refused, naming the key",
+        nowhere == "work_item.grouping.field",
+        f"reported {nowhere!r}",
+    )
+    # ⛔ And a carrier this board has no card-level answer for is refused with the
+    # key named: a milestone belongs to the issue behind a card, and a board holds
+    # draft items that are no issue at all -- so a set read that way would be
+    # short by whatever is not an issue and say nothing about it.
+    _boards.clear()
+    off_card = with_host(
+        _Host({}, pages=search_pages),
+        lambda: refused(
+            lambda: under_test.grouping_items(
+                "Sprint 1", grouping={"carrier": "native_milestone", "name": "grouping"}
+            )
+        ),
+    )
+    check(
+        "a grouping carrier a card cannot answer for is refused, naming the carrier",
+        off_card == "work_item.grouping.carrier",
+        f"reported {off_card!r}",
+    )
+
     # The label guard, through the second seam -- the one path that reads a
     # failure rather than a body. ⚠️ Each of the three answers is a different
     # fact, and the empty one is the only reading that lies.

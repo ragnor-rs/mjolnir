@@ -165,6 +165,18 @@ deploy:
     # that skips a rung rather than by the one it was written against.
     advances: terminal
     batch: "<a command answering which of the identifiers handed to it this deploy carries>"
+    # § 33's publishing half. ⛔ `none` on a project that does carry a grouping, which is the
+    # pairing worth showing: the grouping above is an iteration, and a deploy carries what landed
+    # rather than what the time box holds — so narrowing this batch by it would drop every item
+    # whose code shipped from an earlier column. ⚠️ Required all the same: a target scoped to no
+    # grouping and a target nobody thought about read identically otherwise.
+    grouping: none
+    # No precondition: nothing here is judged by a person before it may ship, and the role the
+    # batch is drawn from is `code_landed` whether this key is written or not.
+    requires_role: none
+    # Nothing to mark: an iteration rolling over is not a release, and `closed_by: orderer` above
+    # says whose decision closing it is. `true` beside `grouping: none` is refused anyway.
+    publishes: false
 
 readiness:
   - { check: state_is, roles: [initial], stop: "The item is not in the starting state." }

@@ -1606,6 +1606,101 @@ def self_test() -> int:
         f"states {QUERYABLE!r}",
     )
 
+    # --- § 33's publishing set, by one bounded query --------------------------
+    #
+    # ⛔ The field is the **configuration's**, not one of `QUERYABLE`: § 4.8 says
+    # where this project holds its grouping, and the host resolves that name. ⚠️
+    # The grouping block is read off the shipped example rather than built here,
+    # for the reason every other fixture in this module is read off it.
+    A_RELEASE = "a release"
+    scope = configuration.groupings.get("release_scope") or next(
+        (
+            entry
+            for entry in (configuration.groupings or {}).values()
+            if entry.get("carrier") == "field"
+        ),
+        None,
+    )
+    check(
+        "the example states a grouping held in a field, so these arms have a subject",
+        scope is not None,
+        f"carries {sorted(configuration.groupings or {})!r}",
+    )
+    if scope is not None:
+        in_a_field = {**scope, "name": "release_scope"}
+        grouped = host()
+        answered = with_host(
+            grouped, lambda: under_test.grouping_items(A_RELEASE, grouping=in_a_field)
+        )
+        check(
+            "a grouping held in a field becomes one clause of one bounded query",
+            got(answered, "jql") == as_query(
+                project, None, [], {str(scope.get("field")): A_RELEASE}
+            ),
+            f"sent {got(answered, 'jql')!r}",
+        )
+        check(
+            "and it carries no status clause, the set being every state the "
+            "tracker holds",
+            "status" not in str(got(answered, "jql"))
+            and len(got(answered, "items") or []) == 3,
+            f"sent {got(answered, 'jql')!r} for {len(got(answered, 'items') or [])} item(s)",
+        )
+        # ⛔ The project bound is there whatever else the clause carries: an
+        # unbounded query is refused by this host outright, so a grouping read
+        # that dropped it would fail on every site rather than on this fixture.
+        check(
+            "the project bound is in the query a grouping read sends",
+            "project = " in str(got(answered, "jql")),
+            f"sent {got(answered, 'jql')!r}",
+        )
+        # ⛔ A carrier with nothing for a clause to name is refused with the key
+        # named, and before any call: a grouping this project keeps nowhere a
+        # query reaches is a defect in the text rather than an empty set.
+        unqueryable_grouping = host()
+        reported = with_host(
+            unqueryable_grouping,
+            lambda: refused(
+                lambda: under_test.grouping_items(
+                    A_RELEASE, grouping={"carrier": "native_milestone"}
+                )
+            ),
+        )
+        check(
+            "a grouping carrier no clause can name is refused, naming the carrier, "
+            "before any call",
+            reported == "work_item.grouping.carrier"
+            and unqueryable_grouping.calls == [],
+            f"reported {reported!r} after {unqueryable_grouping.calls}",
+        )
+        # ⚠️ And the cursor is followed here too, under this module's own ceiling,
+        # which is the half a release's set cannot survive being wrong about.
+        grouped_pages = {"calls": 0}
+
+        def _two_grouped_pages(_path, params, _body):
+            grouped_pages["calls"] += 1
+            if not params.get("nextPageToken"):
+                return {
+                    "issues": [grouped_host.issues[key(1)]],
+                    "isLast": False,
+                    "nextPageToken": "a-token",
+                }
+            return {"issues": [grouped_host.issues[key(2)]], "isLast": True}
+
+        grouped_host = host({"search": _two_grouped_pages})
+        answered = with_host(
+            grouped_host,
+            lambda: under_test.grouping_items(A_RELEASE, grouping=in_a_field),
+        )
+        check(
+            "a grouping read that answers with a cursor is followed to the end",
+            grouped_pages["calls"] == 2
+            and [entry.get("key") for entry in got(answered, "items") or []]
+            == [key(1), key(2)]
+            and got(answered, "at_limit") is False,
+            f"made {grouped_pages['calls']} call(s) for {answered!r}",
+        )
+
     # --- `advance_on_merge`: the tracker's half of the question ---------------
     def _history(account: str) -> dict:
         return {key(1): [{

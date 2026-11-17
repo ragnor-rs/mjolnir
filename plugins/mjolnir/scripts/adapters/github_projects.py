@@ -1521,6 +1521,69 @@ def advance_on_merge(number: int) -> dict:
     }
 
 
+def grouping_items(value: str, *, grouping: dict) -> dict:
+    """The cards this board holds in one grouping, off the board read whole.
+
+    ⛔ **The board is read whole and the grouping is matched on the card**, which
+    is `search_items`' shape one question over: a grouping here is a column's
+    value, so the filter is the same field read and the same paging. ⚠️ Its
+    *whole is not current* caveat applies unchanged, and is the honest statement
+    about this read too -- a card added seconds earlier may be absent, and
+    nothing here waits on an index to make that go away.
+
+    ⛔ **A carrier this board has no card-level answer for is refused with the
+    key named**, which is `set_state`'s answer for a status word the board cannot
+    hold. A milestone is the issue's rather than the card's, and a board holds
+    draft items that are no issue at all -- so a set read off milestones would be
+    a set missing whatever the board carries that is not an issue, silently.
+    """
+    carrier = (grouping or {}).get("carrier")
+    if carrier not in ("field", "label"):
+        raise ConfigError(
+            "work_item.grouping.carrier",
+            f"is {carrier!r}, and a grouping on a board is read off the card: a "
+            "field's value, or a prefixed label. A milestone belongs to the issue "
+            "behind a card and a board holds draft items that are no issue at "
+            "all, so a set read that way would be short by whatever is not an "
+            "issue and say nothing about it.",
+        )
+    owner, number = _address()
+    status_field = _configuration().get(STATUS_FIELD_NAME)
+    status_field = str(status_field) if status_field else None
+    held = (grouping or {}).get("field") if carrier == "field" else None
+    if carrier == "field":
+        # ⛔ Resolved against the board, which is what `search_items` does with a
+        # field a caller names: a field this board does not carry is refused
+        # rather than answered with the cards that do not match it.
+        _field(str(held), key="work_item.grouping.field")
+    label = None
+    if carrier == "label":
+        label = f"{(grouping or {}).get('label_prefix') or ''}{value}"
+    nodes = _paged(
+        lambda cursor: _page(owner, number, cursor),
+        what=f"the items of project {number}",
+    )
+    entries = [card_entry(node, status_field) for node in nodes]
+    if carrier == "field":
+        items = [entry for entry in entries if entry["fields"].get(held) == value]
+    else:
+        items = [
+            entry
+            for entry in entries
+            if label in {one.get("name") for one in entry.get("labels") or []}
+        ]
+    return {
+        "grouping": (grouping or {}).get("name"),
+        "value": value,
+        "matched_on": f"the `{held}` field" if carrier == "field" else f"the `{label}` label",
+        "scanned": len(entries),
+        # ⛔ No bound of its own, so no `at_limit`: the board is read whole and the
+        # set is every card that matched. A bound here would be a release's own
+        # set quietly cut, which is the reading § 33's precondition rests on.
+        "items": items,
+    }
+
+
 ADAPTER = port.Adapter(binder=bind, operations={
     "read_item": read_item,
     "search_items": search_items,
@@ -1535,6 +1598,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "read_blockers": read_blockers,
     "link_for_close": link_for_close,
     "advance_on_merge": advance_on_merge,
+    "grouping_items": grouping_items,
     # ⛔ The operations this tracker has nothing to implement against are named
     # once, below, and read from there by the suite.
 })
@@ -1543,7 +1607,21 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # to implement them against. ⛔ Written once, here, and read by the self-test's
 # completeness check rather than restated in it: an absence added here would
 # otherwise be an operation nobody noticed going missing.
-DELIBERATELY_ABSENT = ("checklist_read", "checklist_write", "checklist_item_delete")
+#
+# `mark_grouping_released` is the newest of them and the reason is the sharpest:
+# a grouping here is a **field's value** -- an iteration option, a text -- and a
+# field value is not an object that can be marked anything. There is no endpoint
+# that closes one, and the board's own rollover is a date passing rather than an
+# act. ⚠️ So § 3's stated fallback is what a release on this tracker gets: the run
+# names the step and the address, carries on, and reports the grouping still
+# open. ⛔ Not implemented against the iteration's dates, which would be this
+# module inventing a release out of a calendar.
+DELIBERATELY_ABSENT = (
+    "mark_grouping_released",
+    "checklist_read",
+    "checklist_write",
+    "checklist_item_delete",
+)
 
 
 def self_test() -> int:

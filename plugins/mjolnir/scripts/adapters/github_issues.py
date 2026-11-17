@@ -44,6 +44,15 @@ What it implements, and what it deliberately does not:
     the operation itself. What it does guard is the two ways an empty answer
     lies: a state qualifier hidden in the terms, and a label the repository does
     not have.
+  * **§ 33's publishing pair addresses the milestone an issue carries natively,
+    by title.** § 4.8's value is the word on the item and this host's milestone
+    number is its own, so the title is what is matched and the number is what the
+    write then uses. Both operations ask the milestone listing across **both**
+    states, which is this host's own trap: it answers with the open ones by
+    default, so a release already marked would read as *no such milestone*. ⚠️ A
+    carrier plain issues have no object for is refused with the key named rather
+    than answered -- `set_state`'s rule for a status word this tracker cannot
+    hold, at the grouping instead of at the item.
   * **Every operation taking an item number resolves it through `read_item`
     first**, which is what makes the pull-request guard there cover them rather
     than cover one. ⚠️ Measured: an earlier draft claimed that coverage while
@@ -107,6 +116,13 @@ NOT_FOUND = "(HTTP 404)"
 # recently updated under a bound; the host's own default order is relevance,
 # which means nothing to a query with no terms in it.
 RECENT_FIRST = "sort:updated-desc"
+
+# The bound on one milestone's listing. ⛔ Carried rather than left to the host's
+# own default, which is 30: a release of forty items would have come back as
+# thirty with no warning, and § 33's precondition reads *nothing is short* off a
+# set that was quietly cut. The answer says whether it filled the bound, which is
+# the honest reading of a listing that may be short.
+MILESTONE_LIMIT = 500
 
 # The configuration the port last handed down, and the only place one comes from.
 # ⛔ Never resolved here, and never from the working directory: which repository
@@ -737,6 +753,152 @@ def advance_on_merge(number: int) -> dict:
     }
 
 
+def _milestone(value: str) -> dict:
+    """The milestone this repository holds under `value`, by title.
+
+    ⛔ **Across both states**, which is this host's own trap: the listing
+    defaults to the open ones, so a release already marked would come back
+    absent and the next ask would read as *no such milestone* rather than as
+    *already closed*.
+
+    ⛔ **Matched on the title and never on the number.** § 4.8's value is the
+    project's own word for the grouping -- the word on the item -- and the
+    number is this host's internal one, so a reader that took the value for a
+    number would address a different milestone whenever the two disagreed.
+    ⚠️ Exactly, then case-insensitively, and ⛔ an ambiguous fold is refused
+    rather than resolved: two milestones a project cannot tell apart is a
+    defect in the text, and closing the wrong release is not recoverable.
+    """
+    repo = _repo()
+    held = _gh(["api", "--paginate", f"repos/{repo}/milestones?state=all"])
+    if not isinstance(held, list):
+        raise port.HostUnavailable(
+            f"`gh api repos/{repo}/milestones` answered something that is not a "
+            "list, so which milestones this repository holds could not be read."
+        )
+    exact = [one for one in held if one.get("title") == value]
+    if len(exact) == 1:
+        return exact[0]
+    folded = [
+        one
+        for one in held
+        if str(one.get("title", "")).casefold() == str(value).casefold()
+    ]
+    if len(folded) == 1:
+        return folded[0]
+    if not folded:
+        raise port.ConfigError(
+            "work_item.grouping",
+            f"names the grouping {value!r}, which is not a milestone {repo} holds. "
+            "The value is the word on the item and the milestone is addressed by "
+            f"its title, so a grouping this repository has no milestone for is a "
+            "defect in the text rather than a capability that is absent.",
+        )
+    raise port.ConfigError(
+        "work_item.grouping",
+        f"names the grouping {value!r}, which {len(folded)} milestones in {repo} "
+        "answer to once case is set aside. Which one a release closes is not this "
+        "implementation's to choose.",
+    )
+
+
+def _native_milestone(grouping: dict, operation: str) -> None:
+    """Refuse a grouping this tracker holds nowhere, with the key named.
+
+    ⛔ `set_state`'s refusal one facet over, and the same kind of answer: a
+    carrier plain issues have no object for is a **defect in the text** rather
+    than an absent capability (§ 4.2's rule for a status word this tracker
+    cannot hold). An implementation that answered for a label grouping here
+    would be closing something that is not a release.
+    """
+    carrier = (grouping or {}).get("carrier")
+    if carrier != "native_milestone":
+        raise port.ConfigError(
+            "work_item.grouping.carrier",
+            f"is {carrier!r}, and `{operation}` on plain issues addresses the "
+            "milestone an issue carries natively. A label is a word on an item "
+            "with nothing to close and no field exists here to hold a grouping, "
+            "so this is a configuration this tracker cannot hold rather than an "
+            "operation it is missing.",
+        )
+
+
+def grouping_items(value: str, *, grouping: dict) -> dict:
+    """The items this repository holds in one milestone, across both states.
+
+    ⛔ **Both states, as `search_items` is**: § 33 reads this set to hold it to a
+    role, and a release held by an item somebody closed by hand is still a fact
+    about the release. The set narrowed to the open ones would answer *nothing is
+    short* for a grouping whose every item had moved.
+
+    Items come back in the host's own field names, the ones `read_item` returns,
+    so the port places each of them against `statuses` with nothing renamed --
+    and ⛔ **`body` is not among them**, for `search_items`'s reason: this is a
+    set, and a set call pulling every body is a backlog in the window.
+
+    ⚠️ The bound is this host's listing bound and the answer carries it, because
+    the layer reading this is required to report one: `at_limit` says the host
+    had at least this many and never that it had more.
+    """
+    _native_milestone(grouping, "grouping_items")
+    # ⛔ Resolved through the listing first, so a milestone this repository does
+    # not hold is refused by name rather than coming back as an empty set -- which
+    # is `search_items`'s unknown-label rule, at the one read a release rests on.
+    held = _milestone(value)
+    items = _gh([
+        "issue", "list", "--repo", _repo(),
+        "--milestone", str(held["title"]),
+        "--state", "all",
+        "--limit", str(MILESTONE_LIMIT),
+        "--json", "number,title,state,labels,updatedAt,url",
+    ])
+    return {
+        "grouping": (grouping or {}).get("name"),
+        "value": held["title"],
+        "state": held.get("state"),
+        "limit": MILESTONE_LIMIT,
+        "at_limit": len(items) >= MILESTONE_LIMIT,
+        "items": items,
+    }
+
+
+def mark_grouping_released(value: str, *, grouping: dict) -> dict:
+    """Close the milestone this grouping names, which is the release's own mark.
+
+    ⛔ **Idempotent, by reading before writing**, which is `set_state`'s rule at
+    the one object a deploy touches that is not an item: a release marked twice
+    is a second write nobody asked for, and a run that retried after a failure
+    partway through would make one.
+
+    ⚠️ **Closing the milestone closes nothing in it**, which is § 4.8's
+    `closes_items` as this host behaves: the issues keep whatever state they
+    have, and the items' own move is the port's separate advance. A project
+    stating otherwise is refused where the configuration is read.
+    """
+    _native_milestone(grouping, "mark_grouping_released")
+    held = _milestone(value)
+    if str(held.get("state", "")).lower() == CLOSED:
+        return {
+            "grouping": (grouping or {}).get("name"),
+            "value": held["title"],
+            "state": held.get("state"),
+            "marked": False,
+            "already": True,
+        }
+    marked = _gh([
+        "api", "-X", "PATCH",
+        f"repos/{_repo()}/milestones/{held['number']}",
+        "-f", f"state={CLOSED}",
+    ])
+    return {
+        "grouping": (grouping or {}).get("name"),
+        "value": marked.get("title", held["title"]),
+        "state": marked.get("state"),
+        "marked": True,
+        "already": False,
+    }
+
+
 def self_test() -> int:
     """This implementation's suite, which lives in the module beside it.
 
@@ -767,6 +929,8 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "read_blockers": read_blockers,
     "link_for_close": link_for_close,
     "advance_on_merge": advance_on_merge,
+    "grouping_items": grouping_items,
+    "mark_grouping_released": mark_grouping_released,
     # ⛔ The operations this tracker has nothing to implement against are named
     # once, below, and read from there by the suite.
 })

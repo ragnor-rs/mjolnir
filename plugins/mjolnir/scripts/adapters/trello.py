@@ -1435,11 +1435,22 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # ⚠️ No count, for the reason the docstring gives: this tuple grew by one the
 # first time the port stated a read half for the dependency, and a number in this
 # comment would have been wrong while the suite stayed green.
+# § 33's publishing pair is the newest of them, and both halves are absent for one
+# reason: a board has lists and cards and **no object a set of cards is planned
+# into**. A list is this project's status ladder (§ 4.2), so reading a grouping off
+# one would read a column as a release; a prefixed label could carry a grouping's
+# value, but there is still nothing to mark released at the other end, and an
+# implementation answering one half and not the other would let a release's items
+# be held to a bar nothing could ever publish. ⚠️ The example beside this module
+# states `carrier: none` with its own reason, which is the same fact from the
+# project's side rather than a second statement of this one.
 DELIBERATELY_ABSENT = (
     "link_dependency",
     "read_blockers",
     "link_for_close",
     "advance_on_merge",
+    "grouping_items",
+    "mark_grouping_released",
 )
 
 

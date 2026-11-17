@@ -1607,6 +1607,48 @@ def _grouping_facet(data: dict, facts: dict) -> dict[str, dict]:
                 f"grouping inside the gate — which is what `{IN_GROUPING_CHECK}` "
                 "exists to ask instead (§ 5, § 4.8).",
             )
+
+    # ⛔ § 33's publishing half read against this facet, and read **here** rather
+    # than in `_validate_deploy` for this function's own reason: the names a
+    # target may write sit one level deeper than any absolute path in `validate`
+    # reaches, so the shape of the key is held there and which grouping it may
+    # name is held here. ⚠️ The three refusals are the gate's three, one facet
+    # over -- a project planning in no grouping, the single form named, and a
+    # name the facet does not carry -- because a target asking about a grouping
+    # and a check asking about one are the same question of the same facet.
+    for index, entry in enumerate(_absent_as(_get(data, "deploy"), [])):
+        if not isinstance(entry, dict):
+            continue
+        named = entry.get(GROUPING_ENTRY_KEY)
+        if not isinstance(named, str) or named.strip() in ("", "none"):
+            continue
+        named = named.strip()
+        where = f"deploy[{index}].{GROUPING_ENTRY_KEY}"
+        if not carried:
+            stated = " ".join(str(_get(data, f"{GROUPING_KEY}.absent_reason")).split())
+            raise ConfigError(
+                f"{GROUPING_KEY}.carrier",
+                f"is `none` while `{where}` names the grouping {named!r} (§ 33). "
+                "A target scoped to a grouping on a project that plans in none has "
+                "no set to publish, and the facet's own stated reason for planning "
+                f"in no grouping is: {stated!r}. Carry the facet, or write `none` "
+                "on the target.",
+            )
+        if not collection:
+            if named != ONE_GROUPING:
+                raise ConfigError(
+                    where,
+                    f"is {named!r}, while `{GROUPING_KEY}` is written as one block "
+                    f"and resolves to the single entry `{ONE_GROUPING}` — which is "
+                    "the name to write here, or `none` where this target is scoped "
+                    "to no grouping (§ 33, § 4.8).",
+                )
+        elif named not in carried:
+            raise ConfigError(
+                where,
+                f"is {named!r}, which `{GROUPING_KEY}` does not carry — it carries "
+                f"{', '.join(repr(k) for k in sorted(carried))} (§ 33, § 4.8).",
+            )
     return carried
 
 
@@ -4393,6 +4435,89 @@ def _validate_deploy(
                 f"{where}.batch",
                 "must be a non-empty command, stated whole (§ 33); omit it where "
                 "this target carries no batch.",
+            )
+        # ⛔ § 33's publishing half. Required for the reason `not_live` and
+        # `advances` above are: a target that says nothing about the grouping it
+        # publishes and a target somebody never thought about read identically,
+        # and the one nobody thought about is the one that marks nothing and
+        # reports a release everybody else cannot see. ⚠️ **Which grouping the
+        # name has to be is not read here** -- that pair is `_grouping_facet`'s,
+        # the facet's own keys sitting deeper than any path in `validate`.
+        grouping = entry.get("grouping")
+        if grouping is None:
+            raise ConfigError(
+                f"{where}.grouping",
+                "required (§ 33); `none` where this target is scoped to no "
+                "grouping, which is what a project planning in none writes on "
+                "every target and what a target carrying a batch of its own "
+                "writes beside a project that does plan in one.",
+            )
+        if not isinstance(grouping, str) or not grouping.strip():
+            raise ConfigError(
+                f"{where}.grouping",
+                f"is {grouping!r}; it must be a name § 4.8 carries, or `none` "
+                "(§ 33).",
+            )
+        requires_role = entry.get("requires_role")
+        if requires_role is None:
+            raise ConfigError(
+                f"{where}.requires_role",
+                "required (§ 33); `none` where no role is required of the set "
+                "this target publishes. A precondition nobody stated and a "
+                "precondition nobody thought about read identically, and this is "
+                "the key that refuses a release while an item is short of it.",
+            )
+        if requires_role != "none":
+            if requires_role not in roles:
+                raise ConfigError(
+                    f"{where}.requires_role",
+                    f"is {requires_role!r}; the surface states "
+                    f"{' | '.join(roles)}, or `none`.",
+                )
+            if requires_role not in mapped_roles:
+                raise ConfigError(
+                    f"{where}.requires_role",
+                    f"is {requires_role!r}, which no status in `statuses` maps "
+                    "(§ 33). A precondition naming a role this project has no "
+                    "status for is one no item can ever hold, so it would hold "
+                    "every release for ever -- and it is refused where it is "
+                    "written rather than met against an item.",
+                )
+            # ⛔ The set the precondition is read over has to exist: § 33 reads it
+            # off the grouping where the target names one and off the batch's own
+            # candidates where it does not, so a target with neither states a bar
+            # over nothing.
+            if grouping == "none" and "batch" not in entry:
+                raise ConfigError(
+                    f"{where}.requires_role",
+                    f"is {requires_role!r} while this target names neither a "
+                    "grouping nor a `batch`, so there is no publishing set to "
+                    "read it over (§ 33). The set is the grouping's items where "
+                    "one is named and the batch's own candidates where it is not.",
+                )
+        if "publishes" not in entry:
+            raise ConfigError(
+                f"{where}.publishes",
+                "required (§ 33). Whether reaching this target marks the grouping "
+                "released is the target's own fact, and a project's lower target "
+                "and its publishing one differ in exactly this -- so it is stated "
+                "rather than read off `not_live`, which answers a different "
+                "question.",
+            )
+        if not isinstance(entry["publishes"], bool):
+            raise ConfigError(
+                f"{where}.publishes",
+                f"is {entry['publishes']!r}; it must be `true` or `false` "
+                "written as a boolean (§ 33), for the reason `not_live` above is: "
+                "a word read as truthy would publish a grouping this target was "
+                "never meant to.",
+            )
+        if entry["publishes"] and grouping == "none":
+            raise ConfigError(
+                f"{where}.publishes",
+                "is true while `grouping` is `none` (§ 33), so there is "
+                "nothing for the mark to be about. A target that "
+                "publishes names the grouping it publishes.",
             )
 
 
@@ -10070,6 +10195,11 @@ def self_test() -> int:
             if entry.get("check") not in (
                 IN_GROUPING_CHECK, GROUPING_REF_CHECK)
         ]
+        # ⛔ § 33's half of the same absence, and it is the facet working rather
+        # than this fixture working around it: a target scoped to a grouping on a
+        # project that plans in none has no set to publish, so the shipped file's
+        # targets write `none` here exactly as its gate drops the checks above.
+        _unscope_targets(stated_absent)
         loaded_absent = _refused(stated_absent)
         check(
             "a project that plans in no grouping is a configuration, not a refusal",
@@ -10113,6 +10243,7 @@ def self_test() -> int:
             entry for entry in _get(all_absent, "readiness")
             if entry.get("check") not in (IN_GROUPING_CHECK, GROUPING_REF_CHECK)
         ]
+        _unscope_targets(all_absent)
         refused_all_absent = _refused(all_absent)
         check(
             "a collection whose every grouping is absent is a configuration, not a refusal",
@@ -11866,6 +11997,20 @@ def self_test() -> int:
           "workflow": _a_workflow_the_example_states()}),
         ("a target with a precondition the invocation does not check loads",
          {"requires": ["a credential this repository may not hold"]}),
+        # ⛔ The publishing half's green side, which the plants below cannot
+        # reach either. ⚠️ `publishes: false` is this facet's `not_live: false`:
+        # read for truth it is the whole point of the key, and read for presence
+        # the key written `false` would publish a grouping nobody asked to.
+        ("a target scoped to the grouping its project plans in, publishing it, loads",
+         {"grouping": _a_grouping_the_example_plans_in(), "publishes": True}),
+        ("and the same target not publishing it loads too",
+         {"grouping": _a_grouping_the_example_plans_in(), "publishes": False}),
+        # ⛔ A precondition over the batch's own candidates, which is the arm
+        # that holds `requires_role` independent of `grouping`: the measured
+        # shape is a release refused while an item has not reached a lower
+        # environment's role, on a project planning in no grouping at all.
+        ("a precondition read over the batch's candidates, with no grouping named, loads",
+         {"requires_role": _a_role_some_status_maps(), "batch": "a-batch-command"}),
     ):
         loaded = _a_valid_example()
         loaded["deploy"] = [_a_deploy_target(**overrides)]
@@ -12510,6 +12655,39 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(advances=_a_role_some_status_maps())])),
         ("a batch written blank", "deploy[0].batch",
          at("deploy", [_a_deploy_target(batch="   ")])),
+        # ⛔ § 33's publishing half, every arm of it. ⚠️ Each plant leaves one key
+        # out or writes one wrong value and nothing else, so a refusal arriving
+        # under another key is this list saying the plant missed rather than the
+        # rule holding.
+        ("a target saying nothing about the grouping it publishes", "deploy[0].grouping",
+         at("deploy", [_a_deploy_target(grouping=_ABSENT)])),
+        ("a grouping written as something that is not a name", "deploy[0].grouping",
+         at("deploy", [_a_deploy_target(grouping=["a-grouping"])])),
+        ("a grouping written blank", "deploy[0].grouping",
+         at("deploy", [_a_deploy_target(grouping="   ")])),
+        # ⛔ The single form named by anything but what it resolves to, which is
+        # § 4.8's own refusal for a gate check one facet over.
+        ("a grouping no name of the facet's answers to", "deploy[0].grouping",
+         at("deploy", [_a_deploy_target(grouping="a grouping nothing plans in")])),
+        ("a target saying nothing about a precondition", "deploy[0].requires_role",
+         at("deploy", [_a_deploy_target(requires_role=_ABSENT)])),
+        ("a precondition outside the role vocabulary", "deploy[0].requires_role",
+         at("deploy", [_a_deploy_target(requires_role="sideways",
+                                        batch="a-command")])),
+        ("a precondition naming a role no status maps", "deploy[0].requires_role",
+         at("deploy", [_a_deploy_target(requires_role=_a_role_no_status_maps(),
+                                        batch="a-command")])),
+        # ⛔ The set the bar is read over has to exist: no grouping named and no
+        # batch stated is a precondition over nothing.
+        ("a precondition with neither a grouping nor a batch to read it over",
+         "deploy[0].requires_role",
+         at("deploy", [_a_deploy_target(requires_role=_a_role_some_status_maps())])),
+        ("a target saying nothing about whether it publishes", "deploy[0].publishes",
+         at("deploy", [_a_deploy_target(publishes=_ABSENT)])),
+        ("publishing written as a word rather than a boolean", "deploy[0].publishes",
+         at("deploy", [_a_deploy_target(publishes="yes")])),
+        ("a target that publishes while naming no grouping", "deploy[0].publishes",
+         at("deploy", [_a_deploy_target(publishes=True)])),
         ("a readiness list that is not a list", "readiness", at("readiness", "all")),
         ("a readiness entry that is not a block", "readiness[0]", at("readiness", ["x"])),
         ("a readiness entry with no check", "readiness[0].check",
@@ -14661,9 +14839,62 @@ def _a_deploy_target(**overrides) -> dict:
         "invoke": "command",
         "command": "a-command",
         "advances": "none",
+        # § 33's publishing half, in the shape that depends on nothing the example
+        # it is placed into happens to carry: a grouping named here would have to
+        # be one *that* project plans in, and a role named here one its own
+        # `statuses` map.
+        "grouping": "none",
+        "requires_role": "none",
+        "publishes": False,
     }
     target.update(overrides)
     return {key: value for key, value in target.items() if value is not _ABSENT}
+
+
+def _a_grouping_the_example_plans_in() -> str:
+    """The name a § 33 target may write for `_a_valid_example`'s own grouping.
+
+    ⛔ Derived rather than written, for `_a_workflow_the_example_states`'s
+    reason: the single form resolves to one entry under `ONE_GROUPING` and the
+    collection form carries the project's own names, so a literal here would be
+    refused by the form rule instead of reaching the arm it was planted for --
+    green under a key saying nothing about what was asserted.
+
+    ⛔ Raises where the example plans in no grouping, rather than answering with
+    something: the green arms below would then assert nothing while still
+    reading as green, which is the one shape this module may not fail in.
+    """
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    data = _a_valid_example()
+    groupings, collection = _groupings(data, facts)
+    carried = sorted(
+        name for name, entry in groupings.items()
+        if isinstance(entry, dict) and entry.get("carrier") not in (None, "none")
+    )
+    if not carried:
+        raise ConfigError(
+            GROUPING_KEY,
+            "the example plans in no grouping, so § 33's publishing arms have no "
+            "name to carry and the plants aimed at them would be refused for the "
+            "absence rather than for what they plant.",
+        )
+    return carried[0] if collection else ONE_GROUPING
+
+
+def _unscope_targets(data: dict) -> dict:
+    """Every § 33 target in `data` scoped to no grouping, and publishing none.
+
+    ⛔ For the fixtures that make § 4.8's facet absent on a shipped file: a
+    target naming a grouping the project no longer plans in is refused, which is
+    the facet working rather than the fixture's problem -- so the fixture writes
+    what such a project writes instead of asserting around the refusal.
+    """
+    for entry in _absent_as(_get(data, "deploy"), []):
+        if isinstance(entry, dict):
+            entry[GROUPING_ENTRY_KEY] = "none"
+            entry["publishes"] = False
+    return data
 
 
 # The sentinel `_a_deploy_target` reads as *leave this key out*, which `None`

@@ -231,6 +231,14 @@ deploy:
       "<the input naming what the run builds>": "<the branch this target serves>"
     advances: deployed
     batch: "<a command answering which of the identifiers handed to it this deploy carries>"
+    # § 33's publishing half, and `none` on every target here because the facet above carries no
+    # grouping: the publishing set is the batch's own candidates, and `publishes: true` would be
+    # refused with both keys named. ⛔ Not a deploy that writes nothing on the tracker — the item
+    # advance above is this facet's own and the absent grouping does not reach it.
+    grouping: none
+    # This is the target that advances items *into* the role the one below requires of them.
+    requires_role: none
+    publishes: false
   - name: "<the environment a version is released to>"
     not_live: false
     # ⛔ Configured, not a capability that is missing: the act spends a version for ever, so this
@@ -241,6 +249,17 @@ deploy:
     ref: "<the tag shape a release is cut as>"
     advances: terminal
     batch: "<a command answering which of the identifiers handed to it this release carries>"
+    grouping: none
+    # ⛔ The precondition, and the example that shows why it is a role rather than a flag: it names
+    # `deployed`, which is NOT the role this target advances from. That one is derived — `accepted`,
+    # § 4.2's own neighbour of `terminal` here — and an item outside it is named and not advanced
+    # while the release goes ahead. This key has the opposite sign: any item in the publishing set
+    # that has not reached the shared environment above holds the **whole** release, and the
+    # refusal names every one of them. ⚠️ Code must pass through the lower environment, which is a
+    # rule about the release and not about the item.
+    requires_role: deployed
+    # Nothing to mark, the facet above carrying no grouping.
+    publishes: false
   # The third shape, and the one two targets in the survey make free to run: a command, in one of
   # the command roots § 1 declares above, reaching a stack this session is the only user of.
   - name: "<the stack on this machine>"
@@ -252,6 +271,11 @@ deploy:
     requires: ["<the credential file this repository may not hold>"]
     # ⛔ Nothing is written on an item for a deploy nobody outside this machine can see.
     advances: none
+    grouping: none
+    # ⛔ `none` is the only value this target may carry: it states no `batch` either, so there is
+    # no publishing set for a precondition to be read over and a role here is refused at load.
+    requires_role: none
+    publishes: false
 
 readiness:
   - { check: state_is, roles: [ready], stop: "The item has not been gated into committed work." }

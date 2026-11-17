@@ -2976,4 +2976,123 @@ this reading was blocked for and which depends on it. The list sits at the top l
 project with one code root and a project with several write the same thing, and the question of
 which root a target belongs to is answered where that item lands it —
 [`§ 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes)
-says so at the key.
+says so at the key. ⚠️ **The other one it left is settled below**, which is why this paragraph names
+one rather than two.
+
+## Publishing a release: the two writers, and the precondition that holds a target
+
+The reading behind
+[`§ 33 → Publishing a grouping`](../plugins/mjolnir/config/schema.md#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)
+and the two operations it rests on in
+[`§ 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does). It
+is the half the deploy facet above named and left where it was, and what settles it is the same
+seven carriers read again for one question: **what a release writes that is not an item.**
+
+### One act or two, decided by the writers rather than by the shape
+
+⛔ **Two, and the deciding evidence is a single pass in a single project.** One carrier's version is
+marked released **by hand** — the step is a link handed to a person, every release — while the items
+in that same version are advanced programmatically in the same minute. So one half's writer is a
+person and the other's is the procedure, on two objects a single operation would have had to write
+together. ⚠️ **A single operation cannot carry two writers**, which is what makes this a shape
+argument rather than a preference: the surface already states a writer per status
+([`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)) and a
+writer per grouping ([`§ 4.8`](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s
+`closed_by`), and folding the acts together would have obliged one of those two keys to be ignored.
+
+⚠️ **And `closed_by` was a key with no act behind it until this reading.** § 4.8 stated the writer
+and said outright that no role in the loop closed a grouping, so the refusal was reserved for
+whichever role came to. The deploying one is that role, and it asks as `deploy` — which is also why
+§ 4.8's own sentence about *performed by nothing yet* is now wrong and was corrected rather than
+left.
+
+### Which subset: one key, because the rest was already derived
+
+⛔ **The filter the deploy facet described as `(grouping, from_role, to_role)` needed one key and
+not three.** § 33 already derives the role an item is advanced *from* — the status immediately
+before `advances` in § 4.2's own order, right for every one of the seven — and already states the
+role it advances *to*. What no key carried was **which grouping** a target is scoped to, and that is
+the one addition: a name § 4.8 carries, or `none`.
+
+⚠️ **`none` is not the absent case of a project with no grouping alone**, which is what makes the
+key worth stating on every target. One carrier plans in an iteration and deploys what landed: its
+batch must not be narrowed by the time box, because an item whose code shipped from an earlier
+column is in the deploy and not in the iteration. So a project that *has* a grouping still writes
+`none` on a target that is not scoped to it.
+
+### The precondition: a key, and the two shapes that make it one
+
+⛔ **Stated and not derived, and the alternative is the one a reader will reach for first**, which
+is the rule at
+[`§ 33 → Publishing a grouping`](../plugins/mjolnir/config/schema.md#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target).
+In both
+measured shapes the required role coincides with the role the advance is made from: one project's
+release may carry only items a person has already accepted, and another's live deploy **refuses to
+run at all** while any item with commits on the integration branch has not reached the
+staging-deployed state. ⚠️ **Deriving it from `advances` would therefore look right on both** — and
+would give every project with a ladder a precondition it never ruled, which the item's own
+acceptance forbids in as many words: a project whose statuses map no such role publishes exactly as
+it does today.
+
+⛔ **What the key changes is the consequence, not the role.**
+[`§ 33 → The batch`](../plugins/mjolnir/config/schema.md#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong)'s
+existing rule for an item
+outside the advance's own role is *named and not advanced*, with the deploy going ahead; this one
+holds the **whole target** and names every item short of the role, because a release is a set and a
+set with a hole in it is not a release. ⚠️ **Which is also why the refusal names all of them**: the
+answer a person needs is what the release is waiting on, and the first item found is not that.
+
+⚠️ **The procedure cannot produce the state either way**, which is what keeps this a precondition
+rather than a step: § 4.2 maps the role to a status written by the person who ordered the work, or
+by a lower environment's own deploy. It is
+[`§ 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)'s
+`answered_by` one state later — a verdict somebody else records, blocking a step the procedure would
+otherwise take.
+
+⚠️ **One carrier's gate has a known hole and names it itself**: an item whose change is confined to
+a shared library can never reach the earlier role, because no deployable service's flag set names
+it, so it is advanced by hand. ⛔ **Which is why the bar is read over a set that is reported rather
+than assumed**: an item the answer could not place is reported **unanswered**, never short and never
+clear, and a release held by an item nobody could place reads exactly like one held by nothing.
+
+### Where the set comes from, and the two arms it has
+
+⛔ **The publishing set is the grouping's items where a target names one and the batch's own
+candidates where it does not** — the two arms at
+[`§ 33 → Publishing a grouping`](../plugins/mjolnir/config/schema.md#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target),
+and the reason the precondition is independent of the grouping key.
+The first arm is the body of the reading above; the second is the carrier whose gate reads *items
+with commits on the integration branch*, on a project that plans in no grouping at all.
+
+⛔ **The batch stays the only source of candidates for the advance**, which
+[`§ 33 → The batch`](../plugins/mjolnir/config/schema.md#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong)
+already rules: the grouping **narrows**, and an item the grouping holds that the batch never named
+is reported rather than advanced. ⚠️ **An unread grouping and a grouping holding nothing are the
+same list**, so what the report carries is which of the two it was and never its length.
+
+### What the trackers can actually do, which is where the absence is real
+
+⛔ **Reading a grouping's membership rides a query on every tracker that has one**, so it is one of
+the two operations at
+[`§ 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does): a
+milestone's issue listing, a board read filtered on a field's value, a bounded query on
+the field a project names. ⛔ **Marking one released does not.** A grouping held in a **field's
+value** — the commonest carrier in the survey — is not an object anything can close: there is no
+endpoint, and a board's iteration rolling over is a date passing rather than an act.
+
+⚠️ **So of the implementations behind the port, the set is readable on three and the mark is
+implementable on one**, and the one is the tracker whose grouping is a native object with a state of
+its own. ⛔ **The others declare the mark absent rather than implementing it against something
+else** — against an iteration's dates, or against a label that cannot be closed — which would be an
+implementation inventing a release out of a calendar. ⚠️ **No figure beyond those two is written
+here**, and the lists themselves are the implementations' own declarations rather than a table
+anything restates.
+
+⛔ **A carrier a given tracker has no object for is refused with the key named rather than reported
+absent**, which is
+[`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)'s rule
+for a status word a tracker cannot hold, one facet up: the
+capability is the adapter's fact and the carrier is the project's, so a configuration naming a
+carrier its tracker cannot address is a defect in the text. ⚠️ **The two readings are kept apart on
+purpose** — *this tracker cannot do it at all* takes § 3's fallback and the run carries on, while
+*this project wrote something this tracker has nowhere to put* stops with the key.
