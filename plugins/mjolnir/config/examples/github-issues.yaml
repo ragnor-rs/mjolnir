@@ -398,3 +398,27 @@ context_guard:
   # The default, written out: the arm reads nothing this project knows, so the value says the
   # default was looked at rather than left to be read in later by somebody who finds it missing.
   reread: refuse
+
+release:
+  # The copy this facet was read out of: a build file declaring the version, a changelog, and a
+  # readme quoting the current version to a reader. Ordered, because the readme quotes what the
+  # build file declares.
+  carrier: list
+  files:
+    - path: "<the build file the version is declared in>"
+      kind: regex
+      pattern: 'version = "(?P<version>\d+\.\d+\.\d+)(-SNAPSHOT)?"'
+      replace: 'version = "{version}"'
+    - path: "<the changelog>"
+      kind: changelog
+    # ⚠️ The flag with the measurement behind it: in the copy surveyed this file does not exist,
+    # and a release that stopped on it is a release that cannot be cut.
+    - path: "<a file quoting the current version to a reader>"
+      kind: regex
+      pattern: 'Latest: \*\*v(?P<version>\d+\.\d+\.\d+)'
+      replace: 'Latest: **v{version}'
+      optional: true
+  # Packages go to a registry, so the version is spent for ever and the go is the person's — § 34.
+  publishes_packages: true
+  # This project writes its own changelog, so the role writes the `changelog` entry above.
+  changelog_ci_owned: false

@@ -612,3 +612,17 @@ context_guard:
   # answer whether its content changed since this session read it — and a guard reading them would
   # refuse a read of something new.
   reread: allow
+
+release:
+  # Two files carrying one version — the build file and the changelog — and a tag spent against
+  # a registry nobody can take a version back from.
+  carrier: list
+  files:
+    - path: "<the build file the version is declared in>"
+      kind: regex
+      pattern: '<version>(?P<version>\d+\.\d+\.\d+)</version>'
+      replace: '<version>{version}</version>'
+    - path: "<the changelog>"
+      kind: changelog
+  publishes_packages: true
+  changelog_ci_owned: false
