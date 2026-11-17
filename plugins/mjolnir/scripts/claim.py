@@ -614,8 +614,8 @@ def a_work_tree(path: str, main_tree: str, tree_dir: str | Path | None = None) -
     if configured is not None:
         # ⚠️ Realpaths on both sides, which is the one thing this comparison cannot
         # skip: a tree directory reached through a symlinked parent -- the ordinary
-        # shape of a temporary directory on this platform -- compares equal to
-        # nothing otherwise.
+        # shape of a temporary directory on one of the two platforms measured --
+        # compares unequal as text and equal as a place.
         return os.path.dirname(here) == os.path.realpath(configured)
     return not here.startswith(main + os.sep)
 
