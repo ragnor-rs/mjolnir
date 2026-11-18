@@ -238,11 +238,13 @@ key either way. The remedy is the same act in both cases — make the file match
 what is marked required and deleting what is marked retired — so what is given up is a diagnostic,
 not a behaviour, and no reader has to be told what to do with a revision it can no longer read.
 
-## The loop — eleven roles
+## The loop — thirteen roles
 
 File a work item · gate it into committed work · start it · finish it · review it · deploy ·
 cut a release · log the day · keep the session's books · restore a session's context ·
-produce deliverables. Two utilities travel beside the loop without being part of it.
+summarise a session for a reader outside the build · bill a period's hours as line items ·
+break a given total of hours down over the work a period shipped. Two utilities travel beside
+the loop without being part of it.
 
 ⚠️ **Keeping the session's books and restoring its context are one pair**, and the loop grew by one
 when the second of them was written: bookkeeping persists what happened at a boundary and
@@ -250,6 +252,21 @@ when the second of them was written: bookkeeping persists what happened at a bou
 next pass. ⛔ **A pair rather than one role with two modes**, because what each may do is opposite —
 one writes and the other is read-only — and a role free to do both would be free to restore by
 deciding.
+
+⚠️ **The last three are three roles and not one**, and the loop grew by two when they were told
+apart: one directory name carried a prose summary of a single session, a billing period's line
+items with an hourly-rate conversion, and a narrative distribution of a total of hours that
+arrives on the invocation. ⚠️ **Who reads each of them is
+[§ 8](#8-language-register-audience--per-artifact-not-per-project)'s and is stated there once**,
+as three artifact keys with three audiences — a reader per role being what a project configures,
+which this section would otherwise carry a second copy of. ⛔ **Three roles rather than one role
+with three modes**, for the reason the pair above is a pair — what each may do differs.
+⛔ **The hours-breakdown role may not measure the period it reports on**: the total is given to it,
+and a role free to measure one would be free to replace a figure [§ 9](#9-day-log) produced with
+one of its own. ⛔ **The billing role is the only one of the three that converts hours to money**,
+so a project that wants the narrative does not thereby configure a rate. ⛔ **And each is
+reconciled on its own, no copy of one being merged with a copy of another** — the merge a shared
+name invites, and the whole of what naming them apart is for.
 
 A project maps a subset — an absent role is a legitimate configuration, not a partial install;
 one adopting project runs a single role. Each role's carrier (skill, command or hook) is §7's
@@ -1780,6 +1797,7 @@ operations the survey reached and says which it did not.
 | `checklist_read` | the item's check items, and which of them are ticked | the role has **no answer** about the checklist and says so; an unreadable checklist is never read as an empty one, by § 2's rule that absence of signal is not an answer |
 | `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
 | `checklist_item_delete` | a check item removed | the item is reworded and ticked instead |
+| `read_vocabulary` | the vocabularies the tracker itself states — its status words in their own order, its label set, its item types where it has native ones — each answered as **read**, as the tracker stating none, or as unestablished, and ⛔ never a verdict about which of them this project means, that being the facets' own question and a person's to answer. ⚠️ **An implementation may publish a vocabulary of its own beyond those three** where its tracker holds one the others do not: the measured case is a board's single-select columns, which is what makes *which field carries status* a question with a menu rather than a column picked out of several | every question about a status word, a label prefix or a type is **asked** rather than filled in, and the asking step's report names the reading it could not take; an unreadable vocabulary is never an empty one, by § 2's rule that absence of signal is not an answer |
 
 ### Who declares a capability
 
@@ -2840,7 +2858,7 @@ and not by a reader rejecting a configuration.
 ### What a hook refuses, and the record it reads
 
 ⛔ **A hook refuses an act on the strength of a record, never on a reading of the work.** The
-division is [§ The loop](#the-loop--eleven-roles)'s — procedure produces a record and enforcement
+division is [§ The loop](#the-loop--thirteen-roles)'s — procedure produces a record and enforcement
 reads it — and this subsection is the enforcement half of it: what a guard reads, what a refusal
 has to name, and what a project with nothing to guard gets.
 
@@ -3046,8 +3064,10 @@ language:
   repo: en                                   # required
   prose_width: 100           # columns, for files in the repository; absent means no wrapping
   artifacts:
-    day_log:   { language: en, register: business,  audience: "…" }
-    deliverables: { language: ru, register: technical, audience: "…" }
+    day_log:         { language: en, register: business,  audience: "…" }
+    session_summary: { language: ru, register: business,  audience: "…" }
+    billing_report:  { language: ru, register: technical, audience: "…" }
+    hours_breakdown: { language: ru, register: business,  audience: "…" }
 ```
 
 One project writes its cards in one language and its repository in another and states the split
@@ -3057,6 +3077,14 @@ and what resolves the item instead — is
 [§ 10 → The branch name a claim is taken on](#the-branch-name-a-claim-is-taken-on). Another
 writes the day log in a technical register for itself where a third writes it in a business
 register for someone outside the build. These are three settings, not one.
+
+⛔ **The three roles one name used to cover are three keys here, each with its own reader.**
+[§ The loop](#the-loop--thirteen-roles) names the roles apart and this is where each one's audience
+is stated: the session summary's is somebody outside the build, the billing report's is whoever
+pays the invoice, and the hours breakdown's is whoever is being told where a period's hours went.
+⛔ **One key answering for all three is the merge naming them apart was for**, so each carries its
+own triple even where a project gives two of them the same three values — a project that later
+moves one reader and not the others has nothing to split.
 
 ### The reply to the person running a role
 
@@ -4405,9 +4433,9 @@ done:
   refuse one of two correct configurations.
 - ⛔ **`answered_by: human` is not satisfiable by the procedure, and no amount of reading the diff
   satisfies it.** The answer is **recorded** where something else can read it and the record says
-  **who** answered — the division [§ The loop](#the-loop--eleven-roles) already states: procedure
-  produces a record and enforcement reads it, so the record is written whether or not a hook
-  refuses the merge on it.
+  **who** answered — the division [§ The loop](#the-loop--thirteen-roles) already states:
+  procedure produces a record and enforcement reads it, so the record is written whether or not a
+  hook refuses the merge on it.
   ⚠️ **It is the record and not the report**: a verdict that exists only in a role's reply is a
   verdict the next role cannot read, by
   [§ 11](#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it).
@@ -5264,6 +5292,21 @@ body_sections:              # the sections a body states, beyond what § 6 alrea
   - heading: "<the heading text, as a body spells it, in the repository's language (§ 8)>"
     read_by: "<what collects this section out of the change>"
     nothing_needed: "<the answer the section carries where the change needs nothing of it>"
+    when: before            # where the step falls against the collecting role's own act
+    answered_by: human      # whether the collecting role performs the step, or asks for it
+```
+
+The vocabulary an entry draws on, stated under the key it belongs to — the device
+[§ 32](#32-a-status-that-moves-backwards) and [§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes)
+already use, because a member of a list sits at no path a marker can reach:
+
+```yaml
+body_sections:
+    heading:        "<the heading text, as a body spells it, in the repository's language (§ 8)>"
+    read_by:        "<what collects this section out of the change>"
+    nothing_needed: "<the answer that closes the section with nothing in it>"
+    when:           before | after
+    answered_by:    human | procedure
 ```
 
 **A section belongs here when another role reads it.** [§ 6](#the-pull-request-title-and-body)
@@ -5274,7 +5317,7 @@ batch carries, and then acts on. ⛔ **That is the test for membership and the o
 a project merely likes is a convention, and a convention enforced by a gate is this surface's own
 defect class arriving as continuous integration. ⚠️ **The measured instance is a deployment's own
 preparation** — what a change needs done to an environment before it can ship — collected by the
-role that deploys a batch and run as the batch's first step; and what made it a facet rather than
+role that deploys a batch and performed where `when` puts it; and what made it a facet rather than
 one project's workflow file is that the section was enforced by a gate and stated on no surface
 ([the measurement](../../../docs/configuration-surface.md#a-section-one-role-writes-and-another-runs)).
 
@@ -5284,11 +5327,13 @@ about it, read identically otherwise. ⚠️ **A reader reports it as unavailabl
 installed for it** — which is the absence being a configuration rather than a gate that holds
 nothing, and the direction that matters, since a run asserting nothing reports green.
 
-**The keys, and what each is for.** ⛔ **All three are written on every entry**, stated here in
-prose rather than by the `# required` marker, for the reason
+**The keys, and what each is for.** ⛔ **Every key the fence states is written on every entry**,
+stated here in prose rather than by the `# required` marker, for the reason
 [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts) states a local check's
 `command` that way: a marker names a key at a path, and a member of a list sits at no path a marker
-or a condition can reach.
+or a condition can reach. ⛔ **And a key this section does not declare is refused with its own
+name**, by the rule [§ 33](#the-three-shapes-a-target-is-reached-by) states for a target's entry:
+a fact about the section that nothing reads, written where somebody would expect it to be read.
 
 - ⛔ **`heading` is the text and not the level.** Which level a body puts a section at, and how it
   cases the words, are formatting — so what is stated here is the words, and a body setting them as
@@ -5310,6 +5355,11 @@ or a condition can reach.
   invent some, and what a body then carries is a sentence written to satisfy a gate. ⛔ **And the
   answer is the whole of the section or it is not the answer** — a section stating it and then
   stating something else has said both, and the role collecting it would have to choose.
+- ⛔ **`when` is where the step falls against the act the collecting role exists to perform**, and
+  ⛔ **`answered_by` is whether that role performs the step or asks for it.** Both are read by
+  whatever `read_by` names, both are required of every entry, and
+  [`When a collected step is performed`](#when-a-collected-step-is-performed-and-who-answers-it)
+  below states what each value does and what an unanswered step holds.
 
 ⛔ **The open-items section is not one of these, and it is not stated here.**
 [§ Nothing is deferred](#nothing-is-deferred) requires it of every body and no key turns that off,
@@ -5325,6 +5375,62 @@ body is the state this facet exists to remove rather than to create. ⚠️ **Th
 event and not by a push**, so a body corrected in place is re-read with no new commit: the trigger
 carries the edit event, which is also why the check is a run of its own rather than a job inside a
 suite whose triggers do not.
+
+### When a collected step is performed, and who answers it
+
+⛔ **The step is carried by the change and by nothing else, which is this facet's own position
+rather than a new one.** A step a change owes an environment is discovered while the change is
+written, so the places that could otherwise hold it each hold it worse: an item's body is written
+before the work and states a prediction, a facet of the item
+([§ 4](#4-work-item-facets)) is written through `set_field`, which
+[§ 3](#the-operations-and-what-an-absent-capability-does) reports unavailable on a measured tracker,
+and [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s grouping is a *set* and therefore
+cannot say which change owes what. ⚠️ **Stated here because the question was put to the item and the
+grouping before this facet existed**
+([the measurement](../../../docs/configuration-surface.md#a-section-one-role-writes-and-another-runs)),
+and a question nobody answers in writing is one the next reader asks again.
+
+**`when`, and what each value holds.** ⛔ **The act named is the collecting role's own** — the one
+`read_by` exists to name — so this key is read without this section knowing what that act is:
+
+| `when` | the step is performed | and an unperformed one holds |
+|---|---|---|
+| `before` | before the act | **the act**, which does not happen |
+| `after` | after the act | **whatever rests on the act**, which has already happened |
+
+⛔ **Required of every entry rather than defaulted**, which is
+[§ 33](#which-target-and-what-makes-one-live)'s argument for `not_live` arriving one facet over: a
+step whose timing nobody stated is one the collector performs wherever is convenient, and the
+convenient place is after the act. ⚠️ **Measured as exactly that**: the step this facet was
+extracted from is a pair of schema changes that must reach a live database *before* the image
+carrying the code which reads them, and while this section described it as needed before the change
+could ship, the one role collecting it ran it after the invocation.
+
+**`answered_by`, and the ask.** ⛔ **`procedure` means the collecting role performs what the section
+states; `human` means it does not, and asks.** Silence is not a yes
+([§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)), so a `human` step nothing
+answered is an unperformed step and holds whatever its `when` says it holds.
+
+⛔ **Required rather than derived from `when`, and the correlation is stated rather than used.** The
+two measured steps are one `before`/`human` and one `after`/`procedure` — a correlation across two
+observations, which is not one axis collapsing into the other, and a value derived from it would be
+derived from two points that happen to agree. ⚠️ **What makes the key load-bearing is the first of
+those two**: the procedure holds no credential for the database that step is about, so a facet with
+no way to say *this one is a person's* leaves the measured instance expressible only as a step the
+collector would try to run itself.
+
+⛔ **An answered step is recorded with the answer, and never inferred from the act having
+succeeded.** What the collecting role reports is the step, the change it was collected out of, and
+the answer as it came back — ⚠️ **and no guard reads that record.** A deploy is not an event
+[§ 7](#what-a-hook-refuses-and-the-record-it-reads)'s hooks are addressed by, so this facet installs
+nothing that refuses one. ⛔ **Stated rather than left implied**, by the rule § 7 states about its
+own merge guard's reach: a mechanism credited with a guarantee it does not have is one nobody
+checks.
+
+⚠️ **A project needing none of this states it the way it already does.** `body_sections: []` is the
+whole-project absence and `nothing_needed` is the per-change one, so a project with no steps writes
+neither of these keys, sees no prompt and pays no round trip — ⛔ **and this facet adds no third way
+of saying nothing**, a second absence being a second thing to hold in step.
 
 ## 21. A command that could open a session on a live machine
 
@@ -6788,7 +6894,7 @@ loop_exempt:
 # procedure: lines_changed
 ```
 
-Which changes never enter [§ The loop](#the-loop--eleven-roles) at all — no work item, no gate, no
+Which changes never enter [§ The loop](#the-loop--thirteen-roles) at all — no work item, no gate, no
 branch of their own, no change opened and no review — and which branch the ones that skip it are
 committed to instead.
 
@@ -6907,8 +7013,9 @@ a `kinds`-only class is asked about changes a `paths` class would have settled s
 cost of an axis no file tree expresses, and the reason `borderline: session` exists beside `ask`.
 
 ⛔ **Every answer names the class and why in the run report**, which is the whole of what makes an
-exempt commit auditable: the day log and the deliverables roles read commits, and the reason to
-configure the bypass rather than take it ad hoc is that a reader can then tell the two apart.
+exempt commit auditable: the day log, the session summary and the hours breakdown read commits, and
+the reason to configure the bypass rather than take it ad hoc is that a reader can then tell the two
+apart.
 
 ### Where an exempt change goes, and the one role it runs
 
@@ -7720,6 +7827,49 @@ the batch carried, advanced to the role the entry names. ⛔ **Which is not a de
 nothing on the tracker at all** — the item advance is this facet's own and the absence of a
 grouping does not reach it — and the report says which of the two the project is.
 
+### What a change in the batch owes this target, and where the step falls
+
+⛔ **The steps are [§ 20](#20-the-sections-a-pull-request-body-must-carry)'s and this subsection
+states none of them again** — not the carrier, not the two keys, not the refusal. What is here is
+the one thing that section cannot state: what its `when` means against *this* role's act, which is
+the invocation [`The three shapes`](#the-three-shapes-a-target-is-reached-by) above names.
+
+| the entry says | performed | and an unperformed one |
+|---|---|---|
+| `when: before` | after the preflight and **before the invocation** | holds the whole target: nothing is invoked, and the run names the step and the change it was collected out of |
+| `when: after` | after the invocation's delivery has been read | holds **the advance of the items whose change owes it** — never the target, and never the grouping's mark |
+
+⛔ **The asymmetry is the act's irreversibility rather than a preference.** A deploy already made
+cannot be unmade, so an `after` step that held the publication would report a release the target is
+already serving as unreleased; what is still withholdable at that point is the move, which
+[`Publishing a grouping`](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)
+above already makes a separate act under a separate writer. ⚠️ **Measured on the inverse of the
+`before` case**: an item whose change is confined to a shared library can never satisfy its
+promotion gate on its own and is advanced by hand after the release — so what that step gates is one
+item's own move, which is the second row read on the case it came from.
+
+⛔ **A `human` step is asked for separately from the go, and before it.** Two facts make it a
+question of its own rather than a field of that one: a go is an authorization and a step's answer is
+an attestation about work that either happened or did not, which
+[§ 7](#what-a-hook-refuses-and-the-record-it-reads) already holds apart; and ⛔ **a target stating
+`not_live: true` is asked for no go at all** while its changes may still owe a `human` step, so a
+step folded into the go would go unasked on exactly the targets a session reaches most often.
+⚠️ **A `before` step reached in that state also means the go is about a deploy that cannot happen**,
+which is the ask § The loop retired, arriving as a question nobody can answer usefully.
+
+⚠️ **No key states which root a step's own command runs in, and that is a stated limit rather than
+a default.** A step is the project's own text in a body rather than a configured command, so
+[§ 1](#a-command-root-is-not-a-code-root)'s names reach it through nothing — a section stating a
+command states where it runs, and a role that assumed the code root would be running a project's
+command somewhere the project never named. ⛔ **The target's own `command_root` is not that
+answer**: it places the invocation, which is a different command.
+
+⛔ **Unanswered is never optimistically assumed, in either row.** Silence holds what the row says it
+holds, and [`What a deploy verifies`](#what-a-deploy-verifies-and-what-it-reports) above is where
+the report of it belongs: the step, the change, and the answer as it came back — ⛔ **never *the
+deploy succeeded, so the step must have been done*,** which is that subsection's own rule about what
+an invocation's outcome is a fact about.
+
 ### Which repository a target's act happens in
 
 ⛔ **The list is the project's and the repository is the entry's.** `code_root` is a name
@@ -8034,3 +8184,91 @@ another copy of the same entry on every run.
 [§ 7](#a-hook-in-a-project-that-states-no-configuration) rules for a carrier addressed by an event:
 this step is invoked by name, and that subsection already makes the answer owed to whoever invokes
 a role in a project configuring nothing.
+
+## What a project is asked, and the one file the answers are written into
+
+**The step above writes the artifacts; this one writes the configuration.** The two are separable
+because the install waits on no answer, which the section before this one states — and this is the
+half that asks. ⛔ **Hand-writing the file is the thing this exists to replace**: a board id, a
+status word or a label prefix mistyped there fails much later and somewhere else, with the mistake
+nowhere near the failure.
+
+⛔ **The question set is this surface's own key inventory, read when the step runs.** Not a list in
+the step and never a list here: a facet this surface states and the step never asks about is a
+**bug in the step**, and the step's own suite is what says so. ⛔ **So a facet added below after
+the step shipped reddens it** until a question reaches the facet, which is the one property that
+keeps the two from drifting. ⚠️ **What the step holds per key is which of three things answers
+it** — a reading it takes, a question it puts, or a stated decision not to ask — and nothing else:
+the menu, the requiredness, the condition, the default and whether a facet may be absent are each
+read from the markers [§ The file itself](#the-file-itself) already declares.
+
+⛔ **This is procedure and declares no key**, by the device
+[§ An artifact states what is true now](#an-artifact-states-what-is-true-now) and the install's own
+section each use: a project that could configure its own interrogation is a project that can turn
+off the questions it is worst at answering, and the one asking would never know which.
+
+```yaml
+# procedure: setup
+```
+
+**The five properties of asking, each of which is this step's own rather than any facet's:**
+
+| | |
+|---|---|
+| **Ask rather than infer where a wrong guess is quiet** | A code root that is its own repository under another owner reads exactly like a directory of this one, and a nested repository ([§ 1](#1-roots)) cannot be guessed — each fails having done something plausible first. ⛔ **Whose answer it is decides this and not how hard the reading would be** |
+| **Detect what is detectable, and read nothing twice** | A tracker's own vocabularies are read rather than asked, through [§ 3](#the-operations-and-what-an-absent-capability-does)'s `read_vocabulary`; a reading that answered is not then put as a question with its own answer beside it, there being nothing a person could check it against. ⛔ **A reading that did not answer is reported as unestablished and the key is asked** — never filled in, which is § 2's absence-of-signal rule arriving where a guess would be cheapest |
+| **A vocabulary is a candidate set and not an answer** | What a tracker publishes becomes the **menu** of the question it answers, and the question is still put: a label set is every label anybody has used, and which of them is this project's convention is a person's to say |
+| **The writer question is a person's, always** | Statuses can be enumerated from a tracker; ⛔ **nothing in any tracker records who is allowed to set one** ([§ 4.2](#42-status--an-ordered-set-of-name-role-writer)), so that half is asked wherever the words were read. The same class is a target that publishes ([§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes)) and what a local verdict proves ([§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)) |
+| **A menu, never a free-text field, wherever this surface names a shared vocabulary** | The readiness predicates ([§ 5](#5-readiness-gate--an-ordered-predicate-list)), the `done:` checks ([§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)) and the day log's exclusions ([§ 9](#9-day-log)) are each a closed set this file states, so a value added there reaches the question without the step changing |
+
+⛔ **An absence is captured as a decision and never left unset.** A facet answered as absent carries
+`absent_reason`, and ⛔ **the step refuses to write a `carrier` of `none` without one** — which is
+this file's opening claim about absence, enforced where the file is first written rather than only
+where it is read. ⚠️ **The trigger is asked for and not refused on**: whether a facet *has* a
+`revisit_when` to state is a judgement about the project rather than a reading, so the question puts
+it and nothing here reddens on an answer of none — which is the decidable half held and the residue
+stated rather than claimed.
+
+⛔ **It writes nothing to the tracker and nothing to the code host.** Every call it makes is a read:
+a step that labelled, filed or moved anything would be adopting a project by changing it.
+
+⛔ **A value this surface marks `# private` is routed to
+[§ 28](#28-a-configured-value-a-repository-may-not-hold)'s own file, or it is not collected at
+all.** It is never written into the tracked one — this step being the one place a person's name, a
+chat thread or a path on somebody's machine would otherwise be checked in — and a value with no
+private layer stated is a **refusal naming the key** rather than a value written where it fits.
+
+⛔ **The configuration is edited and never re-rendered**, which is the install's own rule for the
+same file and is stated there: a project's comments about its own facts are part of it, as is the
+terminator its lines are written with, and a round trip through a parser takes every one of them
+out with nothing reporting the loss. ⛔ **So only the keys the answers change are touched**, and a
+second run leaves the tree byte-identical. ⚠️ **A file that is not there is rendered whole
+instead**, there being no comments to keep.
+
+⚠️ **One bound on that, stated here rather than met later: a key whose value is a list is replaced
+whole, so a comment written *inside* that list does not survive an edit of it.** An entry's
+position carries meaning several facets state — the ordering of `statuses`, of `readiness` and of
+`done` each do — so an editor that reached inside a list would be choosing which entry a key names.
+⛔ **A comment anywhere else does survive**, which is what makes this a bound on one shape rather
+than a qualification of the rule above it.
+
+⛔ **And the edit is read back on two conditions rather than one**, which the install's section
+states and this step performs for the file it writes: a file that stops loading is not written, and
+neither is one that loads and **does not carry the change**. ⚠️ **A key the project resolves through
+§ 28 is not read back here** — the tracked file states its shape and the value comes from a file
+this step has not written yet — and a key the reader cannot resolve at all is reported as unread
+rather than as wrong, the write being an act that can be made again.
+
+⛔ **A key this step cannot place in a file that already exists is reported and never appended.** A
+key appended blind is a key stated twice, and the reader resolves one of the two copies — so what
+comes back names the keys for whoever edits the file, with nothing written.
+
+**The marker is the generation's and not the file's.** A file this step rendered carries a
+generated-by marker at its head, so the generation is discoverable later and so it can be unpicked
+when a plugin is retired. ⛔ **Nothing in it moves between runs**, for the two reasons the install's
+own marker carries none: a head line that moved would be the record of a pass
+[§ An artifact states what is true now](#an-artifact-states-what-is-true-now) forbids an artifact
+outright, and it would make every run a change. ⛔ **What is removable is the marker and not the
+file** — removing a project's configuration is removing its adoption, which is a person's act — and
+⛔ **a file a person wrote carries no marker at all**: it is edited key by key, and marking it would
+be this step claiming authorship of somebody else's file.

@@ -227,10 +227,23 @@ commit:
 
 # § 20, and the entry names the carrier below it rather than a person: the deploy role reads this
 # section out of every change the batch carries, which is the whole membership test.
+#
+# ⛔ One entry per side of the deploy, which is what `when` is for. The first holds the invocation
+# — a schema change the image cannot start without, applied by whoever holds the credential the
+# procedure does not. The second holds nothing but the move: an item whose change is confined to
+# the shared package can never satisfy its own promotion gate, so its advance waits on a step
+# taken after the release, and the deploy goes ahead either way.
 body_sections:
   - heading: "Before this can be deployed"
     read_by: "the deploy role"
     nothing_needed: "Nothing."
+    when: before
+    answered_by: human
+  - heading: "Owed after the release"
+    read_by: "the deploy role, before it advances this change's item"
+    nothing_needed: "Nothing."
+    when: after
+    answered_by: procedure
 
 carriers:
   day_log: skill

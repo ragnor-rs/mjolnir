@@ -290,13 +290,20 @@ commit:
 # both, since the gate reports a missing section by the heading and the reader waiting on it.
 # ⚠️ The headings are in the repository's language and not the tracker's: `language.work_item`
 # below is `ru` and `language.repo` is `en`, and the body is a repository artifact.
+# ⚠️ Both sides of `when` are `before` here and that is the project rather than a default: both
+# sections state work the environment needs ahead of the code, and the second is run by the
+# procedure because the migration is a command in this repository.
 body_sections:
   - heading: "Before this can be deployed"
     read_by: "the deploy role, per environment"
     nothing_needed: "Nothing."
+    when: before
+    answered_by: human
   - heading: "Data to migrate"
     read_by: "the role that runs the migration ahead of the release"
     nothing_needed: "None."
+    when: before
+    answered_by: procedure
 
 carriers:
   day_log: skill

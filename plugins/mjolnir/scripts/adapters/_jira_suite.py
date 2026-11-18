@@ -65,6 +65,7 @@ from adapters.jira import (  # noqa: E402
     advance_on_merge,
     read_blockers,
     read_item,
+    read_vocabulary,
     search_items,
     set_field,
     set_labels,
@@ -253,6 +254,8 @@ ROUTES = [
     ("PUT", r"^/issue/[^/]+$", "update"),
     ("POST", r"^/issue$", "create"),
     ("POST", r"^/issueLink$", "link"),
+    ("GET", r"^/project/[^/]+/statuses$", "statuses"),
+    ("GET", r"^/project/[^/]+$", "project"),
 ]
 
 
@@ -507,6 +510,23 @@ class _Host:
             "create": self._do_create,
             "link": self._do_link,
             "search": self._answer_search,
+            # ⛔ Two issue types with **overlapping** state sets, which is what
+            # this tracker actually publishes: a vocabulary read that took one
+            # type's words would state a set the other half of the backlog
+            # cannot hold, and one that concatenated them would state a word
+            # twice.
+            "statuses": lambda *_: [
+                {"name": "Task", "statuses": [
+                    {"name": "To Do"}, {"name": "In Progress"}, {"name": "Done"},
+                ]},
+                {"name": "Bug", "statuses": [
+                    {"name": "To Do"}, {"name": "Triage"}, {"name": "Done"},
+                ]},
+            ],
+            "project": lambda *_: {
+                "key": str(self.configuration.get("tracker.project_key") or ""),
+                "issueTypes": [{"name": "Task"}, {"name": "Bug"}],
+            },
         }
 
     def __call__(
@@ -682,6 +702,52 @@ def self_test() -> int:
         return f"{project}X-{number}"
 
     # --- the operation list, against the surface the port reads -------------
+    # --- the vocabularies this project states, before a configuration -------
+    #
+    # ⛔ The decision this tracker makes that no other does: statuses are stated
+    # **per issue type**, so the read flattens them and keeps first appearance.
+    # A reading that took one type's would state a set half the backlog cannot
+    # hold, and one that concatenated them would offer a word twice.
+    site = _Host(configuration)
+    vocabulary = with_host(site, read_vocabulary)
+    statuses = got(vocabulary, "statuses") or {}
+    types = got(vocabulary, "types") or {}
+    labels = got(vocabulary, "labels") or {}
+    check(
+        "the status words are every issue type's, flattened in first-appearance order",
+        statuses.get("answer") == port.VOCABULARY_READ
+        and statuses.get("values") == ["To Do", "In Progress", "Done", "Triage"],
+        f"answered {statuses!r}",
+    )
+    check(
+        "a word two types share is stated once rather than twice",
+        (statuses.get("values") or []).count("To Do") == 1,
+        f"answered {statuses.get('values')!r}",
+    )
+    check(
+        "the native issue types are read, which is what § 4.1's carrier turns on",
+        types.get("answer") == port.VOCABULARY_READ
+        and types.get("values") == ["Task", "Bug"],
+        f"answered {types!r}",
+    )
+    # ⛔ The label set is this tracker's own absence: site-wide rather than a
+    # project's, so there is no set a project states -- reported unestablished
+    # and never as a project with no labels.
+    check(
+        "the label set is unestablished, a label here belonging to the whole site",
+        labels.get("answer") == port.VOCABULARY_UNESTABLISHED
+        and labels.get("values") is None,
+        f"answered {labels!r}",
+    )
+    down = _Host(configuration, answers={"statuses": (500, "the host is down")})
+    vocabulary = with_host(down, read_vocabulary)
+    check(
+        "a site that did not answer leaves the statuses unestablished, not empty",
+        (got(vocabulary, "statuses") or {}).get("answer")
+        == port.VOCABULARY_UNESTABLISHED,
+        f"answered {got(vocabulary, 'statuses')!r}",
+    )
+
     stated = port.surface_operations()
     check(
         "every operation the surface states is implemented or deliberately absent",

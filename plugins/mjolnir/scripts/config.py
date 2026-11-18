@@ -7197,8 +7197,8 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # § 20. The sections a body must carry beyond § 6's. Requiredness is the
     # surface's marker and answers whether the key is written; what each entry
     # has to *be* is here, as § 17's is -- and for the same stated reason: a
-    # member of a list sits at no path a marker can reach, so all three of its
-    # keys are held in prose there and in code here.
+    # member of a list sits at no path a marker can reach, so every one of its
+    # keys is held in prose there and in code here.
     body_sections = _absent_as(_get(data, "body_sections"), [])
     if not isinstance(body_sections, list):
         raise ConfigError(
@@ -7208,6 +7208,27 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
             "requires none. A shape this reader cannot walk is a gate installed over "
             "sections nobody can read.",
         )
+    # ⛔ Read off the surface's own fence rather than listed here, which is the
+    # division § 33's target walk already has: a key added to that fence is
+    # accepted with no edit in this module, and a literal here would be a second
+    # statement of the fence free to disagree with it.
+    section_keys = {
+        path.split(".", 1)[1]
+        for path in facts["declared"]
+        if path.startswith("body_sections.")
+    }
+    if not section_keys:
+        raise ConfigError(
+            "body_sections",
+            "the surface declares no key under this one, so an entry could be held "
+            "to nothing. § 20 states the entry's keys in a fence of its own, and a "
+            "surface that has lost it is refused rather than read as permitting "
+            "anything.",
+        )
+    places = vocabulary(facts, "body_sections.when", "where a collected step falls")
+    answerers = vocabulary(
+        facts, "body_sections.answered_by", "who answers a collected step"
+    )
     seen_headings: dict[str, int] = {}
     for index, entry in enumerate(body_sections):
         where = f"body_sections[{index}]"
@@ -7215,9 +7236,21 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
             raise ConfigError(
                 where,
                 f"is {entry!r}, and has to be a mapping stating the `heading` a body "
-                "spells, what `read_by` collects it, and the `nothing_needed` answer "
-                "that closes it (§ 20).",
+                "spells, what `read_by` collects it, the `nothing_needed` answer that "
+                "closes it, and where the step falls (§ 20).",
             )
+        # ⛔ Refused with its own name, which is § 33's rule for a deploy target's
+        # entry one facet over: a key this section does not declare is a fact
+        # about the section that nothing reads, written where somebody would
+        # expect it to be read.
+        for stated_key in entry:
+            if stated_key not in section_keys:
+                raise ConfigError(
+                    f"{where}.{stated_key}",
+                    "is a key § 20 does not declare on a body section, so it is a "
+                    "fact about the section that nothing reads. The keys it declares "
+                    f"are: {', '.join(sorted(section_keys))}.",
+                )
         for key, what in (
             ("heading", "the heading text a body spells, in the repository's language"),
             ("read_by", "what collects this section out of the change"),
@@ -7231,6 +7264,32 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                     "Written blank it reads as a key somebody set while stating "
                     "nothing, and the gate then holds a body to a heading that is "
                     "not there.",
+                )
+        # ⛔ Where the step falls and who answers it, each from the surface's own
+        # alternation and each required of every entry -- § 33's argument for
+        # `not_live`, arriving one facet over: a step whose timing nobody stated
+        # is one the collector performs wherever is convenient, and a step nobody
+        # classified is one it tries to perform itself, holding no credential for
+        # the machine the measured step is about.
+        for key, allowed, what in (
+            ("when", places, "where the step falls against the collecting role's own act"),
+            (
+                "answered_by",
+                answerers,
+                "whether the collecting role performs the step or asks for it",
+            ),
+        ):
+            if key not in entry:
+                raise ConfigError(
+                    f"{where}.{key}",
+                    f"required (§ 20). It states {what}, and a project that never "
+                    "looked and a project that decided read identically without it.",
+                )
+            if entry[key] not in allowed:
+                raise ConfigError(
+                    f"{where}.{key}",
+                    f"is {entry[key]!r}; the surface states {' | '.join(allowed)} "
+                    "(§ 20).",
                 )
         # ⛔ The collision § 20 refuses, and it is keyed the way the gate reads a
         # heading: the text alone, cased however a body cases it. Two entries
@@ -8669,6 +8728,12 @@ MARKED_PROCEDURE = [
     "lines_changed",
     "max_lines",
     "readings",
+    # § What a project is asked's. ⛔ The marked key whose rule is about the step
+    # that writes a configuration rather than about one a configuration carries:
+    # a project writing this would be configuring its own interrogation, which is
+    # a project turning off the questions it is worst at answering -- and the one
+    # asking would have no way to tell which were skipped.
+    "setup",
     "waive_review",
 ]
 
@@ -12641,6 +12706,87 @@ def self_test() -> int:
             f"the surface shows no `(?P<{VERSION_CAPTURE}>` capture",
         )
 
+    print("\n§ 20, where a collected step falls and who answers it:")
+    # ⛔ The arm the plant list cannot reach, the surface's own fence being what it
+    # is about rather than a configuration: with no key declared under
+    # `body_sections` an entry could be held to nothing, and a reader reading that
+    # as permitting anything would accept every malformed entry above.
+    with open(SURFACE, encoding="utf-8") as handle:
+        blind = surface_facts(handle.read())
+    stating_a_section = _a_body_section_of()(_a_valid_example())
+    blind["declared"] = {
+        path for path in blind["declared"] if not path.startswith("body_sections.")
+    }
+    refusal = _refused(stating_a_section, facts=blind)
+    check(
+        "a surface that has lost § 20's entry fence is refused, with the key named",
+        refusal == "body_sections",
+        f"reported {refusal!r}",
+    )
+    # ⛔ And the alternation is a second fact about the same fence, refused on its
+    # own: the arm above empties the declared keys, which leaves the vocabulary
+    # answerable -- so a surface keeping the fence and losing the alternation is
+    # a state that arm cannot reach, and without this one a reader would hold a
+    # step's placement to nothing while reporting green.
+    with open(SURFACE, encoding="utf-8") as handle:
+        wordless = surface_facts(handle.read())
+    wordless["enums"] = {
+        path: value for path, value in wordless["enums"].items()
+        if not path.startswith("body_sections.")
+    }
+    refusal = _refused(stating_a_section, facts=wordless)
+    check(
+        "a surface that has lost § 20's alternation is refused, naming the surface",
+        refusal == os.path.relpath(SURFACE, PLUGIN_ROOT),
+        f"reported {refusal!r}",
+    )
+    # ⛔ And the facet is **read back**, not merely validated: the role collecting
+    # a section reads these two keys out of the resolved configuration, so a key
+    # the reader accepts and nothing hands on is a key nothing reads. ⚠️ The
+    # example is found by the facet rather than named, which is every fixture
+    # here's rule.
+    shipped = [
+        _load_yaml(open(path, encoding="utf-8").read(), CONFIG_PATH)
+        for path in _examples()
+    ]
+    stating = next((each for each in shipped if each.get("body_sections")), None)
+    check(
+        "an example states a section, so the arms below have a subject",
+        stating is not None,
+        "no example states a body section",
+    )
+    if stating is not None:
+        with open(SURFACE, encoding="utf-8") as handle:
+            resolved = _resolve(stating, EXAMPLES, surface_facts(handle.read()), False)
+        entries = resolved.get("body_sections")
+        check(
+            "the resolved configuration carries where each step falls and who answers it",
+            isinstance(entries, list)
+            and all(
+                isinstance(entry, dict) and {"when", "answered_by"} <= set(entry)
+                for entry in entries
+            ),
+            f"carries {entries!r}",
+        )
+    # ⛔ Every value of `when` carried by some shipped example, which is the green
+    # side of the rows § 33 reads them as: a value no example states is a row of
+    # that table nothing here exercises, and the `after` row is the one whose
+    # whole point is that it does *not* hold the target.
+    placed = {
+        entry.get("when")
+        for each in shipped
+        for entry in (each.get("body_sections") or [])
+    }
+    with open(SURFACE, encoding="utf-8") as handle:
+        stated_places = vocabulary(
+            surface_facts(handle.read()), "body_sections.when", "where a step falls"
+        )
+    check(
+        "every place the surface states is stated by some shipped example",
+        set(stated_places) <= placed,
+        f"no example places a step {sorted(set(stated_places) - placed)}",
+    )
+
     print("\n§ 31, what a tier needs before it can run -- and the tier that has no answer:")
     # ⛔ The reading rather than the refusals, which the plants above hold. What
     # these arms are for is the half § 31 commits the reader to that validation
@@ -13516,6 +13662,31 @@ def _planted_violations():
          "body_sections[0].nothing_needed", _a_body_section_of(nothing_needed="  ")),
         ("two body-section entries under one heading", "body_sections[1].heading",
          _two_entries_under_one_heading),
+        # ⛔ Absent and blank are two arms per key, which is the split the entry's
+        # own fixture carries `_ABSENT` for: a step nobody placed is the project
+        # that never looked, and one placed as nothing is a key somebody set
+        # while stating nothing. Both refuse, and the first is the one § 20
+        # requires the key against.
+        ("a body section placing its step nowhere", "body_sections[0].when",
+         _a_body_section_of(when=_ABSENT)),
+        ("a step placed as nothing at all", "body_sections[0].when",
+         _a_body_section_of(when=None)),
+        # ⚠️ The word the item that asked for this key proposed, which is the
+        # likeliest wrong value rather than an invented one: a spelling naming
+        # the deploy's own script places the step against an act § 20 cannot see.
+        ("a step placed outside the surface's alternation", "body_sections[0].when",
+         _a_body_section_of(when="before_script")),
+        ("a body section saying nobody answers its step", "body_sections[0].answered_by",
+         _a_body_section_of(answered_by=_ABSENT)),
+        ("an answerer written as nothing at all", "body_sections[0].answered_by",
+         _a_body_section_of(answered_by=None)),
+        ("an answerer outside the surface's alternation", "body_sections[0].answered_by",
+         _a_body_section_of(answered_by="the deploy role")),
+        # ⛔ The direction a reader is tempted to tolerate, § 33's rule for a
+        # target's entry arriving here: a near-miss of `read_by` is a fact about
+        # the section written exactly where somebody would expect it to be read.
+        ("a body-section key § 20 declares nowhere", "body_sections[0].reads_by",
+         _a_body_section_of(reads_by="whatever collects it out of the change")),
         ("a local check list that is not a list", "checks_local",
          at("checks_local", "a-local-command")),
         ("a local check entry that is not a block", "checks_local[0]",
@@ -14942,9 +15113,9 @@ def _a_body_section_of(**overrides):
     """§ 20's facet carried as one entry, with the stated keys replaced.
 
     Written out rather than borrowed from whichever example states the facet,
-    for the reason `_a_local_check_of` below is. ⚠️ The base states all three
-    keys, every one of them being required on every entry, so each plant here
-    is about one key being absent, blank or of another shape.
+    for the reason `_a_local_check_of` below is. ⚠️ The base states every key the
+    facet declares, all of them being required on every entry, so each plant
+    here is about one key being absent, blank or of another shape.
     """
 
     def mutate(data: dict) -> dict:
@@ -14952,9 +15123,17 @@ def _a_body_section_of(**overrides):
             "heading": "A section this project requires",
             "read_by": "whatever collects it out of the change",
             "nothing_needed": "Nothing.",
+            "when": "before",
+            "answered_by": "human",
         }
         entry.update(overrides)
-        data["body_sections"] = [entry]
+        # ⛔ `_ABSENT` drops the key, which is `_a_release_file`'s device and is
+        # needed here for the same reason: a key written with nothing after it
+        # and a key nobody wrote are two different configurations, and the
+        # refusals they earn are two different arms.
+        data["body_sections"] = [
+            {key: value for key, value in entry.items() if value is not _ABSENT}
+        ]
         return data
 
     return mutate
@@ -14969,9 +15148,11 @@ def _two_entries_under_one_heading(data: dict) -> dict:
     """
     data["body_sections"] = [
         {"heading": "A section this project requires",
-         "read_by": "one reader", "nothing_needed": "Nothing."},
+         "read_by": "one reader", "nothing_needed": "Nothing.",
+         "when": "before", "answered_by": "human"},
         {"heading": "a SECTION this project REQUIRES",
-         "read_by": "another reader", "nothing_needed": "None."},
+         "read_by": "another reader", "nothing_needed": "None.",
+         "when": "after", "answered_by": "procedure"},
     ]
     return data
 

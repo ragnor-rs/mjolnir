@@ -7,8 +7,9 @@ alike any more, and the lines that differ are the corrections you paid for once 
 everywhere else. You find out which copy is wrong when it is already wrong.
 
 mjolnir is that process as **one shared procedure over per-project configuration** —
-[eleven roles](plugins/mjolnir/config/schema.md#the-loop--eleven-roles), from filing a work item to
-the day's log, reading whatever differs between your projects out of one file you write once.
+[thirteen roles](plugins/mjolnir/config/schema.md#the-loop--thirteen-roles), from filing a work
+item to the day's log, reading whatever differs between your projects out of one file you
+write once.
 
 Installed as a Claude Code plugin. **No clone, no submodule, no symlink, and no copy of the
 procedure in your project.** Adopting it in the next project costs that one file you write.
@@ -72,13 +73,23 @@ reader uses to read your one file, and will tell you to install if it is missing
 (`python3 -m pip install pyyaml`). Nothing else: no CLI to install, no package manager of its own,
 and no runtime added to your project.
 
-Two commands above, then one file. Write your project's own facts into `.claude/mjolnir.yaml`:
-start from whichever of
-[`plugins/mjolnir/config/examples/`](plugins/mjolnir/config/examples/) matches your tracker, and
+Two commands above, then `/mjolnir:setup`. It asks you one question per fact, reads what it can
+read instead of asking — your host and slug from your own remote, your tracker's status words,
+labels and item types from your tracker — offers a menu wherever there is a closed set to choose
+from rather than a box to mistype into, and writes `.claude/mjolnir.yaml` for you. Nothing about
+your tracker is written to it: every reading is a read.
+
+**And the question set is your toolkit's own key list, read when it runs.** A facet exists and no
+question reaches it is a bug in the step, caught by a check rather than by somebody noticing — so
+there is no version of this that asks you about last year's keys.
+
+Prefer to write the file by hand? Start from whichever of
+[`plugins/mjolnir/config/examples/`](plugins/mjolnir/config/examples/) matches your tracker;
 [`plugins/mjolnir/config/schema.md`](plugins/mjolnir/config/schema.md) says what every key means.
-That file is the whole of what adoption costs you to write — there is nothing to vendor and nothing
-to keep up to date. Where your host or your git can read nothing but a file, the toolkit writes that
-file itself, under
+Either way that one file is the whole of what adoption costs you — there is nothing to vendor and
+nothing to keep up to date — and a file you wrote yourself is edited key by key on a later run,
+never re-rendered, so your own comments about your own facts survive. Where your host or your git
+can read nothing but a file, the toolkit writes that file itself, under
 [rules stated before anything writes one](plugins/mjolnir/config/schema.md#what-the-toolkit-installs-into-a-project-and-what-takes-it-out):
 marked as generated, byte-identical on a second run, and removed again when your configuration stops
 asking for it.
@@ -90,6 +101,7 @@ a setting, is [`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
 
 | | |
 |---|---|
+| `/mjolnir:setup` | Writes your one file by asking for it: a question per fact, your own tracker's words read rather than asked for, a menu instead of a free-text field wherever there is a closed set, an absence captured as a decision with its reason, and anything your repository may not hold routed outside it |
 | `/mjolnir:file-work-item` | Turns a request — or a chat log — into well-formed items, checked against everything your tracker already holds and related to what they block |
 | `/mjolnir:gate-work-item` | Runs your own readiness checks whole on an item somebody else wrote, and admits it to committed work |
 | `/mjolnir:start` | Takes the next item your ordering makes available, claims it where a sibling session cannot take it twice, and cuts its branch into its own tree |

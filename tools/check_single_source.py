@@ -78,6 +78,7 @@ ROLES = {
     "plugins/mjolnir/skills/load/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/review/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/save/SKILL.md": PROCEDURE,
+    "plugins/mjolnir/skills/setup/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/start/SKILL.md": PROCEDURE,
 }
 

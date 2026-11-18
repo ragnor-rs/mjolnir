@@ -13,10 +13,13 @@ what carry the argument anyway.
 
 ## The survey found nine roles, not eight
 
-The loop's statement is [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles),
-and it now states ten — the tenth is the subsection below, which the survey found in every project's
-tooling and in no project's implementation. What the survey established about the nine it could read
-is the count: gating is a genuine ninth role rather than a variant.
+The loop's statement is
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles), and among
+the roles it carries is one this survey could not read as a role at all: the subsection below,
+which the survey found in every project's tooling and in no project's implementation. ⛔ **No count
+of the loop's own roles is written here**: the loop grows, and a figure beside this citation would
+state a number the surface already disagrees with. What the survey established about the nine it
+*could* read is the count: gating is a genuine ninth role rather than a variant.
 One project splits intake into *write the item* and *gate it into committed work*, and its gate
 copy owns the due date and the estimate; the projects without the role fold a little into filing
 and a little into starting, and neither place sets a date. The same project refuses to let
@@ -126,10 +129,19 @@ differently-named skills for filing and gating.
 
 The reverse also happens, and a name-keyed merge produces nonsense on it:
 
-- **One name, two unrelated roles.** The `deliverables` name is a prose session summary for a
-  non-technical reader in one project, and a tab-separated invoice line-item file with an hourly
-  rate conversion in two others. Same directory name, different output, different trigger, no
-  shared procedure.
+- **One name, three unrelated roles.** The `deliverables` name is a prose session summary for a
+  non-technical reader in one project, a tab-separated invoice line-item file with an hourly rate
+  conversion in two others, and in a fourth a monthly report that distributes a total of hours it
+  is *given* across the changes shipped that month. Same directory name, different output,
+  different trigger, different reader, no shared procedure. ⚠️ **The third was found later and in
+  two carriers**, a command in one project and a skill in another — so the copies of these three
+  run to at least five, and whichever way a survey keyed them, reconciling the third against the
+  command alone leaves the skill copy local in a project declared migrated. ⛔ **No count of the
+  copies is written here**: the number rose once already, and the statement is that a name-keyed
+  merge of this entry is wrong however many there turn out to be. The roles are named apart in
+  [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles), and what
+  the one basename does to the readiness check — which cannot answer for it and says so — is the
+  `ambiguous:` entry in that check's own vocabulary.
 - **One name, a subset role.** A bookkeeping carrier can be the *commit third* of the role with
   the board and memory halves absent. Counting such a copy as a full one overstates adoption;
   counting it as unrelated loses that project's commit behaviour. ⚠️ **How many copies are whole
@@ -165,7 +177,7 @@ completion that some reason about explicitly and others do not have.
 ## The axes, and why each is independent
 
 The axes are stated in
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles) — which
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) — which
 carries the list, and no count, so this document does not hold a copy of one. There are more than
 the three that are obvious. The measurements that forced each to be independent:
 
@@ -725,7 +737,7 @@ this repository's own roles are handed holds neither.
 ## What is an ordered list of named checks rather than procedure
 
 No count is given, for the reason [`schema.md § The
-loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles) gives for the axes — a count
+loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) gives for the axes — a count
 restated elsewhere drifts the moment one is added — and this section is the demonstration: it gained
 what counts as done after it was written, which would have made a number in the heading wrong while
 the gate stayed green.
@@ -1149,10 +1161,11 @@ six projects had, and never the subsection's own inventory.
 
 **Why the surface, and not either of the two homes it was weighed against.** The discipline is read
 by two legs — the implementing one, which no role owns, and the reviewing role — and
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles) already settles
-what follows: a rule read by two roles and written in one of their skills is a second authority for
-the other. Promoting these rules into the reviewing role's own text is therefore the option with a
-precedent against it rather than the cheap one, and it is ruling 11's reasoning arriving a second
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) already
+settles what follows: a rule read by two roles and written in one of their skills is a second
+authority for the other. Promoting these rules into the reviewing role's own text is therefore the
+option with a precedent against it rather than the cheap one, and it is ruling 11's reasoning
+arriving a second
 time. A per-project pointer — the shape the role-to-person map takes — fails a different test: a
 pointer carries values a role reads, and none of this is a value. Six copies free to disagree is the
 defect the extraction deletes rather than a configuration of it.
@@ -1348,10 +1361,10 @@ own run's output.
 
 What is stable enough to state without a number going stale: **a single role runs to thousands of
 tokens and carries dozens of ⛔ and ⚠️ markers, and there is one of them per leg the loop names**
-([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles)). A window largely
-spent on procedure before a line of anyone's code is read is what § 11 exists to notice, and the
-harness vendor's own guidance is that an over-long instructions file is not read selectively — it
-is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
+([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles)). A window
+largely spent on procedure before a line of anyone's code is read is what § 11 exists to notice,
+and the harness vendor's own guidance is that an over-long instructions file is not read
+selectively — it is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
 
 Two consequences, both already true of this tree rather than predicted of it. A role's body is
 loaded only when the role runs, and only its frontmatter — a name and a description — is always
@@ -1914,13 +1927,13 @@ entries describe their runs as covering every change.
 ## A section one role writes and another runs
 
 The facet is [`schema § 20`](../plugins/mjolnir/config/schema.md#20-the-sections-a-pull-request-body-must-carry);
-what is here is the measurement that made it one, and the three questions settled while it was
-being written.
+what is here is the measurement that made it one, and the questions settled while it was being
+written.
 
 **What was found.** One project in the migration set carries a workflow of its own, separate from
 its lint suite, whose single job asserts that a pull request body states what the change needs
 done to an environment before it can be deployed. The section is not decoration there: the role
-that deploys a batch collects exactly it out of every change the batch carries and runs what it
+that deploys a batch collects exactly it out of every change the batch carries and performs what it
 collected. So the body is an interface between two roles — and the heading it turns on was stated
 in a workflow file and nowhere else. Read against the surface as it then stood, § 6 ruled the body
 a summary and a test plan and deferred the closing form to § 3; environment preparation was a
@@ -1936,13 +1949,20 @@ can be built:
 | What `host.checks` records | an entry mirroring nothing, which the duplicate-run guard reads as never-guard | an entry whose `mirrors` names a command a person can run, which that guard reads as guardable |
 | What has to be installed | one file | a checker as well, because a host run executes files and the toolkit is not one of them |
 
-**Three questions, and the arguments that settled each.**
+**The questions, and the arguments that settled each.** ⚠️ **The last three were settled later than
+the first three and against a surface this facet had already changed**, which is why they are rows
+of the same table rather than a second measurement: the step the facet was extracted from turned
+out to be unexpressible in the one direction that mattered, and what the facet was missing was
+established by reading its one reader rather than by finding another project.
 
 | Question | Settled | The argument |
 |---|---|---|
 | What makes a heading a facet rather than a convention | **Another role reads it**, stated on the entry as `read_by` | Any heading can be made mandatory, and a gate over a heading nobody collects is a contributing guide enforced by continuous integration. Writing the reader down on the entry is what keeps the test applied rather than remembered, and it is also what a refusal names — a body handed back with nothing saying who was waiting on the section leaves the author guessing |
 | Whether a section can be required with no way to answer *nothing* | **No; `nothing_needed` is on every entry** | A required section whose only passing form is content turns every change needing nothing into a change that has to invent some, and what the body then carries is a sentence written to satisfy a gate. The answer also has to be the *whole* of the section: a body stating it and then listing work has said both things, and the collecting role would have to choose |
 | Whether the open-items section belongs in the facet | **No** | It is required of every body with no key that turns it off, and an entry here is one a project may stop stating. Carried here, the rule would become configurable — which the rule's own precedence refuses. Its heading stays with the gate that reads it, and what the two gates share is the grammar for finding a section in a body rather than the heading |
+| What carries a step a change owes a deploy — the work item, the release grouping, or this facet | **This facet, and no second carrier is added** | The question was put to the item and the grouping before this facet existed. A step is discovered while the change is written, so the item's body would state it as a prediction made before the work; a facet of the item is written through `set_field`, which the port reports unavailable on a measured tracker; and a grouping is a *set*, so a step carried there cannot say which change owes it. The change is also the only one of the three a gate already holds |
+| Where a collected step falls against the collecting role's own act | **`when`, required of every entry** | The measured step is a pair of schema changes that must reach a live database *before* the image carrying the code that reads them — and the facet's own text called it preparation needed *before the change can ship* while the one role collecting it ran it **after** the invocation. With no key, a step's timing is whatever the collector finds convenient, and the convenient place is after the act. The same argument `not_live` is required by one facet over: a project that never looked and a project that decided read identically otherwise |
+| Whether who answers a step is a second axis or derivable from `when` | **A key, and the correlation is stated rather than used** | The two measured steps are one `before`/`human` and one `after`/`procedure` — a correlation across two observations, and a value derived from it would be derived from two points that happen to agree. What makes the key load-bearing is the first of the two: the procedure holds no credential for the database that step is about, so with no way to say *this one is a person's*, the measured instance is expressible only as a step the collector would try to run itself |
 
 ⚠️ **The headings are the repository's language and not the tracker's**, which is visible in the
 example that states two: its items are written in one language and its repository in another, and
@@ -1955,6 +1975,17 @@ installed nowhere in this tree — which is the facet's own stated absence rathe
 standing down. What exercises the rule is the checker's planted bodies, and what exercises the
 install is a fixture built from the example that states a section, with the generated workflow and
 its registered entry then handed to the drift check that holds every other entry here.
+
+⚠️ **The two keys added later are exercised the same way and in two more places.** The reader's own
+suite holds every shipped example to stating both of them and holds the examples between them to
+stating each value of `when` — so a row of the surface's own table that no example reaches is what
+reddens, rather than a value nobody happens to write. And the collecting reading, which is the
+opposite question over the same grammar, is asserted against planted bodies beside the gate's: the
+arm that makes it worth having at all is the *nothing* answer written as an emphasised bullet with
+no period, which the grammar reads as the answer and a role reading the section by eye would call
+owed. ⛔ **What is still unexercised here is the role**, this project deploying nothing: the
+collector's own refusal for a project stating no section was run in this tree, and the reading arm
+in a temporary skills root carrying a shipped example.
 
 ## The surface a tree is held to, and the guards that went quiet in a configured project
 
@@ -2697,7 +2728,8 @@ all.
 ⛔ **So the gate there cannot tell a deliberate bypass from a missed item** —
 [`schema.md § 30`](../plugins/mjolnir/config/schema.md#30-the-changes-that-do-not-go-through-the-loop)
 — which is the whole cost: a commit with no work item is otherwise indistinguishable from one that
-skipped the process by accident, and the day log and the deliverables roles both read commits.
+skipped the process by accident, and the day log, the session summary and the hours breakdown all
+read commits.
 
 ⚠️ **And the axis that separated the two in practice was not size and not risk.** Some of the
 unticketed tooling work was **larger** than the ticketed product changes beside it, so a
