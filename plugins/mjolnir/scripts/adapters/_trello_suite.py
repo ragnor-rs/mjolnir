@@ -61,6 +61,7 @@ from adapters.trello import (  # noqa: E402
     matches,
     policy_classes,
     read_item,
+    read_vocabulary,
     search_items,
     set_field,
     set_labels,
@@ -512,6 +513,75 @@ def self_test() -> int:
     if not (initial and second):
         print(f"\n{failures} assertion(s) did not hold.")
         return 1
+
+    # --- the vocabularies this board states, read before a configuration ----
+    #
+    # ⛔ Three decisions, each of which fails silently if it is wrong: an
+    # archived list offered as a status word is a word no move resolves, a
+    # nameless label offered is a label no configuration can name, and `types`
+    # answered *unestablished* rather than *none* would send a setup step to ask
+    # a question this tracker has already answered.
+    archived_and_nameless = _Host(configuration, answers={
+        "lists": board_lists + [
+            {"id": "list-gone", "name": "an archived list", "closed": True, "pos": 900},
+        ],
+        "labels": LABELS + [{"id": "label-bare", "name": "", "color": "black"}],
+    })
+    _boards.clear()
+    vocabulary = with_host(archived_and_nameless, read_vocabulary)
+    statuses = (vocabulary.get("statuses") or {}) if isinstance(vocabulary, dict) else {}
+    labels = (vocabulary.get("labels") or {}) if isinstance(vocabulary, dict) else {}
+    types = (vocabulary.get("types") or {}) if isinstance(vocabulary, dict) else {}
+    check(
+        "a state here is a list, and the open ones are the status vocabulary",
+        statuses.get("answer") == port.VOCABULARY_READ
+        and statuses.get("values") == [one["name"] for one in board_lists],
+        f"answered {statuses!r}",
+    )
+    check(
+        "an archived list is not offered as a word a card can be moved into",
+        "an archived list" not in (statuses.get("values") or []),
+        f"offered {statuses.get('values')!r}",
+    )
+    check(
+        "and the reading says how many archived lists it left out",
+        "1 archived" in str(statuses.get("because")),
+        f"said {statuses.get('because')!r}",
+    )
+    check(
+        "a label this tracker holds with no name is not offered either",
+        labels.get("answer") == port.VOCABULARY_READ
+        and labels.get("values") == [one["name"] for one in LABELS],
+        f"answered {labels!r}",
+    )
+    check(
+        "the absence of a type object is `none` rather than unestablished",
+        types.get("answer") == port.VOCABULARY_NONE and types.get("values") == [],
+        f"answered {types!r}",
+    )
+
+    # ⛔ And the direction § 2's rule is about: a board that could not be read
+    # leaves the two readings that depend on it **unestablished** and never
+    # empty, while the one that does not depend on it still answers.
+    _boards.clear()
+    unreachable = _Host(configuration, answers={"lists": (500, "the host is down")})
+    vocabulary = with_host(unreachable, read_vocabulary)
+    check(
+        "a board that could not be read leaves its vocabularies unestablished",
+        isinstance(vocabulary, dict)
+        and (vocabulary.get("statuses") or {}).get("answer")
+        == port.VOCABULARY_UNESTABLISHED
+        and (vocabulary.get("labels") or {}).get("answer")
+        == port.VOCABULARY_UNESTABLISHED,
+        f"answered {vocabulary!r}",
+    )
+    check(
+        "while the one that does not depend on the board still answers",
+        isinstance(vocabulary, dict)
+        and (vocabulary.get("types") or {}).get("answer") == port.VOCABULARY_NONE,
+        f"answered {vocabulary!r}",
+    )
+    _boards.clear()
 
     # --- the operation list, against the surface the port reads -------------
     stated = port.surface_operations()

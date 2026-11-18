@@ -1409,7 +1409,91 @@ def checklist_item_delete(number: int, item: str, *, checklist: str | None = Non
     }
 
 
+def read_vocabulary() -> dict:
+    """What this board states its own words are, before a configuration exists.
+
+    ⛔ **A state here is a list**, which is what `lists: { resolve: by_name }`
+    already makes true one operation over -- so the status vocabulary read is the
+    board's own lists, in the order the host answers them, which is their
+    position on the board.
+
+    ⛔ **Archived lists are left out, and a nameless one is reported rather than
+    dropped in silence.** An archived list is not a state a project moves a card
+    into, and this tracker holds neither uniqueness nor presence for a name -- a
+    default board ships six labels with no name at all -- so a reading that
+    offered either as a status word would offer something no move can resolve.
+
+    ⚠️ **The types are *none* rather than unestablished**, and that is this
+    tracker's own shape: a card has no type object at all, so § 4.1's carrier
+    here is a label convention or nothing, which is a real answer.
+    """
+    reading: dict[str, dict] = {}
+    try:
+        board = _board()
+    except (ConfigError, HostUnavailable) as error:
+        for name in ("statuses", "labels"):
+            reading[name] = {
+                "answer": port.VOCABULARY_UNESTABLISHED,
+                "values": None,
+                "because":
+                    f"the board could not be read, so its vocabularies could "
+                    f"not be either: {error}",
+            }
+        reading["types"] = {
+            "answer": port.VOCABULARY_NONE,
+            "values": [],
+            "because":
+                "a card here has no type object, which is true of this tracker "
+                "whether or not the board could be read",
+        }
+        return reading
+
+    live = [
+        name for name, nodes in board["lists"].items()
+        if any(not node.get("closed") for node in nodes)
+    ]
+    archived = len(board["lists"]) - len(live)
+    reading["statuses"] = {
+        "answer": port.VOCABULARY_READ if live else port.VOCABULARY_NONE,
+        "values": live,
+        "because":
+            f"{len(live)} list(s) on board `{board['board']}`, in their own "
+            "position order, each being a state a card can be moved into"
+            + (f"; {archived} archived list(s) are left out" if archived else "")
+            if live else
+            f"board `{board['board']}` has no open list, so there is no state to "
+            "move a card into -- read as stated rather than as a failure",
+    }
+    # ⛔ The **empty** name as well as the missing one, which is the shape this
+    # host actually publishes: a default board's six labels come back with
+    # `name: ""` rather than with no name at all, so the index above keeps them
+    # under an empty key. Measured as a defect in this operation's first draft --
+    # the suite beside it offered `""` as one of this board's labels.
+    labels = [name for name in board["labels"] if str(name).strip()]
+    reading["labels"] = {
+        "answer": port.VOCABULARY_READ if labels else port.VOCABULARY_NONE,
+        "values": labels,
+        "because":
+            f"{len(labels)} named label(s) on this board; a label this tracker "
+            "holds with no name at all is not offered, there being nothing for a "
+            "configuration to name it by"
+            if labels else
+            "this board carries no named label, which a default board does not "
+            "either -- read as stated rather than as a failure",
+    }
+    reading["types"] = {
+        "answer": port.VOCABULARY_NONE,
+        "values": [],
+        "because":
+            "a card here has no type object, so § 4.1's carrier on this tracker "
+            "is a label convention or nothing at all -- which is an answer rather "
+            "than a reading that failed",
+    }
+    return reading
+
+
 ADAPTER = port.Adapter(binder=bind, operations={
+    "read_vocabulary": read_vocabulary,
     "read_item": read_item,
     "search_items": search_items,
     "create_item": create_item,

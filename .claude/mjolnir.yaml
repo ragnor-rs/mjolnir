@@ -192,6 +192,9 @@ host:
     - workflow: "Session restore"
       mirrors: "python3 plugins/mjolnir/scripts/load.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Setup questions"
+      mirrors: "python3 plugins/mjolnir/scripts/configure.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Single source of truth"
       mirrors: "python3 tools/check_single_source.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]

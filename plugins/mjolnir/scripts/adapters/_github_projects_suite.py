@@ -76,6 +76,7 @@ from adapters.github_projects import (  # noqa: E402
     matches,
     read_blockers,
     read_item,
+    read_vocabulary,
     search_items,
     set_field,
     set_labels,
@@ -634,6 +635,58 @@ def self_test() -> int:
     _boards.clear()
 
     # --- the operation list, against the surface the port reads -------------
+    # --- the vocabularies this board states, before a configuration ---------
+    #
+    # ⛔ The decision this tracker makes that no other does: the statuses are
+    # **unestablished** rather than read, because which field carries status is a
+    # project's statement and a board may hold several single-select columns. A
+    # reading that picked one would write a column nobody named into a
+    # configuration, and every move after it would land somewhere else.
+    _boards.clear()
+    vocabulary = with_host(_Host({}), read_vocabulary) or {}
+    columns = vocabulary.get("status_fields") or {}
+    statuses = vocabulary.get("statuses") or {}
+    check(
+        "every single-select column is published, with its own options",
+        columns.get("answer") == port.VOCABULARY_READ
+        and columns.get("values") == ["Status"]
+        and (columns.get("options") or {}).get("Status")
+        == ["Done", "In Progress", "Merged", "Todo"],
+        f"answered {columns!r}",
+    )
+    check(
+        "the status words are unestablished, the field being this project's to name",
+        statuses.get("answer") == port.VOCABULARY_UNESTABLISHED
+        and statuses.get("values") is None,
+        f"answered {statuses!r}",
+    )
+    check(
+        "and the labels are unestablished too, a board spanning repositories",
+        (vocabulary.get("labels") or {}).get("answer")
+        == port.VOCABULARY_UNESTABLISHED,
+        f"answered {vocabulary.get('labels')!r}",
+    )
+    _boards.clear()
+    # ⚠️ A plain raising transport rather than an answer of the fake's: the fake
+    # envelopes whatever it is given as a host answer, so an exception handed to
+    # it arrives as a payload and is subscripted rather than raised. Measured
+    # here -- the first form of this case reported a `TypeError` where it wanted
+    # an unreachable host.
+    def unreachable(_args, parse: bool = True):
+        raise HostUnavailable("the host did not answer")
+
+    vocabulary = with_host(unreachable, read_vocabulary) or {}
+    check(
+        "a board that could not be read leaves every vocabulary unestablished",
+        all(
+            (vocabulary.get(name) or {}).get("answer")
+            == port.VOCABULARY_UNESTABLISHED
+            for name in ("statuses", "status_fields", "labels", "types")
+        ),
+        f"answered {vocabulary!r}",
+    )
+    _boards.clear()
+
     stated = port.surface_operations()
     check(
         "every operation the surface states is implemented or deliberately absent",

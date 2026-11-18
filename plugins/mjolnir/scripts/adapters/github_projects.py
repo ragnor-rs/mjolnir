@@ -1584,7 +1584,80 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
     }
 
 
+def read_vocabulary() -> dict:
+    """What this board states its own words are, before a configuration exists.
+
+    ⛔ **The statuses are *unestablished* here, and that is the board's shape
+    rather than a reading that failed.** A board keeps its states in a field of
+    its own, and § 3 deliberately does not require `status_field` -- so which
+    field carries status is a project's statement and not something to pick out
+    of a board that can hold several single-select columns. What is published
+    instead is `status_fields`: every single-select column with its own options,
+    which is what makes *which field, and which of its options* a question with a
+    menu rather than a guess.
+
+    ⚠️ **The types are the same shape as plain issues'** -- a board's items are
+    issues, and this host states a type vocabulary above the repository.
+    """
+    reading: dict[str, dict] = {}
+    try:
+        board = _board()
+    except (ConfigError, port.HostUnavailable) as error:
+        for name in ("statuses", "status_fields", "labels", "types"):
+            reading[name] = {
+                "answer": port.VOCABULARY_UNESTABLISHED,
+                "values": None,
+                "because":
+                    f"the board could not be read, so none of its vocabularies "
+                    f"could be: {error}",
+            }
+        return reading
+
+    columns = {
+        name: sorted(field["options"])
+        for name, field in board["fields"].items()
+        if field["data_type"] == SINGLE_SELECT and field["options"]
+    }
+    reading["status_fields"] = {
+        "answer": port.VOCABULARY_READ if columns else port.VOCABULARY_NONE,
+        "values": sorted(columns),
+        "because":
+            f"project {board['number']} carries "
+            + (", ".join(f"`{name}` ({', '.join(options)})"
+                         for name, options in sorted(columns.items()))
+               if columns else "no single-select column at all"),
+        "options": columns,
+    }
+    reading["statuses"] = {
+        "answer": port.VOCABULARY_UNESTABLISHED,
+        "values": None,
+        "because":
+            "a board holds its states in a field of its own and which field that "
+            "is, is this project's statement rather than this board's -- so the "
+            "words are asked, with the columns above as the menu (§ 3)",
+    }
+    reading["labels"] = {
+        "answer": port.VOCABULARY_UNESTABLISHED,
+        "values": None,
+        "because":
+            "a board spans repositories and a label belongs to one of them, so "
+            "there is no one label set for a board to state. ⛔ Not read as a "
+            "board with no labels: the set exists per repository and this address "
+            "does not name one",
+    }
+    reading["types"] = {
+        "answer": port.VOCABULARY_UNESTABLISHED,
+        "values": None,
+        "because":
+            "a board's items are this host's issues and it states their types "
+            "above the repository, so whether a type is native, a prefixed label "
+            "or absent is asked rather than read (§ 4.1)",
+    }
+    return reading
+
+
 ADAPTER = port.Adapter(binder=bind, operations={
+    "read_vocabulary": read_vocabulary,
     "read_item": read_item,
     "search_items": search_items,
     "create_item": create_item,

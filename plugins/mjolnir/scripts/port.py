@@ -806,6 +806,25 @@ def _item_word(item: object) -> str | None:
     return None
 
 
+# --- what a vocabulary read answers with -----------------------------------
+#
+# ⛔ **Three answers and never two.** `read_vocabulary` (§ 3) is asked once per
+# project, before a configuration exists, and what it answers about is a set a
+# tracker may genuinely not have: a vocabulary read, one the tracker states none
+# of, and one this toolkit could not establish are three different facts. A shape
+# able to say only *these are the words* and *there are none* would collapse the
+# last two, which is § 2's absence-of-signal rule arriving exactly where a step
+# would otherwise write a guess into a project's own file.
+#
+# ⛔ **Stated here rather than in each implementation**, because every adapter
+# answers in one shape and a consumer reads one set of words -- four spellings of
+# *unestablished* would leave a reader taking three of them as a vocabulary that
+# was read.
+VOCABULARY_READ = "read"
+VOCABULARY_NONE = "none"
+VOCABULARY_UNESTABLISHED = "unestablished"
+
+
 class Outcome:
     """What the port did about one operation, or did not do and why.
 

@@ -3520,6 +3520,95 @@ applied to a suite's own fixture.
   checks above give: this suite reads trees it creates and the configuration in the checkout, and
   the workflow holds no credential.
 
+## The asking half: the question set against the surface it is derived from
+
+`plugins/mjolnir/scripts/configure.py --self-test` runs in the `Setup questions` workflow, with no
+credential and no network. ⛔ The rule is
+[schema § What a project is asked](../plugins/mjolnir/config/schema.md#what-a-project-is-asked-and-the-one-file-the-answers-are-written-into)
+and this document states none of it. What is recorded here is what the suite holds, which half of
+the step is derived and which is written by hand, and what it leaves alone.
+
+**The coverage arm is the whole reason this is a check and not a convention.** The question set is
+the surface's own key inventory, read at run time; what the step holds per key is which of three
+things answers it — a reading, a question, or a stated decision not to ask. The arm compares the
+two sets **both ways**, and ⛔ **the second direction is not decoration**: a key the step answers
+and the surface no longer declares is a question about a facet that is gone, which a project answers
+into a configuration the reader then refuses. ⚠️ **Both directions were measured firing.** Writing
+the table found one entry naming a key the surface does not declare — a field under the estimate
+facet, which that facet never had — and the forward direction found nine keys no walk of the
+surface's own reader can see.
+
+⚠️ **Those nine are a reading of the surface this repository did not have.** The shared reader
+deliberately skips a `- key:` line, an entry not being a key, so the first key of every list entry
+the surface shows — the workflow a check names, the tier a test tier is, the command a local check
+runs, and six more — was invisible to any walk taken off its key inventory. ⛔ **The step reads
+those in one pass with the ordinary keys** rather than in a second walk joined afterwards: document
+order is what the questions are put in, and two walks concatenated would ask which command a check
+mirrors before asking whether the project has any checks at all.
+
+**What the facet-added arm asserts is the acceptance condition of the item that built this.** A
+facet added to the surface after the step shipped reddens the coverage arm until a question reaches
+it, and ⚠️ **the plant goes into a copy of the surface rather than into the file** — the undo for a
+deliberate break is a copy, never version control's own checkout of one, which cannot tell the break
+from any other uncommitted edit to the same file.
+
+**What else it holds**: every question carrying what the surface states about its key and nothing
+the step decided — the alternation as a menu, the requiredness, the condition, the default, the
+private mark, the facet whose carrier may be absent; a key the interrogation answered not asked
+again; a tracker's own vocabulary becoming the **menu** of the question it answers while the
+question is still put; the shortfall naming every key at once rather than one per round trip, in
+each of the four ways a configuration can be short; a private-marked value routed out of the
+tracked block and a private value with no layer stated refusing the write with nothing written;
+every shipped example written into a fresh tree and accepted by the reader; a second write leaving
+the file byte-identical; a configured project's own comment surviving an edit of one key; and the
+head marker at the head alone, carrying nothing that moves, removable, and absent from a file a
+person wrote.
+
+⚠️ **The two read-back conditions needed two different fixtures, and the second one is the harder
+plant.** A file that stops loading is the first; a file that **loads and does not carry the change**
+is the second, and the two come apart only where a configuration states a key twice. ⛔ **The plant
+has to be a duplicate inside one block**, measured: a second block appended at the end replaces the
+whole block and is then refused for the keys it drops — which is the *first* condition firing, and
+the arm for the second would have asserted nothing while reading green.
+
+⚠️ **Two spellings this step shares with files it may not import are held rather than imported.**
+The placeholder form is the one the private-value sweep reads, and the three words a vocabulary read
+answers with are the port's. ⛔ **The port's are imported** — it ships in the plugin beside the step
+— while ⛔ **the sweep's is stated in the step and asserted equal here**, that file living with this
+repository's own tools and not in the plugin: an import would be a plugin reaching for a file no
+adopter has, and two spellings free to disagree would mean the step routing a value the sweep
+reddens on. ⚠️ The arm is skipped rather than failed in a tree without that file, which is an
+adopter's.
+
+⚠️ **The editor's own worst defect was found by review rather than by a failing case**, and is
+recorded because the shape of it generalises: asked for a key one block does not have, a child
+search that stopped only at column zero ran on into the **sibling** block and edited a key of that
+name there. ⛔ It held on every file whose blocks happened to be in a helpful order, which is why
+nothing reddened — the plant is two sibling blocks at one depth, each holding a key the other does
+not. ⚠️ **And the one thing an edit does not keep is a comment inside a list**, a list being
+replaced whole because an entry's position carries meaning the facets state; that is asserted as a
+bound rather than left to be met.
+
+### What this check deliberately does not hold
+
+- **Whether a question is a good question.** The coverage arm holds that every facet is *reached*;
+  nothing reads whether what is asked about it is the right question, or whether its wording would
+  get a correct answer out of a person. That is the *quoting* kind of check, and no mechanism here
+  is of it.
+- **Whether a detected value is right.** A reading is asserted to be taken, reported, and turned
+  into a question where it fails; whether the slug a remote names is the repository somebody meant
+  is a fact only they hold. ⚠️ Which is why the step reports every reading rather than only the ones
+  that failed.
+- **A tracker's own interrogation against a real tracker.** Each adapter's `read_vocabulary` is held
+  by that adapter's own suite against a substituted transport, which is where the decisions are —
+  an archived list left out, a nameless label left out, one tracker's statuses flattened across its
+  issue types, another's left unestablished because the field is a project's to name. ⛔ **No run
+  here reaches a tracker**, so what a live instance answers is unestablished by this gate.
+- **That a configuration the step writes is one an adopter wants.** The reader accepting it is what
+  is asserted; whether the project then runs is every other check's subject.
+- **Whatever is not committed**, and **issues and pull requests**, for the reasons the checks above
+  give.
+
 ## The body gate: the sections a change has to answer
 
 `plugins/mjolnir/scripts/check_body_sections.py --self-test` runs in the `Body sections`
