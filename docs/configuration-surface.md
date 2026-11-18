@@ -13,10 +13,13 @@ what carry the argument anyway.
 
 ## The survey found nine roles, not eight
 
-The loop's statement is [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles),
-and it now states ten — the tenth is the subsection below, which the survey found in every project's
-tooling and in no project's implementation. What the survey established about the nine it could read
-is the count: gating is a genuine ninth role rather than a variant.
+The loop's statement is
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles), and among
+the roles it carries is one this survey could not read as a role at all: the subsection below,
+which the survey found in every project's tooling and in no project's implementation. ⛔ **No count
+of the loop's own roles is written here**: the loop grows, and a figure beside this citation would
+state a number the surface already disagrees with. What the survey established about the nine it
+*could* read is the count: gating is a genuine ninth role rather than a variant.
 One project splits intake into *write the item* and *gate it into committed work*, and its gate
 copy owns the due date and the estimate; the projects without the role fold a little into filing
 and a little into starting, and neither place sets a date. The same project refuses to let
@@ -1158,10 +1161,11 @@ six projects had, and never the subsection's own inventory.
 
 **Why the surface, and not either of the two homes it was weighed against.** The discipline is read
 by two legs — the implementing one, which no role owns, and the reviewing role — and
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) already settles
-what follows: a rule read by two roles and written in one of their skills is a second authority for
-the other. Promoting these rules into the reviewing role's own text is therefore the option with a
-precedent against it rather than the cheap one, and it is ruling 11's reasoning arriving a second
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) already
+settles what follows: a rule read by two roles and written in one of their skills is a second
+authority for the other. Promoting these rules into the reviewing role's own text is therefore the
+option with a precedent against it rather than the cheap one, and it is ruling 11's reasoning
+arriving a second
 time. A per-project pointer — the shape the role-to-person map takes — fails a different test: a
 pointer carries values a role reads, and none of this is a value. Six copies free to disagree is the
 defect the extraction deletes rather than a configuration of it.
@@ -1357,10 +1361,10 @@ own run's output.
 
 What is stable enough to state without a number going stale: **a single role runs to thousands of
 tokens and carries dozens of ⛔ and ⚠️ markers, and there is one of them per leg the loop names**
-([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles)). A window largely
-spent on procedure before a line of anyone's code is read is what § 11 exists to notice, and the
-harness vendor's own guidance is that an over-long instructions file is not read selectively — it
-is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
+([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles)). A window
+largely spent on procedure before a line of anyone's code is read is what § 11 exists to notice,
+and the harness vendor's own guidance is that an over-long instructions file is not read
+selectively — it is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
 
 Two consequences, both already true of this tree rather than predicted of it. A role's body is
 loaded only when the role runs, and only its frontmatter — a name and a description — is always

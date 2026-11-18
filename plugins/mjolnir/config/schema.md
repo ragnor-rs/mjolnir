@@ -254,16 +254,19 @@ one writes and the other is read-only — and a role free to do both would be fr
 deciding.
 
 ⚠️ **The last three are three roles and not one**, and the loop grew by two when they were told
-apart: one directory name carried a prose summary of a single session for a reader outside the
-build, a billing period's line items with an hourly-rate conversion for whoever pays, and a
-narrative distribution of a total of hours that arrives on the invocation. ⛔ **Three roles rather
-than one role with three modes**, for the reason the pair above is a pair — what each may do
-differs. ⛔ **The hours-breakdown role may not measure the period it reports on**: the total is
-given to it, and a role free to measure one would be free to replace a figure
-[§ 9](#9-day-log) produced with one of its own. ⛔ **The billing role is the only one of the three
-that converts hours to money**, so a project that wants the narrative does not thereby configure a
-rate. ⛔ **And each is reconciled on its own, no copy of one being merged with a copy of another** —
-the merge a shared name invites, and the whole of what naming them apart is for.
+apart: one directory name carried a prose summary of a single session, a billing period's line
+items with an hourly-rate conversion, and a narrative distribution of a total of hours that
+arrives on the invocation. ⚠️ **Who reads each of them is
+[§ 8](#8-language-register-audience--per-artifact-not-per-project)'s and is stated there once**,
+as three artifact keys with three audiences — a reader per role being what a project configures,
+which this section would otherwise carry a second copy of. ⛔ **Three roles rather than one role
+with three modes**, for the reason the pair above is a pair — what each may do differs.
+⛔ **The hours-breakdown role may not measure the period it reports on**: the total is given to it,
+and a role free to measure one would be free to replace a figure [§ 9](#9-day-log) produced with
+one of its own. ⛔ **The billing role is the only one of the three that converts hours to money**,
+so a project that wants the narrative does not thereby configure a rate. ⛔ **And each is
+reconciled on its own, no copy of one being merged with a copy of another** — the merge a shared
+name invites, and the whole of what naming them apart is for.
 
 A project maps a subset — an absent role is a legitimate configuration, not a partial install;
 one adopting project runs a single role. Each role's carrier (skill, command or hook) is §7's
@@ -4429,9 +4432,9 @@ done:
   refuse one of two correct configurations.
 - ⛔ **`answered_by: human` is not satisfiable by the procedure, and no amount of reading the diff
   satisfies it.** The answer is **recorded** where something else can read it and the record says
-  **who** answered — the division [§ The loop](#the-loop--thirteen-roles) already states: procedure
-  produces a record and enforcement reads it, so the record is written whether or not a hook
-  refuses the merge on it.
+  **who** answered — the division [§ The loop](#the-loop--thirteen-roles) already states:
+  procedure produces a record and enforcement reads it, so the record is written whether or not a
+  hook refuses the merge on it.
   ⚠️ **It is the record and not the report**: a verdict that exists only in a role's reply is a
   verdict the next role cannot read, by
   [§ 11](#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it).
