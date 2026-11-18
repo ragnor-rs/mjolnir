@@ -1103,6 +1103,36 @@ ANSWERED_BY: dict[str, Answer] = {
         "Does cutting a release publish a package? ⛔ Asked because a version "
         "spent on a registry is spent for ever, and the go is the person's.",
     ),
+
+    # --- § 35. The live data step a deploy performs ------------------------
+    "deploy.live_data_step.backup.run": ask(
+        "Which command dumps this target's live store?",
+    ),
+    "deploy.live_data_step.backup.verify": ask(
+        "And which command reads that dump back? ⛔ Asked as a key of its own "
+        "because a dump nothing read is a backup on the strength of an exit "
+        "status alone, which is the measured failure (§ 35).",
+    ),
+    "deploy.live_data_step.rehearse": ask(
+        "Does the write have a dry variant? ⚠️ An omitted one is reported as no "
+        "rehearsal rather than as a clean one, so it is asked rather than left "
+        "to the apply command's own flags.",
+    ),
+    "deploy.live_data_step.apply": ask(
+        "Which command writes to the live store?",
+    ),
+    "deploy.live_data_step.apply_by": ask(
+        "Who performs that write -- the procedure, or a person? ⛔ The project's "
+        "own ruling about an act that cannot be undone, never inferred from the "
+        "command's shape.",
+    ),
+    "deploy.live_data_step.order": ask(
+        "Does the write happen before this target is invoked, or after it?",
+    ),
+    "deploy.live_data_step.record": ask(
+        "Which command prints what has already been applied to this store, one "
+        "path per line?",
+    ),
 }
 
 

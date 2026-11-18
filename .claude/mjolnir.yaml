@@ -140,6 +140,16 @@ host:
     # ⚠️ The same reading as the two entries above, on the guard that holds a session: no command
     # in this repository opens one on another machine, so `live_guard` below is `[]` and this run
     # holds the carrier's own suite rather than a verdict about this tree.
+    # ⚠️ And the same reading again on both halves of § 35: this repository states `deploy: []`, so
+    # no target here carries a live data step. The carrier's run holds its own suite against
+    # planted trees and planted commands; the record check's holds a repository the suite builds
+    # and makes one change in, because its in-memory arms say nothing about the diff.
+    - workflow: "Live data carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/live_data.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Live data record"
+      mirrors: "python3 plugins/mjolnir/scripts/check_live_data_record.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Live guard"
       mirrors: "python3 plugins/mjolnir/scripts/live.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]

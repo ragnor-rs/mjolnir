@@ -3817,6 +3817,121 @@ hidden behind a guarantee nothing performs. ⚠️ **And nothing here holds the 
 project's files**, there being none in this tree — a release cut against a project that states one
 is the first exercise of that half, which is a limit of this record rather than of the rule.
 
+## The live data step performed in order, and the reading the carrier gave up on
+
+`plugins/mjolnir/scripts/live_data.py --self-test` runs in the `Live data carrier` workflow, with
+no credential and no network. ⛔ The rule is
+[schema § 35](../plugins/mjolnir/config/schema.md#35-the-live-data-step-a-deploy-performs-and-the-rails-it-is-performed-under)
+and this document states none of it. What is recorded here is why there is a module at all, what
+its suite holds, and what it gave up on.
+
+**The ordering is the module rather than the role.** A role free to reach the write before the dump
+has been read back is a role with no rail, so the sequence is performed where it can be asserted —
+and the deploying skill beside it asks for a plan, a preparation and an apply instead of
+sequencing. ⛔ **The split into two subcommands is the rail**: a preparation that ran its three
+steps and then stopped is the outcome rather than a failure, because the go is given on the
+rehearsal's output and a module that carried straight on would have answered for the person, which
+is [schema § The loop](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s
+test for an ask.
+
+**What this repository is not a subject of.** `deploy` here is `[]`, so no target states a step and
+pointed at this project the carrier exits 3. ⚠️ **So every behavioural arm is asserted against trees
+and commands the suite builds** — each command a script that exits with the status the arm needs,
+rather than a shell builtin, so an arm about a non-zero status can produce one.
+
+What it holds: the plan naming every step in order and running none; each stop planted alone and
+asserted to stop at its own step, with the record an apply would read left absent in every case; a
+completed preparation leaving that record and writing nothing itself; a go naming neither the
+target nor the rehearsal's verdict refused in all four shapes, and one naming both writing; a write
+with no preparation on record refused; a target stating no rehearsal completing with the row still
+in the plan and the report saying there was none rather than that it passed; the hand-over making
+no write and handing the command over whole; a hand-over under an unbound go still refused, which
+is what makes `apply_by` a statement about who runs the command and not about whether it was
+approved; and a write that ran and failed naming what the store is left holding along with the dump
+a recovery reads.
+
+⛔ **One reading was written, measured wrong and removed, and the removal is the record.** The
+module first read a rehearsal's output for the word *divergence* and stopped on it. The surveyed
+copy whose rehearsal is guarded states that it must report **no divergence** to pass — so the
+passing output carries the same word the failing one does, and the first run of this module's own
+suite stopped a clean rehearsal on it. ⚠️ **What replaced it is the surface's own rule**: the exit
+status is the verdict, and the output is carried verbatim for a person to read before the go.
+⛔ **What that leaves open is named rather than closed**, by
+[schema § 11 → A report names what it could not establish](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish):
+a project whose dry variant finds a divergence and exits zero anyway has to make that comparison
+inside its own command, and nothing in this module can make it.
+
+⚠️ **Two arms of the suite were measured asserting nothing and are recorded as such.** The
+every-stop-leaves-no-record arms resolved the record's path through a configuration with no
+artifacts directory, which fell back to the system temporary directory — so they asked about a path
+`prepare` had never written and passed whatever the module did. And the record-prepared-for-another-target
+arm named two plainly different targets, which already miss each other by file name: with the
+comparison removed it stayed green, having been refused by the does-the-file-exist branch above it.
+⛔ **The arm that reaches it is the pair of names the slug cannot tell apart** — `a target` and
+`a-target` — which is why the carrier writes the name itself into the record.
+
+⚠️ **And nothing here holds the facet against a real store.** There is none in this tree, and no
+arm of this suite reaches one: a step performed against a project that states one is the first
+exercise of that half, which is a limit of this record rather than of the rule.
+
+**What the reader's companion refusal does not reach**, recorded beside the carrier because it is
+the same rule's other half. The load-time refusal of a command that carries its own answer is
+lexical, so it sees a here-string and a pipe whose left-hand side is a printing command, and
+⛔ **it does not see one wrapped in another interpreter** — a shell invoked with its program as an
+argument, whose first word is that interpreter rather than the printing command inside it.
+⚠️ **Measured on the parser rather than assumed**, and left open deliberately: the alternative is
+reading inside a quoted argument, which is where the false refusals are and which
+[schema § 35 → Who performs the apply](../plugins/mjolnir/config/schema.md#who-performs-the-apply-and-the-go-that-is-never-the-commands-own-prompt)
+already bounds in the other direction. ⛔ **What is not weakened by it is the ask**: the go is
+unconditional, so a project that evaded this refusal still reaches a person — what it would have
+lost is the reader saying so at the load.
+
+## A released write, against the change that would rewrite it
+
+`plugins/mjolnir/scripts/check_live_data_record.py --self-test` runs in the `Live data record`
+workflow, with no credential and no network. ⛔ The rule is
+[schema § 35 → A record of the store's state](../plugins/mjolnir/config/schema.md#a-record-of-the-stores-state-is-never-rewritten)
+and this document states none of it.
+
+**What it compares is one intersection**: the paths a live target's own listing command prints,
+against the paths this change modifies or deletes. ⛔ **The listing is the project's command and
+never a path pattern this check carries**, which is
+[schema § What the procedure models](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls) —
+and it is read from live targets only, a store the session is the only user of being one it can
+rebuild.
+
+What it holds: a rewrite and a deletion each a problem naming the file and the target; a new write
+no problem; a listing command that exits non-zero and one that is not there each a refusal naming
+it rather than an empty set, which would read as a store with nothing applied to it; and the
+liveness pairing in both directions, including a project with two targets one of each.
+
+⚠️ **The last section of the suite builds a repository and makes one change in it for real**, which
+is the position
+[the end-to-end register's own check](#the-end-to-end-register-against-the-suite-and-the-change-against-both)
+takes for the same reason: the in-memory arms say nothing about the diff, and the diff is where a
+convincing false green lives. ⛔ **What makes that necessary rather than thorough is the rule
+itself** —
+[schema § 35 → A record of the store's state](../plugins/mjolnir/config/schema.md#a-record-of-the-stores-state-is-never-rewritten)
+names the file rather than a count, so a check whose only evidence was a set intersection would
+never have been held to what git actually reports.
+
+⚠️ **One arm was measured asserting a constant rather than a behaviour.** The diff filter leaves
+out additions deliberately — one surveyed carrier detects its *pending* writes as the paths added
+since the last release tag, and an adopter who wrote that as their listing command would be
+printing the branch's own new writes, which with additions in the filter would refuse every change
+the facet exists for. ⛔ **That bound was first held by comparing against the filter string
+itself**, which said nothing: planting the letter back in left the arm green, the intersection
+being empty either way. What holds it now is a planted listing command naming the path the change
+adds.
+
+⚠️ **What is not held.** Whether a project's listing command answers the question the surface
+asks — *what is already applied* rather than *what is pending* — is unreadable here and is the
+adopter's to get right; a command answering the second would print this branch's own writes, and
+the filter above is what keeps that from refusing them rather than a check that notices. ⛔ **And a
+shallow clone has no merge base to read**, which the check reports as *unchecked* rather than as a
+clean diff — so the workflow fetches the whole history, and a run that did not would redden every
+change rather than passing it.
+
 ## The bookkeeping role's derivations, and the round trip that is the resumability arm
 
 `plugins/mjolnir/scripts/save.py --self-test` runs in the `Save artifact` workflow, with no
