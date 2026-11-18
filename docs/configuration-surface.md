@@ -3027,12 +3027,13 @@ roots, and the answer is **the list is the project's and the repository is the e
 ⛔ **No reading was taken for it and none was needed** — the two already here answer it, and a third
 survey would have been evidence collected to confirm a shape rather than to choose one.
 
-⛔ **What rules out nesting is the axis, measured on six projects and a directory in none of them.**
-The build side read what each project's deploy *resolves against*
-([*Where a deploy lives*](build-surface.md#where-a-deploy-lives)): two take the environment as a
-required argument and resolve the host from a library beside them, one has its substitutions
-supplied by whoever triggers the hosted build, two resolve one target each, and the remaining one
-resolves against a **ref** whose default is the wrong one. ⚠️ **So a list keyed on the directory
+⛔ **What rules out nesting is the axis, and a directory is what no project's deploy resolves
+against.** The build side read what each project's deploy *resolves against* and found a directory
+in none of them ([*Where a deploy lives*](build-surface.md#where-a-deploy-lives)). ⛔ **Which shape
+each one resolves against is left on that page rather than copied onto this one**, which that page
+asks for in as many words: the two readings count different things — a project there and a carrier
+here — so neither restates the other, and a copy would be a second classification of the same
+projects with nothing holding it to the first. ⚠️ **So a list keyed on the directory
 would be keyed on the one axis no project's targets divide on**, and the facet's own reason for
 being a list — every fact measured is a target's — reaches this fact exactly as it reaches the rest,
 which is where

@@ -7292,9 +7292,10 @@ the key carries a target and never a reason's vocabulary
 
 ⚠️ **The target vocabulary is not this facet's**, and an entry here is now **resolved** against it.
 The entity a deploy aims at is [§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes)'s, whose
-list is the project's and whose names are unique across it
-([`Which repository a target's act happens in`](#which-repository-a-targets-act-happens-in)), so a
-name no target carries is refused here with the names the project states. ⛔ **Held to the list and
+list is the project's
+([`Which repository a target's act happens in`](#which-repository-a-targets-act-happens-in)) and
+whose names answer one per target across it, so a name no target carries is refused here with the
+names the project states. ⛔ **Held to the list and
 never to a root of it**: a tier is the project's and a target names its own repository, so a tier
 refused on a target says nothing about which repository either is in. ⚠️ **A project stating
 `deploy: []` may refuse a tier on nothing**, the absence being the statement — and the names a tier
@@ -7544,6 +7545,13 @@ this key named and nothing is deployed.
 Three of the five projects carrying this role carry more than one target, and no two of a project's
 targets agree on what is invoked, what it advances, or whether it is live — so a project-level
 answer would be wrong for one of its own targets wherever it had two.
+
+⛔ **One name answers for one target across the whole list**, `name` being the word a deploy is
+asked for by: two entries carrying one name leave the ask undefined, so the second is refused with
+the entry that already carries it named. ⚠️ **Which is what makes the list a vocabulary rather than
+only a list** — [§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s `refused_on`
+resolves a name against it, and a reference into a list whose names repeated would resolve to
+whichever entry was read first.
 
 ⛔ **And the list is the project's while the repository is the entry's**, which is
 [`Which repository a target's act happens in`](#which-repository-a-targets-act-happens-in) below —
@@ -7887,14 +7895,17 @@ target whose root was derived from its batch would have no answer for exactly th
 exists for.
 
 ⛔ **Not a list per root, and the measurement is what rules it out.** What a target resolves against
-was read on six projects and is a directory in none of them: two take the environment as an argument
-and resolve the host from a library beside them, one has its substitutions supplied by whoever
-triggers the build, two resolve one target each, and the remaining one resolves against a **ref**
-([the measurement](../../../docs/build-surface.md#where-a-deploy-lives)). ⚠️ **So nesting the list
+was read on every project in the survey and is a directory in **none** of them
+([the measurement](../../../docs/build-surface.md#where-a-deploy-lives)). ⛔ **Which shape each one
+resolves against stays there and is not restated here**, that page holding the classification and
+this one the rule it carries: a second enumeration of the same projects is free to disagree with
+the reading it was copied from, and nothing would compare the two. ⚠️ **So nesting the list
 under the directory would key it on the one axis no project's targets divide on**, and it would cost
-a second rule besides: `name` is the word a deploy is asked for by, so two roots' lists would still
-have to hold their names apart across the project — which is [§ 1](#a-command-root-is-not-a-code-root)'s
-own rule for a command root's name, taken for the same reason a reference is written somewhere else.
+a second rule besides: the one-name-per-target rule above would have to hold across two lists rather
+than inside one, which is
+[§ 1](#a-command-root-is-not-a-code-root)'s own rule for a command root's name, taken for the same
+reason — a reference is written somewhere else, so one name answering in two places resolves into
+whichever list was read first.
 
 ⛔ **Every reference an entry makes into a repository is resolved in the one this key names**, and
 ⛔ **never against a union over the project's repositories** — which is the only other answer
