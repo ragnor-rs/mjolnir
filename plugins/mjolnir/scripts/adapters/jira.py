@@ -1652,7 +1652,101 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
     }
 
 
+def read_vocabulary() -> dict:
+    """What this project states its own words are, before a configuration exists.
+
+    ⛔ **The statuses are read per issue type and flattened once**, because this
+    tracker states them that way: a project's workflow can give two types two
+    different state sets, and a reading that took one type's would state a
+    vocabulary the other half of the backlog cannot hold. ⚠️ The order is the
+    host's own within each type, and the flattening keeps first appearance --
+    which is the closest thing to *a project's order* this tracker publishes.
+
+    ⛔ **The label set is *unestablished*, and that is this tracker's shape.** A
+    label here is site-wide rather than a project's, so there is no set a project
+    states -- and answering with the site's would hand a setup step every label
+    anybody on the instance has ever used, as though they were this project's
+    convention.
+    """
+    reading: dict[str, dict] = {}
+    key = None
+    try:
+        key = _project_key()
+        statuses = _call("GET", f"/project/{key}/statuses")
+    except (ConfigError, HostUnavailable) as error:
+        statuses = None
+        reading["statuses"] = {
+            "answer": port.VOCABULARY_UNESTABLISHED,
+            "values": None,
+            "because":
+                f"this project's statuses could not be read: {error}. ⛔ Not read "
+                "as a project with no states",
+        }
+    if statuses is not None:
+        words: list[str] = []
+        for a_type in statuses if isinstance(statuses, list) else []:
+            for status in (a_type.get("statuses") or []):
+                name = status.get("name")
+                if name and name not in words:
+                    words.append(name)
+        reading["statuses"] = {
+            "answer": port.VOCABULARY_READ if words else port.VOCABULARY_NONE,
+            "values": words,
+            "because":
+                f"{len(words)} status word(s) across the issue types of {key}, "
+                "in the order this tracker states them"
+                if words else
+                f"{key} states no status at all, which is a project whose "
+                "workflow has none rather than a reading that failed",
+        }
+
+    try:
+        project = _call("GET", f"/project/{key}") if key else None
+    except (ConfigError, HostUnavailable) as error:
+        project = None
+        reading["types"] = {
+            "answer": port.VOCABULARY_UNESTABLISHED,
+            "values": None,
+            "because":
+                f"this project's issue types could not be read: {error}. ⛔ Not "
+                "read as a project with no types",
+        }
+    if project is not None:
+        types = [
+            one.get("name") for one in (project.get("issueTypes") or [])
+            if one.get("name")
+        ]
+        reading["types"] = {
+            "answer": port.VOCABULARY_READ if types else port.VOCABULARY_NONE,
+            "values": types,
+            "because":
+                f"{len(types)} native issue type(s) on {key}, so § 4.1's carrier "
+                "is this tracker's own type rather than a label convention"
+                if types else
+                f"{key} states no issue type, which no project on this tracker "
+                "ordinarily does -- read as stated rather than as a failure",
+        }
+    elif "types" not in reading:  # pragma: no cover -- no key to ask with
+        reading["types"] = {
+            "answer": port.VOCABULARY_UNESTABLISHED,
+            "values": None,
+            "because": "there is no project key to ask about yet",
+        }
+
+    reading["labels"] = {
+        "answer": port.VOCABULARY_UNESTABLISHED,
+        "values": None,
+        "because":
+            "a label here belongs to the whole site rather than to a project, so "
+            "there is no set this project states. ⛔ Not read as a project with "
+            "no labels: answering with the site's would offer every label anybody "
+            "on the instance has used as this project's own convention",
+    }
+    return reading
+
+
 ADAPTER = port.Adapter(binder=bind, operations={
+    "read_vocabulary": read_vocabulary,
     "read_item": read_item,
     "search_items": search_items,
     "create_item": create_item,

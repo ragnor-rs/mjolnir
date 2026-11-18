@@ -1,0 +1,43 @@
+name: Setup questions
+
+# The questions a project is asked, derived from the configuration surface rather than listed.
+# Held to the section of plugins/mjolnir/config/schema.md that states what the asking step may do;
+# no copy of it is carried here.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+#
+# ⚠️ What this run holds is the coverage arm above everything else: a facet added to the surface
+# and reached by no question reddens here, which is the one property that keeps the question set
+# and the surface from drifting apart. The write half is held against planted trees and against
+# every shipped example, since a project that has never seen the toolkit is not this one.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The carrier's suite reads the surface, writes configurations into
+# temporary trees of its own making, and takes no reading that leaves the runner: the host and the
+# tracker interrogations are exercised against substituted transports.
+permissions: {}
+
+jobs:
+  setup-questions:
+    name: Setup questions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Pinned rather than relying on whatever the runner image ships, for the reason the sibling
+      # workflows pin it: the carrier runs on the shared reader, which needs the parser, and a
+      # check that silently stops running is the failure this job exists to catch.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` states this run mirrors.
+      - name: Hold the question set to the surface
+        run: python3 plugins/mjolnir/scripts/configure.py --self-test

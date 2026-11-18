@@ -8600,6 +8600,12 @@ MARKED_PROCEDURE = [
     "lines_changed",
     "max_lines",
     "readings",
+    # § What a project is asked's. ⛔ The marked key whose rule is about the step
+    # that writes a configuration rather than about one a configuration carries:
+    # a project writing this would be configuring its own interrogation, which is
+    # a project turning off the questions it is worst at answering -- and the one
+    # asking would have no way to tell which were skipped.
+    "setup",
     "waive_review",
 ]
 

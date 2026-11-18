@@ -52,6 +52,7 @@ from adapters.github_issues import (  # noqa: E402
     bind,
     link_dependency,
     read_blockers,
+    read_vocabulary,
 )
 
 # The repository this suite's calls address. ⛔ A shape the sweep in `tools/`
@@ -75,6 +76,7 @@ COVERED = {
     "set_state",
     "grouping_items",
     "mark_grouping_released",
+    "read_vocabulary",
 }
 
 # The item under test and the two it is related to. ⛔ Distinct integers, and the
@@ -797,6 +799,77 @@ def self_test() -> int:
         and answered.get("already") is True,
         f"sent {again.sent!r}, answered {answered!r}",
     )
+
+    # --- the vocabularies this tracker states, before a configuration --------
+    #
+    # ⛔ Three decisions, each silent if it is wrong: the status pair is this
+    # host's own and is **not** a call, a label listing that did not answer is
+    # unestablished rather than a repository with no labels, and the type
+    # vocabulary is unestablished rather than `none` -- this host stating it
+    # above the repository, where there is no read here that answers for one.
+    labelled = _Host({"label list": [{"name": "P: Highest"}, {"name": "infra"}]})
+    vocabulary = with_host(labelled, read_vocabulary) or {}
+    statuses = vocabulary.get("statuses") or {}
+    labels = vocabulary.get("labels") or {}
+    types = vocabulary.get("types") or {}
+    check(
+        "the status words are the host's own two, read without asking the host",
+        statuses.get("answer") == port.VOCABULARY_READ
+        and statuses.get("values") == ["open", "closed"],
+        f"answered {statuses!r}",
+    )
+    check(
+        "the label set is this repository's own, read through the client",
+        labels.get("answer") == port.VOCABULARY_READ
+        and labels.get("values") == ["P: Highest", "infra"]
+        and labelled.calls.count("label list") == 1,
+        f"answered {labels!r} after {labelled.calls!r}",
+    )
+    check(
+        "the type vocabulary is unestablished rather than `none`",
+        types.get("answer") == port.VOCABULARY_UNESTABLISHED
+        and types.get("values") is None,
+        f"answered {types!r}",
+    )
+    # ⛔ And the two directions a label listing can be empty, which § 2's rule is
+    # exactly about: a repository with no label at all, and a host that did not
+    # answer. ⚠️ Both read as `values: []`-shaped to a caller that only looked at
+    # the list, which is why the answer word is what a consumer reads.
+    bare = _Host({"label list": []})
+    reading = (with_host(bare, read_vocabulary) or {}).get("labels") or {}
+    check(
+        "a repository with no label at all is stated rather than unestablished",
+        reading.get("answer") == port.VOCABULARY_NONE and reading.get("values") == [],
+        f"answered {reading!r}",
+    )
+    silent = _Host({"label list": HostUnavailable("the host did not answer")})
+    reading = (with_host(silent, read_vocabulary) or {}).get("labels") or {}
+    check(
+        "a host that did not answer leaves the labels unestablished, not empty",
+        reading.get("answer") == port.VOCABULARY_UNESTABLISHED
+        and reading.get("values") is None,
+        f"answered {reading!r}",
+    )
+    check(
+        "and the statuses still answer, not depending on that call",
+        ((with_host(silent, read_vocabulary) or {}).get("statuses") or {}).get(
+            "answer") == port.VOCABULARY_READ,
+        "the status reading was taken down with the label call",
+    )
+    # ⛔ And the same for a slug this adapter refuses: a configuration's own
+    # refusal is a reason the labels are unestablished, not a reason the whole
+    # read fails. ⚠️ Rebound here and put back below, since the refusal is
+    # `_repo`'s and comes from the bound configuration rather than from the host.
+    bind({"host.repo": "not-a-slug"})
+    reading = (with_host(labelled, read_vocabulary) or {})
+    check(
+        "a slug this adapter cannot address leaves the labels unestablished",
+        (reading.get("labels") or {}).get("answer")
+        == port.VOCABULARY_UNESTABLISHED
+        and (reading.get("statuses") or {}).get("answer") == port.VOCABULARY_READ,
+        f"answered {reading!r}",
+    )
+    bind({"host.repo": A_REPO})
 
     # --- the operation set, against what the surface states -------------------
     #
