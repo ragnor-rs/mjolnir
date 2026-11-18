@@ -1797,6 +1797,7 @@ operations the survey reached and says which it did not.
 | `checklist_read` | the item's check items, and which of them are ticked | the role has **no answer** about the checklist and says so; an unreadable checklist is never read as an empty one, by § 2's rule that absence of signal is not an answer |
 | `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
 | `checklist_item_delete` | a check item removed | the item is reworded and ticked instead |
+| `read_vocabulary` | the vocabularies the tracker itself states — its status words in their own order, its label set, its item types where it has native ones — each answered as **read**, as the tracker stating none, or as unestablished, and ⛔ never a verdict about which of them this project means, that being the facets' own question and a person's to answer. ⚠️ **An implementation may publish a vocabulary of its own beyond those three** where its tracker holds one the others do not: the measured case is a board's single-select columns, which is what makes *which field carries status* a question with a menu rather than a column picked out of several | every question about a status word, a label prefix or a type is **asked** rather than filled in, and the asking step's report names the reading it could not take; an unreadable vocabulary is never an empty one, by § 2's rule that absence of signal is not an answer |
 
 ### Who declares a capability
 
@@ -8129,3 +8130,91 @@ another copy of the same entry on every run.
 [§ 7](#a-hook-in-a-project-that-states-no-configuration) rules for a carrier addressed by an event:
 this step is invoked by name, and that subsection already makes the answer owed to whoever invokes
 a role in a project configuring nothing.
+
+## What a project is asked, and the one file the answers are written into
+
+**The step above writes the artifacts; this one writes the configuration.** The two are separable
+because the install waits on no answer, which the section before this one states — and this is the
+half that asks. ⛔ **Hand-writing the file is the thing this exists to replace**: a board id, a
+status word or a label prefix mistyped there fails much later and somewhere else, with the mistake
+nowhere near the failure.
+
+⛔ **The question set is this surface's own key inventory, read when the step runs.** Not a list in
+the step and never a list here: a facet this surface states and the step never asks about is a
+**bug in the step**, and the step's own suite is what says so. ⛔ **So a facet added below after
+the step shipped reddens it** until a question reaches the facet, which is the one property that
+keeps the two from drifting. ⚠️ **What the step holds per key is which of three things answers
+it** — a reading it takes, a question it puts, or a stated decision not to ask — and nothing else:
+the menu, the requiredness, the condition, the default and whether a facet may be absent are each
+read from the markers [§ The file itself](#the-file-itself) already declares.
+
+⛔ **This is procedure and declares no key**, by the device
+[§ An artifact states what is true now](#an-artifact-states-what-is-true-now) and the install's own
+section each use: a project that could configure its own interrogation is a project that can turn
+off the questions it is worst at answering, and the one asking would never know which.
+
+```yaml
+# procedure: setup
+```
+
+**The five properties of asking, each of which is this step's own rather than any facet's:**
+
+| | |
+|---|---|
+| **Ask rather than infer where a wrong guess is quiet** | A code root that is its own repository under another owner reads exactly like a directory of this one, and a nested repository ([§ 1](#1-roots)) cannot be guessed — each fails having done something plausible first. ⛔ **Whose answer it is decides this and not how hard the reading would be** |
+| **Detect what is detectable, and read nothing twice** | A tracker's own vocabularies are read rather than asked, through [§ 3](#the-operations-and-what-an-absent-capability-does)'s `read_vocabulary`; a reading that answered is not then put as a question with its own answer beside it, there being nothing a person could check it against. ⛔ **A reading that did not answer is reported as unestablished and the key is asked** — never filled in, which is § 2's absence-of-signal rule arriving where a guess would be cheapest |
+| **A vocabulary is a candidate set and not an answer** | What a tracker publishes becomes the **menu** of the question it answers, and the question is still put: a label set is every label anybody has used, and which of them is this project's convention is a person's to say |
+| **The writer question is a person's, always** | Statuses can be enumerated from a tracker; ⛔ **nothing in any tracker records who is allowed to set one** ([§ 4.2](#42-status--an-ordered-set-of-name-role-writer)), so that half is asked wherever the words were read. The same class is a target that publishes ([§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes)) and what a local verdict proves ([§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts)) |
+| **A menu, never a free-text field, wherever this surface names a shared vocabulary** | The readiness predicates ([§ 5](#5-readiness-gate--an-ordered-predicate-list)), the `done:` checks ([§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)) and the day log's exclusions ([§ 9](#9-day-log)) are each a closed set this file states, so a value added there reaches the question without the step changing |
+
+⛔ **An absence is captured as a decision and never left unset.** A facet answered as absent carries
+`absent_reason`, and ⛔ **the step refuses to write a `carrier` of `none` without one** — which is
+this file's opening claim about absence, enforced where the file is first written rather than only
+where it is read. ⚠️ **The trigger is asked for and not refused on**: whether a facet *has* a
+`revisit_when` to state is a judgement about the project rather than a reading, so the question puts
+it and nothing here reddens on an answer of none — which is the decidable half held and the residue
+stated rather than claimed.
+
+⛔ **It writes nothing to the tracker and nothing to the code host.** Every call it makes is a read:
+a step that labelled, filed or moved anything would be adopting a project by changing it.
+
+⛔ **A value this surface marks `# private` is routed to
+[§ 28](#28-a-configured-value-a-repository-may-not-hold)'s own file, or it is not collected at
+all.** It is never written into the tracked one — this step being the one place a person's name, a
+chat thread or a path on somebody's machine would otherwise be checked in — and a value with no
+private layer stated is a **refusal naming the key** rather than a value written where it fits.
+
+⛔ **The configuration is edited and never re-rendered**, which is the install's own rule for the
+same file and is stated there: a project's comments about its own facts are part of it, as is the
+terminator its lines are written with, and a round trip through a parser takes every one of them
+out with nothing reporting the loss. ⛔ **So only the keys the answers change are touched**, and a
+second run leaves the tree byte-identical. ⚠️ **A file that is not there is rendered whole
+instead**, there being no comments to keep.
+
+⚠️ **One bound on that, stated here rather than met later: a key whose value is a list is replaced
+whole, so a comment written *inside* that list does not survive an edit of it.** An entry's
+position carries meaning several facets state — the ordering of `statuses`, of `readiness` and of
+`done` each do — so an editor that reached inside a list would be choosing which entry a key names.
+⛔ **A comment anywhere else does survive**, which is what makes this a bound on one shape rather
+than a qualification of the rule above it.
+
+⛔ **And the edit is read back on two conditions rather than one**, which the install's section
+states and this step performs for the file it writes: a file that stops loading is not written, and
+neither is one that loads and **does not carry the change**. ⚠️ **A key the project resolves through
+§ 28 is not read back here** — the tracked file states its shape and the value comes from a file
+this step has not written yet — and a key the reader cannot resolve at all is reported as unread
+rather than as wrong, the write being an act that can be made again.
+
+⛔ **A key this step cannot place in a file that already exists is reported and never appended.** A
+key appended blind is a key stated twice, and the reader resolves one of the two copies — so what
+comes back names the keys for whoever edits the file, with nothing written.
+
+**The marker is the generation's and not the file's.** A file this step rendered carries a
+generated-by marker at its head, so the generation is discoverable later and so it can be unpicked
+when a plugin is retired. ⛔ **Nothing in it moves between runs**, for the two reasons the install's
+own marker carries none: a head line that moved would be the record of a pass
+[§ An artifact states what is true now](#an-artifact-states-what-is-true-now) forbids an artifact
+outright, and it would make every run a change. ⛔ **What is removable is the marker and not the
+file** — removing a project's configuration is removing its adoption, which is a person's act — and
+⛔ **a file a person wrote carries no marker at all**: it is edited key by key, and marking it would
+be this step claiming authorship of somebody else's file.

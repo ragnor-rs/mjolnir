@@ -124,6 +124,12 @@ RECENT_FIRST = "sort:updated-desc"
 # the honest reading of a listing that may be short.
 MILESTONE_LIMIT = 500
 
+# The bound on this repository's label listing, carried for the reason the one
+# above it is: the host's own default would cut a long convention short with
+# nothing saying so, and a vocabulary read for a setup step is the one reading
+# where a quietly truncated list becomes a prefix nobody notices is wrong.
+LABEL_LIMIT = 500
+
 # The configuration the port last handed down, and the only place one comes from.
 # ⛔ Never resolved here, and never from the working directory: which repository
 # an item lives in is `host.repo`'s to say (§ 2), and a process serving more than
@@ -916,8 +922,77 @@ def self_test() -> int:
     return suite.self_test()
 
 
+def read_vocabulary() -> dict:
+    """What this tracker states its own words are, before a configuration exists.
+
+    ⛔ **Three readings, each answering for itself.** A vocabulary read, one the
+    tracker states none of, and one this module could not establish are three
+    different facts, and a shape that could only say *empty* would collapse the
+    last two into the first -- which is § 2's absence-of-signal rule arriving
+    where a setup step would quietly write a guess.
+
+    ⚠️ **The statuses are not a call.** An issue here is open or closed and there
+    is no status field to carry a third word, which `set_state` above already
+    refuses anything else for -- so this reads that same pair rather than asking
+    the host what its states are.
+
+    ⚠️ **The types are *unestablished* rather than absent.** This host states a
+    type vocabulary above the repository, and there is no read here that answers
+    for a repository whose owner may or may not have one -- so whether types are
+    native is asked, which is the honest half of § 4.1's question rather than a
+    `none` nobody checked.
+    """
+    reading = {
+        "statuses": {
+            "answer": port.VOCABULARY_READ,
+            "values": [OPEN, CLOSED],
+            "because":
+                "an issue here is one of the host's own two states, and there is "
+                "no field to carry a third word",
+        },
+    }
+    try:
+        labels = _gh(["label", "list", "--repo", _repo(), "--json", "name",
+                      "--limit", str(LABEL_LIMIT)])
+    # ⛔ The configuration's own refusal is caught here as well as the host's,
+    # and per vocabulary rather than for the whole read: a slug this adapter
+    # cannot address is a reason the **labels** are unestablished, and the status
+    # pair above does not depend on it. Letting it out would take a reading that
+    # answered down with one that could not.
+    except (port.ConfigError, port.HostUnavailable) as error:
+        reading["labels"] = {
+            "answer": port.VOCABULARY_UNESTABLISHED,
+            "values": None,
+            "because":
+                f"this repository's labels could not be read: {error}. ⛔ Not "
+                "read as a repository with no labels",
+        }
+    else:
+        names = [str(one.get("name")) for one in labels if one.get("name")]
+        reading["labels"] = {
+            "answer": port.VOCABULARY_READ if names else port.VOCABULARY_NONE,
+            "values": names,
+            "because":
+                f"{len(names)} label(s) on {_repo()}"
+                if names else
+                f"{_repo()} carries no label at all, which is a repository's "
+                "ordinary state rather than a reading that failed",
+        }
+    reading["types"] = {
+        "answer": port.VOCABULARY_UNESTABLISHED,
+        "values": None,
+        "because":
+            "this host states its item types above the repository, and there is "
+            "no read here that answers for one whose owner may or may not have "
+            "them -- so whether a type is native, a prefixed label or absent is "
+            "asked rather than read (§ 4.1)",
+    }
+    return reading
+
+
 ADAPTER = port.Adapter(binder=bind, operations={
     "read_item": read_item,
+    "read_vocabulary": read_vocabulary,
     "search_items": search_items,
     "create_item": create_item,
     "item_number": item_number,
