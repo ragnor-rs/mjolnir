@@ -121,6 +121,12 @@ carriers:
                                          # surveyed carrier measured as a deploy
 
   design-prd:     { class: beside }     # turn raw sources into a specification (#29)
+  # ⚠️ Classified here rather than in the change that shipped it, which is the recurrence the hook
+  # block below already names arriving on a skill: the carrier landed on the integration branch
+  # under #269 with no entry, so every verdict this check gave was refused for an unclassified
+  # carrier until this line. ⛔ `beside` and not a role: writing a project's configuration carries
+  # no work item, and the loop's role keys above are the legs an item travels.
+  setup:          { class: beside }     # write a project's configuration by asking for it (#269)
 
   # Project-local tooling of the build itself, not carriers of the loop. Each has a work item
   # that would make it a role; until one lands, what is on disk is tooling.
