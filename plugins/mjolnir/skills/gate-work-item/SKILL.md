@@ -122,8 +122,9 @@ project does not carry is nothing to check**, and no verdict is reported for it 
 different from a verdict that passed.
 
 **4a. The item is gateable.** ⛔ **The refusal is keyed on the date this role would write, never on
-the state the item sits in** — [`§ The loop`](../../config/schema.md#the-loop--eleven-roles) states
-why, and the deadlock it names is the reason: an item already carrying a date has been through here
+the state the item sits in** — [`§ The loop`](../../config/schema.md#the-loop--thirteen-roles)
+states why, and the deadlock it names is the reason: an item already carrying a date has been
+through here
 and a second run would replace a commitment somebody may already have been given, while an item
 sitting in the committed state with no date was moved there by hand and is exactly what this role
 is for. An item past the committed state — in flight, landed, finished or dropped — is downstream

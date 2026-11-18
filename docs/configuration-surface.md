@@ -13,10 +13,13 @@ what carry the argument anyway.
 
 ## The survey found nine roles, not eight
 
-The loop's statement is [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles),
-and it now states ten — the tenth is the subsection below, which the survey found in every project's
-tooling and in no project's implementation. What the survey established about the nine it could read
-is the count: gating is a genuine ninth role rather than a variant.
+The loop's statement is
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles), and among
+the roles it carries is one this survey could not read as a role at all: the subsection below,
+which the survey found in every project's tooling and in no project's implementation. ⛔ **No count
+of the loop's own roles is written here**: the loop grows, and a figure beside this citation would
+state a number the surface already disagrees with. What the survey established about the nine it
+*could* read is the count: gating is a genuine ninth role rather than a variant.
 One project splits intake into *write the item* and *gate it into committed work*, and its gate
 copy owns the due date and the estimate; the projects without the role fold a little into filing
 and a little into starting, and neither place sets a date. The same project refuses to let
@@ -126,10 +129,19 @@ differently-named skills for filing and gating.
 
 The reverse also happens, and a name-keyed merge produces nonsense on it:
 
-- **One name, two unrelated roles.** The `deliverables` name is a prose session summary for a
-  non-technical reader in one project, and a tab-separated invoice line-item file with an hourly
-  rate conversion in two others. Same directory name, different output, different trigger, no
-  shared procedure.
+- **One name, three unrelated roles.** The `deliverables` name is a prose session summary for a
+  non-technical reader in one project, a tab-separated invoice line-item file with an hourly rate
+  conversion in two others, and in a fourth a monthly report that distributes a total of hours it
+  is *given* across the changes shipped that month. Same directory name, different output,
+  different trigger, different reader, no shared procedure. ⚠️ **The third was found later and in
+  two carriers**, a command in one project and a skill in another — so the copies of these three
+  run to at least five, and whichever way a survey keyed them, reconciling the third against the
+  command alone leaves the skill copy local in a project declared migrated. ⛔ **No count of the
+  copies is written here**: the number rose once already, and the statement is that a name-keyed
+  merge of this entry is wrong however many there turn out to be. The roles are named apart in
+  [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles), and what
+  the one basename does to the readiness check — which cannot answer for it and says so — is the
+  `ambiguous:` entry in that check's own vocabulary.
 - **One name, a subset role.** A bookkeeping carrier can be the *commit third* of the role with
   the board and memory halves absent. Counting such a copy as a full one overstates adoption;
   counting it as unrelated loses that project's commit behaviour. ⚠️ **How many copies are whole
@@ -165,7 +177,7 @@ completion that some reason about explicitly and others do not have.
 ## The axes, and why each is independent
 
 The axes are stated in
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles) — which
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) — which
 carries the list, and no count, so this document does not hold a copy of one. There are more than
 the three that are obvious. The measurements that forced each to be independent:
 
@@ -725,7 +737,7 @@ this repository's own roles are handed holds neither.
 ## What is an ordered list of named checks rather than procedure
 
 No count is given, for the reason [`schema.md § The
-loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles) gives for the axes — a count
+loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) gives for the axes — a count
 restated elsewhere drifts the moment one is added — and this section is the demonstration: it gained
 what counts as done after it was written, which would have made a number in the heading wrong while
 the gate stayed green.
@@ -1149,10 +1161,11 @@ six projects had, and never the subsection's own inventory.
 
 **Why the surface, and not either of the two homes it was weighed against.** The discipline is read
 by two legs — the implementing one, which no role owns, and the reviewing role — and
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles) already settles
-what follows: a rule read by two roles and written in one of their skills is a second authority for
-the other. Promoting these rules into the reviewing role's own text is therefore the option with a
-precedent against it rather than the cheap one, and it is ruling 11's reasoning arriving a second
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) already
+settles what follows: a rule read by two roles and written in one of their skills is a second
+authority for the other. Promoting these rules into the reviewing role's own text is therefore the
+option with a precedent against it rather than the cheap one, and it is ruling 11's reasoning
+arriving a second
 time. A per-project pointer — the shape the role-to-person map takes — fails a different test: a
 pointer carries values a role reads, and none of this is a value. Six copies free to disagree is the
 defect the extraction deletes rather than a configuration of it.
@@ -1348,10 +1361,10 @@ own run's output.
 
 What is stable enough to state without a number going stale: **a single role runs to thousands of
 tokens and carries dozens of ⛔ and ⚠️ markers, and there is one of them per leg the loop names**
-([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--eleven-roles)). A window largely
-spent on procedure before a line of anyone's code is read is what § 11 exists to notice, and the
-harness vendor's own guidance is that an over-long instructions file is not read selectively — it
-is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
+([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles)). A window
+largely spent on procedure before a line of anyone's code is read is what § 11 exists to notice,
+and the harness vendor's own guidance is that an over-long instructions file is not read
+selectively — it is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
 
 Two consequences, both already true of this tree rather than predicted of it. A role's body is
 loaded only when the role runs, and only its frontmatter — a name and a description — is always
@@ -2715,7 +2728,8 @@ all.
 ⛔ **So the gate there cannot tell a deliberate bypass from a missed item** —
 [`schema.md § 30`](../plugins/mjolnir/config/schema.md#30-the-changes-that-do-not-go-through-the-loop)
 — which is the whole cost: a commit with no work item is otherwise indistinguishable from one that
-skipped the process by accident, and the day log and the deliverables roles both read commits.
+skipped the process by accident, and the day log, the session summary and the hours breakdown all
+read commits.
 
 ⚠️ **And the axis that separated the two in practice was not size and not risk.** Some of the
 unticketed tooling work was **larger** than the ticketed product changes beside it, so a

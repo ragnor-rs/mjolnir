@@ -76,6 +76,7 @@ HOOKS_DIR = "hooks"
 NUMBER_WORDS = {
     "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
     "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
+    "thirteen": 13, "fourteen": 14,
 }
 
 LOOP_HEADING = re.compile(r"^##\s+The loop\s+—\s+(\w+)\s+roles\s*$", re.MULTILINE)
@@ -243,16 +244,28 @@ def registered_hook_matchers(claude_dir: str) -> int:
 
 
 def classify(carriers: list[tuple[str, str]], vocabulary: dict) -> dict:
-    """Split a carrier list into roles, non-role classes, and what nothing classifies."""
+    """Split a carrier list into roles, non-role classes, and what nothing classifies.
+
+    ⛔ An `ambiguous:` entry lands in neither of the first two. A basename covering several roles
+    across the projects -- #14's three, measured over at least five copies -- is a name that
+    answers nothing, and the two wrong readings are opposite and equally silent: counted as its
+    first role, the report names the other two unshipped on a project that carries one of them;
+    counted as all of them, it reports two roles covered that nothing there implements. So it is
+    counted as none, and the caller turns it into "cannot establish" the way an unclassified
+    carrier already is.
+    """
     roles: dict[str, list[str]] = {}
     classes: dict[str, list[str]] = {}
     unclassified: list[str] = []
+    ambiguous: dict[str, list[str]] = {}
     partial: dict[str, str] = {}
     for kind, name in carriers:
         entry = vocabulary.get(name)
         label = f"{name} ({kind})"
         if entry is None:
             unclassified.append(label)
+        elif "ambiguous" in entry:
+            ambiguous[label] = list(entry["ambiguous"])
         elif "role" in entry:
             roles.setdefault(entry["role"], []).append(label)
             if entry.get("partial"):
@@ -263,6 +276,7 @@ def classify(carriers: list[tuple[str, str]], vocabulary: dict) -> dict:
         "roles": roles,
         "classes": classes,
         "unclassified": unclassified,
+        "ambiguous": ambiguous,
         "partial": partial,
     }
 
@@ -560,14 +574,24 @@ def main(argv: list[str]) -> int:
     # caller's list rather than on any tree. The two entries for this repository's own carrier
     # root are the proof: nothing ships them and no adoption target carries them, so they would
     # read as stale while being exactly right.
+    # ⚠️ `ambiguous:` is held the same way and for the same reason. Its values are never compared
+    # against a shipped carrier, so a misspelling in one is quieter than a misspelling in `role:`:
+    # it would print a role the loop does not have as one of the readings a carrier may be, and
+    # nothing downstream would ever ask about it.
     for name, entry in sorted(declared["carriers"].items()):
-        role = entry.get("role")
-        if role is not None and role not in role_keys:
-            unestablished.append(
-                f"vocabulary.yaml maps the carrier `{name}` to the role `{role}`, which is not "
-                f"one of the {len(role_keys)} the loop declares. A role nothing declares reads "
-                "as a role that does not exist, in both directions at once."
-            )
+        for key in ("role", "ambiguous"):
+            value = entry.get(key)
+            if value is None:
+                continue
+            for role in [value] if isinstance(value, str) else value:
+                if role in role_keys:
+                    continue
+                unestablished.append(
+                    f"vocabulary.yaml maps the carrier `{name}` to the role `{role}` under "
+                    f"`{key}:`, which is not one of the {len(role_keys)} the loop declares. A "
+                    "role nothing declares reads as a role that does not exist, in both "
+                    "directions at once."
+                )
 
     vocabulary = declared["carriers"]
     shipped = classify(shipped_carriers(), vocabulary)
@@ -585,6 +609,15 @@ def main(argv: list[str]) -> int:
         unestablished.append(
             "the plugin ships a carrier vocabulary.yaml does not classify: "
             + ", ".join(shipped["unclassified"])
+        )
+    # ⛔ A shipped carrier under an ambiguous name is a stronger finding than a carried one: the
+    # plugin's own reconciliations are named for the role they implement, so a shipped name that
+    # covers several is this repository's own naming to fix rather than an adopter's.
+    for label, readings in sorted(shipped["ambiguous"].items()):
+        print(line("ships (ambiguous)", f"{label} — may be {', '.join(readings)}"))
+        unestablished.append(
+            f"the plugin ships `{label}`, whose name covers {len(readings)} roles "
+            f"({', '.join(readings)}), so nothing here can say which one it implements"
         )
     # ⛔ The sweep is asked for, not assumed to have run. Installation is the
     # module's presence in the port's adapters package and discovery is lazy, so
@@ -615,6 +648,14 @@ def main(argv: list[str]) -> int:
               "with\nits tracker kind after a colon where it has written no configuration of "
               "its own.")
         print(line("could not establish", "no target list was passed"))
+        # ⛔ And everything established before the target list was read, which this return used
+        # to drop. The findings above it are about the surface, the vocabulary and the plugin's
+        # own carriers -- none of them needs a target, all of them were already printed in part,
+        # and the one line about the missing argument read as the only thing wrong. Measured on a
+        # misspelled role key under `ambiguous:`: the hold fired, the entry was on this list, and
+        # a run with no target reported green.
+        for item in unestablished:
+            print(line("could not establish", item))
         return 2
 
     # The host is read once, before the projects, so each project's own adapter item can be
@@ -717,6 +758,9 @@ def main(argv: list[str]) -> int:
         print(line("hooks registered", f"{matchers} matcher(s) in settings"))
         if carried["unclassified"]:
             print(line("unclassified", ", ".join(carried["unclassified"])))
+        for label, readings in sorted(carried["ambiguous"].items()):
+            print(line("ambiguous carrier", f"{label} — may be {', '.join(readings)}; read this "
+                                            "project's own carriers block"))
 
         # A role is replaceable only with the facts it reads available. The day log is the one
         # shipped role, and its evidence script is a project-local path until #15 lands -- so a
@@ -733,6 +777,19 @@ def main(argv: list[str]) -> int:
         if carried["unclassified"]:
             verdict = "CANNOT ESTABLISH — a carrier nothing classifies, so the counts are floors"
             unestablished.append(f"{name}: unclassified carriers")
+        elif carried["ambiguous"]:
+            # ⛔ Its own verdict and its own line, not folded into the one above. The remedy is
+            # opposite: an unclassified carrier is answered by naming it in vocabulary.yaml, and
+            # an ambiguous one can never be -- the name is known and is several roles, so only
+            # this project's own `carriers:` block says which.
+            verdict = ("CANNOT ESTABLISH — a carrier whose name covers several roles, so the "
+                       "counts are floors")
+            unestablished.append(
+                f"{name}: " + "; ".join(
+                    f"`{label}` may be {', '.join(readings)}"
+                    for label, readings in sorted(carried["ambiguous"].items())
+                )
+            )
         elif not resolves:
             verdict = "NOT READY — the plugin does not resolve here"
         elif missing or caveats or adapter == "absent" or loaded is None or not own_config:
