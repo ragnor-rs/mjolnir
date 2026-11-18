@@ -611,8 +611,17 @@ ANSWERED_BY: dict[str, Answer] = {
     "language.artifacts.day_log": ask(
         "Which language, register and audience does the day log carry?",
     ),
-    "language.artifacts.deliverables": ask(
-        "And the deliverables this project produces?",
+    # ⛔ Three keys and not one, because § 8 states three. One question covering
+    # them would be the merge the surface names those roles apart to prevent: a
+    # project moving one of these readers and not the others has nothing to move.
+    "language.artifacts.session_summary": ask(
+        "And a summary of one session, for a reader outside the build?",
+    ),
+    "language.artifacts.billing_report": ask(
+        "And a billing period's line items, for whoever pays the invoice?",
+    ),
+    "language.artifacts.hours_breakdown": ask(
+        "And a period's hours broken down over the work it shipped?",
     ),
 
     # --- § 9. Day log ------------------------------------------------------
