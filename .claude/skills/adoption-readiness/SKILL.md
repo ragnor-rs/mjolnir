@@ -64,10 +64,17 @@ answer.
 
 ## 3. When it says `CANNOT ESTABLISH`
 
-Three causes, and each is a real finding rather than a run to retry:
+Each cause is a real finding rather than a run to retry, and no count of them is written here — a
+figure beside the list would drift by the next one:
 
 - **A carrier nothing classifies.** The role counts become floors — an uncounted role reads as a
   role that does not exist. Classify it in `vocabulary.yaml` under `carriers:` and run again.
+- **A carrier whose name covers several roles.** ⛔ **Not the one above, and the remedy is the
+  opposite one**: the name is known and is more than one role, so naming it in `vocabulary.yaml`
+  can never answer it — the file says so with an `ambiguous:` entry and refuses to pick. What
+  answers it is that project's own `carriers:` block, read from its tree. ⚠️ **Running again
+  changes nothing**, and a role it may be is neither covered nor unshipped until something says
+  which.
 - **The loop's size disagrees.** `schema.md`'s heading counts the roles in a word and the paragraph
   under it lists them; `vocabulary.yaml` declares a key per role. All three must agree, so a role
   added to the surface reddens this instead of being silently uncounted. Add the key.

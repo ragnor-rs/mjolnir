@@ -238,11 +238,13 @@ key either way. The remedy is the same act in both cases — make the file match
 what is marked required and deleting what is marked retired — so what is given up is a diagnostic,
 not a behaviour, and no reader has to be told what to do with a revision it can no longer read.
 
-## The loop — eleven roles
+## The loop — thirteen roles
 
 File a work item · gate it into committed work · start it · finish it · review it · deploy ·
 cut a release · log the day · keep the session's books · restore a session's context ·
-produce deliverables. Two utilities travel beside the loop without being part of it.
+summarise a session for a reader outside the build · bill a period's hours as line items ·
+break a given total of hours down over the work a period shipped. Two utilities travel beside
+the loop without being part of it.
 
 ⚠️ **Keeping the session's books and restoring its context are one pair**, and the loop grew by one
 when the second of them was written: bookkeeping persists what happened at a boundary and
@@ -250,6 +252,18 @@ when the second of them was written: bookkeeping persists what happened at a bou
 next pass. ⛔ **A pair rather than one role with two modes**, because what each may do is opposite —
 one writes and the other is read-only — and a role free to do both would be free to restore by
 deciding.
+
+⚠️ **The last three are three roles and not one**, and the loop grew by two when they were told
+apart: one directory name carried a prose summary of a single session for a reader outside the
+build, a billing period's line items with an hourly-rate conversion for whoever pays, and a
+narrative distribution of a total of hours that arrives on the invocation. ⛔ **Three roles rather
+than one role with three modes**, for the reason the pair above is a pair — what each may do
+differs. ⛔ **The hours-breakdown role may not measure the period it reports on**: the total is
+given to it, and a role free to measure one would be free to replace a figure
+[§ 9](#9-day-log) produced with one of its own. ⛔ **The billing role is the only one of the three
+that converts hours to money**, so a project that wants the narrative does not thereby configure a
+rate. ⛔ **And each is reconciled on its own, no copy of one being merged with a copy of another** —
+the merge a shared name invites, and the whole of what naming them apart is for.
 
 A project maps a subset — an absent role is a legitimate configuration, not a partial install;
 one adopting project runs a single role. Each role's carrier (skill, command or hook) is §7's
@@ -2840,7 +2854,7 @@ and not by a reader rejecting a configuration.
 ### What a hook refuses, and the record it reads
 
 ⛔ **A hook refuses an act on the strength of a record, never on a reading of the work.** The
-division is [§ The loop](#the-loop--eleven-roles)'s — procedure produces a record and enforcement
+division is [§ The loop](#the-loop--thirteen-roles)'s — procedure produces a record and enforcement
 reads it — and this subsection is the enforcement half of it: what a guard reads, what a refusal
 has to name, and what a project with nothing to guard gets.
 
@@ -3046,8 +3060,10 @@ language:
   repo: en                                   # required
   prose_width: 100           # columns, for files in the repository; absent means no wrapping
   artifacts:
-    day_log:   { language: en, register: business,  audience: "…" }
-    deliverables: { language: ru, register: technical, audience: "…" }
+    day_log:         { language: en, register: business,  audience: "…" }
+    session_summary: { language: ru, register: business,  audience: "…" }
+    billing_report:  { language: ru, register: technical, audience: "…" }
+    hours_breakdown: { language: ru, register: business,  audience: "…" }
 ```
 
 One project writes its cards in one language and its repository in another and states the split
@@ -3057,6 +3073,14 @@ and what resolves the item instead — is
 [§ 10 → The branch name a claim is taken on](#the-branch-name-a-claim-is-taken-on). Another
 writes the day log in a technical register for itself where a third writes it in a business
 register for someone outside the build. These are three settings, not one.
+
+⛔ **The three roles one name used to cover are three keys here, each with its own reader.**
+[§ The loop](#the-loop--thirteen-roles) names the roles apart and this is where each one's audience
+is stated: the session summary's is somebody outside the build, the billing report's is whoever
+pays the invoice, and the hours breakdown's is whoever is being told where a period's hours went.
+⛔ **One key answering for all three is the merge naming them apart was for**, so each carries its
+own triple even where a project gives two of them the same three values — a project that later
+moves one reader and not the others has nothing to split.
 
 ### The reply to the person running a role
 
@@ -4405,7 +4429,7 @@ done:
   refuse one of two correct configurations.
 - ⛔ **`answered_by: human` is not satisfiable by the procedure, and no amount of reading the diff
   satisfies it.** The answer is **recorded** where something else can read it and the record says
-  **who** answered — the division [§ The loop](#the-loop--eleven-roles) already states: procedure
+  **who** answered — the division [§ The loop](#the-loop--thirteen-roles) already states: procedure
   produces a record and enforcement reads it, so the record is written whether or not a hook
   refuses the merge on it.
   ⚠️ **It is the record and not the report**: a verdict that exists only in a role's reply is a
@@ -6866,7 +6890,7 @@ loop_exempt:
 # procedure: lines_changed
 ```
 
-Which changes never enter [§ The loop](#the-loop--eleven-roles) at all — no work item, no gate, no
+Which changes never enter [§ The loop](#the-loop--thirteen-roles) at all — no work item, no gate, no
 branch of their own, no change opened and no review — and which branch the ones that skip it are
 committed to instead.
 
@@ -6985,8 +7009,9 @@ a `kinds`-only class is asked about changes a `paths` class would have settled s
 cost of an axis no file tree expresses, and the reason `borderline: session` exists beside `ask`.
 
 ⛔ **Every answer names the class and why in the run report**, which is the whole of what makes an
-exempt commit auditable: the day log and the deliverables roles read commits, and the reason to
-configure the bypass rather than take it ad hoc is that a reader can then tell the two apart.
+exempt commit auditable: the day log, the session summary and the hours breakdown read commits, and
+the reason to configure the bypass rather than take it ad hoc is that a reader can then tell the two
+apart.
 
 ### Where an exempt change goes, and the one role it runs
 
