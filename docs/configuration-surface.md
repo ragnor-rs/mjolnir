@@ -3439,3 +3439,72 @@ state`](../plugins/mjolnir/config/schema.md#a-record-of-the-stores-state-is-neve
 ⚠️ **A command that could not be run leaves the change reported unchecked rather than passed**,
 which is (10)'s own absence-of-signal rule met at the one gate whose silence would read as a clean
 diff.
+
+## Two skills outside the loop, counted rather than taken on the claim
+
+The survey that produced the loop's roles was keyed on those roles, so it missed skills the same
+projects had copied for reasons that have nothing to do with an issue. **Two were named as missed,
+and both are now ruled out of this toolkit** — which is the finding, because they fail and pass the
+de-duplication test on opposite sides of it.
+
+### The counts, and the one of the two that has only ever had one copy
+
+The reading was taken over every skill directory under every project here, over each project's own
+history for the path, and over the whole tree for the mechanism each skill is built on, so that a
+copy under another name would still be found.
+
+| what was claimed | what the count says |
+|---|---|
+| an editor-workspace skill, **two copies**, 127 lines each, apparently identical | **confirmed.** Two copies, both 127 lines, and the carrier's text byte-identical between them |
+| a browser-through-a-borrowed-egress skill, **two copies**, 47 and 48 lines | ⛔ **one copy.** 47 lines, in one project, added in one commit — and no other project's history carries the path, nor any file anywhere else built on the mechanism it needs |
+
+⛔ **Nothing but the count produced the second row**, which is why the count is a property of the
+class at [`schema.md § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
+rather than a step somebody remembers. Both skills read as equally extractable from the item that
+named them: the same sentence, the same shape, two line figures each. ⚠️ **A line figure is the part
+of a claim that reads most like a measurement**, and one of the two figures the claim carried for
+the second skill is right — so the claim was partly correct in the one way that makes it hardest to
+doubt.
+
+### Identical in the carrier, diverged in the script beside it
+
+**The confirmed pair had diverged, and not in the file anyone compares.** The carrier's text matches
+byte for byte; the script it calls does not. One copy's anchor was widened to tolerate the
+attributes the editor appends to a configuration's opening tag — `singleton`, `temporary`,
+`nameIsGenerated` — and the other copy never got it, so a block the editor had touched reads there
+as a template that is not in the file.
+
+⚠️ **The copy was taken before the fix and the fix went to the original**, which is the ordinary
+shape of this divergence and the reason *looks identical* is not a reading: the fix is a few tokens
+in a regular expression, it is invisible in a listing, and the copy that lacks it fails by reporting
+the argument as wrong.
+
+### Why the counts did not decide it, which is the whole of the finding
+
+⛔ **The two candidates land on opposite sides of the de-duplication test and get the same answer.**
+That is what retires the test as an admission rule, at [`schema.md § 36 → Why a utility has no
+home`](../plugins/mjolnir/config/schema.md#why-a-utility-has-no-home-on-this-surface-from-either-direction):
+
+| | the de-duplication test | the per-project values in it | the answer |
+|---|---|---|---|
+| the editor-workspace skill | **passed.** Two copies, measurably diverged, and nothing in the procedure belonging to any one project | **none.** The file's path, the block to copy and the entry point are arguments of the pass | not carried |
+| the browser skill | **failed.** One copy, so nothing to reconcile | an egress machine, a port, a target site, a browser's own path | not carried |
+
+**So the first one is the instructive case and not the second.** A candidate that passes every
+stated test and is still refused is the one that shows what the test was for — the de-duplication
+properties find a candidate and [`schema.md
+§ 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
+makes the loop what admits one. ⚠️ **And the property that reads
+most like a qualification is the disqualifying one** — the editor skill has *nothing* per-project
+in it, so there is no configuration for this toolkit's one mechanism to carry, and what would be
+shared is a file.
+
+⛔ **A pointer would have satisfied the boundary and delivered nothing**, which is the reading
+[`schema.md § 36 → Why a utility has no
+home`](../plugins/mjolnir/config/schema.md#why-a-utility-has-no-home-on-this-surface-from-either-direction)
+forecloses for the second skill: the surface already has that shape for a tree's own setup, so the
+browser skill could have been carried as a name for a command each project writes.
+
+⚠️ **One figure is worth stating because it is the one a reader expects to decide this and does
+not**: the skill with nothing per-project in it is the longer of the two, 127 lines against 47.
+Length says nothing about whether a procedure belongs to a shared loop.

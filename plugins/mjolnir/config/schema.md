@@ -8356,6 +8356,58 @@ one was overruled, whether the apply ran or was handed over, and — where it ra
 ⛔ **what the store is left holding**, which is the one fact a deploy report that stopped here
 cannot omit.
 
+## 36. A skill that is no leg of the loop, and why none is carried here
+
+```yaml
+# procedure: shipped_skill
+```
+
+⛔ **This toolkit carries the loop's roles and nothing else.** A skill that is not a leg of the
+route is not carried here, **however many projects have copied it and however far those copies have
+drifted apart.** ⛔ **This declares no key**: there is no non-loop skill for a project to configure,
+so a configuration stating one is refused with the key named.
+
+⛔ **What decides it is the scope and not the duplication.** The de-duplication test is how a
+candidate is *found* — more than one copy, already diverging, nothing in the procedure that belongs
+to any one project — and ⛔ **passing it admits nothing.** ⚠️ **The two measured candidates are the
+argument**: one failed that test and one passed it cleanly, and the answer for both is the same, so
+the test cannot be what the answer came from
+([the measurement](../../../docs/configuration-surface.md#two-skills-outside-the-loop-counted-rather-than-taken-on-the-claim)).
+
+⛔ **The list that decides is [§ The loop](#the-loop--thirteen-roles)'s, and it is closed.** A role
+is on it because the route needs a leg there; a utility is on it for no reason at all, and a list
+that admitted one would have no stated way to refuse the next.
+
+### Why a utility has no home on this surface, from either direction
+
+⛔ **Both answers are *not here*, and they are reached from opposite ends** — which is what shows
+that the loop decides this rather than how configurable a thing is:
+
+| what the utility's per-project values are | why it is still not carried |
+|---|---|
+| **none** — every value is an argument of the pass rather than a fact of the project | there is nothing for this surface to carry, so what would be shared is a **file** and not a procedure over configuration. ⚠️ The property that reads as making adoption free is the sign that this toolkit is not what the thing needs |
+| **a host, a port, a target, a credential** | the class [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) routes through a project's own script and **never** through a key, so there is no key to state them on |
+
+⚠️ **The reading each direction invites is the one to refuse.** The first invites *it costs nothing,
+so why not* — and what it costs is the surface's own subject, which is every per-project fact a
+**role** reads to decide what to do next. The second invites a pointer the procedure names and
+calls, the shape [§ 10](#10-branch-model) already has for a tree's own setup: ⛔ **it satisfies the
+boundary's letter and delivers nothing**, the adopting project writing the whole working procedure
+and getting a name for it back.
+
+### Where a duplicated utility goes instead
+
+⚠️ **It stays where it is, and that is an answer rather than a gap.** A tool somebody wants in
+several projects is a tool for the harness's own user-wide root, which is outside this toolkit
+entirely and asks nothing of any project's configuration. ⛔ **So the duplication is not denied and
+not adopted**: what this section rules is that it is not *this* toolkit's to delete, and a sweep
+that found it was keyed on the wrong question.
+
+⛔ **And no count of what is carried is written here or anywhere else.** [§ 7](#7-carrier) already
+states that a directory sweep answers which **carriers** a project has rather than which roles, and
+this section adds the other half: the directories under a plugin are the roles it carries, because
+nothing else is carried.
+
 ## What the toolkit installs into a project, and what takes it out
 
 **Adoption costs one file a project writes, and a short list of files the toolkit writes.** The

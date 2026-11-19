@@ -8969,6 +8969,13 @@ MARKED_PROCEDURE = [
     # a project turning off the questions it is worst at answering -- and the one
     # asking would have no way to tell which were skipped.
     "setup",
+    # § 36's. ⛔ The one marked key whose rule is about a skill that is **not** a
+    # leg of the loop: a project writing it would be configuring a shared
+    # utility whose whole property is that it has nothing per-project in it, so
+    # the key refuses the habit rather than a value anybody could usefully
+    # state. ⚠️ And it is the class's own test arriving as a refusal -- a utility
+    # with a fact to configure is one § 36 keeps out of this toolkit entirely.
+    "shipped_skill",
     "waive_review",
 ]
 
