@@ -8375,8 +8375,9 @@ the test cannot be what the answer came from
 ([the measurement](../../../docs/configuration-surface.md#two-skills-outside-the-loop-counted-rather-than-taken-on-the-claim)).
 
 ⛔ **The list that decides is [§ The loop](#the-loop--thirteen-roles)'s, and it is closed.** A role
-is on it because the route needs a leg there; a utility is on it for no reason at all, and a list
-that admitted one would have no stated way to refuse the next.
+is on it because the route needs a leg there, which is a statable reason and the same one every
+time. ⚠️ **A utility admitted beside them would be admitted on no such reason**, and a list with one
+entry of that kind has nothing to refuse the next one with.
 
 ### Why a utility has no home on this surface, from either direction
 
@@ -8404,9 +8405,11 @@ not adopted**: what this section rules is that it is not *this* toolkit's to del
 that found it was keyed on the wrong question.
 
 ⛔ **And no count of what is carried is written here or anywhere else.** [§ 7](#7-carrier) already
-states that a directory sweep answers which **carriers** a project has rather than which roles, and
-this section adds the other half: the directories under a plugin are the roles it carries, because
-nothing else is carried.
+rules that a directory sweep answers which **carriers** a thing has rather than which roles —
+measured in the direction where a project's loop is slash commands and a sweep of skills
+undercounts it. ⚠️ **This section closes the other direction and adds no count of its own**: a
+carrier directory under a plugin holds a role of the loop, so a sweep cannot find more carriers than
+there are roles carried, whichever kind each one is.
 
 ## What the toolkit installs into a project, and what takes it out
 
