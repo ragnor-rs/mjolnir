@@ -78,9 +78,10 @@ and [§ 12](#12-ordering) each stating one.
 prefixes is the stack entering the toolkit one token at a time: it is a guess about the language a
 configured script is written in, it is wrong the first time a project writes one in another
 language, and the configuration never said so. § 12 states this of its own key already; what is
-general is here, and `day_log.script` ([§ 9](#9-day-log)) is the one key still carrying the other
-form — a path a role prefixes — marked **transitional** where it is declared, so what settles it is
-the extraction that key already waits on rather than a second rule here.
+general is here, and ⛔ **no key on this surface carries the other form.** The one that did —
+`day_log.script` ([§ 9](#9-day-log)), a path a role prefixed — is **retired**, and a configuration
+still declaring it is refused where § 9 retires it: the extraction it was transitional for has
+landed, so the rule above holds with no exception left to name.
 
 ⛔ **A fact that is only ever one project's reaches a role through that project's own command,
 script or hook, never through a key**: a host, a service, a port, a credential, a container name, a
@@ -3368,9 +3369,10 @@ dependencies, copying the assets and environment files git does not track, alloc
 naming a container project, and tearing all of it down again — the boundary at
 [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) arriving
 at the one role that cuts a tree, so the shared procedure calls the pointer and a skill on the
-route **names** it instead of restating it. ⚠️ **Unlike `day_log.script`, this pointer is not
-transitional.** Nothing here is waiting to be extracted: a tree's setup and teardown are where a
-project's own build genuinely differs.
+route **names** it instead of restating it. ⚠️ **This pointer is not waiting to be extracted, which
+is what distinguishes it from a transitional one.** A tree's setup and teardown are where a
+project's own build genuinely differs, so there is no shared script for this key to be standing in
+for — the condition that retired the one pointer this surface used to carry (§ 9's `script`).
 
 ⛔ **It is steps and never a location, and `tree_dir` is the location.** The two were conflated
 while the second key was absent, which left *where a tree goes* stated in no facet and carried by
@@ -4333,9 +4335,9 @@ re-sorted** — a second sort is a second answer to a question the project has a
 whatever argues for the order lives where the ordering does rather than here.
 
 ⚠️ **`command` is a command the procedure runs as given, and never a path it prefixes with
-anything**, which is the one ambiguity `day_log.script` (§ 9) carries and this key does not
-inherit. It is run from the skills root, like every path on this surface (§ 1), and the procedure
-reads its output rather than its exit status beyond failure.
+anything**, which was the one ambiguity `day_log.script` (§ 9) carried before that key was retired,
+and which this key never inherited. It is run from the skills root, like every path on this surface
+(§ 1), and the procedure reads its output rather than its exit status beyond failure.
 
 ⛔ **`carrier: none` is an answer and not a stop.** A project that keeps no ordering has a role
 that, invoked with nothing, **says exactly that and asks for an item by number** — never a silent
@@ -6423,8 +6425,8 @@ role never and needs no store — so an absent directory is a decision this read
 oversight and does not try to. ⛔ **What it does instead is report it**: a project that maps the
 carrier and states no directory for the `file` kind has an absence that is load-bearing, and the
 reader names the key in its own report of what this configuration cannot do, exactly as it already
-names an unset `day_log.script` ([§ 9](#9-day-log)) — so the role stops rather than joining a path
-onto a null.
+names every facet whose carrier is `none` in that report's `unavailable` list — so the role stops
+rather than joining a path onto a null.
 
 ⚠️ **`none` carries no block, and a configuration naming it and stopping is complete**: it addresses
 nothing at all, every operation above takes its stated fallback, and the role measures the day and
