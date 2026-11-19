@@ -8969,6 +8969,15 @@ MARKED_PROCEDURE = [
     # a project turning off the questions it is worst at answering -- and the one
     # asking would have no way to tell which were skipped.
     "setup",
+    # § 36's. ⛔ The one marked key with no subject at all: nothing but the
+    # loop's roles is carried here, so a project writing this would be
+    # configuring a skill that does not exist -- and the two shapes it would be
+    # written in are each refused by the rule rather than by the key. A utility
+    # with no per-project fact in it has nothing to state; one with a host, a
+    # port or a target in it holds the class the boundary routes through the
+    # project's own script. ⚠️ So this refuses the habit of reaching for a key,
+    # which is the one thing a reader meeting § 36 is most likely to try.
+    "shipped_skill",
     "waive_review",
 ]
 
