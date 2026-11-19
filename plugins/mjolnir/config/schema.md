@@ -7294,12 +7294,17 @@ third-party account, and an environment whose quota is the one that caps through
 the key carries a target and never a reason's vocabulary
 ([the measurement](../../../docs/build-surface.md#the-tiers-what-each-needs-and-which-are-asked-for)).
 
-⚠️ **The target vocabulary is not this facet's.** The entity a deploy aims at is
-[§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes)'s and whether that list is a project's
-or a code root's is #63's, which is open; so an entry here is a name, held to being a non-empty one
-and to nothing else. ⛔ **A facet that resolved one of its entries against that list in passing
-would be the second statement of a decision nobody has made** — and the names a tier is refused
-against were measured on a project whose tiers and whose deploys were read apart.
+⚠️ **The target vocabulary is not this facet's**, and an entry here is now **resolved** against it.
+The entity a deploy aims at is [§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes)'s, whose
+list is the project's
+([`Which repository a target's act happens in`](#which-repository-a-targets-act-happens-in)) and
+whose names answer one per target across it, so a name no target carries is refused here with the
+names the project states. ⛔ **Held to the list and
+never to a root of it**: a tier is the project's and a target names its own repository, so a tier
+refused on a target says nothing about which repository either is in. ⚠️ **A project stating
+`deploy: []` may refuse a tier on nothing**, the absence being the statement — and the names a tier
+is refused against were measured on a project whose tiers and whose deploys were read apart, which
+is why the reference is one way round and not a pair.
 
 ⚠️ **The role that launches a tier is #128's**, and the refusal is that role's to perform. What is
 configuration here is the list; what this reader owes that role is one reading of it, which is why a
@@ -7481,6 +7486,7 @@ deploy:                        # the targets this project deploys to; required
     not_live: false
     invoke: command
     command: "<the whole command>"
+    code_root: app             # § 1's name for the repository this target's act is in; see below
     command_root: api          # § 1's name for the root it runs in; omitted where it is the code root
     requires: ["<a precondition the command does not check itself>"]
     advances: deployed
@@ -7492,6 +7498,7 @@ deploy:                        # the targets this project deploys to; required
     not_live: true
     invoke: command
     command: "<the whole command>"
+    code_root: site            # a second target in the project's other repository
     advances: none
     grouping: none
     requires_role: none
@@ -7508,7 +7515,8 @@ deploy:
     not_live:     false
     invoke:       command | dispatch | by_hand
     command:      "<the whole command, where the shape is `command`>"
-    command_root: "<a name § 1's `command_roots` declares>"
+    code_root:    "<a name § 1's `roots.code` carries — required where it carries several>"
+    command_root: "<a name that root's own `command_roots` declares>"
     workflow:     "<a name § 2's `checks` is keyed on, where the shape is not `command`>"
     ref:          "<the ref a dispatch is made against>"
     inputs:       "<the typed inputs this target always sends, as a mapping>"
@@ -7550,12 +7558,18 @@ Three of the five projects carrying this role carry more than one target, and no
 targets agree on what is invoked, what it advances, or whether it is live — so a project-level
 answer would be wrong for one of its own targets wherever it had two.
 
-⚠️ **A question about this list is deliberately left where it already is, and naming it is what
-keeps this from being a second answer to it.** Whether the list is a *project's* or a **code
-root's** is #63's, which depends on this item and states the question in those words; the list here
-sits at the top level, where a project with one code root and a project with several are the same
-configuration. ⚠️ **The filter that decides which subset of a grouping a target advances is no
-longer among them**: it is
+⛔ **One name answers for one target across the whole list**, `name` being the word a deploy is
+asked for by: two entries carrying one name leave the ask undefined, so the second is refused with
+the entry that already carries it named. ⚠️ **Which is what makes the list a vocabulary rather than
+only a list** — [§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s `refused_on`
+resolves a name against it, and a reference into a list whose names repeated would resolve to
+whichever entry was read first.
+
+⛔ **And the list is the project's while the repository is the entry's**, which is
+[`Which repository a target's act happens in`](#which-repository-a-targets-act-happens-in) below —
+the question this key was written with left open and which is now answered at the entry, for the
+same reason every other fact here is: it varies per target and not per project. ⚠️ **The filter
+that decides which subset of a grouping a target advances is a third such fact**: it is
 [`Publishing a grouping`](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)
 below, and what an entry states for it is in the same fence as the rest.
 
@@ -7875,6 +7889,57 @@ holds, and [`What a deploy verifies`](#what-a-deploy-verifies-and-what-it-report
 the report of it belongs: the step, the change, and the answer as it came back — ⛔ **never *the
 deploy succeeded, so the step must have been done*,** which is that subsection's own rule about what
 an invocation's outcome is a fact about.
+
+### Which repository a target's act happens in
+
+⛔ **The list is the project's and the repository is the entry's.** `code_root` is a name
+[§ 1](#a-projects-code-is-not-always-one-repository)'s `roots.code` carries, **required of every
+target where that collection carries several and refused where it carries one** — the direction
+[§ 4.7](#47-code-root) takes for a work item, for the same reason: on a project with one repository
+the key has one answer and a configuration stating it is coverage nobody asked for, while on a
+project with two the plausible answer is the first root and it is wrong half the time.
+
+⛔ **A target's act is not where its items' code is, and neither derives the other.** § 4.7 answers
+which repository a *work item* belongs to and is read off the item; this answers where the act
+`invoke` names is performed, and is read off the target. ⚠️ **One deploy's batch may carry items
+from both repositories** — the measured project's board is one board over two repositories — so a
+target whose root was derived from its batch would have no answer for exactly the case the key
+exists for.
+
+⛔ **Not a list per root, and the measurement is what rules it out.** What a target resolves against
+was read on every project in the survey and is a directory in **none** of them
+([the measurement](../../../docs/build-surface.md#where-a-deploy-lives)). ⛔ **Which shape each one
+resolves against stays there and is not restated here**, that page holding the classification and
+this one the rule it carries: a second enumeration of the same projects is free to disagree with
+the reading it was copied from, and nothing would compare the two. ⚠️ **So nesting the list
+under the directory would key it on the one axis no project's targets divide on**, and it would cost
+a second rule besides: the one-name-per-target rule above would have to hold across two lists rather
+than inside one, which is
+[§ 1](#a-command-root-is-not-a-code-root)'s own rule for a command root's name, taken for the same
+reason — a reference is written somewhere else, so one name answering in two places resolves into
+whichever list was read first.
+
+⛔ **Every reference an entry makes into a repository is resolved in the one this key names**, and
+⛔ **never against a union over the project's repositories** — which is the only other answer
+available, and is wrong in the direction that loads:
+
+| what the entry states | where it is read | what a union would admit |
+|---|---|---|
+| `workflow` | that root's own `checks` ([§ 2](#2-code-host)) | a target naming a run in a repository its own act never reaches |
+| `command_root` | that root's own `command_roots` ([§ 1](#a-command-root-is-not-a-code-root)) | a name one repository declares, written on a target in the other |
+| `code_root_runs_nothing` | that root's own flag, so a `command` target naming no `command_root` under a root that runs nothing is refused | nothing at all — § 1's flag against a command with nowhere to run reaches a target through this key and through no other |
+| `ref`, and the repository a dispatch is made against | that root's `host.repo`, named to [§ 29](#29-the-hosts-run-operations) as the root | a dispatch made against whichever repository a project-level read answered with |
+
+⚠️ **The last row is a stop rather than a wrong answer, which is why the key is required and not
+optional.** A command root is stated relative to one repository, so on a project with two the reader
+refuses a project-level read of the block rather than answering with the first — and resolving the
+entry's command is the **first** thing the deploying role does. ⛔ **A target with no repository
+named is therefore a role that cannot start**, measured on the two-root configuration this
+repository ships as an example.
+
+⚠️ **A project with one repository writes nothing new**, which is the whole of what this key asks of
+it: the name is refused on an entry, every reference resolves where the one root is, and the single
+form's root is the root every target's act is in.
 
 ## 34. The files that carry a version, and what cutting a release writes
 

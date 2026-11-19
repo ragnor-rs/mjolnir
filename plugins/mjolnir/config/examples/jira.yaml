@@ -575,8 +575,11 @@ test_tiers:
       # itself — the condition that section's own rule states. It is named rather than described.
       selection_held_by: "the e2e_register comparison configured above"
       # The target this suite is never run against, and the measured reason: it writes to a real
-      # third-party account. ⚠️ A name and nothing more — what a deploy target is remains #63's.
-      refused_on: ["<the environment real customers are on>"]
+      # third-party account. ⛔ The name is one `deploy` above states, word for word, and § 31
+      # resolves it against that list. ⚠️ A third name here would be refused rather than read as
+      # a target this project might acquire: a tier refused on a word nothing deploys to reads as
+      # refused somewhere and is run against every target there is.
+      refused_on: ["<the environment a verified release is shipped to>"]
       command: "<the acceptance scenario command>"
     - tier: end_to_end
       # The second suite under the same tier, and the one that costs money: a graded evaluation

@@ -1041,6 +1041,13 @@ ANSWERED_BY: dict[str, Answer] = {
     "deploy.command": ask(
         "Which command?",
     ),
+    # ⛔ Asked rather than inferred, and the quiet wrong guess is the measured
+    # one: the deploying role resolves this entry's command first, a command
+    # root is stated per repository, so a target naming the wrong one of two
+    # resolves a command in a repository its act never reaches (§ 33).
+    "deploy.code_root": ask(
+        "Which of this project's repositories is this target's act performed in?",
+    ),
     "deploy.command_root": ask(
         "Which command root does it run in?",
     ),

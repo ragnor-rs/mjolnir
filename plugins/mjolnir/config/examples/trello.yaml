@@ -221,6 +221,12 @@ deploy:
     # Live, so silence on the go is not a yes and nothing happens.
     not_live: false
     invoke: dispatch
+    # ⛔ Required here and in no single-root example: this project's code is two
+    # repositories, so the workflow below, the ref beside it and the repository the
+    # dispatch is made against are each read in **one** of them, and the first root is the
+    # plausible answer § 33 refuses. ⚠️ Not the root the items in the batch belong to —
+    # that is § 4.7's, read off each card, and one deploy's batch may carry both.
+    code_root: app
     workflow: "Web checks"
     # ⛔ The ref the dispatch is made against — which branch's copy of the workflow runs.
     ref: "<the branch this target serves>"
@@ -245,6 +251,11 @@ deploy:
     # project rules that a person performs it. The role prepares, hands over the workflow and the
     # ref, and reports no deploy made.
     invoke: by_hand
+    # ⛔ The **other** repository, and this is the pair that makes the key load-bearing:
+    # the workflow below is in `site`'s own check list and the one above is in `app`'s, so
+    # before this key existed a reader held each name against the union of both and could
+    # not tell a target naming its own run from one naming the sibling repository's.
+    code_root: site
     workflow: "Build"
     ref: "<the tag shape a release is cut as>"
     advances: terminal
@@ -266,6 +277,12 @@ deploy:
     not_live: true
     invoke: command
     command: "<the whole command, with its target argument>"
+    # ⛔ `app`, because that is the repository declaring the command root below — and the
+    # two keys are not one fact: § 1's `A command root is not a code root` is read here at
+    # the one pair of keys that carries both senses. ⚠️ `app` also states
+    # `code_root_runs_nothing: true`, so a command target here with no `command_root` is
+    # refused rather than attempted at a directory with no manifest.
+    code_root: app
     command_root: api-service
     # § 16's list, cited there: a precondition the command does not check itself.
     requires: ["<the credential file this repository may not hold>"]
@@ -569,7 +586,11 @@ test_tiers:
       # nothing holds the criterion to this tier's cases, there being no case files to hold it
       # to, so the selection is reported unheld. The remedy is case files, which is the register
       # facet's own `revisit_when` above.
-      refused_on: ["<the environment real customers are on>"]
+      # ⛔ The name is one `deploy` above states, word for word, and § 31 resolves it against
+      # that list. ⚠️ A fourth name here would be refused rather than read as a target this
+      # project might acquire: a tier refused on a word nothing deploys to reads as refused
+      # somewhere and is run against every target there is.
+      refused_on: ["<the environment a version is released to>"]
 
 spend_guard:
   # The simplest shape the facet has: one command that spends, named, with no pattern beside it.

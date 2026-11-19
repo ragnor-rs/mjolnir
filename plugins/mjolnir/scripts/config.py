@@ -1252,28 +1252,129 @@ def _command_root_facet(data: dict, roots: dict[str, dict]) -> None:
             "not work at all.",
         )
 
-    # § 33's reference into the same union, and here for the same reason § 17's
-    # is: `deploy` is a project-level key, so a target legitimately names a root
-    # the view being validated does not carry -- refused per view, a correct
-    # configuration would be refused once per sibling root. ⛔ Everything else
-    # about an entry is `_validate_deploy`'s; what is left here is the one arm no
-    # view can answer.
+    # ⚠️ **§ 33's reference into a command root is not read here**, and that is
+    # the one thing this facet deliberately does not answer: a deploy target
+    # names the repository its act is in, so the question is whether **that
+    # root** declares the name rather than whether any root does. It is
+    # `_deploy_root_facet` below, beside the rest of § 33's references into a
+    # repository, and the union above would be the second and weaker statement
+    # of it.
+
+
+def _deploy_root_facet(data: dict, roots: dict[str, dict]) -> None:
+    """§ 33's `code_root`, and every reference an entry makes into a repository.
+
+    ⛔ Project-level rather than one of `validate`'s, for the reason the two
+    facets above it are: the requiredness turns on how many roots there are,
+    which no view can see, and `deploy` is a project-level key, so a target
+    naming the root a given view is **not** would be refused once per sibling
+    root -- a correct configuration refused for being read from the other side.
+
+    ⛔ **And every reference resolved here is resolved against the one root the
+    entry names**, never against a union over the project's repositories. A
+    union is the only other answer available and it is wrong in the direction
+    that loads: a target naming a workflow in one repository and a command root
+    in the other passes it, and nothing tells that target apart from one whose
+    references are all its own.
+    """
     targets = _absent_as(_get(data, "deploy"), [])
     if not isinstance(targets, list):
+        # Already refused by `validate`, which every view goes through before
+        # this runs -- `_command_root_facet`'s own rule for the same shape.
         return
+    named = ", ".join(repr(key) for key in roots)
     for index, entry in enumerate(targets):
         if not isinstance(entry, dict):
             continue
-        stated = entry.get(COMMAND_ROOT_REF)
-        if not isinstance(stated, str) or stated in union:
-            continue
-        raise ConfigError(
-            f"deploy[{index}].{COMMAND_ROOT_REF}",
-            f"names the command root {stated!r}, which no code root declares. "
-            f"The project declares {', '.join(repr(k) for k in union) or 'none'} "
-            "(§ 1). A deploy whose root nothing carries is a stop naming the "
-            "root, never a command retried at the code root.",
-        )
+        where = f"deploy[{index}]"
+        stated = entry.get(DEPLOY_CODE_ROOT)
+        # ⛔ The two directions § 4.7 takes for a work item, taken here for a
+        # target: `len(roots) < 2` rather than the collection flag, so a
+        # collection carrying one entry reads exactly as the single form does.
+        if len(roots) < 2:
+            if stated is not None:
+                raise ConfigError(
+                    f"{where}.{DEPLOY_CODE_ROOT}",
+                    f"is stated while `roots.code` carries one root ({named}). "
+                    "§ 33 makes the key the repository a target's act is in, and "
+                    "a project with one repository has one answer: every "
+                    "reference this entry makes resolves there whether the key "
+                    "is written or not.",
+                )
+            key = next(iter(roots))
+        elif stated is None:
+            raise ConfigError(
+                f"{where}.{DEPLOY_CODE_ROOT}",
+                f"required where `roots.code` carries several roots ({named}): "
+                "the workflow, the command root and the ref this entry states "
+                "are each read in one repository, and the first root is the "
+                "plausible answer § 33 refuses rather than the one to give.",
+            )
+        elif not isinstance(stated, str) or stated not in roots:
+            raise ConfigError(
+                f"{where}.{DEPLOY_CODE_ROOT}",
+                f"is {stated!r}, which `roots.code` does not carry. It carries "
+                f"{named} (§ 1). A target whose repository nothing names is a "
+                "stop naming the roots, never a deploy made against the first "
+                "of them.",
+            )
+        else:
+            key = stated
+        root = roots[key]
+        at = "roots.code" if len(roots) < 2 else f"roots.code.{key}"
+
+        # § 2's list, read off **this** root's own block. ⚠️ A root that states
+        # no `host` of its own carries the project's, `_code_roots` having
+        # merged the two already -- so a project whose checks are one answer for
+        # both repositories is held to that answer rather than to nothing.
+        block = root.get("host")
+        workflow = entry.get("workflow")
+        if isinstance(workflow, str):
+            own = {
+                check.get("workflow")
+                for check in _absent_as(
+                    block.get("checks") if isinstance(block, dict) else None, []
+                )
+                if isinstance(check, dict)
+            }
+            if workflow not in own:
+                raise ConfigError(
+                    f"{where}.workflow",
+                    f"is {workflow!r}, which no `host.checks` entry of {at} names "
+                    f"(§ 2). That root states "
+                    f"{', '.join(repr(n) for n in sorted(n for n in own if n)) or 'none'}"
+                    "; a target naming a run from another repository is a dispatch "
+                    "at a workflow its own act never reaches.",
+                )
+
+        # § 1's command roots, read off this root rather than off the project.
+        declares = command_roots(root)
+        reference = entry.get(COMMAND_ROOT_REF)
+        if isinstance(reference, str) and reference not in declares:
+            raise ConfigError(
+                f"{where}.{COMMAND_ROOT_REF}",
+                f"names the command root {reference!r}, which {at} does not "
+                f"declare. It declares "
+                f"{', '.join(repr(n) for n in sorted(declares)) or 'none'} "
+                "(§ 1). A deploy whose root that repository does not carry is a "
+                "stop naming the root, never a command retried at the code root.",
+            )
+        # ⛔ And § 1's flag reaches a target at last, which is the arm nothing
+        # could answer before: a command naming no root under a repository that
+        # runs none is refused here rather than run where § 1 states no command
+        # is valid at all.
+        if (
+            entry.get("invoke") == "command"
+            and COMMAND_ROOT_REF not in entry
+            and root.get(CODE_ROOT_RUNS_NOTHING) is True
+        ):
+            raise ConfigError(
+                f"{where}.{COMMAND_ROOT_REF}",
+                f"required: this target's command runs in {at}, which states "
+                "`code_root_runs_nothing: true` (§ 1). A command with no root "
+                "named there has nowhere to run, and the deploy would be "
+                "attempted at a directory the project says is not one.",
+            )
 
 
 # § 4.8's keys on one grouping, read off the surface's own single-form fence
@@ -4130,6 +4231,15 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
                     "a sequence it refuses the suite on one target per character, "
                     "which refuses it everywhere and nowhere.",
                 )
+            # ⛔ § 33's own names, read there rather than taken on trust. The
+            # list is the project's and its names are unique across it, so a
+            # view carries the whole vocabulary -- which is why this resolves
+            # here and § 33's reference into a *repository* does not.
+            stated_targets = {
+                target.get("name")
+                for target in _absent_as(_get(data, "deploy"), [])
+                if isinstance(target, dict) and isinstance(target.get("name"), str)
+            }
             for position, target in enumerate(refused):
                 if not isinstance(target, str) or not target.strip():
                     raise ConfigError(
@@ -4138,6 +4248,16 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
                         "naming nothing is counted as a refusal and matches no "
                         "target, so the suite reads as refused somewhere and runs "
                         "everywhere.",
+                    )
+                if target not in stated_targets:
+                    raise ConfigError(
+                        f"{where}.refused_on[{position}]",
+                        f"is {target!r}, which no `deploy` entry names (§ 33). The "
+                        f"project states "
+                        f"{', '.join(repr(n) for n in sorted(stated_targets)) or 'no target'}"
+                        "; a tier refused on a word nothing deploys to reads as "
+                        "refused somewhere and is run against every target there "
+                        "is.",
                     )
 
         workflow = _tier_text(
@@ -4311,9 +4431,7 @@ def _validate_test_tiers(data: dict, facts: dict, workflows: set[str]) -> None:
 EXCLUDING = "excluding"
 
 
-def _validate_deploy(
-    data: dict, facts: dict, mapped_roles: set, workflows: set[str]
-) -> None:
+def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
     """§ 33's entries, which no marker on the surface can reach.
 
     Requiredness of the list itself is marked and answered before this runs;
@@ -4455,13 +4573,13 @@ def _validate_deploy(
                 "must be a non-empty name § 1's `command_roots` declares; omit it "
                 "where the command runs at the code root.",
             )
-        if "workflow" in entry and entry["workflow"] not in workflows:
-            raise ConfigError(
-                f"{where}.workflow",
-                f"is {entry['workflow']!r}, which no `host.checks` entry names "
-                "(§ 2). A target naming a run this project does not state is a "
-                "dispatch at a workflow no consumer of the facet can read.",
-            )
+        # ⚠️ **Whether the workflow is one `host.checks` states is not read
+        # here**, and the reason is which *root's* list it is read against:
+        # § 33 makes the repository a target's act is in the entry's own fact,
+        # so the question is `_deploy_root_facet`'s, where the root the entry
+        # names is in hand. A union over the project's repositories would
+        # answer it here, and would accept a target naming a run in a
+        # repository its own act never reaches.
         if "inputs" in entry:
             inputs = entry["inputs"]
             if not isinstance(inputs, dict) or not inputs:
@@ -5218,6 +5336,11 @@ def _triggers(entry: dict, where: str) -> None:
 COMMAND_ROOTS = "command_roots"
 CODE_ROOT_RUNS_NOTHING = "code_root_runs_nothing"
 COMMAND_ROOT_REF = "command_root"
+# § 33's own reference into § 1's roots: which repository a target's act is in.
+# ⚠️ Not `COMMAND_ROOT_REF`'s neighbour by accident -- the two sit together
+# because an entry states both and they name different things, which is § 1's
+# `A command root is not a code root` read at the one key pair that carries it.
+DEPLOY_CODE_ROOT = "code_root"
 
 # Where the command goes inside an `invoke` form (§ 1). ⛔ A form and not a
 # pattern, which is `PLACEHOLDER`'s own reason one facet over: what reads this
@@ -7119,7 +7242,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # legitimate configuration in which the move is reported rather than made, so
     # a reader demanding `writer: deploy` would refuse a project that really does
     # deploy the target.
-    _validate_deploy(data, facts, mapped_roles, workflows)
+    _validate_deploy(data, facts, mapped_roles)
     # § 34's entries, in the same position and for the same reason § 33's are: the
     # carrier's alternation and the keys beside it are the surface's markers, and
     # what a member of the list has to be is no marker's to reach.
@@ -8580,6 +8703,11 @@ def _resolve(
     # § 1's command roots, beside it and for the same reason: the name rule
     # compares what two code roots declare, and § 17's list is the project's.
     _command_root_facet(data, roots)
+    # § 33's own reference into those roots, after it rather than inside it: the
+    # requiredness turns on the root count like § 4.7's above, and every
+    # reference it resolves is against the one root an entry names rather than
+    # against the union the facet before it reads § 17's list through.
+    _deploy_root_facet(data, roots)
     # § 4.8, beside it and for the mirror of its reason: the rules turn on which
     # of the facet's two forms is written, whose keys sit one level deeper than
     # any absolute path in `validate` reaches.
@@ -10640,6 +10768,13 @@ def self_test() -> int:
             entry for entry in _absent_as(subset.get("deploy"), [])
             if entry.get("advances") != "terminal"
         ]
+        # ⛔ And a tier refused on one of the dropped targets goes with them, for
+        # the same reason and one rule further out: § 31 resolves `refused_on`
+        # against § 33's own names, so a fixture that removed a target and left
+        # the reference is refused by *that* rule and asserts nothing about this
+        # one. ⚠️ Derived from what the filter above left rather than named, so
+        # an example that moves which target a tier refuses is still held.
+        _keep_refusals_in(subset)
         check(
             "a project mapping no terminal role has nothing for that rule to compare",
             _refused(subset) is None,
@@ -12634,6 +12769,70 @@ def self_test() -> int:
             f"carries {targets!r}",
         )
 
+    print("\n§ 33's `code_root`, which only a project with two repositories can state:")
+    # ⛔ Every arm here is on the **shipped collection** rather than on a block
+    # built in this module, for `_command_root_broken`'s reason one facet over:
+    # what an adopter copies is what is held, and these rules all turn on two
+    # roots declaring different things -- a hand-built pair would be a shape this
+    # repository ships nowhere. ⚠️ Which target carries which key is found by
+    # shape, so an example that reorders its list is still held.
+    collection = _a_collection_example()
+    dispatching = _a_target_stating("workflow")
+    commanding = _a_target_stating(COMMAND_ROOT_REF)
+    declaring, plain = _a_command_root_root(), _a_plain_code_root()
+    check(
+        "the collection example states targets of both shapes, so these arms have a subject",
+        collection is not None and dispatching >= 0 and commanding >= 0
+        and bool(declaring) and bool(plain),
+        f"dispatching {dispatching}, commanding {commanding}, "
+        f"roots {declaring!r} and {plain!r}",
+    )
+    if collection is not None and dispatching >= 0 and commanding >= 0:
+        for label, index, keys, wanted in (
+            # ⛔ The requiredness, in the direction only a collection reaches: a
+            # target saying nothing about its repository, where there are two.
+            ("a target naming no repository, where the project has two",
+             dispatching, {DEPLOY_CODE_ROOT: _DROP},
+             f"deploy[{dispatching}].{DEPLOY_CODE_ROOT}"),
+            ("a repository name no root carries",
+             dispatching, {DEPLOY_CODE_ROOT: "a-root-nothing-names"},
+             f"deploy[{dispatching}].{DEPLOY_CODE_ROOT}"),
+            # ⛔ The union closed, which is the arm this key was added for: the
+            # workflow is one the **sibling** root's checks carry, so the entry
+            # is correct against the project and wrong against its own act.
+            # ⚠️ Planted by moving the root rather than the workflow, so the
+            # name is one some root really states -- a made-up name would redden
+            # on the no-root-states-it arm and assert nothing about the union.
+            ("a target naming the sibling repository's workflow",
+             dispatching, {DEPLOY_CODE_ROOT: plain},
+             f"deploy[{dispatching}].workflow"),
+            ("a target naming the sibling repository's command root",
+             commanding, {DEPLOY_CODE_ROOT: plain},
+             f"deploy[{commanding}].{COMMAND_ROOT_REF}"),
+            # ⛔ And § 1's flag reaching a target, which nothing could answer
+            # while the repository went unstated.
+            ("a command target with no root, under a repository that runs none",
+             commanding, {COMMAND_ROOT_REF: _DROP},
+             f"deploy[{commanding}].{COMMAND_ROOT_REF}"),
+        ):
+            got = _deploy_root_broken(index, **keys)
+            check(f"{label} is refused", got == wanted, f"refused on {got!r}")
+        # ⛔ The green side, and it is not the unedited example: moving a target
+        # to the sibling repository **and** its workflow with it has to load, or
+        # the rule above would be refusing the repository rather than the
+        # disagreement between the two keys.
+        moved = _a_collection_example()
+        entry = _get(moved, "deploy")[dispatching]
+        entry[DEPLOY_CODE_ROOT] = plain
+        entry["workflow"] = _a_workflow_the_root_states(moved, plain)
+        _keep_refusals_in(moved)
+        refusal = _refused(moved)
+        check(
+            "a target moved to the other repository, with that repository's own workflow, loads",
+            refusal is None,
+            f"refused on {refusal!r}",
+        )
+
     print("\n§ 35, the live data step -- the green side, and the surface arm no plant reaches:")
     # ⛔ The plants are all red by construction, so none of them says a correct
     # step loads -- and the arms that matter most here are the three no refusal
@@ -12994,7 +13193,7 @@ def self_test() -> int:
             workflow=_SAME,
             stood_up_by="host",
             selection_held_by="a comparison holding the criterion to the suite",
-            refused_on=["a-target-this-suite-is-never-run-against"],
+            refused_on=[_SAME],
         ),
     )
     suite = full["suites"][0]
@@ -13007,8 +13206,11 @@ def self_test() -> int:
         ("the comparison holding that criterion", suite["selection_held_by"],
          "a comparison holding the criterion to the suite"),
         ("that the criterion is held at all", suite["selection_held"], True),
+        # ⚠️ The wanted value is the **target the fixture resolved**, derived the
+        # way the workflow below it is: a literal would assert the fixture
+        # rather than the rendering the moment § 33's names stopped being free.
         ("the targets it is refused on", suite["refused_on"],
-         ["a-target-this-suite-is-never-run-against"]),
+         [_a_deploy_target()["name"]]),
         ("where its verdict comes from", suite["verdict"]["from"], "host.checks"),
     ) + (
         ("the workflow its verdict is read out of", suite["verdict"]["workflow"],
@@ -13513,6 +13715,15 @@ def _planted_violations():
                                         ref="a-ref")])),
         ("a command root no code root declares", "deploy[0].command_root",
          at("deploy", [_a_deploy_target(command_root="a root nothing declares")])),
+        # ⛔ The other direction of § 33's own `code_root`, and the one a
+        # single-root example can reach: a project with one repository has one
+        # answer, so the key written there is a fact nothing reads. ⚠️ The
+        # collection's side of the same rule -- required where there are two --
+        # is in the § 33 `code_root` section below, no view and no single-root
+        # fixture being able to state two roots at all.
+        ("a repository named on a target where the project has one",
+         "deploy[0].code_root",
+         at("deploy", [_a_deploy_target(code_root="code")])),
         ("inputs that are not a mapping", "deploy[0].inputs",
          at("deploy", [_a_deploy_target(
              invoke="dispatch", command=_ABSENT, ref="a-ref",
@@ -14447,9 +14658,16 @@ def _planted_violations():
         ("refused targets written as one target rather than a list",
          "test_tiers.tiers[0].refused_on",
          _a_test_tiers_block(refused_on="a-target")),
+        # ⚠️ The first member is the sentinel rather than a literal, so the plant
+        # reaches **position 1**: written as a name nothing deploys to it would
+        # redden at position 0 on the § 33 agreement rule below, under the same
+        # key and asserting the other arm.
         ("a refused target that names nothing",
          "test_tiers.tiers[0].refused_on[1]",
-         _a_test_tiers_block(refused_on=["a-target", "  "])),
+         _a_test_tiers_block(refused_on=[_SAME, "  "])),
+        ("a tier refused on a target nothing deploys to",
+         "test_tiers.tiers[0].refused_on[0]",
+         _a_test_tiers_block(refused_on=["a-target-nothing-deploys-to"])),
         ("a suite whose verdict is stated twice, one way each",
          "test_tiers.tiers[0].command",
          _a_test_tiers_block(workflow=_SAME, command="a-command")),
@@ -14794,6 +15012,27 @@ def _a_test_tiers_block(**overrides):
         tiers = suite_overrides.pop("tiers", None)
         if "workflow" in suite_overrides and suite_overrides["workflow"] is _SAME:
             suite_overrides["workflow"] = _a_workflow_the_base_states(data)
+        # ⛔ `refused_on` takes the same sentinel as `workflow` above, and for
+        # the same reason: § 31's entries are resolved against § 33's own names,
+        # so a literal here is refused for naming no target instead of reaching
+        # the arm it was written for -- the shape that reads green under the
+        # right key while asserting nothing. ⚠️ A target is **added** where the
+        # example states none: the base carries `deploy: []`, which is a project
+        # that may refuse a tier on nothing at all.
+        if "refused_on" in suite_overrides:
+            stated = suite_overrides["refused_on"]
+            if stated is _SAME or (
+                isinstance(stated, list) and any(item is _SAME for item in stated)
+            ):
+                targets = _absent_as(_get(data, "deploy"), [])
+                if not targets or not isinstance(targets[0], dict):
+                    targets = [_a_deploy_target()]
+                    data["deploy"] = targets
+                name = targets[0]["name"]
+                suite_overrides["refused_on"] = (
+                    [name] if stated is _SAME
+                    else [name if item is _SAME else item for item in stated]
+                )
         node = data.setdefault("test_tiers", {})
         node.clear()
         node["carrier"] = "list"
@@ -16353,6 +16592,79 @@ def _refuses_missing_code_root() -> str | None:
 # the form that is held. Found rather than named, for the reason
 # `_a_valid_example` is -- a fixture this code pointed at one tracker would be
 # the toolkit naming a tracker.
+def _a_target_stating(key: str) -> int:
+    """The index of the first target in the shipped collection stating `key`.
+
+    ⛔ Found by shape rather than written, which is every fixture here's rule:
+    an index spelled out is one reordering away from planting on a target whose
+    shape never reads the key, and a plant like that reddens on the shape rule
+    instead -- green under a key that says nothing about what was asserted.
+    """
+    for index, entry in enumerate(
+        _absent_as(_get(_a_collection_example() or {}, "deploy"), [])
+    ):
+        if isinstance(entry, dict) and entry.get(key):
+            return index
+    return -1
+
+
+def _a_workflow_the_root_states(data: dict, key: str) -> str | None:
+    """A workflow name the named root's own `host.checks` carries (§ 1, § 2)."""
+    for check in _absent_as(_get(data, f"roots.code.{key}.host.checks"), []):
+        if isinstance(check, dict) and isinstance(check.get("workflow"), str):
+            return check["workflow"]
+    return None
+
+
+def _deploy_root_broken(index: int, **keys) -> str | None:
+    """The key the shipped collection refuses on with one target's keys changed.
+
+    ⚠️ The refusals the arms over this expect are all § 33's references into one
+    repository, so the plant is written as *which root the target is in* as
+    often as it is written as the reference: a reference nobody states would
+    redden on its own does-anything-state-it arm, which asserts the opposite of
+    the union being closed.
+    """
+    data = _a_collection_example()
+    entry = _get(data, "deploy")[index]
+    for key, value in keys.items():
+        if value is _DROP:
+            entry.pop(key, None)
+        else:
+            entry[key] = value
+    return _refused(data)
+
+
+def _keep_refusals_in(data: dict) -> dict:
+    """Drop every § 31 refusal naming a target `data`'s own `deploy` no longer has.
+
+    ⛔ For the fixtures that remove a target to reach a rule about something
+    else: § 31's `refused_on` is resolved against § 33's names, so a target
+    taken out from under a tier leaves a reference nothing carries and the
+    configuration is refused for *that* instead of for what the fixture was
+    built to exercise. ⚠️ It drops rather than rewrites: a tier refused on a
+    target this project no longer deploys to is a tier refused on nothing, which
+    is what the removal actually made true.
+    """
+    names = {
+        entry.get("name")
+        for entry in _absent_as(data.get("deploy"), [])
+        if isinstance(entry, dict)
+    }
+    for tier in _absent_as(_get(data, "test_tiers.tiers"), []):
+        if not isinstance(tier, dict) or "refused_on" not in tier:
+            continue
+        kept = [
+            target for target in _absent_as(tier.get("refused_on"), [])
+            if target in names
+        ]
+        if kept:
+            tier["refused_on"] = kept
+        else:
+            tier.pop("refused_on")
+    return data
+
+
 def _a_collection_example() -> dict | None:
     for path in _examples():
         with open(path, encoding="utf-8") as handle:
