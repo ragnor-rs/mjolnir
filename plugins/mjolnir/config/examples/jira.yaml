@@ -460,6 +460,7 @@ private:
   carrier: file
   source: "<the path to this project's own untracked file of those values>"
   keys:
+    - billing.rates
     - day_log.attribute_to
     - day_log.evidence.calendars
     - day_log.evidence.chat.exclude
@@ -676,3 +677,28 @@ release:
       kind: changelog
   publishes_packages: true
   changelog_ci_owned: false
+
+billing:
+  # § 37's stated arm, and this is the example that carries it: the one role of the loop whose
+  # subject is more than one project, configured here because this is also the one example with
+  # § 28's layer in `file` form — and `rates` is marked `# private`, so a project without that
+  # layer has nothing to answer it with.
+  #
+  # ⛔ Three roots, each absolute, each another project's **skills root** — not a store, not a
+  # directory of files. What is read out of each one is that project's own § 26 destination port,
+  # resolved from that project's configuration, so this list says which projects a period spans
+  # and nothing about where any of their hours are kept.
+  #
+  # ⚠️ This project's own root is among them deliberately: § 37 states the list whole and implies
+  # nothing, so a project that bills its own hours beside two others' lists three. A list naming
+  # only the other two would be the statement that this project's hours are not billed.
+  carrier: period
+  projects:
+    - "/<the absolute path to this project's own skills root>"
+    - "/<the absolute path to a second project's skills root>"
+    - "/<the absolute path to a third project's skills root>"
+  # ⛔ `rates` is not written here at all. It is named in `private.keys` above, and the untracked
+  # file that facet points at is where both halves of every entry live — so no client is named in
+  # this file and no rate is in it. ⚠️ The same arm `evidence.chat.path` demonstrates one block up:
+  # the key is required under this carrier, the list is what answers its requiredness, and a value
+  # written here beside the listing is what § 28 refuses.

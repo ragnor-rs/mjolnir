@@ -1140,6 +1140,25 @@ ANSWERED_BY: dict[str, Answer] = {
         "Which command prints what has already been applied to this store, one "
         "path per line?",
     ),
+
+    # --- § 37. The projects a billing period is assembled from -------------
+    "billing.carrier": ask(
+        "Is anybody invoiced for a period of hours assembled here? ⚠️ Asked "
+        "apart from the day log above, which measures and records the hours: a "
+        "project can record every day and bill nobody (§ 37).",
+    ),
+    "billing.projects": ask(
+        "Which projects is a period assembled from -- the skills root of each, "
+        "written absolutely? ⛔ Stated whole, this project's own root included "
+        "where its hours are billed: § 37 implies nothing, and a root left out "
+        "is hours nobody is charged for.",
+    ),
+    "billing.rates": ask(
+        "And the rate per client? ⛔ Marked `# private` on the surface, so the "
+        "question routes the value to § 28's untracked file and the tracked "
+        "configuration states only that the key is answered there -- a rate and "
+        "a client's name being the two values this toolkit holds nowhere.",
+    ),
 }
 
 
@@ -1959,8 +1978,20 @@ def routed(surface_text: str, answers: dict) -> tuple[dict, dict]:
         # sweep takes: a shape stating `<the exported archive>` is naming the key
         # rather than somebody's own archive, and routing it would move a
         # statement of shape out of the file whose job is to carry the shape.
+        #
+        # ⛔ **Three shapes and not two.** A mapping is here because § 37's
+        # `rates` is the first private-marked key whose shape is one, and the
+        # two-shape form routed it: both halves of its entries are stand-ins, so
+        # a project illustrating the shape had its illustration moved into a file
+        # nobody reviews -- and the write then refused for want of a layer that
+        # project deliberately states none of. ⚠️ **Both halves are read**,
+        # because a client's name is as much the value as the rate beside it.
         if _a_placeholder(value) or (
             isinstance(value, list) and value and all(map(_a_placeholder, value))
+        ) or (
+            isinstance(value, dict) and value
+            and all(_a_placeholder(key) and _a_placeholder(entry)
+                    for key, entry in value.items())
         ):
             continue
         private[path] = value
@@ -2610,6 +2641,46 @@ def self_test() -> int:
           private == {"day_log.attribute_to": "a person"}, f"routed {private!r}")
     check("the block it sat in is left in place rather than pruned",
           "day_log" in tracked, "the block was pruned")
+
+    # ⛔ § 37's `rates` is the first private-marked key shaped as a **mapping**,
+    # and both directions are asserted because the shape test had two arms and
+    # needed three. ⚠️ The green side first: a mapping of stand-ins states the
+    # key's shape and stays in the tracked file, which is what a project with no
+    # § 28 layer writes -- and routing it refused that project's own write.
+    shaped = _an_example("none.yaml")
+    shaped["billing"] = {
+        "carrier": "period",
+        "projects": ["/a-project"],
+        "rates": {"<the client an invocation names>": "<that client's rate>"},
+    }
+    tracked, private = routed(surface_text, shaped)
+    check("a private-marked mapping of stand-ins stays in the tracked file",
+          _at(tracked, "billing.rates") is not None and "billing.rates" not in private,
+          f"routed {private!r}")
+
+    # ⛔ And the red side, which is what the arm is for: a mapping carrying
+    # somebody's own client and rate is a value, and it moves. ⚠️ Asserted
+    # because a shape test written only on the green side would pass with the
+    # whole arm inverted.
+    real = json.loads(json.dumps(shaped))
+    real["billing"]["rates"] = {"a-client": 100}
+    real["private"] = {
+        "carrier": config.PRIVATE_FILE,
+        "source": "private.yaml",
+        "keys": ["billing.rates"],
+    }
+    tracked, private = routed(surface_text, real)
+    check("a private-marked mapping carrying real values is routed out",
+          _at(tracked, "billing.rates") is None
+          and private == {"billing.rates": {"a-client": 100}},
+          f"routed {private!r}, tracked {_at(tracked, 'billing.rates')!r}")
+    check("a mapping with a real client and a stand-in rate is routed too",
+          "billing.rates" in routed(
+              surface_text,
+              {**real, "billing": {**real["billing"],
+                                   "rates": {"a-client": "<that client's rate>"}}},
+          )[1],
+          "a half-stated mapping stayed in the tracked file")
 
     # ⛔ And a project with a private value and no private layer is **refused**:
     # the one thing that must never happen is the value landing in the tracked
