@@ -2164,9 +2164,24 @@ def _plant_a_surface_marking_nothing_private(tree: Tree) -> Tree:
     ⛔ What this asserts is that the class is read **from the marks**: a sweep
     carrying its own list of eligible keys would not notice, and would go on
     reporting green about a surface that no longer names the class at all.
+
+    ⛔ **The clause is dropped from among its siblings and not off the end of the
+    line**, which is the surface's own grammar: several markers on one line are
+    separated by `;` **in any order**, so a mark sitting before a
+    `required_when` is as much a mark as one sitting last. ⚠️ **Measured, and the
+    first form of this plant read the convention instead**: it anchored on the
+    end of the line, and the first key marked `# private; required_when: …` left
+    one mark standing -- so the class stayed readable, this plant stayed green,
+    and a plant that cannot fail asserts nothing.
     """
-    body = tree.text.get(SURFACE, "")
-    tree.text[SURFACE] = re.sub(r";?\s*#?\s*\bprivate\b(?=\s*$)", "", body, flags=re.M)
+    out = []
+    for line in tree.text.get(SURFACE, "").splitlines():
+        body, hash_, comment = line.partition("#")
+        if hash_:
+            kept = [c.strip() for c in comment.split(";") if c.strip() != "private"]
+            line = f"{body}# {'; '.join(kept)}" if kept else body.rstrip()
+        out.append(line)
+    tree.text[SURFACE] = "\n".join(out) + "\n"
     return tree
 
 

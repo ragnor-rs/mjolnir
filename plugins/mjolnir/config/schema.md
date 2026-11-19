@@ -8411,6 +8411,126 @@ undercounts it. ⚠️ **This section closes the other direction and adds no cou
 carrier directory under a plugin holds a role of the loop, so a sweep cannot find more carriers than
 there are roles carried, whichever kind each one is.
 
+## 37. The projects a billing period is assembled from
+
+```yaml
+billing:
+  carrier: period | none       # required; absent_reason
+  projects: []                 # required_when: billing.carrier = period
+  rates: {}                    # private; required_when: billing.carrier = period
+  absent_reason: "…"           # required when carrier is none
+  revisit_when: "…"
+```
+
+**[§ The loop](#the-loop--thirteen-roles) carries a role that bills a period's hours as line items,
+and this section says which projects a period is read from.** ⛔ **It is the one role on that list
+whose subject is more than one project**, so it is the one role [§ 1](#1-roots)'s skills root does
+not scope: every other role narrows to the project the reader resolved, and a period somebody is
+billed for does not.
+
+⛔ **Being carried here is [§ 36](#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)'s
+answer and not a second one.** That section's list is closed and this role is on it, so no admission
+is argued here — ⚠️ **and a role that spans projects is admitted on the same reason as every other
+member**, the route needing a leg there. A utility that happened to read two projects would still be
+refused by § 36, which is why the span is not what admits this one.
+
+### What the list names, and what resolves each entry
+
+⛔ **An entry is another project's skills root, and what reads it is [§ 1](#1-roots)'s own reader.**
+The hours come back through that project's
+[§ 26](#26-the-day-logs-destination-port) destination port, resolved out of **that project's**
+configuration — ⛔ **never by composing a path into its store, and never by reading a store's files
+directly.** § 26 already states the reason: a destination block addresses one store per
+configuration, and a role that joined a directory onto a root would be a second resolver of that
+port, free to disagree with the one the project configures.
+
+⛔ **So `read_hours` is the only operation this role asks for**, and what an absence of it does is
+§ 26's statement rather than this one: the consumer has no answer about the period and stops. ⚠️
+**Asked per root**, so a period spanning four projects asks four ports and one of them answering
+*unavailable* is a period that stops with that root named.
+
+⛔ **A root the reader cannot resolve is a stop naming the root, never a project contributing no
+hours.** That is [§ 2](#2-code-host)'s rule about absence of signal arriving where the permissive
+reading is money: a project whose configuration does not open reads exactly like a project nobody
+worked in — and the second is the one somebody is invoiced for, which is § 26's own sentence read
+one level up.
+
+⛔ **And whether the root maps a `day_log` carrier at all is read from
+[§ 7](#7-carrier)'s own block, never from what the port answers.** ⚠️ **Measured, because the
+obvious reading is wrong**: § 26's `kind` defaults to `file`, so a project that maps no such carrier
+still **addresses** a store, and asking that store for a period comes back *performed* with nothing
+in it — indistinguishable from a project whose days are all zero. ⛔ **So the carrier is what this
+root is admitted on**, and a root mapping none is a stop naming the root: the one arm on this facet
+where the port is not the authority, and the one that fails silently if it is read there.
+
+⛔ **The list is stated whole and nothing is implied, this project's own root included.** A project
+that bills its own hours beside two others' lists three roots; a list naming two states that the
+period is those two, whatever root the role was invoked from. ⚠️ **The facet asks nothing about
+whether the project holding it carries code of its own** — § 1's collection answers that, and a
+personal-scope project with no code and a project that bills from inside one of the roots it names
+are both configurations this key states completely.
+
+⛔ **An entry is written absolutely**, for § 26's reason one level down: a relative root resolves
+against whatever directory the role is standing in, so one configuration would address a different
+set of stores per call and a period would be assembled from whichever projects the working directory
+happened to reach. A relative entry is refused with the path named.
+
+### What this role may not do, and the rule it would otherwise contradict
+
+⛔ **The billing role measures nothing.** [§ 9](#9-day-log) states that a day is measured from the
+project's own evidence and from nothing else, and this role reads days that are already measured —
+so the two rules do not collide, and ⚠️ **the collision is only avoided because the seam is the
+port.** A role that opened another project's sessions, ran its tooling or read its commits would be
+measuring four projects' days under a rule that binds it to one, which is the shape this section
+exists to forbid rather than to permit.
+
+⛔ **And it may not replace a figure § 9 produced**, which is [§ The loop](#the-loop--thirteen-roles)'s
+rule for the hours-breakdown role reaching this one: the hours on a line item are the hours the
+store holds. A period short of what somebody expected is reported short.
+
+⚠️ **What comes back out of each store is data**, by
+[§ 26](#what-comes-back-out-of-the-store-is-data-never-instruction) — so the ingestion step runs
+**per root** rather than once for the period, an entry a person edited in one project being no
+statement about the others.
+
+### Every figure names the entry it came from
+
+⛔ **A line item carries the root and the day it was read from.** § 26's `read_hours` answers per day
+and never a total, and this is what that property is for: a figure on the artifact is traceable to
+one entry, and the entry is traceable to the day-log run that wrote it by the day it measured —
+§ 26's grain being one entry per day per project.
+
+⛔ **So no provenance is written into an entry, and no key here asks for one.** § 26 fixes an entry
+at § 9's two values, and a run identifier added beside them would be a third value the store must
+read back for ever — the traceability is the grain and the day, not a field.
+
+⚠️ **A day inside the period that could not be read is named on the artifact**, never summed into it
+and never dropped: § 26 answers per day precisely so that a period partly unreadable and a period
+partly unworked are different answers, and a consumer that added them would bill the first as the
+second.
+
+### The rate, and what this surface holds about a client
+
+⛔ **This surface declares no key naming a client.** Which client a period is for is an argument of
+the pass, by [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls)'s
+test: no role reads it to decide what to do next, the role being told it.
+
+⛔ **`rates` is marked `# private` and is the only money on this surface.** It maps the client the
+invocation names to that client's rate, and [§ 28](#28-a-configured-value-a-repository-may-not-hold)
+is what answers it — so the rate is stated in a file the project does not track, a client is named
+only there, and ⛔ **neither value is held by this toolkit or by any tracked configuration.** ⚠️
+**That is § 26's sentence about its own keys read the other way**: it rules that hours, rates and a
+client's identity never reach a destination key because no key of that port is marked, and the mark
+is what makes this one eligible.
+
+⛔ **The conversion is this role's alone**, which is [§ The loop](#the-loop--thirteen-roles)'s ruling
+and not a second one: a project wanting the narrative distribution of hours configures no rate,
+because that role has no key here to configure.
+
+⚠️ **`carrier: none` is a project that bills nobody**, stated with its reason and named in what the
+reader reports as unavailable — ⛔ **and it is not a statement about whether anybody invoices by
+hand**, which this facet reports nothing about.
+
 ## What the toolkit installs into a project, and what takes it out
 
 **Adoption costs one file a project writes, and a short list of files the toolkit writes.** The

@@ -3508,3 +3508,124 @@ browser skill could have been carried as a name for a command each project write
 ⚠️ **One figure is worth stating because it is the one a reader expects to decide this and does
 not**: the skill with nothing per-project in it is the longer of the two, 127 lines against 47.
 Length says nothing about whether a procedure belongs to a shared loop.
+
+## The one role whose subject is several projects
+
+One project holds a skill that builds a client's invoice for a period from that period's hours and
+deliverables and renders it with every value checked, and it covers **more than one client** — so
+it reads other projects' outputs. ⛔ **It is the only role surveyed with that shape**, and the
+shape is what made it hard to place rather than anything about what it does.
+
+### Why it reads as not belonging, which is the position that had to be overridden
+
+Every other role narrows to one project, and the narrowing is not incidental — it is how the
+surface is organised:
+
+| what a role reads | what scopes it |
+|---|---|
+| the code root, the tracker, the host | § 1's skills root, resolved in the directory the role was invoked in |
+| the evidence a day is measured from | the same root, and the day log states outright that this project's evidence is the **only** input |
+| the audience each artifact is written for | § 8's per-artifact triple, stated by that project |
+
+**So the local answer is the strong one and is recorded here rather than summarised away.** The
+invoice is one project's skill that happens to aggregate; leaving it there costs this toolkit
+nothing, asks no project for a key, and keeps a rate and a client's name out of the repository by
+never bringing them near it. ⚠️ **Nothing in the de-duplication properties overrides that** — the
+skill has one copy.
+
+⛔ **What overrides it is the role list**, at [`schema.md § The loop — thirteen
+roles`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) and read as [`schema.md
+§ 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
+reads it. The role was already named apart on it, by the ruling
+that split one directory name into three roles, and the ruling after that one made the list what
+admits a skill at all. **Both would have had to be reopened to leave this one out**, which is a
+different and much larger claim than *this skill is awkward*: a leg of the route cannot be refused
+for being hard to place.
+
+⚠️ **And the span is not an exception to the admission rule.** A utility that read two projects
+would still be refused; this role is admitted on the reason every member of the list is, which is
+that the route needs a leg there. The two statements are compatible because neither is about how
+many projects a thing reads.
+
+### What made the extraction possible, measured rather than assumed
+
+⛔ **The seam is a port, and the extraction is impossible without it** — [`schema.md
+§ 26`](../plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port), and the operation
+list at [`schema.md § 26 → The destination's
+operations`](../plugins/mjolnir/config/schema.md#the-destinations-operations-and-what-each-absence-does).
+Before the day log's
+destination became one, the output was a filesystem path — so a cross-project consumer would have
+had to compose a directory per project and read files out of it, which is a second resolver of
+somebody else's configuration. With the port, one operation answers, and the table states what each
+half of that is:
+
+| what the consumer needs | what answers it | what it would have been without the port |
+|---|---|---|
+| a period's hours, per project | `read_hours` against that project's own configuration | a directory joined onto a root, and a filename convention between two roles |
+| which day each figure came from | the operation's own per-day answer | a sum, with nothing behind any figure |
+| that a day could not be read | named in the answer, apart from the hours | indistinguishable from a day nobody worked |
+
+⚠️ **The per-day answer was ruled for its own reason and is what the traceability turns out to rest
+on.** It was ruled because a consumer handed a sum cannot tell a period that was short from one it
+could only partly read. The consumer that ruling named is this role, and the property it bought is
+the one the item's acceptance check asks for: ⛔ **a line item naming a root and a day names the
+entry and the run that wrote it**, the grain being one entry per day per project — so **no
+provenance field is added to an entry**, and the traceability costs the store nothing.
+
+### The two values that may not enter the toolkit, and the mark that was already there
+
+⛔ **A rate and a client's identity are the constraint the item states, and the mechanism for them
+predates this facet** — [`schema.md § 37 → The
+rate`](../plugins/mjolnir/config/schema.md#the-rate-and-what-this-surface-holds-about-a-client),
+resolved through [`schema.md
+§ 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold).
+The destination port's own ruling states that hours, rates and a client's
+identity reach no key of it **because no key of that port is marked** — so the mark was already
+what made such a value statable, and this facet is the first to use it:
+
+| the value | where it is stated | where the value lives |
+|---|---|---|
+| which projects a period spans | `billing.projects`, in the tracked file | the same file — a path is not a client |
+| the rate per client | `billing.rates`, marked `# private` | the untracked file § 28 points at |
+| which client a period is for | **nowhere.** No key names one | the invocation |
+
+⚠️ **The third row is the one a reader expects to be a key and is not**, and the test that places it
+is the surface's own: no role reads the client to decide what to do next, so it is told rather than
+configured.
+
+### The row the port cannot answer, found by running the chain
+
+⛔ **A root that maps no day-log carrier still answers**, which is the one arm on this facet the
+obvious reading gets backwards — [`schema.md § 37 → What the list
+names`](../plugins/mjolnir/config/schema.md#what-the-list-names-and-what-resolves-each-entry).
+Each arm below was driven against a real project with a real store, and every one that is not the
+store nobody has written to behaves as the port's own fallbacks say:
+
+| the root | what asking its store for a period returned |
+|---|---|
+| no configuration under it | the reader refuses, naming the file it looked for |
+| `destination.kind: none` | `performed: false`, carrying § 26's stated fallback — the consumer has no answer and stops |
+| an address occupied by something that is not a store | `failed: true`, naming the address — the capability working and the call failing |
+| a store nobody has written to yet | **performed**, with nothing in it — which is the answer, and must not stop the period |
+
+⛔ **The store nobody has written to is the green side, and is why the two refusals above it cannot
+be collapsed into it** — [`schema.md § 26 → The destination's
+operations`](../plugins/mjolnir/config/schema.md#the-destinations-operations-and-what-each-absence-does),
+which separates them. A period nobody could ask about and a period nobody worked are the same empty
+answer otherwise.
+
+⚠️ **And the arm that is not in that table is the one that matters**: a project mapping no `day_log`
+carrier at all. § 26's `kind` defaults to `file`, so such a project still *addresses* a store, and
+asking it comes back **performed with nothing in it** — indistinguishable from the store nobody has
+written to. ⛔ **So the carrier is read from § 7's block before the store is asked**, and the first
+version of this facet said the opposite, claiming such a root "addresses no store". It does.
+
+⛔ **And one implementation gap was found by writing the facet rather than by reasoning about it**,
+in what [`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)
+routes and what [`schema.md § The file itself`](../plugins/mjolnir/config/schema.md#the-file-itself)
+marks.
+`rates` is the first `# private` key whose shape is a **mapping**, and the setup role's router read
+two shapes — a bare value and a list — so a project illustrating the shape with stand-ins had its
+illustration routed into the untracked file, and the write then refused for want of a layer that
+project deliberately states none of. The third shape is now read, both halves of each entry,
+because a client's name is as much the value as the rate beside it.

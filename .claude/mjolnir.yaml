@@ -815,3 +815,24 @@ release:
     An adopter is asked to pin a version of this plugin rather than taking the tree — the first
     moment one of the version strings this repository already carries would decide what somebody
     gets, and so the first moment bumping one would be work rather than bookkeeping.
+
+billing:
+  # ⛔ Nobody is billed for this repository's hours, so there is no period to assemble and no set
+  # of roots to assemble one from. ⚠️ The day log here is measured and recorded — `day_log` is a
+  # mapped carrier above and its destination is stated — so the absence is this facet's and not
+  # that one's: the hours exist and no invoice reads them.
+  #
+  # ⛔ Stated rather than omitted, for the reason every absent carrier here is: a project nobody
+  # bills and a project whose roots have not been listed yet read alike otherwise, and the second
+  # would assemble a period from whatever the invocation reached.
+  #
+  # ⚠️ And `rates` is unreachable from here by construction: § 28's layer is what answers it and
+  # `private.carrier` above is `none`, so this repository could not state a rate even if it billed
+  # — which is the same statement that facet's own reason already makes about every value here.
+  carrier: none
+  absent_reason: >-
+    Nobody is invoiced for work on this toolkit, so no period is assembled and no project root is
+    read for one. The day is measured and recorded here; nothing converts it to money.
+  revisit_when: >-
+    Work on this toolkit starts being billed to somebody — the first moment one of the day-log
+    entries this repository already writes would decide what appears on an invoice.

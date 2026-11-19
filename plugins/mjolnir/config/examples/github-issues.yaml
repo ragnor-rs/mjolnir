@@ -427,3 +427,16 @@ release:
   publishes_packages: true
   # This project writes its own changelog, so the role writes the `changelog` entry above.
   changelog_ci_owned: false
+
+billing:
+  # § 37's absent case under a project that could not state the other one: `private.carrier` above
+  # is `none`, and `rates` is marked `# private`, so there is no layer here to answer it from.
+  # ⛔ That is a consequence and not the reason — the reason is below, and a project with § 28's
+  # layer and nobody to bill would write exactly the same two keys.
+  carrier: none
+  absent_reason: >-
+    This is a product repository and nobody is invoiced for work on it: the day log here is read
+    by the team that writes it, and no period of its hours becomes a line item.
+  revisit_when: >-
+    Work on this repository is billed to somebody outside it — a contractor's period, or the
+    product being charged to another part of the organisation.

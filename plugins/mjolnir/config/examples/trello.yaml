@@ -644,3 +644,16 @@ release:
   revisit_when: >-
     Something outside this repository starts depending on a named version of it — a published
     client library, or a consumer pinning what it talks to.
+
+billing:
+  # § 37's absent case under the project whose `private` block above states that every value here
+  # is already reviewable by everyone who can read the file. ⚠️ A rate would be the first value
+  # that is not — the two people who work here are not the two a rate is agreed with — so this
+  # facet and that one would move together, which is what the `revisit_when` below says.
+  carrier: none
+  absent_reason: >-
+    The two people who work on this service are paid for it by the same organisation that reads
+    the day log, so there is no period to assemble and nothing to convert to money.
+  revisit_when: >-
+    Work here is billed out to somebody — which is also the point at which `private` above gains
+    its first value, a rate being agreed with somebody who does not read this file.

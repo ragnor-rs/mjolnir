@@ -315,3 +315,16 @@ release:
     published, which is the ordinary state of a repository that has not cut a release.
   revisit_when: >-
     The first file in this repository comes to carry a version somebody outside it reads.
+
+# § 37, and the pairing with the mapped `day_log` above is the point of stating it here: this
+# project measures and records its days and bills nobody for them, which are two facets and not
+# one. ⛔ A reader that took the recorded day as evidence of an invoice would have the absence
+# backwards.
+billing:
+  carrier: none
+  absent_reason: >-
+    Nothing here is invoiced. The day log above records this project's hours for whoever works on
+    it, and no period of them is assembled for anybody outside it.
+  revisit_when: >-
+    The hours this project already records start being billed to somebody, which is the first
+    reader of them who is not the person who worked them.

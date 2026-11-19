@@ -69,6 +69,7 @@ ROLES = {
     RULINGS: RECORDS,
     "docs/building-itself.md": RECORDS,
     "docs/test-first-for-a-model-writer.md": RECORDS,
+    "plugins/mjolnir/skills/billing-report/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/cut-release/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/day-report/SKILL.md": PROCEDURE,
     "plugins/mjolnir/skills/deploy/SKILL.md": PROCEDURE,
