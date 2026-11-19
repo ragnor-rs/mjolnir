@@ -78,9 +78,12 @@ and [§ 12](#12-ordering) each stating one.
 prefixes is the stack entering the toolkit one token at a time: it is a guess about the language a
 configured script is written in, it is wrong the first time a project writes one in another
 language, and the configuration never said so. § 12 states this of its own key already; what is
-general is here, and `day_log.script` ([§ 9](#9-day-log)) is the one key still carrying the other
-form — a path a role prefixes — marked **transitional** where it is declared, so what settles it is
-the extraction that key already waits on rather than a second rule here.
+general is here. ⚠️ **The key that stood as this rule's one exception is retired**:
+`day_log.script` ([§ 9](#9-day-log)) was a path a role prefixed, marked **transitional** where it
+was declared, and the extraction it waited on has landed — so a configuration still declaring it is
+refused there rather than read, and the rule above holds with no exception left to name. What
+remains path-shaped on this surface is `branch_model.mechanics`
+([§ 10](#10-branch-model)), whose own form that section states.
 
 ⛔ **A fact that is only ever one project's reaches a role through that project's own command,
 script or hook, never through a key**: a host, a service, a port, a credential, a container name, a
@@ -3368,9 +3371,10 @@ dependencies, copying the assets and environment files git does not track, alloc
 naming a container project, and tearing all of it down again — the boundary at
 [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) arriving
 at the one role that cuts a tree, so the shared procedure calls the pointer and a skill on the
-route **names** it instead of restating it. ⚠️ **Unlike `day_log.script`, this pointer is not
-transitional.** Nothing here is waiting to be extracted: a tree's setup and teardown are where a
-project's own build genuinely differs.
+route **names** it instead of restating it. ⚠️ **This pointer is not waiting to be extracted, which
+is what distinguishes it from a transitional one.** A tree's setup and teardown are where a
+project's own build genuinely differs, so there is no shared script for this key to be standing in
+for — which is the condition that was met for § 9's `script`, and that retired it.
 
 ⛔ **It is steps and never a location, and `tree_dir` is the location.** The two were conflated
 while the second key was absent, which left *where a tree goes* stated in no facet and carried by
@@ -4333,9 +4337,9 @@ re-sorted** — a second sort is a second answer to a question the project has a
 whatever argues for the order lives where the ordering does rather than here.
 
 ⚠️ **`command` is a command the procedure runs as given, and never a path it prefixes with
-anything**, which is the one ambiguity `day_log.script` (§ 9) carries and this key does not
-inherit. It is run from the skills root, like every path on this surface (§ 1), and the procedure
-reads its output rather than its exit status beyond failure.
+anything**, which was the one ambiguity `day_log.script` (§ 9) carried before that key was retired,
+and which this key never inherited. It is run from the skills root, like every path on this surface
+(§ 1), and the procedure reads its output rather than its exit status beyond failure.
 
 ⛔ **`carrier: none` is an answer and not a stop.** A project that keeps no ordering has a role
 that, invoked with nothing, **says exactly that and asks for an item by number** — never a silent
@@ -6423,8 +6427,8 @@ role never and needs no store — so an absent directory is a decision this read
 oversight and does not try to. ⛔ **What it does instead is report it**: a project that maps the
 carrier and states no directory for the `file` kind has an absence that is load-bearing, and the
 reader names the key in its own report of what this configuration cannot do, exactly as it already
-names an unset `day_log.script` ([§ 9](#9-day-log)) — so the role stops rather than joining a path
-onto a null.
+names every facet whose carrier is `none` in that report's `unavailable` list — so the role stops
+rather than joining a path onto a null.
 
 ⚠️ **`none` carries no block, and a configuration naming it and stopping is complete**: it addresses
 nothing at all, every operation above takes its stated fallback, and the role measures the day and
@@ -7522,7 +7526,15 @@ deploy:
     grouping:     "<a grouping § 4.8 carries, by the name that facet keys it on — or `none`>"
     requires_role: "<one of § 4.2's own roles, read there — or `none`>"
     publishes:    false
+    live_data_step: "<§ 35's block, stated there and not restated>"
 ```
+
+⛔ **The last of those is a block rather than a value, and what it is read for is
+[§ 35](#35-the-live-data-step-a-deploy-performs-and-the-rails-it-is-performed-under)'s** — the
+division this facet already has with § 16 over `requires` and with § 4.2 over `advances`. A target
+that writes to a live store carries the part of reaching it that cannot be undone, and ⚠️ **a target
+that does not omits the key**, which § 35 states is most of the carriers read above. ⛔ **The figure
+is stated there and not here**, a count written twice being a count two sections may disagree on.
 
 **[§ 29](#29-the-hosts-run-operations) states what a role may do with a run and
 [§ 4.2](#42-status--an-ordered-set-of-name-role-writer) states who may write a status; this section
@@ -8106,6 +8118,243 @@ from a gap:**
   [§ 33 → The batch](#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong)'s rule rather
   than by a second command here: ⛔ **the tracker's answer and the project's own command, neither
   alone**, and this section states no key because the one it would state already exists.
+
+## 35. The live data step a deploy performs, and the rails it is performed under
+
+```yaml
+deploy:
+  - name: "<the environment this project serves from>"
+    not_live: false
+    invoke: command
+    command: "<the whole command>"
+    advances: deployed
+    batch: "<a command answering which of the items handed to it this deploy carries>"
+    live_data_step:                  # omitted where this target writes no live data
+      backup:
+        run: "<the command that dumps the live store>"
+        verify: "<the command that reads the dump back>"
+      rehearse: "<the apply command's own dry variant>"
+      apply: "<the command that writes to the live store>"
+      apply_by: person
+      order: before_invoke
+      record: "<a command printing one path per line>"
+```
+
+The vocabulary the block draws on, stated under the key it belongs to — the device
+[§ 32](#32-a-status-that-moves-backwards),
+[§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes) and
+[§ 34](#34-the-files-that-carry-a-version-and-what-cutting-a-release-writes) already use, because a
+member of a list sits at no path a marker can reach:
+
+```yaml
+deploy:
+    live_data_step:
+      backup:
+        run:    "<the command that dumps the live store, stated whole>"
+        verify: "<the command that reads the dump back; its exit status is the verdict>"
+      rehearse: "<the apply command's dry variant, where the project has one>"
+      apply:    "<the command that writes irreversibly to the live store>"
+      apply_by: procedure | person
+      order:    before_invoke | after_invoke
+      record:   "<a command printing the paths already applied to this store, one per line>"
+```
+
+**[§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes) states what reaching a target
+invokes; this section states what holds while the one part of it that cannot be undone is
+performed.** ⛔ **The two are not the same rail and the difference is what this section exists
+for**: § 33's go is asked before anything is invoked, about a *deploy*, and the evidence the write
+below is decided on — a verified dump, and a rehearsal's output — does not exist yet when it is put.
+A deploy whose live write is honoured by a session improvising three irreversible commands is a
+deploy § 33 gated and nothing guarded.
+
+⛔ **It states no store, no connection, no credential, no schema and no detection of what is
+pending.** Each is [the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s
+middle column read against this step, and the last of them is the one worth naming: both surveyed
+copies work out *which* writes a given deploy owes from their own history — one from the covered
+items' commits, the other from the last release tag — and neither derivation is a fact any other
+project shares
+([the measurement](../../../docs/configuration-surface.md#the-live-data-step-two-copies-and-the-four-stops-they-already-carry)).
+⚠️ **So `apply` is one command stated whole**, and whether it has anything to do on a given run is
+the command's own answer rather than a set this surface assembles.
+
+⛔ **The block is a target's and not a project's, which is § 33's own evidence read one key down.**
+Measured on the carrier covering four targets: two of them have a live store and two have none at
+all, and the two that do detect their pending sets differently — so a project-level block would be
+wrong for half of one project's own targets, and a top-level one would have to name a store for the
+targets that have none.
+
+⚠️ **The key is omitted where a target writes no live data, and that is the ordinary case rather
+than an absence worth marking.** Two of the seven surveyed deploying carriers perform such a write
+and the rest do not — two of those reaching their store through the application's own startup, where
+a deploy performs no step at all. A target stating no block is a deploy exactly as § 33 leaves it,
+and the role says the step was not configured rather than that it found nothing to do.
+
+⛔ **And the block is refused in both directions, by § 33's rule for its own per-shape keys.** A key
+this section does not declare, written inside the block, is a fact about the step that nothing
+reads; and `backup`, `apply`, `apply_by`, `order` and `record` are each required of a block that is
+stated at all. ⚠️ **Four of those five because a step configured without one of them is a step whose
+ordering nothing can perform**, and the fifth for [§ 2](#2-code-host)'s reason instead: a project
+that never looked at what its store already holds and a project that decided nothing is released
+read identically otherwise. ⛔ **`rehearse` is the one key a block may omit**, and the subsection
+below states why.
+
+### The backup is verified by a command, and never by the artifact it wrote
+
+⛔ **`backup.run` and `backup.verify` are two keys because a dump that failed still leaves a
+file.** The dump is taken before anything reaches the store, and what says it is a backup is a
+second command reading it back — ⛔ **whose exit status is the whole of the verdict**, this section
+reading no output and comparing nothing.
+
+⛔ **The artifact's size is not an oracle and this surface offers no key for one.** ⚠️ **Measured,
+and the measurement is an incident in the direction a reader would not expect**: one copy asserts
+the archive is non-trivial in size, and the other refuses that test by name after a dump came back
+at a quarter of the previous release's bytes, the shrink was read aloud as data loss, and the
+store's own catalogue turned out to be intact — the difference being overhead the dump does not
+write. ⛔ **So the strict-looking test is the one that was wrong**, and a project that wants it
+states it inside its own `verify` command, where it is that project's claim rather than this
+surface's.
+
+⛔ **The backup runs whether or not this deploy has anything to apply.** ⚠️ **Stated because one
+copy makes it a rule with no override**: what a release turns out to write against a store is not
+fully known until it has run, and a dump taken afterwards records the damage rather than the state
+before it. ⛔ **A failed or unverified dump stops the deploy** — not the step, the deploy — and
+nothing below it runs.
+
+### A rehearsal the project may not have, and what reading it is for
+
+⛔ **`rehearse` is optional, and an omitted one is reported as no rehearsal rather than as a clean
+one.** ⚠️ **One of the two copies has one for every write it performs and the other has none at
+all**, which is what makes this a key rather than a step: the one with none shows the writes it is
+about to make and confirms them instead, and a surface demanding a dry variant would make that
+project unable to state its own step.
+
+⛔ **The rehearsal is run against the same store the apply will reach, and its output is read.** A
+role that ran it and parsed nothing performed a ritual: what the output carries is whether the write
+is still correct for *this* store, which is the one question nothing else on this route asks.
+⛔ **A rehearsal that reports divergence, or that exits non-zero, stops the step** — and ⚠️ **a
+rehearsal whose output could not be read is reported unread rather than clean**, by
+[§ 11](#a-report-names-what-it-could-not-establish).
+
+⚠️ **What counts as divergence is the rehearsal's own**, and this surface states no pattern for it:
+the exit status is the verdict, exactly as `backup.verify`'s is, and a project whose dry variant
+reports divergence on standard output while exiting zero states that comparison inside the command.
+
+### Who performs the apply, and the go that is never the command's own prompt
+
+| `apply_by` | what the role does |
+|---|---|
+| `procedure` | runs `apply`, and only after the go below is recorded |
+| `person` | runs nothing: hands `apply` over verbatim and ⛔ **reports no apply made** |
+
+⛔ **`person` is a project's ruling about who may perform the act, and is
+[§ 33](#the-three-shapes-a-target-is-reached-by)'s `by_hand` one level down.** ⚠️ **One surveyed
+project carries exactly that as a standing rule** — its live writes are the operator's to perform —
+and then carves an exception for a deploy it has authorised, which is the pair of readings this key
+exists to let a project state rather than leave to a role.
+
+⛔ **The go is asked after the rehearsal has been read and before the apply, and it is not
+configuration.** [§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) admits an
+ask where the act is the person's, and this one is: the write cannot be taken back, and the dump and
+the rehearsal are what it is decided on. ⛔ **No key turns it off**, for the reason
+[§ 6](#authorship-is-procedure-not-configuration) gives for authorship — a project that could
+configure the go away is a project whose live store is written unasked. ⚠️ **It is a second ask
+inside one deploy and that is deliberate**: § 33's is about reaching the target at all, this one is
+about a write whose evidence did not exist when that one was put.
+
+⛔ **A prompt the command puts is not the go, and a command carrying its own answer is refused at
+the load.** ⚠️ **Measured on the copy whose writes block on a prompt of their own**, which asks
+whether to continue and exits on anything but a yes: a session running such a command unattended
+has to feed it, and the answer it feeds is one it gave on the applicant's behalf. ⛔ **So a stated
+`apply` or `rehearse` that feeds itself an answer is refused with the key named and the construct
+named with it** — the approval would be written into the configuration, where no ask can reach it
+and no record can be read back. What satisfies such a prompt is the procedure's own recorded go, and
+the role reports that it answered a prompt rather than that it obtained an approval.
+
+⛔ **What that refusal matches is narrow, and the bound is measured rather than cautious:** a
+here-string, and a pipe whose left-hand side is a command that only prints. ⚠️ **A file redirected
+into the command is its payload and not an answer** — the surveyed copy whose writes take their
+statements on standard input does exactly that, so a rule refusing every redirect would refuse a
+real project's real apply, which is the false refusal this bound exists to avoid. ⛔ **And a flag
+that suppresses a prompt is not matched either**, since one project's *assume yes* is another's
+ordinary argument: what this surface can decide mechanically is that an answer was *generated*, and
+it declines to guess at the rest.
+
+⚠️ **One key the item behind this section proposed is deliberately absent**: an `answered_by` beside
+the step, naming who answers the go. ⛔ **It would be the ask made configurable** under a key that
+[§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check) uses for something
+else entirely — who answers a *completion* check — and a project writing anything but `human` there
+would have turned off the one rail this section is for.
+
+### Where the step falls against the invocation, which the go names
+
+⛔ **`order` is required and states which side of § 33's invocation the step runs on.**
+
+| `order` | when the step runs |
+|---|---|
+| `before_invoke` | the whole step, ending at the apply, then § 33's invocation |
+| `after_invoke` | § 33's invocation, then the whole step |
+
+⛔ **It is a configured default and the go names it, so a person may overrule it for this deploy.**
+⚠️ **Both halves are measured, from opposite ends**: one copy holds the order constant and always
+writes before the image, and the other states outright that the order is a decision rather than a
+default — having met a store several writes behind a release whose new code reads every one of them
+on its first call. ⛔ **Which of the two a given deploy wants is a fact about what is pending**, and
+this surface has already said that detection is the project's — so the configured value is what the
+role proposes and the go is where it is settled.
+
+⚠️ **The role does not read the pending writes to decide this**, and that is a boundary rather than
+a shortcoming: judging whether new code hard-requires a schema is knowledge of that project's code,
+which is [the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s middle
+column. What the role owes is to state the order it is taking, and to say that it took the
+configured one rather than a judgement of its own.
+
+### A record of the store's state is never rewritten
+
+⛔ **`record` is a command printing the paths already applied to this store, one per line, and a
+change that modifies or deletes one of them is refused.** A file that has been applied is no longer
+an instruction: it is the record of what the store was made to be, and editing it leaves every
+later reader believing a state the store never passed through.
+
+⛔ **Read from live targets only.** A target the configuration states is not live is a store the
+session is the only user of and can rebuild, so the files applied to it are still editable — which
+is [§ 33](#which-target-and-what-makes-one-live)'s liveness inversion doing a second job here, and
+⚠️ **the strict direction is what an unclassified target gets**, since a target is live unless the
+configuration says otherwise.
+
+⛔ **The gate names the file rather than the count**, and ⛔ **a `record` command that could not be
+run leaves the change reported unchecked rather than passed** — [§ 2](#2-code-host)'s rule that
+absence of signal is not an answer, met at the one gate whose silence would read as a clean diff.
+
+⚠️ **No copy carries this rule and that is stated rather than glossed.** Both surveyed copies warn
+about re-applying a write and neither forbids editing one, so what is here is this repository's own
+reading of the first sentence above rather than a rule any project has run under —
+⛔ **the position [§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes) takes for the one of
+its three review classes that came from no copy at all.**
+
+### The ordering, and what the role reports
+
+⛔ **The step is one ordered sequence and every stop in it stops the deploy rather than the step:**
+
+| | what runs | what a failure does |
+|---|---|---|
+| 1 | `backup.run` | stops the deploy; nothing has reached the store |
+| 2 | `backup.verify` | stops the deploy; there is a file and it is not a backup |
+| 3 | `rehearse`, where one is stated | stops the deploy, naming divergence or the exit status |
+| 4 | the rehearsal's output, **read** | stops the deploy where it could not be read |
+| 5 | the go | silence is not a yes: nothing happens and the deploy stays unmade |
+| 6 | `apply`, or the hand-over where `apply_by` is `person` | stops the deploy, naming what the store now holds |
+
+⛔ **The order is performed and not documented**: a role free to take step 6 before step 2 is a role
+with no rail at all, and the sequence is asserted where the step is performed rather than stated
+here alone.
+
+⛔ **The report names what it could not establish**, which is
+[§ 11](#a-report-names-what-it-could-not-establish)'s rule rather than this section's. ⚠️ **What
+this step adds to it is its own list**: whether the dump was verified and by what, whether a
+rehearsal ran at all, what its output was read as, which order was taken and whether the configured
+one was overruled, whether the apply ran or was handed over, and — where it ran and failed —
+⛔ **what the store is left holding**, which is the one fact a deploy report that stopped here
+cannot omit.
 
 ## What the toolkit installs into a project, and what takes it out
 

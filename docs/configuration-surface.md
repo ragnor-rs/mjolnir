@@ -3309,3 +3309,133 @@ rule rather than by a second command; and closing whatever the release correspon
 grouping axis's question, the copy surveyed having closed a release and an iteration together one
 to one, which is one project's coincidence until a second shows it. The deploy side of the first is
 [the reading above](#the-batch-and-the-two-assemblies-that-lose-an-item).
+
+## The live data step: two copies, and the four stops they already carry
+
+Ruling (10) settled the deploying role and its skeleton carries one rail on the read half —
+*the preflight writes nothing* — and none on the one step inside a deploy that writes irreversibly
+to a live store. ⛔ **The seven carriers read above were re-read for that step alone**, and the
+answer is the facet at
+[`schema.md § 35`](../plugins/mjolnir/config/schema.md#35-the-live-data-step-a-deploy-performs-and-the-rails-it-is-performed-under).
+
+**Two of the seven perform such a write.** The rest are worth stating, because the shape of the
+absence is what made the key a target's rather than a project's:
+
+| | what the carrier does with a live store | what that leaves the facet |
+|---|---|---|
+| B | one carrier over four targets: **two** of them write to a store, **two** hold none at all, and the two that write **detect their pending sets differently** | the block is a target's; a project-level one is wrong for half of this project's own targets |
+| C | the environment-split pair, and only the irreversible-facing one of them writes | the same conclusion from a second direction — one project, two carriers, one block |
+| A | two carriers, a dispatch and an act handed to a person; neither reaches a store | the key is omitted, and that is a deploy exactly as (10) leaves it |
+| E, F | the store is reached by the application's **own startup** — a framework migrates on boot and the deploy never performs a step | an absence with a cause, rather than a project that has not got round to it |
+| D | no deploying carrier at all | — |
+
+⚠️ **The two copies that do carry the step agree on its sequence and disagree on three of its four
+stops**, which is what makes each of the three a key rather than a rule. The sequence both carry is
+dump → verify → *(rehearse)* → confirm → write, and the facet performs it at
+[`schema.md § 35 → The ordering`](../plugins/mjolnir/config/schema.md#the-ordering-and-what-the-role-reports).
+
+### The size assertion that was the wrong strictness
+
+⚠️ **This is the one place in the whole survey where the stricter-looking copy is the one that was
+measured wrong.** C asserts the archive exists and is non-trivial in size before continuing, which
+reads as the careful version of a dump that failed and left a file anyway. B carries the opposite
+rule, with an incident behind it: a dump came back at roughly a quarter of the previous release's
+bytes, the shrink was read aloud as catalogue loss, the catalogue was in fact intact, and the
+difference was row-overhead, index and dead-tuple volume that a dump does not write at all. Its own
+text puts it as *two dumps taken months apart are not comparable by size in either direction*, and
+what it verifies instead is that reading the dump back enumerates every table the store holds.
+
+⛔ **So the facet carries two keys and no size**, and the verdict is an exit status rather than a
+figure this toolkit compares — [`schema.md § 35 → The backup is verified by a
+command`](../plugins/mjolnir/config/schema.md#the-backup-is-verified-by-a-command-and-never-by-the-artifact-it-wrote).
+⚠️ **A project that still wants the size test states it inside its own verification command**, where
+it is that project's claim about its own store. The facet does not forbid it; it declines to be the
+thing that makes it.
+
+⚠️ **And the unconditional reading came from the same copy**: its dump runs whether or not the
+release carries anything to apply, with no override, because what a release turns out to write
+against a store is not fully known until it has run and a dump taken afterwards records the damage
+rather than the state before it.
+
+### A rehearsal one copy has for everything and the other has for nothing
+
+⚠️ **C carries a dry variant for every write it performs and B carries none**, and both arrangements
+are deliberate in their own text. C's writes are scripted, each one paired with a sibling that sets
+a dry flag and changes nothing, and its carrier runs the dry one first and reviews the output. B's
+writes are plain statements applied one at a time; what it does instead is print each one in full
+and confirm it, and its own note is that re-applying one may error and that this is expected.
+
+⛔ **So the rehearsal is a key and not a step**, and the surface that demanded one would make the
+second project unable to state its own procedure —
+[`schema.md § 35 → A rehearsal the project may not
+have`](../plugins/mjolnir/config/schema.md#a-rehearsal-the-project-may-not-have-and-what-reading-it-is-for).
+⚠️ **What both copies agree on is the reading**: C's text says the guarded variant must report no
+divergence and that a guard which aborts stops the deploy — a verdict that exists only once it is
+read. A role that ran the dry variant and parsed nothing performed a ritual.
+
+### The prompt the session would have to answer on the applicant's behalf
+
+⚠️ **C's writes block on a prompt of their own.** Its shared helper opens a reader on standard
+input, asks whether to continue, and exits on anything but a yes — and it returns immediately
+without asking when the dry flag is set, so the prompt guards exactly the irreversible half.
+⚠️ **That is the measurement behind the rule**: a session running such a command unattended has to
+feed it an answer, and the answer it feeds is one it gave for the person whose store is about to
+change.
+
+⛔ **So the go is the procedure's own recorded ask and the command's prompt is never it**, and a
+configured command carrying its own answer is refused where it is written —
+[`schema.md § 35 → Who performs the
+apply`](../plugins/mjolnir/config/schema.md#who-performs-the-apply-and-the-go-that-is-never-the-commands-own-prompt).
+⚠️ **C also states the standing rule the `apply_by` key exists for**, in as many words: the live
+writes are the operator's to perform, and its carrier performs them only under an explicit go for
+that deploy. Both readings are a project's to state, which is why the key has two values rather
+than the procedure choosing one.
+
+⚠️ **The ask being a *second* one inside a single deploy is the part worth defending.** Both copies
+put their confirmation **before** the dump, where neither the verified dump nor the rehearsal's
+output exists yet — so the question they ask is *shall this deploy happen*, and the question the
+facet adds is *shall this write happen, given what the rehearsal said*. ⛔ **The test is
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s
+and nothing else**: the act is the person's, and the evidence is new.
+
+⚠️ **One key the item behind this facet proposed did not survive** — an `answered_by` beside the
+step. It would have made the one unconditional rail configurable, under a word the surface already
+uses for who answers a completion check, so a project writing anything but *human* there would have
+turned the ask off. Stated here because a key dropped in silence reads as a key nobody thought of.
+
+### The ordering against the image, which one copy calls a decision
+
+⚠️ **C holds the order constant and B states outright that it is a decision rather than a default.**
+C writes before its build, always. B's text carries the reasoning and the case: its store sat
+several writes behind a release whose new code reads a table, a column and a dropped type on its
+first call, so the write had to precede the image — while a write purely additive to code already
+running belongs after it. ⚠️ **And B asks for exactly what the facet now does**: that the order
+chosen be stated in the confirmation, so the operator rules on it rather than discovering it.
+
+⛔ **So `order` is a configured default the go names**, which is the only arrangement both copies
+can state — [`schema.md § 35 → Where the step falls against the
+invocation`](../plugins/mjolnir/config/schema.md#where-the-step-falls-against-the-invocation-which-the-go-names).
+⚠️ **What the role may not do is decide it by reading the pending writes**: judging whether new code
+hard-requires a schema is knowledge of that project's code, which is the boundary's middle column,
+and a role that attempted it would be guessing under a key the project already answered.
+
+### The forbidding rule no copy carries
+
+⛔ **Neither copy forbids editing a write that has already been applied, and the facet does.** Both
+warn about *re-applying* one — B's confirmation says a non-idempotent write may error on a second
+run and that skipping it is safe — and neither says anything about changing its text afterwards.
+⚠️ **So this is the position [`schema.md
+§ 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes)
+takes for the one of its three review classes that came from no copy**: a rule with no project's
+experience behind it, stated as such.
+
+The reasoning is that an applied write is no longer an instruction but the record of what the store
+was made to be, so editing it leaves every later reader believing a state the store never passed
+through. ⛔ **What makes it checkable is that the released set is the project's to print**, by the
+device the ordering axis already uses for its own queue — and it is read from **live** targets only,
+a store the session is the only user of being one it can rebuild:
+[`schema.md § 35 → A record of the store's
+state`](../plugins/mjolnir/config/schema.md#a-record-of-the-stores-state-is-never-rewritten).
+⚠️ **A command that could not be run leaves the change reported unchecked rather than passed**,
+which is (10)'s own absence-of-signal rule met at the one gate whose silence would read as a clean
+diff.

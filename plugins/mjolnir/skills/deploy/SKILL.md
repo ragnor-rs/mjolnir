@@ -106,6 +106,19 @@ what this step does is run it.
 - ⚠️ **A command target may contend on something the project declared exclusive**
   ([`§ 10`](../../config/schema.md#exclusive-resources)). A refusal there is a place to come back
   for rather than a failure: the deploy is retried once one frees, and the reply says it waited.
+- ⛔ **And where the entry carries a live data step, its own plan is taken here** — read-only, by
+  § 35's own carrier, because *establish what is about to be invoked before the target is
+  confirmed* reaches those commands exactly as it reaches the entry's:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" plan --target "<the entry's name>"
+  ```
+
+  ⛔ **It runs none of them**, which is what keeps this inside the preflight. ⚠️ **It exits 3 where
+  this target writes no live data**, which is the ordinary case rather than a failure: the deploy is
+  exactly what § 33 states, step 5a does not run, and the reply says the target states no step
+  rather than that the step found nothing to do. ⛔ **A step the configuration could not be read for
+  is a stop before the go**, named with the key.
 
 ## 4. The batch, what the item side of it is, and what the changes owe
 
@@ -241,6 +254,73 @@ step 4b, so a go reached at all is a go over a target nothing is holding.
 ⛔ **A go that goes to the port carries what it is for.** Where the shape is `dispatch`, the port
 refuses a go that does not name this workflow, this ref and every input — and ⛔ **the words are
 never composed to satisfy it**, which would be filling in a form rather than having an approval.
+
+## 5a. The live data step, where the target carries one
+
+⛔ **The facet is [`§ 35`](../../config/schema.md#35-the-live-data-step-a-deploy-performs-and-the-rails-it-is-performed-under)
+and this file states none of it again**, for the reason it restates no part of § 33. ⛔ **And the
+ordering is not performed here either**: a role free to reach the write before the dump has been
+read back is a role with no rail at all, so the sequence is the carrier's and this step asks it.
+
+⛔ **The plan was taken in step 3 and is not taken again here.** § 33 puts establishing what is
+about to be invoked **before** the target is confirmed, and this step's commands are no different: a
+rehearsal that is not there has to stop the deploy earlier than the go rather than after a dump has
+already been taken.
+
+- ⛔ **Lettered rather than numbered because its position is the configuration's.** `order` states
+  which side of step 6 the whole of this step falls on — `before_invoke` runs it here, and
+  `after_invoke` runs it once step 6 has come back. ⛔ **Neither is this role's to choose**, and
+  ⚠️ **a role that read the pending writes to decide would be judging whether the new code requires
+  the schema**, which is that project's knowledge of its own code.
+- ⛔ **The order taken is named in the go below**, so the person rules on it rather than discovering
+  it. The configured value is what this role proposes.
+
+**The preparation, which stops on its own:**
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" prepare --target "<the entry's name>"
+```
+
+- ⛔ **A non-zero exit is a stop for the deploy and not for the step**, and the carrier names which
+  of the sequence it stopped at. Nothing after it runs and step 6 is not reached.
+- ⛔ **The rehearsal's output is read**, which is what the step is for: a role that ran it and
+  parsed nothing performed a ritual. ⚠️ **A target stating no rehearsal is reported as *no
+  rehearsal*** and never as a clean one, and the go below is asked with that said.
+- ⚠️ **The carrier reads no word out of that output** — § 35 makes the exit status the verdict —
+  so what the output says is a **person's** reading and this role carries it to them verbatim.
+
+**Then the go, which is a second ask and is not § 33's:**
+
+⛔ **Asked here because the evidence did not exist when step 5's question was put**: a verified dump
+and a rehearsal's output. The test is
+[`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s —
+the write cannot be taken back — and ⛔ **no key turns it off**, `apply_by` deciding only who runs
+the command once it is recorded.
+
+**Show, in the question:** the target, that the entry states it live, the dump's path or name and
+that it was read back, the rehearsal's output **whole** or that there was none, the order being
+taken and that it is the configured one, and who the entry says performs the write.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" apply --target "<the entry's name>" \
+  --given "<their answer, in their words>"
+```
+
+⚠️ **The flag is `--given`, which is this toolkit's own word for an answer a gate reads back** —
+and not the shorter spelling, which the names check reads as the build tool of the same name and
+refuses the whole command. A false refusal renamed around rather than argued with.
+
+- ⛔ **The go is handed over as they wrote it and is never composed to satisfy the carrier.** It
+  refuses one that names neither the target nor the rehearsal's verdict, and ⚠️ **that refusal is
+  reported rather than worked around**: a role that filled in the wording would have a form and not
+  an approval.
+- ⛔ **Silence is not a yes.** Nothing is invoked, the deploy stays unmade, and the reply says the
+  question went unanswered.
+- ⛔ **Where `apply_by` is `person` the carrier makes no write and hands the command over**, and the
+  reply reports **no apply made** in those words — § 33's `by_hand` one level down.
+- ⛔ **Where the write ran and failed, what the store is left holding is named rather than
+  omitted**, along with the dump a recovery reads. ⚠️ A command that exited zero is still a fact
+  about the invocation and not about the store.
 
 ## 6. Invoke what the target states
 
@@ -427,8 +507,15 @@ the facts, with a table where the content enumerates.
 - ⛔ **what was not verified**, named rather than omitted
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)): every skipped
   scenario, every tier that did not run, and everything a log did not cover;
+- ⛔ **the live data step, where the target carries one** — that the dump was verified and by what,
+  whether a rehearsal ran at all, what its output was read as, which order was taken and whether
+  the configured one was overruled, and whether the write ran or was handed over. ⚠️ **A target
+  stating no step says so**, by
+  [`§ 35`](../../config/schema.md#35-the-live-data-step-a-deploy-performs-and-the-rails-it-is-performed-under),
+  rather than being left out of a reply a reader then reads as a deploy that wrote nothing;
 - ⛔ **what the deploy left standing** — a version spent, a branch ahead of what the target serves,
-  work queued behind the command that queued it;
+  work queued behind the command that queued it, and ⛔ **what a live store is left holding** where
+  the write ran and failed;
 - ⛔ anything that needs the person running this, **asked with the options**
   ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): a target that could not
   be chosen, a precondition nobody can supply, a batch nothing could assemble. Nothing is noted for

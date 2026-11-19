@@ -2236,7 +2236,7 @@ VIOLATIONS = [
     # the script behind it happens to be in, whichever key names it.
     ("no stack is named in the strict set",
      "an interpreter prefixing a key's placeholder rather than a command stated whole",
-     _plant_in_a_carrier("\nRun `python3 <day_log.script> --check` here too.\n")),
+     _plant_in_a_carrier("\nRun `python3 <ordering.command> --check` here too.\n")),
     # The same construct against rule 1's reader: a ``…`` span's backticks are
     # not a span's delimiters, so a double span ahead of a command is where that
     # pairing goes wrong.

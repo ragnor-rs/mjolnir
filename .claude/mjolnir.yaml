@@ -140,6 +140,16 @@ host:
     # ⚠️ The same reading as the two entries above, on the guard that holds a session: no command
     # in this repository opens one on another machine, so `live_guard` below is `[]` and this run
     # holds the carrier's own suite rather than a verdict about this tree.
+    # ⚠️ And the same reading again on both halves of § 35: this repository states `deploy: []`, so
+    # no target here carries a live data step. The carrier's run holds its own suite against
+    # planted trees and planted commands; the record check's holds a repository the suite builds
+    # and makes one change in, because its in-memory arms say nothing about the diff.
+    - workflow: "Live data carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/live_data.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Live data record"
+      mirrors: "python3 plugins/mjolnir/scripts/check_live_data_record.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Live guard"
       mirrors: "python3 plugins/mjolnir/scripts/live.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -765,9 +775,10 @@ context_guard:
   # in is the project whose shell calls must reach no decision at all.
   unbounded: []
   # ⛔ Nothing is exempt, which is the ordinary configuration with nothing above to be exempt
-  # from. The role this facet's exemption exists for is this toolkit's own day log, and ⚠️ it
-  # cannot run here at all — `day_log.script` is unset, which the reader already reports — so the
-  # command there would be an exemption for a call this project never makes.
+  # from. The role this facet's exemption exists for is this toolkit's own day log, and ⚠️ the
+  # exemption is what covers a project whose evidence comes back in a result — which § 22 states,
+  # and which is not this project: the day log here writes its measurement to `destination.out_dir`
+  # and reads the file, so its command's result carries nothing to bound or replace.
   never_bound: []
   # No `result_limit_chars`, so no result is replaced here and none of the roles that read a long
   # evidence file meets a head and a tail in place of it. ⛔ Stated as an absence rather than as a

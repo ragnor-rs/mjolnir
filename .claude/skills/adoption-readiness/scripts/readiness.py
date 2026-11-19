@@ -762,17 +762,15 @@ def main(argv: list[str]) -> int:
             print(line("ambiguous carrier", f"{label} — may be {', '.join(readings)}; read this "
                                             "project's own carriers block"))
 
-        # A role is replaceable only with the facts it reads available. The day log is the one
-        # shipped role, and its evidence script is a project-local path until #15 lands -- so a
-        # configuration that leaves it null cannot run it, which the reader already reports.
-        # ⛔ Read only off this project's own configuration: asked of a probe, this would report
-        # whichever file the probe came from and attribute its absence here.
-        caveats = []
-        if own_config and loaded is not None and "day_log" in covered:
-            if loaded.get("day_log.script") is None:
-                caveats.append("day_log.script is null — the role stops rather than running (#15)")
-        for caveat in caveats:
-            print(line("blocked anyway", caveat))
+        # ⛔ No shipped role is blocked by its own configuration here, and the arm that used to
+        # answer that question is gone rather than left standing. It read `day_log.script`, which
+        # #15 retired: a configuration declaring that key is now refused by the reader, so the
+        # test had one outcome for every project -- `None` always, and so a caveat and a
+        # NOT READY verdict for every project that carried a `day_log` role. ⚠️ An unconditional
+        # arm is worse than an absent one: it reads as a reading and answers nothing.
+        # ⚠️ What a replacement would have to be: a reading taken off a key that is still live,
+        # and off this project's own configuration rather than a probe's -- asked of a probe, it
+        # would report whichever file the probe came from and attribute the absence here.
 
         if carried["unclassified"]:
             verdict = "CANNOT ESTABLISH — a carrier nothing classifies, so the counts are floors"
@@ -792,7 +790,7 @@ def main(argv: list[str]) -> int:
             )
         elif not resolves:
             verdict = "NOT READY — the plugin does not resolve here"
-        elif missing or caveats or adapter == "absent" or loaded is None or not own_config:
+        elif missing or adapter == "absent" or loaded is None or not own_config:
             parts = []
             if loaded is None:
                 parts.append("no configuration can be validated")
@@ -802,8 +800,6 @@ def main(argv: list[str]) -> int:
                 parts.append("no tracker adapter")
             if missing:
                 parts.append(f"{len(missing)} role(s) unshipped")
-            if caveats:
-                parts.append("a shipped role blocked by its own configuration")
             verdict = "NOT READY — " + "; ".join(parts)
         else:
             verdict = "READY"

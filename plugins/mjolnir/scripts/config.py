@@ -2794,6 +2794,70 @@ class Config:
             "changelog_ci_owned": self.get("release.changelog_ci_owned"),
         }
 
+    def live_data_step(self, target: str) -> dict:
+        """§ 35's block on one § 33 target, with which answer it is said out loud.
+
+        ⛔ **Three answers and not two**, because the two absences are not the
+        same fact and a caller that collapsed them would report a step it never
+        looked for. `found` is the block; `target` is `None` where this project
+        states no such target at all, which is a stop naming the names it does
+        state; and a target that exists and carries no block is a deploy exactly
+        as § 33 leaves it, which the report says rather than leaving a reader to
+        read silence as a step that found nothing to do.
+
+        ⚠️ **`reads_record` is the liveness pairing and is answered here rather
+        than by whoever asks**: the forbidding gate reads a released set from live
+        targets only, a store the session is the only user of being one it can
+        rebuild — and a target is live unless the configuration says otherwise
+        (§ 35).
+        """
+        stated = [
+            entry
+            for entry in self.get("deploy") or ()
+            if isinstance(entry, dict) and entry.get("name") == target
+        ]
+        if not stated:
+            return {
+                "target": None,
+                "found": None,
+                "reads_record": False,
+                "names": [
+                    entry.get("name")
+                    for entry in self.get("deploy") or ()
+                    if isinstance(entry, dict)
+                ],
+                "report": [
+                    f"No deploy target is named {target!r} here (§ 33), so there "
+                    "is no live data step to read and none is improvised."
+                ],
+            }
+        entry = stated[0]
+        block = entry.get("live_data_step")
+        if not isinstance(block, dict):
+            return {
+                "target": dict(entry),
+                "found": None,
+                "reads_record": False,
+                "names": [target],
+                "report": [
+                    f"The target {target!r} states no live data step "
+                    "(`live_data_step` omitted), so reaching it writes no live "
+                    "data through this procedure and the deploy is exactly what "
+                    "§ 33 states. ⛔ Not a step that found nothing to do."
+                ],
+            }
+        return {
+            "target": dict(entry),
+            "found": dict(block),
+            # ⚠️ `is False` rather than `not`: a target that said nothing about
+            # being live is refused at the load, so the only two readings here are
+            # the two the configuration states — and a truthy read would make an
+            # absent key mean *live*, which is the right answer by accident.
+            "reads_record": entry.get("not_live") is False,
+            "names": [target],
+            "report": [],
+        }
+
     def _report_roots(self) -> "list[tuple[str, Config]]":
         """(what to prefix a line with, the root to read it from).
 
@@ -4390,8 +4454,13 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
     # the division § 4.8's key walk already has: a key added to that fence is
     # accepted with no edit in this module, and a literal here would be a second
     # statement of the fence free to disagree with it.
+    # ⚠️ **First segments**, not whole paths: § 35 declares a *block* on an entry,
+    # so the fence that states it contributes `deploy.live_data_step.backup.run`
+    # and the key this loop holds an entry to is `live_data_step`. A set of whole
+    # paths would refuse the block it was declared by, and the refusal above would
+    # list four nested paths as keys a target may carry.
     declared = {
-        path.split(".", 1)[1]
+        path.split(".")[1]
         for path in facts["declared"]
         if path.startswith("deploy.")
     }
@@ -4668,6 +4737,172 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
                 "is true while `grouping` is `none` (§ 33), so there is "
                 "nothing for the mark to be about. A target that "
                 "publishes names the grouping it publishes.",
+            )
+        # ⛔ § 35's block, validated here rather than in a pass of its own: it is a
+        # key of *this* entry, so a project that states it on a target this loop
+        # has already refused is refused for the target first. The division is the
+        # one § 33 has with § 16 over `requires` -- the shape is held where the
+        # entry is, and what the block means is the other section's.
+        _validate_live_data_step(where, entry, facts)
+
+
+# § 35's two commands that may not carry their own answer, and the one shape a
+# pipe into them is allowed to have. ⛔ Narrow by measurement rather than by
+# caution: the surveyed copy whose writes take their statements on standard input
+# redirects a **file** into the command, so a rule refusing every `<` would refuse
+# a real project's real apply. What is refused is a left-hand side that only
+# prints -- which is how an answer is fed -- and a here-string, which is the same
+# act spelled shorter.
+_ONLY_PRINTS = ("echo", "printf", "yes")
+_HERE_STRING = "<<<"
+
+
+def _carries_its_own_answer(command: str) -> str | None:
+    """The construct by which a command feeds itself an answer, or None.
+
+    Returns the construct's own text so the refusal can name it: a refusal that
+    said *this command answers itself* without saying which part did would leave
+    an adopter re-reading a command the reader will not say anything more about.
+    """
+    if _HERE_STRING in command:
+        return _HERE_STRING
+    for stage in command.split("|")[:-1]:
+        # The last word of a stage is what the pipe carries, but the *first* is
+        # what produced it, and a stage may itself be prefixed by an assignment
+        # or a `(`. Read the first bare word.
+        words = [word for word in stage.replace("(", " ").split() if "=" not in word]
+        if words and os.path.basename(words[0]) in _ONLY_PRINTS:
+            return f"{words[0]} |"
+    return None
+
+
+def _validate_live_data_step(where: str, entry: dict, facts: dict) -> None:
+    """§ 35's block on a § 33 entry, which no marker on the surface can reach.
+
+    ⛔ **Every arm refuses rather than skipping**, and the direction is the one
+    this section exists for: a step whose ordering a reader could not make sense
+    of is an irreversible write to somebody's live store performed under whatever
+    the session improvised, which is the state § 33 gated and nothing guarded.
+
+    ⚠️ The block itself is **optional**, most of the surveyed carriers writing no
+    live data at all, so an entry that omits it is a deploy exactly as § 33 leaves
+    it and nothing below runs. ⛔ **The figure is § 35's and is not carried here**:
+    a count in a reader is a copy of a measurement that lives in the record, and
+    the remedy for one is to delete it rather than to keep it in step.
+    """
+    if "live_data_step" not in entry:
+        return
+    at = f"{where}.live_data_step"
+    block = entry["live_data_step"]
+    if not isinstance(block, dict):
+        raise ConfigError(
+            at,
+            "must be a mapping; a step states at least a backup, the command that "
+            "writes, who performs it and which side of the invocation it falls on "
+            "(§ 35). Omit the key entirely where this target writes no live data.",
+        )
+    # ⛔ Read off § 35's own entry fence rather than listed here, which is
+    # `_validate_deploy`'s own rule read one level down: a key added to that fence
+    # is accepted with no edit in this module.
+    prefix = "deploy.live_data_step."
+    declared = {
+        path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)
+    }
+    if not declared:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a step could be held "
+            "to nothing. § 35 states the block's keys in a fence of its own, and a "
+            "surface that has lost it is refused rather than read as permitting "
+            "anything.",
+        )
+    top = {path.split(".")[0] for path in declared}
+    for stated_key in block:
+        if stated_key not in top:
+            raise ConfigError(
+                f"{at}.{stated_key}",
+                "is a key § 35 does not declare on a live data step, so it is a "
+                "fact about the step that nothing reads. The keys it declares "
+                f"are: {', '.join(sorted(top))}.",
+            )
+    # ⛔ Required of a block stated at all, rather than defaulted. A step missing
+    # one of these is a step whose ordering nothing can perform -- and `record` is
+    # in the list for § 2's reason rather than for the ordering's: a project that
+    # never looked at what its store already holds and one that decided nothing is
+    # released read identically otherwise.
+    for key in ("backup", "apply", "apply_by", "order", "record"):
+        if key not in block:
+            raise ConfigError(
+                f"{at}.{key}",
+                "required of a live data step (§ 35). The block is omitted whole "
+                "where a target writes no live data; a block that is stated states "
+                "every one of these.",
+            )
+    backup = block["backup"]
+    if not isinstance(backup, dict):
+        raise ConfigError(
+            f"{at}.backup",
+            "must be a mapping of the command that dumps the live store and the "
+            "command that reads the dump back (§ 35).",
+        )
+    inside = {
+        path[len("backup."):]
+        for path in declared
+        if path.startswith("backup.") and "." not in path[len("backup."):]
+    }
+    for stated_key in backup:
+        if stated_key not in inside:
+            raise ConfigError(
+                f"{at}.backup.{stated_key}",
+                "is a key § 35 does not declare on a backup, so it is a fact "
+                f"nothing reads. The keys it declares are: {', '.join(sorted(inside))}.",
+            )
+    # ⛔ Two keys and not one, because a dump that failed still leaves a file:
+    # what says the artifact is a backup is a second command reading it back, and
+    # its exit status is the whole of the verdict (§ 35).
+    for key in ("run", "verify"):
+        value = backup.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(
+                f"{at}.backup.{key}",
+                "required, and a non-empty command stated whole (§ 35).",
+            )
+    for key in ("apply", "rehearse", "record"):
+        if key in block and (
+            not isinstance(block[key], str) or not block[key].strip()
+        ):
+            raise ConfigError(
+                f"{at}.{key}",
+                "must be a non-empty command, stated whole (§ 35); `rehearse` is "
+                "omitted where the project has no dry variant.",
+            )
+    # ⛔ The one refusal that is about a command's *text* rather than its shape,
+    # and the measurement behind it is the surveyed copy whose writes block on a
+    # prompt of their own: a command carrying its own answer has the approval
+    # written into the configuration, where no ask reaches it and no record can be
+    # read back (§ 35).
+    for key in ("apply", "rehearse"):
+        if key not in block or not isinstance(block[key], str):
+            continue
+        construct = _carries_its_own_answer(block[key])
+        if construct is not None:
+            raise ConfigError(
+                f"{at}.{key}",
+                f"feeds itself an answer, by `{construct}` (§ 35). A prompt the "
+                "command puts is not the go, and an answer written into the "
+                "configuration is an approval nothing asked for and no record can "
+                "be read back. ⚠️ A file redirected into the command is its "
+                "payload rather than an answer and is not what this refuses.",
+            )
+    for key, what in (
+        ("apply_by", "who performs a live data step's write"),
+        ("order", "which side of the invocation a live data step falls on"),
+    ):
+        stated = vocabulary(facts, f"deploy.live_data_step.{key}", what)
+        if block[key] not in stated:
+            raise ConfigError(
+                f"{at}.{key}",
+                f"is {block[key]!r}; the surface states {' | '.join(stated)}.",
             )
 
 
@@ -12598,6 +12833,138 @@ def self_test() -> int:
             f"refused on {refusal!r}",
         )
 
+    print("\n§ 35, the live data step -- the green side, and the surface arm no plant reaches:")
+    # ⛔ The plants are all red by construction, so none of them says a correct
+    # step loads -- and the arms that matter most here are the three no refusal
+    # can reach: a target that omits the block entirely, which is five of the
+    # seven surveyed carriers and must stay a deploy exactly as § 33 leaves it;
+    # and the two false-refusal bounds on the answer rule, each of which a
+    # slightly wider rule would have refused on a real project's real command.
+    for label, overrides in (
+        ("a target that writes no live data omits the block and loads",
+         {"live_data_step": _ABSENT}),
+        ("a step with no rehearsal loads, that being the key § 35 lets a block omit",
+         {"live_data_step": _a_live_data_step()}),
+        ("and the same step with a rehearsal stated loads",
+         {"live_data_step": _a_live_data_step(rehearse="a-dry-run")}),
+        # ⚠️ Both members of each alternation, written out rather than sampled:
+        # the fixture carries the surface's *first* member, so an arm that
+        # exercised only the fixture would say nothing about the second -- and the
+        # second of `apply_by` is the one that runs the irreversible command.
+        ("a step whose write the procedure performs loads",
+         {"live_data_step": _a_live_data_step(apply_by="procedure")}),
+        ("a step whose write a person performs loads",
+         {"live_data_step": _a_live_data_step(apply_by="person")}),
+        ("a step that runs before the invocation loads",
+         {"live_data_step": _a_live_data_step(order="before_invoke")}),
+        ("a step that runs after the invocation loads",
+         {"live_data_step": _a_live_data_step(order="after_invoke")}),
+        # ⛔ The first false-refusal bound, and it is a real project's real
+        # command: the surveyed copy whose writes take their statements on
+        # standard input redirects a **file** into the command. A rule refusing
+        # every redirect would refuse it, which is the direction this bound exists
+        # to hold.
+        ("an apply that redirects its payload in from a file loads",
+         {"live_data_step": _a_live_data_step(apply="a-write < a-statement-file")}),
+        # ⛔ The second bound: a pipe whose left-hand side is work rather than an
+        # answer. One project's apply reaches its store through a chain, and a rule
+        # that matched any `|` would refuse it.
+        ("an apply that pipes real work into the write loads",
+         {"live_data_step": _a_live_data_step(apply="a-reader a-file | a-write")}),
+        # ⚠️ And a flag that suppresses a prompt, which § 35 states outright is
+        # not matched: one project's *assume yes* is another's ordinary argument,
+        # and a reader guessing at that would refuse configurations it cannot read.
+        ("an apply carrying a flag that suppresses a prompt loads",
+         {"live_data_step": _a_live_data_step(apply="a-write --assume-yes")}),
+    ):
+        loaded = _a_valid_example()
+        loaded["deploy"] = [_a_deploy_target(**overrides)]
+        refusal = _refused(loaded)
+        check(label, refusal is None, f"refused on {refusal!r}")
+
+    # ⛔ The one arm the plant list cannot reach, the surface's own entry fence
+    # being what it is about rather than a configuration: with no key declared
+    # under `deploy.live_data_step` a block could be held to nothing, and a reader
+    # that read that as permitting anything would accept every malformed block
+    # above. ⚠️ Planted on the derived set rather than on the surface's text,
+    # which is where § 34's sibling arm plants its own.
+    with open(SURFACE, encoding="utf-8") as handle:
+        blind = surface_facts(handle.read())
+    blind["declared"] = {
+        path for path in blind["declared"]
+        if not path.startswith("deploy.live_data_step.")
+    }
+    refusal = None
+    try:
+        _validate_live_data_step(
+            "deploy[0]", {"live_data_step": _a_live_data_step()}, blind
+        )
+    except ConfigError as refused:
+        refusal = refused.key
+    check(
+        "a surface that has lost § 35's entry fence is refused, with the key named",
+        refusal == "deploy[0].live_data_step",
+        f"reported {refusal!r}",
+    )
+
+    # ⛔ And the block is **read back**, not merely validated: the deploying role
+    # reads the step out of the resolved configuration, so a key the reader
+    # accepts and no reader renders is a key nothing holds. ⚠️ The example is
+    # found by the facet rather than named, which is every fixture here's rule.
+    carried = next(
+        (
+            data for data in (
+                _load_yaml(open(path, encoding="utf-8").read(), CONFIG_PATH)
+                for path in _examples()
+            )
+            if any(
+                isinstance(entry, dict) and "live_data_step" in entry
+                for entry in _absent_as(_get(data, "deploy"), [])
+            )
+        ),
+        None,
+    )
+    check(
+        "an example carries the facet, so the arms below have a subject",
+        carried is not None,
+        "no example states a live data step",
+    )
+    if carried is not None:
+        with open(SURFACE, encoding="utf-8") as handle:
+            resolved = _resolve(carried, EXAMPLES, surface_facts(handle.read()), False)
+        stepped = [
+            entry for entry in resolved.get("deploy") or []
+            if isinstance(entry, dict) and "live_data_step" in entry
+        ]
+        check(
+            "the resolved configuration carries the step the file states",
+            len(stepped) == sum(
+                1 for entry in _get(carried, "deploy")
+                if isinstance(entry, dict) and "live_data_step" in entry
+            ),
+            f"carries {stepped!r}",
+        )
+        check(
+            "and the step's own keys come back with it, the backup's two among them",
+            all(
+                {"backup", "apply", "apply_by", "order", "record"}
+                <= set(entry["live_data_step"])
+                and {"run", "verify"} <= set(entry["live_data_step"]["backup"])
+                for entry in stepped
+            ),
+            f"carries {stepped!r}",
+        )
+        # ⛔ The liveness pairing § 35 reads the `record` command from, asserted on
+        # the shipped example rather than on a fixture: a step configured on a
+        # target the project states is not live would make the forbidding gate read
+        # a store the session can rebuild, which is the one reading that section
+        # rules out by name.
+        check(
+            "and the example states the step on a live target, which is what the gate reads",
+            all(entry.get("not_live") is False for entry in stepped),
+            f"carries {[entry.get('not_live') for entry in stepped]!r}",
+        )
+
     print("\n§ 34, the files that carry a version -- the green side, and the one surface arm:")
     # ⛔ The plants are all red by construction, so none of them says a correct
     # file list loads -- and the arms that matter most here are the two no
@@ -13413,6 +13780,85 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(publishes="yes")])),
         ("a target that publishes while naming no grouping", "deploy[0].publishes",
          at("deploy", [_a_deploy_target(publishes=True)])),
+        # § 35's block, one plant per arm, every one of them on a target this list
+        # has already shown loads — so a refusal here is the block's and never the
+        # target's. ⚠️ The block's own absence is **not** planted: § 35 makes an
+        # omitted block a deploy exactly as § 33 leaves it, and the green side
+        # below is where that is asserted.
+        ("a live data step that is not a block", "deploy[0].live_data_step",
+         at("deploy", [_a_deploy_target(live_data_step="a dump and a write")])),
+        ("a key § 35 declares on no step", "deploy[0].live_data_step.store",
+         at("deploy", [_a_deploy_target(
+             live_data_step=_a_live_data_step(store="a connection this surface may not hold"))])),
+        # ⛔ One plant per required key, which is § 35's list and not a sample of
+        # it: a step missing any one of them is a step whose ordering nothing can
+        # perform, and the key the refusal names is the only thing that tells an
+        # adopter which.
+        ("a step with no backup", "deploy[0].live_data_step.backup",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(backup=_ABSENT))])),
+        ("a step with nothing to apply", "deploy[0].live_data_step.apply",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(apply=_ABSENT))])),
+        ("a step saying nothing about who performs the write",
+         "deploy[0].live_data_step.apply_by",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(apply_by=_ABSENT))])),
+        ("a step saying nothing about which side of the invocation it falls on",
+         "deploy[0].live_data_step.order",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(order=_ABSENT))])),
+        ("a step saying nothing about what the store already holds",
+         "deploy[0].live_data_step.record",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(record=_ABSENT))])),
+        ("a backup that is not a block", "deploy[0].live_data_step.backup",
+         at("deploy", [_a_deploy_target(
+             live_data_step=_a_live_data_step(backup="a-dump"))])),
+        ("a key § 35 declares on no backup", "deploy[0].live_data_step.backup.retain",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"run": "a-dump", "verify": "a-read-back", "retain": "a week"}))])),
+        # ⛔ Both halves of the backup, which is the pair § 35 makes two keys for:
+        # a dump that failed still leaves a file, so the dump alone says nothing.
+        ("a backup with no dump to take", "deploy[0].live_data_step.backup.run",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"verify": "a-read-back"}))])),
+        ("a backup nothing reads back", "deploy[0].live_data_step.backup.verify",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"run": "a-dump"}))])),
+        ("a dump command written blank", "deploy[0].live_data_step.backup.run",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"run": "   ", "verify": "a-read-back"}))])),
+        ("a verification written blank", "deploy[0].live_data_step.backup.verify",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"run": "a-dump", "verify": "   "}))])),
+        ("an apply written blank", "deploy[0].live_data_step.apply",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(apply="   "))])),
+        ("a rehearsal written blank", "deploy[0].live_data_step.rehearse",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(rehearse="   "))])),
+        ("a record command written blank", "deploy[0].live_data_step.record",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(record="   "))])),
+        ("who performs the write, outside its alternation",
+         "deploy[0].live_data_step.apply_by",
+         at("deploy", [_a_deploy_target(
+             live_data_step=_a_live_data_step(apply_by="whoever-is-around"))])),
+        ("an order outside its alternation", "deploy[0].live_data_step.order",
+         at("deploy", [_a_deploy_target(
+             live_data_step=_a_live_data_step(order="whenever"))])),
+        # ⛔ The three shapes an answer is fed by, each planted alone, and the
+        # false-refusal bound beside them in the green side below. ⚠️ The pipe is
+        # planted on both of the commands this rule reaches, since a rule written
+        # for one of them would leave the dry variant able to clear its own prompt
+        # — and a cleared rehearsal is a rehearsal whose reading was never owed.
+        ("an apply that pipes itself an answer", "deploy[0].live_data_step.apply",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             apply="echo y | a-write"))])),
+        ("an apply that answers itself with a here-string",
+         "deploy[0].live_data_step.apply",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             apply="a-write <<< y"))])),
+        ("a rehearsal that pipes itself an answer", "deploy[0].live_data_step.rehearse",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             rehearse="yes | a-dry-run"))])),
+        ("an answer fed by a printing command behind an assignment",
+         "deploy[0].live_data_step.apply",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             apply="STORE=a-url printf 'y\\n' | a-write"))])),
         # § 34's shape, one plant per arm. ⛔ Every one of them replaces the whole
         # facet rather than editing the base example's, which is this list's rule
         # for `_a_deploy_target` read one facet over: a plant that broke one key
@@ -15775,6 +16221,53 @@ def _unscope_targets(data: dict) -> dict:
             entry[GROUPING_ENTRY_KEY] = "none"
             entry["publishes"] = False
     return data
+
+
+def _a_live_data_step(**overrides) -> dict:
+    """§ 35's smallest valid block, to break one key of at a time.
+
+    ⛔ Built here rather than borrowed from whichever example carries the facet,
+    for `_a_deploy_target`'s reason: a plant that broke one key of a shipped file
+    would stop asserting the moment that file grew a second target.
+    ⚠️ It states no `rehearse`, that being the one key § 35 lets a block omit, so
+    the arms about it state it themselves and the arm about its absence is the
+    fixture as it stands.
+    """
+    step = {
+        "backup": {"run": "a-dump", "verify": "a-read-back"},
+        "apply": "a-write",
+        # ⛔ Read off the surface rather than spelled, for the reason
+        # `_a_workflow_the_example_states` is derived: a literal here is one
+        # renamed alternation member away from being refused by the vocabulary
+        # arm rather than by whichever arm the plant was aimed at -- green under
+        # a key that says nothing about it.
+        "apply_by": _a_member_of("deploy.live_data_step.apply_by"),
+        "order": _a_member_of("deploy.live_data_step.order"),
+        "record": "a-listing",
+    }
+    step.update(overrides)
+    return {key: value for key, value in step.items() if value is not _ABSENT}
+
+
+def _a_member_of(path: str) -> str:
+    """The surface's first stated member of one alternation.
+
+    ⛔ Refused **with the path named** where the surface states none, rather than
+    raising an index error out of the suite: the plants that carry this would
+    otherwise break nothing while still reading as plants, and a traceback naming
+    no key is the one shape this module may not fail in.
+    """
+    stated = facts_for(path)
+    if not stated:
+        raise ConfigError(
+            path,
+            "states no alternation, so the fixtures that carry a member of it "
+            "would carry nothing and the arms they assert would be asserted by "
+            "nothing.",
+        )
+    return stated[0]
+
+
 def _a_release_file(**overrides) -> dict:
     """§ 34's smallest valid version-carrying file, to break one key of at a time.
 

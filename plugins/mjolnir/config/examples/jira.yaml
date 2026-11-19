@@ -193,11 +193,14 @@ deploy:
     requires_role: none
     # Verifying a release branch does not publish the scope — the target below does.
     publishes: false
+  # § 35 on the second of the two, and not on the first: the pair is what makes the block a
+  # target's rather than a project's — one environment here writes to a live store and the other
+  # does not, so a project-level step would be a fact the first target carries and never performs.
   - name: "<the environment a verified release is shipped to>"
     not_live: false
     invoke: command
     command: "<the whole command, with its project and configuration arguments>"
-    requires: ["<the dump the live step is refused without>"]
+    requires: ["<a credential this repository may not hold>"]
     advances: terminal
     batch: "<a command answering which of the identifiers handed to it this release carries>"
     grouping: release_scope
@@ -208,6 +211,26 @@ deploy:
     # for the scope and `statuses` answers for its items, and a refusal on one says nothing about
     # the other. Both happen to refuse here, which is this credential's fact rather than the rule.
     publishes: true
+    live_data_step:
+      backup:
+        run: "<the command that dumps the live store>"
+        # ⛔ A command and not a size: the artifact's bytes are not an oracle, which § 35 states
+        # against the copy that asserts them and the measured incident behind the other one. A
+        # project wanting a size test states it inside this command, where it is its own claim.
+        verify: "<the command that reads the dump back>"
+      # ⚠️ Stated here because this project's writes have a dry variant; § 35 lets a block omit
+      # the key, and an omitted one is reported as no rehearsal rather than as a clean one.
+      rehearse: "<the apply command's own dry variant>"
+      apply: "<the command that writes to the live store>"
+      # ⛔ This project's standing rule is that the live write is the operator's, so the role
+      # prepares, hands the command over and reports no apply made. The go is asked either way —
+      # no key turns it off, and `procedure` only says who runs the command after it is recorded.
+      apply_by: person
+      # The configured default, which the go names so a person may overrule it for this deploy:
+      # whether the write belongs before the image depends on what is pending, and detecting that
+      # is this project's own.
+      order: before_invoke
+      record: "<a command printing the paths already applied to this store, one per line>"
 
 # § 4.8's grouping checks, and each names which grouping it asks about because this project
 # carries more than one (§ 5). ⛔ No entry below carries the project's own word for a grouping:
@@ -630,7 +653,7 @@ context_guard:
   # so the only command position in the call is the interpreter itself — naming it alone would
   # exempt every call of that language, and the pattern narrows it back to the one script.
   never_bound:
-    - command: "<the interpreter `day_log.script` is run through>"
+    - command: "<the interpreter the day log's evidence script is run through>"
       args_match: "THE-EVIDENCE-SCRIPTS-OWN-FILE-NAME"
   result_limit_chars: 50000
   sidecar_dir: "<the absolute path of a directory outside every working tree>"
