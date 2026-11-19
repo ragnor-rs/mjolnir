@@ -78,10 +78,12 @@ and [§ 12](#12-ordering) each stating one.
 prefixes is the stack entering the toolkit one token at a time: it is a guess about the language a
 configured script is written in, it is wrong the first time a project writes one in another
 language, and the configuration never said so. § 12 states this of its own key already; what is
-general is here, and ⛔ **no key on this surface carries the other form.** The one that did —
-`day_log.script` ([§ 9](#9-day-log)), a path a role prefixed — is **retired**, and a configuration
-still declaring it is refused where § 9 retires it: the extraction it was transitional for has
-landed, so the rule above holds with no exception left to name.
+general is here. ⚠️ **The key that stood as this rule's one exception is retired**:
+`day_log.script` ([§ 9](#9-day-log)) was a path a role prefixed, marked **transitional** where it
+was declared, and the extraction it waited on has landed — so a configuration still declaring it is
+refused there rather than read, and the rule above holds with no exception left to name. What
+remains path-shaped on this surface is `branch_model.mechanics`
+([§ 10](#10-branch-model)), whose own form that section states.
 
 ⛔ **A fact that is only ever one project's reaches a role through that project's own command,
 script or hook, never through a key**: a host, a service, a port, a credential, a container name, a
@@ -3372,7 +3374,7 @@ at the one role that cuts a tree, so the shared procedure calls the pointer and 
 route **names** it instead of restating it. ⚠️ **This pointer is not waiting to be extracted, which
 is what distinguishes it from a transitional one.** A tree's setup and teardown are where a
 project's own build genuinely differs, so there is no shared script for this key to be standing in
-for — the condition that retired the one pointer this surface used to carry (§ 9's `script`).
+for — which is the condition that was met for § 9's `script`, and that retired it.
 
 ⛔ **It is steps and never a location, and `tree_dir` is the location.** The two were conflated
 while the second key was absent, which left *where a tree goes* stated in no facet and carried by
