@@ -5207,15 +5207,25 @@ def _validate_billing(data: dict) -> None:
                 "a different set of projects per call -- and under § 10's "
                 "worktree model that is a different directory per item.",
             )
-        if root in seen:
+        # ⛔ **Compared as the path resolves and reported as it was written.**
+        # Two spellings of one root are one root: a trailing separator, a doubled
+        # one, a `.` segment and a `sub/..` pair each name the project beside
+        # them, and ⚠️ **all four were measured accepted** by an arm that
+        # compared the strings -- so the project's hours were read twice and
+        # billed twice, which is the stake this arm's own message names.
+        # ⚠️ **The written form stays in the refusal**, since that is what a
+        # reader has to find in the file.
+        resolved = os.path.normpath(root)
+        if resolved in seen:
             raise ConfigError(
                 where,
-                f"is {root!r}, which billing.projects[{seen[root]}] already "
-                "names (§ 37). A root listed twice is a project whose hours are "
-                "read twice and billed twice, the one arithmetic error on this "
-                "facet nothing downstream can see.",
+                f"is {root!r}, which resolves to {resolved!r} -- the root "
+                f"billing.projects[{seen[resolved]}] already names (§ 37). A "
+                "root listed twice is a project whose hours are read twice and "
+                "billed twice, the one arithmetic error on this facet nothing "
+                "downstream can see.",
             )
-        seen[root] = index
+        seen[resolved] = index
 
     # ⚠️ **Read only once it is there**, which is the one arm on this facet that
     # does not refuse an absence. § 37 marks the key `# private`, so a project
@@ -14154,6 +14164,24 @@ def _planted_violations():
          at("billing", _a_billing_of(projects=["../a-sibling-project"]))),
         ("a root the list already names", "billing.projects[1]",
          at("billing", _a_billing_of(projects=["/a-project", "/a-project"]))),
+        # ⛔ One plant per spelling, because the first form of the arm compared
+        # the strings and all four of these were measured **accepted** -- the
+        # same project read twice and billed twice. ⚠️ A single plant would
+        # assert the comparison is normalised at all and not that it reaches the
+        # shapes a person actually writes.
+        ("a root the list already names, under a trailing separator",
+         "billing.projects[1]",
+         at("billing", _a_billing_of(projects=["/a-project", "/a-project/"]))),
+        ("a root the list already names, under a doubled separator",
+         "billing.projects[1]",
+         at("billing", _a_billing_of(projects=["/a-project", "/a-project//"]))),
+        ("a root the list already names, under a dot segment",
+         "billing.projects[1]",
+         at("billing", _a_billing_of(projects=["/a-project", "/a-project/."]))),
+        ("a root the list already names, under a parent segment resolving back",
+         "billing.projects[1]",
+         at("billing",
+            _a_billing_of(projects=["/a-project", "/a-project/sub/.."]))),
         ("a rate that is not a mapping of client to rate", "billing.rates",
          at("billing", _a_billing_of(rates="an-hourly-rate"))),
         ("a rate mapping naming no client", "billing.rates",

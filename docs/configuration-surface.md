@@ -3556,7 +3556,8 @@ operations`](../plugins/mjolnir/config/schema.md#the-destinations-operations-and
 Before the day log's
 destination became one, the output was a filesystem path — so a cross-project consumer would have
 had to compose a directory per project and read files out of it, which is a second resolver of
-somebody else's configuration. With the port, one operation answers:
+somebody else's configuration. With the port, one operation answers, and the table states what each
+half of that is:
 
 | what the consumer needs | what answers it | what it would have been without the port |
 |---|---|---|
@@ -3597,8 +3598,8 @@ configured.
 ⛔ **A root that maps no day-log carrier still answers**, which is the one arm on this facet the
 obvious reading gets backwards — [`schema.md § 37 → What the list
 names`](../plugins/mjolnir/config/schema.md#what-the-list-names-and-what-resolves-each-entry).
-Four arms were driven against real projects with real stores, and three of the four behave as the
-port's own fallbacks say:
+Each arm below was driven against a real project with a real store, and every one that is not the
+store nobody has written to behaves as the port's own fallbacks say:
 
 | the root | what asking its store for a period returned |
 |---|---|
@@ -3607,17 +3608,17 @@ port's own fallbacks say:
 | an address occupied by something that is not a store | `failed: true`, naming the address — the capability working and the call failing |
 | a store nobody has written to yet | **performed**, with nothing in it — which is the answer, and must not stop the period |
 
-⛔ **The fourth row is the green side and is why the second and third cannot be collapsed into it** —
-[`schema.md § 26 → The destination's
+⛔ **The store nobody has written to is the green side, and is why the two refusals above it cannot
+be collapsed into it** — [`schema.md § 26 → The destination's
 operations`](../plugins/mjolnir/config/schema.md#the-destinations-operations-and-what-each-absence-does),
 which separates them. A period nobody could ask about and a period nobody worked are the same empty
 answer otherwise.
 
 ⚠️ **And the arm that is not in that table is the one that matters**: a project mapping no `day_log`
 carrier at all. § 26's `kind` defaults to `file`, so such a project still *addresses* a store, and
-asking it comes back **performed with nothing in it** — identical to the fourth row. ⛔ **So the
-carrier is read from § 7's block before the store is asked**, and the first version of this facet
-said the opposite, claiming such a root "addresses no store". It does.
+asking it comes back **performed with nothing in it** — indistinguishable from the store nobody has
+written to. ⛔ **So the carrier is read from § 7's block before the store is asked**, and the first
+version of this facet said the opposite, claiming such a root "addresses no store". It does.
 
 ⛔ **And one implementation gap was found by writing the facet rather than by reasoning about it**,
 in what [`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)
