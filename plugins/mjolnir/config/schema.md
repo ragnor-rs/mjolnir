@@ -8440,9 +8440,10 @@ refused by § 36, which is why the span is not what admits this one.
 The hours come back through that project's
 [§ 26](#26-the-day-logs-destination-port) destination port, resolved out of **that project's**
 configuration — ⛔ **never by composing a path into its store, and never by reading a store's files
-directly.** § 26 already states the reason: a destination block addresses one store per
-configuration, and a role that joined a directory onto a root would be a second resolver of that
-port, free to disagree with the one the project configures.
+directly.** The reason is this section's own and ⚠️ **is not § 26's**, which rules that an address
+names one place and not this: a destination block addresses one store per configuration, so a role
+that joined a directory onto a root would be a second resolver of that port, free to disagree with
+the one the project configures.
 
 ⛔ **So `read_hours` is the only operation this role asks for**, and what an absence of it does is
 § 26's statement rather than this one: the consumer has no answer about the period and stops. ⚠️
@@ -8477,12 +8478,14 @@ happened to reach. A relative entry is refused with the path named.
 
 ### What this role may not do, and the rule it would otherwise contradict
 
-⛔ **The billing role measures nothing.** [§ 9](#9-day-log) states that a day is measured from the
-project's own evidence and from nothing else, and this role reads days that are already measured —
-so the two rules do not collide, and ⚠️ **the collision is only avoided because the seam is the
-port.** A role that opened another project's sessions, ran its tooling or read its commits would be
-measuring four projects' days under a rule that binds it to one, which is the shape this section
-exists to forbid rather than to permit.
+⛔ **The billing role measures nothing.** The rule it would otherwise contradict is the **measuring
+role's own** — *this project's evidence is the only input* — and ⚠️ **this section does not
+attribute it to [§ 9](#9-day-log)**, which states the facet and states no such sentence: the rule
+lives in that role's own text, which is where a reader following a citation has to arrive. This
+role reads days that are already measured, so the two do not collide, and ⚠️ **the collision is
+only avoided because the seam is the port.** A role that opened another project's sessions, ran its
+tooling or read its commits would be measuring four projects' days under a rule that binds it to
+one, which is the shape this section exists to forbid rather than to permit.
 
 ⛔ **And it may not replace a figure § 9 produced**, which is [§ The loop](#the-loop--thirteen-roles)'s
 rule for the hours-breakdown role reaching this one: the hours on a line item are the hours the
@@ -8517,8 +8520,19 @@ test: no role reads it to decide what to do next, the role being told it.
 
 ⛔ **`rates` is marked `# private` and is the only money on this surface.** It maps the client the
 invocation names to that client's rate, and [§ 28](#28-a-configured-value-a-repository-may-not-hold)
-is what answers it — so the rate is stated in a file the project does not track, a client is named
-only there, and ⛔ **neither value is held by this toolkit or by any tracked configuration.** ⚠️
+is what answers it — so the rate is stated in a file the project does not track and a client is
+named only there.
+
+⛔ **What the mark gives is eligibility and not impossibility**, and ⚠️ **the stronger claim is the
+one to refuse**: § 28's layer is a project's to carry, so a project that carries none states this
+key's **shape** in its tracked file, which that section permits, and a real rate written there is a
+value nothing on this surface can refuse. ⛔ **What holds it is the sweep over the marks** — a
+tracked configuration carrying a concrete value under a `# private` key is a check's to catch, both
+halves of an entry included, a client's identity being as much the value as the rate beside it.
+⚠️ **Measured, and the first form of this section claimed the absolute**: it said neither value is
+held by any tracked configuration while the shipped example for a project without that layer wrote
+`rates` into one, and the sweep that would have made the claim true read every mark but this one —
+the first whose shape is a mapping. ⚠️
 **That is § 26's sentence about its own keys read the other way**: it rules that hours, rates and a
 client's identity never reach a destination key because no key of that port is marked, and the mark
 is what makes this one eligible.

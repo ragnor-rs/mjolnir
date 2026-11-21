@@ -1947,6 +1947,29 @@ def shortfall(surface_text: str, answers: dict) -> list[str]:
 A_PLACEHOLDER = re.compile(r"^(?:<.*>|[^\n]*[<…][^\n]*)$")
 
 
+def _all_placeholders(value) -> bool:
+    """Whether a whole answer is a statement of shape, at any depth.
+
+    ⛔ **An empty container is not a statement of shape.** It names nothing, so
+    it is neither a stand-in nor a value and is left where the project wrote it
+    — which is the arm the three-shape form already had and this walk keeps.
+
+    ⚠️ **Both halves of a mapping entry are read**, a client's name being as
+    much the value as the rate beside it, and ⛔ **the recursion is the point**:
+    a mapping of lists of stand-ins is a statement of shape exactly as a flat
+    one is, and the shape test is what decides whether a value leaves the file
+    whose job is to carry the shape.
+    """
+    if isinstance(value, dict):
+        return bool(value) and all(
+            _all_placeholders(key) and _all_placeholders(entry)
+            for key, entry in value.items()
+        )
+    if isinstance(value, list):
+        return bool(value) and all(map(_all_placeholders, value))
+    return _a_placeholder(value)
+
+
 def _a_placeholder(value) -> bool:
     """Whether this value is a stand-in rather than somebody's own fact."""
     return isinstance(value, str) and bool(A_PLACEHOLDER.match(value.strip()))
@@ -1986,13 +2009,14 @@ def routed(surface_text: str, answers: dict) -> tuple[dict, dict]:
         # nobody reviews -- and the write then refused for want of a layer that
         # project deliberately states none of. ⚠️ **Both halves are read**,
         # because a client's name is as much the value as the rate beside it.
-        if _a_placeholder(value) or (
-            isinstance(value, list) and value and all(map(_a_placeholder, value))
-        ) or (
-            isinstance(value, dict) and value
-            and all(_a_placeholder(key) and _a_placeholder(entry)
-                    for key, entry in value.items())
-        ):
+        # ⚠️ **Read by shape rather than by depth.** The two-shape form, and the
+        # three-shape one that replaced it, each tested one level: a list of
+        # stand-ins and a mapping whose halves are stand-ins were read, and a
+        # value one level further down was not -- so a nested illustration was
+        # routed out, which is the same failure the three-shape form was written
+        # to fix, reproduced one level down. ⛔ The walk below reaches any depth
+        # and answers the same thing at every one of them.
+        if _all_placeholders(value):
             continue
         private[path] = value
         _unset(tracked, path)
@@ -2681,6 +2705,22 @@ def self_test() -> int:
                                    "rates": {"a-client": "<that client's rate>"}}},
           )[1],
           "a half-stated mapping stayed in the tracked file")
+
+    # ⛔ And the depth, which is what the shape test is read by. ⚠️ **Measured
+    # on the three-shape form**: a mapping whose entries are themselves
+    # stand-in containers was routed out, which is the same failure that form
+    # was written to fix, one level down.
+    nested = _an_example("none.yaml")
+    nested["billing"] = {
+        "carrier": "period",
+        "projects": ["/a-project"],
+        "rates": {"<the client an invocation names>": ["<that client's rate>"]},
+    }
+    tracked, private = routed(surface_text, nested)
+    check("a stand-in nested one level deeper still states shape, so it stays",
+          _at(tracked, "billing.rates") is not None
+          and "billing.rates" not in private,
+          f"routed {private!r}")
 
     # ⛔ And a project with a private value and no private layer is **refused**:
     # the one thing that must never happen is the value landing in the tracked

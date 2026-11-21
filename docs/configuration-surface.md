@@ -3598,8 +3598,11 @@ configured.
 ⛔ **A root that maps no day-log carrier still answers**, which is the one arm on this facet the
 obvious reading gets backwards — [`schema.md § 37 → What the list
 names`](../plugins/mjolnir/config/schema.md#what-the-list-names-and-what-resolves-each-entry).
-Each arm below was driven against a real project with a real store, and every one that is not the
-store nobody has written to behaves as the port's own fallbacks say:
+Each arm below was driven, and ⚠️ **against what each row's own description says rather than against
+a real project every time**: the first row has no project under it to be one and the third has
+something at the address that is not a store, which is what those rows *are*. ⚠️ **Nor is every row
+a fallback of the port's** — the first is § 1's reader refusing and the third is a capability
+working and its call failing, and only the second carries § 26's own stated fallback:
 
 | the root | what asking its store for a period returned |
 |---|---|
@@ -3608,11 +3611,13 @@ store nobody has written to behaves as the port's own fallbacks say:
 | an address occupied by something that is not a store | `failed: true`, naming the address — the capability working and the call failing |
 | a store nobody has written to yet | **performed**, with nothing in it — which is the answer, and must not stop the period |
 
-⛔ **The store nobody has written to is the green side, and is why the two refusals above it cannot
-be collapsed into it** — [`schema.md § 26 → The destination's
+⛔ **The store nobody has written to is the green side, and is why the store that could not be
+reached cannot be collapsed into it** — [`schema.md § 26 → The destination's
 operations`](../plugins/mjolnir/config/schema.md#the-destinations-operations-and-what-each-absence-does),
-which separates them. A period nobody could ask about and a period nobody worked are the same empty
-answer otherwise.
+which separates a failed call from an empty answer. A period nobody could ask about and a period
+nobody worked are the same empty answer otherwise. ⚠️ **Each row is named by its own subject here
+and never by its position**: an ordinal breaks silently when a row is added, which is the defect the
+count that used to sit above this table already was.
 
 ⚠️ **And the arm that is not in that table is the one that matters**: a project mapping no `day_log`
 carrier at all. § 26's `kind` defaults to `file`, so such a project still *addresses* a store, and

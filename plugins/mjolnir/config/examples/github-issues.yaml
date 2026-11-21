@@ -429,10 +429,12 @@ release:
   changelog_ci_owned: false
 
 billing:
-  # § 37's absent case under a project that could not state the other one: `private.carrier` above
-  # is `none`, and `rates` is marked `# private`, so there is no layer here to answer it from.
-  # ⛔ That is a consequence and not the reason — the reason is below, and a project with § 28's
-  # layer and nobody to bill would write exactly the same two keys.
+  # § 37's absent case. `private.carrier` above is `none`, so a rate here would have no § 28 layer
+  # to be resolved from — ⚠️ which is **not** the same as a rate being unstatable: that mark makes
+  # the key eligible for the layer and never obliges it into one, so such a project states the
+  # key's shape in this file, as `github-projects.yaml` does. ⛔ That is a consequence either way
+  # and not the reason — the reason is below, and a project with § 28's layer and nobody to bill
+  # would write exactly the same two keys.
   carrier: none
   absent_reason: >-
     This is a product repository and nobody is invoiced for work on it: the day log here is read

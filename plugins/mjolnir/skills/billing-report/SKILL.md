@@ -1,7 +1,7 @@
 ---
 name: billing-report
 description: Bill a period's hours as line items — the projects a period spans read from configuration, each one's hours read back through its own destination port, every figure carrying the entry it came from, and the rate resolved from outside the repository. Use when asked to build an invoice, bill a client, assemble a period's line items, or say what a month's hours come to.
-argument-hint: "--client <name> --from YYYY-MM-DD --to YYYY-MM-DD"
+argument-hint: "--client <name> --from YYYY-MM-DD --to YYYY-MM-DD [--to-file <path>]"
 ---
 
 # Billing report
@@ -37,12 +37,14 @@ this role chose is an invoice nobody configured.
 
 ## 1. What the invocation names, and what the configuration does
 
-Two things come from the invocation and nothing else: **the client** and **the period**.
+Three things come from the invocation and nothing else: **the client**, **the period** and **where
+the artifact goes**.
 
 | input | where it comes from |
 |---|---|
 | the client | the invocation. ⛔ No key names one — § 37's test is that no role reads it to decide what to do next, so it is told rather than configured |
 | the period | the invocation, as a first and a last day |
+| where the artifact goes | the invocation. ⛔ § 37 carries nothing about it, and § 5 below is what a pass given no destination does |
 | the projects | `billing.projects`, read in full |
 | the rate | `billing.rates`, under the client the invocation named |
 
@@ -67,10 +69,11 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --skills-root <the root> \
   --argument <the first day> --argument <the last day>
 ```
 
-⛔ **The port is the only way in.** § 37 forbids composing a path into another project's store and
-forbids reading its files directly: the destination block addresses one store per configuration, and
-a role that joined a directory onto a root would be a second resolver of that port, free to disagree
-with the one the project configures.
+⛔ **The port is the only way in**, and
+[`config/schema.md § 37 → What the list names`](../../config/schema.md#what-the-list-names-and-what-resolves-each-entry)
+is where the reason is stated: composing a path into another project's store, and reading its files
+directly, are both forbidden there. ⚠️ **The derivation is not restated here**, that section
+carrying it once.
 
 ⛔ **Each of these is a stop naming the root, and not a project contributing nothing:**
 
@@ -109,11 +112,16 @@ did not write, and the figure goes to whoever is paying.
 
 ## 3. The line items
 
-⛔ **One line item per project per day**, carrying the root, the day, the hours and the description
-the entry holds. § 26's `read_hours` answers per day and never a total, and this is what that
-property is for: ⛔ **every figure on the artifact names the entry it came from**, and the entry
-names the day-log run that wrote it by the day it measured — § 26's grain being one entry per day
-per project.
+⛔ **One line item per project per day**, carrying the root, the day and the hours — ⚠️ **and not the
+entry's description**, which `read_hours` does not answer with. § 26's `read_hours` answers per day
+and never a total, and this is what that property is for: ⛔ **every figure on the artifact names the
+entry it came from**, and the entry names the day-log run that wrote it by the day it measured —
+§ 26's grain being one entry per day per project.
+
+⚠️ **Measured, because the first form of this file asked for a fourth value**: the description is
+reachable only through `read_day`, which § 37 does not admit — so a line item specified to carry it
+was asking for the one operation this role may not ask for, and § 37's own sentence about what a
+line item carries said root and day and never agreed with it.
 
 ⛔ **Nothing is summed in place of that.** A period rendered as one total for one project is an
 invoice no figure in which can be traced to anything, and the traceability is the grain rather than
@@ -143,9 +151,11 @@ forbids outright.
 
 ## 4. What this role may not do
 
-⛔ **It measures nothing.** [§ 9](../../config/schema.md#9-day-log) binds the measuring role to one
-project's own evidence, and ⚠️ **this role reads days that are already measured** — which is the
-whole reason the two rules do not collide. So, for every root in the list:
+⛔ **It measures nothing.** The rule it would otherwise contradict is the **measuring role's own**,
+stated in [`skills/day-report/SKILL.md`](../day-report/SKILL.md) — *this project's evidence is the
+only input* — and ⚠️ **not [§ 9](../../config/schema.md#9-day-log)**, which states the facet and
+carries no such sentence. ⚠️ **This role reads days that are already measured**, which is the whole
+reason the two do not collide. So, for every root in the list:
 
 - ⛔ **no session transcript is opened**, no commit log is read, no chat archive and no calendar;
 - ⛔ **nothing of that project's tooling is run**, and no check of its own is invoked;
@@ -162,13 +172,19 @@ Language, register and audience are
 [§ 8](../../config/schema.md#8-language-register-audience--per-artifact-not-per-project)'s
 `billing_report` triple — ⛔ **read from the configuration, never assumed**, and ⚠️ **not the day
 log's**: the two are separate keys precisely so that a project can move one reader without moving
-the other, and the reader here is whoever pays.
+the other.
 
 ⛔ **The artifact's destination is not this surface's.** § 37 carries the projects and the rate and
 nothing about where an invoice lands: where to put it comes from the invocation, and a path composed
-here would be a store this toolkit addressed on its own. ⚠️ **Where the invocation names none, the
-artifact is the reply** — which is an answer rather than a stop, and the one case where the register
-below carries the whole output.
+here would be a store this toolkit addressed on its own.
+
+⛔ **Where the invocation names no destination, the priced artifact is not produced**, and the pass
+**stops** naming the destination it needs. ⚠️ **Measured as a contradiction in the first form of
+this file**, which said the reply carried the artifact instead: § 1 and § 6 both forbid the rate
+and the money from reaching a reply, a reply is a transcript, and the invocation this file
+documents named no destination at all — so the one branch every pass took was the branch with no
+legal output in it. ⛔ **What the reply may carry on its own is the unpriced half** — the line
+items, their roots and days and hours, and every stop — which is an answer and not the artifact.
 
 ## 6. The reply
 
@@ -176,19 +192,22 @@ Register, and the language, are
 [§ 8](../../config/schema.md#the-reply-to-the-person-running-a-role)'s — the outcome in the first
 sentence, then the facts, with a table where the content enumerates.
 
-- the client the invocation named and the period, by its first and last day;
+- ⛔ **that a client was named, and the period by its first and last day — never the client's own
+  name.** § 1 rules that neither the client nor the rate reaches this reply, and a reply naming the
+  client is the half of that rule a reader never notices;
 - ⛔ **every root in `billing.projects`, each with what its port answered** — the hours it
   contributed, or that it answered with none, or the stop it produced. ⚠️ **Every root named,
   including the ones that answered cleanly**: a reply listing only what it found cannot be checked
   against the list the configuration states, which is the one thing a reader of this reply can
   check;
 - the total hours, and ⛔ **the line-item count beside it** — a total with no count behind it is the
-  summed artifact § 3 forbids, arriving in the reply instead;
+  summed artifact the line-items section above forbids, arriving in the reply instead;
 - every day named `unreadable`, against its root, and every `unplaced` entry, named apart;
 - that the ingestion step ran **per root**, and what it surfaced — ⛔ never that a store was clean,
   which is a clearance [§ 14](../../config/schema.md#the-hidden-half-is-shown-before-a-role-acts-on-the-text)
   says no run can give;
-- where the artifact was written, or that the invocation named nowhere and the reply carries it;
+- where the artifact was written, or ⛔ **that the invocation named no destination, so the priced
+  artifact was not produced and the unpriced half is what this reply carries**;
 - ⛔ **never the rate, and never what the period comes to in money.** Both are § 28's values, and a
   reply is a transcript: ⚠️ the artifact carries them to the reader who is owed them, and this reply
   says that it did;

@@ -826,9 +826,11 @@ billing:
   # bills and a project whose roots have not been listed yet read alike otherwise, and the second
   # would assemble a period from whatever the invocation reached.
   #
-  # ⚠️ And `rates` is unreachable from here by construction: § 28's layer is what answers it and
-  # `private.carrier` above is `none`, so this repository could not state a rate even if it billed
-  # — which is the same statement that facet's own reason already makes about every value here.
+  # ⚠️ And `private.carrier` above is `none`, so a rate here would have no § 28 layer to be
+  # resolved from. ⛔ Not that a rate would be unstatable: the mark makes the key eligible for that
+  # layer and never obliges it into one, so a repository in this position states the key's shape in
+  # its own tracked file — which is why the sweep over the marks is what holds a concrete value out
+  # of one, rather than the absence of a layer.
   carrier: none
   absent_reason: >-
     Nobody is invoiced for work on this toolkit, so no period is assembled and no project root is

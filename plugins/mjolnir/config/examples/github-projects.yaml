@@ -545,9 +545,10 @@ billing:
   # twice — a `# private` key is *eligible* for that layer and never obliged into it, and a
   # project whose values are reviewable where they are writes them here.
   #
-  # ⛔ Two roots, each absolute, each another project's **skills root**. What is read out of each
-  # is that project's own § 26 destination port, so this list says which projects a period spans
-  # and nothing about where their hours are kept.
+  # ⛔ Two roots, each absolute, each a project's **skills root** — the first of them this
+  # project's own, which § 37 states the list carries like any other. What is read out of each is
+  # that project's own § 26 destination port, so this list says which projects a period spans and
+  # nothing about where their hours are kept.
   carrier: period
   projects:
     - "/<the absolute path to this project's own skills root>"
