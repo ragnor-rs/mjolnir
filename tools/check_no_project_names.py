@@ -692,11 +692,21 @@ def deslugged(name: str) -> re.Pattern[str]:
     ⚠️ `_` is spelled out rather than left to `\\w`, which contains it: the
     second form of this pattern closed the hyphen hole and left the underscore
     one open, measured by planting both.
+
+    ⛔ **And `_` joins the name's own parts, not only its boundaries.** The third
+    form of this pattern had the separator class as `[-\\s]?`, which reaches a
+    two-word name written `googlesheet`, `google sheet` and `google-sheet` and
+    **not** `google_sheet` -- so every compound of a multi-word kind in that one
+    spelling passed, this repository's own hyphenated tracker kinds included.
+    Measured by planting an underscored compound of a two-word kind: the
+    single-word plant beside it had always reddened, because there the underscore
+    is a boundary rather than a join, and that is why the hole survived a check
+    that looked covered.
     """
     boundary = "[0-9A-Za-z]"
     return re.compile(
         f"(?<!{boundary})"
-        + r"[-\s]?".join(map(re.escape, name.split("-")))
+        + r"[-\s_]?".join(map(re.escape, name.split("-")))
         + f"(?!{boundary})"
     )
 
@@ -934,6 +944,63 @@ class Tree:
         # `none` is the absent case and an ordinary English word; a procedure
         # that may not say "none" could not state an absent case.
         return {n for n in names if n != "none"}
+
+    def port_kind_names(self) -> set[str]:
+        """Every slug-shaped kind of every port, from the surface and each config.
+
+        ⛔ **Read off the `# port:` marker and not off a `kind:` line's
+        indentation**, which is what lets this reach a port whose block is nested
+        -- the destination's sits under `day_log:`, where the tracker reader
+        beside this one anchors at column zero. The marker gives the key's own
+        dotted path, so there is no block to find.
+
+        ⛔ **Slug-shaped only, and the bound is the whole reason this is a second
+        method.** A kind compounded out of two words is a name, and a name is the
+        one spelling nobody writes in prose; a single-word kind of a port whose
+        word is ordinary English cannot be forbidden in prose about that word at
+        all -- `file` being in *a file name* and in `__file__`. ⚠️ The tracker
+        port's word-shaped kinds are not lost by this: that port is swept whole
+        by the method above, every kind it states being a service.
+        """
+        names: set[str] = set()
+        text = self.text.get(SURFACE, "")
+        try:
+            facts = reader.surface_facts(text)
+        except (reader.ConfigError, yaml.YAMLError):
+            # ⚠️ Reported by the check rather than here, as an empty set: a
+            # surface this reader cannot read is already named by the subtraction
+            # one method up, and a second refusal about it would be the same fact
+            # twice.
+            return names
+        paths = sorted(facts["ports"])
+        for path in paths:
+            names.update(map(str, facts["enums"].get(path, [])))
+        for config_path in self.configs():
+            try:
+                data = yaml.safe_load(self.text.get(config_path, "")) or {}
+            except yaml.YAMLError:
+                continue
+            for path in paths:
+                node = data
+                for part in path.split("."):
+                    node = node.get(part) if isinstance(node, dict) else None
+                if isinstance(node, str):
+                    names.add(node)
+        # `none` is the absent case for every port and an ordinary English word;
+        # a procedure that may not say "none" could not state an absent case.
+        #
+        # ⛔ And the tracker's own kinds come **out**, which is what keeps the two
+        # checks disjoint: that port is swept whole by the method above, so
+        # leaving its hyphenated kinds in here would report one carrier naming one
+        # of them as two problems — read as two leaks where there is one.
+        # ⚠️ Subtracted through that method rather than by spelling the tracker's
+        # key path, so there is one statement of which kinds are the tracker's.
+        tracked = self.tracker_names()
+        return {
+            name
+            for name in names
+            if name != "none" and re.search(r"[-_]", name) and name not in tracked
+        }
 
     @staticmethod
     def _tracker_blocks(body: str) -> list[str]:
@@ -1195,6 +1262,34 @@ def check_no_tracker_is_named_in_the_strict_set(tree: Tree) -> list[str]:
                     f"{path}: names the tracker `{name}`. The shared procedure names the port "
                     "and never a tracker, so a role's text may not carry one at all — in any "
                     "spelling, which is why the slug and its de-slugged form are both matched."
+                )
+    return problems
+
+
+def check_no_store_behind_a_port_is_named_in_the_strict_set(tree: Tree) -> list[str]:
+    """The same rule as above, for every *other* port the surface declares.
+
+    ⛔ **One check and not one per port.** The subject is read off the `# port:`
+    markers, so a port that lands later is swept the moment its kind has a slug
+    for a name — which is the shape the destination port's own suite runner
+    records as the thing review was holding on its own.
+    """
+    names = tree.port_kind_names()
+    problems = []
+    if not names:
+        return [
+            f"{SURFACE}: no slug-shaped `kind:` was read from any `# port:` marker and no "
+            "configuration declares one, so this check holds nothing."
+        ]
+    for path in tree.strict():
+        body = tree.text[path].lower()
+        for name in sorted(names):
+            if deslugged(name).search(body):
+                problems.append(
+                    f"{path}: names `{name}`, which is a kind behind a port. The shared "
+                    "procedure names the port and never what is behind it, so a role's text "
+                    "may not carry one at all — in any spelling, which is why the slug and "
+                    "its de-slugged form are both matched."
                 )
     return problems
 
@@ -1632,6 +1727,10 @@ CHECKS = [
     ("the strict set is swept at all", check_the_strict_set_is_swept),
     ("no carrier escapes the strict set", check_no_carrier_escapes),
     ("no tracker is named in the strict set", check_no_tracker_is_named_in_the_strict_set),
+    (
+        "no store behind a port is named in the strict set",
+        check_no_store_behind_a_port_is_named_in_the_strict_set,
+    ),
     ("no stack is named in the strict set", check_no_stack_is_named_in_the_strict_set),
     ("no value is carried in the strict set", check_no_value_is_carried_in_the_strict_set),
     ("no private value is committed", check_no_private_value_is_committed),
@@ -2362,6 +2461,22 @@ VIOLATIONS = [
      _plant_in_a_carrier("\n  trello-sync:    { class: guard }\n")),
     ("no tracker is named in the strict set", "a tracker inside an underscored compound",
      _plant_in_a_carrier("\n  jira_sync:      { class: guard }\n")),
+    # ⛔ A **two-word** tracker kind written with an underscore, which is the
+    # spelling the plant above cannot reach: there the underscore is a boundary,
+    # and here it is the join between the name's own parts.
+    ("no tracker is named in the strict set",
+     "a multi-word tracker written with an underscore",
+     _plant_in_a_carrier("\n  github_projects_sync:  { class: guard }\n")),
+    ("no store behind a port is named in the strict set", "a store named in a carrier",
+     _plant_in_a_carrier("\nThe entry lands in the google-sheet instead.\n")),
+    ("no store behind a port is named in the strict set",
+     "a store named in its de-slugged spelling",
+     _plant_in_a_carrier("\nThe entry lands in the Google Sheet instead.\n")),
+    ("no store behind a port is named in the strict set",
+     "a store inside an underscored compound",
+     _plant_in_a_carrier("\n  google_sheet_sync:  { class: guard }\n")),
+    ("no store behind a port is named in the strict set",
+     "a surface declaring no port kinds at all", _plant_surface_with_no_tracker_kinds),
     ("no stack is named in the strict set", "a build tool invocation in a carrier",
      _plant_in_a_carrier("\nRun `npm run build` first.\n")),
     ("no stack is named in the strict set", "a build tool inside a hyphenated compound",
