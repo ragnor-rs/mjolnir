@@ -301,6 +301,22 @@ reviewing role **records** — the verdicts, and the answer to every ask it make
 **never merges and never waives**; a hook (§7) is what refuses an act on the strength of that
 record, and the record is written whether or not one is installed.
 
+⛔ **Launching a change's test tiers is the reviewing leg's, and no role on this list launches one
+anywhere else.** Stated here for the reason the division above is: two roles read it, and a rule
+read by two roles and written in one of their skills is a second authority for the other.
+[§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) states what each tier needs
+before it can run at all, and the launch is the act over that list. ⛔ **What the act comprises and
+which suites it is owed for are the role's own and are not stated here** — the first because the
+report's form is procedure, the second because it is a question about what the project's own build
+already runs. ⛔ **The deploy role reads which tiers
+ran out of what its invocation delivered and launches none**, which is that role's own statement and
+not a restriction added here. ⚠️ **It is an arm of a leg and not a leg of its own**, by the test
+this section splits a role on: what it may do is what the reviewing role may do — run a command in a
+tree, record a verdict, merge nothing — and a role free to do no more than another role is a step of
+it. ⛔ **So the leg table above is unchanged**, and ⚠️ **a project mapping no reviewing role loses
+the launch with that leg** — the absent-reviewing-role bullet below, which names what the skipped
+leg owned rather than leaving the loss to be discovered.
+
 **The surface's axes are independent, and there are more of them than the obvious three:** the
 work-item tracker (§3), the code host (§2), the code root (§1), each role's carrier (§7),
 language/register/audience per artifact (§8), and the branch model (§10). The list is the
@@ -369,7 +385,11 @@ than a reason to trust it.
   changes what the person is deciding. ⚠️ **No question changes hands**: the ask was already the
   finishing role's. ⛔ **And neither half is a `done:` check a project could configure** — §13
   refuses both, because a check an adopter answers is either a route's own thoroughness turned down
-  by configuration or a merge licensed by it.
+  by configuration or a merge licensed by it. ⛔ **What the skipped leg also takes with it is the
+  launch**: the finishing role launches no tier, so such a project has its § 31 suites answered by
+  whatever its own build runs and by nothing else — ⛔ **named in the merge ask beside the missing
+  leg**, since a suite nobody launched is a suite nothing reports, and that facet exists to keep a
+  tier that never ran from reading as one that passed.
 - ⛔ **An absent finishing role is where the route ends**, not a leg to hand past: nothing else opens
   a change, so implemented work stops there. The starting role says so in its reply, since a route
   that ends silently is the defect this section exists to close.
@@ -4873,7 +4893,8 @@ one's — ⚠️ **cited and not stated again here**, which is the division the 
 for the shape rules of their own keys.
 
 **What reads this facet.** The verdict is produced by the carrier shipped with this surface, run as
-a host check like any other (§ 2). ⚠️ **The role that launches a tier is #128's** and is not this
+a host check like any other (§ 2). ⚠️ **The role that launches a tier is the reviewing one**
+([§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)) and is not this
 facet's to state: what is configuration here is the declaration, the report and the floor, and what
 is procedure is the arithmetic over them.
 
@@ -7438,7 +7459,11 @@ refused on a target says nothing about which repository either is in. ⚠️ **A
 is refused against were measured on a project whose tiers and whose deploys were read apart, which
 is why the reference is one way round and not a pair.
 
-⚠️ **The role that launches a tier is #128's**, and the refusal is that role's to perform. What is
+⚠️ **The role that launches a tier is the reviewing one**
+([§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)), and the refusal is that
+role's to perform. ⛔ **Performed on a reading rather than on this list parsed again**: the reader
+answers whether a named target refuses a suite, so the act and the vocabulary resolution are one
+call and the role matches no target name of its own. What is
 configuration here is the list; what this reader owes that role is one reading of it, which is why a
 tier's record is printable rather than only validated — a field nothing renders is a field nothing
 holds.
