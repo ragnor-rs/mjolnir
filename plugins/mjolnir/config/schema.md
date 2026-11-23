@@ -8954,12 +8954,12 @@ be this step claiming authorship of somebody else's file.
 
 ## What a project already holds that states the loop, and what adopting it does to that
 
-**A project adopting this toolkit has three places that state its loop, and the two sections above
-reach two of them.** The carriers it was running are deleted and the one file is written; what
-stands untouched is the project's **own instructions file** and the **per-project memory store**
-[§ 25](#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from) names. ⛔ **Both of those are
-read at the start of every session**, which is what makes a procedure left standing in them a
-procedure still in force rather than a leftover.
+**A project adopting this toolkit holds its loop in three places, and adoption reaches two.** Its
+own carriers stop being the route, and the one file the two sections above are about is written; the
+third place stands untouched — the project's **own instructions file** and the **per-project memory
+store** [§ 25](#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from) names. ⛔ **Both of
+those are read at the start of every session**, which is what makes a procedure left standing in
+them a procedure still in force rather than a leftover.
 
 ⛔ **So a migration is not finished when the carriers are gone.** What it leaves if it stops there
 is this file's own subject one layer out: two statements of one rule, free to disagree, of which the
@@ -9005,10 +9005,10 @@ value some key asks for, or **deliberately local**. ⛔ **And a ruling that gene
 project is named rather than dropped as project colour**: an unclassified ruling reads as a project
 fact while being a procedure in force, which is the one state a migration must not leave behind.
 
-⛔ **The subject is the whole store and not its loop rulings.** A store read for those alone answers
-about a third of itself, and the classes that reading misses do not resolve in the same direction as
-each other — one of them belongs to a project other than the one holding it, which no reading scoped
-to the loop would have surfaced at all
+⛔ **The subject is the whole store and not its loop rulings.** A store read for those alone leaves
+most of itself unclassified, and the classes that reading misses do not resolve in the same
+direction as each other — one of them belongs to a project other than the one holding it, which no
+reading scoped to the loop would have surfaced at all
 ([the measurement](../../../docs/configuration-surface.md#the-third-surface-one-store-read-whole-and-the-classes-the-loops-share-misses)).
 
 ⚠️ **The case for leaving all of them where they are is the strongest of the three, and it is stated
@@ -9052,7 +9052,9 @@ resolves to nothing, and nothing announces that.
 [§ 9](#9-day-log)'s ritual list matches the bare and the namespaced form of every name on it,
 because the bare form is in the transcripts for ever and a day backfilled from them would otherwise
 count bookkeeping as work. ⛔ **So the documents are rewritten to the new form and the measurement
-keeps reading both**, and a migration that repointed the second would lose hours it cannot recover.
+keeps reading both** — ⚠️ **and the direction matters**: a migration that narrowed the list to the
+new form alone would not lose a day's hours but inflate them, every past bookkeeping turn counting
+as work, which is the error nobody checking an invoice would catch.
 
 ⛔ **A fact in the store that names a deleted carrier goes stale silently**, and is recalled as the
 next pass's premise rather than re-derived —

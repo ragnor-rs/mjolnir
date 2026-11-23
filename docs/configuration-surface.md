@@ -2528,7 +2528,7 @@ that the subject is the whole store rather than its loop rulings are
 
 ### The fourth class, which a reading scoped to the loop does not surface at all
 
-**Four of the seventeen rulings are about the shared toolkit and are held in a consumer's store.**
+**Four of the rulings above are about the shared toolkit and are held in a consumer's store.**
 They are not that project's rulings at all: they state how to file into this backlog, what priority
 an item here carries, where a gap goes, and that nothing here names a technology. ⛔ **Left where
 they are, they are read by the one project's sessions and by no other's, which is this argument in
