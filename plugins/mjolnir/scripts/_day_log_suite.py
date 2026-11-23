@@ -140,7 +140,7 @@ PROMPTS = [
     # backlog and an ordering document into agreement is this project's work, not
     # the session's bookkeeping -- and it is the nearest miss there is.
     (WORK, "<command-message>close-out</command-message> <command-name>/close-out</command-name>"),
-    (WORK, "<command-name>/adoption-readiness</command-name>"),
+    (WORK, "<command-name>/mjolnir:adoption</command-name>"),
     (WORK, "Base directory for this skill: /x/.claude/skills/close-out # Close out a batch"),
     (WORK, "Base directory for this skill: /x/.claude/skills/deploy # Deploy"),
     # ⛔ A name that merely begins with a bookkeeping one.

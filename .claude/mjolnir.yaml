@@ -59,6 +59,16 @@ host:
     - workflow: "Adapter suites"
       mirrors: "python3 plugins/mjolnir/scripts/adapter_suites.py"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ What this run holds is everything about the adoption check that needs no adoption target:
+    # the two closed vocabularies and their disjointness, the loop's size agreeing with the
+    # surface, that every carrier this toolkit ships declares its own class in its own file, and
+    # all three verdicts out of one path — each stood up on the suite's own trees, since a
+    # property asserted against the live targets would pass or fail for reasons outside this
+    # repository. ⛔ The targets themselves are never named here: they arrive on an invocation,
+    # so no run can measure them and this gate holds the check rather than the migration.
+    - workflow: "Adoption check"
+      mirrors: "python3 plugins/mjolnir/skills/adoption/scripts/adoption.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ What this run holds is the rule the `commit-msg` rail carries and not whether any clone has
     # one installed: the hook fires on a developer's machine, and neither route survives a clone, so
     # what reports an absent rail is the install step's own per-route answer read in the repository.
@@ -513,9 +523,9 @@ day_log:
   streams: [sessions, commits]
   attribute_to: null
   # ⚠️ Measured rather than assumed: every command name in this project's own transcripts is
-  # either on the shared closed list or is work — the loop's roles, `close-out` and
-  # `adoption-readiness`. Nothing bookkeeping has been retired, so the list is empty, and the
-  # reader reports that by name.
+  # either on the shared closed list or is work — the loop's roles, `close-out` and the adoption
+  # check. Nothing bookkeeping has been retired, so the list is empty, and the reader reports
+  # that by name.
   ritual_retired: []
   exclusions: [log_upkeep, rework, overhead]
   sections: billed_only
@@ -941,6 +951,12 @@ documents:
         - "docs/single-source-of-truth.md"
         - "docs/test-first-for-a-model-writer.md"
       derived_from: ["docs/configuration-surface.md", "docs/divergences-and-rulings.md"]
+    # ⚠️ The one carrier that is no leg of the loop, and the row is where that sits: it names the
+    # surface alone, like every role carrier, because what admits it and every rule it follows
+    # are stated there — and it is derived from the surface for the same reason.
+    - document: "plugins/mjolnir/skills/adoption/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
     # ⚠️ The one carrier that names another: the billing role states what the hours-breakdown role
     # is, those two having been told apart from each other and from a third by one ruling.
     - document: "plugins/mjolnir/skills/billing-report/SKILL.md"

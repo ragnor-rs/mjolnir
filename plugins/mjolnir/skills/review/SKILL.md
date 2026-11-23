@@ -816,3 +816,12 @@ enters it.
   strand the change where nothing resumes it** — no leg is entered on *an open change with an
   unanswered question* — and the merging leg's own ask is where silence does stop things, which is
   the one place it can stop them safely.
+
+## What this carrier is
+
+```yaml
+# carrier: review
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).
