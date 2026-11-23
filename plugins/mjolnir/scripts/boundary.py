@@ -58,6 +58,11 @@ import sys
 import unicodedata
 from pathlib import Path
 
+# What this carrier is, read from this file and declared nowhere else, by schema.md
+# § Whether a project can adopt this procedure at all. ⛔ The class is the hook's own and not
+# the role's: a role's carrier declares itself in its own file, and one script can be both.
+CARRIER_CLASS = "guard"
+
 # --- where the rule lives --------------------------------------------------
 
 # What ships with this file: the surface it is the carrier for, the hooks that

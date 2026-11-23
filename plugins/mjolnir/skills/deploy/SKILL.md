@@ -520,3 +520,12 @@ the facts, with a table where the content enumerates.
   ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): a target that could not
   be chosen, a precondition nobody can supply, a batch nothing could assemble. Nothing is noted for
   later.
+
+## What this carrier is
+
+```yaml
+# carrier: deploy
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).
