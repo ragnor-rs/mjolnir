@@ -1080,6 +1080,23 @@ def self_test() -> int:
         if not ok:
             problems.append(what)
 
+    def answers(what: str, how, expected) -> None:
+        """An arm whose subject may *raise* rather than answer wrong.
+
+        ⛔ A raise is reported as this arm failing and the suite continues. ⚠️ Found by review on
+        this change's own fix commit: the arms written against the traceback defect called the
+        function directly, so disabling the fix took the whole suite down at that line instead of
+        reddening one arm -- and every arm after it never ran, which is one defect masking all of
+        them. The arm has to survive exactly the failure it is written against.
+        """
+        try:
+            produced = how()
+        except Exception as error:                       # noqa: BLE001 - the arm's whole subject
+            print(f"  FAIL  {what} — it raised {type(error).__name__}: {error}")
+            problems.append(what)
+            return
+        check(what, produced == expected)
+
     with open(VOCABULARY, encoding="utf-8") as handle:
         declared = yaml.safe_load(handle)
     role_keys = declared["roles"]
@@ -1167,11 +1184,14 @@ def self_test() -> int:
     # file a person maintains outside this repository, so this is the ordinary shape of its
     # mistakes.
     for shape in ({}, {"partial": "only a note"}, "not a mapping at all"):
-        half = classify_carried([("skill", "half-written")], {"half-written": shape})
-        check(f"a map entry stating none of the three is unclassified, not a traceback "
-              f"({shape if shape else 'empty'})",
-              half["unclassified"] == ["half-written (skill)"]
-              and not half["roles"] and not half["classes"])
+        answers(
+            f"a map entry stating none of the three is unclassified, not a traceback "
+            f"({shape if shape else 'empty'})",
+            lambda one=shape: classify_carried(
+                [("skill", "half-written")], {"half-written": one}),
+            {"roles": {}, "classes": {}, "unclassified": ["half-written (skill)"],
+             "ambiguous": {}, "partial": {}},
+        )
 
     # --- the tracker readings go through the port, and name no tracker -------
     # ⛔ Held on the text rather than on a run, which is what this property is about: the two
