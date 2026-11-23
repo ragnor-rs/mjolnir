@@ -666,3 +666,14 @@ documents:
     second document for it to agree with and nothing is built from it.
   revisit_when: >-
     A second document is added, which is the first moment two files here can disagree.
+
+# § 39's absent case. One readme and no grouping above, so there is neither a corpus to read nor a
+# version to read it at.
+spec_corpus:
+  carrier: none
+  absent_reason: >-
+    The one document here is a readme describing the service as it is now. Nothing states what it
+    was for an earlier version, and nothing groups the cards on this board into one.
+  revisit_when: >-
+    Somebody outside the two people who work on this service starts being told what a version of
+    it does — the first reader of a copy that is not the current one.
