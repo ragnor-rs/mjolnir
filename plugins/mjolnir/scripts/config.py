@@ -9940,6 +9940,12 @@ MARKED_REQUIRED_WHEN = [
 # since the reader keeps no list of its own to compare against -- drop the clause
 # from the surface and this is what reddens.
 MARKED_PROCEDURE = [
+    # § Whether a project can adopt's. ⛔ The marked key whose subject is the three
+    # acts of adoption rather than anything a project's loop does: a project
+    # writing this would be configuring how its own adoption is measured, which is
+    # a project turning off the facts it answers worst -- the same shape as `setup`
+    # below and the same reason, one act over.
+    "adoption",
     "audit_trail",
     # § 27's. ⛔ The one marked key whose rule is about how a *value* is reached
     # rather than about a rail being switched off: a project writing this would

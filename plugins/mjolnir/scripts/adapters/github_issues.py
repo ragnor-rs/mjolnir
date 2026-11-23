@@ -133,7 +133,7 @@ LABEL_LIMIT = 500
 # The configuration the port last handed down, and the only place one comes from.
 # ⛔ Never resolved here, and never from the working directory: which repository
 # an item lives in is `host.repo`'s to say (§ 2), and a process serving more than
-# one project -- which the adoption-readiness run already is -- must address each
+# one project -- which the adoption check's own run already is -- must address each
 # one's own. An earlier draft read it from the invocation directory and cached it
 # process-wide, which pinned every later project to the first one's repository.
 _bound = None

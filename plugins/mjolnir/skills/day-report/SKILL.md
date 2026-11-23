@@ -583,3 +583,12 @@ a meeting, what the commits were actually for — is gone. So each day is measur
 can be. A month with holes in it is wrong in one direction only, too small, which is why §4 and
 this section both fail loudly instead of shrugging: a missing daily does not make the month look
 wrong, it makes it look smaller, which is the failure nobody notices.
+
+## What this carrier is
+
+```yaml
+# carrier: day_log
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).

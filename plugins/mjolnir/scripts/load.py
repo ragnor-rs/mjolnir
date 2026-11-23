@@ -97,6 +97,11 @@ import config  # noqa: E402 -- the one reader, not a second parser
 # another. Found by review on the change that added the read-time half.
 import save  # noqa: E402 -- the memory entry's vocabulary, read and not restated
 
+# What this carrier is, read from this file and declared nowhere else, by schema.md
+# § Whether a project can adopt this procedure at all. ⛔ The class is the hook's own and not
+# the role's: a role's carrier declares itself in its own file, and one script can be both.
+CARRIER_CLASS = "reading"
+
 # --- the readings ----------------------------------------------------------
 #
 # ⛔ The order is procedure (§ 24) and so is the membership: a project does not

@@ -737,3 +737,12 @@ sentence, then the facts, with a table where the content enumerates.
   quiet form;
 - ⛔ anything needing the person running this, **asked with the options**. The pass is not finished
   while a question it raised is open.
+
+## What this carrier is
+
+```yaml
+# carrier: finish
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).
