@@ -54,6 +54,10 @@ READER = "README.md"
 RULINGS = "docs/divergences-and-rulings.md"
 # The document that records what each gate checks, this one included.
 RECORD = "docs/single-source-of-truth.md"
+# Where a carrier of the loop lives, stated once: the classification rule below
+# reads it, and so do both halves of check 11. ⛔ Written a second time it would
+# be the restated fact this file's own review lens names, one directory over.
+CARRIERS = "plugins/mjolnir/skills"
 
 # A document either explains the surface, records how a divergence was settled, or
 # carries procedure for one role. The first two may not state a rule; procedure
@@ -77,7 +81,7 @@ ROLE_RULES = [
     # ⛔ The twelve role carriers as one rule, which is where the enumeration
     # genuinely was a copy: every one of them is a carrier because of where it
     # sits, and a thirteenth would have had to be written down twice.
-    ("plugins/mjolnir/skills/*/SKILL.md", PROCEDURE),
+    (f"{CARRIERS}/*/SKILL.md", PROCEDURE),
     (RULINGS, RECORDS),
     ("docs/building-itself.md", RECORDS),
     ("docs/test-first-for-a-model-writer.md", RECORDS),
@@ -118,6 +122,13 @@ OUTCOME_COLUMN = "Outcome lives in"
 # a rule rather than a statement of one.
 BINDING = "⛔"
 STATEMENT = re.compile(r"^\s*(?:[-*]\s+)?" + BINDING)
+
+# How the front page names a carrier: as the command an adopter types, and as a
+# link to the carrier's own directory in the inventory below it. A carrier is
+# claimed in both places or in neither, which is what check 11 holds.
+CARRIER_IN_PROSE = re.compile(rf"^{re.escape(CARRIERS)}/([^/]+)/SKILL\.md$")
+FRONT_PAGE_COMMAND = re.compile(r"`/mjolnir:([a-z0-9][a-z0-9-]*)`")
+FRONT_PAGE_INVENTORY = re.compile(rf"\]\({re.escape(CARRIERS)}/([^/)]+)/\)")
 
 # The markers that direct a reader rather than inform one. The footprint counts
 # both, because what a citation costs is not the file's length alone: a document
@@ -1047,6 +1058,69 @@ def check_the_footprint_covers_what_is_walked(tree: Tree) -> list[str]:
     return problems
 
 
+def check_the_front_page_names_every_carrier(tree: Tree) -> list[str]:
+    """The front page's two carrier lists against the carriers, in both directions.
+
+    ⛔ Here because the page's own honesty bound is that every claim on it is
+    checkable by reading the surface it links or running the gate that holds it,
+    and these two lists were held by nothing: a carrier ships, neither list gains
+    a row, and a page that keeps the shape of a complete inventory while being
+    short of one reads to an adopter as a role that does not exist.
+
+    ⚠️ **Both lists and not one.** A carrier can sit in the command table and be
+    absent from the inventory below it, which is a state this found rather than
+    one reasoned about -- so the two directions are asked separately and a
+    carrier named once is still reported.
+
+    ⛔ **`shown_lines` is the wrong reader here and a check written on it holds
+    nothing.** That helper counts a **code span** as shown, and a command on this
+    page *is* a code span by the page's own form -- so every claim would be
+    exempt and the run would stay green over an empty reading. What is exempt is
+    a **fenced** region alone, read through `fenced_lines` -- the helper the
+    heading reader already shares, rather than a second walk of the same fences
+    -- which is the form an example of a command takes.
+    """
+    if READER not in tree.text:
+        return [f"{READER}: claimed by no role, so the page's own carrier lists are held "
+                "by nothing."]
+    carriers = {
+        match.group(1) for path in tree.prose
+        for match in [CARRIER_IN_PROSE.match(path)] if match
+    }
+    text = tree.text[READER]
+    fenced = fenced_lines(text)
+    commands: set[str] = set()
+    inventory: set[str] = set()
+    for index, line in enumerate(text.splitlines()):
+        if index in fenced:
+            continue
+        commands.update(FRONT_PAGE_COMMAND.findall(line))
+        inventory.update(FRONT_PAGE_INVENTORY.findall(line))
+    problems = [
+        f"{READER}: `{name}` ships and the page names no `/mjolnir:{name}`, so a role an "
+        "adopter can type is one the page does not offer."
+        for name in sorted(carriers - commands)
+    ] + [
+        f"{READER}: `{name}` ships and the page's inventory links no "
+        f"`plugins/mjolnir/skills/{name}/`, so the list of what is in it is short of what is."
+        for name in sorted(carriers - inventory)
+    ] + [
+        f"{READER}: the page offers `/mjolnir:{name}` and no carrier of that name ships, so "
+        "the claim resolves to nothing an adopter can run."
+        for name in sorted(commands - carriers)
+    ] + [
+        f"{READER}: the page's inventory links `plugins/mjolnir/skills/{name}/` and no carrier "
+        "of that name ships."
+        for name in sorted(inventory - carriers)
+    ]
+    if not carriers:
+        problems.append(
+            f"{READER}: no carrier was found at all, so neither direction of this check holds "
+            "anything."
+        )
+    return problems
+
+
 CHECKS = [
     ("every document has a role", check_every_document_has_a_role),
     ("citations resolve", check_citations_resolve),
@@ -1062,6 +1136,9 @@ CHECKS = [
     ("citations between documents resolve", check_citations_between_documents_resolve),
     ("the record has a row per check", check_the_record_has_a_row_per_check),
     ("no document leaves a fence open", check_no_document_leaves_a_fence_open),
+    # ⛔ Appended for the reason the record check states, and not placed beside
+    # check 0, whose subject is also a document set.
+    ("the front page names every carrier", check_the_front_page_names_every_carrier),
 ]
 
 
@@ -1758,6 +1835,86 @@ def _plant_undeclared_key_in_an_example(tree: Tree) -> Tree:
     return tree
 
 
+def _plant_a_carrier_the_command_table_does_not_offer(tree: Tree) -> Tree:
+    """A carrier the inventory lists and no command offers.
+
+    ⛔ The inventory row is planted beside the carrier, so this selects the
+    command direction alone: a plant that left both lists short would redden two
+    branches and assert neither.
+    """
+    path = f"{CARRIERS}/planted-untyped/SKILL.md"
+    tree.prose.append(path)
+    tree.text[path] = "# Planted\n"
+    tree.text[READER] += (
+        f"\n| [`{CARRIERS}/planted-untyped/`]({CARRIERS}/planted-untyped/) | Planted |\n"
+    )
+    return tree
+
+
+def _plant_a_carrier_the_inventory_does_not_list(tree: Tree) -> Tree:
+    """A carrier the command table offers and the inventory below it omits.
+
+    ⚠️ The state the page was actually in for one of its carriers, which is why
+    the two directions are separate branches rather than one membership test.
+    """
+    path = f"{CARRIERS}/planted-unlisted/SKILL.md"
+    tree.prose.append(path)
+    tree.text[path] = "# Planted\n"
+    tree.text[READER] += "\n| `/mjolnir:planted-unlisted` | Planted |\n"
+    return tree
+
+
+def _plant_a_command_no_carrier_ships(tree: Tree) -> Tree:
+    """The page offering a role an adopter cannot run."""
+    tree.text[READER] += "\n| `/mjolnir:planted-absent` | Planted |\n"
+    return tree
+
+
+def _plant_an_inventory_row_no_carrier_ships(tree: Tree) -> Tree:
+    """The inventory listing a directory the plugin does not carry."""
+    tree.text[READER] += (
+        f"\n| [`{CARRIERS}/planted-gone/`]({CARRIERS}/planted-gone/) | Planted |\n"
+    )
+    return tree
+
+
+def _plant_no_carrier_at_all(tree: Tree) -> Tree:
+    """A tree the carrier reading finds nothing in.
+
+    ⛔ The arm that keeps an empty reading from printing green, which is the
+    defect the check's own docstring names in the other direction -- so it is
+    asserted rather than left as the one branch nothing exercises. The carriers
+    are dropped from the document set rather than from disk, which is where this
+    check reads them.
+
+    ⚠️ **The page's own claims go with them, and that is what makes this plant
+    assert the arm it names.** Measured: dropping the carriers alone leaves every
+    `/mjolnir:` command on the page naming nothing, so the check reddened through
+    the offers-nothing branch and went on reddening with this arm switched off --
+    a plant certifying nothing. With both sides emptied the degenerate line is
+    the only one that can fire.
+    """
+    tree.prose = [path for path in tree.prose if not CARRIER_IN_PROSE.match(path)]
+    tree.text[READER] = "\n".join(
+        line for line in tree.text[READER].splitlines()
+        if not FRONT_PAGE_COMMAND.search(line) and not FRONT_PAGE_INVENTORY.search(line)
+    ) + "\n"
+    return tree
+
+
+def _plant_a_command_shown_inside_a_fence(tree: Tree) -> Tree:
+    """A command written as an example, which is not the page claiming it.
+
+    ⛔ The green side of the one exemption check 11 carries, and the arm that
+    makes the exemption a fence's rather than a code span's: the command is
+    written in backticks **inside** a fence, which is how an example of the form
+    reads, and the page's own live claims are code spans with no fence around
+    them.
+    """
+    tree.text[READER] += "\n```\nType `/mjolnir:planted-shown` to start.\n```\n"
+    return tree
+
+
 VIOLATIONS = [
     ("every document has a role", "a document with no role", _plant_unroled_document),
     ("every document has a role", "a nested document with no role", _plant_unroled_nested_document),
@@ -1797,6 +1954,16 @@ VIOLATIONS = [
     ("binding statements cite the surface", "a statement citing no section", _plant_binding_statement_citing_no_section),
     ("configurations match the surface", "an undeclared key in this project's own config", _plant_undeclared_key),
     ("configurations match the surface", "an undeclared key in an example", _plant_undeclared_key_in_an_example),
+    ("the front page names every carrier", "a carrier the command table does not offer",
+     _plant_a_carrier_the_command_table_does_not_offer),
+    ("the front page names every carrier", "a carrier the inventory does not list",
+     _plant_a_carrier_the_inventory_does_not_list),
+    ("the front page names every carrier", "a command no carrier ships",
+     _plant_a_command_no_carrier_ships),
+    ("the front page names every carrier", "an inventory row no carrier ships",
+     _plant_an_inventory_row_no_carrier_ships),
+    ("the front page names every carrier", "a tree carrying no carrier at all",
+     _plant_no_carrier_at_all),
 ]
 
 
@@ -1833,6 +2000,8 @@ EXEMPTIONS = [
      _plant_a_shown_check_table),
     ("the record has a row per check", "a second table below a blank line",
      _plant_a_second_table_after_the_record),
+    ("the front page names every carrier", "a command shown as an example inside a fence",
+     _plant_a_command_shown_inside_a_fence),
 ]
 
 
