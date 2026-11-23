@@ -2692,6 +2692,60 @@ signature.
   but the key it reads has to exist, and until §10 was written this derivation named a value no
   configuration carried.
 
+### The rail under the authorship rule, and the three halves it cannot reach
+
+⛔ **The rule above is held by a `commit-msg` hook and not by prose.** There are three layers it
+could rest on and the first two both leak: an agent setting, which reports have shown is not
+honoured when the commit is made by a shell command rather than through an internal commit path —
+the common case for a procedure made of commands — and an instruction in a project's rules file,
+which survives neither a compaction nor a new agent arriving. A git hook runs below all of that, on
+every commit from any path, and is the only one of the three that cannot be talked out of.
+
+⛔ **It is procedure like the rule it holds, so no project configures it and no key turns it off.**
+It is one of
+[the artifacts the install step writes](#what-the-toolkit-installs-into-a-project-and-what-takes-it-out),
+and it is the one that reads **no** configured value: a project that could state its own recognition
+list would be stating which tools it credits.
+
+⚠️ **A git hook and not one of [§ 7](#7-carrier)'s.** A different mechanism with a different
+lifecycle: those fire on tool events inside a session, and this fires on `git commit` whoever runs
+it. ⛔ **Neither substitutes for the other and they are not merged.**
+
+**What decides that a line is a tool's, and the direction the decision fails in:**
+
+| | |
+|---|---|
+| **The address, never the display name** | A co-author trailer is taken out on the strength of the **address** it carries, and a display name decides nothing a person could have chosen. ⚠️ **A measured collision rather than taste**: the vendor product name in use here is also an ordinary given name, so a rule reading the name eats a human co-author — the one outcome the rule above forbids outright, pairing credit being legitimate and the rule having only ever excluded tools |
+| **One marker is read across the whole trailer** | The host's `[bot]` suffix, which it writes in the display name as often as in the address — a bot whose address is a numeric login carries it nowhere else. ⛔ **The stated exception and not a hole in the row above**: it is admissible because it is not a name anybody chooses, the host reserving it for an account that is not a person, so it cannot collide with a human the way a product name collides with a given name |
+| **A list, because there is no shape** | Nothing in a trailer identifies a tool structurally, so what is recognised is a list of vendor domains plus the host's own marker for an account that is not a person. ⛔ **Every entry states what it is on the list for**, a list whose members carry no reason being one nobody can audit |
+| **An unrecognised tool keeps its trailer** | ⚠️ **The safe direction, chosen rather than met.** A trailer that survives is visible in the message to whoever reads it and comes out of the next commit once the list grows; a human co-author eaten by a rule that guessed is gone from the record and nothing reports the loss. ⛔ **So the residue is stated and never closed by widening the match** |
+| **Every block, never the last one** | A squashed message concatenates many messages, so one message legitimately carries several trailer blocks with human co-authors among them. ⚠️ Measured against a rule scoped to the final paragraph: the earlier blocks kept every tool trailer they had |
+| **A message that is nothing but attribution is refused** | The commit is stopped and the message file left as it was, rather than a message being written out empty. ⛔ **Not a collapse to nothing** — there is no message left to commit, and the person writes one |
+
+⚠️ **The only whitespace it touches is the trailing run of blank lines** a removed final trailer
+leaves behind. Blank lines left in the *middle* stay exactly as they are: collapsing them is a
+change to the project's own text, and git's own cleanup already does it.
+
+⛔ **Three halves of the rule no `commit-msg` hook can reach, named rather than left to be assumed
+covered:**
+
+- **The author and the committer.** They are headers rather than message text and no hook is given
+  them. What holds those is the host's own authenticated identity.
+- **A pull request body.** No git hook sees one, so the marker that goes in a description is the
+  finishing role's to not write —
+  [the subsection below](#the-pull-request-title-and-body) states it there for exactly this reason,
+  a reader who found the rail having no way to tell otherwise.
+- **Existing history.** The rail rewrites the message being written and nothing else, which is the
+  forward-only carve-out above. ⛔ **It is not a licence to run over a past full of tool trailers.**
+
+⚠️ **No route carries the rail across a fresh clone, and which gap a project gets is the one thing
+the repository decides.** A hooks directory git answers with is inside the git directory, which a
+clone does not carry; a tracked directory selected by `core.hooksPath` is carried and **not called**,
+that key being repository configuration rather than content. ⛔ **So the install step reports what a
+clone would have at whichever route answered**, and the first is what a repository stating nothing
+gets because it is the honest of the two: an absent file reads as absent to anything that looks,
+while a present file git is not calling reads as installed.
+
 ### The pull request title and body
 
 Like authorship, this is procedure rather than configuration — the per-project facts it reads are
@@ -2711,7 +2765,12 @@ reference form ([§ 2](#what-a-pull-request-title-opens-with)), the language and
   project's split-by-audience rule makes different from its tracker's — and neither is
   hard-wrapped, by [§ 8 → Prose line width](#prose-line-width).
 - **The authorship rule above binds the pull request as it binds the commit**: no generated-by
-  marker, no tool credited.
+  marker, no tool credited. ⛔ **And nothing enforces it here, which is why it is stated here.**
+  [The rail](#the-rail-under-the-authorship-rule-and-the-three-halves-it-cannot-reach) is a
+  `commit-msg` hook, no git hook is given a pull request body, and the host offers no equivalent —
+  so this half of the rule is held by the role composing the body and by nothing else. ⚠️ **A
+  reader who knows the rail exists is the reader this statement is for**: the commit being covered
+  by a mechanism is exactly what makes the body look covered too.
 - **The body is held to [*Nothing is deferred*](#nothing-is-deferred)**, which is where the
   open-items statement and what reads it back are ruled.
 

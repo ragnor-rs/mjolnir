@@ -48,9 +48,11 @@ Two facts it deliberately does not carry:
     with the check that holds the facet to those same files.
   * **Which route a git hook is installed by.** A repository stating
     `core.hooksPath` has chosen one; a repository stating none is read through
-    git's own answer for where its hooks live. ⚠️ **Choosing between a tracked
-    hooks directory and this step is the hook's own work item**, so this module
-    reads whichever route the repository already states and decides neither.
+    git's own answer for where its hooks live, and this module reads whichever
+    the repository already states rather than choosing. ⚠️ **What it does now
+    state is what a fresh clone has at either**, which is `after_a_clone` below:
+    neither route survives one, so the gap is reported per route instead of
+    being left for a reader to assume away.
 
 **A project that states no configuration gets nothing written and is told so.**
 Not silence: this step is invoked by name, and § 7 makes the answer owed to
@@ -108,6 +110,14 @@ import title_form  # noqa: E402
 # checker says is that module's -- this one holds the four properties above and
 # reads `body_sections` through the reader like any other configured fact.
 import check_body_sections  # noqa: E402
+
+# ⛔ Imported for its rendering and not for its rule. What a tool's attribution
+# in a commit message *is* belongs to § 6 and is answered in that module; this
+# one registers the hook file git has to find and holds the four properties
+# above over it. ⚠️ **No configured value reaches it**, which is the one way this
+# artifact differs from the body gate's checker: § 6 makes authorship procedure,
+# so there is nothing per project to render in and nothing it can wait on.
+import strip_attribution  # noqa: E402
 
 try:
     import yaml
@@ -553,6 +563,30 @@ BODY_GATE_TRIGGER = f"pull_request({', '.join(BODY_GATE_TYPES)}) -> *"
 BODY_GATE_ARTIFACTS = ("body-sections-checker", "body-sections-gate")
 
 
+# --- the authorship rail ---------------------------------------------------
+#
+# ⛔ Everything about *what* this file does is § 6's and `strip_attribution`'s.
+# What is here is the one fact this module owns about it: the name git calls, and
+# that no configured value decides whether a project gets one.
+
+# ⛔ The name git looks for, and it is not a choice. git calls a file of exactly
+# this name in the hooks directory and nothing else, so a leaf spelled any other
+# way is a rail that is written, reported installed and never run.
+RAIL_LEAF = "commit-msg"
+
+
+def rail_body(_configuration: config.Config) -> str:
+    """The hook, which reads nothing of the project's.
+
+    ⛔ **No configuration is passed through and the parameter is ignored by
+    name.** § 6 makes authorship procedure rather than configuration, so a
+    project that could render its own recognition list into this file would be
+    stating which tools it credits -- which is the setting that section says
+    does not exist.
+    """
+    return strip_attribution.render()
+
+
 def body_gate_wanted(configuration: config.Config) -> bool:
     """Whether this project asks for the body gate at all.
 
@@ -686,7 +720,18 @@ def body_gate_entry(configuration: config.Config) -> dict:
 # is reached. So there is no value that artifact could be *waiting* on -- which
 # is what separates it from the body pair, whose `needs` names the one key a
 # project may legitimately not have written yet.
+#
+# ⚠️ **The rail states no `wanted` and no `needs`, and both absences are § 6's
+# ruling rather than omissions.** Authorship is procedure there and no key turns
+# it off, so every project that states a configuration at all gets this file;
+# and the hook reads no project value, so there is nothing it can be *waiting*
+# on. ⛔ **It registers no `host.checks` entry either**: git calls it on a commit
+# and the host makes no run of it, so an entry would name a run that never
+# happens -- which § 2's drift gate is right to refuse.
 ARTIFACTS: tuple[Artifact, ...] = (
+    Artifact(
+        "attribution-rail", HOOK, RAIL_LEAF, body=rail_body,
+    ),
     Artifact(
         "body-sections-checker", SCRIPT, BODY_GATE_SCRIPT_LEAF,
         needs=("body_sections",), wanted=body_gate_wanted, body=body_gate_script,
@@ -756,17 +801,68 @@ def hook_directory(code_root: str) -> str | None:
     which is not somewhere this step may write. `None` here is `place()`'s
     *nowhere*, and the answer names it.
     """
+    where, _route = hook_place(code_root)
+    return where
+
+
+# The two routes a hook directory is resolved by, named rather than told apart
+# by a path's shape. ⛔ Which one answered is what decides what a fresh clone has
+# (`after_a_clone` below), and that is not derivable from the directory: a
+# repository may legitimately state a `core.hooksPath` that resolves to the same
+# place git would have answered with.
+STATED, GIT_OWN = "the repository's own core.hooksPath", "git's own answer"
+
+
+def hook_place(code_root: str) -> tuple[str | None, str | None]:
+    """Where git calls this repository's hooks from, and which route answered.
+
+    ⛔ The resolution is one function and the two readers of it take the same
+    answer: a second walk would be free to resolve one directory and report the
+    other route for it.
+    """
     stated = _git(code_root, "config", "--local", "--get", "--type=path",
                   "core.hooksPath")
     if stated:
-        return stated if os.path.isabs(stated) else os.path.join(code_root, stated)
+        where = stated if os.path.isabs(stated) else os.path.join(code_root, stated)
+        return where, STATED
     elsewhere = _git(code_root, "config", "--get", "--type=path", "core.hooksPath")
     if elsewhere:
-        return None
+        return None, None
     answered = _git(code_root, "rev-parse", "--git-path", "hooks")
     if not answered:
-        return None
-    return answered if os.path.isabs(answered) else os.path.join(code_root, answered)
+        return None, None
+    where = answered if os.path.isabs(answered) else os.path.join(code_root, answered)
+    return where, GIT_OWN
+
+
+def after_a_clone(route: str | None) -> str:
+    """What a fresh clone of this repository has at this hook directory.
+
+    ⛔ **Reported rather than left to be assumed, and neither route escapes it.**
+    `.git/` is not cloned, so a rail installed where git answers is simply not
+    there; and `core.hooksPath` is repository *configuration* rather than
+    content, so a rail in a tracked directory is carried by the clone and never
+    called. ⚠️ **Which is the finding and not a defect of either route**: a clone
+    needs one command whichever was taken, so what a route changes is the shape
+    of the gap and not whether there is one.
+
+    ⚠️ **The honest of the two, which is why the first is what a repository
+    stating nothing gets**: an absent file reads as absent to anything that
+    looks, while a present file git is not calling reads as installed -- the
+    quietly-unprotected state this answer exists to make impossible.
+    """
+    if route == GIT_OWN:
+        return ("a fresh clone has no rail at all: this directory is inside the git "
+                "directory, which a clone does not carry. It reads as absent to "
+                "anything that looks, and `install.py install` puts it back")
+    if route == STATED:
+        return ("a fresh clone carries this directory's contents but not the "
+                "`core.hooksPath` that makes git call them, so the file is there and "
+                "the rail is not. ⛔ Setting that key again is what installs it, and "
+                "a reader asking only whether the file is present gets the wrong "
+                "answer")
+    return ("this step could not resolve where hooks are called from, so it cannot "
+            "say what a clone would have either")
 
 
 def _git(root: str, *arguments: str) -> str | None:
@@ -1174,6 +1270,32 @@ def _state(artifact: Artifact, answer: str, path: str | None, **rest) -> dict:
             "path": path, "answer": answer, **rest}
 
 
+def _with_clone_answer(configuration: config.Config, artifact: Artifact,
+                       state: dict) -> dict:
+    """`state` carrying what a fresh clone would have at this artifact's place.
+
+    ⛔ **On every answer and not only on the ones that wrote something.** A
+    reader asking whether the rail is live needs this beside `unchanged` most of
+    all: that answer is the one that reads as *installed and fine*, and for the
+    route a repository stating nothing gets, the same file is absent the moment
+    somebody clones.
+
+    ⛔ **Added at the one exit every answer passes through**, rather than at each
+    `_state` call. ⚠️ The per-call form was the first shape of this and it is the
+    one that goes wrong silently: an answer added later carries no clone reading,
+    and a reader cannot tell a route that could not be resolved from an arm that
+    forgot to say.
+
+    ⚠️ **Only the hook kind carries it.** A workflow lives in the tracked tree
+    and the host reads it from the ref, so a clone has it by construction, and a
+    key saying so on every workflow state would be noise.
+    """
+    if artifact.kind != HOOK:
+        return state
+    _where, route = hook_place(configuration.code_root)
+    return {**state, "after_a_clone": after_a_clone(route)}
+
+
 def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dict:
     """Bring one artifact to the state this configuration asks for.
 
@@ -1189,6 +1311,12 @@ def one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dic
     host kind whose definitions are not files, reported *no place to write it* —
     an incompleteness, and a non-zero exit — about a gate nobody asked for.
     """
+    return _with_clone_answer(
+        configuration, artifact, _one(configuration, artifact, write=write))
+
+
+def _one(configuration: config.Config, artifact: Artifact, *, write: bool) -> dict:
+    """The answer itself, before the clone reading its caller attaches."""
     asked = artifact.wanted(configuration)
     path = place(configuration, artifact)
     if path is None:
@@ -1469,7 +1597,10 @@ def removal(
     by_position: dict[int, dict] = {}
 
     def answered(index: int, state: dict) -> None:
-        by_position[index] = state
+        # ⛔ The same one exit `one` above routes its answers through, so the
+        # removal path carries the clone reading too: an adopter asking what a
+        # fresh clone has is asking it most often while taking the toolkit out.
+        by_position[index] = _with_clone_answer(configuration, members[index], state)
 
     for index, artifact in reversed(list(enumerate(members))):
         path = place(configuration, artifact)
@@ -1555,6 +1686,14 @@ def _a_project(tmp: str, checks=None, title=None, runner=None) -> config.Config:
     Built from an example rather than written here, for the reason the sibling
     consumer's fixtures are: a planted configuration the reader beside this
     module would refuse makes every answer below an answer about nothing.
+
+    ⛔ **And a git repository, because the live registry holds a hook.** ⚠️
+    Measured as a plain directory, which is what it was until the rail was
+    registered: every arm running the whole registry reported *no place to write
+    it* for the rail and the run exited non-zero -- an incompleteness about the
+    fixture rather than about the step. ⚠️ **Whether git answered is asserted by
+    the arm beside the precondition** and not swallowed here, `_a_repository`
+    stating why.
     """
     with open(os.path.join(config.EXAMPLES, "github-issues.yaml"), encoding="utf-8") as handle:
         data = yaml.safe_load(handle)
@@ -1575,6 +1714,7 @@ def _a_project(tmp: str, checks=None, title=None, runner=None) -> config.Config:
     os.makedirs(os.path.join(tmp, ".claude"), exist_ok=True)
     with open(os.path.join(tmp, config.CONFIG_PATH), "w", encoding="utf-8") as handle:
         handle.write(yaml.safe_dump(data, allow_unicode=True))
+    _a_repository(tmp)
     return config.load(tmp)
 
 
@@ -1997,6 +2137,179 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         gate = one(project, _a_gate(), write=True)
         check("a workflow file is left whatever mode the file system gave it",
               _a_gate().mode is None and gate["answer"] == WRITTEN)
+
+    print()
+    print("the authorship rail: the one artifact no configured value decides")
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⛔ The fixture states neither a title form nor anything else this
+        # artifact could turn on, which is what makes the arm below about § 6's
+        # *no key turns it off* rather than about a facet that happened to be set.
+        bare = _a_project(tmp, title=None)
+        rail = _registered("attribution-rail")
+        check("the rail asks for nothing", rail.needs == () and rail.wanted(bare),
+              f"needs={rail.needs}")
+        state = one(bare, rail, write=True)
+        check("it is written", state["answer"] == WRITTEN, str(state))
+        # ⛔ The name git looks for, asserted as the name and not as the constant:
+        # an arm comparing `RAIL_LEAF` to itself would pass on any spelling.
+        check("under the name git calls", os.path.basename(state["path"]) == "commit-msg",
+              str(state["path"]))
+        check("in the directory git answered with",
+              os.path.dirname(state["path"]) == hook_directory(bare.code_root),
+              str(state["path"]))
+        text = _read(state["path"])
+        check("the shebang keeps the first line", text.startswith("#!"), repr(text[:30]))
+        check("and the marker takes the second", _marked(text), repr(text[:120]))
+        check("it is executable", os.access(state["path"], os.X_OK))
+        check("a second run leaves it byte-identical",
+              one(bare, rail, write=True)["answer"] == UNCHANGED
+              and _read(state["path"]) == text)
+        check("it registers no host.checks entry",
+              rail.entry(bare) is None and rail.registers_as is None,
+              "git calls this on a commit and the host makes no run of it, so an "
+              "entry would name a run that never happens")
+        # ⛔ The clone reading, on the answer that reads as *installed and fine*.
+        # ⚠️ Measured without it: `unchanged` was the whole answer, and a fresh
+        # clone with no rail at all was indistinguishable from a protected one.
+        check("and every answer carries what a fresh clone would have",
+              "after_a_clone" in state
+              and "after_a_clone" in one(bare, rail, write=True),
+              str(state))
+        check("which for git's own answer says there is no rail at all",
+              "no rail at all" in state["after_a_clone"], state["after_a_clone"])
+
+        # ⛔ The end-to-end arm, and the one the other arms cannot reach: git
+        # calling the installed file on a real commit. ⚠️ Everything above holds
+        # that a file was written; this holds that the rail *fires*.
+        for key, value in (("user.email", "fixture@invalid"), ("user.name", "A Fixture")):
+            subprocess.run(["git", "-C", bare.code_root, "config", key, value],
+                           capture_output=True, check=False)
+        subprocess.run(["git", "-C", bare.code_root, "add", "-A"],
+                       capture_output=True, check=False)
+        # ⛔ Composed from the rail's own list and not written out. ⚠️ Two
+        # reasons, and the second is the one that bites: the sibling sweep
+        # holding this tree to naming no address reddens on the literal, and an
+        # arm carrying a vendor domain of its own goes on passing after the list
+        # has stopped carrying it -- asserting that a trailer nothing recognises
+        # was stripped, which is the opposite of the rule.
+        domain = strip_attribution.TOOL_DOMAINS[0][0]
+        tool = f"Co-Authored-By: A Tool <noreply@{domain}>"
+        human = "Co-Authored-By: A Person <a.person@invalid>"
+        committed = subprocess.run(
+            ["git", "-C", bare.code_root, "commit",
+             "-m", "A fixture commit", "-m", f"{human}\n{tool}"],
+            capture_output=True, text=True, check=False,
+        )
+        check("git commits through the installed rail", committed.returncode == 0,
+              (committed.stderr or committed.stdout).strip())
+        landed = subprocess.run(
+            ["git", "-C", bare.code_root, "log", "-1", "--format=%B"],
+            capture_output=True, text=True, check=False,
+        ).stdout
+        check("and the tool trailer is not in the commit that landed",
+              domain not in landed, repr(landed))
+        check("while the human co-author is", human in landed, repr(landed))
+        check("and the subject is untouched", landed.startswith("A fixture commit\n"),
+              repr(landed))
+
+        # ⛔ The other two paths the same hook is given a message file on, held
+        # here because nothing above distinguishes them. ⚠️ An amend and a merge
+        # each re-run `commit-msg` on a message this rail has never seen, and a
+        # rail safe on an ordinary commit and not on these would leave
+        # attribution in exactly the commits a landing is made of.
+        amended = subprocess.run(
+            ["git", "-C", bare.code_root, "commit", "--amend",
+             "-m", "An amended fixture commit", "-m", f"{human}\n{tool}"],
+            capture_output=True, text=True, check=False,
+        )
+        after_amend = subprocess.run(
+            ["git", "-C", bare.code_root, "log", "-1", "--format=%B"],
+            capture_output=True, text=True, check=False,
+        ).stdout
+        check("an amend goes through the rail too", amended.returncode == 0,
+              (amended.stderr or amended.stdout).strip())
+        check("  and the amended message carries the person and not the tool",
+              domain not in after_amend and human in after_amend, repr(after_amend))
+
+        # ⚠️ **The trunk's name is read before the side branch is cut**, and the
+        # reflog is not what answers it. Measured through `HEAD@{-1}`: the
+        # checkout back resolved nothing, the merge ran on the side branch,
+        # answered *already up to date*, exited 0 — and the two arms below then
+        # read the side commit's own message. ⛔ An exit status is not the
+        # delivery.
+        trunk = subprocess.run(
+            ["git", "-C", bare.code_root, "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, check=False,
+        ).stdout.strip()
+        subprocess.run(
+            ["git", "-C", bare.code_root, "checkout", "-q", "-b", "a-side-branch"],
+            capture_output=True, check=False)
+        with open(os.path.join(bare.code_root, "a-side-file"), "w",
+                  encoding="utf-8") as handle:
+            handle.write("a line\n")
+        subprocess.run(["git", "-C", bare.code_root, "add", "-A"],
+                       capture_output=True, check=False)
+        subprocess.run(["git", "-C", bare.code_root, "commit", "-m", "A side commit"],
+                       capture_output=True, check=False)
+        back = subprocess.run(["git", "-C", bare.code_root, "checkout", "-q", trunk],
+                              capture_output=True, text=True, check=False)
+        check("  the fixture is back on the branch the merge is made into",
+              back.returncode == 0 and subprocess.run(
+                  ["git", "-C", bare.code_root, "rev-parse", "--abbrev-ref", "HEAD"],
+                  capture_output=True, text=True, check=False,
+              ).stdout.strip() == trunk,
+              "a merge made on the side branch answers `already up to date` and exits "
+              "0, which the arms below would read as a merge that happened")
+        merged = subprocess.run(
+            ["git", "-C", bare.code_root, "merge", "--no-ff", "a-side-branch",
+             "-m", "A merge of the side branch", "-m", f"{human}\n{tool}"],
+            capture_output=True, text=True, check=False,
+        )
+        after_merge = subprocess.run(
+            ["git", "-C", bare.code_root, "log", "-1", "--format=%B"],
+            capture_output=True, text=True, check=False,
+        ).stdout
+        check("a merge commit goes through it as well", merged.returncode == 0,
+              (merged.stderr or merged.stdout).strip())
+        check("  and the merge message carries the person and not the tool",
+              domain not in after_merge and human in after_merge, repr(after_merge))
+        check("  and the merge subject is untouched",
+              after_merge.startswith("A merge of the side branch\n"), repr(after_merge))
+
+        # ⛔ The plant verified rather than asserted: with the rail taken out the
+        # same commit has to keep the trailer, or the arm above is green about a
+        # message git was never going to carry it in.
+        removal(bare, (rail,), write=True)
+        unprotected = subprocess.run(
+            ["git", "-C", bare.code_root, "commit", "--allow-empty",
+             "-m", "A second fixture commit", "-m", tool],
+            capture_output=True, text=True, check=False,
+        )
+        kept = subprocess.run(
+            ["git", "-C", bare.code_root, "log", "-1", "--format=%B"],
+            capture_output=True, text=True, check=False,
+        ).stdout
+        check("and with the rail removed the same trailer survives, so the arm holds",
+              unprotected.returncode == 0 and domain in kept, repr(kept))
+
+    print()
+    print("the rail's clone reading names the other route where that one answered")
+    with tempfile.TemporaryDirectory() as tmp:
+        tracked = _a_project(tmp)
+        where = os.path.join(tracked.code_root, "a-tracked-hooks-directory")
+        subprocess.run(
+            ["git", "-C", tracked.code_root, "config", "core.hooksPath",
+             "a-tracked-hooks-directory"],
+            capture_output=True, check=False,
+        )
+        state = one(tracked, _registered("attribution-rail"), write=True)
+        check("the rail lands in the directory the repository stated",
+              state["answer"] == WRITTEN and os.path.dirname(state["path"]) == where,
+              str(state))
+        check("and the clone reading names that route's own gap",
+              "core.hooksPath" in state["after_a_clone"], state["after_a_clone"])
+        check("rather than the other one's",
+              "no rail at all" not in state["after_a_clone"], state["after_a_clone"])
 
     print()
     print("the artifact is placed atomically, so a half-written file is never its own")

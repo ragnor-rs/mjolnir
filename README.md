@@ -298,6 +298,17 @@ The [authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-n
 is the single statement of what that means, why it is procedure rather than a setting, and the
 one trap in it.
 
+**And it is a rail rather than a request.** A `commit-msg` hook takes a tool's trailer out of the
+message as it is written — below the model, on every commit from any path, where a setting that is
+not reliably honoured and an instruction no compaction survives both leak. What decides a line is
+the **address** and not a display name anybody chose, because the product name in use here is also
+an ordinary given name and a human co-author is the one thing the rule has never excluded. The rule,
+the list it recognises, and the three parts of itself no git hook reaches are
+[§ 6 → The rail](plugins/mjolnir/config/schema.md#the-rail-under-the-authorship-rule-and-the-three-halves-it-cannot-reach).
+⚠️ **The honest bound: a fresh clone has no git hook**, whichever route it was installed by, so a
+clone is one command away from the rail — and the install step tells you which of the two gaps you
+have rather than reporting a rail that is not there.
+
 ⛔ **Who *holds* a role is looked up, and never answered by asking who is running.** The author of a
 commit is the authenticated user by the rule above; the dev, the owner and the reviewer are not —
 they coincide only while one person runs everything, and a gate that asked the tracker *who am I*
