@@ -386,3 +386,12 @@ it — the outcome in the first sentence, then the facts, with a table where the
   branch and an item that disagree, a missing working file that would have to be replayed before
   the work can go on. Nothing is noted for later — the pass is not finished while a question it
   raised is open.
+
+## What this carrier is
+
+```yaml
+# carrier: load
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Can mjolnir replace a target project's loop today, and what is missing where it cannot.
+"""Can this procedure replace a target project's loop today, and what is missing where it cannot.
 
-Readiness is not one fact, so this prints four per project and never averages them:
+The answer is not one fact, so this prints four per project and never averages them:
 
   **Resolution** -- does the plugin resolve in that project at all. The registration is
   machine-wide at user scope, so this is one global fact plus a check for a local override that
@@ -15,19 +15,23 @@ Readiness is not one fact, so this prints four per project and never averages th
   states § 3 keeps apart stay apart: an adapter registered for this kind, the trackerless
   adapter, and an adapter nobody has built yet.
 
-  **The roles** -- what the project carries today against what the plugin ships. Both sides are
-  enumerated from the trees rather than declared, because a count that is maintained by hand is
-  the thing that goes stale first. Carriers are skills, commands *and* hooks (§ 7): a sweep of
-  skill directories alone undercounts one target by six roles.
+  **The roles** -- what the project carries today against what this toolkit ships. Both sides are
+  enumerated from the trees rather than declared, because a count maintained by hand is the thing
+  that goes stale first. Carriers are skills, commands *and* hooks (§ 7): a sweep of skill
+  directories alone undercounts one target by six roles.
 
-⛔ Which projects to check is an **argument, never a value in this tree**. Each is a path, with
-that project's tracker kind after a colon where it has no configuration of its own to read one
-from; the adapter work item per kind and the migration's roots are arguments too. So this file
-names no project, no directory and no tracker, and a list nobody passed is reported as exactly
-that rather than resolving to nothing and reading as ready.
+⛔ Which projects to check is an **argument, never a value in this tree**, and so is everything
+else about them -- the tracker kind, the adapter work item, the migration's roots, a drafted
+configuration, and the map that says what a carrier on that project's disk is. So this file names
+no project, no directory and no tracker, and a list nobody passed is reported as exactly that
+rather than resolving to nothing and reading as ready.
 
-  readiness.py <path>[:<kind>] ... [--adapter-item <kind>=<n>] [--migration-items 1,2]
-               [--candidate <name>=<file>] [--no-host]
+  adoption.py <path>[:<kind>] ... [--carriers <file>] [--adapter-item <kind>=<n>]
+              [--migration-items 1,2] [--candidate <name>=<file>] [--no-host]
+
+⛔ What *this toolkit* ships is classified the other way round: each carrier declares its own
+class beside itself, a skill in its own `SKILL.md` and a hook in its own script, so the change
+that ships a carrier cannot ship it unclassified. Nothing in this directory lists them.
 
 ⛔ Nothing here writes to a target project, and nothing writes to this repository.
 
@@ -45,10 +49,20 @@ import subprocess
 import sys
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SKILL_DIR)))
-PLUGIN_ROOT = os.path.join(REPO_ROOT, "plugins", "mjolnir")
+PLUGIN_ROOT = os.path.dirname(os.path.dirname(SKILL_DIR))
 PLUGIN_SCRIPTS = os.path.join(PLUGIN_ROOT, "scripts")
 VOCABULARY = os.path.join(SKILL_DIR, "vocabulary.yaml")
+
+# The tree the plugin is served from, used for one label and nothing else. ⚠️ Not the project
+# this role is running in: that is the skills root below, and the two are the same directory only
+# when the check is run from the repository the plugin is served out of.
+PLUGIN_TREE = os.path.dirname(os.path.dirname(PLUGIN_ROOT))
+
+# § 1's skills root -- the project this role was invoked in, which is where its own configuration
+# is read from. ⛔ Not derived from this file's path: a carrier under a plugin resolves the plugin
+# wherever it is installed, and the project whose backlog carries the work items below is the one
+# the person ran the check in.
+SKILLS_ROOT = os.getcwd()
 
 # The reader and the port are imported rather than reimplemented: this check must report what a
 # role would actually get, and a second implementation of either would report what it believes.
@@ -58,7 +72,7 @@ try:
     import port  # noqa: E402
     import yaml  # noqa: E402
 except ModuleNotFoundError as error:  # pragma: no cover - environment, not logic
-    sys.exit(f"readiness.py cannot import what it measures with: {error}")
+    sys.exit(f"adoption.py cannot import what it measures with: {error}")
 
 # Where a project's own configuration sits, and where the loop's carriers sit under it. Both are
 # the harness's layout rather than this check's choice.
@@ -80,6 +94,17 @@ NUMBER_WORDS = {
 }
 
 LOOP_HEADING = re.compile(r"^##\s+The loop\s+—\s+(\w+)\s+roles\s*$", re.MULTILINE)
+
+# How a carrier declares what it is, in its own file.
+#
+# ⛔ The skill form is read **inside a fenced yaml block** and not anywhere in the file. At the
+# start of a markdown line `# carrier: start` is a level-one heading, so a form matched loose
+# would read a heading as a declaration and a declaration in prose as one too -- and the fence is
+# the device the surface itself uses for the same purpose.
+FENCE = re.compile(r"^```yaml\s*$(?P<body>.*?)^```\s*$", re.MULTILINE | re.DOTALL)
+FENCED_CARRIER = re.compile(r"^#\s*carrier:\s*(?P<word>[A-Za-z_][\w-]*)\s*$", re.MULTILINE)
+HOOK_CARRIER = re.compile(
+    r"^CARRIER_CLASS\s*=\s*[\"'](?P<word>[A-Za-z_][\w-]*)[\"']\s*$", re.MULTILINE)
 
 
 class CannotEstablish(Exception):
@@ -114,6 +139,27 @@ def parse_pair(argument: str, what: str) -> tuple[str, str]:
     return key.strip(), value.strip()
 
 
+def read_carrier_map(path: str | None) -> dict:
+    """The map that says what a carrier on a *target's* disk is, which arrives on the invocation.
+
+    ⛔ Absent is not empty. With no map passed, nothing can say what any carrier a project holds
+    is, so the role axis of every target is unestablished and says so -- never a project carrying
+    no roles, which is § 2's absence-of-signal rule arriving where the permissive reading is a
+    migration declared done.
+    """
+    if path is None:
+        return {}
+    if not os.path.isfile(path):
+        raise SystemExit(f"--carriers names `{path}`, which is not a file")
+    with open(path, encoding="utf-8") as handle:
+        declared = yaml.safe_load(handle) or {}
+    carriers = declared.get("carriers")
+    if not isinstance(carriers, dict):
+        raise SystemExit(
+            f"--carriers wants a mapping under `carriers:`, and `{path}` carries none")
+    return carriers
+
+
 # --- the surface, held against the declaration ------------------------------
 
 
@@ -143,29 +189,33 @@ def loop_role_count(surface_text: str) -> tuple[int, int]:
     return NUMBER_WORDS[word], len(phrases)
 
 
-# --- what the plugin ships --------------------------------------------------
+# --- what this toolkit ships, and what each shipped carrier says it is ------
 
 
-def shipped_carriers() -> list[tuple[str, str]]:
-    """Every carrier the plugin ships, as `(kind, name)`.
+def shipped_carriers(plugin_root: str = PLUGIN_ROOT) -> list[tuple[str, str]]:
+    """Every carrier this toolkit ships, as `(kind, name)`, each one once.
 
     Enumerated from the plugin tree. A role is shipped when something here carries it, which is
     not the same question as whether its work item is closed.
+
+    ⛔ Deduplicated, and the duplicates are the hooks: one script registered on five events is one
+    carrier, and a list that repeated it named the same thing five times in the report and
+    classified it five times over.
     """
     found = []
-    skills = os.path.join(PLUGIN_ROOT, SKILLS_DIR)
+    skills = os.path.join(plugin_root, SKILLS_DIR)
     if os.path.isdir(skills):
         for name in sorted(os.listdir(skills)):
             if os.path.isfile(os.path.join(skills, name, "SKILL.md")):
                 found.append(("skill", name))
 
-    commands = os.path.join(PLUGIN_ROOT, COMMANDS_DIR)
+    commands = os.path.join(plugin_root, COMMANDS_DIR)
     if os.path.isdir(commands):
         for name in sorted(os.listdir(commands)):
             if name.endswith(".md"):
                 found.append(("command", name[:-3]))
 
-    hooks = os.path.join(PLUGIN_ROOT, HOOKS_DIR, "hooks.json")
+    hooks = os.path.join(plugin_root, HOOKS_DIR, "hooks.json")
     if os.path.isfile(hooks):
         with open(hooks, encoding="utf-8") as handle:
             declared = json.load(handle)
@@ -173,7 +223,7 @@ def shipped_carriers() -> list[tuple[str, str]]:
             for matcher in matchers:
                 for entry in matcher.get("hooks") or []:
                     found.append(("hook", hook_stem(entry, event)))
-    return found
+    return sorted(set(found))
 
 
 def hook_stem(entry: dict, event: str) -> str:
@@ -188,6 +238,88 @@ def hook_stem(entry: dict, event: str) -> str:
         if "/" in token and "." in base:
             return os.path.splitext(base)[0]
     return os.path.splitext(os.path.basename(tokens[0]))[0] if tokens[0] else event
+
+
+def declaration_file(kind: str, name: str, plugin_root: str) -> str:
+    """Which of this toolkit's own files a shipped carrier declares itself in."""
+    if kind == "skill":
+        return os.path.join(plugin_root, SKILLS_DIR, name, "SKILL.md")
+    if kind == "command":
+        return os.path.join(plugin_root, COMMANDS_DIR, f"{name}.md")
+    return os.path.join(plugin_root, "scripts", f"{name}.py")
+
+
+def shipped_word(kind: str, name: str, plugin_root: str = PLUGIN_ROOT) -> str:
+    """The one word a shipped carrier declares about itself, read from its own file.
+
+    ⛔ Raises rather than returning a default. A carrier whose file says nothing is the state the
+    central table used to hide: the role it carries would read as a role that does not exist, and
+    that is the one error this check must not make.
+
+    ⛔ And two declarations in one file raise as well. A file saying two things is not a file
+    saying the first of them, and picking one would be this reader choosing which.
+    """
+    path = declaration_file(kind, name, plugin_root)
+    if not os.path.isfile(path):
+        raise CannotEstablish(
+            f"`{name}` ({kind}) is shipped, and the file it would declare itself in is not "
+            f"there: {os.path.relpath(path, plugin_root)}"
+        )
+    with open(path, encoding="utf-8") as handle:
+        text = handle.read()
+
+    if kind == "hook":
+        words = [m.group("word") for m in HOOK_CARRIER.finditer(text)]
+    else:
+        words = [
+            m.group("word")
+            for fence in FENCE.finditer(text)
+            for m in FENCED_CARRIER.finditer(fence.group("body"))
+        ]
+
+    if not words:
+        raise CannotEstablish(
+            f"`{name}` ({kind}) is shipped and declares no class in its own file. The change "
+            "that ships a carrier declares it there, by schema.md § Whether a project can adopt "
+            "this procedure at all → Which carriers are classified, and where."
+        )
+    if len(set(words)) > 1:
+        raise CannotEstablish(
+            f"`{name}` ({kind}) declares {len(set(words))} different classes in one file "
+            f"({', '.join(sorted(set(words)))}), so nothing there says which it is."
+        )
+    return words[0]
+
+
+def classify_shipped(carriers: list[tuple[str, str]], roles: list[str], classes: set[str],
+                     plugin_root: str = PLUGIN_ROOT) -> dict:
+    """Split what this toolkit ships into roles and non-role classes, by each carrier's own word.
+
+    ⛔ There is no map here and no fallback. Every carrier answers for itself or is reported, and
+    what cannot be read is a finding rather than a gap in the toolkit.
+    """
+    found: dict[str, list[str]] = {}
+    other: dict[str, list[str]] = {}
+    problems: list[str] = []
+    for kind, name in carriers:
+        label = f"{name} ({kind})"
+        try:
+            word = shipped_word(kind, name, plugin_root)
+        except CannotEstablish as error:
+            problems.append(str(error))
+            continue
+        if word in roles:
+            found.setdefault(word, []).append(label)
+        elif word in classes:
+            other.setdefault(word, []).append(label)
+        else:
+            problems.append(
+                f"`{name}` ({kind}) declares `{word}`, which is neither one of the "
+                f"{len(roles)} roles the loop states nor one of the {len(classes)} classes "
+                "vocabulary.yaml closes. A word nothing declares reads as a role that does not "
+                "exist, in both directions at once."
+            )
+    return {"roles": found, "classes": other, "problems": problems}
 
 
 # --- what a project carries -------------------------------------------------
@@ -243,8 +375,8 @@ def registered_hook_matchers(claude_dir: str) -> int:
     return total
 
 
-def classify(carriers: list[tuple[str, str]], vocabulary: dict) -> dict:
-    """Split a carrier list into roles, non-role classes, and what nothing classifies.
+def classify_carried(carriers: list[tuple[str, str]], carrier_map: dict) -> dict:
+    """Split a target's carrier list into roles, non-role classes, and what nothing classifies.
 
     ⛔ An `ambiguous:` entry lands in neither of the first two. A basename covering several roles
     across the projects -- #14's three, measured over at least five copies -- is a name that
@@ -260,7 +392,7 @@ def classify(carriers: list[tuple[str, str]], vocabulary: dict) -> dict:
     ambiguous: dict[str, list[str]] = {}
     partial: dict[str, str] = {}
     for kind, name in carriers:
-        entry = vocabulary.get(name)
+        entry = carrier_map.get(name)
         label = f"{name} ({kind})"
         if entry is None:
             unclassified.append(label)
@@ -279,6 +411,52 @@ def classify(carriers: list[tuple[str, str]], vocabulary: dict) -> dict:
         "ambiguous": ambiguous,
         "partial": partial,
     }
+
+
+def hold_carrier_map(carrier_map: dict, roles: list[str], classes: set[str]) -> list[str]:
+    """Every word the invocation's map uses, against the two sets the surface closes.
+
+    ⛔ Held because nothing else does. A misspelled `role:` was accepted silently, classified a
+    carrier under a role that does not exist, and then reported the real role as unshipped -- a
+    wrong NOT READY with no line anywhere saying why.
+
+    ⚠️ One direction only, and an earlier form of this comment claimed both. An entry nothing
+    ships and no project carries is stale data, and nothing holds that -- nor can anything hold it
+    on this population: the projects are the invocation's argument, so an entry would read as
+    stale whenever the one target carrying it is left off the list, a red keyed on the caller's
+    list rather than on any tree.
+
+    ⚠️ `ambiguous:` is held the same way and for the same reason. Its values are never compared
+    against a shipped carrier, so a misspelling in one is quieter than a misspelling in `role:`:
+    it would print a role the loop does not have as one of the readings a carrier may be, and
+    nothing downstream would ever ask about it.
+    """
+    problems = []
+    for name, entry in sorted(carrier_map.items()):
+        if not isinstance(entry, dict):
+            problems.append(
+                f"the carrier map entry for `{name}` is not a mapping, so it states neither a "
+                "role nor a class")
+            continue
+        for key in ("role", "ambiguous"):
+            value = entry.get(key)
+            if value is None:
+                continue
+            for role in [value] if isinstance(value, str) else value:
+                if role in roles:
+                    continue
+                problems.append(
+                    f"the carrier map puts `{name}` under the role `{role}` in `{key}:`, which "
+                    f"is not one of the {len(roles)} the loop declares. A role nothing declares "
+                    "reads as a role that does not exist, in both directions at once."
+                )
+        word = entry.get("class")
+        if word is not None and word not in classes:
+            problems.append(
+                f"the carrier map puts `{name}` in the class `{word}`, which is not one of the "
+                f"{len(classes)} vocabulary.yaml closes."
+            )
+    return problems
 
 
 # --- the plugin's reach into a project --------------------------------------
@@ -322,7 +500,7 @@ def resolution(claude_dir: str) -> tuple[bool, str]:
         if local is False:
             return False, f"disabled for this project in .claude/{name}"
 
-    tree = "the working tree" if served == REPO_ROOT else served
+    tree = "the tree this check is running out of" if served == PLUGIN_TREE else served
     return True, f"user scope, directory source → {tree}"
 
 
@@ -367,14 +545,15 @@ def configuration(target: dict, project_dir: str,
                   candidate: str | None) -> tuple[object, bool, str, str | None]:
     """Resolve the configuration this project's roles would read, and say where it came from.
 
-    Four sources, in the order that answers the readiness question most truthfully first:
-    the project's own file; a candidate named on the invocation for it; the shipped example for
-    the kind the invocation gave; this repository's own configuration where the kind matches.
+    Four sources, in the order that answers the question most truthfully first: the project's own
+    file; a candidate named on the invocation for it; the shipped example for the kind the
+    invocation gave; the configuration of the project this check is running in, where the kind
+    matches.
 
     ⛔ Only the first two are **this project's facts**, which the returned flag says, because
     the other two are a probe of the port for a `kind` and carry nobody's values. Reading a
-    project fact off an example or off this repository's own file is the mistake the flag
-    exists to make impossible -- it would report one project's absence as another's.
+    project fact off an example or off another project's file is the mistake the flag exists to
+    make impossible -- it would report one project's absence as another's.
     """
     own = os.path.join(project_dir, CONFIG_PATH)
     if os.path.isfile(own):
@@ -415,13 +594,13 @@ def configuration(target: dict, project_dir: str,
             return None, False, f"examples/{kind}.yaml", str(error)
 
     try:
-        here = config.load(REPO_ROOT, check_paths=True)
+        here = config.load(SKILLS_ROOT, check_paths=True)
     except config.ConfigError as error:
-        return None, False, "this repository's own configuration", str(error)
+        return None, False, "the configuration of the project this check runs in", str(error)
     if here.tracker_kind == kind:
         return here, False, (
-            "none written — port probed through this repository's own configuration, "
-            "which runs the same kind"
+            "none written — port probed through the configuration of the project this check "
+            "runs in, which states the same kind"
         ), None
     return None, False, "none written", (
         f"no configuration exists to probe `tracker.kind: {kind}` with: the project has no "
@@ -438,8 +617,8 @@ def tracker(loaded) -> tuple[str, int, int, str]:
     # ⛔ Keyed on the port's own names for its three states and never on copies of
     # the words. ⚠️ Measured: this dict held `trackerless` as a literal, the port
     # renamed that state to `unconfigured`, and every configuration with no tracker
-    # reached this line as `KeyError` — a traceback where a readiness answer
-    # belongs, from a script the same change was editing.
+    # reached this line as `KeyError` — a traceback where an answer belongs, from a
+    # script the same change was editing.
     detail = {
         port.STATE_REGISTERED: f"an adapter is registered for `{described['kind']}`",
         port.STATE_UNCONFIGURED: "the adapter that implements nothing — a stated "
@@ -514,11 +693,15 @@ def line(label: str, value: str) -> str:
     return f"  {label:<26}{value}"
 
 
-def main(argv: list[str]) -> int:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("projects", nargs="*", metavar="PATH[:KIND]",
                         help="a target's checkout, and its tracker kind where the project has "
                              "no configuration of its own to read one from")
+    parser.add_argument("--carriers", metavar="FILE",
+                        help="the map saying what a carrier on a target's disk is, keyed by "
+                             "basename; a target's facts, so it arrives here and is kept outside "
+                             "this repository")
     parser.add_argument("--adapter-item", action="append", default=[], metavar="KIND=N",
                         help="the work item that builds that kind's adapter; repeatable")
     parser.add_argument("--migration-items", default="", metavar="N,N",
@@ -528,7 +711,15 @@ def main(argv: list[str]) -> int:
                              "own skills root and written nowhere; repeatable")
     parser.add_argument("--no-host", action="store_true",
                         help="skip the dependency closure, which is the only network read")
-    args = parser.parse_args(argv)
+    parser.add_argument("--self-test", action="store_true",
+                        help="hold this check to the properties it claims, and to the surface")
+    return parser
+
+
+def main(argv: list[str]) -> int:
+    args = build_parser().parse_args(argv)
+    if args.self_test:
+        return self_test()
 
     targets = [parse_project(argument) for argument in args.projects]
     adapter_items = {}
@@ -539,6 +730,7 @@ def main(argv: list[str]) -> int:
         adapter_items[kind_key] = int(number)
     candidates = dict(parse_pair(c, "--candidate") for c in args.candidate)
     migration_items = [int(n) for n in re.findall(r"\d+", args.migration_items)]
+    carrier_map = read_carrier_map(args.carriers)
 
     with open(VOCABULARY, encoding="utf-8") as handle:
         declared = yaml.safe_load(handle)
@@ -548,9 +740,22 @@ def main(argv: list[str]) -> int:
 
     unestablished: list[str] = []
 
+    role_keys = declared["roles"]
+    class_words = set(declared["classes"])
+
+    # ⛔ The two sets are asserted disjoint rather than assumed so. One word meaning both a role
+    # and a class would make every carrier's declaration ambiguous, and the reader resolves roles
+    # first -- so the collision would be silent in exactly the direction that reports a class as
+    # a role of the loop.
+    both = sorted(set(role_keys) & class_words)
+    if both:
+        unestablished.append(
+            f"vocabulary.yaml uses {', '.join(both)} as both a role of the loop and a class, so "
+            "a carrier declaring one of those words states two different things at once"
+        )
+
     # The surface against the declaration, before any project is read: a role list that no
     # longer matches the loop would make every count below wrong in the same direction.
-    role_keys = declared["roles"]
     try:
         counted, listed = loop_role_count(surface_text)
         if not counted == listed == len(role_keys):
@@ -561,64 +766,21 @@ def main(argv: list[str]) -> int:
     except CannotEstablish as error:
         unestablished.append(str(error))
 
-    # ⛔ And every `role:` value against that list, which nothing held. The file's own header
-    # claims the role keys are held to the surface both ways, and that was true of the *count*
-    # only: a misspelled `role:` was accepted silently, classified a shipped carrier under a role
-    # that does not exist, and then reported the real role as unshipped — a wrong NOT READY with
-    # no line anywhere saying why.
-    #
-    # ⚠️ One direction only, and the comment here claimed both. A declared entry that nothing
-    # ships and no project carries is stale data, and nothing holds that — nor can anything hold
-    # it on this population: the projects are the invocation's argument, so an entry would read
-    # as stale whenever the one target carrying it is left off the list, a red keyed on the
-    # caller's list rather than on any tree. The two entries for this repository's own carrier
-    # root are the proof: nothing ships them and no adoption target carries them, so they would
-    # read as stale while being exactly right.
-    # ⚠️ `ambiguous:` is held the same way and for the same reason. Its values are never compared
-    # against a shipped carrier, so a misspelling in one is quieter than a misspelling in `role:`:
-    # it would print a role the loop does not have as one of the readings a carrier may be, and
-    # nothing downstream would ever ask about it.
-    for name, entry in sorted(declared["carriers"].items()):
-        for key in ("role", "ambiguous"):
-            value = entry.get(key)
-            if value is None:
-                continue
-            for role in [value] if isinstance(value, str) else value:
-                if role in role_keys:
-                    continue
-                unestablished.append(
-                    f"vocabulary.yaml maps the carrier `{name}` to the role `{role}` under "
-                    f"`{key}:`, which is not one of the {len(role_keys)} the loop declares. A "
-                    "role nothing declares reads as a role that does not exist, in both "
-                    "directions at once."
-                )
+    unestablished.extend(hold_carrier_map(carrier_map, role_keys, class_words))
 
-    vocabulary = declared["carriers"]
-    shipped = classify(shipped_carriers(), vocabulary)
+    shipped = classify_shipped(shipped_carriers(), role_keys, class_words)
     shipped_roles = set(shipped["roles"])
 
-    print("mjolnir — adoption readiness\n")
+    print("mjolnir — can this procedure replace a project's loop\n")
     print(line("loop", f"{len(role_keys)} roles: {' · '.join(role_keys)}"))
     print(line("ships", ", ".join(
         f"{role} [{', '.join(shipped['roles'][role])}]" for role in sorted(shipped_roles)
     ) or "no role carrier at all"))
     for name, members in sorted(shipped["classes"].items()):
         print(line(f"ships ({name})", ", ".join(members)))
-    if shipped["unclassified"]:
-        print(line("ships (unclassified)", ", ".join(shipped["unclassified"])))
-        unestablished.append(
-            "the plugin ships a carrier vocabulary.yaml does not classify: "
-            + ", ".join(shipped["unclassified"])
-        )
-    # ⛔ A shipped carrier under an ambiguous name is a stronger finding than a carried one: the
-    # plugin's own reconciliations are named for the role they implement, so a shipped name that
-    # covers several is this repository's own naming to fix rather than an adopter's.
-    for label, readings in sorted(shipped["ambiguous"].items()):
-        print(line("ships (ambiguous)", f"{label} — may be {', '.join(readings)}"))
-        unestablished.append(
-            f"the plugin ships `{label}`, whose name covers {len(readings)} roles "
-            f"({', '.join(readings)}), so nothing here can say which one it implements"
-        )
+    for problem in shipped["problems"]:
+        print(line("ships (unestablished)", problem.split(". ")[0]))
+        unestablished.append(problem)
     # ⛔ The sweep is asked for, not assumed to have run. Installation is the
     # module's presence in the port's adapters package and discovery is lazy, so
     # reading the registry before anything built a `Port` reported `none` while
@@ -628,7 +790,7 @@ def main(argv: list[str]) -> int:
     # ⛔ Once per port the surface declares, and never the one port this script
     # happens to care most about: a line naming a single port's implementations
     # reads as the whole of what is built, and a port whose package is empty is
-    # exactly what a readiness answer has to carry.
+    # exactly what an answer here has to carry.
     # ⚠️ Labelled by the **package** that was swept rather than by the port's
     # name: the label column is narrower than a dotted kind path, which ran the
     # value straight into the label with no space between them — and the package
@@ -640,6 +802,14 @@ def main(argv: list[str]) -> int:
         installed = ", ".join(sorted(port.load_adapters(spec))) or "none"
         print(line(f"{spec.package} installed", installed))
 
+    # ⛔ Absent is reported rather than read as empty, and before any target is measured: with no
+    # map, nothing can say what a carrier any project holds is.
+    if not carrier_map:
+        unestablished.append(
+            "no carrier map was passed, so what any target's own carriers are is unestablished "
+            "and every role count below is a floor — `--carriers <file>`"
+        )
+
     # ⛔ A list nobody passed is reported rather than resolved to nothing. An empty run that
     # printed a summary and exited 0 would read as "every target is ready". Answered before the
     # host is read, since there is nothing for a closure to be reported against.
@@ -649,7 +819,7 @@ def main(argv: list[str]) -> int:
               "its own.")
         print(line("could not establish", "no target list was passed"))
         # ⛔ And everything established before the target list was read, which this return used
-        # to drop. The findings above it are about the surface, the vocabulary and the plugin's
+        # to drop. The findings above it are about the surface, the vocabulary and this toolkit's
         # own carriers -- none of them needs a target, all of them were already printed in part,
         # and the one line about the missing argument read as the only thing wrong. Measured on a
         # misspelled role key under `ambiguous:`: the hold fired, the entry was on this list, and
@@ -663,15 +833,22 @@ def main(argv: list[str]) -> int:
     repo, closure, closure_notes = None, {}, []
     if not args.no_host:
         try:
-            repo = config.load(REPO_ROOT, check_paths=True).get("host.repo")
+            repo = config.load(SKILLS_ROOT, check_paths=True).get("host.repo")
         except config.ConfigError as error:
-            unestablished.append(f"this repository's own configuration: {error}")
+            unestablished.append(
+                f"the configuration of the project this check runs in: {error}")
         if repo and migration_items:
             closure, closure_notes = blocked_by_closure(repo, migration_items)
             unestablished.extend(closure_notes)
 
-    not_ready: list[str] = []
+    # ⛔ Three buckets and not two. ⚠️ Measured on this check's own first run after the promotion:
+    # a target whose verdict was CANNOT ESTABLISH was appended to `not ready`, because the only
+    # test was whether the verdict was READY -- so the summary folded the third answer into the
+    # second in the one line a reader skims, while the verdict line three rows above said
+    # otherwise. The exit status was right and the summary was wrong, which is the quieter half.
     ready: list[str] = []
+    not_ready: list[str] = []
+    unanswered: list[str] = []
 
     for target in targets:
         name = target["name"]
@@ -738,7 +915,7 @@ def main(argv: list[str]) -> int:
                             else "  ⚠️ open; no closure was read to say what depends on it")
                 print(line("adapter work item", f"#{item} {state} — {title}{flag}"))
 
-        carried = classify(project_carriers(claude_dir), vocabulary)
+        carried = classify_carried(project_carriers(claude_dir), carrier_map)
         matchers = registered_hook_matchers(claude_dir)
         carried_roles = set(carried["roles"])
         covered = sorted(carried_roles & shipped_roles)
@@ -772,14 +949,19 @@ def main(argv: list[str]) -> int:
         # and off this project's own configuration rather than a probe's -- asked of a probe, it
         # would report whichever file the probe came from and attribute the absence here.
 
-        if carried["unclassified"]:
+        if not carrier_map:
+            # ⛔ Its own verdict, because the cause is the invocation and not the project: a
+            # target measured with no map has nothing wrong with it, and reporting it as
+            # unclassified would name the project for a missing argument.
+            verdict = ("CANNOT ESTABLISH — no carrier map was passed, so the counts are floors")
+        elif carried["unclassified"]:
             verdict = "CANNOT ESTABLISH — a carrier nothing classifies, so the counts are floors"
             unestablished.append(f"{name}: unclassified carriers")
         elif carried["ambiguous"]:
             # ⛔ Its own verdict and its own line, not folded into the one above. The remedy is
-            # opposite: an unclassified carrier is answered by naming it in vocabulary.yaml, and
-            # an ambiguous one can never be -- the name is known and is several roles, so only
-            # this project's own `carriers:` block says which.
+            # opposite: an unclassified carrier is answered by naming it in the map, and an
+            # ambiguous one can never be -- the name is known and is several roles, so only this
+            # project's own statement says which.
             verdict = ("CANNOT ESTABLISH — a carrier whose name covers several roles, so the "
                        "counts are floors")
             unestablished.append(
@@ -804,7 +986,12 @@ def main(argv: list[str]) -> int:
         else:
             verdict = "READY"
         print(line("VERDICT", verdict))
-        (ready if verdict == "READY" else not_ready).append(name)
+        if verdict == "READY":
+            ready.append(name)
+        elif verdict.startswith("CANNOT ESTABLISH"):
+            unanswered.append(name)
+        else:
+            not_ready.append(name)
 
     print("\nthe migration's critical path — open items, blockers walked transitively")
     if not migration_items:
@@ -824,14 +1011,284 @@ def main(argv: list[str]) -> int:
             print(line("", f"⚠️ {note}"))
 
     print("\nsummary")
+    print(line("targets", ", ".join(t["name"] for t in targets)))
     print(line("ready", ", ".join(ready) or "none"))
     print(line("not ready", ", ".join(not_ready) or "none"))
+    print(line("no answer", ", ".join(unanswered) or "none"))
     for item in unestablished:
         print(line("could not establish", item))
 
     if unestablished:
         return 2
     return 1 if not_ready else 0
+
+
+# --- what this check claims about itself ------------------------------------
+
+
+def self_test() -> int:
+    """Hold this check to the four properties it claims, and to the surface it reads.
+
+    ⛔ Every arm stands its own trees up. A property asserted against the live adoption targets
+    would be asserted against whatever those projects happen to hold today, which is a test that
+    passes or fails for reasons outside this repository.
+    """
+    import shutil                                      # noqa: PLC0415 - the suite's own, not the
+    import tempfile                                    # noqa: PLC0415 - check's
+    import contextlib
+    import io
+
+    problems: list[str] = []
+
+    def check(what: str, ok: bool) -> None:
+        print(f"  {'ok  ' if ok else 'FAIL'}  {what}")
+        if not ok:
+            problems.append(what)
+
+    with open(VOCABULARY, encoding="utf-8") as handle:
+        declared = yaml.safe_load(handle)
+    role_keys = declared["roles"]
+    class_words = set(declared["classes"])
+
+    # --- the two closed sets, and the surface they are held to ---------------
+    check("the role keys and the class words are disjoint",
+          not set(role_keys) & class_words)
+
+    with open(os.path.join(PLUGIN_ROOT, "config", "schema.md"), encoding="utf-8") as handle:
+        surface_text = handle.read()
+    counted, listed = loop_role_count(surface_text)
+    check(f"the loop's size agrees three ways ({len(role_keys)})",
+          counted == listed == len(role_keys))
+
+    # --- every carrier this toolkit ships declares itself -------------------
+    live = shipped_carriers()
+    live_shipped = classify_shipped(live, role_keys, class_words)
+    check("every carrier this toolkit ships declares its own class",
+          not live_shipped["problems"])
+    check("one script on several events is one shipped carrier",
+          len(live) == len(set(live)))
+
+    # ⛔ Property: a shipped carrier nothing classifies refuses this check's own answer. Planted
+    # against the mechanism rather than asserted -- a fake plugin tree with one undeclared skill.
+    fake = tempfile.mkdtemp(prefix="adoption-shipped-")
+    try:
+        bare = os.path.join(fake, SKILLS_DIR, "declares-nothing")
+        os.makedirs(bare)
+        with open(os.path.join(bare, "SKILL.md"), "w", encoding="utf-8") as handle:
+            handle.write("---\nname: declares-nothing\n---\n\n# A carrier with no declaration\n")
+        planted = classify_shipped(
+            shipped_carriers(fake), role_keys, class_words, plugin_root=fake)
+        check("a shipped carrier declaring nothing is a finding, not a default",
+              len(planted["problems"]) == 1 and "declares no class" in planted["problems"][0])
+
+        # And a declaration that is a heading rather than a fenced marker is not read as one.
+        with open(os.path.join(bare, "SKILL.md"), "w", encoding="utf-8") as handle:
+            handle.write("---\nname: declares-nothing\n---\n\n# carrier: start\n")
+        heading = classify_shipped(
+            shipped_carriers(fake), role_keys, class_words, plugin_root=fake)
+        check("a markdown heading is not read as a carrier declaration",
+              len(heading["problems"]) == 1)
+
+        # And a word in neither closed set is refused by name.
+        with open(os.path.join(bare, "SKILL.md"), "w", encoding="utf-8") as handle:
+            handle.write("---\nname: x\n---\n\n```yaml\n# carrier: not-a-word\n```\n")
+        unknown = classify_shipped(
+            shipped_carriers(fake), role_keys, class_words, plugin_root=fake)
+        check("a declared word in neither closed set is refused by name",
+              len(unknown["problems"]) == 1 and "not-a-word" in unknown["problems"][0])
+
+        # And two declarations in one file say nothing rather than the first of them.
+        with open(os.path.join(bare, "SKILL.md"), "w", encoding="utf-8") as handle:
+            handle.write("---\nname: x\n---\n\n```yaml\n# carrier: start\n```\n"
+                         "\n```yaml\n# carrier: finish\n```\n")
+        twice = classify_shipped(
+            shipped_carriers(fake), role_keys, class_words, plugin_root=fake)
+        check("two declarations in one file are a finding, not the first of them",
+              len(twice["problems"]) == 1 and "different classes" in twice["problems"][0])
+    finally:
+        shutil.rmtree(fake, ignore_errors=True)
+
+    # --- the invocation's own map, held to the same two sets ----------------
+    check("a misspelled role in the carrier map is refused by name",
+          len(hold_carrier_map({"a": {"role": "stat"}}, role_keys, class_words)) == 1)
+    check("a misspelled role under `ambiguous:` is refused too",
+          len(hold_carrier_map(
+              {"a": {"ambiguous": ["start", "stat"]}}, role_keys, class_words)) == 1)
+    check("a class word in neither set is refused",
+          len(hold_carrier_map({"a": {"class": "helpful"}}, role_keys, class_words)) == 1)
+    check("a well-formed map is quiet",
+          not hold_carrier_map(
+              {"a": {"role": "start"}, "b": {"class": "utility"}}, role_keys, class_words))
+
+    # --- an ambiguous name is counted as no role ----------------------------
+    split = classify_carried(
+        [("skill", "two-roles")], {"two-roles": {"ambiguous": ["billing_report", "day_log"]}})
+    check("a basename covering several roles is counted as none of them",
+          not split["roles"] and len(split["ambiguous"]) == 1)
+
+    # --- carriers are swept across all three kinds, and hooks come from settings
+    sweep = tempfile.mkdtemp(prefix="adoption-sweep-")
+    try:
+        claude = os.path.join(sweep, ".claude")
+        os.makedirs(os.path.join(claude, SKILLS_DIR, "a-skill"))
+        with open(os.path.join(claude, SKILLS_DIR, "a-skill", "SKILL.md"), "w",
+                  encoding="utf-8") as handle:
+            handle.write("---\nname: a-skill\n---\n")
+        os.makedirs(os.path.join(claude, COMMANDS_DIR))
+        with open(os.path.join(claude, COMMANDS_DIR, "a-command.md"), "w",
+                  encoding="utf-8") as handle:
+            handle.write("a command\n")
+        os.makedirs(os.path.join(claude, HOOKS_DIR))
+        with open(os.path.join(claude, HOOKS_DIR, "a-hook.sh"), "w", encoding="utf-8") as handle:
+            handle.write("#!/bin/sh\n")
+        found = project_carriers(claude)
+        check("a target's carriers are swept across skills, commands and hooks",
+              sorted(found) == [("command", "a-command"), ("hook", "a-hook"),
+                                ("skill", "a-skill")])
+
+        # ⛔ Hooks counted from settings and not from the directory: one target registers five
+        # matchers and keeps no hooks directory at all, so the listing is not the population.
+        with open(os.path.join(claude, "settings.json"), "w", encoding="utf-8") as handle:
+            json.dump({"hooks": {"PreToolUse": [{}, {}], "Stop": [{}]}}, handle)
+        check("registered hooks are counted from settings, not from the directory",
+              registered_hook_matchers(claude) == 3 and len(
+                  [one for one in found if one[0] == "hook"]) == 1)
+    finally:
+        shutil.rmtree(sweep, ignore_errors=True)
+
+    # --- a probe is never reported as a project's own fact ------------------
+    probe = tempfile.mkdtemp(prefix="adoption-probe-")
+    try:
+        os.makedirs(os.path.join(probe, ".claude"))
+        loaded, own, source, error = configuration(
+            {"name": os.path.basename(probe), "dir": probe, "kind": "github-issues"},
+            probe, None)
+        check("a probed configuration is never flagged as the project's own",
+              loaded is not None and own is False and "port probed" in source and error is None)
+        _, no_kind_own, _, no_kind_error = configuration(
+            {"name": "x", "dir": probe, "kind": None}, probe, None)
+        check("no file and no kind is a third answer, not a guess",
+              no_kind_own is False and no_kind_error is not None)
+    finally:
+        shutil.rmtree(probe, ignore_errors=True)
+
+    # --- the three verdicts, out of one path --------------------------------
+    stage = tempfile.mkdtemp(prefix="adoption-verdicts-")
+    was = os.environ.get("CLAUDE_CONFIG_DIR")
+    try:
+        cfg = os.path.join(stage, "config")
+        os.makedirs(os.path.join(cfg, "plugins"))
+        with open(os.path.join(cfg, "plugins", "known_marketplaces.json"), "w",
+                  encoding="utf-8") as handle:
+            json.dump({"mjolnir": {"installLocation": PLUGIN_TREE}}, handle)
+        with open(os.path.join(cfg, "settings.json"), "w", encoding="utf-8") as handle:
+            json.dump({"enabledPlugins": {PLUGIN_ID: True}}, handle)
+        os.environ["CLAUDE_CONFIG_DIR"] = cfg
+
+        example = os.path.join(PLUGIN_ROOT, "config", "examples", "github-issues.yaml")
+        with open(example, encoding="utf-8") as handle:
+            example_text = handle.read()
+
+        # A project this toolkit can fully serve: its own configuration, a registered adapter,
+        # and every carrier it holds mapping to a role something here ships.
+        served = os.path.join(stage, "fully-served")
+        os.makedirs(os.path.join(served, ".claude", SKILLS_DIR, "its-filer"))
+        with open(os.path.join(served, ".claude", SKILLS_DIR, "its-filer", "SKILL.md"), "w",
+                  encoding="utf-8") as handle:
+            handle.write("---\nname: its-filer\n---\n")
+        with open(os.path.join(served, ".claude", "mjolnir.yaml"), "w",
+                  encoding="utf-8") as handle:
+            handle.write(example_text)
+
+        # And one it cannot: no configuration of its own, and a carrier whose role nothing here
+        # ships yet.
+        short = os.path.join(stage, "not-served")
+        os.makedirs(os.path.join(short, ".claude", SKILLS_DIR, "its-breakdown"))
+        with open(os.path.join(short, ".claude", SKILLS_DIR, "its-breakdown", "SKILL.md"), "w",
+                  encoding="utf-8") as handle:
+            handle.write("---\nname: its-breakdown\n---\n")
+
+        # And one nothing can be said about: a carrier the map does not name.
+        opaque = os.path.join(stage, "unmapped")
+        os.makedirs(os.path.join(opaque, ".claude", SKILLS_DIR, "nobody-named-this"))
+        with open(os.path.join(opaque, ".claude", SKILLS_DIR, "nobody-named-this", "SKILL.md"),
+                  "w", encoding="utf-8") as handle:
+            handle.write("---\nname: nobody-named-this\n---\n")
+        with open(os.path.join(opaque, ".claude", "mjolnir.yaml"), "w",
+                  encoding="utf-8") as handle:
+            handle.write(example_text)
+
+        carriers_file = os.path.join(stage, "carriers.yaml")
+        with open(carriers_file, "w", encoding="utf-8") as handle:
+            handle.write("carriers:\n"
+                         "  its-filer: { role: file }\n"
+                         "  its-breakdown: { role: hours_breakdown }\n")
+
+        def run(argv: list[str]) -> tuple[int, str]:
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                status = main(argv)
+            return status, buffer.getvalue()
+
+        code, text = run([served, "--carriers", carriers_file, "--no-host"])
+        check("a project this toolkit can fully serve is READY, and the run exits 0",
+              code == 0 and "VERDICT                   READY" in text)
+
+        code, text = run([f"{short}:github-issues", "--carriers", carriers_file, "--no-host"])
+        check("a project it cannot serve is NOT READY and every gap is named",
+              code == 1 and "NOT READY" in text
+              and "no configuration written" in text and "1 role(s) unshipped" in text
+              and "hours_breakdown" in text)
+
+        code, text = run([opaque, "--carriers", carriers_file, "--no-host"])
+        check("a carrier nothing classifies is CANNOT ESTABLISH and exits 2, never NOT READY",
+              code == 2 and "CANNOT ESTABLISH" in text and "NOT READY" not in text)
+        # ⛔ And the summary's own buckets, which the line above does not reach: it tests the
+        # words in the whole report, and the defect this arm was written against put the target
+        # under `not ready` while the verdict line said CANNOT ESTABLISH. One fact, two answers.
+        check("an unanswered target is in the summary's third bucket, not under not-ready",
+              "no answer                 unmapped" in text
+              and "not ready                 none" in text)
+
+        # ⛔ And the two verdicts come out of one path: both targets in one run, each answered.
+        code, text = run([served, f"{short}:github-issues",
+                          "--carriers", carriers_file, "--no-host"])
+        check("both verdicts come out of the same run, and not-ready decides the status",
+              code == 1 and "READY" in text and "NOT READY" in text
+              and "ready                     fully-served" in text
+              and "not ready                 not-served" in text)
+
+        # ⛔ No map is its own answer, and it names the invocation rather than the project.
+        code, text = run([served, "--no-host"])
+        check("no carrier map is unestablished and names the argument, not the project",
+              code == 2 and "no carrier map was passed" in text)
+
+        # ⛔ An empty target list measures nothing and says so.
+        code, text = run(["--carriers", carriers_file, "--no-host"])
+        check("an empty target list is reported, never resolved to nothing",
+              code == 2 and "no target list was passed" in text
+              and "no project was named" in text)
+
+        # ⛔ And the targets measured are named, so no verdict reads as covering a project
+        # nobody passed.
+        code, text = run([served, "--carriers", carriers_file, "--no-host"])
+        check("the report names which targets were measured",
+              "targets                   fully-served" in text)
+    finally:
+        if was is None:
+            os.environ.pop("CLAUDE_CONFIG_DIR", None)
+        else:
+            os.environ["CLAUDE_CONFIG_DIR"] = was
+        shutil.rmtree(stage, ignore_errors=True)
+
+    print()
+    if problems:
+        print(f"{len(problems)} propert{'y' if len(problems) == 1 else 'ies'} this check claims "
+              "about itself does not hold.")
+        return 1
+    print("Every property this check claims about itself holds, and the loop's size agrees with "
+          "the surface.")
+    return 0
 
 
 if __name__ == "__main__":

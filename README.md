@@ -102,6 +102,7 @@ a setting, is [`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
 
 | | |
 |---|---|
+| `/mjolnir:adoption` | Answers whether this can replace a project's loop **today**, and names what is missing where it cannot — four facts per project it never averages into one: whether the plugin resolves there, whether a configuration exists that the reader accepts, what your tracker's port answers, and which of the loop's roles you carry against which ship. Ready, not ready, or *could not establish* — and the third is never folded into the second |
 | `/mjolnir:setup` | Writes your one file by asking for it: a question per fact, your own tracker's words read rather than asked for, a menu instead of a free-text field wherever there is a closed set, an absence captured as a decision with its reason, and anything your repository may not hold routed outside it |
 | `/mjolnir:file-work-item` | Turns a request — or a chat log — into well-formed items, checked against everything your tracker already holds and related to what they block |
 | `/mjolnir:gate-work-item` | Runs your own readiness checks whole on an item somebody else wrote, and admits it to committed work |
@@ -115,8 +116,9 @@ a setting, is [`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
 | `/mjolnir:day-report` | Builds a day's time-log entry from session transcripts, git, the host, chat and the calendar |
 | `/mjolnir:billing-report` | Bills a period's hours as line items, one per project per day, every figure naming the entry it was read from — and the rate resolved outside your repository, so it reaches the invoice and never a transcript |
 
-You type the first one, and the loop carries the item from there: `start` hands the finished branch
-to `finish`, which enters `review` on the open change, which comes back to `finish` for the merge.
+You type `/mjolnir:file-work-item`, and the loop carries the item from there: `start` hands the
+finished branch to `finish`, which enters `review` on the open change, which comes back to `finish`
+for the merge.
 Each hand-off happens on a stated condition rather than on being asked, and the one place it stops
 to ask you is stated too — the merge, which is yours —
 [§ The loop](plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask).
@@ -127,6 +129,7 @@ you, and what it then carries is derived rather than remembered.
 
 | | |
 |---|---|
+| [`plugins/mjolnir/skills/adoption/`](plugins/mjolnir/skills/adoption/) | Answer whether this procedure can replace a project's loop today, and name what is missing where it cannot: four facts per project read from its live tree rather than declared, carriers swept across skills, commands *and* hooks because a sweep of one undercounts a project by six roles, a probe of the port never reported as a project's own fact, and a carrier nothing classifies refusing the answer rather than lowering it. Which projects it measures, and every value about them, arrives on the invocation — so nothing in it names a project, and a target you leave off is not reported as missing |
 | [`plugins/mjolnir/skills/setup/`](plugins/mjolnir/skills/setup/) | Write a project's configuration by asking for it: the question set derived from the surface's own keys rather than listed beside them, a menu wherever there is a closed set, an absence captured as a decision with its reason, and a value the repository may not hold routed outside it |
 | [`plugins/mjolnir/skills/file-work-item/`](plugins/mjolnir/skills/file-work-item/) | Turn a request into work items: the split confirmed, a three-layer duplicate check with a human gate, the parent case where the request is a piece of an open item, and the body rendered from the project's own template |
 | [`plugins/mjolnir/skills/gate-work-item/`](plugins/mjolnir/skills/gate-work-item/) | Gate a work item into committed work: the project's own checks run whole on an item somebody else wrote, who repairs what failed asked once, and then the two things written here and nowhere else — the estimate and the date — before the item is admitted |

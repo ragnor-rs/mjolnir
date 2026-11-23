@@ -49,6 +49,11 @@ if _SCRIPTS not in sys.path:
 
 import claim  # noqa: E402
 
+# What this carrier is, read from this file and declared nowhere else, by schema.md
+# § Whether a project can adopt this procedure at all. ⛔ The class is the hook's own and not
+# the role's: a role's carrier declares itself in its own file, and one script can be both.
+CARRIER_CLASS = "guard"
+
 SURFACE = Path(__file__).resolve().parent.parent / "config" / "schema.md"
 CARRIER = Path(__file__).resolve().parent.parent / "hooks" / "hooks.json"
 CARRIER_EVENT = "SessionStart"
