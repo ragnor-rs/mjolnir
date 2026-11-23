@@ -359,3 +359,12 @@ Then report, in the register
 ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): the question, the options,
 what each costs, and which is recommended. The pass is not finished while a question it raised is
 open, and a gap written up thoroughly still reads as diligence while leaving the work undone.
+
+## What this carrier is
+
+```yaml
+# carrier: file
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).

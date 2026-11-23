@@ -1,0 +1,47 @@
+name: Adoption check
+
+# The check that answers whether this procedure can replace a project's loop. What a gate can hold
+# about it is every property that needs no adoption target: that the role keys and the class words
+# are two closed sets and disjoint, that the loop's size agrees between the surface's heading, the
+# paragraph under it and the declared keys, that every carrier this toolkit ships declares its own
+# class in its own file, and that all three verdicts — ready, not ready, and could-not-establish —
+# come out of one path with the third never folded into the second.
+#
+# ⚠️ The projects it measures are the suite's own, stood up per arm with their own configurations,
+# their own carriers and their own plugin registry. ⛔ No adoption target is named here or anywhere
+# in the carrier: the target list arrives on an invocation, by § Whether a project can adopt this
+# procedure at all of plugins/mjolnir/config/schema.md — so this run holds the check and says
+# nothing about any migration's state.
+#
+# What that leaves unheld is stated rather than assumed away: whether a role the check reports as
+# covered *behaves* the way the local copy it replaces did is a judgement per project, answered by
+# that project's own migration item and not by a name match.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The one network read this carrier makes is the dependency closure, and
+# the self-test does not take it: every arm runs against trees the suite creates.
+permissions: {}
+
+jobs:
+  adoption-check:
+    name: Adoption check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, and the same string `host.checks` states this run mirrors. ⚠️ Held
+      # together by eye, and § 2 rules that it must be: the mapping from a run to the command it
+      # mirrors is configured and never inferred. The workflow *name* above is held mechanically,
+      # by the `Host checks drift` run.
+      - name: Assert the two vocabularies, the shipped declarations, and all three verdicts
+        run: python3 plugins/mjolnir/skills/adoption/scripts/adoption.py --self-test

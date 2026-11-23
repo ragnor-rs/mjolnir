@@ -8536,6 +8536,16 @@ is on it because the route needs a leg there, which is a statable reason and the
 time. ⚠️ **A utility admitted beside them would be admitted on no such reason**, and a list with one
 entry of that kind has nothing to refuse the next one with.
 
+⛔ **What the toolkit ships outside that list is the acts of adoption itself, and they are admitted
+on a reason of the same shape rather than beside the roles.** Which acts those are, and the closure
+that refuses another, are stated once at
+[§ Whether a project can adopt](#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it)
+— ⛔ **cited and not enumerated here**, an enumeration written in a second place being a copy of
+something that lives in the first. ⚠️ **That is not this section being narrowed**: a utility is
+refused by every sentence above and is no act of adoption, so that class closes rather than opens
+the list, and a candidate arriving as one more of its members is what that section refuses in this
+one's place.
+
 ⛔ **What this section rules on is a *skill*, and a block of configuration whose consumer is a check
 is not one.** The closed list decides which **roles** are carried; it has never been what admits a
 facet, and reading it that way would refuse [§ 15](#15-end-to-end-coverage-recorded),
@@ -9109,6 +9119,121 @@ file** — removing a project's configuration is removing its adoption, which is
 ⛔ **a file a person wrote carries no marker at all**: it is edited key by key, and marking it would
 be this step claiming authorship of somebody else's file.
 
+## Whether a project can adopt this procedure at all, and the check that answers it
+
+**Adoption has three acts, and the two sections above are the second and the third.** A project is
+installed into, and it is asked what it configures — and before either is worth performing,
+something has to answer whether this procedure can replace that project's loop at all, and name
+what is missing where it cannot. ⛔ **That answer is a check the toolkit ships**, and this section
+is what admits it.
+
+```yaml
+# procedure: adoption
+```
+
+⛔ **This is procedure and declares no key.** A project that could configure how its own adoption is
+measured could turn off the facts it answers worst, and the person running the check would never
+know which — the device
+[§ An artifact states what is true now](#an-artifact-states-what-is-true-now) and the two sections
+above each use, for the same reason each time.
+
+### Why this is carried where a utility is not
+
+⛔ **[§ 36](#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here) rules that the
+loop's closed list is what admits a skill, and this is not an exception to that.** The list decides
+which **roles** are carried, a role being on it because the route needs a leg there — and this
+check is on no item's route, reads no work item and moves nothing. ⚠️ **Its subject is this
+toolkit**: its own install, its own role list, and whether a given tree can run them. That is the
+subject the two sections above share and no leg of the loop has.
+
+⛔ **So the class is adoption itself, and its membership is closed by the same argument § 36 makes
+about the loop's.** There are three acts and no fourth: putting the toolkit into a project, asking
+that project what it states, and answering whether the procedure can run there. ⚠️ **What refuses
+the next candidate is therefore statable and the same every time** — a thing admitted here has to
+be a fourth act of adoption, and a utility is not one, whatever its copy count and however little
+of it belongs to any project.
+
+⚠️ **A section about adoption is not itself an act of it**, which matters because there is one:
+[§ What a project already holds](#what-a-project-already-holds-that-states-the-loop-and-what-adopting-it-does-to-that)
+states what adopting does to two stores a project was already keeping its loop in, and names the
+configuring pass as what performs it — so it is inside the second act rather than a fourth beside
+them. ⛔ **The test is whether a thing is performed by a pass of its own**, and that is the same test
+the closure above is stated by rather than a second one.
+
+⛔ **And the property that reads as the qualification is not the reason.** A candidate with nothing
+per-project in it is refused by § 36 precisely *because* what would be shared is a file rather than
+a procedure over configuration; this check has nothing per-project in it either, and is admitted on
+its subject instead. ⚠️ **Read the other way round, this section would reopen the hole § 36
+closed**: *it costs nothing to carry* is the argument that admits everything.
+
+### Every per-project value arrives on the invocation
+
+⛔ **Which projects are measured, and every value about them, is an argument of the pass and never a
+fact written in this repository.** A project does not know it is somebody's adoption target, and
+the list belongs to whoever is adopting rather than to any project on it. ⚠️ **The naming rule a
+carrier root carries is not what decides this** — it is what made the alternative unwritable, which
+is a different statement and the weaker of the two.
+
+⚠️ **The cost is stated rather than closed: a target left off the invocation is not reported as
+missing**, because nothing in the check knows it exists. ⛔ **An empty list is reported as an empty
+list**, never resolved to nothing — a run that measured no project and printed a verdict would read
+as every project being ready, which is [§ 2](#2-code-host)'s absence-of-signal rule arriving where
+the permissive reading is a migration.
+
+⛔ **And a store outside every tree is not this surface's to name.** Where a runner keeps its list
+between runs is the runner's business:
+[§ 28](#28-a-configured-value-a-repository-may-not-hold) carves out configuration a repository may
+not hold, and a target list is configuration of no project.
+
+### Four facts, and the third value of the answer
+
+⛔ **Four facts per project, and they are never averaged into one**: whether the plugin resolves in
+that tree at all, whether a configuration exists that [§ 1](#1-roots)'s own reader accepts, what
+the [§ 3](#3-tracker-port) port answers for its kind, and which of
+[§ The loop](#the-loop--thirteen-roles)'s roles it carries against which the toolkit ships.
+⚠️ **The reader and the port are the ones a role would run on**, imported rather than reimplemented:
+a second implementation of either reports what it believes rather than what a role would get.
+
+⛔ **A project's own facts and a probe of the port are kept apart.** A target that has written no
+configuration can still have its port asked, through a configuration the invocation names or the
+shipped example for a kind — and ⛔ **nothing read that way is ever reported as that project's
+own**, which is one project's absence attributed to another.
+
+⛔ **And the answer is three-valued: ready, not ready, and *could not establish*** — the third never
+folded into the second. An uncounted role reads as a role that does not exist, so a carrier nothing
+classifies makes every count a **floor** and refuses the answer rather than lowering it.
+
+### Which carriers are classified, and where each classification lives
+
+⛔ **The class of a carrier the toolkit ships is declared beside that carrier**, so the change that
+ships one cannot ship it unclassified. A skill declares it in its own file and a hook in its own
+script; what the check reads is the plugin's own tree, and what is declared is only the class of
+each thing found there. ⚠️ **Measured, which is why it is stated here rather than left to a
+convention**: a central table of shipped carriers went stale once per landing that added one, and
+each occurrence refused the check's own answer while no target's verdict moved — so the counts were
+unestablished rather than wrong, every time.
+
+⛔ **The class of a carrier a *target* carries arrives on the invocation**, with the rest of that
+project's values. ⚠️ **[§ 7](#7-carrier)'s own block is not that answer and cannot become it**: it
+states which **roles** a project carries and by which kind, which is that project's declaration
+about itself and says nothing about a basename on its disk — and a target that has written no
+configuration, which is every target before it adopts, would have no answer at all.
+
+⛔ **A basename covering several roles is counted as none of them.** The name is known and is more
+than one role, so no entry anywhere can answer it: counted as its first role the report calls the
+others unshipped, counted as all of them it reports roles covered that nothing implements, and each
+reading is one wrong line. ⚠️ **Running again changes nothing** — what answers it is that project's
+own statement, and until there is one the role is neither covered nor unshipped.
+
+### The word, and why it is not `readiness`
+
+⛔ **The check ships under `adoption`.**
+[§ 5](#5-readiness-gate--an-ordered-predicate-list) already holds `readiness` for the gate's ordered
+predicate list over one work item, and two meanings for one word inside one toolkit is the defect a
+single authority for each fact exists to catch. ⚠️ **The collision is in the word and not in the
+subject**: both answer *may this proceed*, one about an item and one about a project — which is
+exactly why the name alone cannot tell a reader which is meant.
+
 ## What a project already holds that states the loop, and what adopting it does to that
 
 **A project adopting this toolkit holds its loop in three places, and adoption reaches two.** Its
@@ -9231,3 +9356,4 @@ forbidding check about a rule is the one most likely to forbid the prose stating
 where exactly one governed document carries the bare form and carries it as the measurement behind
 the two-form match above
 ([the measurement](../../../docs/configuration-surface.md#the-third-surface-one-store-read-whole-and-the-classes-the-loops-share-misses)).
+
