@@ -6287,7 +6287,7 @@ that exists so that it does not.
 ```yaml
 day_log:
   destination:
-    kind: file | none          # default: file; port: destinations
+    kind: file | google-sheet | none    # default: file; port: destinations
 ```
 
 **[§ 9](#9-day-log) measures a working day; this section says where the two values it produces are
@@ -6430,6 +6430,75 @@ reader names the key in its own report of what this configuration cannot do, exa
 names every facet whose carrier is `none` in that report's `unavailable` list — so the role stops
 rather than joining a path onto a null.
 
+```yaml
+day_log:
+  destination:
+    kind: google-sheet
+    sheet: "<the spreadsheet's own identifier>"   # private
+    tab: "<the tab an entry is one row of>"
+    columns:
+      date: "<the header word over the day column>"
+      hours: "<the header word over the hours column>"
+      description: "<the header word over the description column>"
+```
+
+**A spreadsheet is the kind the reading half of this port was stated for.** § 9's two values are a
+figure and a sentence, and what reads them back is a column of numbers over a range of days — which
+is what `read_hours` is asked for and what a consumer of it sums. ⚠️ **The descriptions ride in a
+column of their own for whoever keeps the record and are not a period's line items**: those are
+stated at a grain § 9 is deliberately below, and nothing here promotes one to the other.
+
+⛔ **The sheet's shape is the project's, so `columns` is a mapping and not a layout this surface
+fixes.** A person who already keeps a timesheet has their own header words in their own order, and a
+kind that fixed three columns would refuse every such sheet or, worse, write into whichever cell
+happened to be third. ⚠️ **The three roles are the surface's and the words are the project's**: what
+is configured is which header word carries the day, which the hours and which the description, and
+the order they sit in is read off the sheet rather than stated here.
+
+⛔ **So the mapping is resolved against the tab's own header row before anything is written, and
+every way it fails to resolve is a refusal naming the key.** A header word the sheet does not carry,
+a word two of its columns carry, and two roles configured onto one column are each a mapping that
+cannot address three cells — ⚠️ **and the direction that matters is that none of them is a write
+into a default column**: a mapping that silently missed the hours word and wrote the figure into the
+description reads as a run that worked, and a period read back out of that sheet is short with
+nothing saying so.
+
+⛔ **Values, never formulas, and the rule binds the read as well as the write.** A summing formula in
+the sheet is a second statement of the period's hours and a stale one is a wrong invoice, so what is
+written is the figure § 9's `round_to` and `enforce_grid` already produced, written as a value the
+sheet does not evaluate and does not re-round. ⚠️ **Read back, a cell holding a formula is an
+*unreadable* day and never the number it currently displays** — the `unreadable` reading one
+subsection up, arriving by a person's edit rather than by the store's own hand, and the one shape of
+it that answers with a plausible number instead of with nothing.
+
+⛔ **The day is § 9's day and never the write's timestamp.** `day_start` makes a working day
+something other than a calendar day, and a backfilled day is recorded against the day it was
+measured for — so the date cell is the entry's key, and a row carrying a date this kind cannot place
+is `read_hours`'s `unplaced` rather than a day of the period.
+
+⛔ **Nothing holds a spreadsheet against two writers, and that is stated rather than designed
+around.** [§ 10](#the-claim-on-a-work-item)'s claim is a ref and has a test-and-set; a sheet has
+neither, so two sessions of one project can each read no row for a day and each append one. ⚠️ **The
+write therefore reads the day back and reports two rows where it finds them**, naming both: *one
+entry per day* is a property this kind can report on and not one it can hold, and a second row
+reported is a person's to remove. ⛔ **Never folded into a success**, which is the doubled total
+`read_hours` would otherwise answer with.
+
+⛔ **The spreadsheet's identifier is marked `# private`, and that mark is what
+[§ 28](#28-a-configured-value-a-repository-may-not-hold) needs to resolve it from outside the
+repository.** A sheet somebody's hours are kept in is an address a project may not be able to
+commit, which is that facet's own class — ⚠️ **and it is the address and not the credential**: the
+credential is held out of every configured value by
+[§ 14](#14-what-a-role-holds-and-what-may-cross-the-boundary) and is named in `environment.inherits`
+rather than carried here, which is how a kind behind a service is reachable at all.
+
+⛔ **Which bounds what `locate` may answer with under this kind: the place inside the store, and
+never the store's own identifier.** § 28 keeps a private value out of every report, and a role says
+where an entry landed out loud — so what is named is the tab and the row, which is what whoever can
+already reach the sheet needs and what whoever cannot learns nothing from. ⚠️ **That is the
+capability answering rather than the absent case**: the fallback one subsection up names the store
+by its configuration, and a tab and a row say more than that without saying the thing § 28 forbids.
+
 ⚠️ **`none` carries no block, and a configuration naming it and stopping is complete**: it addresses
 nothing at all, every operation above takes its stated fallback, and the role measures the day and
 reports the two values with nowhere to put them. ⛔ **That is a configuration and not a broken
@@ -6463,21 +6532,23 @@ back out of a store — *log this as four hours* — is named and stopped on, ne
 
 ⛔ **A destination block carries an address and never a credential.**
 [§ 14](#14-what-a-role-holds-and-what-may-cross-the-boundary) holds a credential out of every
-configured value, so this surface declares no key for one: a kind that cannot be reached without a
-secret is a kind this surface cannot state yet, which is a bound on what may be added here rather
-than a hole in what is.
+configured value, so this surface declares no key for one — ⚠️ **which is a bound on what may be
+*written* here and not on which kinds may exist**. A kind behind a service is reached by naming the
+variable its secret arrives in, in `environment.inherits`, exactly as a tracker kind behind one is:
+named and never valued, so the block addresses the store and the shell carries the secret.
 
-⚠️ **The `file` kind needs none**, which is part of why it is the one stated — a directory is an
-address, and `$TMPDIR/<project>` is a name the role's own command expands rather than a value the
-reader resolves ([§ 11](#the-store-and-when-an-in-tree-store-is-safe)).
+⚠️ **The `file` kind needs no variable at all**, which is part of why it is the one defaulted to — a
+directory is an address, and `$TMPDIR/<project>` is a name the role's own command expands rather than
+a value the reader resolves ([§ 11](#the-store-and-when-an-in-tree-store-is-safe)).
 
 ⛔ **And an address is not reportable by default.** `locate` exists so a report can say where an
 entry landed; its absent case names the store **by its configuration** instead, which is what keeps
 a private address out of a report that goes somewhere else. ⚠️ **A configuration is a tracked
-file** — [§ 28](#28-a-configured-value-a-repository-may-not-hold)'s layer being the exception, and
-one no key of this port is marked for — so hours, rates and a client's identity never reach a
+file** — [§ 28](#28-a-configured-value-a-repository-may-not-hold)'s layer being the exception, which
+`google-sheet`'s own identifier is marked for — so hours, rates and a client's identity never reach a
 destination key either: § 9's ban on writing hours into a tracked file, read against the key that
-says where they go.
+says where they go. ⛔ **A kind whose address is private bounds what its own `locate` answers
+with**, which is that kind's block above and not a second rule here.
 
 ## 27. The role-to-person map
 
@@ -6697,8 +6768,10 @@ is this facet one facet early, and the two are the same rule rather than two mec
 every configured value by [§ 14](#14-what-a-role-holds-and-what-may-cross-the-boundary) — named and
 never valued, which is that section's own rule and not this one's — and is not a private value to be
 relocated; § 26's `out_dir` is an address the role's own command
-expands and carries no mark, so a project whose store sits somewhere it may not name is a mark this
-surface would have to add rather than a list entry it already allows. ⛔ **And a reader older than a
+expands and carries no mark, while that section's `sheet` is a store's identifier a project may not
+be able to commit and is marked — ⚠️ **which is the shape of the extension rather than an exception
+to it**: a store somewhere a project may not name is reached by marking the key that names it, and
+never by listing a key the surface leaves unmarked. ⛔ **And a reader older than a
 mark reads the tracked file alone, which splits by requiredness rather than failing one way**: a
 listed key that the surface marks `# required` or `# required_when` is **refused** there with the key
 named — § 1's obligation arriving from the other side, measured against the installed reader on the

@@ -442,6 +442,7 @@ rather than from a hand-kept list of roots.
 | 11 | No tracked configuration carries a value under a key the surface marks `# private` — a chat thread's name, a calendar's own name, a person, a path on somebody's machine ([schema § 28](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)) | every tracked configuration | forbidding |
 | 12 | No invocation of the host client **for a run** — its own `run` subcommand, a dispatch, a pull request's runs, and the endpoints behind all three, in a command line, in a list of quoted words, or split across a continuation. The client itself stays permitted, being how a pull request is opened, read and merged ([schema § 29](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)) | the strict set | forbidding |
 | 13 | No tracker's own vocabulary for a **dependency** — the field an edge is carried in, the endpoint it is posted to, the sides and the wording of a link call. This is check 6 one level down: a role writing one of these names a tracker's *shape* without naming the tracker, which check 6 passed while it was the same defect. ⚠️ Matched in code regions only, by rule 1 and more load-bearingly than anywhere else here — a link type's wording is also an ordinary English phrase, and a shipped role explains the direction of a dependency in exactly those words ([schema § 3 → An edge is a relation](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)) | the strict set | forbidding |
+| 14 | No kind behind **any other port** is named, in either spelling — check 6's rule with the subject read off the `# port:` markers rather than off the tracker block, so a port landing later is swept the moment its kind has a slug for a name. ⛔ **Slug-shaped kinds only, and the bound is the check**: a single-word kind of a port whose word is ordinary English cannot be forbidden in prose about that word, so `file` is held by review and said so in as many words beside the port's own suite runner ([schema § 26](../plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port)) | the strict set | forbidding |
 
 ⚠️ **A row takes the next number and never one already in the table.** The first form of the
 host-client row, 12, was inserted in the middle, which left the rows after it naming checks that
@@ -502,6 +503,7 @@ It derives what it can, for the reason stated above about the check not becoming
 |---|---|
 | the one permitted slug, from `host.repo` in this project's own configuration | the host-URL, address and tracker-identifier grammars |
 | the tracker names, from the `kind` alternatives of the surface's **tracker block** and every configuration's declared kind | the closed list of stack tool names |
+| every other port's slug-shaped kinds, from the `# port:` markers' own key paths and the same paths in every configuration | nothing: which ports exist is the markers' answer, and no list of them is kept here |
 | the forbidden value set, from **every scalar the configurations state** — this project's own included — minus the vocabulary the surface publishes | nothing: no list of key names is kept here, and none is kept in step |
 | the file list, from `git ls-files`; the strict set, from the carrier shapes | a carrier directory's name, and the code-span and quoted-string forms of rules 1 and 2 |
 | the file to plant a violation into, from the strict set | the exceptions below |
@@ -510,6 +512,22 @@ It derives what it can, for the reason stated above about the check not becoming
 every `kind:` cannot tell `host.kind: github` from `tracker.kind`, and the first draft subtracted
 the host's name afterwards — an undeclared carve-out of *content* in a script that is supposed to
 hardcode form, and one that silently let the host's own name through a carrier root.
+
+⚠️ **The row beneath it reads the other ports off their markers instead, and that is why it reaches
+a port whose block is nested.** The destination's sits under `day_log:`, where a read anchored at
+column zero finds nothing; the marker carries the key's own dotted path, so there is no block to
+find and no indentation to parse.
+
+⛔ **And the de-slugging pattern had a hole that only a two-word kind could show** — the subject
+being the kinds [schema § 26](../plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port)
+and [schema § 3](../plugins/mjolnir/config/schema.md#3-tracker-port) state. Its separator
+class was `[-\s]?`, so a two-word name was matched written `googlesheet`, `google sheet` and
+`google-sheet` and **not** `google_sheet` — every compound of a multi-word kind in that one
+spelling passed, this project's own hyphenated tracker kinds included. ⚠️ **The existing underscore
+plant could not see it**: it uses a single-word kind, where the underscore is a *boundary* the
+lookarounds already handled rather than a *join* between the name's parts, so the hole survived a
+check that read as covered. Measured by planting an underscored compound of a two-word kind, and
+there is now a plant of each shape.
 
 Reading the forbidden values out of the configurations is what makes the acceptance item's pair
 work in opposite directions: **a new example configuration adds to what is forbidden under a

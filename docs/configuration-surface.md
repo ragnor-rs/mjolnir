@@ -2551,9 +2551,66 @@ than by the entry growing a third value.
 ⛔ **A destination block carries an address and never a credential**, which is why this surface
 declares no key for one —
 [`schema.md § 26 → The store's address`](../plugins/mjolnir/config/schema.md#the-stores-address-and-what-may-not-be-written-beside-it).
-⚠️ **That is a stated bound on what may be added here rather than a hole in what is**: the file kind
-needs no secret, so nothing shipped is waiting on it, and a kind that cannot be reached without one
-is a kind this surface cannot state until private values have a home.
+⚠️ **That is a bound on what may be *written* in the block and not on which kinds may exist**, which
+is how the first kind behind a service came to be statable without the rule moving: the credential
+is named in `environment.inherits` and carried by the shell, exactly as a tracker kind behind a
+service already did it.
+
+### The spreadsheet kind, and the three things it had to settle that a directory never did
+
+⛔ **The reading half of this port is what the kind was stated for** —
+[`schema.md § 26 → The destination's operations`](../plugins/mjolnir/config/schema.md#the-destinations-operations-and-what-each-absence-does).
+A directory answers a period by being listed and parsed per entry; a spreadsheet already holds a
+column of figures against a column of days, which is what a period's consumer sums.
+⚠️ **The descriptions ride in a column of their own and are not a period's line items** — those are
+stated at a grain the day log is deliberately below.
+
+**The sheet's shape is the project's.** A person who already keeps a timesheet has their own header
+words in their own order, so the kind configures a mapping from the surface's three roles to the
+sheet's own words and resolves it against the tab's header row —
+[`schema.md § 26 → What each kind`](../plugins/mjolnir/config/schema.md#what-each-kind-of-destination-block-carries).
+⛔ **Every way that resolution fails is a refusal naming the key**: a word the sheet does not carry,
+a word two of its columns carry, two roles landing on one column. ⚠️ **The alternative was a fixed
+layout**, which refuses every sheet that already exists — and the failure a looser mapping has is
+not a refusal at all: a figure written into whichever cell happened to be third reads as a run that
+worked, and the period read back out is short with nothing saying so.
+
+**Values, never formulas, and the rule binds the read as well as the write.** A summing formula in
+the sheet is a second statement of the period and a stale one is a wrong invoice, so the write asks
+the host not to parse what it is given and the read asks for what was *entered* rather than for what
+is displayed. ⚠️ **A formula in the hours cell is therefore an unreadable day and never the number
+it currently shows** — which is the one shape of that reading that answers with a plausible figure
+instead of with nothing.
+
+⛔ **And nothing holds a spreadsheet against two writers, which is reported rather than designed
+around** —
+[`schema.md § 26 → What each kind`](../plugins/mjolnir/config/schema.md#what-each-kind-of-destination-block-carries).
+The file kind makes *one entry per day* a property of the file system by opening
+exclusively; a spreadsheet has no such call and the host publishes no compare-and-swap. So the write
+reads the day back and **fails naming both rows** where it finds two, and a person removes one.
+⚠️ **The limit is stated rather than closed**: a second row is still possible, and what the kind
+guarantees is that no period is answered with the doubled total.
+
+⚠️ **One limit of the read is worth writing down because it looks like an oversight.** A date cell
+holding a real date comes back as a serial number, and the epoch those count from is a property of
+the spreadsheet this host's API does not publish — so such a row is reported as one the kind cannot
+place in a day, rather than placed by guessing an epoch. ⛔ **That is the fail-closed direction**: a
+guess about which day somebody's hours belong to is the thing this port refuses, and the row is
+reported apart from the days for the reason § 26 already gives.
+
+### What `locate` may answer with once an address is private
+
+⛔ **The spreadsheet's identifier is marked `# private`, and the mark bounds the port's own reporting
+operation.** `locate` exists so a role can say where an entry landed, and § 28 keeps a private value
+out of every report — so under this kind `locate` names **the tab and the row** and never the store.
+⚠️ **That is the capability answering rather than its absent case**: the fallback names the store by
+its configuration, and a tab and a row say more than that to whoever can already reach the sheet
+while saying nothing to whoever cannot.
+
+⚠️ **The same bound reaches a failure's own wording**, which is the half that is easy to miss: every
+refusal quotes the call it made, and the identifier is in that call's URL path. What is quoted is
+the part of the path *after* the sheet — the range, the tab and the operation — so a failure says
+what was asked without saying where.
 
 ## The role-to-person map: four stores and one pointer
 
@@ -3580,8 +3637,12 @@ rate`](../plugins/mjolnir/config/schema.md#the-rate-and-what-this-surface-holds-
 resolved through [`schema.md
 § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold).
 The destination port's own ruling states that hours, rates and a client's
-identity reach no key of it **because no key of that port is marked** — so the mark was already
-what made such a value statable, and this facet is the first to use it:
+identity reach no key of it, and at the time this was written **no key of that port was marked** —
+so the mark was already what made such a value statable, and this facet was the first to use it.
+⚠️ **That port has since marked one key** — the spreadsheet kind's own identifier, which is a
+store's address rather than a figure or a person — and the ruling still holds for the reason it was
+made rather than for the count: what the mark reaches is the key that *names* the store, and hours,
+a rate and a client's identity are not it.
 
 | the value | where it is stated | where the value lives |
 |---|---|---|

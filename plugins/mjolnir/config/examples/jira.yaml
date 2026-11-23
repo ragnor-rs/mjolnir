@@ -396,9 +396,22 @@ day_log:
   # § 26's port. ⚠️ A worklog on this tracker is **not** what this names: an entry here is one
   # day's hours and description for the whole project, and a worklog hangs off one issue. Which
   # kinds are built is what the port's own directory says.
+  #
+  # The spreadsheet kind, which is this file's arm of that port: the client's own timesheet is a
+  # sheet somebody already kept before this toolkit arrived, so the column words below are read
+  # off its header row rather than imposed on it. ⛔ The sheet's identifier is **not here** — it
+  # is listed under § 28 below and resolved from the untracked file, which is what that facet's
+  # own `# private` mark on the key permits.
   destination:
-    kind: file
-    out_dir: "$TMPDIR/<project>"
+    kind: google-sheet
+    tab: "Time log"
+    # ⚠️ The words are the sheet's and the roles are the surface's. The order they sit in on the
+    # tab is read off the header row, so this says nothing about which column is first — and a
+    # column the client keeps for their own purposes sits between two of these and is left alone.
+    columns:
+      date: "Date"
+      hours: "Hours"
+      description: "What was done"
 
 branch_model:
   # The shape where every item gets its own tree and the shared checkout is never worked in —
@@ -457,11 +470,18 @@ private:
   # half states is which keys it answers. ⚠️ `evidence.chat.path` among them is the one that
   # proves the list is read before requiredness — it is required under this `kind`, and this
   # file carries it nowhere.
+  #
+  # ⚠️ `destination.sheet` is the one entry here that is a **store's address** rather than a
+  # person, a thread or a rate: the client's timesheet is identified by a string that opens it to
+  # anyone who has it, and § 26 marks that key for exactly this. ⛔ The credential that reaches
+  # the sheet is **not** on this list and could not be — § 14 holds a credential out of every
+  # configured value and names the variable instead, which is `environment.inherits` below.
   carrier: file
   source: "<the path to this project's own untracked file of those values>"
   keys:
     - billing.rates
     - day_log.attribute_to
+    - day_log.destination.sheet
     - day_log.evidence.calendars
     - day_log.evidence.chat.exclude
     - day_log.evidence.chat.mixed
@@ -483,12 +503,17 @@ loop_exempt:
   destination: null
 
 environment:
-  # Two variables rather than one: this tracker authenticates as a person, so the credential
-  # and the account it belongs to are separate facts and both are read. ⚠️ Which is also why
-  # `writer: never` appears throughout this file — the same credential that makes the write
-  # possible is what makes it read as that person speaking. ⛔ The names are the ones the
-  # implementation reads: a list naming only the token would read as complete.
-  inherits: [PATH, HOME, JIRA_ACCOUNT, JIRA_API_TOKEN]
+  # Two variables for the tracker rather than one: it authenticates as a person, so the
+  # credential and the account it belongs to are separate facts and both are read. ⚠️ Which is
+  # also why `writer: never` appears throughout this file — the same credential that makes the
+  # write possible is what makes it read as that person speaking. ⛔ The names are the ones the
+  # implementations read: a list naming only a token would read as complete.
+  #
+  # ⚠️ The third is the day log's store, and it is the whole of how § 26's spreadsheet kind is
+  # reachable: that block addresses the sheet and this names the variable the secret arrives in.
+  # ⛔ Named and never valued — a list of names is not a secret, and a configured value would be
+  # the leak § 14 exists to prevent.
+  inherits: [PATH, HOME, JIRA_ACCOUNT, JIRA_API_TOKEN, GOOGLE_SHEETS_TOKEN]
 
 e2e_register:
   # The facet carried in full: a suite of journeys, a document that says which journey each case
