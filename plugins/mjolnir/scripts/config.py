@@ -14206,6 +14206,46 @@ def self_test() -> int:
         unknown == "stop deploy",
         f"answered {unknown!r}",
     )
+    # ⛔ § 31 rules the refusal "held to the list and never to a root of it": a
+    # tier is the project's and a target names its own repository, so a tier
+    # refused on a target says nothing about which repository either is in.
+    # ⚠️ The stop above reads that list through `get`, so a narrowing that
+    # answered with one root's targets would turn a target the project **does**
+    # state into a stop -- under a root, silently, and only for the targets
+    # belonging to the other one. Found by probing the narrowed read rather than
+    # by reading it; the arm is what keeps the answer.
+    narrowing = _a_collection_example()
+    if narrowing is None:
+        failures += 1
+        print("  FAIL  no example carries § 1's collection, so the per-root refusal is unasserted")
+    else:
+        with open(SURFACE, encoding="utf-8") as handle:
+            narrowing_facts = surface_facts(handle.read())
+        across = [
+            target["name"]
+            for target in _absent_as(_get(narrowing, "deploy"), [])
+            if isinstance(target, dict) and isinstance(target.get("name"), str)
+        ]
+        check(
+            "the collection example states targets, so this arm has a subject",
+            len(across) > 1,
+            f"found {across!r}",
+        )
+        unseen = []
+        for root in list(_get(narrowing, "roots.code") or {}):
+            narrowed = _resolve(
+                copy.deepcopy(narrowing), EXAMPLES, narrowing_facts, False
+            ).root(root)
+            for name in across:
+                try:
+                    narrowed.tier("integration", name)
+                except ConfigError as error:
+                    unseen.append((root, name, error.key))
+        check(
+            "every target the project states answers under every root, not just its own",
+            not unseen,
+            f"stopped on {unseen!r}",
+        )
     # ⛔ The arm that must not weaken, asserted on the answer and not on the
     # prose: a suite stating neither source comes back with no verdict, and the
     # report says so in the words § 31 uses. A reading that defaulted it to the

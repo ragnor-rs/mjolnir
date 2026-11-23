@@ -587,17 +587,17 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --tier <each tier § 31 states
   --against-target <the target this change is verified on, where the project states one>
 ```
 
-- ⛔ **What this launches is the suite the ordinary build does not already run, read off its verdict
-  source and never off its tier's name.** A suite whose verdict is a `workflow` is started by that
-  workflow's own triggers ([`§ 2`](../../config/schema.md#2-code-host)) and its answer was read at
-  the head of this step; a suite whose verdict is a `command` is the one nothing else will ever
-  start, and that one is this step's to launch — ⛔ **the same division this step already makes**
-  between a command the host has mirrored and a check no entry mirrors. ⚠️ **A project whose whole
-  suite the host runs therefore configures nothing and gets today's behaviour.** ⛔ **And the
-  carve-out already stated above holds here unchanged**: a command the project's `done:` list
-  carries is the finishing role's to run, so a suite whose verdict is that command is reported as
-  that role's rather than launched here — ⛔ never run by both, which is the expensive suite spent
-  twice this step is already written against.
+- ⛔ **Which suites this is owed for is read off the verdict source, never off a tier's name.** A
+  suite whose verdict is a `workflow` was answered by that workflow's own triggers
+  ([`§ 2`](../../config/schema.md#2-code-host)) and read at the head of this step, so nothing here
+  starts it; a suite whose verdict is a `command` is a `checks_local` entry, and ⚠️ **whether that
+  command runs here was already decided above** — by the mirrored-or-not division and the `done:`
+  carve-out, which this reading does not re-decide and may not contradict. ⛔ **What this reading
+  decides is the other question: whether the tier may run at all**, which
+  [`§ 31`](../../config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) holds
+  and § 17 does not — ⛔ **so a suite the division above sends elsewhere is reported with its tier's
+  own answer and launched by nobody twice.** ⚠️ **A project whose whole suite the host runs
+  therefore configures nothing and gets today's behaviour.**
 - ⛔ **Every suite so identified whose preconditions hold is launched, and this step runs whole**:
   one that fails does not stop the ones after it, and a change failing two hears about both.
   ⚠️ **The order is the project's own list order**, never one composed here.

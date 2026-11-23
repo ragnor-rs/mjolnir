@@ -305,10 +305,10 @@ record, and the record is written whether or not one is installed.
 anywhere else.** Stated here for the reason the division above is: two roles read it, and a rule
 read by two roles and written in one of their skills is a second authority for the other.
 [§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) states what each tier needs
-before it can run at all, and the launch is the act over that list — the suites started, the refusal
-a target states performed, and a report per suite of what ran, what was refused and what could not
-run. ⛔ **Which of them this is owed for is the role's own reading and not stated here**, that being
-a question about what the project's own build already runs. ⛔ **The deploy role reads which tiers
+before it can run at all, and the launch is the act over that list. ⛔ **What the act comprises and
+which suites it is owed for are the role's own and are not stated here** — the first because the
+report's form is procedure, the second because it is a question about what the project's own build
+already runs. ⛔ **The deploy role reads which tiers
 ran out of what its invocation delivered and launches none**, which is that role's own statement and
 not a restriction added here. ⚠️ **It is an arm of a leg and not a leg of its own**, by the test
 this section splits a role on: what it may do is what the reviewing role may do — run a command in a
