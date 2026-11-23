@@ -3802,3 +3802,78 @@ them is a defect in that project:
 ⚠️ **Its own gate is green**, which is how the five were told apart from findings: the comparison
 was run against a project whose checker passes, so a difference is this facet's shape and not that
 project's prose.
+
+## The specification corpus: a block of three keys, one of which was already carried
+
+The item asking for this wrote the shape it wanted, and ⛔ **one of its three keys is a second
+record of a fact that had already landed.** Read against the surface as it now stands:
+
+| what the item asked for | what the surface already says |
+|---|---|
+| `root`, a path the corpus hangs under | **no root.** § 38 states its governed set as glob lists against repository-relative paths and carries none, so a `root` beside globs would make every glob relative to a second thing — and the two spellings of one path would be free to disagree. The item notices the absence and still asks for the key |
+| `load_bearing`, the part read whole | **carried as asked**, with `[]` legitimate and the corpus's own list refused empty — § 38's division between a marker's question and a shape rule's |
+| `ref_for_version`, how a version names a ref | **already there.** [`schema.md § 4.8`](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s `ref_prefix` is a ref named after a grouping's own value, and [`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)'s `grouping_ref_exists` already composes it. A key here would be two records of one branch-naming scheme |
+
+So what the facet carries is a carrier, two glob lists and ⛔ **one key naming which of § 4.8's
+groupings the corpus hangs off** —
+[`schema.md § 39 → The ref is the grouping's`](../plugins/mjolnir/config/schema.md#the-ref-is-the-groupings-and-this-facet-declares-none).
+⚠️ **Written as a rule of the reader rather than a marked condition**, because what its
+requiredness turns on is *how many* groupings a project carries, which is `work_item.code_root`'s
+own reason for the same choice.
+
+### The obvious rule about `kind` is refused by a shipped example
+
+⛔ **Refusing every grouping whose `kind` is not `version` reads as the natural rule and is wrong**,
+and the measurement is in this repository's own examples: the cheapest configuration there is names
+its releases with the tracker's **milestones** and cuts a branch per release, so `kind` is
+`milestone` and a ref is named after it. That rule would refuse it.
+
+⚠️ **What `kind` and `ref_prefix` each answer is therefore stated rather than conflated**: the first
+says what a grouping is **to the plan** and the second says that a ref carries its value, and it is
+only the second this facet needs —
+[`schema.md § 39 → The ref is the grouping's`](../plugins/mjolnir/config/schema.md#the-ref-is-the-groupings-and-this-facet-declares-none).
+⛔ **What not reading it gives up is stated too**: a `ref_prefix` on a time box, named here, gets the
+corpus read at an iteration's branch and nothing refuses it.
+
+### Three outcomes, and the third was found by building the read
+
+The item names two — the version's own ref, and the fallback where that branch does not exist yet.
+⛔ **A third exists and only appears once the read is actually taken**, which is why
+[`schema.md § 39 → The fallback`](../plugins/mjolnir/config/schema.md#the-fallback-is-correct-and-it-is-the-one-thing-here-that-must-be-said-out-loud)
+states the pair it must not be folded into: the branch is on the remote and is **not in this
+clone**, so there is no object to read.
+
+| the outcome | what it means | the wrong answer it is not |
+|---|---|---|
+| the version's ref resolved | the copy that governs | — |
+| the branch does not exist | the integration branch was read instead. ⚠️ Correct, and reported on every run that takes it | a verdict about the governing copy |
+| the branch is on the remote and not in this clone | **nothing was read** | the fallback. ⛔ Folding the two would read the governing copy's absence from a clone as the version's absence from the project |
+
+⚠️ **The limit this makes explicit is that the read is a read.** It reaches the remote for one
+question and opens objects only out of the clone, so a version nobody has fetched is reported
+unread with the one command that would fetch it — rather than fetched, which is the role's call and
+not the carrier's.
+
+### The negative is asserted, and one arm's first form reported the right colour
+
+⛔ **"Nothing is checked out" is asserted rather than promised**: the branch, the head, the porcelain
+status and a corpus file's own uncommitted text are digested before and after a read taken from a
+third branch with a dirty tree, and compared. The read it takes is the version's copy and not the
+uncommitted one, which is the whole of what
+[`schema.md § 39 → Which copy governs`](../plugins/mjolnir/config/schema.md#which-copy-governs-and-why-the-working-tree-is-never-it)
+is for.
+
+⚠️ **The arm needed a second tree, and a plant is what found it.** Planting a plain `git checkout`
+into the read reported **green**: on a dirty tree git refuses that checkout, because it would
+overwrite the local change — so the arm was reached only by a *forcing* checkout, and a plant
+nobody forced certified nothing. ⛔ **So the negative is asserted twice**, on the dirty tree and on
+a clean one, the clean tree being where a plain checkout succeeds; and the suite asserts that the
+clean tree really was clean, or the pair would be the dirty arm written out twice.
+
+⚠️ **And one arm's first form was measured wrong rather than failing.** The grouping rule asked its
+question against the raw `work_item.grouping` block, where a grouping whose carrier is `none` is
+still written; § 4.8's own rules drop it, and the gate's checks read the set that remains. So a
+project planning in no grouping was refused for stating no `ref_prefix` — the right colour under
+the wrong key, and a plant certifying the wrong arm. ⛔ **The fix was to ask the resolved set**, in
+the one function that produces it, which is why this rule sits beside § 5's rather than with the
+facet's own glob arms.

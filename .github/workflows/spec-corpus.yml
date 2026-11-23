@@ -1,0 +1,46 @@
+name: Spec corpus
+
+# The carrier that reads a project's specification corpus at the ref the item's version maps to.
+# What a gate can hold about it is every arm that needs no project of anybody's: that the copy read
+# is the version's own and not the working tree's, that nothing is checked out by the read, that a
+# version whose branch does not exist falls back and says so, that a branch the remote advertises
+# and this clone does not hold is reported unread rather than as the fallback, and that a project
+# carrying no corpus is reported as having no subject rather than as having no contradiction.
+#
+# ⚠️ One run and not two, unlike the documents pair beside it: `spec_corpus` is `none` on this
+# repository, so there is no corpus here for a second run to read. What the suite below reads is
+# repositories it builds itself — a branch per version, a dirty tree on a third branch, and a
+# single-branch clone — which is the only place the three outcomes can be stood up at all.
+#
+# ⛔ What stays unheld is stated rather than assumed away: whether a request contradicts the
+# corpus is a reading of prose and the filing role's to make by § 39, so nothing here runs or
+# counts one.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The carrier reads objects out of a clone and asks a remote one
+# question, so a run that needed one would be a run doing something this one does not.
+permissions: {}
+
+jobs:
+  spec-corpus:
+    name: Spec corpus
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, and the same string `host.checks` states this run mirrors. ⚠️ Held
+      # together by eye, and § 2 rules that it must be: the mapping from a run to the command it
+      # mirrors is configured and never inferred. The workflow *name* above is held mechanically,
+      # by the `Host checks drift` run.
+      - name: Assert each outcome against repositories built for it
+        run: python3 plugins/mjolnir/scripts/spec_corpus.py --self-test

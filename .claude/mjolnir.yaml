@@ -232,6 +232,15 @@ host:
     - workflow: "Single source of truth"
       mirrors: "python3 tools/check_single_source.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The same reading as the entries above whose facet this project does not state:
+    # `spec_corpus` below is `none`, so pointed at this tree the carrier answers that there is no
+    # corpus and no verdict about one. ⛔ One entry and not two, unlike the documents pair above:
+    # there is no corpus here for a second run to read, so what this holds is the three outcomes
+    # against repositories the suite builds — a branch per version, a dirty tree on a third
+    # branch, and a single-branch clone, which is the only place the unread arm exists at all.
+    - workflow: "Spec corpus"
+      mirrors: "python3 plugins/mjolnir/scripts/spec_corpus.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Spend guard"
       mirrors: "python3 plugins/mjolnir/scripts/spend.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -985,3 +994,23 @@ documents:
   # reworded into its opposite, so an entry here would be a check whose green says nothing — which
   # is what the reader warns about rather than refuses.
   quoted: []
+
+# § 39. No specification corpus, and the reason is the one § 39 writes the absence down for: this
+# repository's specification **is** the configuration surface, which `documents` above already
+# governs as prose and which no branch carries a second copy of. ⛔ Not a project that has one
+# somewhere the surface cannot reach — a wiki, a document store — which is the other reading of
+# this carrier and the one `revisit_when` is the trigger for. ⚠️ And the grouping half is absent
+# twice over: `work_item.grouping.carrier` is `none` here, so there is no version for a ref to be
+# named after even if a corpus existed.
+spec_corpus:
+  carrier: none
+  absent_reason: >-
+    The specification of this toolkit is `plugins/mjolnir/config/schema.md`, read at the tree a
+    role is standing in and held by the `documents` facet above. There is no second copy per
+    version: nothing here is versioned (`release.carrier` is `none`), so no branch carries the
+    surface as it stood for a version and there is no ref for a filing role to read it at.
+  revisit_when: >-
+    This toolkit starts being versioned for consumers, which is the first moment a branch carries
+    a copy of the surface that differs from the default branch's — or a project adopting these
+    roles keeps its specification in its own repository, which is the shape § 39 was written from
+    and which this project is not.

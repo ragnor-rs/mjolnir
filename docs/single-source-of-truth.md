@@ -4359,3 +4359,54 @@ only through its carrier's suite is a facet nothing has ever run over real text 
   assert is every commit after it** — an edge added with no row, and a row whose edge the text
   dropped, are each a failure ([`schema.md § 38 → The two
   edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)).
+
+## The specification corpus, read at a ref rather than out of the tree
+
+The checks above read the **index** — the files in the tree now. ⛔ **This one reads a ref**, and
+that is the whole division between the two: which copy of a project's specification governs an item
+is the copy on the branch for *that item's version*, which is a different set of bytes from the one
+any index carries ([`schema.md § 39`](../plugins/mjolnir/config/schema.md#39-the-specification-corpus-and-which-copy-of-it-governs)).
+`plugins/mjolnir/scripts/spec_corpus.py` is the one implementation, and the globs, the part read
+whole and the grouping the ref is named after are a project's configuration.
+
+One run and not two, unlike the pair above: `spec_corpus` is `none` on this repository, so there is
+no corpus here for a second run to read. What `Spec corpus` holds is each outcome against
+repositories the suite builds — a branch per version, a dirty tree on a third branch, and a
+single-branch clone:
+
+| Name | Check | Kind |
+|---|---|---|
+| the copy read is the version's own | the ref composed from the grouping's prefix, and the text read at it | computed |
+| nothing is checked out | the branch, the head, the porcelain status and a corpus file's uncommitted text, digested before and after the read | computed |
+| a version with no branch falls back and says so | the integration branch read instead, and the report naming the ref it actually read | computed |
+| a ref the remote has and this clone does not is unread | the third outcome, reported as itself rather than as the fallback | computed |
+| a keyword is held to a word boundary | the match that reports a hit inside a longer word | computed |
+| a project with no corpus has no subject | the absent case, and the report that says so rather than that nothing contradicts | computed |
+
+⛔ **The two answers the last of those keeps apart are the reason the facet is worth a check at
+all.** *No corpus is configured* is the absence of a subject and *no contradiction was found* is a
+verdict, so the suite asserts the first and asserts that the second does not appear
+([`schema.md § 39 → the absent
+case`](../plugins/mjolnir/config/schema.md#carrier-none-and-the-two-answers-it-must-not-collapse-into-one)).
+
+### What this check deliberately does not hold
+
+- **Whether the request contradicts the corpus.** That is a reading of prose and the filing role's
+  to make. ⛔ **The carrier answers `None` rather than `False`** so that a caller rendering it
+  cannot print *none found*, which is the one wrong answer available here
+  ([`schema.md § 39 → the absent
+case`](../plugins/mjolnir/config/schema.md#carrier-none-and-the-two-answers-it-must-not-collapse-into-one)).
+- **Anything about the corpus's content.** Not a section list, not a heading, not a document's
+  shape — the first of those is § 38's subject and the rest are nobody's here
+  ([`schema.md § 39`](../plugins/mjolnir/config/schema.md#39-the-specification-corpus-and-which-copy-of-it-governs)).
+- **Whether the grouping named is the right one.** ⛔ `kind` is not read, so a `ref_prefix` on a
+  time box gets the corpus read at an iteration's branch and nothing refuses it. What rules that
+  out is the project's own statement of which grouping carries the corpus
+  ([`schema.md § 39 → The ref is the grouping's`](../plugins/mjolnir/config/schema.md#the-ref-is-the-groupings-and-this-facet-declares-none)).
+- **A version nobody has fetched.** The read opens objects out of the clone, so the third outcome
+  is reported with the one command that would fetch it rather than fetched — a fetch being the
+  role's call and not the carrier's.
+- **Whether this repository's own corpus is read.** There is none: the facet here is `none`, so
+  every arm above runs against a fixture and none of them has ever run over a real project's
+  specification. ⚠️ **That is the gap the documents pair above does not have**, and it is stated
+  rather than left for a green to imply.
