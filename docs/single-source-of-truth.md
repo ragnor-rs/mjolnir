@@ -138,6 +138,7 @@ inserted rather than appended renumbered every reference below and the run staye
 | 8 | `citations between documents resolve` | Every **other** anchored link into a markdown heading resolves — between two documents, out of the schema into one, and within a document | every document with a role, the schema included | computed |
 | 9 | `the record has a row per check` | This table's rows are the script's checks, in its own order and under its own names | the number and the name, not what the remaining cells say | computed |
 | 10 | `no document leaves a fence open` | No document ends inside a fenced block | every document with a role, the schema included | computed |
+| 11 | `the front page names every carrier` | Every carrier the plugin ships is offered on the front page as a command **and** linked in the inventory below it, and neither list names a carrier that does not ship | both lists, fenced examples excepted | computed |
 
 Check 2 is the one that does the most work, because it runs in the direction nobody remembers to
 check by hand: a section added to the schema with nothing recording why it has that shape fails
@@ -342,6 +343,13 @@ Stated, because an unstated limit reads later as coverage.
   ⛔ **A row whose scope or kind has gone stale reads correctly to it**: that half is a
   reader's. ⚠️ **And a row carrying no name cell is refused rather than compared**, which is a
   document to report on and not a verdict about any check.
+- **What the front page *says* about a carrier.** Check 11 holds membership of its two lists in
+  both directions and nothing else: the sentence beside a carrier is written for an adopter and is
+  held by nobody, so a row describing the wrong role, a benefit the carrier does not deliver and a
+  description that has gone stale all read correctly to it. ⛔ **Neither is the order of either
+  list held**, the page being an advertisement rather than an inventory in a fixed sequence.
+  ⚠️ **And its subject is this repository's own carriers**: an adopting project's own page is
+  outside every glob this gate walks, so nothing here says whether that page is complete.
 - **A heading inside a region the citation scan skips and the heading scan does not.** ⚠️ **The
   two scans now share one fence walker**, so this residue is narrower than it was: a fenced
   block is the same bytes to both, under either delimiter and at any delimiter length. ⛔ **What

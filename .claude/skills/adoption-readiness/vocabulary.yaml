@@ -110,11 +110,20 @@ carriers:
   finish:         { role: finish }       # the reconciled finishing role (#10, shipped by #113)
   start:          { role: start }        # the starting half, still project-local (#9)
   review:         { role: review }       # the reconciled reviewing role (#11)
-  # ⚠️ The three roles #14 named apart carry no entry here yet, and that is correct rather than an
-  # omission: none of them is reconciled, so no carrier of any of them is shipped under its own
-  # name. #265 ships the session summary, #266 the billing report and #267 the hours breakdown,
-  # and each of those changes names its own carrier here — not before, or the check reports a
-  # carrier the plugin does not ship.
+  # ⚠️ The three roles #14 named apart are no longer in one state. The billing report's carrier is
+  # shipped and is classified below; #265's session summary and #267's hours breakdown carry no
+  # entry here yet, and that is correct rather than an omission — neither is reconciled, so no
+  # carrier of either is shipped under its own name. ⛔ Each of those two names its own carrier
+  # here in the change that ships it: not before, or the check reports a carrier the plugin does
+  # not ship, and not after, which is what the entry below cost.
+  billing-report: { role: billing_report }  # the billing-report role (#266). ⚠️ Its carrier
+                                            # landed with the change that ruled where a role whose
+                                            # subject is more than one project belongs (#18), and
+                                            # no entry came with it — so every verdict this check
+                                            # gave was refused for an unclassified carrier until
+                                            # this line, which is the recurrence the `setup` entry
+                                            # above and the hook block below each state in their
+                                            # own words
   cut-release:    { role: release }      # the release role, shipped by #36 — and the one shipped
                                          # carrier whose basename is not its role key, because
                                          # the word `release` is already taken above by a
