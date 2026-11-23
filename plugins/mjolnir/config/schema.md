@@ -8778,7 +8778,10 @@ being files in repositories this one cannot open.
 second half is this section. ⚠️ **One file, and a second one where
 [§ 28](#28-a-configured-value-a-repository-may-not-hold) applies** — a project holding values it may
 not commit writes those into a file it does not track, which is a cost that facet states and this
-sentence would otherwise read as denying.
+sentence would otherwise read as denying. ⚠️ **And it is a claim about what is written**: a project
+that already states its loop somewhere of its own owes a pass over that as well, which is
+[§ What a project already holds](#what-a-project-already-holds-that-states-the-loop-and-what-adopting-it-does-to-that)'s
+and is nothing this step performs.
 
 What the procedure needs and cannot express anywhere else is a file in the adopting repository: a
 host gate is a workflow file or the host never runs it, and a rail that has to fire on a git
@@ -8948,3 +8951,126 @@ outright, and it would make every run a change. ⛔ **What is removable is the m
 file** — removing a project's configuration is removing its adoption, which is a person's act — and
 ⛔ **a file a person wrote carries no marker at all**: it is edited key by key, and marking it would
 be this step claiming authorship of somebody else's file.
+
+## What a project already holds that states the loop, and what adopting it does to that
+
+**A project adopting this toolkit holds its loop in three places, and adoption reaches two.** Its
+own carriers stop being the route, and the one file the two sections above are about is written; the
+third place stands untouched — the project's **own instructions file** and the **per-project memory
+store** [§ 25](#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from) names. ⛔ **Both of
+those are read at the start of every session**, which is what makes a procedure left standing in
+them a procedure still in force rather than a leftover.
+
+⛔ **So a migration is not finished when the carriers are gone.** What it leaves if it stops there
+is this file's own subject one layer out: two statements of one rule, free to disagree, of which the
+one a session reads first is the one nobody reviewed. ⚠️ **And the two stores are not one problem in
+two places** — one is a tracked document and the other is a store § 25's carriers may put outside
+the repository entirely, which is what the mechanics below turn on.
+
+⛔ **The end state is the one this file's opening paragraphs already state for every document beside
+it: those stores may *name* where a rule of the loop lives and may not *restate* it.** A project
+keeping a description of the loop is not the failure — a project keeping a **second** one is, and
+the test is whether a reader who found the two disagreeing could tell which binds. ⚠️ **Which is why
+a pointer at the section is admissible prose and a paraphrase of it is not**: no mechanism can
+establish that a paraphrase still matches what it paraphrases — the reason the quoting kind of check
+is admitted with a warning and never relied on
+([§ 38](#the-three-kinds-of-check-and-the-one-that-is-admitted-with-a-warning)) — so a text that
+cites is checkable and a text that restates is not.
+
+⛔ **This is procedure and declares no key**, by the device
+[§ An artifact states what is true now](#an-artifact-states-what-is-true-now) and the two sections
+above each use:
+
+```yaml
+# procedure: rulings
+```
+
+⛔ **`rulings` is the key this surface will never declare**, and it names the shape a reader reaches
+for first: a pointer at a project's own store of rulings, the way
+[§ 27](#27-the-role-to-person-map) points at a role-to-person map. It is refused for the reason that
+facet is admitted — ⛔ **a pointer carries values a role reads, and a ruling is not a value.** § 27's
+map answers *who holds this role*, and a role looks that up to decide what to do next; a ruling
+**is** what to do next, which
+[§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) sends to
+procedure rather than to a key. ⚠️ **The same refusal is already recorded for the one class of these
+rulings that is stated here**, at
+[§ The loop → What earns a test](#what-earns-a-test-and-what-makes-its-red-believable), and this
+section classifies the rest against that form rather than settling it a second time.
+
+### Every ruling in those stores is classified, and the subject is the whole store
+
+⛔ **Ruling by ruling, and three dispositions.** Each one is **promoted** — to procedure on this
+surface, or to a key it already declares — **carried as configuration**, by a project writing the
+value some key asks for, or **deliberately local**. ⛔ **And a ruling that generalises to no other
+project is named rather than dropped as project colour**: an unclassified ruling reads as a project
+fact while being a procedure in force, which is the one state a migration must not leave behind.
+
+⛔ **The subject is the whole store and not its loop rulings.** A store read for those alone leaves
+most of itself unclassified, and the classes that reading misses do not resolve in the same
+direction as each other — one of them belongs to a project other than the one holding it, which no
+reading scoped to the loop would have surfaced at all
+([the measurement](../../../docs/configuration-surface.md#the-third-surface-one-store-read-whole-and-the-classes-the-loops-share-misses)).
+
+⚠️ **The case for leaving all of them where they are is the strongest of the three, and it is stated
+rather than dismissed.** It costs nothing, it keeps a ruling beside the prose that justifies it, and
+it is the only disposition that **deletes** nothing. ⛔ **What it costs is this toolkit's own
+founding argument applied one level in**: a correction somebody paid for once stays readable by one
+project's sessions and by no other's, which is the condition the roles were extracted out of. ⚠️
+**And what answers it is that the homes exist**: a ruling whose key or subsection is on this surface
+is promoted without being lost, and one whose home is nowhere is **named** rather than left where it
+is by default. ⛔ **So *local* is a disposition a ruling is given, and never the one it keeps for
+want of a reading.**
+
+### What each store owes, and why the two are mechanically different
+
+| the store | where it is | what holds it |
+|---|---|---|
+| the project's own instructions file | tracked, under a code root | [§ 38](#38-the-documents-a-project-holds-to-a-checkable-property): the file is a governed document, and a spelling the loop has moved away from is a `forbidden` entry carrying its own `reason` and `stable_because` |
+| the per-project memory store | wherever [§ 25](#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)'s carrier puts it, which under `derived` is outside the repository by construction | ⛔ **nothing this toolkit ships**, in that case: the procedure composes no path to the store, so no glob governs it and no check reaches it |
+
+⛔ **The second row is a boundary and not an omission**, and what stands where a check would be is
+two things this surface already states: § 25's admission over whatever enters that store next, and
+the classification above having been **named** in the pass that made it. ⚠️ **So the disposition of
+every entry is recorded rather than performed silently** — the one artifact a later reader can check
+the pass against, there being no run to re-read.
+
+⚠️ **A pinned store is the one case where the second row can become the first**, and it is worth an
+adopter knowing before it chooses: § 25's `store` may be stated relative to the skills root, so a
+project that pins its store **inside** the repository has a store § 38's globs can govern like any
+other prose. ⛔ **That is not a recommendation and this section makes none** — which carrier a
+project gets is a property of where its store already is, which § 25 states — but it is the
+difference between a half nothing holds and a half something can.
+
+### The invocation changes, and the two surfaces move in opposite directions
+
+⛔ **Every invocation a project's documents name is the namespaced form**, which is
+[§ 7](#invocation)'s rule rather than this section's: a bare name is a role that was a project's own
+carrier and is not one now. ⚠️ **Such a document is not merely out of date** — it names a route that
+resolves to nothing, and nothing announces that.
+
+⚠️ **What a day's measurement does about the same change is the opposite, and is already settled**:
+[§ 9](#9-day-log)'s ritual list matches the bare and the namespaced form of every name on it,
+because the bare form is in the transcripts for ever and a day backfilled from them would otherwise
+count bookkeeping as work. ⛔ **So the documents are rewritten to the new form and the measurement
+keeps reading both** — ⚠️ **and the direction matters**: a migration that narrowed the list to the
+new form alone would not lose a day's hours but inflate them, every past bookkeeping turn counting
+as work, which is the error nobody checking an invoice would catch.
+
+⛔ **A fact in the store that names a deleted carrier goes stale silently**, and is recalled as the
+next pass's premise rather than re-derived —
+[§ 24](#24-session-restore--the-readings-a-pass-is-resumed-from)'s rule met from the writing side.
+So repointing such a fact belongs to the migration rather than to a tidy-up after it, and one whose
+premise the migration itself removed is reported under
+[§ 25](#the-standing-a-recalled-fact-is-reported-under)'s standing rather than left to read as
+current.
+
+⚠️ **What this section does not reach is named, so that a reader can tell a boundary from a gap.**
+It rules nothing about *which* rulings a given project holds, that being a reading of that project's
+own store; and it adds no leg to [§ The loop](#the-loop--thirteen-roles) — the pass that performs
+this is the adoption, and no role on that closed list enters it. ⛔ **And the forbidding half above
+cannot be asserted by the repository that states the rule**: a document quoting the bare form as
+evidence is correct, a lexical ban cannot tell it from a document naming a dead route, and a
+forbidding check about a rule is the one most likely to forbid the prose stating it — measured here,
+where exactly one governed document carries the bare form and carries it as the measurement behind
+the two-form match above
+([the measurement](../../../docs/configuration-surface.md#the-third-surface-one-store-read-whole-and-the-classes-the-loops-share-misses)).
