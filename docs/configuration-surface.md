@@ -3593,6 +3593,39 @@ what made such a value statable, and this facet is the first to use it:
 is the surface's own: no role reads the client to decide what to do next, so it is told rather than
 configured.
 
+### What a marked value costs the role that needs it, measured on this one
+
+⛔ **The second row above is unreadable by the role it exists for, and that is the mark working
+rather than failing** — [`schema.md
+§ 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold) states
+the class, and a value this repository may not hold is one the reader's report replaces with a
+marker. ⚠️ **Measured on the § 28 arm of this facet**: a run
+against a project whose `private.keys` names `billing.rates` printed `rates: "<private:
+private.source>"`, while `Config.billing` over the same project resolved the real mapping. The role
+was documented as reading the key and forbidden from parsing the file, so the chain had **no route
+to a rate at all**, and the one guard on the resolved value was reachable by nothing: disabling it
+left every suite in this repository green.
+
+⛔ **So the division is the one the measuring role already had**, and it is a property of the class
+rather than of this facet — [`schema.md § 28 → The
+pointer`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)
+being what puts such a value outside the tracked file in the first place: it is read **inside a
+process**, and a role that needs one names the key and runs the carrier that resolves it.
+[`day_log.py`](../plugins/mjolnir/scripts/day_log.py) reads `day_log.attribute_to` that way, and
+[`billing.py`](../plugins/mjolnir/scripts/billing.py) reads the rate that way, with two outputs
+whose difference is the whole of its contract:
+
+| what it emits | what it carries | why there |
+|---|---|---|
+| its own standard output, which the role reads | the period's unpriced half — roots, days, hours, what could not be read | a role's output is a session transcript, which § 28's values may not reach |
+| the artifact, at the destination the invocation names | the rate, the money, and the client | the one output a rate is owed to, being what whoever pays reads |
+| each root's own answer, where `--answers-dir` names | that root's port answer, one file per root | § 11's ingestion step is run **per root**, and one pass over the concatenation reports one verdict for every store |
+
+⚠️ **The ingestion step moved with the reading**, and that is the same rule one level down: the
+carrier is what reads another project's store, so it is what runs the step and what stops on a
+directive found in one — a pass running it afterwards would be examining a period whose artifact was
+already written.
+
 ### The row the port cannot answer, found by running the chain
 
 ⛔ **A root that maps no day-log carrier still answers**, which is the one arm on this facet the

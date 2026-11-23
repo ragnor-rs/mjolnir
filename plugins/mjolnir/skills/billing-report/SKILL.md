@@ -46,28 +46,27 @@ the artifact goes**.
 | the period | the invocation, as a first and a last day |
 | where the artifact goes | the invocation. ⛔ § 37 carries nothing about it, and § 5 below is what a pass given no destination does |
 | the projects | `billing.projects`, read in full |
-| the rate | `billing.rates`, under the client the invocation named |
+| the rate | ⛔ **not read here at all** — `billing.rates` is resolved inside the carrier below, and § 5 is where that is stated |
 
 ⛔ **A client the rate mapping does not name is a stop naming the client**, never a period rendered
-at no rate and never a rate taken from another entry. ⚠️ **And the mapping is resolved through the
-reader like every other value** — under [§ 28](../../config/schema.md#28-a-configured-value-a-repository-may-not-hold)
-it comes out of a file the project does not track, which is where a rate and a client's name live
-and the reason neither is in this toolkit.
+at no rate and never a rate taken from another entry. ⚠️ **The carrier is what produces that stop**,
+and it names the client the invocation gave it and no other entry the mapping holds.
 
-⛔ **Neither value is reported.** The rate and the client reach the artifact and the artifact's own
-destination; ⛔ **they do not reach the reply**, which goes into a session transcript that is not
-the file § 28 put them outside the repository to keep them in.
+⛔ **Neither value is reported, and neither is read into this pass.** Under
+[§ 28](../../config/schema.md#28-a-configured-value-a-repository-may-not-hold) the rate comes out of
+a file the project does not track, and ⚠️ **the reader's own report replaces every such key with a
+marker** — so there is nothing to read there, by design rather than by omission. ⛔ **The rate and
+the money reach the artifact and its destination and nothing else**: a reply is a session
+transcript, and so is the output of any command this pass runs.
 
 ## 2. The hours, one project at a time
 
-For each root in `billing.projects`, in the order the list states it:
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --skills-root <the root>
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --skills-root <the root> \
-  --port day_log.destination.kind --invoke read_hours \
-  --argument <the first day> --argument <the last day>
-```
+⛔ **The carrier in § 5 reads every root, and this pass reads none of them itself.** It takes each
+root in the order `billing.projects` states it, asks that root's own reader which carriers it maps,
+and then asks that root's own destination port for the period — ⚠️ **two readers of one store are
+free to disagree about a period**, so the role that reports the hours is not also a reader of them.
+What a root's own answer looks like, for each of the five cases below, is what the carrier reports
+per root.
 
 ⛔ **The port is the only way in**, and
 [`config/schema.md § 37 → What the list names`](../../config/schema.md#what-the-list-names-and-what-resolves-each-entry)
@@ -85,11 +84,11 @@ carrying it once.
 | the operation **failed** | the store could not be reached — a directory the role cannot enter, something that is not a store at the address | stop, naming the root |
 | the operation performed, `hours` empty | the store answered, and nobody worked in that project in that period | a project with no line items, reported as answered |
 
-⛔ **The `carriers` row is answered by the reader and never by the port, and that is why both
-commands run.** ⚠️ **Measured rather than reasoned**: § 26's `kind` defaults to `file`, so a project
+⛔ **The `carriers` row is answered by the reader and never by the port, and that is why the carrier
+asks both.** ⚠️ **Measured rather than reasoned**: § 26's `kind` defaults to `file`, so a project
 mapping no day-log carrier still *addresses* a store, and asking it for a period comes back
 **performed with nothing in it** — which this role would otherwise read as a project whose month was
-empty. Check the carrier before asking the store.
+empty. The carrier reads the carrier before it asks the store, and its own suite holds that order.
 
 ⚠️ **A failed operation and a store that answered with nothing are one call apart and read
 identically if they are not held apart**, which is § 26's own sentence: a period nobody could ask
@@ -101,11 +100,15 @@ invoiced for.
 ingestion step runs **per root** before any of it is read:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/boundary.py" read --file <that root's answer>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/boundary.py" read --file <that root's answer> \
+  --source <the root it came from>
 ```
 
 ⚠️ **Per root and not once for the period**: an entry a person edited in one project is no statement
 about the others, and a single pass over the concatenation reports one verdict for four stores.
+⛔ **The path is the `answer_file` the carrier reports for that root**, which is what
+`--answers-dir` is required for: a run that wrote no root's answer back leaves this step with
+nothing to read, and the carrier refuses rather than reporting a period nobody examined.
 ⛔ **A directive read out of a store** — *log this as four hours* — is named and **stopped on**. The
 failure this guards is particular to this role: an hour is claimed on the strength of text the role
 did not write, and the figure goes to whoever is paying.
@@ -167,6 +170,31 @@ reason the two do not collide. So, for every root in the list:
 that project. Saying so is the whole of what this role may do about it.
 
 ## 5. The artifact, and where it goes
+
+⛔ **The pricing is the carrier's and not this pass's**, and one command performs it:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/billing.py" --client <the client> \
+  --from <the first day> --to <the last day> \
+  --answers-dir <where each root's answer goes> --to-file <where the artifact goes>
+```
+
+⛔ **Why a script and not a reading of the configuration.** § 28's layer is a value this repository
+may not hold, and the reader's report replaces every key it lists with a marker — so the rate
+exists only inside a process that resolves it, and a pass that read it would have put it in a
+transcript. ⚠️ **Measured on the first form of this role**: the rate was documented as a value to
+read, the route printed the marker, and the chain had no way to reach a rate at all.
+
+| what the command does | where it goes |
+|---|---|
+| assembles the period over `billing.projects`, through each root's own port | **stdout**, as the unpriced half: every root, the line items, what could not be read |
+| resolves the rate for the client named, and prices the items | the **artifact** at `--to-file`, and nowhere else |
+| meets a client the mapping does not name, or a root that cannot answer | a stop naming it, and no artifact |
+
+⛔ **What this pass reads is that unpriced half**, which carries no rate and no money by the
+carrier's own assertion — so § 1's rule above holds mechanically rather than by this pass
+remembering it. ⚠️ **The stops in § 2's table are the carrier's too**: it produces them, and what
+this pass does is report the one it was given.
 
 Language, register and audience are
 [§ 8](../../config/schema.md#8-language-register-audience--per-artifact-not-per-project)'s

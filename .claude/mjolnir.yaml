@@ -59,6 +59,15 @@ host:
     - workflow: "Adapter suites"
       mirrors: "python3 plugins/mjolnir/scripts/adapter_suites.py"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ What this run holds is the one arm no other suite can reach: § 28's layer resolved for
+    # one client, the shape of a rate the tracked file never held, and that what the carrier
+    # prints carries neither that rate nor the money it produces. ⛔ The projects it assembles a
+    # period over are its own, stood up per arm — nobody is billed for this repository, so the
+    # facet here is `carrier: none` and the suite's fixtures are the only billing projects there
+    # are.
+    - workflow: "Billing carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/billing.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Body sections"
       mirrors: "python3 plugins/mjolnir/scripts/check_body_sections.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]

@@ -1,0 +1,45 @@
+name: Billing carrier
+
+# The carrier that assembles a billing period and prices it. What a gate can hold about it is
+# every arm that needs no client and no rate of anybody's: that each way a root can fail to answer
+# is a stop naming the root rather than a project contributing nothing, that a store nobody has
+# written to still answers and does not stop the period, that a day nobody can read is reported
+# apart from the hours rather than as zero, and the two § 28 arms no other suite reaches — a rate
+# resolved out of a layer the tracked file does not hold, refused by its shape when it is
+# malformed, and never appearing in what the process prints.
+#
+# ⚠️ The projects a period is assembled over are the suite's own, stood up per arm with their own
+# configurations and their own stores: nobody is invoiced for work on this repository, so
+# `billing.carrier` here is `none` and there is no real period for a run to measure. What that
+# leaves unheld is stated rather than assumed away — whether a *rendered* invoice reads correctly
+# to whoever pays it is a judgement about prose, answered by the person who reads one.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The carrier reads other projects' stores through their own
+# destination ports and the suite stands every one of those projects up itself, so a run that
+# needed a credential would be a run doing something this one does not.
+permissions: {}
+
+jobs:
+  billing-carrier:
+    name: Billing carrier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, and the same string `host.checks` states this run mirrors. ⚠️ Held
+      # together by eye, and § 2 rules that it must be: the mapping from a run to the command it
+      # mirrors is configured and never inferred. The workflow *name* above is held mechanically,
+      # by the `Host checks drift` run.
+      - name: Assert every stop names its root, and that no rate or money reaches what is printed
+        run: python3 plugins/mjolnir/scripts/billing.py --self-test
