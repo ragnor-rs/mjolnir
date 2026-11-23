@@ -13,7 +13,9 @@ The answer is not one fact, so this prints four per project and never averages t
 
   **The tracker** -- asked through a `Port` rather than read off the registry, so the three
   states § 3 keeps apart stay apart: an adapter registered for this kind, the trackerless
-  adapter, and an adapter nobody has built yet.
+  adapter, and an adapter nobody has built yet. ⛔ Every other tracker reading this check takes
+  goes through the same port and names no tracker either -- the blocker closure and each adapter
+  work item included.
 
   **The roles** -- what the project carries today against what this toolkit ships. Both sides are
   enumerated from the trees rather than declared, because a count maintained by hand is the thing
@@ -45,7 +47,6 @@ import argparse
 import json
 import os
 import re
-import subprocess
 import sys
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -396,6 +397,16 @@ def classify_carried(carriers: list[tuple[str, str]], carrier_map: dict) -> dict
         label = f"{name} ({kind})"
         if entry is None:
             unclassified.append(label)
+        elif not isinstance(entry, dict) or not (
+                entry.keys() & {"role", "class", "ambiguous"}):
+            # ⛔ An entry that states none of the three is counted as no classification at all,
+            # which is the same answer as no entry. ⚠️ Found by review on this change, reproduced:
+            # the `else` arm read `entry["class"]` unconditionally, so a half-written entry --
+            # `{}`, or one carrying only a `partial:` note -- came back as a `KeyError` traceback
+            # and an exit status of 1, which every caller keying on the status reads as *not
+            # ready*. ⛔ The map is a file a person maintains outside this repository, so a
+            # half-written entry is the ordinary shape of its mistakes rather than an exotic one.
+            unclassified.append(label)
         elif "ambiguous" in entry:
             ambiguous[label] = list(entry["ambiguous"])
         elif "role" in entry:
@@ -628,11 +639,29 @@ def tracker(loaded) -> tuple[str, int, int, str]:
     return described["adapter"], available, len(operations), detail
 
 
-# --- the migration's critical path, from the host ---------------------------
+# --- the migration's critical path, through the tracker port ----------------
+#
+# ⛔ Both readings below go through the port and neither names a tracker. ⚠️ Found by review on
+# this change: they shelled out to one host's own client, with that host's API path and a
+# projection written out -- a second implementation of two operations § 3 already declares, in a
+# file whose own header claims the port is imported rather than reimplemented. The claim was the
+# defect; the code is what made it false. ⚠️ Neither the client's name nor the path form is
+# written anywhere in this file, which a self-test arm holds: this is a carrier's implementation
+# and the one lexical rule it is held to is naming no tracker.
+#
+# ⚠️ What the switch also buys, stated because it is the reason the port exists rather than a
+# bonus: these read *this* project's tracker, whatever kind it is, instead of one host's issue
+# API -- so a project whose backlog is not on the code host gets an answer or a stated absence
+# rather than a silent failure to read anything.
 
 
-def blocked_by_closure(repo: str, roots: list[int]) -> tuple[dict[int, str], list[str]]:
-    """Walk `blocked_by` transitively. Relations, never a line in a body."""
+def tracker_over(loaded) -> object:
+    """The tracker port over this project's configuration, built once per run."""
+    return port.Port(loaded)
+
+
+def blocked_by_closure(over, roots: list[int]) -> tuple[dict[int, str], list[str]]:
+    """Walk `read_blockers` transitively. Relations, never a line in a body."""
     open_blockers: dict[int, str] = {}
     # ⛔ Asked-and-answered is tracked apart from found-as-a-blocker. Folding the two into one
     # set stops the walk one level past the roots, and a transitive closure that silently
@@ -645,26 +674,22 @@ def blocked_by_closure(repo: str, roots: list[int]) -> tuple[dict[int, str], lis
         if number in asked:
             continue
         asked.add(number)
-        try:
-            raw = subprocess.run(
-                ["gh", "api", f"repos/{repo}/issues/{number}/dependencies/blocked_by",
-                 "--jq", ".[] | [.number, .state, .title] | @tsv"],
-                capture_output=True, text=True, timeout=30, check=True,
-            ).stdout
-        except FileNotFoundError:
-            return open_blockers, ["`gh` is not on PATH, so the critical path was not read"]
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
-            notes.append(f"#{number}: the host did not answer ({type(error).__name__})")
+        outcome = over.invoke("read_blockers", str(number))
+        if outcome.refused or not outcome.performed:
+            # ⛔ Absent and did-not-answer are reported apart, the port holding them apart: the
+            # first is a capability this tracker does not have and stops the walk entirely, the
+            # second is one item nobody could ask about.
+            if outcome.refused:
+                return open_blockers, [
+                    f"the tracker port cannot read blockers here: {outcome.detail}"]
+            notes.append(f"#{number}: the tracker did not answer — {outcome.detail}")
             continue
-        for row in raw.strip().split("\n"):
-            if not row:
+        for blocker in (outcome.result or {}).get("blockers") or []:
+            if str(blocker.get("state", "")).lower() != "open":
                 continue
-            blocker, state, title = row.split("\t", 2)
-            blocker = int(blocker)
-            if state != "open":
-                continue
-            open_blockers.setdefault(blocker, title)
-            frontier.append(blocker)
+            found = int(blocker["number"])
+            open_blockers.setdefault(found, blocker.get("title") or "")
+            frontier.append(found)
     # The roots are the migration itself; two of them block each other, and naming them as
     # their own blockers says nothing the header has not already said.
     for root in roots:
@@ -672,18 +697,16 @@ def blocked_by_closure(repo: str, roots: list[int]) -> tuple[dict[int, str], lis
     return open_blockers, notes
 
 
-def issue(repo: str, number: int) -> tuple[str, str] | None:
-    """One work item's state and title, read from the host rather than written down here."""
-    try:
-        raw = subprocess.run(
-            ["gh", "api", f"repos/{repo}/issues/{number}",
-             "--jq", "[.state, .title] | @tsv"],
-            capture_output=True, text=True, timeout=30, check=True,
-        ).stdout.strip()
-    except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+def issue(over, number: int) -> tuple[str, str] | None:
+    """One work item's state and title, read through the port rather than written down here."""
+    outcome = over.invoke("read_item", str(number))
+    if outcome.refused or not outcome.performed or not outcome.result:
         return None
-    state, title = raw.split("\t", 1)
-    return state, title
+    item = outcome.result
+    state, title = item.get("state"), item.get("title")
+    if state is None or title is None:
+        return None
+    return str(state).lower(), str(title)
 
 
 # --- the report -------------------------------------------------------------
@@ -828,17 +851,20 @@ def main(argv: list[str]) -> int:
             print(line("could not establish", item))
         return 2
 
-    # The host is read once, before the projects, so each project's own adapter item can be
-    # reported against the closure rather than beside it.
-    repo, closure, closure_notes = None, {}, []
+    # The tracker is read once, before the projects, so each project's own adapter item can be
+    # reported against the closure rather than beside it. ⚠️ `repo` is read for the report alone
+    # and is never what addresses a call: which repository or project the items live in is the
+    # port's own business, read out of the same configuration it was built from.
+    over, repo, closure, closure_notes = None, None, {}, []
     if not args.no_host:
         try:
-            repo = config.load(SKILLS_ROOT, check_paths=True).get("host.repo")
+            here = config.load(SKILLS_ROOT, check_paths=True)
+            over, repo = tracker_over(here), here.get("host.repo")
         except config.ConfigError as error:
             unestablished.append(
                 f"the configuration of the project this check runs in: {error}")
-        if repo and migration_items:
-            closure, closure_notes = blocked_by_closure(repo, migration_items)
+        if over and migration_items:
+            closure, closure_notes = blocked_by_closure(over, migration_items)
             unestablished.extend(closure_notes)
 
     # ⛔ Three buckets and not two. ⚠️ Measured on this check's own first run after the promotion:
@@ -860,6 +886,12 @@ def main(argv: list[str]) -> int:
             print(line("VERDICT", "CANNOT ESTABLISH — no .claude directory at "
                                   f"{project_dir}"))
             unestablished.append(f"{name}: no checkout at {project_dir}")
+            # ⛔ Into the third bucket before the `continue`, not left out of all three.
+            # ⚠️ Found by review on this change, reproduced: this arm returned to the loop
+            # without placing the target anywhere, so the summary named it under `targets` and
+            # then said `none` on every one of the three lines below it -- a target measured and
+            # placed nowhere, which reads as a target that was not measured.
+            unanswered.append(name)
             continue
 
         resolves, why = resolution(claude_dir)
@@ -900,12 +932,12 @@ def main(argv: list[str]) -> int:
             pass                         # the line above already said why there is nothing to say
         elif item is None:
             print(line("adapter work item", f"none passed for `{kind}`"))
-        elif not repo:
-            print(line("adapter work item", f"#{item} — the host was not read"))
+        elif over is None:
+            print(line("adapter work item", f"#{item} — the tracker was not read"))
         else:
-            found = issue(repo, item)
+            found = issue(over, item)
             if found is None:
-                print(line("adapter work item", f"#{item} — the host did not answer"))
+                print(line("adapter work item", f"#{item} — the tracker did not answer"))
                 unestablished.append(f"{name}: #{item}'s state was not read")
             else:
                 state, title = found
@@ -998,11 +1030,14 @@ def main(argv: list[str]) -> int:
         # ⚠️ Named rather than skipped. A section that vanished with its roots would leave the
         # report looking complete while the one transitive question went unasked.
         print(line("from", "no roots passed, so no closure was walked — `--migration-items N,N`"))
-    elif not repo:
-        print(line("from", f"{', '.join(f'#{n}' for n in migration_items)}, and the host was "
+    elif over is None:
+        print(line("from", f"{', '.join(f'#{n}' for n in migration_items)}, and the tracker was "
                            "not read"))
     else:
-        print(line("from", f"{', '.join(f'#{n}' for n in migration_items)} in {repo}"))
+        # ⚠️ The subject is named by what the port answers for, which is `host.repo` where that
+        # is what this project's tracker is keyed on and nothing where it states none.
+        where = f" in {repo}" if repo else ""
+        print(line("from", f"{', '.join(f'#{n}' for n in migration_items)}{where}"))
         for number, title in sorted(closure.items()):
             print(line("", f"#{number}  {title}"))
         if not closure:
@@ -1125,6 +1160,36 @@ def self_test() -> int:
         [("skill", "two-roles")], {"two-roles": {"ambiguous": ["billing_report", "day_log"]}})
     check("a basename covering several roles is counted as none of them",
           not split["roles"] and len(split["ambiguous"]) == 1)
+
+    # ⛔ And a map entry stating none of the three. ⚠️ Found by review on this change: the arm
+    # that reads a `class:` read it unconditionally, so a half-written entry raised `KeyError`
+    # and exited 1 -- which every caller keying on the status reads as *not ready*. The map is a
+    # file a person maintains outside this repository, so this is the ordinary shape of its
+    # mistakes.
+    for shape in ({}, {"partial": "only a note"}, "not a mapping at all"):
+        half = classify_carried([("skill", "half-written")], {"half-written": shape})
+        check(f"a map entry stating none of the three is unclassified, not a traceback "
+              f"({shape if shape else 'empty'})",
+              half["unclassified"] == ["half-written (skill)"]
+              and not half["roles"] and not half["classes"])
+
+    # --- the tracker readings go through the port, and name no tracker -------
+    # ⛔ Held on the text rather than on a run, which is what this property is about: the two
+    # readings were a host client with an API path written out, in a file whose header claims
+    # the port is imported rather than reimplemented.
+    # ⚠️ The needles are assembled from parts rather than written out, because this file is the
+    # text being searched: the first form of this arm failed on its own assertion string, which
+    # is the arm reaching the mechanism and also the arm being useless.
+    with open(os.path.abspath(__file__), encoding="utf-8") as handle:
+        own_text = handle.read()
+    shelling = "sub" + "process"
+    host_client = "g" + "h api"
+    check("no host client and no shell-out is in this file at all",
+          shelling not in own_text and host_client not in own_text)
+    asked = [one for one in ("read_blockers", "read_item")
+             if f'over.invoke("{one}"' in own_text]
+    check("the blocker closure and the work-item read go through port operations",
+          len(asked) == 2)
 
     # --- carriers are swept across all three kinds, and hooks come from settings
     sweep = tempfile.mkdtemp(prefix="adoption-sweep-")
@@ -1274,6 +1339,18 @@ def self_test() -> int:
         code, text = run([served, "--carriers", carriers_file, "--no-host"])
         check("the report names which targets were measured",
               "targets                   fully-served" in text)
+
+        # ⛔ A target with no checkout is placed too. ⚠️ Found by review on this change: that arm
+        # returned to the loop without reaching any bucket, so the summary named the target under
+        # `targets` and then said `none` on all three lines under it — a target measured and
+        # placed nowhere, which reads exactly like a target nobody measured.
+        gone = os.path.join(stage, "no-checkout-here")
+        os.makedirs(gone)
+        code, text = run([gone, "--carriers", carriers_file, "--no-host"])
+        check("a target with no checkout is in the third bucket, not in none of them",
+              code == 2
+              and "no answer                 no-checkout-here" in text
+              and "targets                   no-checkout-here" in text)
     finally:
         if was is None:
             os.environ.pop("CLAUDE_CONFIG_DIR", None)

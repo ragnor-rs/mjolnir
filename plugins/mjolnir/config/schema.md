@@ -8379,15 +8379,15 @@ is on it because the route needs a leg there, which is a statable reason and the
 time. ⚠️ **A utility admitted beside them would be admitted on no such reason**, and a list with one
 entry of that kind has nothing to refuse the next one with.
 
-⛔ **What the toolkit ships outside that list is adoption's own three acts, and they are admitted on
-a reason of the same shape rather than beside the roles.** Installing into a project, asking it what
-it configures and answering whether the procedure can run there are each about *this toolkit* —
-[§ What the toolkit installs](#what-the-toolkit-installs-into-a-project-and-what-takes-it-out),
-[§ What a project is asked](#what-a-project-is-asked-and-the-one-file-the-answers-are-written-into)
-and [§ Whether a project can adopt](#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it),
-the last of which states the closure. ⚠️ **That is not this section being narrowed**: a utility is
-refused by every sentence above and is no act of adoption, so the three close rather than open the
-list — and a candidate arriving as a *fourth* is what that section refuses in this one's place.
+⛔ **What the toolkit ships outside that list is the acts of adoption itself, and they are admitted
+on a reason of the same shape rather than beside the roles.** Which acts those are, and the closure
+that refuses another, are stated once at
+[§ Whether a project can adopt](#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it)
+— ⛔ **cited and not enumerated here**, an enumeration written in a second place being a copy of
+something that lives in the first. ⚠️ **That is not this section being narrowed**: a utility is
+refused by every sentence above and is no act of adoption, so that class closes rather than opens
+the list, and a candidate arriving as one more of its members is what that section refuses in this
+one's place.
 
 ⛔ **What this section rules on is a *skill*, and a block of configuration whose consumer is a check
 is not one.** The closed list decides which **roles** are carried; it has never been what admits a

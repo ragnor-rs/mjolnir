@@ -9,16 +9,13 @@
 #
 # ⚠️ What used to be here and is not any more: a map from a carrier's basename to its role or its
 # class, covering both the carriers this toolkit ships and the ones its adoption targets carry.
-# Both halves moved, in opposite directions, and the surface states each:
-#
-#   a carrier this toolkit ships declares its own class beside itself — a skill in its own
-#   SKILL.md, a hook in its own script — so the change that ships one cannot ship it unclassified;
-#
-#   a carrier a target carries is classified by a map that arrives on the invocation, with the
-#   rest of that project's values, since a basename on somebody else's disk is that project's fact.
+# Both halves moved, in opposite directions, and where each went is stated at
+# `schema.md § Whether a project can adopt → Which carriers are classified, and where each
+# classification lives` — ⛔ cited rather than repeated, so this file cannot come to disagree with
+# the rule it is the vocabulary for.
 #
 # ⛔ So nothing in this file goes stale when a carrier lands anywhere. What is left is vocabulary:
-# the words the two declarations above are written in, and nothing that names a thing.
+# the words those declarations are written in, and nothing that names a thing.
 
 # The roles of the loop, by the key a carrier's declaration uses for each. No count is written
 # here: the length of this list is the statement, and a figure beside it would drift by the next
