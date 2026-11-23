@@ -3768,14 +3768,13 @@ quotes a trailer in prose.
 ⛔ **That marker is the one read of the whole trailer and is the stated exception to the
 address rule, not a hole in it**, which is
 [§ 6 → The rail](../plugins/mjolnir/config/schema.md#the-rail-under-the-authorship-rule-and-the-three-halves-it-cannot-reach)'s
-own second row. The host writes `[bot]` in the display name as often as in the address — a bot
-whose address is a numeric login carries it nowhere else — so a read of the address alone loses
-exactly the trailers that arm exists for. ⚠️ **What makes it admissible is that it is
-not a name anybody chooses**: the host reserves the suffix for an account that is not a person, so
-it cannot collide with a human the way a product name collides with a given name. ⚠️ **Found by
-this change's own review** — the code read the whole trailer while its docstring said a display name
-decided nothing, which is a rule contradicted by its own implementation and the direction nothing
-would have reported.
+own second row, which states why it is admissible and is not restated here. What this document
+records is that both placements are held — the suffix in the display name and the suffix in the
+address — and that the second had no arm until this change's own review asked for one. ⚠️ **The
+finding under it was the statement rather than the code**: the code read the whole trailer while its
+docstring said a display name decided nothing, which is a rule contradicted by its own
+implementation, and a plant reading the address alone reddens four arms — so the read is
+load-bearing and it was the sentence that was wrong.
 
 **The recognition list is data and is held as data.** ⛔ There is no shape that identifies a tool, so
 what is recognised is a list — vendor domains for the trailer rule, product and vendor spellings for
