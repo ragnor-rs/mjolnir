@@ -1,0 +1,44 @@
+name: Documents
+
+# This repository's own prose, held to the graph its configuration states: every governed document
+# declared, the enforced edge held in both directions, every document reachable from an entry
+# point, no forbidden name, and no block a renderer would read differently from its author.
+#
+# ⚠️ A second run beside `Documents carrier`, and the division is which question each answers. That
+# one reads a project built for it and answers about the **carrier** — every arm reddens, every
+# exemption stays green — which is the answer an adopter whose `documents.carrier` is `none` can
+# still get. This one reads *this* tree and answers about **these** documents, so it is the run
+# that goes red when a document here gains an edge no row allows.
+#
+# ⛔ Most of what this repository ships is prose, which is why both runs exist rather than one:
+# a facet held only through its carrier's suite is a facet nothing has ever run over real text.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential. The check reads the index and the files in it.
+permissions: {}
+
+jobs:
+  documents:
+    name: Documents
+    runs-on: ubuntu-latest
+    steps:
+      # ⛔ The full history is not needed and the index is: the governed set comes from
+      # `git ls-files`, so a checkout with no index would report every document as ungoverned and
+      # the run would pass for a reason that has nothing to do with the documents.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, and the same string `host.checks` states this run mirrors. ⚠️ Held
+      # together by eye, and § 2 rules that it must be. The workflow *name* above is held
+      # mechanically, by the `Host checks drift` run.
+      - name: Hold every governed document to its row, its edges and its own blocks
+        run: python3 plugins/mjolnir/scripts/documents.py

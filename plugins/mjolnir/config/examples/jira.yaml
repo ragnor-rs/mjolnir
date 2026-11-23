@@ -702,3 +702,15 @@ billing:
   # this file and no rate is in it. ⚠️ The same arm `evidence.chat.path` demonstrates one block up:
   # the key is required under this carrier, the list is what answers its requiredness, and a value
   # written here beside the listing is what § 28 refuses.
+
+# § 38's absent case, and the pairing with the documents this project does keep is why it is
+# stated: a specification wiki lives outside the repository, so there is no tracked document for a
+# graph to be about. ⛔ A reader that took the wiki as the governed set would be holding this
+# facet to files no check here can open.
+documents:
+  carrier: none
+  absent_reason: >-
+    The documents this project is written about live in a wiki outside the repository, so the
+    tracked markdown is a short readme and nothing is derived from anything.
+  revisit_when: >-
+    A document moves into the repository, which is the first one a check here could read.

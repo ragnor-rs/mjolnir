@@ -111,11 +111,15 @@ Three were in the tree when the check was written, which is the argument for it:
 
 ## The three kinds, and why one of them is absent
 
-[Work item #28](https://github.com/ragnor-rs/mjolnir/issues/28) classifies the checks themselves,
-from two independent implementations that reached the same conclusion: **computed** checks derive
-the property and cannot be fooled by a reword; **forbidding** checks assert a name or pattern must
-not appear, and are sound when the thing forbidden is stable; **quoting** a sentence back at the
-file it came from fails in both directions. Every check below is one of the first two.
+The classification is [`schema.md § 38 → The three
+kinds`](../plugins/mjolnir/config/schema.md#the-three-kinds-of-check-and-the-one-that-is-admitted-with-a-warning)'s,
+read out of two independent implementations that reached the same conclusion: **computed** checks
+derive the property and cannot be fooled by a reword; **forbidding** checks assert a name or
+pattern must not appear, and are sound when the thing forbidden is stable; **quoting** a sentence
+back at the file it came from fails in both directions. Every check below is one of the first two.
+⚠️ **It was a work item's text until that section landed**, and the section is now where it is
+stated — which is the half the numbering above is for: a reader asking whether an outcome had been
+extracted can answer it.
 
 The `Name` column is the script's own name for the check, matched against the run's list rather than
 described: a row keyed on its number alone said nothing about *which* check it was, so a check
@@ -265,8 +269,9 @@ form, a new column name, a new kind of document — and that residue is made lou
 silent by check 0: a markdown document at the root, under `docs/`, or under `plugins/` with no
 declared role fails the build instead of being quietly skipped.
 
-This is [#28](https://github.com/ragnor-rs/mjolnir/issues/28)'s own finding applied here — the
-sixth instance counted in
+This is [`schema.md § 38 → The two
+edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)'s own
+rule applied here — the sixth instance counted in
 [`configuration-surface.md`](configuration-surface.md#the-strongest-argument-for-extraction-is-not-borrowed)
 is another project's document checker, and this guard is a seventh: the graph a machine walks and
 the statement a person maintains are deliberately one thing, read from one place.
@@ -4176,9 +4181,11 @@ What it holds:
 ## A check that carries the mode is asserted to redden on a violation
 
 `--self-test` plants one violation per check and asserts that check goes red, as the first step of
-the workflow — before the tree is held to anything. The discipline is #28's: an assertion written
-before its break tends to match only the break its author imagined, and a check that cannot fail
-is not a check.
+the workflow — before the tree is held to anything. The discipline is [`schema.md § 38 → Every
+check carries a
+violation`](../plugins/mjolnir/config/schema.md#every-check-carries-a-violation-it-reddens-on)'s:
+an assertion written before its break tends to match only the break its author imagined, and a
+check that cannot fail is not a check.
 
 A script carrying the mode is run through it by its workflow, before the tree — or, for the gate
 on the change, the pull request — is held to anything. ⛔ **Not every check here carries it**:
@@ -4247,5 +4254,83 @@ gate.
 
 That mode caught its own author. The first draft of the anchor rule collapsed runs of whitespace
 where the code host replaces each space individually, which reported six sound citations as broken
-— so the first finding this check produced was against itself, which is the reading rule #28
+— so the first finding this check produced was against itself, which is the reading rule
+[`schema.md § 38 → What a red
+says`](../plugins/mjolnir/config/schema.md#what-a-red-says-and-what-stays-in-a-projects-own-script)
 states: when one goes red, the assertion is as likely to be wrong as the document.
+
+## The documents against the graph, the forbidden list and their own blocks
+
+The two checks above hold *this* repository's prose, and their graph and their forbidden list are
+written in the script. ⛔ **That is the thing [`schema.md
+§ 38`](../plugins/mjolnir/config/schema.md#38-the-documents-a-project-holds-to-a-checkable-property)
+retires**: the rows, the globs, the entry points, the forbidden names and anything quoted are a
+project's configuration, and `plugins/mjolnir/scripts/documents.py` is the one implementation that
+reads them. Two independent implementations in two other projects were what argued for it, and the
+counts behind that are in [`configuration-surface.md`](configuration-surface.md#the-document-checks-two-implementations-and-the-claim-measured-rather-than-taken).
+
+Nine checks, each declaring which of the three kinds it is, and the run prints the kind beside the
+verdict so that a reader can tell what a green is worth:
+
+| Name | Check | Kind |
+|---|---|---|
+| every governed document has a row | the governed set against the graph in both directions, and every governed file readable | computed |
+| a document names only what its row allows | the enforced edge, in the direction a filename appearing is the defect | computed |
+| a row names only edges the text carries | the same edge, in the direction nothing else reports | computed |
+| every document is reachable from an entry point | a document nothing names and nothing addresses | computed |
+| no forbidden name appears | each stated pattern over the governed set, a pattern that cannot be evaluated reported rather than read as no match | forbidding |
+| a table keeps its shape | every row of a table carrying the same number of cell delimiters, an escaped pipe counted as a cell's own character | computed |
+| a table row keeps its table | a run of pipe lines with no delimiter row, which renders as a paragraph | computed |
+| no document leaves a fence open | an opening delimiter with no matching close | computed |
+| a quoted sentence is still in its document | the kind that does not work, performed as configured and warned about on every run | quoting |
+
+⛔ **The quoting kind is admitted and not refused**, which that section rules: refusing it would
+leave a project already carrying such a check unable to state what holds its documents at all. So
+it runs, and every run names both of its failure modes — red on an innocent reword, green when the
+claim is reworded into its opposite ([`schema.md § 38 → The three
+kinds`](../plugins/mjolnir/config/schema.md#the-three-kinds-of-check-and-the-one-that-is-admitted-with-a-warning)).
+
+Two runs rather than one, and the division is which question each answers. `Documents carrier`
+reads a project built for it and answers about the **carrier**: every arm reddens on its planted
+violation and every exemption stays green, which is the answer an adopter whose
+`documents.carrier` is `none` can still get. `Documents` reads *this* tree and answers about
+**these** documents. ⛔ **Both, because most of what this repository ships is prose** — a facet held
+only through its carrier's suite is a facet nothing has ever run over real text ([`schema.md
+§ 38`](../plugins/mjolnir/config/schema.md#38-the-documents-a-project-holds-to-a-checkable-property)).
+
+### What this check deliberately does not hold
+
+- **A project's own domain checks.** Whether a project's five request shapes each have a home in
+  its layout is a computed property of that project's subject matter, and it stays in that
+  project's own script. ⛔ **The facet does not even name them**: a key pointing at a command that
+  answered one would satisfy the boundary's letter and leave the adopting project writing the
+  whole working procedure for a name back ([`schema.md § 38 → What a red
+  says`](../plugins/mjolnir/config/schema.md#what-a-red-says-and-what-stays-in-a-projects-own-script)).
+- **Whether a document is true.** Every check here is structural. A row that is current, an edge
+  that resolves and a table that renders say nothing about whether the sentences are right, which
+  is the limit the quoting kind exists to tempt a project past.
+- **The `derived_from` edge against the text.** Content that flowed in obliges no citation, so
+  that edge is recorded and held acyclic and never compared with any document's words
+  ([`schema.md § 38 → The two
+  edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)).
+- **Anything about a document the globs do not govern, or the index does not carry.** The set comes
+  from `git ls-files`, so a file nobody has added is outside every check here — and a project that
+  narrows its globs narrows the check with them, which is visible in its own configuration and
+  nowhere else.
+- **What a renderer other than the code host's would do.** The block properties were measured
+  against one renderer. A different one may break a block this passes, and nothing here reports it.
+- **A mention whose meaning depends on which document it is in.** A row states one spelling for the
+  document it is about, so a project where one file's name counts only in a particular form inside
+  two particular others cannot say that — two edges of one surveyed project, named in
+  [`configuration-surface.md`](configuration-surface.md#both-projects-rules-expressed-in-the-facet-and-run-against-their-own-trees)
+  with what a key for it would have to carry.
+- **The edge of a row that does not state one.** ⛔ `may_name: null` is an edge this project does not
+  enforce, so the two edge checks and reachability say nothing about that document; the run names
+  every such row, and where every row carries one it says which three checks hold nothing
+  ([`schema.md § 38 → The two
+  edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)).
+- **Whether the graph is the right graph.** The rows for this repository were read off the text
+  rather than composed, so they assert nothing about the commit that landed them. ⛔ **What they
+  assert is every commit after it** — an edge added with no row, and a row whose edge the text
+  dropped, are each a failure ([`schema.md § 38 → The two
+  edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)).

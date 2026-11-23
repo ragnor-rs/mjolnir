@@ -1159,6 +1159,81 @@ ANSWERED_BY: dict[str, Answer] = {
         "configuration states only that the key is answered there -- a rate and "
         "a client's name being the two values this toolkit holds nowhere.",
     ),
+
+    # --- § 38. The documents a project holds to a checkable property --------
+    "documents.carrier": ask(
+        "Are this project's prose documents held to anything a machine can "
+        "check? ⚠️ Answering no is a configuration rather than a gap: there is "
+        "then no graph, and a reader asked what holds a document says nothing "
+        "is stated rather than that the documents agree (§ 38).",
+    ),
+    "documents.files": ask(
+        "Which files are the governed set, as globs from the code root? ⛔ A "
+        "tracked file one of them matches and no row declares is a stop rather "
+        "than a skip, so the globs are what decides how much new prose has to "
+        "be placed deliberately. ⚠️ `*` stops at a separator here and `**` "
+        "crosses one (§ 38).",
+    ),
+    "documents.entry_points": ask(
+        "And which of them does a reader -- or a mechanism -- arrive at without "
+        "any document naming it? ⛔ A list rather than one root, because a "
+        "carrier a harness loads by name is named by no document; every other "
+        "governed file has to be reachable from one of these (§ 38).",
+    ),
+    "documents.graph.document": ask(
+        "One row per governed document: which document is this row about? ⛔ "
+        "Every governed file needs one, and a document with no row sits outside "
+        "the graph and is held by nothing (§ 38).",
+    ),
+    "documents.graph.named_as": ask(
+        "And how does prose here name it -- by its path, or by something else? "
+        "⚠️ Asked because the commonest answer is *something else*: a project "
+        "that refers to its role carriers by slug has every edge in its graph "
+        "read as dropped until it says so. Omit the key where the path is what "
+        "gets written (§ 38).",
+    ),
+    "documents.graph.may_name": ask(
+        "Which documents may this one's text name? ⛔ Held in **both** "
+        "directions -- it may name only these and must name all of them -- and "
+        "the three answers are different: a list, `[]` for a document that may "
+        "name no other at all, and `null` for an edge this project does not "
+        "enforce here (§ 38).",
+    ),
+    "documents.graph.derived_from": ask(
+        "And which documents did its content flow in from? ⚠️ Recorded rather "
+        "than enforced: this edge obliges no citation and is never compared with "
+        "the text. What is held is that the record is complete and stays "
+        "acyclic (§ 38).",
+    ),
+    "documents.forbidden.pattern": ask(
+        "Which name or pattern may appear in none of them -- a module this "
+        "project deleted, a word its own rules ban? ⚠️ Each entry states what "
+        "keeps the forbidden thing stable, since a forbidding check is sound "
+        "exactly there and nowhere else (§ 38).",
+    ),
+    "documents.forbidden.reason": ask(
+        "What would its appearance mean? ⛔ Stated, because a refusal whose "
+        "reason nobody wrote down is one nobody can tell a false refusal from "
+        "(§ 38).",
+    ),
+    "documents.forbidden.stable_because": ask(
+        "And what keeps that thing from being reworded into something else? ⛔ "
+        "This is the whole soundness condition of the forbidding kind: a name "
+        "that was renamed rather than removed still refers to something, and "
+        "the check then refuses correct prose (§ 38).",
+    ),
+    "documents.quoted.sentence": ask(
+        "Is any sentence quoted back at the document it came from? ⛔ This is "
+        "the kind that does not work and it is admitted with a warning rather "
+        "than refused: it goes red on an innocent reword and green when the "
+        "claim is reworded into its opposite, so its green says nothing about "
+        "the claim. Derive the property instead, where you can (§ 38).",
+    ),
+    "documents.quoted.document": ask(
+        "And which document is it quoted against? ⛔ One the graph declares: a "
+        "sentence quoted at a document outside the governed set is a check over "
+        "a file nothing else here reads (§ 38).",
+    ),
 }
 
 
