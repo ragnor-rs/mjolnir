@@ -2529,6 +2529,14 @@ denied by a sibling is a place nothing releases. Written as an arm it is ordered
 taken, and the suite asserts it the way the merge guard's ordering is asserted, on a call that is at
 once a guarded command and a `claimed_by` match.
 
+⚠️ **And what it cannot see at all is a command a script runs.** The arm sits on the event that
+precedes a shell call, so it matches a mirrored command written *as* that call and nothing else:
+a script that walks `host.checks` and runs each `mirrors` through a subprocess reaches the host
+without passing this guard once. ⛔ **Measured while driving one item's plan**, where that is the
+ordinary way the whole mirrored set gets run — so the duplication the guard exists to prevent is
+avoided there by running the set *before* the push and not by anything mechanical
+([schema § 18](../plugins/mjolnir/config/schema.md#18-the-guard-on-a-command-the-host-has-already-run)).
+
 ⚠️ **What it still cannot order is a sibling guard in another script.** The spend guard recorded
 below is one, as the guard #37 asks for will be, and a place taken here can still be left behind by
 one of those denying the call. That is what the lease's `ttl` bounds, and it is why a short lifetime
