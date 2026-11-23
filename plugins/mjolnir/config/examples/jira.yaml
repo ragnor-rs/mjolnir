@@ -406,8 +406,10 @@ day_log:
     kind: google-sheet
     tab: "Time log"
     # ⚠️ The words are the sheet's and the roles are the surface's. The order they sit in on the
-    # tab is read off the header row, so this says nothing about which column is first — and a
-    # column the client keeps for their own purposes sits between two of these and is left alone.
+    # tab is read off the header row, so this block says nothing about which column is first —
+    # and any column of that tab these three words do not name is one the adapter leaves alone,
+    # whether the client keeps one or not. ⛔ This file states no claim about that sheet's other
+    # columns, having no way to: the sheet is addressed and not described here.
     columns:
       date: "Date"
       hours: "Hours"
@@ -509,10 +511,11 @@ environment:
   # write possible is what makes it read as that person speaking. ⛔ The names are the ones the
   # implementations read: a list naming only a token would read as complete.
   #
-  # ⚠️ The third is the day log's store, and it is the whole of how § 26's spreadsheet kind is
-  # reachable: that block addresses the sheet and this names the variable the secret arrives in.
-  # ⛔ Named and never valued — a list of names is not a secret, and a configured value would be
-  # the leak § 14 exists to prevent.
+  # ⚠️ The day log's store needs one of its own, and it is the whole of how § 26's spreadsheet
+  # kind is reachable: that block addresses the sheet and this names the variable the secret
+  # arrives in. ⛔ Named and never valued — a list of names is not a secret, and a configured
+  # value would be the leak § 14 exists to prevent. ⚠️ No ordinal: a comment counting the entries
+  # is wrong the next time one lands, green, which this file records one facet over.
   inherits: [PATH, HOME, JIRA_ACCOUNT, JIRA_API_TOKEN, GOOGLE_SHEETS_TOKEN]
 
 e2e_register:
