@@ -36,6 +36,14 @@ careful about:
 -- whether the version's branch is there at all -- and reads objects only out of
 the clone.
 
+⚠️ **What it prints is as large as the corpus the project configured**, the
+load-bearing documents arriving whole: that is what the filing role has to read,
+and `load_bearing` is the key that bounds it. ⛔ **Nothing here caps the output
+instead**, a truncated specification being the reading § 39 exists to prevent one
+step further on -- so a project whose corpus is large names this command in
+§ 22's own list, where a bound is a project's statement rather than a carrier's
+guess.
+
 Usage:
     spec_corpus.py --version V [--keyword W ...]
                                   the corpus that governs V, and what it says
@@ -92,8 +100,19 @@ def _resolvable(root, ref: str) -> str | None:
     order the reading needs rather than git's own: a project's own branch for a
     released version may be stale in a checkout somebody has been working in,
     and what governs is what the remote holds.
+
+    ⛔ **Those two candidates and no third, so what is composed is a branch.**
+    § 4.8's `ref_prefix` composes a ref `grouping_ref_exists` looks for among
+    the remote's **heads**, so a branch is what the facet means throughout.
+    ⚠️ **The first form carried a bare-revision candidate as well and it was two
+    defects, not a convenience**: a tag would have resolved here and then been
+    reported *fallback* by the arm beside this one, which reads heads only — the
+    two answers § 39 is written to keep apart, reached through a candidate
+    nothing on the surface asks for; and a `ref_prefix` leaving the composed
+    name a revision expression would have resolved the working tree's own
+    commit and called it the version's copy.
     """
-    for candidate in (f"refs/remotes/{REMOTE}/{ref}", f"refs/heads/{ref}", ref):
+    for candidate in (f"refs/remotes/{REMOTE}/{ref}", f"refs/heads/{ref}"):
         proc = _git(root, "rev-parse", "--verify", "--quiet", f"{candidate}^{{commit}}",
                     check=False)
         if proc.returncode == 0 and proc.stdout.strip():
@@ -320,7 +339,12 @@ def _repo(where: str, name: str) -> str:
     os.makedirs(os.path.join(root, "spec", "requirements"))
     subprocess.run(["git", "init", "-q", "-b", "main", root], check=True,
                    capture_output=True)
-    for key, value in (("user.email", "a@b.invalid"), ("user.name", "A Fixture")):
+    # ⛔ An identity with no at-sign in it, because the names gate forbids an
+    # address **anywhere** in the tree and a fixture identifies nobody. ⚠️ Not a
+    # way round that gate: git never required an address, and `user.email` with
+    # no at-sign commits exactly as well -- measured, the identity recorded as
+    # `A Fixture <fixture>`. What the gate forbids is gone rather than hidden.
+    for key, value in (("user.email", "fixture"), ("user.name", "A Fixture")):
         subprocess.run(["git", "-C", root, "config", key, value], check=True,
                        capture_output=True)
     return root
@@ -365,8 +389,21 @@ def self_test() -> int:
 
     print("§ 39, the corpus and which copy of it governs:")
 
+    # ⛔ Collected across every arm below and asserted at the end, because the
+    # claim is about **every** answer this module gives rather than about the
+    # two arms whose own assertions happened to mention it: whether the request
+    # contradicts the corpus is the filing role's reading, so no outcome may
+    # come back carrying a verdict about it. ⚠️ `None` and not `False` -- a
+    # caller rendering `False` prints *none found*, which is the one wrong
+    # answer available here.
+    verdicts = []
+
+    def answered(answer: dict) -> dict:
+        verdicts.append((answer.get("outcome"), answer.get("contradiction")))
+        return answer
+
     # The absent subject, which is the arm whose wrong answer is a verdict.
-    answer = read_corpus(".", None, "9.0")
+    answer = answered(read_corpus(".", None, "9.0"))
     check("a project with no corpus reports no subject rather than a verdict",
           answer["carried"] is False and answer["contradiction"] is None,
           f"{answer}")
@@ -411,7 +448,7 @@ def self_test() -> int:
                             encoding="utf-8").read(),
         }
 
-        answer = read_corpus(root, _a_facet(), "9.0", keywords=["passkey"])
+        answer = answered(read_corpus(root, _a_facet(), "9.0", keywords=["passkey"]))
         check("the ref read is the version's own, composed from the grouping's prefix",
               answer["outcome"] == AT_THE_VERSION and answer["ref"] == "release/9.0",
               f"{answer['outcome']} at {answer['ref']!r}")
@@ -472,14 +509,29 @@ def self_test() -> int:
         # integration branch's and not the tree's.
         _write(root, "spec/requirements/one.md", "# Requirements\n\nUncommitted.\n")
 
+        # ⛔ A branch and not any revision that happens to resolve. ⚠️ Planted as
+        # a **tag** at the version's own commit with no branch of that name: a
+        # bare-revision candidate resolves it, and the arm that decides the
+        # unread outcome reads heads only — so the two would disagree and the
+        # report would say *fallback* about a copy that is right there. The tag
+        # is named with the prefix the facet composes, so nothing but the
+        # candidate list decides the answer.
+        subprocess.run(["git", "-C", root, "tag", "release/8.0", "release/9.0"],
+                       check=True, capture_output=True)
+        answer = answered(read_corpus(root, _a_facet(), "8.0"))
+        check("a tag the composed name resolves to is not read as the version's branch",
+              answer["outcome"] != AT_THE_VERSION, f"{answer['outcome']}")
+        check("and the arm it does take is the one its own branch reading supports",
+              answer["outcome"] == FALLBACK, f"{answer['outcome']}")
+
         # A keyword that is a prefix of a word in the corpus, which is the false
         # hit an unbounded term produces.
-        answer = read_corpus(root, _a_facet(), "9.0", keywords=["pass"])
+        answer = answered(read_corpus(root, _a_facet(), "9.0", keywords=["pass"]))
         check("a keyword is held to a word boundary", answer["matched"] == [],
               f"{answer['matched']}")
 
         # ⛔ The fallback, and the arm that must speak.
-        answer = read_corpus(root, _a_facet(), "9.1")
+        answer = answered(read_corpus(root, _a_facet(), "9.1"))
         check("a version whose branch does not exist falls back",
               answer["outcome"] == FALLBACK, f"{answer['outcome']}")
         check("and the ref reported is the one actually read",
@@ -491,8 +543,8 @@ def self_test() -> int:
               "Uncommitted" not in said and "as it is now" in said.lower(), said)
 
         # `load_bearing: []` is a project reaching every document by keyword.
-        answer = read_corpus(root, _a_facet(load_bearing=[]), "9.0",
-                             keywords=["passkey"])
+        answer = answered(read_corpus(root, _a_facet(load_bearing=[]), "9.0",
+                                      keywords=["passkey"]))
         check("an empty load-bearing list reads nothing whole",
               answer["load_bearing"] == [], f"{answer['load_bearing']}")
         check("and every document of the corpus is then keyword-matched",
@@ -502,7 +554,7 @@ def self_test() -> int:
 
         # A corpus whose globs match nothing at that ref: reported as that, and
         # ⛔ never as a specification that agrees.
-        answer = read_corpus(root, _a_facet(files=["elsewhere/**/*.md"]), "9.0")
+        answer = answered(read_corpus(root, _a_facet(files=["elsewhere/**/*.md"]), "9.0"))
         check("a corpus matching nothing at the ref comes back empty",
               answer["corpus"] == [], f"{answer['corpus']}")
         said = render(answer)
@@ -533,7 +585,7 @@ def self_test() -> int:
             ["git", "clone", "-q", "--single-branch", "--branch", "main", origin, clone],
             check=True, capture_output=True,
         )
-        answer = read_corpus(clone, _a_facet(), "9.0")
+        answer = answered(read_corpus(clone, _a_facet(), "9.0"))
         check("a ref on the remote that this clone does not hold is reported unread",
               answer["outcome"] == UNREAD, f"{answer['outcome']}")
         check("⛔ and never as the fallback, which would be a verdict on another copy",
@@ -544,6 +596,23 @@ def self_test() -> int:
               "release/9.0" in said and "git fetch" in said, said)
         check("⛔ and says it is not the fallback",
               "not the fallback" in said, said)
+
+    # ⛔ The claim that covers every answer rather than the two arms that
+    # happened to mention it: no outcome carries a verdict about whether the
+    # request contradicts the corpus, that reading being the filing role's.
+    # ⚠️ The reached set is asserted too — a collector nothing fed would make
+    # the claim vacuously true, which is this suite's own no-op-plant rule.
+    reached = {outcome for outcome, _ in verdicts}
+    check(
+        "every outcome this module gives is reached by the arms above",
+        reached == {None, AT_THE_VERSION, FALLBACK, UNREAD},
+        f"reached {sorted(str(name) for name in reached)}",
+    )
+    check(
+        "⛔ and not one of them carries a verdict about a contradiction",
+        all(stated is None for _, stated in verdicts),
+        f"{[(outcome, stated) for outcome, stated in verdicts if stated is not None]}",
+    )
 
     if failures:
         print(
@@ -585,7 +654,10 @@ def main(argv: list) -> int:
         reason = resolved.get(f"{reader.SPEC_CORPUS_KEY}.absent_reason")
         answer = read_corpus(resolved.code_root, facet, args.version, args.keywords)
     except reader.ConfigError as error:
-        print(f"{error.key}: {error.args[0] if error.args else error}", file=sys.stderr)
+        # ⛔ `str(error)` and not the key beside it: that exception already opens
+        # its message with its own key, so a caller composing the pair prints
+        # the key twice and reads as two refusals.
+        print(str(error), file=sys.stderr)
         return 2
     except (CorpusError, claim.ClaimError) as error:
         print(str(error), file=sys.stderr)

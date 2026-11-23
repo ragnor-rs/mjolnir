@@ -3870,6 +3870,35 @@ nobody forced certified nothing. ⛔ **So the negative is asserted twice**, on t
 a clean one, the clean tree being where a plain checkout succeeds; and the suite asserts that the
 clean tree really was clean, or the pair would be the dirty arm written out twice.
 
+### A bare-revision candidate was two of the defects the facet exists against
+
+⛔ **The reading resolves two candidates and no third: the remote-tracking ref and the local
+branch**, which is what
+[`schema.md § 39 → The ref is the grouping's`](../plugins/mjolnir/config/schema.md#the-ref-is-the-groupings-and-this-facet-declares-none)
+means by a ref composed from a prefix. The first form carried the composed name as a bare revision
+beside them, which reads as a convenience and is two defects:
+
+| what the third candidate admitted | what it would have reported |
+|---|---|
+| a **tag** of the composed name | *at the version* — while the arm that decides the unread outcome reads the remote's **heads** only, so the same name is simultaneously *there* and *not advertised*. The two answers § 39 keeps apart, reached through a candidate nothing on the surface asks for |
+| a `ref_prefix` leaving the composed name a revision expression | the working tree's own commit, read as the version's copy — the one thing the facet is for |
+
+⚠️ **Found by reading the diff rather than by a red**, and closed with the arm that reproduces it: a
+tag named with the facet's own prefix, at the version's commit, with no branch of that name. It
+reddens when the candidate is put back. ⛔ **So a branch is what the facet composes throughout**,
+which is what § 4.8's `ref_prefix` already means — `grouping_ref_exists` looks for it among the
+remote's heads.
+
+### The claim about contradictions covers every outcome, not the arms that mentioned it
+
+⛔ **No outcome carries a verdict about whether the request contradicts the corpus**, that reading
+being the filing role's by
+[`schema.md § 39 → the absent case`](../plugins/mjolnir/config/schema.md#carrier-none-and-the-two-answers-it-must-not-collapse-into-one).
+⚠️ **Two of the four arms asserted it and two did not**, which is a claim
+about two answers wearing the shape of a claim about all of them — so every answer the suite takes
+is collected and the claim is made once over the set, with the **reached** set asserted beside it: a
+collector nothing fed would make the claim vacuously true.
+
 ⚠️ **And one arm's first form was measured wrong rather than failing.** The grouping rule asked its
 question against the raw `work_item.grouping` block, where a grouping whose carrier is `none` is
 still written; § 4.8's own rules drop it, and the gate's checks read the set that remains. So a
