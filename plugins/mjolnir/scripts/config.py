@@ -2003,7 +2003,7 @@ class Config:
             )
         return {"name": name, **self.groupings[name]}
 
-    def tier(self, name: str) -> dict:
+    def tier(self, name: str, against_target: str | None = None) -> dict:
         """§ 31's suites classified under one tier, and what each needs.
 
         The reading the launching role is owed, performed here for the reason
@@ -2028,6 +2028,17 @@ class Config:
         `source: null`, which the launching role reads as **no answer** and never
         as green. That is the one arm of this facet that must not weaken, so it
         is carried in the shape of the answer rather than left to a reader.
+
+        ⛔ `against_target` answers the refusal rather than describing it. § 31
+        makes the refusal the reviewing role's **act**, and an act performed on
+        `refused_on` read by the role is that role matching § 33's names for
+        itself -- a second resolution of a vocabulary this reader already holds,
+        free to disagree with it about a name's case, its spacing or its
+        presence. So the question *is this suite refused on this target* is
+        asked here and comes back per suite as `refused`, and ⛔ the name is
+        held to § 33's own list before any suite is read: a target nothing
+        deploys to is a stop and never an answer of `false`, which is the
+        reading that would run a refused suite against every target there is.
         """
         names = vocabulary(self.facts, "test_tiers.tier", "a tier")
         if name not in names:
@@ -2038,12 +2049,33 @@ class Config:
                 "enters, so a reading asked under one answers about no tier at "
                 "all rather than about the nearest one (§ 31).",
             )
+        # ⛔ Before the carrier is read, and before any suite is: the name is
+        # § 33's and the question asked under one it does not state is asked
+        # about no target at all. ⚠️ Stopping here rather than answering `false`
+        # is the direction that matters -- a misspelled target answered *not
+        # refused* runs the one suite the project refused on it.
+        if against_target is not None:
+            stated_targets = [
+                target.get("name")
+                for target in _absent_as(self.get("deploy"), [])
+                if isinstance(target, dict) and isinstance(target.get("name"), str)
+            ]
+            if against_target not in stated_targets:
+                raise ConfigError(
+                    "deploy",
+                    f"states no target named {against_target!r}. It states "
+                    f"{', '.join(repr(n) for n in sorted(stated_targets)) or 'no target'}; "
+                    "§ 31 resolves a tier's refusal against § 33's own names, so a "
+                    "refusal asked about a word nothing deploys to is asked about "
+                    "no target rather than answered.",
+                )
         if self.get("test_tiers.carrier") == "none":
             stated = " ".join(str(self.get("test_tiers.absent_reason")).split())
             return {
                 "tier": name,
                 "carried": False,
                 "stated": False,
+                "against_target": against_target,
                 "suites": [],
                 "absent_reason": stated,
                 "report": [
@@ -2083,6 +2115,14 @@ class Config:
                     "selection_held_by": entry.get("selection_held_by"),
                     "selection_held": "selection_held_by" in entry,
                     "refused_on": list(entry.get("refused_on") or []),
+                    # ⚠️ `null` where no target was asked about, and never
+                    # `false`: a suite nobody asked the question of is not a
+                    # suite cleared to run against everything.
+                    "refused": (
+                        None
+                        if against_target is None
+                        else against_target in (entry.get("refused_on") or [])
+                    ),
                     "verdict": source,
                 }
             )
@@ -2113,6 +2153,20 @@ class Config:
                     "refusal to perform rather than a note, and the target "
                     "vocabulary is not this facet's."
                 )
+            if entry["refused"] is True:
+                report.append(
+                    f"A {name!r} suite is refused against {against_target!r}: ⛔ "
+                    "the refusal is performed **before any case runs**, and a "
+                    "suite stopped this way reports refused with this rule rather "
+                    "than reporting nothing (§ 31)."
+                )
+            elif entry["refused"] is False:
+                report.append(
+                    f"A {name!r} suite is not refused against {against_target!r}, "
+                    "so nothing here stops it — ⚠️ which is not a precondition "
+                    "met: what it needs is `needs` above, and a tier that could "
+                    "not run is never folded into a verdict (§ 31)."
+                )
             if entry["started"] == "asked":
                 report.append(
                     f"A {name!r} suite is opt-in (`started: asked`), so it is "
@@ -2130,6 +2184,7 @@ class Config:
             "tier": name,
             "carried": True,
             "stated": bool(suites),
+            "against_target": against_target,
             "suites": out,
             "report": report,
         }
@@ -14087,6 +14142,70 @@ def self_test() -> int:
         any("refusal to perform rather than a note" in line for line in full["report"]),
         f"reported {full['report']!r}",
     )
+    # ⛔ The refusal as the reviewing role performs it, which § 31 makes that
+    # role's **act** rather than a field it reads: the question is asked of the
+    # reader against one target and the answer is per suite. ⚠️ Three arms and
+    # not one, because the three answers are distinguishable and the reader
+    # collapsing any two of them is the defect -- `null` is nobody asked,
+    # `false` is asked and clear, and a name § 33 does not state is a stop. A
+    # reader answering `false` to the third would run, against every target
+    # there is, the one suite the project refused.
+    refusing = _a_deploy_target()["name"]
+    check(
+        "a suite nobody asked about a target reports no refusal, and never false",
+        suite["refused"] is None and full["against_target"] is None,
+        f"reported {suite['refused']!r} against {full['against_target']!r}",
+    )
+    refused_here = _tier_read(
+        "integration",
+        _a_test_tiers_block(workflow=_SAME, refused_on=[_SAME]),
+        against_target=refusing,
+    )
+    check(
+        "a suite asked about the target it is refused on comes back refused",
+        refused_here["suites"][0]["refused"] is True
+        and refused_here["against_target"] == refusing,
+        f"answered {refused_here['suites'][0]['refused']!r}",
+    )
+    check(
+        "and the report says the refusal is performed before any case runs",
+        any(
+            "**before any case runs**" in line for line in refused_here["report"]
+        ),
+        f"reported {refused_here['report']!r}",
+    )
+    # ⚠️ The green side of the same scope, which is what keeps the arm above
+    # from passing on a reader that answered `true` to everything.
+    cleared = _tier_read(
+        "integration",
+        _and_a_second_deploy_target(
+            _a_test_tiers_block(workflow=_SAME, refused_on=[_SAME])
+        ),
+        against_target="another-target",
+    )
+    check(
+        "a suite asked about a target that does not refuse it comes back clear",
+        cleared["suites"][0]["refused"] is False,
+        f"answered {cleared['suites'][0]['refused']!r}",
+    )
+    check(
+        "and clear is reported as nothing stopping it rather than as runnable",
+        any("not a precondition" in line for line in cleared["report"]),
+        f"reported {cleared['report']!r}",
+    )
+    try:
+        unknown = _tier_read(
+            "integration",
+            _a_test_tiers_block(workflow=_SAME, refused_on=[_SAME]),
+            against_target="a-target-nothing-deploys-to",
+        )
+    except ConfigError as error:
+        unknown = f"stop {error.key}"
+    check(
+        "a refusal asked about a target no deploy entry states is a stop",
+        unknown == "stop deploy",
+        f"answered {unknown!r}",
+    )
     # ⛔ The arm that must not weaken, asserted on the answer and not on the
     # prose: a suite stating neither source comes back with no verdict, and the
     # report says so in the words § 31 uses. A reading that defaulted it to the
@@ -14231,6 +14350,21 @@ def self_test() -> int:
         "the invocation prints the tier reading the launching role is pointed at",
         code == 0 and '"tier": "unit"' in printed,
         f"exited {code} having printed {printed[:160]!r} and {failed.getvalue()[:160]!r}",
+    )
+    # ⛔ The target asked about with no tier named, which is the one shape of this
+    # pair that answers nothing: § 31 states the refusal per suite, so a target
+    # alone is a question about which of nothing is refused. ⚠️ Held on the
+    # invocation rather than on the method, the pairing being the parser's.
+    buffer, failed = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(failed):
+        code = main(
+            ["--skills-root", REPO_ROOT, "--no-check-paths", "--against-target", "a-target"]
+        )
+    check(
+        "a target asked about with no tier named is a stop rather than a reading",
+        code != 0 and "refused_on" in failed.getvalue(),
+        f"exited {code} having printed {buffer.getvalue()[:160]!r} "
+        f"and {failed.getvalue()[:160]!r}",
     )
 
     if failures:
@@ -16154,6 +16288,27 @@ def _a_test_tiers_block(**overrides):
 _SAME = object()
 
 
+def _and_a_second_deploy_target(mutate, name: str = "another-target"):
+    """`mutate`'s project with a second § 33 target beside the one it states.
+
+    ⛔ The not-refused arm cannot be written without it: a project stating one
+    target can only be asked about the target its suite is already refused on,
+    so `refused: false` would be a reading no fixture reaches and the arm
+    holding it would be green on an answer the reader never produces.
+    """
+
+    def composed(data: dict) -> dict:
+        data = mutate(data)
+        targets = data.get("deploy")
+        if not isinstance(targets, list):
+            targets = []
+            data["deploy"] = targets
+        targets.append(_a_deploy_target(name=name))
+        return data
+
+    return composed
+
+
 def _an_absent_test_tiers_block(**overrides):
     """§ 31's facet stated absent, with a value written beside the absence.
 
@@ -16477,20 +16632,25 @@ def _answer_on(paths, kind=None, *, classes=None, borderline=None,
     return _resolve(data, EXAMPLES, facts, False).exempt_for(paths, kind)
 
 
-def _tier_read(tier: str, mutate=None):
+def _tier_read(tier: str, mutate=None, against_target: str | None = None):
     """§ 31's reading of one tier, or the `ConfigError` it refused with.
 
     ⛔ The whole answer rather than a rendering, for the reason `_answer_on`
     above returns one: the arms below read the fields the launching role reads,
     and a rendering would let a field be replaceable by a constant with the
     suite still green — which is exactly how an unrendered field goes unheld.
+
+    ⚠️ `against_target` is passed through rather than defaulted to a name, so
+    the no-target reading stays the one the arms below assert `refused: null`
+    on: a helper that always asked about some target would make that answer
+    unreachable and the arm holding it green on nothing.
     """
     data = _a_valid_example()
     if mutate is not None:
         data = mutate(data)
     with open(SURFACE, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
-    return _resolve(data, EXAMPLES, facts, False).tier(tier)
+    return _resolve(data, EXAMPLES, facts, False).tier(tier, against_target)
 
 
 def _verdict_on(paths, kind=None, **overrides) -> str:
@@ -18179,6 +18339,15 @@ def main(argv: list[str]) -> int:
         "tier with nothing to lack rather than as one that passed",
     )
     parser.add_argument(
+        "--against-target",
+        metavar="TARGET",
+        help="one of § 33's deploy targets, by the name that facet keys it on: "
+        "every suite `--tier` reports comes back with whether this target "
+        "refuses it, which is the reading the reviewing role performs its § 31 "
+        "refusal on. ⛔ A name no `deploy` entry states is a stop and never an "
+        "answer of not-refused",
+    )
+    parser.add_argument(
         "--self-test",
         action="store_true",
         help="hold this reader to the surface and the examples",
@@ -18203,7 +18372,15 @@ def main(argv: list[str]) -> int:
         # facet is the project's rather than a root's, so either form resolves
         # it and a role that has narrowed to a root asks the same question.
         if args.tier:
-            answer = config.tier(args.tier)
+            answer = config.tier(args.tier, args.against_target)
+        elif args.against_target:
+            raise ConfigError(
+                "test_tiers.tiers.refused_on",
+                "cannot be asked about a target with no tier named: § 31 states "
+                "the refusal per suite, so a target alone asks which of nothing "
+                "is refused. Pass `--tier` with it, or read the targets this "
+                "project states out of the report this run prints without either.",
+            )
         # ⛔ After the root narrowing for § 27's reason, and ⚠️ **the kind is
         # read whether or not it was given**: a run that passed paths and no
         # kind is asking the question § 30's third verdict answers, so dropping
