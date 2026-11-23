@@ -311,6 +311,7 @@ PORT_KEY = "kind"
 # being the adapter's fact (§ 3), so neither of these reaches a fallback.
 NO_DESTINATION = "none"
 FILE_DESTINATION = "file"
+SHEET_DESTINATION = "google-sheet"
 
 # The file kind's one key, and where it sits. ⛔ Spelled once here rather than in
 # each of the three places that read it -- the two reports and the load-bearing
@@ -320,6 +321,32 @@ DESTINATION_BLOCK = "day_log.destination"
 OUT_DIR_KEY = "out_dir"
 OUT_DIR_PATH = f"{DESTINATION_BLOCK}.{OUT_DIR_KEY}"
 DESTINATION_KIND_PATH = f"{DESTINATION_BLOCK}.kind"
+
+# The spreadsheet kind's own keys, spelled here for the same reason the file
+# kind's one is: the marked-private inventory, the report of what a
+# configuration cannot do, and the load-bearing absence list each read them, and
+# those three disagreeing is the failure this reader is built to not have.
+#
+# ⛔ **Three keys and not one**, which is the kind's shape rather than a choice
+# here: § 26 addresses a spreadsheet by an identifier *and* a tab, and the
+# column mapping is what makes the sheet's own layout the project's. A kind
+# addressed by two values and configured by a third has no single key whose
+# absence means *no store*, so each is reported by name.
+SHEET_KEY = "sheet"
+SHEET_TAB_KEY = "tab"
+SHEET_COLUMNS_KEY = "columns"
+SHEET_PATH = f"{DESTINATION_BLOCK}.{SHEET_KEY}"
+SHEET_TAB_PATH = f"{DESTINATION_BLOCK}.{SHEET_TAB_KEY}"
+SHEET_COLUMNS_BLOCK = f"{DESTINATION_BLOCK}.{SHEET_COLUMNS_KEY}"
+
+# ⛔ The mapping is reported **per role** and not as a block. The surface declares
+# a key per role rather than one for the mapping -- a project supplies a word
+# apiece -- so a report naming the block would name no key this surface states,
+# and a project reading it would not know which of the three it is short of.
+SHEET_COLUMN_PATHS = [
+    f"{SHEET_COLUMNS_BLOCK}.{role}" for role in ("date", "hours", "description")
+]
+SHEET_KEYS = [SHEET_PATH, SHEET_TAB_PATH, *SHEET_COLUMN_PATHS]
 
 # § 29's run port, read for the one thing this reader may say about it: that a
 # configuration states a host whose runs nothing here can be asked about. ⛔ The
@@ -3501,6 +3528,29 @@ class Config:
                 "is not required -- a project that maps no `day_log` carrier needs "
                 "no store -- so it is reported here rather than refused."
             )
+        elif destination == SHEET_DESTINATION:
+            # ⛔ Each absent key named, never the first one found. § 26 addresses
+            # this kind by an identifier and a tab and configures its layout with
+            # a mapping, so a project that stated one of the three hears about
+            # the other two in the same reading rather than one per fix.
+            #
+            # ⛔ A key § 28's layer **answers** counts as stated, and the value is
+            # not resolved to find out. That facet makes listing a key the
+            # statement that the layer answers it, and a report that read the
+            # value would stop on an unreadable private file while saying what
+            # this configuration cannot do -- which is the one place a stop is
+            # the wrong shape.
+            listed = set(self.private_keys)
+            for path in SHEET_KEYS:
+                if path in listed or self.get(path) is not None:
+                    continue
+                out.append(
+                    f"`{path}` is not set and `{DESTINATION_KIND_PATH}` is "
+                    f"`{SHEET_DESTINATION}`, so the day log cannot address a row "
+                    "of that spreadsheet. § 26 states the key is not required -- a "
+                    "project that maps no `day_log` carrier needs no store -- so "
+                    "it is reported here rather than refused."
+                )
         # § 29's kind that addresses nothing, reported the same way. ⛔ Not read as
         # a second statement of `checks: []`, which this reader reports nowhere and
         # § 29 holds apart from it: one says the host defines no run this surface
@@ -9915,6 +9965,14 @@ MARKED_PROCEDURE = [
     "lines_changed",
     "max_lines",
     "readings",
+    # § What a project already holds's. ⛔ The marked key whose rule is about what
+    # an adopting project already had before this surface reached it: a pointer
+    # at its own store of rulings, which is the shape a reader meeting that
+    # section reaches for first and the one § 27 makes look admissible. What
+    # refuses it is that a pointer carries values a role reads, and a ruling is
+    # not a value -- so a project writing this would be configuring the
+    # procedure to be read out of a file nobody shares.
+    "rulings",
     # § What a project is asked's. ⛔ The marked key whose rule is about the step
     # that writes a configuration rather than about one a configuration carries:
     # a project writing this would be configuring its own interrogation, which is
@@ -9987,6 +10045,12 @@ SHOWN_LISTS = {
 # about the set.
 MARKED_PRIVATE = [
     "day_log.attribute_to",
+    # § 26's, and the one marked key that is a **store's address**. ⚠️ It is why
+    # the argument beside `billing.rates` below is stated the way it is rather
+    # than as *no key of that port is marked*: the destination port marks the
+    # identifier of the store and nothing else, so hours, a rate and a client's
+    # identity still reach no key of it.
+    SHEET_PATH,
     "day_log.evidence.calendars",
     f"{CHAT_BLOCK}.exclude",
     f"{CHAT_BLOCK}.mixed",
@@ -10001,8 +10065,9 @@ MARKED_PRIVATE = [
     #
     # § 37's, and the one marked key that is money. ⚠️ Its eligibility is argued
     # from this list's own bound: § 26 rules that hours, rates and a client's
-    # identity reach no destination key *because no key of that port is marked*,
-    # so a rate becoming statable at all is this entry and nothing else.
+    # identity reach no destination key, which holds with that port's one mark in
+    # place because the mark is on a *store's identifier* -- so a rate becoming
+    # statable at all is still this entry and nothing else.
     "billing.rates",
 ]
 
@@ -12745,7 +12810,7 @@ def self_test() -> int:
     # matched case-sensitively like every other clause here. What catches both is
     # the inventory comparison above -- the port leaves the derived set and the
     # sets stop matching -- which is why that comparison is not derived.
-    for word in (NO_DESTINATION, FILE_DESTINATION):
+    for word in (NO_DESTINATION, FILE_DESTINATION, SHEET_DESTINATION):
         stated = surface["enums"].get(PLANTED_PORT[0]) or []
         check(
             f"the surface still states `{word}` among this port's own kinds",
@@ -14498,6 +14563,18 @@ def _load_bearing_absences(config: Config) -> list[str]:
         and config.get(OUT_DIR_PATH) is None
     ):
         absent.append(OUT_DIR_PATH)
+    # ⛔ The spreadsheet kind's three, by the same rule and keyed the same way. ⚠️ A
+    # key § 28's layer answers is **stated**, and is read off the list rather than
+    # resolved -- the reason the report above gives, which binds here harder: this
+    # runs for every carrier a project maps, so a value read here would stop a
+    # reading that is about which keys are absent.
+    if carriers.get("day_log") and config.get(DESTINATION_KIND_PATH) == SHEET_DESTINATION:
+        listed = set(config.private_keys)
+        absent.extend(
+            path
+            for path in SHEET_KEYS
+            if path not in listed and config.get(path) is None
+        )
     return absent
 
 

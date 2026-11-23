@@ -96,6 +96,13 @@ can read nothing but a file, the toolkit writes that file itself, under
 marked as generated, byte-identical on a second run, and removed again when your configuration stops
 asking for it.
 
+**One cost is not a file anybody writes, and it is the one worth knowing before you start.** If your
+project **already** describes its own process — in the file your agent reads every session, or in
+the memory it keeps about your repository — that description does not stop being read when the local
+copies go, and the toolkit cannot reach it to take it out. What is owed there, ruling by ruling, and
+which half of it a check can hold at all, is
+[stated rather than left to you to discover](plugins/mjolnir/config/schema.md#what-a-project-already-holds-that-states-the-loop-and-what-adopting-it-does-to-that).
+
 ## What you type
 
 Skills are addressed **namespaced, with no alias** — the rule, and why it is procedure rather than
@@ -291,6 +298,17 @@ stated with the check in
 The [authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration)
 is the single statement of what that means, why it is procedure rather than a setting, and the
 one trap in it.
+
+**And it is a rail rather than a request.** A `commit-msg` hook takes a tool's trailer out of the
+message as it is written — below the model, on every commit from any path, where a setting that is
+not reliably honoured and an instruction no compaction survives both leak. What decides a line is
+the **address** and not a display name anybody chose, because the product name in use here is also
+an ordinary given name and a human co-author is the one thing the rule has never excluded. The rule,
+the list it recognises, and the three parts of itself no git hook reaches are
+[§ 6 → The rail](plugins/mjolnir/config/schema.md#the-rail-under-the-authorship-rule-and-the-three-halves-it-cannot-reach).
+⚠️ **The honest bound: a fresh clone has no git hook**, whichever route it was installed by, so a
+clone is one command away from the rail — and the install step tells you which of the two gaps you
+have rather than reporting a rail that is not there.
 
 ⛔ **Who *holds* a role is looked up, and never answered by asking who is running.** The author of a
 commit is the authenticated user by the rule above; the dev, the owner and the reviewer are not —
