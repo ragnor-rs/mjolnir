@@ -54,18 +54,28 @@ roles:
 #
 # `ambiguous:` is the third form, and it is a list of the role keys above: a basename that covers
 # several roles across the projects, so the name itself answers nothing. ⛔ It is counted as no
-# role — never as all of them and never as the first — and it makes the verdict "cannot establish"
-# with the carrier named, because a copy classified as the wrong one of its roles reports the real
-# one as unshipped and the wrong one as covered, in one line each and both wrong.
+# role — never as all of them and never as the first — because a copy classified as the wrong one
+# of its roles reports the real one as unshipped and the wrong one as covered, in one line each
+# and both wrong.
 #
 # ⚠️ `guard` and `rule` split a hook by which side of schema § The loop → "Procedure produces a
 # record and enforcement reads it" it sits on, and the distinction is the one #166 ruled on: a
 # hook that supplies procedure before the writing is not a check over what was written.
 # Classifying a loader as a guard would restate here exactly the conflation that ruling deleted.
 #
-# ⛔ A carrier matching nothing here is reported as unclassified and makes the verdict
-# "cannot establish" rather than being skipped. An uncounted role reads as a role that does not
-# exist, which is the one error this check must not make.
+# ⛔ What a carrier this file cannot answer for costs is stated here and in no entry below, and it
+# is two different costs by which side the carrier sits on — read off the check's own code rather
+# than off a run, where the two are easy to read as one:
+#
+#   a carrier in a project's own tree — unclassified or ambiguous — makes **that project's**
+#   verdict "cannot establish" with the carrier named, its role counts being floors;
+#
+#   a carrier **the plugin ships** makes the **check's own answer** unestablished — exit 2, with
+#   the carrier named in the summary — and every target's role counts floors, while ⛔ **no
+#   target's own verdict moves**: a project's verdict is read from that project's carriers alone.
+#
+# Either way an uncounted role reads as a role that does not exist, which is the one error this
+# check must not make.
 carriers:
   create-issue:   { role: file }
   pick-issue:     { role: gate }        # gates the card, dates it from priority, refuses an
@@ -104,7 +114,7 @@ carriers:
   # issue-suffixed ones the surveyed copies used. ⚠️ A reconciliation renames the carrier, so
   # landing one leaves this map describing only the copies it replaced: `finish` and
   # `finish-issue` are one role under two names, and until both are here the check reports the
-  # shipped one as unclassified and refuses a verdict.
+  # shipped one as unclassified, at the cost the block above states.
   file-work-item: { role: file }         # the reconciled filing role (#7, shipped by #114)
   gate-work-item: { role: gate }         # the reconciled gating role (#8)
   finish:         { role: finish }       # the reconciled finishing role (#10, shipped by #113)
@@ -119,11 +129,9 @@ carriers:
   billing-report: { role: billing_report }  # the billing-report role (#266). ⚠️ Its carrier
                                             # landed with the change that ruled where a role whose
                                             # subject is more than one project belongs (#18), and
-                                            # no entry came with it — so every verdict this check
-                                            # gave was refused for an unclassified carrier until
-                                            # this line, which is the recurrence the `setup` entry
-                                            # above and the hook block below each state in their
-                                            # own words
+                                            # no entry came with it — the recurrence the hook
+                                            # block below names, arriving on a skill as it did
+                                            # for `setup` below
   cut-release:    { role: release }      # the release role, shipped by #36 — and the one shipped
                                          # carrier whose basename is not its role key, because
                                          # the word `release` is already taken above by a
@@ -132,9 +140,9 @@ carriers:
   design-prd:     { class: beside }     # turn raw sources into a specification (#29)
   # ⚠️ Classified here rather than in the change that shipped it, which is the recurrence the hook
   # block below already names arriving on a skill: the carrier landed on the integration branch
-  # under #269 with no entry, so every verdict this check gave was refused for an unclassified
-  # carrier until this line. ⛔ `beside` and not a role: writing a project's configuration carries
-  # no work item, and the loop's role keys above are the legs an item travels.
+  # under #269 with no entry, at the cost the head block states. ⛔ `beside` and not a role:
+  # writing a project's configuration carries no work item, and the loop's role keys above are the
+  # legs an item travels.
   setup:          { class: beside }     # write a project's configuration by asking for it (#269)
 
   # Project-local tooling of the build itself, not carriers of the loop. Each has a work item
@@ -151,12 +159,12 @@ carriers:
 
   # The hook carriers the plugin ships, which no count here states: a number would be wrong by
   # the next one that lands. ⚠️ A hook landing in the plugin is unclassified until it is named
-  # here, and an unclassified carrier makes every role count a floor — so adding one to the
-  # plugin without adding it here reddens this check rather than being silently uncounted. ⛔ It
-  # has happened to every carrier that landed in the plugin before being named here, and no tally
-  # of the occurrences is kept: a count of them goes stale by the next one exactly as a count of
-  # the entries would. What the recurrence argues for needs no number to state it — name a
-  # carrier here in the change that ships it.
+  # here, at the cost the head block states — so adding one to the plugin without adding it here
+  # reddens this check rather than being silently uncounted. ⛔ It has happened to every carrier
+  # that landed in the plugin before being named here, and no tally of the occurrences is kept: a
+  # count of them goes stale by the next one exactly as a count of the entries would. What the
+  # recurrence argues for needs no number to state it — name a carrier here in the change that
+  # ships it.
   check_reply_defers_nothing:   { class: guard }  # holds the reply to leaving no work undone
   boundary:                     { class: guard }  # refuses what may not leave the project, on
                                                   # `PreToolUse` (#90, shipped by #142)
