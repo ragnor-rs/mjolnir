@@ -34,6 +34,7 @@ Usage:
 
 from __future__ import annotations
 
+import fnmatch
 import glob
 import os
 import functools
@@ -60,30 +61,49 @@ RECORD = "docs/single-source-of-truth.md"
 # citations are still held, because a dead citation in a skill is a dead citation.
 EXPLAINS, RECORDS, PROCEDURE = "explains", "records", "procedure"
 
-ROLES = {
-    READER: EXPLAINS,
-    "docs/build-surface.md": EXPLAINS,
-    "docs/configuration-surface.md": EXPLAINS,
-    "docs/single-source-of-truth.md": EXPLAINS,
-    "docs/working-on-the-toolkit.md": EXPLAINS,
-    RULINGS: RECORDS,
-    "docs/building-itself.md": RECORDS,
-    "docs/test-first-for-a-model-writer.md": RECORDS,
-    "plugins/mjolnir/skills/billing-report/SKILL.md": PROCEDURE,
-    "plugins/mjolnir/skills/cut-release/SKILL.md": PROCEDURE,
-    "plugins/mjolnir/skills/day-report/SKILL.md": PROCEDURE,
-    "plugins/mjolnir/skills/deploy/SKILL.md": PROCEDURE,
-    "plugins/mjolnir/skills/file-work-item/SKILL.md": PROCEDURE,
-    "plugins/mjolnir/skills/finish/SKILL.md": PROCEDURE,
-    "plugins/mjolnir/skills/gate-work-item/SKILL.md": PROCEDURE,
-    "plugins/mjolnir/skills/load/SKILL.md": PROCEDURE,
-    "plugins/mjolnir/skills/review/SKILL.md": PROCEDURE,
-    "plugins/mjolnir/skills/save/SKILL.md": PROCEDURE,
-    "plugins/mjolnir/skills/setup/SKILL.md": PROCEDURE,
-    "plugins/mjolnir/skills/start/SKILL.md": PROCEDURE,
-}
+# ⛔ **Rules and not an enumeration**, which is this file's own first-class
+# finding applied to itself. The first form of this map named all twenty-one
+# documents, and `documents.graph` in the configuration names the same
+# twenty-one -- so adding a document meant two edits, and the second one being
+# forgotten was a document outside one declaration while inside the other. The
+# per-document list lives in the configuration now, read by `documents.py`
+# against `schema.md § 38`; what is here is the *kind*, which is this project's
+# own taxonomy of its prose and is no adopter's to inherit.
+#
+# ⚠️ Ordered, and the first match wins: the skills pattern is narrower than the
+# fallback below it, and a rule matching no file at all is reported rather than
+# left to rot.
+ROLE_RULES = [
+    # ⛔ The twelve role carriers as one rule, which is where the enumeration
+    # genuinely was a copy: every one of them is a carrier because of where it
+    # sits, and a thirteenth would have had to be written down twice.
+    ("plugins/mjolnir/skills/*/SKILL.md", PROCEDURE),
+    (RULINGS, RECORDS),
+    ("docs/building-itself.md", RECORDS),
+    ("docs/test-first-for-a-model-writer.md", RECORDS),
+    (READER, EXPLAINS),
+    ("docs/build-surface.md", EXPLAINS),
+    ("docs/configuration-surface.md", EXPLAINS),
+    ("docs/single-source-of-truth.md", EXPLAINS),
+    ("docs/working-on-the-toolkit.md", EXPLAINS),
+    # ⛔ **And no catch-all.** One was written here and it silently retired this
+    # file's own first check: with every `*.md` falling under a default, a new
+    # store of prose could never be *unclassified*, and the two plants asserting
+    # that a new document fails rather than being skipped both stayed green. The
+    # eight names above are each a statement of a **kind**, which lives nowhere
+    # else -- not a second copy of `documents.graph`, which states what each one
+    # may name.
+]
 
 MAY_NOT_STATE_A_RULE = (EXPLAINS, RECORDS)
+
+
+def role_of(path: str) -> str | None:
+    """The kind a document plays, by the first rule that matches it."""
+    for pattern, kind in ROLE_RULES:
+        if fnmatch.fnmatch(path, pattern) or path == pattern:
+            return kind
+    return None
 
 PROSE_GLOBS = ["*.md", "docs/**/*.md", "plugins/**/*.md"]
 CONFIG_GLOBS = [".claude/mjolnir.yaml", "plugins/mjolnir/config/examples/*.y*ml"]
@@ -482,7 +502,7 @@ class Tree:
         a citation, and this reader refused one for as long as it has existed.
         """
         out = []
-        for path in ROLES:
+        for path in self.prose:
             text = self.text.get(path, "")
             shown = shown_spans(text)
             for match in CITATION.finditer(text):
@@ -562,15 +582,24 @@ class Tree:
 def check_every_document_has_a_role(tree: Tree) -> list[str]:
     problems = []
     for path in tree.prose:
-        if path not in ROLES:
+        if role_of(path) is None:
             problems.append(
-                f"{path}: no declared role. A markdown document at the root or under docs/ "
-                "must be given a role in this script, so that a new store of prose cannot "
+                f"{path}: no rule of `ROLE_RULES` classifies it. A markdown document at the "
+                "root or under docs/ must fall under one, so that a new store of prose cannot "
                 "become a second authority by being skipped."
             )
-    for path in ROLES:
-        if path not in tree.text:
-            problems.append(f"{path}: has a declared role and does not exist.")
+    # ⛔ A rule that matches nothing, which is the direction the enumeration this
+    # replaced could not go wrong in and a pattern can: a rule left behind by a
+    # document that moved reads as covering it for ever.
+    for pattern, kind in ROLE_RULES:
+        if not any(
+            fnmatch.fnmatch(path, pattern) or path == pattern for path in tree.prose
+        ):
+            problems.append(
+                f"{pattern}: classifies nothing as {kind!r}, so whatever it was written for "
+                "is either gone or now covered by an earlier rule. A rule that matches no "
+                "document reads as covering one."
+            )
     for pattern in tree.empty_globs:
         problems.append(
             f"{pattern}: matched no file, so whatever it was meant to cover is unchecked. "
@@ -782,8 +811,8 @@ def check_outcomes_live_in_one_of_two_places(tree: Tree) -> list[str]:
 
 def check_binding_statements_cite_the_surface(tree: Tree) -> list[str]:
     problems = []
-    for path, kind in ROLES.items():
-        if kind not in MAY_NOT_STATE_A_RULE:
+    for path in tree.prose:
+        if role_of(path) not in MAY_NOT_STATE_A_RULE:
             continue
         text = tree.text.get(path, "")
         # ⛔ **What *shows* markdown is skipped here too**, which this reader was
@@ -1064,6 +1093,20 @@ def _plant_unroled_nested_document(tree: Tree) -> Tree:
 
 def _plant_glob_matching_nothing(tree: Tree) -> Tree:
     tree.empty_globs.append("docs/**/*.md")
+    return tree
+
+
+def _plant_a_rule_that_classifies_nothing(tree: Tree) -> Tree:
+    """A classification rule left behind by the documents that moved.
+
+    ⛔ The direction the enumeration this replaced could not go wrong in: a rule
+    naming a path nothing matches any more reads as covering a document for
+    ever. ⚠️ Planted by taking the carriers away rather than by editing the rule
+    list, so what it exercises is the comparison and not a literal in it.
+    """
+    for path in [p for p in tree.prose if p.endswith("/SKILL.md")]:
+        tree.prose.remove(path)
+        tree.text.pop(path, None)
     return tree
 
 
@@ -1719,6 +1762,8 @@ VIOLATIONS = [
     ("every document has a role", "a document with no role", _plant_unroled_document),
     ("every document has a role", "a nested document with no role", _plant_unroled_nested_document),
     ("every document has a role", "a glob that matches nothing", _plant_glob_matching_nothing),
+    ("every document has a role", "a classification rule that matches nothing",
+     _plant_a_rule_that_classifies_nothing),
     ("citations resolve", "an anchor that does not exist", _plant_broken_anchor),
     ("citations resolve", "a valid anchor on a wrong path", _plant_broken_path),
     # ⛔ One per citer this check reaches and the one above it does not, each
@@ -1836,9 +1881,15 @@ def self_test(tree: Tree) -> int:
             print(f"  PLANT COULD NOT BE BUILT {name}: {label} -- {refusal}")
             failures += 1
             continue
+        # ⛔ Over the **union** of both path sets and not over the planted one:
+        # keyed on the planted tree's own items, a plant that *removes* a
+        # document changes no text and registers as having changed nothing, so
+        # it was reported as a duplicate of the only other plant that edits no
+        # text. ⚠️ Measured on the plant that takes the role carriers away.
         changed = {
-            path: text for path, text in planted.text.items()
-            if text != tree.text.get(path)
+            path: planted.text.get(path)
+            for path in set(planted.text) | set(tree.text)
+            if planted.text.get(path) != tree.text.get(path)
         }
         # ⛔ Before the verdict, because the verdict is about the mutation: a
         # substitution gone stale against an edit in the same pass changes no

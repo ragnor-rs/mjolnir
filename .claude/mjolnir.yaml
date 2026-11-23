@@ -96,6 +96,21 @@ host:
     - workflow: "Day log"
       mirrors: "python3 plugins/mjolnir/scripts/day_log.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⛔ Two entries and not one, and the division is which question each answers. This one reads
+    # *this* tree: `documents` below is a carried list, so the run goes red when a document here
+    # gains an edge no row allows, loses one a row states, or arrives with no row at all. ⚠️ Most
+    # of what this repository ships is prose, so a facet held only through its carrier's suite
+    # would be a facet nothing had ever run over real text.
+    - workflow: "Documents"
+      mirrors: "python3 plugins/mjolnir/scripts/documents.py"
+      triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ And this one reads a project built for it, answering about the **carrier**: every arm
+    # reddens on its planted violation and every exemption stays green. It is the answer an
+    # adopter whose `documents.carrier` is `none` can still get, which is why it is separate from
+    # the entry above rather than folded into it.
+    - workflow: "Documents carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/documents.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ What this run holds is the carrier's own suite and not a verdict about this tree:
     # `e2e_register` below is `none`, so pointed at this project the check says it has no
     # subject and exits without one. The entry is here because the carrier ships from this
@@ -847,3 +862,126 @@ billing:
   revisit_when: >-
     Work on this toolkit starts being billed to somebody — the first moment one of the day-log
     entries this repository already writes would decide what appears on an invoice.
+
+documents:
+  # ⛔ Most of what this repository ships is prose, so the graph is configuration and not a table
+  # inside one of the documents: two records of one graph are free to disagree, and the one a check
+  # reads is the one nobody proofreads.
+  #
+  # ⚠️ The rows were **measured** off the text rather than composed — every `may_name` set is what
+  # that document names today — so the graph asserts nothing about this commit. What it asserts is
+  # every commit after it: an edge added to a text with no row, and a row whose edge the text
+  # dropped, are each a failure, which is the direction a hand-written graph is worth having for.
+  carrier: list
+  files: ["*.md", "docs/**/*.md", "plugins/**/*.md"]
+  # ⛔ One glob and not twelve paths. A role carrier is addressed **by name** by the harness that
+  # loads it, so it is arrived at without any document naming it — the class is the reason, and
+  # listing the members would state the reason twelve times and lose it.
+  entry_points: ["README.md", "plugins/mjolnir/skills/*/SKILL.md"]
+  graph:
+    - document: "README.md"
+      may_name:
+        - "docs/build-surface.md"
+        - "docs/building-itself.md"
+        - "docs/configuration-surface.md"
+        - "docs/divergences-and-rulings.md"
+        - "docs/single-source-of-truth.md"
+        - "docs/test-first-for-a-model-writer.md"
+        - "docs/working-on-the-toolkit.md"
+        - "plugins/mjolnir/config/schema.md"
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "docs/build-surface.md"
+      may_name: ["docs/configuration-surface.md", "plugins/mjolnir/config/schema.md"]
+      derived_from: ["docs/configuration-surface.md"]
+    - document: "docs/building-itself.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: []
+    - document: "docs/configuration-surface.md"
+      may_name:
+        - "docs/build-surface.md"
+        - "docs/building-itself.md"
+        - "docs/divergences-and-rulings.md"
+        - "docs/single-source-of-truth.md"
+        - "docs/test-first-for-a-model-writer.md"
+        - "plugins/mjolnir/config/schema.md"
+      derived_from: []
+    - document: "docs/divergences-and-rulings.md"
+      may_name:
+        - "docs/configuration-surface.md"
+        - "docs/test-first-for-a-model-writer.md"
+        - "docs/working-on-the-toolkit.md"
+        - "plugins/mjolnir/config/schema.md"
+      derived_from: ["docs/configuration-surface.md"]
+    - document: "docs/single-source-of-truth.md"
+      may_name:
+        - "README.md"
+        - "docs/configuration-surface.md"
+        - "docs/divergences-and-rulings.md"
+        - "docs/working-on-the-toolkit.md"
+        - "plugins/mjolnir/config/schema.md"
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "docs/test-first-for-a-model-writer.md"
+      may_name: ["docs/single-source-of-truth.md", "plugins/mjolnir/config/schema.md"]
+      derived_from: []
+    - document: "docs/working-on-the-toolkit.md"
+      may_name: ["README.md", "plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/config/schema.md"
+      may_name:
+        - "README.md"
+        - "docs/build-surface.md"
+        - "docs/configuration-surface.md"
+        - "docs/divergences-and-rulings.md"
+        - "docs/single-source-of-truth.md"
+        - "docs/test-first-for-a-model-writer.md"
+      derived_from: ["docs/configuration-surface.md", "docs/divergences-and-rulings.md"]
+    # ⚠️ The one carrier that names another: the billing role states what the hours-breakdown role
+    # is, those two having been told apart from each other and from a third by one ruling.
+    - document: "plugins/mjolnir/skills/billing-report/SKILL.md"
+      may_name:
+        - "plugins/mjolnir/config/schema.md"
+        - "plugins/mjolnir/skills/day-report/SKILL.md"
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/cut-release/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/day-report/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/deploy/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/file-work-item/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/finish/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/gate-work-item/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/load/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/review/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/save/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/setup/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/start/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+  # ⛔ Nothing is forbidden by name here, and that is stated rather than left out. The forbidding
+  # checks this repository runs — no audit trail, no other project's name, nothing deferred — are
+  # procedure with facets of their own, so a list repeating any of them would be a second statement
+  # of a rule that already has one. What this key is for is a project's **own** stable name: a
+  # module it deleted, a word its own rules ban. This repository has none.
+  forbidden: []
+  # ⛔ Nothing is quoted. The kind goes red on an innocent reword and green when the claim is
+  # reworded into its opposite, so an entry here would be a check whose green says nothing — which
+  # is what the reader warns about rather than refuses.
+  quoted: []

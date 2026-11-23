@@ -657,3 +657,12 @@ billing:
   revisit_when: >-
     Work here is billed out to somebody — which is also the point at which `private` above gains
     its first value, a rate being agreed with somebody who does not read this file.
+
+# § 38's absent case.
+documents:
+  carrier: none
+  absent_reason: >-
+    One readme, written for the two people who work on this service and read by them. There is no
+    second document for it to agree with and nothing is built from it.
+  revisit_when: >-
+    A second document is added, which is the first moment two files here can disagree.

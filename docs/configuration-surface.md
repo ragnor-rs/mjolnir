@@ -3667,3 +3667,138 @@ two shapes — a bare value and a list — so a project illustrating the shape w
 illustration routed into the untracked file, and the write then refused for want of a layer that
 project deliberately states none of. The third shape is now read, both halves of each entry,
 because a client's name is as much the value as the rate beside it.
+
+## The document checks: two implementations, and the claim measured rather than taken
+
+One project holds its documents to a declared reference graph and another classifies the checks
+themselves, and the item asking for the extraction carried both as line figures — 489 and roughly
+2,400. ⛔ **The figures were measured rather than taken**, which is the property
+[`schema.md § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
+already makes a rule after a sibling claim turned out to be half invented:
+
+| what was claimed | what the count says |
+|---|---|
+| a reference-graph implementation, **489 lines** | **confirmed.** 503 lines today, one project, reading its graph out of the rules file that governs its documents |
+| a check-classifying implementation, **roughly 2,400 lines** | **confirmed.** 2,194 lines, a different project, 140 references to markdown files in it |
+
+⚠️ **The second was found only by sweeping on behaviour and not on filename.** It is a **shell**
+script, so every sweep over `*.py` named like a check missed it — four such sweeps did, and the
+largest candidate any of them returned was 1,047 lines in a third project and was not a document
+check at all. What found it was asking which sizeable script names more than one markdown file and
+holds something.
+
+⚠️ **And the theory the item quoted is a quotation.** The three kinds, the discipline and the
+reading rule are in that script's own header, word for word — which is worth stating because the
+claim read exactly like a surveyor's paraphrase, and a paraphrase would have been this repository's
+own rule wearing another project's authority.
+
+### The admission question, which had to be answered before any of it was built
+
+⛔ **The two rulings that landed immediately before this one close the list of **roles** and say
+nothing about a facet**, which is what
+[`schema.md § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
+now states outright. The reading to refuse is the one the item invites by calling itself a role: on
+that reading
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles)'s closed list
+refuses this work, because holding documents to a property is no leg of the route.
+
+⛔ **What shows the reading is wrong is that it refuses half the surface.** Five sections already
+carry per-project facts whose only consumer is a check or a hook rather than a role, and none of
+them is on that list — so the closed list has never been what admits a facet, and
+[`schema.md § 38`](../plugins/mjolnir/config/schema.md#38-the-documents-a-project-holds-to-a-checkable-property)
+is carried on the reason § 34's is: the per-project values arrive already written as **data**.
+
+⚠️ **The item's own framing is therefore refused rather than honoured**: nothing is added to the
+loop, no `carriers` key answers for this, and no role enters it.
+
+### One root is false for a set whose members are addressed by name
+
+The implementation this property came from holds reachability from a **single** document. ⛔ **That
+is false of this repository and the measurement is twelve documents**, which is why
+[`schema.md § 38 → The two edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)
+states a list of entry points instead: the twelve role carriers here are each loaded by name by the
+harness and named by no document, so a single-root reading reports twelve unreachable documents that
+a reader reaches every session.
+
+⚠️ **The teeth survive because the list is short and declared.** A project that states every
+document an entry point has turned the check off and can read that off its own configuration, which
+a single root hides by making the same decision look like a graph problem.
+
+### The first real run reported a correct document as broken
+
+⛔ **The check's own first pass over this repository's documents produced one failure, and the
+assertion was what was wrong** — which is the reading
+[`schema.md § 38 → What a red says`](../plugins/mjolnir/config/schema.md#what-a-red-says-and-what-stays-in-a-projects-own-script)
+exists to force. A ruling whose cell carries `` `high \| medium \| low` `` was reported as a row
+with two cells too many: the pipes are escaped, the document renders exactly as written, and the
+count was of the raw character.
+
+⚠️ **The implementation this property was read out of has the same defect**, counting the raw
+character in the same way — so the extraction is where it was found rather than where it was
+copied. ⚠️ **And a doubled backslash is its own arm**: the pipe after a literal backslash *is* a
+delimiter, which a look-back implementation gets wrong and a consuming one gets right.
+
+### Three plants that certified nothing, each found by disabling the mechanism
+
+⛔ **Every arm was verified by breaking the thing it names and watching the suite redden**, which is
+the discipline
+[`schema.md § 38 → Every check carries a violation`](../plugins/mjolnir/config/schema.md#every-check-carries-a-violation-it-reddens-on)
+states. Three plants did not survive it:
+
+| the plant | why it certified nothing |
+|---|---|
+| a fence delimiter shown inside another fence | the block held only the two delimiters, so with the matching rule disabled the outer fence closed early, the inner one opened and closed, and nothing was left for any check to see. It now carries a ragged table, which is what the matching rule decides |
+| a tilde fence that closes | the same shape: inert prose inside it stays green whether the delimiter is recognised or not |
+| a path that is not a governed document | written as a bare path in backticks, it was reachable only by the loop over documents already known, so no mutation of the edge reader could have reddened it. It is a **link** now, which is resolved and then tested against the governed set |
+
+⚠️ **One plant is kept with its limit written down instead.** The smallest legitimate table — one
+row and its delimiter — is decided by the delimiter counts agreeing and not by the run-length guard
+beside it, measured by widening that guard and watching the plant stay green. The guard's own
+subject is a *lone* line of pipes, whose red belongs to the block check and is planted there.
+
+⚠️ **And the same discipline over the reader found five plants sharing one refusal**: absence, a
+container and a blank value had been one branch, so the suite asserted one arm three times and
+reported two it had never exercised. The branches are split, and every one of the facet's thirty-
+eight planted violations now names its own.
+
+### What the facet cannot express, measured on the project it came from
+
+⛔ **The classifying implementation runs twenty-five check groups and this facet expresses four
+kinds of thing**: the governed set, the graph, the forbidden names and a document's own blocks.
+Most of the rest are computed properties of that project's **subject matter** — whether its five
+request shapes each have a home in its layout, whether its predicate vocabulary's width is stated
+where the extraction stage holds it — and
+[`schema.md § 38 → What a red says`](../plugins/mjolnir/config/schema.md#what-a-red-says-and-what-stays-in-a-projects-own-script)
+leaves every one of them in that project's own script.
+
+⚠️ **Stated as a boundary rather than as coverage**, because the alternative was measured and
+refused one section over: a key pointing at a command that answers such a question satisfies the
+boundary's letter and leaves the adopting project writing the whole working procedure for a name
+back.
+
+### Both projects' rules, expressed in the facet and run against their own trees
+
+⛔ **The facet was driven against both projects rather than argued about**, each one's rules written
+as a `documents` block in a temp skills root — neither repository touched — read by the shipped
+reader and then run by the shipped carrier over that project's own index. ⛔ **Two keys exist only
+because this was driven**, and both are
+[`schema.md § 38 → The two edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)'s:
+
+| what the drive found | what it cost |
+|---|---|
+| **Thirty of one project's declared edges read as dropped.** It names each of its eight role carriers by that carrier's **slug** and never by its filename, with a per-node pattern for every other document besides | `named_as`, a row's own spelling, with the path as the default and a link resolving either way. With it, thirty failures became none |
+| **The other project declares no reference graph at all.** Under two states its only options were to list every edge its text happens to carry — turning on a graph it never asked for — or to be red for ever | a third state, `may_name: null`. ⚠️ **And warned about rather than refused**: a project in that position is a legitimate configuration, so the run names the rows it does not enforce and says which three checks hold nothing, which is the shape the quoting kind already had |
+
+**What the two runs then said.** The graph-less project came back **green on every check** — its
+governed set, all seven of its forbidden names, and all three block properties, over its own six
+documents. The graph project came back with **five**, and all five are worth stating because none of
+them is a defect in that project:
+
+| the five | what each is |
+|---|---|
+| three edges out of its root file | cells of the **derivation table** it keeps inside that document. ⛔ The facet moves that record into configuration, so under § 38 those rows are not in the document at all — the exclusion that project's own checker needs is made unnecessary rather than expressed |
+| two mentions of its root file | a per-**citer** exception: inside its two documents about a client's repository, the root file counts only in the one form that cannot mean anything else. ⛔ **The facet does not express this and the residue is stated rather than closed** — two of that project's fifty-five edges, in one project, and a key for it would be a map per row carrying a pattern per citing document |
+
+⚠️ **Its own gate is green**, which is how the five were told apart from findings: the comparison
+was run against a project whose checker passes, so a difference is this facet's shape and not that
+project's prose.

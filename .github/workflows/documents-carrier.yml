@@ -1,0 +1,45 @@
+name: Documents carrier
+
+# The carrier that holds a project's prose documents to its configured graph, its forbidden names
+# and their own block structure. What a gate can hold about it is every arm that needs no project
+# of anybody's: that a governed document no row declares is a stop rather than a skip, that the
+# enforced edge is held in both directions, that a document nothing names and nothing addresses is
+# reported, that a forbidden pattern which cannot be evaluated is reported rather than read as no
+# match, and the three block properties a renderer reads differently from an author.
+#
+# ⚠️ Two runs are therefore made over this repository and neither is this step: the suite below
+# reads a project built for it, and the configured facet of *this* project is held by the
+# `Documents` run beside it. The first answers about the carrier, the second about this tree.
+#
+# ⛔ What stays unheld is stated rather than assumed away: a project's own domain checks — whether
+# its request shapes each have a home in its layout — are in that project's own script by § 38,
+# and nothing here runs or counts them.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The carrier reads an index and the files in it, so a run that needed
+# one would be a run doing something this one does not.
+permissions: {}
+
+jobs:
+  documents-carrier:
+    name: Documents carrier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, and the same string `host.checks` states this run mirrors. ⚠️ Held
+      # together by eye, and § 2 rules that it must be: the mapping from a run to the command it
+      # mirrors is configured and never inferred. The workflow *name* above is held mechanically,
+      # by the `Host checks drift` run.
+      - name: Assert each check reddens on its planted violation and each exemption stays green
+        run: python3 plugins/mjolnir/scripts/documents.py --self-test

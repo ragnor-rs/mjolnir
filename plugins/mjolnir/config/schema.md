@@ -8379,6 +8379,19 @@ is on it because the route needs a leg there, which is a statable reason and the
 time. ⚠️ **A utility admitted beside them would be admitted on no such reason**, and a list with one
 entry of that kind has nothing to refuse the next one with.
 
+⛔ **What this section rules on is a *skill*, and a block of configuration whose consumer is a check
+is not one.** The closed list decides which **roles** are carried; it has never been what admits a
+facet, and reading it that way would refuse [§ 15](#15-end-to-end-coverage-recorded),
+[§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran),
+[§ 19](#19-a-command-that-spends-and-the-supervision-it-is-refused-without),
+[§ 22](#22-what-enters-the-window-bounded-where-the-call-is-made) and
+[§ 38](#38-the-documents-a-project-holds-to-a-checkable-property), none of which is a leg of the
+route and each of which carries per-project facts a role or a check reads. ⚠️ **The two directions
+below are what tell the two cases apart**: a candidate whose per-project values are *none* has
+nothing for this surface to carry, and one whose values are a host or a credential routes through a
+project's own script — ⛔ **a candidate whose values are neither, arriving already written as data,
+is the shape a facet is carried on**, which is § 34's own argument and § 38's.
+
 ### Why a utility has no home on this surface, from either direction
 
 ⛔ **Both answers are *not here*, and they are reached from opposite ends** — which is what shows
@@ -8544,6 +8557,220 @@ because that role has no key here to configure.
 ⚠️ **`carrier: none` is a project that bills nobody**, stated with its reason and named in what the
 reader reports as unavailable — ⛔ **and it is not a statement about whether anybody invoices by
 hand**, which this facet reports nothing about.
+
+## 38. The documents a project holds to a checkable property
+
+```yaml
+documents:
+  carrier: list | none             # required; absent_reason
+  files: ["*.md", "docs/**/*.md"]  # required_when: documents.carrier = list
+  entry_points: ["README.md"]      # required_when: documents.carrier = list
+  graph:                           # required_when: documents.carrier = list
+    - document: "docs/architecture.md"
+      named_as: "architecture"               # how prose names it, where that is not its path
+      may_name: ["docs/requirements.md"]     # the enforced row; `[]` may name nothing, `null` unenforced
+      derived_from: ["docs/requirements.md"] # recorded and held acyclic, never read against the text
+  forbidden: []                    # required_when: documents.carrier = list
+  quoted: []                       # required_when: documents.carrier = list
+  absent_reason: "…"               # required where the carrier is none
+```
+
+The vocabulary an entry of `graph` and of `forbidden` draws on, stated under the key it belongs to —
+the device [§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes) and
+[§ 34](#34-the-files-that-carry-a-version-and-what-cutting-a-release-writes) already use, because a
+member of a list sits at no path a marker can reach:
+
+```yaml
+documents:
+  graph:
+    document:     "<the document, relative to the code root>"
+    named_as:     "<an expression a mention of it matches, where prose does not use its path>"
+    may_name:     ["<each document this one's text may name>"]
+    derived_from: ["<each document this one's content flowed in from>"]
+  forbidden:
+    pattern:        "<the name or pattern that may not appear in a governed document>"
+    reason:         "<what its appearance would mean>"
+    stable_because: "<what keeps the forbidden thing from being reworded into something else>"
+  quoted:
+    sentence: "<the sentence quoted back at the document it came from>"
+    document: "<the document it is quoted against>"
+```
+
+**This states what a project's prose documents are held to, so that something other than a reader's
+attention holds them.** ⛔ **It declares no document's content, no heading, no wording and no
+style**, each being [the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s
+middle column read against prose: what varies between projects is a **graph, a file set and a list
+of names**, which is the shape [§ 34](#34-the-files-that-carry-a-version-and-what-cutting-a-release-writes)
+is carried on and for the same stated reason — the two implementations this facet was read out of
+arrive already written as data.
+
+⛔ **This is a facet and no fourteenth leg of [§ The loop](#the-loop--thirteen-roles).** Nothing is
+added to that list, no `carriers` key answers for it and no role enters it: what is carried is a
+block of configuration and the check that consumes it, which is the shape
+[§ 15](#15-end-to-end-coverage-recorded), [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
+and [§ 20](#20-the-sections-a-pull-request-body-must-carry) already have. ⚠️ **The item asking for
+this called it a role and that framing is refused** — a role would have to be on the closed list,
+and [§ 36](#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here) is what would then
+refuse it.
+
+### The three kinds of check, and the one that is admitted with a warning
+
+⛔ **Two kinds work and one does not, and this is the division both implementations arrived at
+independently.** It is procedure: a project states which of its own rules are forbidding and which
+sentences it quotes, and the kind each check is decides what its green is worth.
+
+| the kind | what it holds | when it is sound | what it fails on |
+|---|---|---|---|
+| **computed** | the property is **derived** — a table's cells counted, a link resolved, a codepoint looked for | always, the derivation being independent of how the document is worded | nothing a reword reaches; this is the kind the facet's own checks are |
+| **forbidding** | a name or a pattern **must not appear** | where the forbidden thing is stable — a deleted module's name, a word a rule bans | a forbidden thing that was renamed rather than removed, which is what `stable_because` is asked for |
+| **quoting** | a sentence is **quoted back** at the file it came from | ⛔ **never** | it goes red on an innocent reword, and green when the claim is reworded into its opposite |
+
+⚠️ **A quoted sentence is compared with the whitespace flattened on both sides**, because a document
+is wrapped: a sentence that is there spans a line break, and a raw comparison reports it gone —
+which this kind then reads as the claim having been reworded away. ⛔ **That is not one of its two
+failure modes but a third thing it would get wrong**, so it is held rather than disclosed.
+
+⛔ **A `quoted` entry is admitted and warned about, rather than refused.** Both failure modes are
+named in the warning, in both directions, because the one that matters is invisible: a project that
+has written one is told that its green says nothing about the claim, not that its configuration is
+malformed. ⚠️ **Refusing it outright was the obvious reading and is wrong** — a project already
+carrying such a check would then be unable to state what holds its documents at all, and the record
+of that check would move back out of the facet into a script nobody compares against it.
+
+⛔ **The kind is stated and never derived from what the entry looks like.** A pattern and a quoted
+sentence are the same string to a reader, so a facet guessing between them would warn about the
+wrong half of a project's list.
+
+### The two edges, and which of them is enforced
+
+⛔ **`derived_from` records where content flowed in, and is never checked against the text.** A
+document that does not name what it was built from is correct, so the edge obliges no citation. What
+is held about it is that the record is **complete** — every governed document has a row — and that
+the declared graph stays **acyclic**.
+
+⛔ **`may_name` is what is enforced, and it is enforced in both directions**: a document may name
+only what its row allows, and it must name all of it. ⚠️ **One direction alone is half a check** —
+without the second, a row stating an edge the text dropped stays green for ever.
+
+⛔ **An empty `may_name` row may name nothing at all, and that is the check with teeth.** A filename
+appearing in such a document is an edge running the wrong way, which is the defect this half of the
+facet exists for rather than a tidiness rule about links.
+
+⛔ **And `may_name: null` is a third state: the edge is not enforced for that document.** ⚠️ **Three
+states because two were measured as not enough**: one of the two projects this facet was read out of
+governs a document set and declares **no reference graph at all**, so under two states its only
+options were to list every edge its text happens to carry — turning on a graph it never asked for —
+or to be red for ever. `[]` is a decision that this document may name nothing; `null` is the absence
+of a decision, and the run reports how many rows carry it. ⛔ **A project where every row is `null`
+is told the graph half holds nothing**, rather than being shown a green it would read as agreement.
+
+⛔ **How a mention is recognised is `named_as`, and a path is only the default.** ⚠️ **Measured on the
+same two projects**: one refers to each of its eight role carriers by its **slug** and never by its
+filename, so every row of its graph would otherwise read as an edge the text dropped — thirty of
+them, measured. A row stating `named_as` is matched by that expression instead; a row stating none is
+matched by its path, at a path boundary, and a link to it resolves either way.
+
+⚠️ **A path boundary is required of the default form and is not a nicety.** The same project carries
+a root `CLAUDE.md`, a `tech/CLAUDE.md` and a `main_website-CLAUDE.md`, and recognises the first with
+three lookbehinds of its own; a plain substring test reports an edge to the root file from every
+document that names either of the others. ⛔ **The boundary reproduces all three**, so no key is
+declared for them.
+
+⛔ **The graph a machine walks and the statement a person maintains are one thing, read from one
+place.** That is this surface's own subject applied to prose, and it is the reason the rows are
+configuration rather than a table inside a document: two records of one graph are free to disagree,
+and the one a check reads is the one nobody proofreads.
+
+⛔ **Every governed document is a declared node, and a tracked file the globs match that no row
+declares is a stop.** ⚠️ **Not a skip**, which is the arm the obvious procedure gets backwards: a
+new store of prose is exactly the thing that quietly becomes a second authority, and a graph that
+does not know about it never checks it at all. A declared document that is not on disk is the same
+stop from the other side, since every assertion over a document that moved otherwise reports green.
+
+⛔ **And every governed document is an entry point or reachable from one by `may_name` edges.** A
+document nothing names and nothing addresses is a document no reader arrives at, which no per-file
+check can see.
+
+⛔ **`entry_points` is a list and not one root, and the measurement is why.** The implementation this
+property was read out of holds reachability from a single document, and that is false of a set whose
+members are addressed **by name from outside the prose**: this repository's twelve role carriers are
+each named by the harness that loads them and by no document, so a single-root reading reports
+twelve documents as unreachable that a reader reaches every session. ⚠️ **The teeth are in the list
+being short and deliberate** — every document declared an entry point is one nothing has to name, so
+a project that declares them all has turned the check off and can read that off its own
+configuration.
+
+### The property a renderer reads differently from its author
+
+⛔ **A document's own block structure is held, and it is held as a **computed** check.** This is the
+kind that cannot be expressed by forbidding anything: the defect is the **absence** of a delimiter
+row under a line that begins a table, so there is no name and no pattern to ban.
+
+| what is held | what the defect renders as |
+|---|---|
+| a table's rows agree about how many cells they carry | a row short of a cell silently takes the next column's value |
+| an escaped `\|` is a cell's own character, and the closing `\|` is optional | ⚠️ neither is a defect: both were measured reported as ragged rows that render exactly as written |
+| a line of pipes has a table above it, or a delimiter row under it | a row separated from its own table by a blank line renders as a paragraph with its pipes showing |
+| no document leaves a fence open | everything after the opening is read as code, and every check over that text stops seeing prose |
+
+⚠️ **Measured on this repository**: a ruling appended after the blank line that ends a table was
+answered `<p>| 32 | … |</p>` by the host's own renderer while every check over that document was
+green, each of them holding a **line** or holding the document against this surface and none holding
+its blocks.
+
+### Every check carries a violation it reddens on
+
+⛔ **A check ships with a recorded violation, and the suite asserts the red rather than claiming
+it.** The discipline is to write the violation **first**: an assertion written before its break
+tends to match only the break its author imagined.
+
+⛔ **One plant per branch that does real work, not one per check.** ⚠️ **Measured here**: a first
+pass planted one violation per check and shipped two checks with almost no teeth — one testing a
+citation's fragment while discarding its path, the other testing for a bare substring where the rule
+is about naming a section — and **both passed their plants**.
+
+⛔ **A plant that reddens the check by another route certifies nothing**, which is why the plant's
+own text is read against the mechanism it is meant to reach rather than against the colour of the
+run.
+
+### What a red says, and what stays in a project's own script
+
+⛔ **When a check goes red, the assertion is as likely to be wrong as the document.** Stated here
+because the alternative is the failure it prevents: a check force-fixed in the direction of the
+document rewrites correct prose to satisfy a wrong assertion, and nothing afterwards records that
+this is what happened.
+
+⛔ **A project's own domain-specific computed checks stay in that project's own script, and this
+facet neither carries them nor names them.** What a shared mechanism can hold is the graph, the file
+set, the forbidden names and a document's block structure; whether a project's five request shapes
+each have a home in its layout is a property of that project's subject matter, and a key pointing at
+a command that answers it would satisfy
+[§ 36](#why-a-utility-has-no-home-on-this-surface-from-either-direction)'s letter and deliver
+nothing. ⚠️ **So the facet's coverage is a boundary and not a claim of completeness**: a project's
+document rules are expressible here to the extent that they are the four things above.
+
+### `carrier: none`, and the configurations this key refuses
+
+⛔ **A project whose prose nothing holds states `carrier: none` with its reason, and gets no check.**
+The reader names it among what is unavailable, with the consequence rather than the key alone.
+
+⚠️ **The absence is not the check standing down.** There is no graph to stand down from, so a reader
+asked what holds a document answers *nothing is stated* rather than *the documents are consistent*.
+⛔ **And `graph: []` is the wrong spelling of it**: that reads as a project that governs documents
+and has not written its rows yet, which is this facet at its most drifted and the state it most
+needs to tell apart from the other.
+
+⛔ **Stated as a list, the block states every key and none is defaulted.** `forbidden: []` and
+`quoted: []` are a project forbidding and quoting nothing, written; `files`, `entry_points` and
+`graph` carry no empty form, a governed set with nothing in it being a check that never fires while
+reading as one that does.
+
+⛔ **This key is required of every project, so it invalidates every configuration written before
+it** — [§ 1](#the-surface-is-resolved-beside-the-configuration)'s own
+case, discharged the way that section states: the absent form is stated here and in every shipped
+example in the same change, and the record the change lands with says that configurations outside
+this repository are refused until each writes the key. ⚠️ **No check here can reach them**, they
+being files in repositories this one cannot open.
 
 ## What the toolkit installs into a project, and what takes it out
 

@@ -557,3 +557,14 @@ billing:
   # here for the reason every value in these files is: example data, not any project's facts.
   rates:
     "<the client an invocation names>": "<that client's hourly rate>"
+
+# § 38's absent case. ⛔ Not a project with tidy documents: there is no graph, so a reader asked
+# what holds a document here is told nothing is stated rather than that the documents agree.
+documents:
+  carrier: none
+  absent_reason: >-
+    This project's prose is a handful of notes nobody has organised into a graph, and holding them
+    to one would be a rule written for this file rather than read off the documents.
+  revisit_when: >-
+    A second document starts being built from the content of a first — the point at which one of
+    them can go stale against the other with nothing saying so.

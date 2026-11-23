@@ -442,3 +442,46 @@ billing:
   revisit_when: >-
     Work on this repository is billed to somebody outside it — a contractor's period, or the
     product being charged to another part of the organisation.
+
+# § 38, stated as a list: this project's documents are few and each has a place. ⚠️ The rows are
+# read off the text rather than invented — `may_name` is what a document names **today** — so the
+# graph asserts nothing about this commit and everything about the next one.
+documents:
+  carrier: list
+  files: ["*.md", "docs/**/*.md"]
+  # ⛔ One entry point. Nothing outside the prose addresses any other document here, so every one
+  # of them has to be reachable by a link from this file.
+  entry_points: ["README.md"]
+  graph:
+    - document: "README.md"
+      may_name: ["docs/architecture.md", "docs/runbook.md"]
+      derived_from: []
+    # ⚠️ Prose here calls this one *the architecture*, never by its path, so the row says so —
+    # without it every edge to this document reads as one the text dropped.
+    - document: "docs/architecture.md"
+      named_as: "the architecture"
+      may_name: ["docs/runbook.md"]
+      derived_from: []
+    # ⛔ An empty `may_name` row is the check with teeth: a filename appearing in this document is
+    # an edge running the wrong way — the runbook is derived from the architecture and may not
+    # point back at it.
+    - document: "docs/runbook.md"
+      may_name: []
+      derived_from: ["docs/architecture.md"]
+    # ⛔ And `null` is the third answer, not a spelling of the one above: this project has never
+    # decided what its contributing guide may name, so the edge is not enforced for it. ⚠️ The run
+    # says on every pass which rows carry this, so the unheld half is never read as agreement.
+    - document: "docs/contributing.md"
+      may_name: null
+      derived_from: []
+  # The module this project deleted. ⚠️ `stable_because` is what makes a forbidding check sound:
+  # the name went away rather than moving, so nothing correct can reintroduce it.
+  forbidden:
+    - pattern: "LegacyBillingAdapter"
+      reason: >-
+        The adapter was deleted in the migration off the old provider, so a document naming it is
+        describing a code path that is not there.
+      stable_because: >-
+        The name was removed rather than renamed — there is no component it now refers to, so no
+        correct sentence can carry it.
+  quoted: []

@@ -2828,6 +2828,31 @@ class Config:
             "rates": dict(rates or {}),
         }
 
+    @property
+    def documents(self) -> dict | None:
+        """§ 38's `documents`, or `None` where no document here is held.
+
+        The facet's whole public face, and the carrier beside this module is its
+        one reader. ⚠️ `None` is the project's **stated** absence -- no graph,
+        so a reader asked what holds a document answers *nothing is stated*
+        rather than *the documents are consistent*, which is the one
+        mis-report this facet's absence invites.
+
+        ⛔ **The rows come back as the configuration wrote them and are not
+        normalised here.** A path rewritten on the way out is a path the project
+        cannot find in its own refusal, and the three keys of a row are each
+        read by a different arm of the check.
+        """
+        if self.get("documents.carrier") != "list":
+            return None
+        return {
+            "files": list(self.get("documents.files") or ()),
+            "entry_points": list(self.get("documents.entry_points") or ()),
+            "graph": [dict(entry) for entry in self.get("documents.graph") or ()],
+            "forbidden": [dict(entry) for entry in self.get("documents.forbidden") or ()],
+            "quoted": [dict(entry) for entry in self.get("documents.quoted") or ()],
+        }
+
     def live_data_step(self, target: str) -> dict:
         """§ 35's block on one § 33 target, with which answer it is said out loud.
 
@@ -3117,6 +3142,21 @@ class Config:
                 "hours are read for an invoice. ⛔ Not a statement about "
                 "whether the day is measured here, which is § 9's facet, nor "
                 "about whether anybody invoices by hand: "
+                f"{' '.join(str(reason).split())}"
+            )
+        # § 38, and reported for the reason § 34's is: a check that would have
+        # held this project's documents learns that none is governed, rather
+        # than meeting a key that is not there. ⛔ Reported as nothing being
+        # stated and never as documents that agree -- there is no graph to
+        # stand down from, and *the documents are consistent* is the one answer
+        # an absent facet must not be read as.
+        if self.get("documents.carrier") == "none":
+            reason = self.get("documents.absent_reason")
+            out.append(
+                "No document is governed (`documents.carrier: none`), so no "
+                "graph, no forbidden name and no block structure is held here, "
+                "and a reader asked what holds a document answers ⛔ **nothing "
+                "is stated** rather than that the documents agree: "
                 f"{' '.join(str(reason).split())}"
             )
         # § 31, and reported for the reason § 15's and § 16's are: a role that
@@ -5186,6 +5226,362 @@ def _one_root(root: str) -> str:
         # already collapsed, which is why only this one arm was measured open.
         return os.path.normpath("/" + root.lstrip("/"))
     return f"{at.st_dev}:{at.st_ino}"
+
+
+def _documents_entries(facet: dict, key: str, facts: dict) -> set:
+    """The keys § 38 declares on a member of one of its lists.
+
+    ⛔ Read off the surface's own entry fence rather than listed here, which is
+    the division § 33's and § 34's entry walks already have: a key added to that
+    fence is accepted with no edit in this module, and a literal here would be a
+    second statement of the fence free to disagree with it.
+    """
+    prefix = f"documents.{key}."
+    declared = {
+        path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)
+    }
+    if not declared:
+        raise ConfigError(
+            f"documents.{key}",
+            "the surface declares no key under this one, so an entry could be "
+            "held to nothing. § 38 states each list's entry keys in a fence of "
+            "its own, and a surface that has lost it is refused rather than read "
+            "as permitting anything.",
+        )
+    return declared
+
+
+def _a_document(value, where: str, what: str) -> str:
+    """One path a § 38 row names, or a refusal naming what the value is for.
+
+    ⛔ **Four arms and not one**, because a project reaches each of them by a
+    different mistake and a single message would name the wrong one three times
+    out of four. ⚠️ **Measured on this facet's own plants**: with absence, a
+    container and a blank collapsed into one branch, three plants shared one
+    refusal -- so the suite asserted one arm three times and reported two arms
+    it had never exercised.
+    """
+    if value is None:
+        raise ConfigError(where, f"required (§ 38): {what}")
+    if not isinstance(value, str):
+        raise ConfigError(
+            where,
+            f"is {type(value).__name__}, where § 38 states a path: {what}. A "
+            "container written here is a fact with a shape nothing reads.",
+        )
+    if not value.strip():
+        raise ConfigError(
+            where,
+            f"is written blank (§ 38): {what}. An empty value is not an absent "
+            "one -- it reads as a path and matches no file.",
+        )
+    if value != value.strip():
+        raise ConfigError(
+            where,
+            f"is {value!r}, which carries surrounding whitespace (§ 38). A path "
+            "that only looks like another path matches no file and is reported "
+            "as a document that is not there.",
+        )
+    if os.path.isabs(value):
+        raise ConfigError(
+            where,
+            f"is {value!r}, which is absolute (§ 38). Every path here is relative "
+            "to the code root: an absolute one names a place on one machine and "
+            "is unreadable on every other.",
+        )
+    return value
+
+
+def _validate_documents(data: dict, facts: dict) -> None:
+    """§ 38's three lists, which no marker on the surface can reach.
+
+    The carrier's own alternation and the requiredness of the keys beside it are
+    marked and answered before this runs; what each member of each list has to
+    *be* is here, which is the division §§ 31, 32, 33 and 34 already have.
+
+    ⛔ **Every arm refuses rather than skipping**, and the direction is the one
+    this facet exists for: a row nobody could read is a document held to nothing
+    while the run that holds it stays green -- which is the state the governed
+    set's own completeness rule exists against, one level down.
+    """
+    carrier = _get(data, "documents.carrier")
+    if carrier != "list":
+        # ⛔ The complement is **not** silence: a key stated beside `none` is
+        # refused rather than ignored, the rule § 33 and § 34 already state. A
+        # graph under a carrier that reads none is a set of documents somebody
+        # governed and nothing holds.
+        stated = [
+            key
+            for key in ("files", "entry_points", "graph", "forbidden", "quoted")
+            if key in _absent_as(_get(data, "documents"), {})
+        ]
+        if stated:
+            raise ConfigError(
+                f"documents.{stated[0]}",
+                f"is stated while `documents.carrier` is {carrier!r}, which reads "
+                "none of it (§ 38). A project that governs no document states the "
+                "carrier and its reason; one that does states the carrier as "
+                "`list`.",
+            )
+        return
+
+    for key in ("files", "entry_points"):
+        value = _get(data, f"documents.{key}")
+        if not isinstance(value, list):
+            raise ConfigError(
+                f"documents.{key}",
+                "must be a list of globs relative to the code root (§ 38). One "
+                "glob written as a bare string is a list of one and is written "
+                "as such, so that a second can be added without changing shape.",
+            )
+        # ⛔ The empty list is its own arm and not a spelling of the one above:
+        # § 38 makes `carrier: none` how a project says nothing is governed, so
+        # `[]` is a project that governs documents and matched none of them --
+        # a check that never fires while reading as one that does.
+        if not value:
+            raise ConfigError(
+                f"documents.{key}",
+                "carries no glob (§ 38), so the governed set is empty and every "
+                "check over it passes for a reason that has nothing to do with "
+                "the documents. A project that governs none states "
+                "`carrier: none` with its reason instead.",
+            )
+        for index, glob in enumerate(value):
+            _a_document(glob, f"documents.{key}[{index}]", "a glob a document matches")
+
+    graph = _get(data, "documents.graph")
+    if not isinstance(graph, list):
+        raise ConfigError(
+            "documents.graph",
+            "must be a list, one entry per governed document (§ 38). A mapping "
+            "keyed on the document would make the row's own path a key, and § 38 "
+            "states the path as a key *of* the row so that a row with no "
+            "document is a refusal rather than an unnameable entry.",
+        )
+    if not graph:
+        raise ConfigError(
+            "documents.graph",
+            "carries no row (§ 38). `graph: []` reads as a project that governs "
+            "documents and has not written its rows yet, which is the state this "
+            "facet most needs to tell apart from `carrier: none` -- and every "
+            "governed document would then be undeclared.",
+        )
+    declared = _documents_entries(_get(data, "documents"), "graph", facts)
+    rows: dict[str, int] = {}
+    for index, entry in enumerate(graph):
+        where = f"documents.graph[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                "must be a mapping; an entry states the document and the two "
+                "edges that run from it (§ 38).",
+            )
+        for stated_key in entry:
+            if stated_key not in declared:
+                raise ConfigError(
+                    f"{where}.{stated_key}",
+                    "is a key § 38 does not declare on a graph row, so it is a "
+                    "fact about the document that nothing reads. The keys it "
+                    f"declares are: {', '.join(sorted(declared))}.",
+                )
+        document = _a_document(
+            entry.get("document"), f"{where}.document", "the document this row is about"
+        )
+        if document in rows:
+            raise ConfigError(
+                f"{where}.document",
+                f"is {document!r}, which documents.graph[{rows[document]}] already "
+                "names (§ 38). Two rows over one document are two statements of "
+                "one row, and which of them is enforced is decided by their order "
+                "rather than by the project.",
+            )
+        rows[document] = index
+        if "named_as" in entry:
+            named_as = entry["named_as"]
+            if not isinstance(named_as, str) or not named_as.strip():
+                raise ConfigError(
+                    f"{where}.named_as",
+                    "must be a non-empty expression where it is stated at all "
+                    "(§ 38). A row omits the key to be matched by its path; one "
+                    "stating it blank is matched by nothing and every edge to it "
+                    "reads as dropped.",
+                )
+            try:
+                re.compile(named_as)
+            except re.error as exc:
+                raise ConfigError(
+                    f"{where}.named_as",
+                    f"is not a usable expression ({exc}), so a mention of this "
+                    "document could never be recognised (§ 38). Refused here "
+                    "rather than met with a check that silently matches nothing.",
+                ) from None
+        for key in ("may_name", "derived_from"):
+            if key not in entry:
+                raise ConfigError(
+                    f"{where}.{key}",
+                    "required (§ 38). An omitted row is not an empty one, and not "
+                    "a null one either: `[]` is a document that may name nothing "
+                    "at all, `null` is an edge this project does not enforce "
+                    "here, and an omission would read as whichever the reader "
+                    "guessed.",
+                )
+            edges = entry[key]
+            # ⛔ `null` is admitted on the enforced edge alone, and the
+            # asymmetry is the facet's own: a project may decline to enforce
+            # what a document names, and a derivation record that declined to
+            # say anything would leave § 38's completeness rule with nothing to
+            # be about.
+            if edges is None and key == "may_name":
+                continue
+            if not isinstance(edges, list):
+                raise ConfigError(
+                    f"{where}.{key}",
+                    "must be a list of documents, `[]` where there are none"
+                    + (", or `null` where the edge is not enforced here" if
+                       key == "may_name" else "")
+                    + " (§ 38).",
+                )
+            seen = set()
+            for at, edge in enumerate(edges):
+                named = _a_document(
+                    edge, f"{where}.{key}[{at}]", "a document this row names"
+                )
+                if named == document:
+                    raise ConfigError(
+                        f"{where}.{key}[{at}]",
+                        f"is {named!r}, which is the row's own document (§ 38). A "
+                        "document is not an edge to itself: under `derived_from` "
+                        "that is a one-node cycle, and under `may_name` it is a "
+                        "rule every document satisfies by carrying its own name.",
+                    )
+                if named in seen:
+                    raise ConfigError(
+                        f"{where}.{key}[{at}]",
+                        f"names {named!r} twice (§ 38). The edge is stated or it is "
+                        "not; a repeat says nothing a reader could act on.",
+                    )
+                seen.add(named)
+
+    # ⛔ Both directions over the row set, which is the facet's own rule applied
+    # to its configuration: an edge naming a document no row declares is a row
+    # about a document outside the graph, and the governed-set check one level
+    # down would then report that document as undeclared while this row reads
+    # as covering it.
+    for index, entry in enumerate(graph):
+        for key in ("may_name", "derived_from"):
+            for at, named in enumerate(entry[key] or ()):
+                if named not in rows:
+                    raise ConfigError(
+                        f"documents.graph[{index}].{key}[{at}]",
+                        f"names {named!r}, which no row of this graph declares "
+                        "(§ 38). Every governed document is a declared node, so an "
+                        "edge to one that is not declared is an edge out of the "
+                        "graph -- and the document it points at is held to nothing.",
+                    )
+
+    # ⛔ Acyclic, and the cycle is **named** rather than reported as a count: a
+    # project told its derivation record has a cycle in it has to find which
+    # documents, and the walk already knows.
+    cycle = _derivation_cycle({row["document"]: row["derived_from"] for row in graph})
+    if cycle:
+        raise ConfigError(
+            "documents.graph",
+            "records a cycle in `derived_from`: "
+            + " -> ".join(cycle)
+            + ". Content cannot flow in a circle (§ 38), and a cycle makes every "
+            "document in it both the source and the copy.",
+        )
+
+    for key in ("forbidden", "quoted"):
+        value = _get(data, f"documents.{key}")
+        if not isinstance(value, list):
+            raise ConfigError(
+                f"documents.{key}",
+                "must be a list, `[]` where the project states none (§ 38). The "
+                "empty list is the statement; an omission is refused by the "
+                "marker before this runs.",
+            )
+        entry_keys = _documents_entries(_get(data, "documents"), key, facts) if value \
+            else set()
+        for index, entry in enumerate(value):
+            where = f"documents.{key}[{index}]"
+            if not isinstance(entry, dict):
+                raise ConfigError(where, f"must be a mapping (§ 38).")
+            for stated_key in entry:
+                if stated_key not in entry_keys:
+                    raise ConfigError(
+                        f"{where}.{stated_key}",
+                        f"is a key § 38 does not declare on a `{key}` entry. The "
+                        f"keys it declares are: {', '.join(sorted(entry_keys))}.",
+                    )
+            # ⛔ Absence and a blank value are two arms, which is `_a_document`'s
+            # own division one level over and for the same measured reason: a key
+            # nobody wrote and a key somebody emptied are reached by different
+            # mistakes, and one message names the wrong one half the time.
+            for needed in sorted(entry_keys):
+                if needed not in entry:
+                    raise ConfigError(
+                        f"{where}.{needed}",
+                        f"required (§ 38). Every key of a `{key}` entry is stated: "
+                        "a forbidding check whose reason nobody wrote down is one "
+                        "nobody can tell a false refusal from, and a quoted "
+                        "sentence with no document is a check with no subject.",
+                    )
+                stated = entry[needed]
+                if not isinstance(stated, str):
+                    raise ConfigError(
+                        f"{where}.{needed}",
+                        f"is {type(stated).__name__}, where § 38 states prose.",
+                    )
+                if not stated.strip():
+                    raise ConfigError(
+                        f"{where}.{needed}",
+                        "is written blank (§ 38), which reads as stated and says "
+                        f"nothing. A `{key}` entry with an empty key is a check "
+                        "whose own record of why it exists is gone.",
+                    )
+        if key == "quoted":
+            for index, entry in enumerate(value):
+                document = entry.get("document")
+                if document not in rows:
+                    raise ConfigError(
+                        f"documents.quoted[{index}].document",
+                        f"is {document!r}, which no row of `graph` declares (§ 38). "
+                        "A sentence quoted against a document outside the governed "
+                        "set is a check over a file nothing else here reads.",
+                    )
+
+
+def _derivation_cycle(edges: dict) -> list | None:
+    """One cycle in a `derived_from` record, named in the order it runs.
+
+    ⛔ Returns the cycle rather than a flag, for the reason every refusal on this
+    surface names its subject: *the graph has a cycle* is a message a project
+    cannot act on, and the walk that found it already holds the path.
+    """
+    WHITE, GREY, BLACK = 0, 1, 2
+    colour = {node: WHITE for node in edges}
+
+    def walk(node: str, path: list) -> list | None:
+        colour[node] = GREY
+        path.append(node)
+        for nxt in edges.get(node, ()):
+            if colour.get(nxt) == GREY:
+                return path[path.index(nxt):] + [nxt]
+            if colour.get(nxt) == WHITE:
+                found = walk(nxt, path)
+                if found:
+                    return found
+        path.pop()
+        colour[node] = BLACK
+        return None
+
+    for node in edges:
+        if colour[node] == WHITE:
+            found = walk(node, [])
+            if found:
+                return found
+    return None
 
 
 def _validate_billing(data: dict) -> None:
@@ -7544,6 +7940,11 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # written absolutely is a rule the surface states in prose, there being no
     # marker for it, and it is the one arm whose permissive reading is money.
     _validate_billing(data)
+    # § 38's lists, in the same position and for the same reason. ⛔ The two rules
+    # no marker reaches are the ones about the row set rather than a row: that
+    # every edge names a declared document, and that the derivation record stays
+    # acyclic -- each of which a per-row marker could never ask.
+    _validate_documents(data, facts)
 
     readiness = _absent_as(_get(data, "readiness"), [])
     if not isinstance(readiness, list):
@@ -9092,6 +9493,7 @@ MARKED_REQUIRED = [
     "context_guard.unbounded",
     "day_log.evidence.chat.kind",
     "deploy",
+    "documents.carrier",
     "done",
     "e2e_register.carrier",
     "environment.inherits",
@@ -9160,6 +9562,16 @@ MARKED_REQUIRED_WHEN = [
     # list rather than a value in the tracked file.
     ("billing.projects", "billing.carrier", "period"),
     ("billing.rates", "billing.carrier", "period"),
+    # § 38's five, each meaningless where the project governs no document. ⚠️ Two
+    # of them are marked while `[]` is a legitimate value: the marker answers
+    # *must this key be written* and the empty list is the project's statement
+    # that it forbids and quotes nothing, which is the division § 1 draws between
+    # a marker's question and a shape rule's.
+    ("documents.entry_points", "documents.carrier", "list"),
+    ("documents.files", "documents.carrier", "list"),
+    ("documents.forbidden", "documents.carrier", "list"),
+    ("documents.graph", "documents.carrier", "list"),
+    ("documents.quoted", "documents.carrier", "list"),
     # § 10's one, meaningless under the mode that creates no tree: with nothing
     # ever pruned there is no removal for an ignored path to be lost to. ⚠️ Its
     # sibling `tree_dir` is **not** here, carrying the same condition in prose
@@ -9361,6 +9773,7 @@ MARKED_PRIVATE = [
 MARKED_ABSENT_CAPABLE = [
     "billing",
     "context.artifacts",
+    "documents",
     "e2e_register",
     "executed",
     "memory",
@@ -14488,6 +14901,165 @@ def _planted_violations():
         # `true` would otherwise reach the sign test and pass it.
         ("a rate written as a flag", "billing.rates",
          at("billing", _a_billing_of(rates={"a-client": True}))),
+        # § 38, and the arms no marker reaches. ⛔ Every one fails in the same
+        # direction if it is not held: a row nobody can read is a document held
+        # to nothing while the run holding it stays green, and the governed-set
+        # rule one level down would then report that document as undeclared.
+        #
+        # ⚠️ The complement first, which is § 34's and § 37's own arm one facet
+        # over: a key stated beside a carrier that reads none is a set of
+        # documents somebody governed and nothing holds.
+        ("a graph stated beside a carrier that reads none", "documents.graph",
+         at("documents", {"carrier": "none", "absent_reason": "nothing is governed",
+                          "graph": [_a_document_row()]})),
+        ("a glob list stated beside a carrier that reads none", "documents.files",
+         at("documents", {"carrier": "none", "absent_reason": "nothing is governed",
+                          "files": ["*.md"]})),
+        ("a glob list that is not a list", "documents.files",
+         at("documents", _a_documents_of(files="*.md"))),
+        # ⚠️ The empty list is its own arm and not a spelling of the one above,
+        # which is § 34's reason for the same pair: `carrier: none` is how § 38
+        # says nothing is governed, so `[]` is a project that governs documents
+        # and matched none of them -- a check that never fires while reading as
+        # one that does.
+        ("a glob list matching nothing by construction", "documents.files",
+         at("documents", _a_documents_of(files=[]))),
+        ("a glob that is not a path", "documents.files[0]",
+         at("documents", _a_documents_of(files=[{"glob": "*.md"}]))),
+        ("a glob written blank", "documents.files[0]",
+         at("documents", _a_documents_of(files=["   "]))),
+        # ⛔ Absolute paths are their own arm in both lists: one names a place on
+        # one machine, so the same configuration governs a different set per
+        # checkout -- § 37's relative-root arm inverted, and failing the same way.
+        ("a glob written absolutely", "documents.files[0]",
+         at("documents", _a_documents_of(files=["/a-document.md"]))),
+        ("an entry-point list carrying no document", "documents.entry_points",
+         at("documents", _a_documents_of(entry_points=[]))),
+        ("an entry point written absolutely", "documents.entry_points[0]",
+         at("documents", _a_documents_of(entry_points=["/a-document.md"]))),
+        ("a graph that is not a list", "documents.graph",
+         at("documents", _a_documents_of(graph={"document": "a-document.md"}))),
+        ("a graph carrying no row", "documents.graph",
+         at("documents", _a_documents_of(graph=[]))),
+        ("a graph row that is not a block", "documents.graph[0]",
+         at("documents", _a_documents_of(graph=["a-document.md"]))),
+        ("a key § 38 declares on no graph row", "documents.graph[0].audience",
+         at("documents", _a_documents_of(
+             graph=[_a_document_row(audience="a fact nothing reads")]))),
+        ("a graph row naming no document", "documents.graph[0].document",
+         at("documents", _a_documents_of(graph=[_a_document_row(document=_ABSENT)]))),
+        ("a document written blank", "documents.graph[0].document",
+         at("documents", _a_documents_of(graph=[_a_document_row(document="  ")]))),
+        # ⚠️ Surrounding whitespace is its own arm: the value is a non-empty
+        # string, so every other test passes it, and it then matches no file and
+        # is reported as a document that is not there.
+        ("a document carrying surrounding whitespace", "documents.graph[0].document",
+         at("documents", _a_documents_of(
+             graph=[_a_document_row(document=" a-document.md")]))),
+        ("a document written absolutely", "documents.graph[0].document",
+         at("documents", _a_documents_of(
+             graph=[_a_document_row(document="/a-document.md")]))),
+        # ⛔ Two rows over one document, which is the arm about the row set rather
+        # than about a row: which row is enforced is then decided by their order.
+        ("one document given two rows", "documents.graph[1].document",
+         at("documents", _a_documents_of(
+             graph=[_a_document_row(), _a_document_row()]))),
+        # ⛔ An omitted edge list and an empty one are **two arms**, and the
+        # omission is the one that reads like the other: `[]` is a document that
+        # may name nothing at all, which is the check with teeth, so an omission
+        # permitted here would turn that check off while reading as it.
+        ("a graph row omitting the enforced edge", "documents.graph[0].may_name",
+         at("documents", _a_documents_of(graph=[_a_document_row(may_name=_ABSENT)]))),
+        # ⛔ `null` is admitted on the enforced edge and refused on the
+        # derivation record, which is the asymmetry § 38 states: a project may
+        # decline to enforce what a document names, and a derivation record
+        # that declined to say anything would leave the completeness rule with
+        # nothing to be about.
+        ("a derivation record written null", "documents.graph[0].derived_from",
+         at("documents", _a_documents_of(graph=[_a_document_row(derived_from=None)]))),
+        # § 38's spelling, both ways it can be unusable. ⚠️ The second is the one
+        # that would otherwise match nothing in silence, which reads as every
+        # edge to that document having been dropped.
+        ("a spelling written blank", "documents.graph[0].named_as",
+         at("documents", _a_documents_of(graph=[_a_document_row(named_as="   ")]))),
+        ("a spelling that is not a usable expression", "documents.graph[0].named_as",
+         at("documents", _a_documents_of(graph=[_a_document_row(named_as="a(role")]))),
+        ("a graph row omitting the derivation record", "documents.graph[0].derived_from",
+         at("documents",
+            _a_documents_of(graph=[_a_document_row(derived_from=_ABSENT)]))),
+        ("an enforced edge list that is not a list", "documents.graph[0].may_name",
+         at("documents",
+            _a_documents_of(graph=[_a_document_row(may_name="b-document.md")]))),
+        ("an edge written blank", "documents.graph[0].may_name[0]",
+         at("documents", _a_documents_of(graph=[_a_document_row(may_name=["  "])]))),
+        # ⛔ A document as an edge to itself, in both lists: under `derived_from`
+        # it is a one-node cycle the walk would otherwise have to find, and under
+        # `may_name` it is a rule every document satisfies by carrying its own
+        # name.
+        ("a document named as its own enforced edge", "documents.graph[0].may_name[0]",
+         at("documents", _a_documents_of(
+             graph=[_a_document_row(may_name=["a-document.md"])]))),
+        ("a document derived from itself", "documents.graph[0].derived_from[0]",
+         at("documents", _a_documents_of(
+             graph=[_a_document_row(derived_from=["a-document.md"])]))),
+        ("one edge stated twice", "documents.graph[0].may_name[1]",
+         at("documents", _a_documents_of(graph=[
+             _a_document_row(may_name=["b-document.md", "b-document.md"]),
+             _a_document_row(document="b-document.md")]))),
+        # ⛔ The two arms about the row set, neither of which a per-row marker
+        # could ask. The first is the one that reads as covered: a row naming a
+        # document the graph does not declare looks like an edge and is an edge
+        # out of the graph, and the document it points at is held to nothing.
+        ("an enforced edge to a document no row declares",
+         "documents.graph[0].may_name[0]",
+         at("documents",
+            _a_documents_of(graph=[_a_document_row(may_name=["b-document.md"])]))),
+        ("a derivation from a document no row declares",
+         "documents.graph[0].derived_from[0]",
+         at("documents",
+            _a_documents_of(graph=[_a_document_row(derived_from=["b-document.md"])]))),
+        ("a derivation record that runs in a circle", "documents.graph",
+         at("documents", _a_documents_of(graph=[
+             _a_document_row(derived_from=["b-document.md"]),
+             _a_document_row(document="b-document.md",
+                             derived_from=["a-document.md"])]))),
+        ("a forbidding list that is not a list", "documents.forbidden",
+         at("documents", _a_documents_of(forbidden="ALegacyName"))),
+        ("a forbidding entry that is not a block", "documents.forbidden[0]",
+         at("documents", _a_documents_of(forbidden=["ALegacyName"]))),
+        ("a key § 38 declares on no forbidding entry", "documents.forbidden[0].since",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(since="a fact nothing reads")]))),
+        ("a forbidden pattern with no pattern", "documents.forbidden[0].pattern",
+         at("documents",
+            _a_documents_of(forbidden=[_a_forbidden_name(pattern=_ABSENT)]))),
+        # ⛔ Both of the prose keys, each its own arm. ⚠️ `stable_because` is the
+        # one a reader is tempted to tolerate, and tolerating it leaves a
+        # forbidding check nobody can tell a false refusal from: § 38 makes the
+        # kind sound exactly where the forbidden thing is stable, and the entry
+        # is where that is stated.
+        ("a forbidden pattern with no reason", "documents.forbidden[0].reason",
+         at("documents",
+            _a_documents_of(forbidden=[_a_forbidden_name(reason=_ABSENT)]))),
+        ("a forbidden pattern with nothing stabilising it",
+         "documents.forbidden[0].stable_because",
+         at("documents",
+            _a_documents_of(forbidden=[_a_forbidden_name(stable_because=_ABSENT)]))),
+        ("a forbidden pattern whose reason is blank", "documents.forbidden[0].reason",
+         at("documents",
+            _a_documents_of(forbidden=[_a_forbidden_name(reason="   ")]))),
+        ("a quoted list that is not a list", "documents.quoted",
+         at("documents", _a_documents_of(quoted="a sentence"))),
+        ("a quoted entry with no sentence", "documents.quoted[0].sentence",
+         at("documents",
+            _a_documents_of(quoted=[{"document": "a-document.md"}]))),
+        # ⛔ The quoted entry's own row-set arm: a sentence quoted against a
+        # document outside the governed set is a check over a file nothing else
+        # here reads, which is the kind's failure mode plus an unheld subject.
+        ("a sentence quoted against a document no row declares",
+         "documents.quoted[0].document",
+         at("documents", _a_documents_of(
+             quoted=[{"sentence": "a claim", "document": "b-document.md"}]))),
         ("a readiness list that is not a list", "readiness", at("readiness", "all")),
         ("a readiness entry that is not a block", "readiness[0]", at("readiness", ["x"])),
         ("a readiness entry with no check", "readiness[0].check",
@@ -16840,6 +17412,53 @@ def _a_release_of(**overrides) -> dict:
     }
     facet.update(overrides)
     return {key: value for key, value in facet.items() if value is not _ABSENT}
+
+
+def _a_document_row(**overrides) -> dict:
+    """§ 38's smallest valid graph row, to break one key of at a time.
+
+    ⛔ Built here rather than borrowed from whichever example carries the facet,
+    for `_a_release_file`'s reason: a plant that broke one key of a shipped row
+    would stop asserting the moment that file's graph grew a row.
+    """
+    row = {"document": "a-document.md", "may_name": [], "derived_from": []}
+    row.update(overrides)
+    return {key: value for key, value in row.items() if value is not _ABSENT}
+
+
+def _a_documents_of(**overrides) -> dict:
+    """§ 38's smallest facet that governs a document, for the arms above the rows.
+
+    ⛔ The carrier is `list` in every one of them, for `_a_release_of`'s reason: a
+    plant that left it `none` would be refused by the stated-beside-an-absent-
+    carrier arm instead, which is a different branch under a different key --
+    green while asserting nothing about the one it was aimed at.
+
+    ⚠️ **One row and no edges**, so that every arm about an edge states its own:
+    a fixture already carrying one would make an edge plant a *second* edge, and
+    the refusal would then name an index the plant did not write.
+    """
+    facet = {
+        "carrier": "list",
+        "files": ["*.md"],
+        "entry_points": ["a-document.md"],
+        "graph": [_a_document_row()],
+        "forbidden": [],
+        "quoted": [],
+    }
+    facet.update(overrides)
+    return {key: value for key, value in facet.items() if value is not _ABSENT}
+
+
+def _a_forbidden_name(**overrides) -> dict:
+    """§ 38's smallest valid forbidding entry, every key of which is stated."""
+    entry = {
+        "pattern": "ALegacyName",
+        "reason": "the component was deleted, so a document naming it describes nothing",
+        "stable_because": "the name was removed rather than renamed",
+    }
+    entry.update(overrides)
+    return {key: value for key, value in entry.items() if value is not _ABSENT}
 
 
 def _a_billing_of(**overrides) -> dict:

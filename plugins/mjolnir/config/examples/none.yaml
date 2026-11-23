@@ -328,3 +328,14 @@ billing:
   revisit_when: >-
     The hours this project already records start being billed to somebody, which is the first
     reader of them who is not the person who worked them.
+
+# § 38's absent case, and it pairs with the absent tracker above in the way that matters: this
+# project keeps its plan in documents, and holding them to a graph is still a decision it has not
+# taken. ⛔ So the absence is this facet's own and says nothing about how much prose there is.
+documents:
+  carrier: none
+  absent_reason: >-
+    The documents here are a plan and a readme, maintained by the one person who reads them, and
+    no check has been written over either.
+  revisit_when: >-
+    Somebody other than the author starts relying on one of these documents being current.
