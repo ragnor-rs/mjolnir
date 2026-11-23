@@ -1,0 +1,43 @@
+name: Attribution rail
+
+# The rail under the authorship rule is a `commit-msg` hook, so what it does happens on a developer's
+# machine and never on the host. What a gate can hold is the rule the hook carries: that a tool's
+# trailer comes out, that a human co-author does not, that a squashed message loses every tool line
+# and keeps every human one, that a second pass changes nothing, and that the copy an adopting
+# repository is given is the same half this suite ran. An arm whose match has quietly stopped firing
+# reports green on every commit — which is this run's whole subject, and the only part of the rail a
+# workflow can reach.
+#
+# ⚠️ What this cannot hold is whether a rail is installed in any particular clone. Neither route
+# survives one — `.git/hooks` is not cloned and `core.hooksPath` is configuration rather than content
+# — and what reports that is the install step's own answer per route, read in the repository rather
+# than here. That residue is stated rather than left for a reader to assume away.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: a run holding what may be written into a commit message has no business
+# holding anything that could leave.
+permissions: {}
+
+jobs:
+  attribution-rail:
+    name: Attribution rail
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, and the same string `host.checks` states this run mirrors. ⚠️ Held
+      # together by eye, and § 2 rules that it must be: the mapping from a run to the command it
+      # mirrors is configured and never inferred. The workflow *name* above is held mechanically, by
+      # the `Host checks drift` run.
+      - name: Assert the rule, the direction it fails in, and the copy an adopter is given
+        run: python3 plugins/mjolnir/scripts/strip_attribution.py --self-test

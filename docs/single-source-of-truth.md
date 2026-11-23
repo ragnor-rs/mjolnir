@@ -3534,12 +3534,15 @@ applied to a suite's own fixture.
   run: a repository is not swept for files the toolkit might one day want to write, so an adopter
   finds out at install time rather than before it.
 - **Whether `core.hooksPath` is the route a project ought to take.** The step reads the
-  **repository's own** scope and decides neither route; choosing between a tracked hooks directory
-  and this step is the hook's own work item. ⚠️ A repository stating neither gets git's own answer,
-  which is outside the tracked tree — so an artifact installed there does not survive a fresh
-  clone, and nothing here reports that. ⛔ A path stated for the whole machine is a stop and not a
-  third route: git would call hooks from there, so a copy inside the repository would never run,
-  and that directory is not somewhere this step may write.
+  **repository's own** scope and decides neither route; which one a project ought to take is
+  [the rail's own section](#the-rail-under-the-authorship-rule-and-the-three-halves-it-does-not-reach),
+  where it is recorded with the case against the answer. ⛔ A path stated for the whole machine is a
+  stop and not a third route: git would call hooks from there, so a copy inside the repository would
+  never run, and that directory is not somewhere this step may write. ⚠️ **What the step now
+  reports is what a fresh clone has at whichever route answered** — this used to be the thing
+  nothing here said, and the gap it left was an artifact installed outside the tracked tree reading
+  as installed for ever. ⛔ **It is a per-route answer and not a verdict**: neither route survives a
+  clone, so what is reported is which gap this repository has rather than whether it has one.
 - **Whatever is not committed**, and **issues and pull requests**, for the reasons the document
   checks above give: this suite reads trees it creates and the configuration in the checkout, and
   the workflow holds no credential.
@@ -3706,6 +3709,120 @@ a project stating no section, which is the status that says so — and in a temp
 carrying a shipped example for the arm that reads one. ⛔ **What no run here covers is the role**:
 nothing is deployed from this repository, so what a deploy does with a step it collected is read on
 the surface rather than measured.
+
+## The rail under the authorship rule, and the three halves it does not reach
+
+`plugins/mjolnir/scripts/strip_attribution.py --self-test` runs in the `Attribution rail`
+workflow, with no credential and no network. ⛔ The rule is
+[schema § 6 → The rail](../plugins/mjolnir/config/schema.md#the-rail-under-the-authorship-rule-and-the-three-halves-it-cannot-reach)
+and this document states none of it. What is recorded here is what the suite holds, what the rail
+cannot reach, and the one decision the item behind it existed to take.
+
+**Why it is a hook and not a setting or an instruction.** The two cheaper layers both leak: an agent
+setting that reports have shown is not honoured when the commit is made by a shell command rather
+than through an internal commit path — the common case for a procedure made of commands — and an
+instruction in a project's rules file, which survives neither a compaction nor a new agent. ⚠️ **It
+is a git hook and not one of [§ 7](../plugins/mjolnir/config/schema.md#7-carrier)'s**: a different
+mechanism with a different lifecycle, and the two are not merged.
+
+**The decision the item asked for, recorded with the case against it.** Three answers were
+available: install the rail into whatever directory git answers with, install it into a tracked
+directory selected by `core.hooksPath`, or write the capability down as deliberately dropped.
+⛔ **The first is what a repository stating nothing gets, and the second is honoured wherever a
+repository has already chosen it**, by
+[§ 6 → The rail](../plugins/mjolnir/config/schema.md#the-rail-under-the-authorship-rule-and-the-three-halves-it-cannot-reach)
+— the install step reads the repository's own scope and picks neither. ⚠️ **The case against the
+first is real and is why the choice is recorded rather than assumed**: `.git/` is not cloned, so
+the rail is simply absent in a fresh clone, and the
+tracked-directory route does carry the file. ⛔ **What decides it is that neither route survives a
+clone**: `core.hooksPath` is repository configuration rather than content, so the tracked route
+produces a file that is present and **not called** — which reads as installed to anything that
+looks — while an absent file reads as absent. ⚠️ **Both need one command after a clone**, so what
+the route changes is the shape of the gap and not whether there is one. ⛔ **Dropping the capability
+was refused** for the reason the rule itself gives: the rule binds every commit, and a rule with no
+mechanism under it is the prose the item was written against.
+
+**What the suite holds.** A tool trailer out and the rest of the message unchanged byte for byte; a
+human co-author kept; a squashed message with both kinds interleaved losing every tool line and
+keeping every human one; a second pass over the first pass's output changing nothing; a message that
+is nothing but attribution refused with the file left as it was, rather than written out empty; the
+trailing run of blank lines a removed final trailer leaves behind taken off, in five shapes
+including a message with no final newline; and the hook's own invocation — one argument, written in
+place — run as a process against a planted message file. ⚠️ **The arm that makes every block
+load-bearing is asked of the *first* block**, because that is the one a rule scoped to the final
+paragraph keeps; a count over the whole message stays green against that defect and was measured
+doing so.
+
+**The decision the rule turns on, held both ways.** ⛔ **The address decides and the display name
+decides nothing**: the vendor product name in use here is also an ordinary given name, so the suite
+plants a person carrying it with an address of their own and asserts the line survives. ⚠️
+**Measured against the obvious wrong rule** — a match on the product word in the display name —
+which reddened that arm and two others. The domain comparison is held against a domain that *ends*
+with a vendor's and one that merely starts with it, both of which belong to whoever registered them;
+against a subdomain, which does not; against the host's own marker for an account that is not a
+person, in the address and in the display name alike; against a trailer carrying no address at all,
+which is kept; against three spellings and spacings of the token; against a `Signed-off-by` naming
+the same vendor, which is a person's attestation and is left alone; and against a line that merely
+quotes a trailer in prose.
+
+**The recognition list is data and is held as data.** ⛔ There is no shape that identifies a tool, so
+what is recognised is a list — vendor domains for the trailer rule, product and vendor spellings for
+the generated-by marker, which has no address to read. Every entry is asserted lower case, unspaced,
+stated once, and carrying a reason of at least five words; the domains are additionally asserted to
+be domains rather than addresses. ⚠️ **A mistyped member of a shipped list is otherwise silent.**
+**The marker rule is held on both halves** — the phrase and a recognised name, which is
+[§ 6 → The rail](../plugins/mjolnir/config/schema.md#the-rail-under-the-authorship-rule-and-the-three-halves-it-cannot-reach)'s
+list rule reaching the one line that carries no address — and the suite plants three ordinary
+sentences carrying the phrase, one of them a sentence about this very rule, and asserts each is
+kept.
+
+**The copy an adopting repository is given.** Everything above a sentinel line is the rule and is
+what the install step vendors; everything below is the renderer and the suite. The arms assert the
+rendered copy parses, carries the rule, carries no renderer and no suite, keeps its shebang on the
+first line, imports nothing outside the standard library, and **runs as a separate process** to the
+same bytes this module produces. ⛔ **It carries none of the suite's planted spellings**, and that
+arm derives its forbidden set from the planted trailers rather than naming literals: the first form
+of it named three, which is the shape that goes quietly green when a fixture is renamed. ⚠️ **A
+render of a file with no sentinel is refused**, asserted by pointing the renderer at a planted file
+rather than by grepping for the `raise` — measured with the split taken out, which vendored a
+human's address into every adopting repository while every other arm stayed green.
+
+**What the install step's own suite holds about it, rather than this one.** That the rail is written
+under the name git calls and in the directory git answered with, executable, marked after the
+shebang, byte-identical on a second run, registering no `host.checks` entry, and asking for nothing
+— the one registered artifact that reads no configured value, by § 6 making authorship procedure.
+⛔ **And that it fires**: a real `git commit` in a fixture repository, through the installed hook,
+whose landed message carries the human co-author and not the tool one — with the plant verified, the
+same commit keeping the trailer once the rail is removed. ⛔ **On all three paths git gives the hook
+a message file on**, an ordinary commit, an amend and a `--no-ff` merge, because a rail safe on the
+first and not on the other two would leave attribution in exactly the commits a landing is made of.
+⚠️ **The merge arm needed a precondition of its own**: the trunk's name read from the reflog
+resolved nothing, so the merge ran on the side branch, answered *already up to date*, exited 0, and
+the arms then read the side commit's message — an exit status standing in for a delivery, which the
+precondition now refuses.
+
+**The three halves no run reaches, named rather than left to be assumed covered.** The author and
+the committer are headers rather than message text and no hook is given them. A pull request body
+is seen by no git hook and by no host equivalent, so that half of the rule is held by the finishing
+role composing the body and by nothing else — stated in that role for the reader who knows the rail
+exists and would otherwise assume it covered. ⚠️ **Existing history is outside the rule**, which is
+forward-only, and no run here rewrites any.
+
+**What this repository is not a subject of.** ⛔ **Whether any particular clone has the rail
+installed.** The hook fires on a developer's machine, no workflow observes one, and what reports an
+absent rail is the install step's own per-route answer read in the repository — ⚠️ **which was read
+in this one**, from inside a worktree, and answers that no rail is installed here with the route's
+own gap named. ⚠️ **One install covers every worktree**, measured: git answers a worktree with the
+**common** hooks directory rather than one of its own, so the rail is not per tree and a session
+standing in one is held by whatever the primary checkout installed. ⚠️ **This
+repository's own history carries no tool trailer at all** — searched, and the rule was held here by
+prose and by whoever read it until this rail existed — so the recognition list is grounded in the
+spelling the harness in use is configured to append and in the host's own bot convention, not in a
+corpus this tree holds. ⛔ **A tool whose spelling is on neither keeps its trailer**, which is the
+stated residue and the direction the rail is built to fail in; closing it means a list entry, never
+a wider match. ⚠️ **And a repository stating a non-default `core.commentChar`** has its comment
+lines counted as content by the emptiness test, which fails safe: the rail does not abort, and
+git's own cleanup then strips the comments and aborts on the empty message itself.
 
 ## What a pull request title opens with, derived once
 
