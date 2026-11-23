@@ -54,6 +54,10 @@ READER = "README.md"
 RULINGS = "docs/divergences-and-rulings.md"
 # The document that records what each gate checks, this one included.
 RECORD = "docs/single-source-of-truth.md"
+# Where a carrier of the loop lives, stated once: the classification rule below
+# reads it, and so do both halves of check 11. ⛔ Written a second time it would
+# be the restated fact this file's own review lens names, one directory over.
+CARRIERS = "plugins/mjolnir/skills"
 
 # A document either explains the surface, records how a divergence was settled, or
 # carries procedure for one role. The first two may not state a rule; procedure
@@ -77,7 +81,7 @@ ROLE_RULES = [
     # ⛔ The twelve role carriers as one rule, which is where the enumeration
     # genuinely was a copy: every one of them is a carrier because of where it
     # sits, and a thirteenth would have had to be written down twice.
-    ("plugins/mjolnir/skills/*/SKILL.md", PROCEDURE),
+    (f"{CARRIERS}/*/SKILL.md", PROCEDURE),
     (RULINGS, RECORDS),
     ("docs/building-itself.md", RECORDS),
     ("docs/test-first-for-a-model-writer.md", RECORDS),
@@ -122,9 +126,9 @@ STATEMENT = re.compile(r"^\s*(?:[-*]\s+)?" + BINDING)
 # How the front page names a carrier: as the command an adopter types, and as a
 # link to the carrier's own directory in the inventory below it. A carrier is
 # claimed in both places or in neither, which is what check 11 holds.
-CARRIER_IN_PROSE = re.compile(r"^plugins/mjolnir/skills/([^/]+)/SKILL\.md$")
+CARRIER_IN_PROSE = re.compile(rf"^{re.escape(CARRIERS)}/([^/]+)/SKILL\.md$")
 FRONT_PAGE_COMMAND = re.compile(r"`/mjolnir:([a-z0-9][a-z0-9-]*)`")
-FRONT_PAGE_INVENTORY = re.compile(r"\]\(plugins/mjolnir/skills/([^/)]+)/\)")
+FRONT_PAGE_INVENTORY = re.compile(rf"\]\({re.escape(CARRIERS)}/([^/)]+)/\)")
 
 # The markers that direct a reader rather than inform one. The footprint counts
 # both, because what a citation costs is not the file's length alone: a document
@@ -1838,12 +1842,11 @@ def _plant_a_carrier_the_command_table_does_not_offer(tree: Tree) -> Tree:
     command direction alone: a plant that left both lists short would redden two
     branches and assert neither.
     """
-    path = "plugins/mjolnir/skills/planted-untyped/SKILL.md"
+    path = f"{CARRIERS}/planted-untyped/SKILL.md"
     tree.prose.append(path)
     tree.text[path] = "# Planted\n"
     tree.text[READER] += (
-        "\n| [`plugins/mjolnir/skills/planted-untyped/`]"
-        "(plugins/mjolnir/skills/planted-untyped/) | Planted |\n"
+        f"\n| [`{CARRIERS}/planted-untyped/`]({CARRIERS}/planted-untyped/) | Planted |\n"
     )
     return tree
 
@@ -1854,7 +1857,7 @@ def _plant_a_carrier_the_inventory_does_not_list(tree: Tree) -> Tree:
     ⚠️ The state the page was actually in for one of its carriers, which is why
     the two directions are separate branches rather than one membership test.
     """
-    path = "plugins/mjolnir/skills/planted-unlisted/SKILL.md"
+    path = f"{CARRIERS}/planted-unlisted/SKILL.md"
     tree.prose.append(path)
     tree.text[path] = "# Planted\n"
     tree.text[READER] += "\n| `/mjolnir:planted-unlisted` | Planted |\n"
@@ -1870,9 +1873,32 @@ def _plant_a_command_no_carrier_ships(tree: Tree) -> Tree:
 def _plant_an_inventory_row_no_carrier_ships(tree: Tree) -> Tree:
     """The inventory listing a directory the plugin does not carry."""
     tree.text[READER] += (
-        "\n| [`plugins/mjolnir/skills/planted-gone/`]"
-        "(plugins/mjolnir/skills/planted-gone/) | Planted |\n"
+        f"\n| [`{CARRIERS}/planted-gone/`]({CARRIERS}/planted-gone/) | Planted |\n"
     )
+    return tree
+
+
+def _plant_no_carrier_at_all(tree: Tree) -> Tree:
+    """A tree the carrier reading finds nothing in.
+
+    ⛔ The arm that keeps an empty reading from printing green, which is the
+    defect the check's own docstring names in the other direction -- so it is
+    asserted rather than left as the one branch nothing exercises. The carriers
+    are dropped from the document set rather than from disk, which is where this
+    check reads them.
+
+    ⚠️ **The page's own claims go with them, and that is what makes this plant
+    assert the arm it names.** Measured: dropping the carriers alone leaves every
+    `/mjolnir:` command on the page naming nothing, so the check reddened through
+    the offers-nothing branch and went on reddening with this arm switched off --
+    a plant certifying nothing. With both sides emptied the degenerate line is
+    the only one that can fire.
+    """
+    tree.prose = [path for path in tree.prose if not CARRIER_IN_PROSE.match(path)]
+    tree.text[READER] = "\n".join(
+        line for line in tree.text[READER].splitlines()
+        if not FRONT_PAGE_COMMAND.search(line) and not FRONT_PAGE_INVENTORY.search(line)
+    ) + "\n"
     return tree
 
 
@@ -1936,6 +1962,8 @@ VIOLATIONS = [
      _plant_a_command_no_carrier_ships),
     ("the front page names every carrier", "an inventory row no carrier ships",
      _plant_an_inventory_row_no_carrier_ships),
+    ("the front page names every carrier", "a tree carrying no carrier at all",
+     _plant_no_carrier_at_all),
 ]
 
 

@@ -350,6 +350,9 @@ Stated, because an unstated limit reads later as coverage.
   list held**, the page being an advertisement rather than an inventory in a fixed sequence.
   ⚠️ **And its subject is this repository's own carriers**: an adopting project's own page is
   outside every glob this gate walks, so nothing here says whether that page is complete.
+  ⚠️ **The carrier reading is keyed on the skills directory**, every carrier this plugin ships
+  being a skill there — so a command the page offers is held against that directory and against
+  nothing else.
 - **A heading inside a region the citation scan skips and the heading scan does not.** ⚠️ **The
   two scans now share one fence walker**, so this residue is narrower than it was: a fenced
   block is the same bytes to both, under either delimiter and at any delimiter length. ⛔ **What
