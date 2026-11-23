@@ -66,11 +66,23 @@ FENCE = re.compile(r"^[ \t]*(?P<delim>`{3,}|~{3,})(?P<info>[^\n]*)$")
 DELIMITER = re.compile(r"^[ \t]*\|[-|: \t]*$")
 
 
+def flat(text: str) -> str:
+    """The text with every run of whitespace collapsed to one space.
+
+    ⛔ Here because a document is **wrapped**: a sentence quoted against one
+    spans a line break, and a comparison that did not flatten both sides would
+    report a sentence that is there as gone.
+    """
+    return " ".join(text.split())
+
+
 def glob_regex(glob: str) -> re.Pattern:
     """A governed-set glob, where `*` stops at a separator and `**` crosses one.
 
-    ⛔ **Deliberately not [§ 15](schema.md)'s semantics**, where `*` crosses a
-    separator, and the difference is stated rather than left to be discovered: a
+    ⛔ **Deliberately not the end-to-end register's semantics** -- § 15's
+    consumer matches a case glob with the shell's own wildcards, where `*`
+    crosses a separator -- and the difference is stated rather than left to be
+    discovered: a
     governed set is a statement about *where* a project's documents live, so a
     wildcard that crossed a separator could not say *the root's own markdown and
     not a nested directory's* at all -- and a project writing `*.md` would
@@ -102,7 +114,7 @@ def governed(path: str, globs) -> bool:
     return any(glob_regex(glob).match(path) for glob in globs)
 
 
-def fences(text: str) -> frozenset:
+def fences(text: str) -> tuple:
     """The line numbers inside a fenced block, and whether one was left open.
 
     Returned as the pair, because an unclosed fence is one of the checks and the
@@ -238,16 +250,32 @@ class Subject:
 
     @property
     def enforced(self) -> list:
-        """The documents whose `may_name` row this project states at all.
+        """The governed documents whose row states an enforced edge.
 
-        ⛔ The three graph checks are over these and no others, and where there
-        are none they say the graph half holds nothing rather than passing: a
-        project that enforces no edge must not be shown a green it would read as
-        its documents agreeing.
+        ⛔ The three graph checks are over these and no others. Where there are
+        none they return nothing and `warnings` is what says the graph half holds
+        nothing -- a project that enforces no edge is a legitimate configuration,
+        so what it is owed is the disclosure rather than a permanent red.
         """
         return [
             path for path in self.set_now
-            if self.rows.get(path, {}).get("may_name") is not None
+            if path in self.rows and self.rows[path]["may_name"] is not None
+        ]
+
+    @property
+    def unenforced(self) -> list:
+        """The governed documents whose row states `may_name: null`.
+
+        ⛔ **A document with no row at all is not one of these**, and the two were
+        measured collapsed: keyed on a missing row reading as `null`, a document
+        the graph had never declared was reported as one this project *decided*
+        not to enforce -- and a tree where no document had a row at all was
+        reported as one where every row states `null`. Both are a different
+        fault, and check 1 is what reports it.
+        """
+        return [
+            path for path in self.set_now
+            if path in self.rows and self.rows[path]["may_name"] is None
         ]
 
     def read(self, path: str):
@@ -482,8 +510,25 @@ def delimiters(line: str) -> int:
     return found
 
 
+def cells(line: str) -> int:
+    """The cells a row carries, with the optional closing delimiter discounted.
+
+    ⛔ **The closing `|` is optional in the format and a raw delimiter count
+    treats it as a cell.** ⚠️ Measured: a table whose last row is written
+    `| one | two` -- two cells, no closing delimiter -- was reported ragged
+    against the rows above it, while a renderer reads the two forms
+    identically. ⚠️ Whether the last character *is* a delimiter is asked by
+    counting rather than by looking at it, so a row ending in an escaped `\\|`
+    is not discounted.
+    """
+    found = delimiters(line)
+    if line.endswith("|") and found > delimiters(line[:-1]):
+        return found - 1
+    return found
+
+
 def _tables(text: str, inside) -> list:
-    """Every run of pipe lines outside a fence, as (first line, [(number, cells)])."""
+    """Every run of consecutive pipe lines outside a fence, each as [(number, line)]."""
     runs, current = [], []
     for number, line in enumerate(text.splitlines(), 1):
         if number in inside:
@@ -520,7 +565,7 @@ def check_a_table_keeps_its_shape(subject: Subject) -> list:
             # file put a green-side plant that no mutation of this guard decided.
             if len(run) < 2:
                 continue
-            widths = {delimiters(line) for _n, line in run}
+            widths = {cells(line) for _n, line in run}
             if len(widths) != 1:
                 problems.append(
                     f"{path}:{run[0][0]}-{run[-1][0]}: the rows of this table carry "
@@ -595,7 +640,13 @@ def check_a_quoted_sentence_is_still_in_its_document(subject: Subject) -> list:
                 "the sentence quoted against it was compared with nothing."
             )
             continue
-        if sentence not in text:
+        # ⛔ **Both sides flattened, because a document is hard-wrapped.** ⚠️
+        # Measured on this very facet: a sentence present in a document that
+        # wraps at a stated column spans a line break, so a raw substring test
+        # reports it missing -- which this kind then reads as the claim having
+        # been reworded away. A quoting check that cannot find a sentence that
+        # is there is worse than the kind's own failure modes.
+        if flat(sentence) not in flat(text):
             problems.append(
                 f"{document}: no longer carries the quoted sentence "
                 f"{sentence[:60]!r}. ⚠️ Read this as the kind says: the document may have "
@@ -636,13 +687,10 @@ def warnings(subject: Subject) -> list:
     """
     said = []
     # ⛔ The rows this project declines to enforce, counted on every run. Where
-    # that is all of them, three of the nine checks below hold nothing and this
-    # is the only place that says so -- a project reading their green as its
-    # documents agreeing is the one misread the third state invites.
-    unenforced = [
-        path for path in subject.set_now
-        if subject.rows.get(path, {}).get("may_name") is None
-    ]
+    # that is all of them, three of the nine checks hold nothing and this is the
+    # only place that says so -- a project reading their green as its documents
+    # agreeing is the one misread the third state invites.
+    unenforced = subject.unenforced
     if unenforced and not subject.enforced:
         said.append(
             f"every one of the {len(unenforced)} governed document(s) states "
@@ -814,6 +862,34 @@ def _plant_a_quoted_sentence_that_is_gone(subject: Subject) -> Subject:
     return subject
 
 
+def _plant_a_quoted_sentence_reworded_away(subject: Subject) -> Subject:
+    """The kind's own red: the document says something else now.
+
+    ⚠️ Apart from the plant above, which deletes the sentence outright: this one
+    leaves a sentence in place and changes what it claims, which is the shape a
+    project writing a quoted check is actually afraid of.
+    """
+    subject.quoted = [
+        {"sentence": "It names nothing", "document": "docs/a-document.md"},
+    ]
+    subject.text["docs/a-document.md"] = subject.text["docs/a-document.md"].replace(
+        "It names nothing.", "It names everything."
+    )
+    return subject
+
+
+def _drop_a_row(subject: Subject) -> Subject:
+    """One document's row removed while the rest keep theirs.
+
+    ⛔ The arm that tells *no row* apart from `may_name: null`: with the two
+    collapsed, this planted state was reported as a document the project had
+    decided not to enforce, and a tree where **no** document had a row was
+    reported as one where every row states `null`.
+    """
+    del subject.rows["docs/a-document.md"]
+    return subject
+
+
 def _plant_a_quoted_document_that_cannot_be_read(subject: Subject) -> Subject:
     subject.quoted = [
         {"sentence": "a claim", "document": "docs/deleted-without-git-rm.md"},
@@ -851,6 +927,10 @@ VIOLATIONS = [
      _plant_a_quoted_sentence_that_is_gone),
     ("a quoted sentence is still in its document", "a quoted document that cannot be read",
      _plant_a_quoted_document_that_cannot_be_read),
+    ("a quoted sentence is still in its document", "a sentence reworded into something else",
+     _plant_a_quoted_sentence_reworded_away),
+    ("every governed document has a row",
+     "one document's row gone while its siblings keep theirs", _drop_a_row),
 ]
 
 
@@ -969,6 +1049,34 @@ def _plant_a_cell_carrying_an_escaped_pipe(subject: Subject) -> Subject:
     return subject
 
 
+def _plant_a_row_with_no_closing_delimiter(subject: Subject) -> Subject:
+    """The closing pipe is optional, and two rows written each way are one shape.
+
+    ⚠️ Measured: with the raw delimiter count compared, a table whose last row
+    omits the closing pipe was reported ragged against the rows above it, and a
+    renderer reads the two forms identically.
+    """
+    subject.text["docs/a-document.md"] += "\n| a | b |\n|---|---|\n| one | two\n"
+    return subject
+
+
+def _plant_a_quoted_sentence_the_document_wraps(subject: Subject) -> Subject:
+    """A sentence that is in the document and spans a line break.
+
+    ⛔ The arm this kind would otherwise fail on every wrapped project: a raw
+    substring test reports a sentence that is there as gone, which reads as the
+    claim having been reworded away.
+    """
+    subject.text["docs/a-document.md"] += (
+        "\nIt states that the claim this document\nstill makes, and nothing else.\n"
+    )
+    subject.quoted = [
+        {"sentence": "the claim this document still makes",
+         "document": "docs/a-document.md"},
+    ]
+    return subject
+
+
 def _plant_a_cell_after_a_literal_backslash(subject: Subject) -> Subject:
     """A doubled backslash is a literal, so the pipe straight after it is a delimiter.
 
@@ -997,6 +1105,10 @@ EXEMPTIONS = [
      _plant_a_graph_that_enforces_nothing),
     ("a document named by a spelling of its own rather than by its path",
      _plant_a_document_named_by_a_spelling_of_its_own),
+    ("a row that omits the optional closing delimiter",
+     _plant_a_row_with_no_closing_delimiter),
+    ("a quoted sentence the document wraps across a line break",
+     _plant_a_quoted_sentence_the_document_wraps),
     ("a cell carrying an escaped pipe", _plant_a_cell_carrying_an_escaped_pipe),
     ("a cell whose delimiter follows a literal backslash",
      _plant_a_cell_after_a_literal_backslash),
@@ -1115,6 +1227,29 @@ def self_test() -> int:
     check("a partly enforced graph names the rows it does not enforce",
           "docs/a-document.md" in partly, partly[:140])
     check("and does not claim the checks hold nothing", "HOLD NOTHING" not in partly)
+
+    # ⛔ *No row* against `may_name: null`, which were one answer and are two.
+    no_row = _drop_a_row(subject.copy())
+    check("a document with no row is not reported as one the project left unenforced",
+          no_row.unenforced == [], f"{no_row.unenforced}")
+    check("and nothing warns about it, check 1 being what reports it",
+          warnings(no_row) == [], f"{warnings(no_row)}")
+    check("while a row stating null is reported as unenforced",
+          _plant_a_row_that_does_not_enforce_its_edge(subject.copy()).unenforced
+          == ["docs/a-document.md"])
+
+    # ⛔ The two forms of a row, and the sentence a wrapped document carries --
+    # each a false refusal this file's own first form produced.
+    check("the optional closing delimiter is discounted",
+          cells("| a | b |") == cells("| a | b") == 2,
+          f"{cells('| a | b |')} vs {cells('| a | b')}")
+    escaped_at_the_end = cells(r"| a | b \|")
+    check("and an escaped pipe at the end of a row is not discounted",
+          escaped_at_the_end == 2, f"{escaped_at_the_end}")
+    check("a ragged row is still ragged once both are discounted",
+          cells("| one |") != cells("| a | b |"))
+    check("a wrapped sentence is found",
+          flat("a claim\nacross a break") == "a claim across a break")
 
     # The glob semantics, which is where this file deliberately differs from
     # § 15's and the difference is asserted rather than described.
@@ -1281,11 +1416,22 @@ def main(argv: list) -> int:
             "editing either."
         )
         return 1
-    print(
-        f"\nEvery one of the {len(subject.set_now)} governed documents has a row, names "
-        "what its row allows and nothing else, is reached from an entry point, carries "
-        "no forbidden name, and keeps its own blocks."
-    )
+    # ⛔ The summary names what was **held** and nothing more. ⚠️ Measured on
+    # this file's own first form: it said every document names what its row
+    # allows and is reached from an entry point, which is false of a project
+    # whose rows state `may_name: null` -- the three graph checks held nothing
+    # there, and the sentence asserted they had passed.
+    held = [
+        f"all {len(subject.set_now)} governed document(s) have a row",
+        "no forbidden name appears",
+        "and every one keeps its own blocks",
+    ]
+    if subject.enforced:
+        held.insert(1, (
+            f"{len(subject.enforced)} of them name only what their row allows and all "
+            "of it, and are reached from an entry point"
+        ))
+    print("\n" + "; ".join(held) + ".")
     return 0
 
 

@@ -8625,6 +8625,11 @@ sentences it quotes, and the kind each check is decides what its green is worth.
 | **forbidding** | a name or a pattern **must not appear** | where the forbidden thing is stable — a deleted module's name, a word a rule bans | a forbidden thing that was renamed rather than removed, which is what `stable_because` is asked for |
 | **quoting** | a sentence is **quoted back** at the file it came from | ⛔ **never** | it goes red on an innocent reword, and green when the claim is reworded into its opposite |
 
+⚠️ **A quoted sentence is compared with the whitespace flattened on both sides**, because a document
+is wrapped: a sentence that is there spans a line break, and a raw comparison reports it gone —
+which this kind then reads as the claim having been reworded away. ⛔ **That is not one of its two
+failure modes but a third thing it would get wrong**, so it is held rather than disclosed.
+
 ⛔ **A `quoted` entry is admitted and warned about, rather than refused.** Both failure modes are
 named in the warning, in both directions, because the one that matters is invisible: a project that
 has written one is told that its green says nothing about the claim, not that its configuration is
@@ -8704,6 +8709,7 @@ row under a line that begins a table, so there is no name and no pattern to ban.
 | what is held | what the defect renders as |
 |---|---|
 | a table's rows agree about how many cells they carry | a row short of a cell silently takes the next column's value |
+| an escaped `\|` is a cell's own character, and the closing `\|` is optional | ⚠️ neither is a defect: both were measured reported as ragged rows that render exactly as written |
 | a line of pipes has a table above it, or a delimiter row under it | a row separated from its own table by a blank line renders as a paragraph with its pipes showing |
 | no document leaves a fence open | everything after the opening is read as code, and every check over that text stops seeing prose |
 

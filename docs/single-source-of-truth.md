@@ -4309,6 +4309,12 @@ only through its carrier's suite is a facet nothing has ever run over real text 
 - **Whether a document is true.** Every check here is structural. A row that is current, an edge
   that resolves and a table that renders say nothing about whether the sentences are right, which
   is the limit the quoting kind exists to tempt a project past.
+- **Where in a document a forbidden name appears.** The forbidding kind reads every line of a
+  governed document, fenced lines and shown examples among them, so a project that documents its
+  own forbidden name is refused on the sentence that forbids it. ⚠️ **The same is true of the
+  implementation this kind was read out of**, and the remedy is the pattern rather than a scope: an
+  entry states an expression, so a project in that position narrows it ([`schema.md § 38 → The
+  three kinds`](../plugins/mjolnir/config/schema.md#the-three-kinds-of-check-and-the-one-that-is-admitted-with-a-warning)).
 - **The `derived_from` edge against the text.** Content that flowed in obliges no citation, so
   that edge is recorded and held acyclic and never compared with any document's words
   ([`schema.md § 38 → The two
