@@ -515,7 +515,7 @@ environment:
   # kind is reachable: that block addresses the sheet and this names the variable the secret
   # arrives in. ⛔ Named and never valued — a list of names is not a secret, and a configured
   # value would be the leak § 14 exists to prevent. ⚠️ No ordinal: a comment counting the entries
-  # is wrong the next time one lands, green, which this file records one facet over.
+  # of the list beside it is wrong the next time one lands, green.
   inherits: [PATH, HOME, JIRA_ACCOUNT, JIRA_API_TOKEN, GOOGLE_SHEETS_TOKEN]
 
 e2e_register:
