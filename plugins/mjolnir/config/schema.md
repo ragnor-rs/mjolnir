@@ -301,6 +301,22 @@ reviewing role **records** — the verdicts, and the answer to every ask it make
 **never merges and never waives**; a hook (§7) is what refuses an act on the strength of that
 record, and the record is written whether or not one is installed.
 
+⛔ **Launching a change's test tiers is the reviewing leg's, and no role on this list launches one
+anywhere else.** Stated here for the reason the division above is: two roles read it, and a rule
+read by two roles and written in one of their skills is a second authority for the other.
+[§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) states what each tier needs
+before it can run at all, and the launch is the act over that list. ⛔ **What the act comprises and
+which suites it is owed for are the role's own and are not stated here** — the first because the
+report's form is procedure, the second because it is a question about what the project's own build
+already runs. ⛔ **The deploy role reads which tiers
+ran out of what its invocation delivered and launches none**, which is that role's own statement and
+not a restriction added here. ⚠️ **It is an arm of a leg and not a leg of its own**, by the test
+this section splits a role on: what it may do is what the reviewing role may do — run a command in a
+tree, record a verdict, merge nothing — and a role free to do no more than another role is a step of
+it. ⛔ **So the leg table above is unchanged**, and ⚠️ **a project mapping no reviewing role loses
+the launch with that leg** — the absent-reviewing-role bullet below, which names what the skipped
+leg owned rather than leaving the loss to be discovered.
+
 **The surface's axes are independent, and there are more of them than the obvious three:** the
 work-item tracker (§3), the code host (§2), the code root (§1), each role's carrier (§7),
 language/register/audience per artifact (§8), and the branch model (§10). The list is the
@@ -369,7 +385,11 @@ than a reason to trust it.
   changes what the person is deciding. ⚠️ **No question changes hands**: the ask was already the
   finishing role's. ⛔ **And neither half is a `done:` check a project could configure** — §13
   refuses both, because a check an adopter answers is either a route's own thoroughness turned down
-  by configuration or a merge licensed by it.
+  by configuration or a merge licensed by it. ⛔ **What the skipped leg also takes with it is the
+  launch**: the finishing role launches no tier, so such a project has its § 31 suites answered by
+  whatever its own build runs and by nothing else — ⛔ **named in the merge ask beside the missing
+  leg**, since a suite nobody launched is a suite nothing reports, and that facet exists to keep a
+  tier that never ran from reading as one that passed.
 - ⛔ **An absent finishing role is where the route ends**, not a leg to hand past: nothing else opens
   a change, so implemented work stops there. The starting role says so in its reply, since a route
   that ends silently is the defect this section exists to close.
@@ -4901,7 +4921,8 @@ one's — ⚠️ **cited and not stated again here**, which is the division the 
 for the shape rules of their own keys.
 
 **What reads this facet.** The verdict is produced by the carrier shipped with this surface, run as
-a host check like any other (§ 2). ⚠️ **The role that launches a tier is #128's** and is not this
+a host check like any other (§ 2). ⚠️ **The role that launches a tier is the reviewing one**
+([§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)) and is not this
 facet's to state: what is configuration here is the declaration, the report and the floor, and what
 is procedure is the arithmetic over them.
 
@@ -7466,7 +7487,11 @@ refused on a target says nothing about which repository either is in. ⚠️ **A
 is refused against were measured on a project whose tiers and whose deploys were read apart, which
 is why the reference is one way round and not a pair.
 
-⚠️ **The role that launches a tier is #128's**, and the refusal is that role's to perform. What is
+⚠️ **The role that launches a tier is the reviewing one**
+([§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)), and the refusal is that
+role's to perform. ⛔ **Performed on a reading rather than on this list parsed again**: the reader
+answers whether a named target refuses a suite, so the act and the vocabulary resolution are one
+call and the role matches no target name of its own. What is
 configuration here is the list; what this reader owes that role is one reading of it, which is why a
 tier's record is printable rather than only validated — a field nothing renders is a field nothing
 holds.
@@ -8958,6 +8983,137 @@ case, discharged the way that section states: the absent form is stated here and
 example in the same change, and the record the change lands with says that configurations outside
 this repository are refused until each writes the key. ⚠️ **No check here can reach them**, they
 being files in repositories this one cannot open.
+
+## 39. The specification corpus, and which copy of it governs
+
+```yaml
+spec_corpus:
+  carrier: repository | none              # required; absent_reason
+  files: ["<a glob the corpus matches>"]  # required_when: spec_corpus.carrier = repository
+  load_bearing: ["<a glob read whole>"]   # required_when: spec_corpus.carrier = repository
+  grouping: "<the release scope>"         # where the project carries several groupings
+  absent_reason: "…"                      # required where the carrier is none
+  revisit_when: "…"
+```
+
+**A project whose specification lives in its own repository has one copy of it per version** — the
+branch for each version carries the corpus as it stood for that version — so which copy governs is
+a fact about the **item** and not about the working tree. ⛔ **This states where that corpus is and
+nothing about what is in it**: not a section list, not a heading, not a document's own shape, which
+is [§ 38](#38-the-documents-a-project-holds-to-a-checkable-property)'s subject one facet over and
+[the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s middle column either
+way.
+
+⛔ **This is a facet and no fourteenth leg of [§ The loop](#the-loop--thirteen-roles)**, which is
+§ 38's own rule beside it: nothing is added to that list, no `carriers` key answers for it and no
+role enters it. What is carried is a block of configuration and the read the filing role performs
+with it.
+
+### Which copy governs, and why the working tree is never it
+
+A session files an item while standing on some other item's branch, on the integration branch, or
+in a tree cut from an old release. ⛔ **Each of those is a different copy, and the one that governs
+is the one belonging to the version the item is *for*** — read at that ref, never out of the
+working tree and ⛔ **never by checking anything out**, which under
+[§ 10](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it)'s tree per item would move a
+checkout a parallel session is standing in.
+
+⚠️ **The cost of the wrong copy is a confident wrong answer in the one step whose whole value is
+confidence.** The filing role decides *duplicate, parent, or new* and then classifies the
+dependency: read against a corpus two versions stale, behaviour that was removed reads as current
+and behaviour the item is about reads as missing. That role is also required to surface a
+**contradiction** between the request and the corpus before filing, which is meaningless unless the
+corpus is the one that governs the target version.
+
+### The ref is the grouping's, and this facet declares none
+
+⛔ **No key here states how a version names a ref.** `grouping` names one of
+[§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s own groupings, and the ref is that
+grouping's `ref_prefix` joined onto the value the item carries — the same composition
+[§ 5](#5-readiness-gate--an-ordered-predicate-list)'s `grouping_ref_exists` performs, used for a
+different purpose. A second key would be two records of one branch-naming scheme, free to disagree
+about which branch a version is on, which is this surface's own subject applied to itself.
+
+⛔ **So two refusals follow from the one key**: a `grouping` naming no grouping the project carries,
+and a grouping stating no `ref_prefix` — there being no ref for the read to be taken at.
+
+⛔ **And `kind` is deliberately not read, which is the arm the obvious procedure gets wrong.** The
+facet is about a copy per *version*, so refusing every grouping whose `kind` is not `version` reads
+as the natural rule and is **measured wrong**: the shipped `github-issues` example names its
+releases with the tracker's own milestones, `kind: milestone`, and cuts a branch per release — so
+that rule would refuse the commonest shape there is. `kind` says what a grouping is **to the plan**
+and `ref_prefix` says that a ref carries its value, and it is the second of those this facet needs.
+⚠️ **What is given up by not reading it is stated rather than discovered**: a project that puts a
+`ref_prefix` on a time box and names it here gets the corpus read at an iteration's branch, and
+nothing refuses it. The key naming the grouping is the project's own statement of which one carries
+the corpus, and no reading of `kind` can second-guess it.
+
+⛔ **`grouping` is required where the project carries several groupings and omitted where it
+carries one**, which is § 5's rule for the same key on its own entries. It is stated in prose
+rather than marked for [§ 1](#the-file-itself)'s reason and `work_item.code_root.carrier`'s: the
+marker answers *must this key be written*, and what this turns on is *how many* groupings a project
+carries, which no condition on a key's value can reach.
+
+### The fallback is correct, and it is the one thing here that must be said out loud
+
+⚠️ **A version whose branch does not exist yet falls back to the integration branch, and that is
+the right behaviour.** ⛔ **It is also reported, on every run that takes it** — a corpus written for
+a later version is otherwise read as the governing one and the run gives no sign, which is
+[§ 2](#2-code-host)'s rule that absence of signal is not an answer arriving at a ref. A report
+naming the ref it actually read and not the one it was asked for is what discharges it.
+
+⛔ **Which branch is fallen back to is derived, and no key here states it.** § 10 speaks of the
+integration branch throughout and this surface declares none, so the derivation is the claim
+carrier's own; a key here would be a second one, and the two would be free to disagree about where
+a project's work lands.
+
+⛔ **And there is a third outcome the fallback must not absorb: a branch the remote advertises that
+the clone does not hold.** The read opens objects out of the clone, so there is nothing to read and
+the answer is **unread** — reported with the one command that would fetch it, a fetch being the
+role's call and not a read's. ⚠️ **Folding it into the fallback is the wrong answer available
+here**: that arm is for a version that does not exist, so taking it would read the governing copy's
+absence from *a clone* as the version's absence from *the project*, and produce a verdict about the
+integration branch instead. ⛔ **A remote that could not be reached at all takes this arm too** and
+never the fallback, by [§ 2](#2-code-host)'s rule: a remote nobody could ask is not a remote that
+answered *no such ref*.
+
+### `load_bearing`, and what the rest of the corpus is for
+
+`files` is the corpus; `load_bearing` is the part of it read **whole**, and the rest is matched on
+keywords taken from the request. ⛔ **Both are glob lists against repository-relative paths and
+neither is a root**, which is § 38's shape and its stated reason: `*` stops at a separator here and
+`**` crosses one, so a project can say *this subtree and not a nested one* — and a `root` key would
+make every glob relative to a second thing, with the two spellings of one path free to disagree.
+
+⛔ **`files: []` is refused and `load_bearing: []` is not**, and the pair is § 38's division between
+a marker's question and a shape rule's. An empty corpus is a step that reads nothing while reading
+as one that reads something, and `carrier: none` is how a project says that instead; an empty
+load-bearing list is a project stating that every document in its corpus is reached by keyword,
+which is a decision rather than an omission.
+
+### `carrier: none`, and the two answers it must not collapse into one
+
+⛔ **A project with no corpus of its own states `carrier: none` with its reason, and the filing role
+files normally.** The reader names it among what is unavailable, with the consequence rather than
+the key alone.
+
+⛔ **What a report must then keep apart is *no corpus is configured* from *no contradiction was
+found*.** The second is a verdict and the first is the absence of a subject for one, so a role
+printing the second where it meant the first has claimed that a corpus it never read agrees with
+the request. ⚠️ **This is the failure direction the facet is written against**, and it is reachable
+from the other side too: a corpus configured and read at the integration branch under the fallback
+above is a verdict about the wrong copy, which is why that arm is reported rather than quiet.
+
+⚠️ **A corpus kept somewhere other than the repository is this absence and not a carrier.** A wiki,
+a document store, a tracker's own pages: each is a port rather than a ref read, and
+[§ 3](#the-trackerless-adapter-and-a-kind-with-no-implementation)'s ruling on growing an adapter for
+one measured shape applies. `revisit_when` is where a project records needing one.
+
+⛔ **This key is required of every project, so it invalidates every configuration written before
+it** — [§ 1](#the-surface-is-resolved-beside-the-configuration)'s own case, discharged the way that
+section states and § 38 discharged it one section up: the absent form is stated here and in every
+shipped example in the same change, and the record the change lands with says that configurations
+outside this repository are refused until each writes the key.
 
 ## What the toolkit installs into a project, and what takes it out
 
