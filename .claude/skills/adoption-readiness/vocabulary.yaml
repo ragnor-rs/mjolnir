@@ -140,9 +140,9 @@ carriers:
   design-prd:     { class: beside }     # turn raw sources into a specification (#29)
   # ⚠️ Classified here rather than in the change that shipped it, which is the recurrence the hook
   # block below already names arriving on a skill: the carrier landed on the integration branch
-  # under #269 with no entry, at the cost the head block states.
-  # ⛔ `beside` and not a role: writing a project's configuration carries
-  # no work item, and the loop's role keys above are the legs an item travels.
+  # under #269 with no entry, at the cost the head block states. ⛔ `beside` and not a role:
+  # writing a project's configuration carries no work item, and the loop's role keys above are the
+  # legs an item travels.
   setup:          { class: beside }     # write a project's configuration by asking for it (#269)
 
   # Project-local tooling of the build itself, not carriers of the loop. Each has a work item
@@ -159,12 +159,12 @@ carriers:
 
   # The hook carriers the plugin ships, which no count here states: a number would be wrong by
   # the next one that lands. ⚠️ A hook landing in the plugin is unclassified until it is named
-  # here, at the cost the head block states — so adding one to the
-  # plugin without adding it here reddens this check rather than being silently uncounted. ⛔ It
-  # has happened to every carrier that landed in the plugin before being named here, and no tally
-  # of the occurrences is kept: a count of them goes stale by the next one exactly as a count of
-  # the entries would. What the recurrence argues for needs no number to state it — name a
-  # carrier here in the change that ships it.
+  # here, at the cost the head block states — so adding one to the plugin without adding it here
+  # reddens this check rather than being silently uncounted. ⛔ It has happened to every carrier
+  # that landed in the plugin before being named here, and no tally of the occurrences is kept: a
+  # count of them goes stale by the next one exactly as a count of the entries would. What the
+  # recurrence argues for needs no number to state it — name a carrier here in the change that
+  # ships it.
   check_reply_defers_nothing:   { class: guard }  # holds the reply to leaving no work undone
   boundary:                     { class: guard }  # refuses what may not leave the project, on
                                                   # `PreToolUse` (#90, shipped by #142)
