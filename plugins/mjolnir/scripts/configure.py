@@ -667,6 +667,30 @@ ANSWERED_BY: dict[str, Answer] = {
     "day_log.destination.out_dir": ask(
         "Which directory does that destination write into?",
     ),
+    "day_log.destination.sheet": ask(
+        "Which spreadsheet holds the entries? ⛔ Marked `# private` on the "
+        "surface, so the answer is routed to § 28's own file and never written "
+        "into the tracked configuration.",
+    ),
+    "day_log.destination.tab": ask(
+        "Which tab of it is an entry one row of?",
+    ),
+    # ⚠️ One question per role rather than one about the mapping. The surface
+    # states the three roles and the project supplies a word for each, so a
+    # single question would be one answer a project has to shape itself — and
+    # § 26 makes the sheet's own layout the thing being read, which is three
+    # separate readings off one header row.
+    "day_log.destination.columns.date": ask(
+        "Which header word in that tab is over the column carrying the day? "
+        "⚠️ The sheet's own word, read off its header row — § 26 makes the "
+        "layout the project's rather than this toolkit's.",
+    ),
+    "day_log.destination.columns.hours": ask(
+        "And the word over the column carrying the hours?",
+    ),
+    "day_log.destination.columns.description": ask(
+        "And the word over the column carrying the description?",
+    ),
     "day_log.evidence.chat.kind": ask(
         "Is a chat archive evidence for a day here, and in which form?",
     ),

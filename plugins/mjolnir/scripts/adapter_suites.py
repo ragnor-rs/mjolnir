@@ -14,14 +14,17 @@ runs *this*, which asks the surface which ports there are, asks each port what i
 installed, and runs whatever suite each module exposes -- a new implementation,
 and a new port, are covered the moment they land, with nothing to remember.
 
-⚠️ **Only the tracker half of that is held by a check, and the limit is stated
-rather than left to be discovered.** The contract's own sweep reddens on any
-`tracker.kind` the surface states, in either spelling; the same sweep cannot be
-run for the destination port, whose kinds are ordinary English words -- `file`
-appears in `__file__`, in *a file name*, in half the prose here. ⛔ So what holds
-a store's vocabulary out of the shared procedure is this sentence and the review
-that reads it, not a gate, and a claim to the contrary would be the kind of
-unheld assertion the surface spends its refusals on.
+⚠️ **What a check holds is every kind whose spelling is a *slug*, and the kinds it
+cannot hold are stated rather than left to be discovered.** The contract's own
+sweep reddens on any `tracker.kind` the surface states, in either spelling, and
+on any kind of any other port compounded out of two words -- a name being the one
+spelling nobody writes in prose. ⛔ **A single-word kind of another port is held
+by nothing**: `file` appears in `__file__`, in *a file name*, in half the prose
+here, so what keeps that one store's vocabulary out of the shared procedure is
+this sentence and the review that reads it. ⚠️ **Which is narrower than the limit
+this paragraph used to state** -- it read as the whole destination port being
+unsweepable, which stopped being true the first time that port stated a kind with
+a hyphen in it.
 
 ⚠️ **An implementation with no suite is reported, not failed**, which is a
 decision about what this runner is for rather than about any one implementation:
