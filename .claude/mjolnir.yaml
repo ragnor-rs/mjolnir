@@ -59,6 +59,15 @@ host:
     - workflow: "Adapter suites"
       mirrors: "python3 plugins/mjolnir/scripts/adapter_suites.py"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ What this run holds is the one arm no other suite can reach: § 28's layer resolved for
+    # one client, the shape of a rate the tracked file never held, and that what the carrier
+    # prints carries neither that rate nor the money it produces. ⛔ The projects it assembles a
+    # period over are its own, stood up per arm — nobody is billed for this repository, so the
+    # facet here is `carrier: none` and the suite's fixtures are the only billing projects there
+    # are.
+    - workflow: "Billing carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/billing.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Body sections"
       mirrors: "python3 plugins/mjolnir/scripts/check_body_sections.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -815,3 +824,26 @@ release:
     An adopter is asked to pin a version of this plugin rather than taking the tree — the first
     moment one of the version strings this repository already carries would decide what somebody
     gets, and so the first moment bumping one would be work rather than bookkeeping.
+
+billing:
+  # ⛔ Nobody is billed for this repository's hours, so there is no period to assemble and no set
+  # of roots to assemble one from. ⚠️ The day log here is measured and recorded — `day_log` is a
+  # mapped carrier above and its destination is stated — so the absence is this facet's and not
+  # that one's: the hours exist and no invoice reads them.
+  #
+  # ⛔ Stated rather than omitted, for the reason every absent carrier here is: a project nobody
+  # bills and a project whose roots have not been listed yet read alike otherwise, and the second
+  # would assemble a period from whatever the invocation reached.
+  #
+  # ⚠️ And `private.carrier` above is `none`, so a rate here would have no § 28 layer to be
+  # resolved from. ⛔ Not that a rate would be unstatable: the mark makes the key eligible for that
+  # layer and never obliges it into one, so a repository in this position states the key's shape in
+  # its own tracked file — which is why the sweep over the marks is what holds a concrete value out
+  # of one, rather than the absence of a layer.
+  carrier: none
+  absent_reason: >-
+    Nobody is invoiced for work on this toolkit, so no period is assembled and no project root is
+    read for one. The day is measured and recorded here; nothing converts it to money.
+  revisit_when: >-
+    Work on this toolkit starts being billed to somebody — the first moment one of the day-log
+    entries this repository already writes would decide what appears on an invoice.

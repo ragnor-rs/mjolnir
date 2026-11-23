@@ -2794,6 +2794,40 @@ class Config:
             "changelog_ci_owned": self.get("release.changelog_ci_owned"),
         }
 
+    @property
+    def billing(self) -> dict | None:
+        """§ 37's `billing`, or `None` where this project bills nobody.
+
+        ⚠️ `None` is the project's **stated** absence — no period is assembled
+        here, which is a configuration rather than a gap, and never a statement
+        about whether the day is measured (§ 9's facet) or whether somebody
+        invoices by hand.
+
+        ⛔ **`rates` is handed back as the reader resolved it**, which under
+        § 28's layer means a value this module read out of an untracked file. It
+        is the one value on this surface that is money, and the carrier beside
+        this module is its one reader: nothing here renders it, reports it or
+        writes it anywhere a report goes.
+
+        ⛔ **And its shape is held here, which is the only place it can be.**
+        `_validate_billing` reads the tracked file, so for the arm § 37 actually
+        recommends -- the key named in § 28's list and carried nowhere in the
+        tracked file -- its shape rule is unreachable: that layer checks only
+        that a listed key was answered, never with what. ⚠️ **Measured**: a flat
+        rate answered as a number, a list, or a string each came out of this
+        property as a bare `TypeError` or `ValueError` naming no key, which is
+        the one failure this module's own promise forbids.
+        """
+        if self.get("billing.carrier") != "period":
+            return None
+        rates = self.get("billing.rates")
+        if rates is not None:
+            _rates_shaped(rates)
+        return {
+            "projects": list(self.get("billing.projects") or ()),
+            "rates": dict(rates or {}),
+        }
+
     def live_data_step(self, target: str) -> dict:
         """§ 35's block on one § 33 target, with which answer it is said out loud.
 
@@ -3067,6 +3101,22 @@ class Config:
                 "No executed count is carried (`executed.carrier: none`), so "
                 "what a run executed is **unavailable** here rather than zero, "
                 "and no run is held to a floor: "
+                f"{' '.join(str(reason).split())}"
+            )
+        # § 37, and reported for the reason § 34's is: a role that would have
+        # assembled a period learns that this project bills nobody, rather than
+        # meeting a key that is not there. ⛔ Reported as no period being
+        # assembled and never as no hours -- the hours may well be measured and
+        # recorded here, which is a different facet, and a report conflating the
+        # two would say this project has no day log.
+        if self.get("billing.carrier") == "none":
+            reason = self.get("billing.absent_reason")
+            out.append(
+                "No billing period is assembled (`billing.carrier: none`), so "
+                "the billing role stops with this key named and no project's "
+                "hours are read for an invoice. ⛔ Not a statement about "
+                "whether the day is measured here, which is § 9's facet, nor "
+                "about whether anybody invoices by hand: "
                 f"{' '.join(str(reason).split())}"
             )
         # § 31, and reported for the reason § 15's and § 16's are: a role that
@@ -5098,6 +5148,249 @@ def _validate_release(data: dict, facts: dict) -> None:
                 "(§ 34). Each decides what the role does rather than what it "
                 "reads, so a word read as truthy would move the ask or the "
                 "changelog without anything saying so.",
+            )
+
+
+def _one_root(root: str) -> str:
+    """One key per project for § 37's list, however the root was spelled.
+
+    ⛔ **A lexical comparison is not this rule.** `os.path.normpath` closes the
+    four spellings the first form of the arm above was written for and ⚠️ **three
+    more were measured accepted after it**: a root and a symlink to it, the same
+    root in another case on a case-insensitive filesystem -- which is the one
+    every adopter of this toolkit is on -- and a leading `//`, which POSIX
+    requires `normpath` to preserve. Each is one project read twice and billed
+    twice, which is the arm's own stake.
+
+    ⛔ **So where the root is there, the filesystem answers**: a device and an
+    inode are what *same directory* means, and they are the only test that
+    closes all three at once -- `realpath` closes the symlink and misses the
+    case, and `normcase` is the identity function on this platform.
+
+    ⚠️ **Where the root is not there, the answer is lexical and the leading `//`
+    is collapsed with it.** A path that does not resolve cannot be stat-ed, and
+    refusing it here would be this reader checking that a root exists, which is
+    `load`'s `check_paths` question and not this one. ⛔ **The consequence is
+    stated rather than left to be found**: two spellings of one *absent* root
+    still collide lexically, and two spellings a filesystem would call one
+    directory are caught only on a machine where that directory is present. A
+    configuration is therefore refused on the machine the period would have been
+    assembled on, which is the machine whose answer is the one that matters.
+    """
+    try:
+        at = os.stat(root)
+    except OSError:
+        # ⚠️ Two leading separators and no more: POSIX reserves that spelling and
+        # `normpath` preserves it, so `//a-project` and `/a-project` survive as
+        # two keys unless the leading run is collapsed first. Three or more were
+        # already collapsed, which is why only this one arm was measured open.
+        return os.path.normpath("/" + root.lstrip("/"))
+    return f"{at.st_dev}:{at.st_ino}"
+
+
+def _validate_billing(data: dict) -> None:
+    """§ 37's roots, and the one rule about them no marker can state.
+
+    The carrier's alternation and the requiredness of the keys beside it are
+    marked on the surface and answered before this runs. What is here is the
+    shape of the list and the rule that each entry is written **absolutely** --
+    § 37's prose, for § 26's reason one level down: a relative root resolves
+    against whatever directory the role is standing in, so one configuration
+    would address a different set of stores per call.
+
+    ⛔ **Every arm refuses rather than dropping the entry**, and the direction is
+    the whole of why this facet is read strictly: a root that is skipped is a
+    project whose hours do not reach the invoice, which reads as a period
+    somebody did not work and is the figure they are billed.
+    """
+    if _get(data, "billing.carrier") != "period":
+        # ⛔ The complement is not silence, by § 34's rule for the same shape: a
+        # root list or a rate under a carrier that reads neither is a period
+        # somebody configured and nothing assembles.
+        # ⛔ **A listed key is stated**, which the first form of this arm missed.
+        # § 28 rules that naming a key in `private.keys` is how a project states
+        # it without writing it, and that rule was implemented in the
+        # requiredness direction and not in this one -- so a project that stopped
+        # billing, set the carrier to `none` and left `billing.rates` in its list
+        # was accepted and then reported a rate inside a dead facet. ⚠️ Only
+        # `rates` can take that route, an unmarked key not being listable, so the
+        # hole was exactly on the money key.
+        listed = {
+            str(key).split(".", 1)[1]
+            for key in _absent_as(_get(data, "private.keys"), [])
+            if str(key).startswith("billing.")
+        }
+        stated = [
+            key
+            for key in ("projects", "rates")
+            if key in _absent_as(_get(data, "billing"), {}) or key in listed
+        ]
+        if stated:
+            raise ConfigError(
+                f"billing.{stated[0]}",
+                "is stated while `billing.carrier` is "
+                f"{_get(data, 'billing.carrier')!r}, which reads none of it "
+                "(§ 37). A project that bills nobody states the carrier and its "
+                "reason; one that does states the carrier as `period`.",
+            )
+        return
+
+    projects = _get(data, "billing.projects")
+    if not isinstance(projects, list):
+        raise ConfigError(
+            "billing.projects",
+            f"is {projects!r}; § 37 states the skills roots a period is "
+            "assembled from as a list. A value that is not a list leaves the "
+            "role reading whichever roots it finds in it.",
+        )
+    if not projects:
+        raise ConfigError(
+            "billing.projects",
+            "is empty under `billing.carrier: period`, which is a project that "
+            "bills somebody from no project at all (§ 37). A project that bills "
+            "nobody states `carrier: none` with its reason; an empty list is a "
+            "period that assembles to nothing and reports no hours.",
+        )
+    seen: dict[str, int] = {}
+    for index, root in enumerate(projects):
+        where = f"billing.projects[{index}]"
+        if not isinstance(root, str) or not root.strip():
+            raise ConfigError(
+                where,
+                f"is {root!r}; each entry is one other project's skills root, "
+                "written as a path (§ 37).",
+            )
+        if not root.startswith("/"):
+            raise ConfigError(
+                where,
+                f"is {root!r}, which is relative. § 37 states a root absolutely: "
+                "a relative one resolves against whatever directory the role is "
+                "standing in, so one configuration would assemble a period from "
+                "a different set of projects per call -- and under § 10's "
+                "worktree model that is a different directory per item.",
+            )
+        # ⛔ **Compared as the path resolves and reported as both were written.**
+        # Two spellings of one root are one root: a trailing separator, a doubled
+        # one, a `.` segment and a `sub/..` pair each name the project beside
+        # them, and ⚠️ **all four were measured accepted** by an arm that
+        # compared the strings -- so the project's hours were read twice and
+        # billed twice, which is the stake this arm's own message names.
+        # ⚠️ **The written forms stay in the refusal**, both of them, since what
+        # a reader has to find is the two lines in the file rather than the key
+        # they collided on -- which under the identity below is a device and an
+        # inode and says nothing to anybody.
+        resolved = _one_root(root)
+        if resolved in seen:
+            raise ConfigError(
+                where,
+                f"is {root!r}, which names the same project as "
+                f"billing.projects[{seen[resolved]}], {projects[seen[resolved]]!r} "
+                "(§ 37). A root listed twice is a project whose hours are read "
+                "twice and billed twice, the one arithmetic error on this facet "
+                "nothing downstream can see.",
+            )
+        seen[resolved] = index
+
+    # ⚠️ **Read only once it is there**, which is the one arm on this facet that
+    # does not refuse an absence. § 37 marks the key `# private`, so a project
+    # naming it in § 28's list satisfies its requiredness with the list and
+    # carries it nowhere in the tracked file -- and an unanswered listed key is
+    # refused by § 28, naming the key, rather than by a shape rule here that
+    # would report a mapping problem about a value this file never held.
+    rates = _get(data, "billing.rates")
+    if rates is None:
+        return
+    # ⚠️ **The empty mapping is the shape a migration leaves behind**, and only
+    # where § 28 answers the key. [§ 28](#28) states that a key sitting at null
+    # or at an empty collection in the tracked file states nothing, which is
+    # what a project moving its values out leaves there -- and `rates: {}` is
+    # the literal § 37's own fence prints. ⛔ Refused where nothing answers it,
+    # which is the arm that keeps an invoice from being rendered at no rate.
+    answered_elsewhere = any(
+        str(key) == "billing.rates"
+        for key in _absent_as(_get(data, "private.keys"), [])
+    )
+    if rates == {} and answered_elsewhere:
+        return
+    _rates_shaped(rates)
+
+
+def _rates_shaped(rates) -> None:
+    """§ 37's `rates`, refused by its shape and ⛔ never by quoting its value.
+
+    ⚠️ **The one refusal on this surface that may not render what it refuses.**
+    A rate and a client's name are the two values § 28 holds outside the
+    repository and § 37 states no key for the second at all -- and a refusal
+    goes to stdout, into whatever run or transcript asked the reader. ⛔ So the
+    **type** is named and the value is not: a reader looking for `billing.rates`
+    in their own file needs to be told what shape was wanted, which the type
+    answers, and ⚠️ **the arm fires exactly when the value is real**, a
+    well-formed mapping being the one shape that never reaches it.
+
+    ⛔ **Measured, and the first form of this arm quoted the value**: a flat rate
+    answered as a number came back as `is 250`, and a mapping mis-written as a
+    list came back carrying the client's name beside it.
+    """
+    if not isinstance(rates, dict):
+        raise ConfigError(
+            "billing.rates",
+            f"is a {type(rates).__name__} where § 37 states a mapping from the "
+            "client an invocation names to that client's rate. ⛔ The value is "
+            "not quoted here, and that is the rule rather than an omission: a "
+            "rate and a client's name are § 28's two values and a refusal is "
+            "read wherever the reader ran.",
+        )
+    if not rates:
+        raise ConfigError(
+            "billing.rates",
+            "is an empty mapping, which is a rate nothing answers (§ 37). The "
+            "role that reads it converts hours to money, so the permissive "
+            "reading is an invoice rendered at no rate at all rather than a run "
+            "that stops. ⚠️ Where § 28's list answers this key, the empty "
+            "mapping is the shape a migration leaves behind and is read as that "
+            "instead -- so naming it in `private.keys` is what permits it.",
+        )
+    # ⛔ **Both halves of every entry**, which the first form of this arm read
+    # neither of. § 37 states the key as a mapping *from the client an
+    # invocation names* to that client's rate, and ⚠️ **seven shapes were
+    # measured accepted**: a blank client, a rate written null, blank, as prose,
+    # negative, as a mapping and as a list. The sibling list refuses a
+    # non-string, a blank, a relative path and a duplicate, and this facet's own
+    # docstring says it is read strictly because the permissive reading is
+    # money -- so the money key was the loose one.
+    for client, rate in rates.items():
+        where = "billing.rates"
+        if not isinstance(client, str) or not client.strip():
+            raise ConfigError(
+                where,
+                "names a client that is not written as a word (§ 37). ⛔ The "
+                "value is not quoted here, by this arm's own rule: a client's "
+                "identity is one of § 28's two values.",
+            )
+        if isinstance(rate, bool) or isinstance(rate, (dict, list)) or rate is None:
+            raise ConfigError(
+                where,
+                f"states a rate as a {type(rate).__name__} for one of its "
+                "clients, where § 37 states one rate per client (§ 37). ⛔ "
+                "Neither half is quoted, for the reason above.",
+            )
+        if isinstance(rate, (int, float)) and rate <= 0:
+            raise ConfigError(
+                where,
+                "states a rate that is zero or below for one of its clients "
+                "(§ 37). An invoice rendered at it bills nothing, or bills "
+                "backwards, which is the permissive reading this facet is read "
+                "strictly to refuse.",
+            )
+        if isinstance(rate, str) and not rate.strip():
+            raise ConfigError(
+                where,
+                "states a blank rate for one of its clients (§ 37), which is a "
+                "rate nothing answers written as though it were answered. ⚠️ A "
+                "rate written as a word is **not** refused: this surface states "
+                "no currency, so `120 EUR/h` is a rate a project may mean, and "
+                "the residue is that prose nobody can multiply by reaches the "
+                "role rather than the reader.",
             )
 
 
@@ -7247,6 +7540,10 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # carrier's alternation and the keys beside it are the surface's markers, and
     # what a member of the list has to be is no marker's to reach.
     _validate_release(data, facts)
+    # § 37's roots, in the same position and for the same reason: that a root is
+    # written absolutely is a rule the surface states in prose, there being no
+    # marker for it, and it is the one arm whose permissive reading is money.
+    _validate_billing(data)
 
     readiness = _absent_as(_get(data, "readiness"), [])
     if not isinstance(readiness, list):
@@ -8781,6 +9078,7 @@ def _examples() -> list[str]:
 # below, and a marker added fails it until somebody writes the key down here.
 MARKED_REQUIRED = [
     "already_run.never_guard",
+    "billing.carrier",
     "body_sections",
     "branch_model.exclusive_resources",
     "branch_model.kind",
@@ -8856,6 +9154,12 @@ PER_ROOT_BLOCKS = ["branch_model", "code_root_runs_nothing", "command_roots", "h
 RELATIVELY_DECLARED = ("work_item.type_branch_prefix.bug", "bugfix")
 
 MARKED_REQUIRED_WHEN = [
+    # § 37's two, each meaningless where the project bills nobody. ⚠️ `rates` is
+    # also `# private`, which is the pairing `day_log.evidence.chat.path` below
+    # already demonstrates: the condition fires, and what satisfies it is § 28's
+    # list rather than a value in the tracked file.
+    ("billing.projects", "billing.carrier", "period"),
+    ("billing.rates", "billing.carrier", "period"),
     # § 10's one, meaningless under the mode that creates no tree: with nothing
     # ever pruned there is no removal for an ignored path to be lost to. ⚠️ Its
     # sibling `tree_dir` is **not** here, carrying the same condition in prose
@@ -9040,9 +9344,22 @@ MARKED_PRIVATE = [
     f"{CHAT_BLOCK}.mixed",
     f"{CHAT_BLOCK}.path",
     f"{CHAT_BLOCK}.patterns",
+    # ⛔ **Out of order deliberately, and the position is load-bearing.** The
+    # layer's own suite below plants a *string* into `MARKED_PRIVATE[0]` and
+    # `[1]`, so the first two entries have to be keys a string is a legitimate
+    # value for. § 37 states this one as a **mapping** from a client to a rate,
+    # and the reader refuses a string there -- which would have turned every
+    # plant in that suite red while reporting a rate's shape.
+    #
+    # § 37's, and the one marked key that is money. ⚠️ Its eligibility is argued
+    # from this list's own bound: § 26 rules that hours, rates and a client's
+    # identity reach no destination key *because no key of that port is marked*,
+    # so a rate becoming statable at all is this entry and nothing else.
+    "billing.rates",
 ]
 
 MARKED_ABSENT_CAPABLE = [
+    "billing",
     "context.artifacts",
     "e2e_register",
     "executed",
@@ -12118,6 +12435,132 @@ def self_test() -> int:
         check(f"{label} is refused, with the key named", broken == key,
               f"reported {broken!r}")
 
+    # ⛔ § 37 against § 28's list, both directions. ⚠️ The list is how a project
+    # states a key without writing it, and this facet read that rule in one
+    # direction only -- so the arm below is the green side and the one under it
+    # is the refusal the first form of the complement arm missed.
+    migrating = _a_valid_example()
+    migrating["billing"] = _a_billing_of(rates={})
+    migrating["private"] = {
+        "carrier": PRIVATE_FILE,
+        "source": "private.yaml",
+        "keys": ["billing.rates"],
+    }
+    broken = _refused(migrating)
+    check(
+        "the empty mapping a migration leaves behind is read as that where "
+        "§ 28's list answers the key",
+        broken is None,
+        f"refused {broken!r}",
+    )
+
+    dead = _a_valid_example()
+    dead["billing"] = {"carrier": "none", "absent_reason": "nobody is billed"}
+    dead["private"] = {
+        "carrier": PRIVATE_FILE,
+        "source": "private.yaml",
+        "keys": ["billing.rates"],
+    }
+    broken = _refused(dead)
+    check(
+        "a rate left in § 28's list beside a carrier that reads none is refused",
+        broken == "billing.rates",
+        f"reported {broken!r}",
+    )
+
+    # ⛔ § 37's three arms whose key a sibling arm also reports, asserted on what
+    # the refusal **said**. ⚠️ Each was measured passing with the clause it names
+    # deleted, which is a plant that cannot fail.
+    def _billing(**facet):
+        tree = _a_valid_example()
+        tree["billing"] = _a_billing_of(**facet)
+        return tree
+
+    said = _said(_billing(projects=["   "]))
+    check("a root written blank is refused as blank rather than as relative",
+          "blank" in said or "written as a path" in said,
+          f"said {said!r}")
+
+    said = _said(_billing(projects=["../a-sibling"]))
+    check("and a relative root is refused as relative",
+          "relative" in said, f"said {said!r}")
+
+    said = _said(_billing(projects=["/a-project", "/a-project/"]))
+    check("a duplicate root names both written forms, not the key they collided on",
+          "'/a-project'" in said and "'/a-project/'" in said,
+          f"said {said!r}")
+
+    # ⛔ And the one refusal on this facet that may not render what it refuses.
+    # ⚠️ Both shapes are ones that **do** refuse, since an arm that accepts
+    # would make this assertion pass by saying nothing at all.
+    for label, planted in (
+        ("a rate written where a mapping belongs",
+         _billing(rates="acme-industries-250-an-hour")),
+        ("an entry whose rate is a container",
+         _billing(rates={"acme-industries": ["250-an-hour"]})),
+    ):
+        said = _said(planted)
+        check(f"{label} is refused at all", said.startswith("billing.rates"),
+              f"said {said!r}")
+        check(f"and {label} is refused without quoting the rate or the client",
+              "250-an-hour" not in said and "acme-industries" not in said,
+              f"said {said!r}")
+
+    # ⛔ § 37's two spellings a lexical comparison cannot reach, planted against
+    # real directories because that is the only thing that distinguishes them.
+    # ⚠️ **Not plantable in the list above**, whose trees are pure data: a
+    # symlink and a case-insensitive filesystem are facts about a disk, and the
+    # arm they hold is the one whose permissive reading bills a project twice.
+    with tempfile.TemporaryDirectory() as billing_root:
+        real = os.path.join(billing_root, "a-project")
+        other = os.path.join(billing_root, "a-second-project")
+        link = os.path.join(billing_root, "a-link")
+        os.mkdir(real)
+        os.mkdir(other)
+        os.symlink(real, link)
+
+        # ⚠️ The tree is built here rather than through the list's own `at`
+        # helper, which is local to `_planted_violations` and is a different
+        # name in this scope.
+        def _roots(*entries):
+            tree = _a_valid_example()
+            tree["billing"] = _a_billing_of(projects=list(entries))
+            return tree
+
+        broken = _refused(_roots(real, link))
+        check("a root and a symlink to it are one root, and the second is refused",
+              broken == "billing.projects[1]", f"reported {broken!r}")
+
+        # ⚠️ Asserted against what the filesystem says rather than against the
+        # platform: the same two spellings are one directory where case is
+        # folded and two where it is not, so the wanted answer is whichever
+        # `samefile` gives. ⛔ Both sides are an assertion -- a reader that
+        # case-folded unconditionally would redden the second.
+        shouted = os.path.join(billing_root, "A-PROJECT")
+        folded = os.path.exists(shouted) and os.path.samefile(real, shouted)
+        broken = _refused(_roots(real, shouted))
+        check(
+            "the same root in another case is refused exactly where this "
+            "filesystem calls the two one directory",
+            (broken == "billing.projects[1]") if folded else (broken is None),
+            f"reported {broken!r} with samefile {folded!r}",
+        )
+
+        # ⛔ The green side, and the reason the identity above is not simply
+        # *refuse more*: two roots that are two projects stay two roots. Verified
+        # by inverting it -- keyed on the parent directory, this reddens.
+        broken = _refused(_roots(real, other))
+        check("two roots that are two projects are accepted",
+              broken is None, f"refused {broken!r}")
+
+        # ⚠️ And a root that is not there at all still answers lexically, which
+        # is what keeps this arm out of `check_paths`' question: the pair below
+        # resolves nowhere and is still one root.
+        broken = _refused(_roots("/a-project-that-is-not-there",
+                                 "//a-project-that-is-not-there"))
+        check("two spellings of one absent root are still one root",
+              broken == "billing.projects[1]", f"reported {broken!r}")
+
     # ⛔ The green side of the plants above, which §§ 15 and 16 make the
     # whole of the rule rather than an exception to it: the rule is about what an
     # entry's command answers about, so the same script under its asserting flag
@@ -13960,6 +14403,91 @@ def _planted_violations():
         ("the changelog's ownership written as a word rather than a boolean",
          "release.changelog_ci_owned",
          at("release", _a_release_of(changelog_ci_owned="yes"))),
+        # § 37, and the arms no marker reaches. ⛔ Every one of them fails in the
+        # same direction if it is not held: a root that is dropped, read twice or
+        # resolved against the wrong directory changes what somebody is billed,
+        # and nothing downstream of this reader can see which of those happened.
+        #
+        # ⚠️ The complement first, which is § 34's own arm one facet over: a key
+        # stated beside a carrier that reads none is a period somebody
+        # configured and nothing assembles.
+        ("a root list stated beside a carrier that reads none", "billing.projects",
+         at("billing", {"carrier": "none", "absent_reason": "nobody is billed",
+                        "projects": ["/a-project"]})),
+        ("a rate stated beside a carrier that reads none", "billing.rates",
+         at("billing", {"carrier": "none", "absent_reason": "nobody is billed",
+                        "rates": {"a-client": 1}})),
+        ("a root list that is not a list", "billing.projects",
+         at("billing", _a_billing_of(projects="/a-project"))),
+        # ⚠️ The empty list is its own arm and not a spelling of the one above,
+        # which is § 34's reason for the same pair: `carrier: none` is how § 37
+        # says nobody is billed, so `[]` is a project that bills somebody from no
+        # project at all and must not read as the stated absence.
+        ("a root list naming no project", "billing.projects",
+         at("billing", _a_billing_of(projects=[]))),
+        ("a root that is not a path", "billing.projects[0]",
+         at("billing", _a_billing_of(projects=[{"root": "/a-project"}]))),
+        ("a root written blank", "billing.projects[0]",
+         at("billing", _a_billing_of(projects=["   "]))),
+        # ⛔ The arm § 37 states in prose because no marker can: a relative root
+        # resolves against whatever directory the role stands in, and under § 10
+        # that is a different tree per item -- so one configuration would
+        # assemble a period from a different set of projects per call.
+        ("a root written relatively", "billing.projects[0]",
+         at("billing", _a_billing_of(projects=["../a-sibling-project"]))),
+        ("a root the list already names", "billing.projects[1]",
+         at("billing", _a_billing_of(projects=["/a-project", "/a-project"]))),
+        # ⛔ One plant per spelling, because the first form of the arm compared
+        # the strings and all four of these were measured **accepted** -- the
+        # same project read twice and billed twice. ⚠️ A single plant would
+        # assert the comparison is normalised at all and not that it reaches the
+        # shapes a person actually writes.
+        ("a root the list already names, under a trailing separator",
+         "billing.projects[1]",
+         at("billing", _a_billing_of(projects=["/a-project", "/a-project/"]))),
+        ("a root the list already names, under a doubled separator",
+         "billing.projects[1]",
+         at("billing", _a_billing_of(projects=["/a-project", "/a-project//"]))),
+        ("a root the list already names, under a dot segment",
+         "billing.projects[1]",
+         at("billing", _a_billing_of(projects=["/a-project", "/a-project/."]))),
+        ("a root the list already names, under a parent segment resolving back",
+         "billing.projects[1]",
+         at("billing",
+            _a_billing_of(projects=["/a-project", "/a-project/sub/.."]))),
+        # ⚠️ POSIX reserves exactly two leading separators and `normpath` is
+        # required to preserve them, so this spelling survived the fix the four
+        # above were written for and was measured **accepted**. Three or more
+        # were already collapsed, which is why this is one plant and not two.
+        ("a root the list already names, under a leading double separator",
+         "billing.projects[1]",
+         at("billing", _a_billing_of(projects=["/a-project", "//a-project"]))),
+        ("a rate that is not a mapping of client to rate", "billing.rates",
+         at("billing", _a_billing_of(rates="an-hourly-rate"))),
+        ("a rate mapping naming no client", "billing.rates",
+         at("billing", _a_billing_of(rates={}))),
+        # ⛔ Both halves of an entry, each its own arm. ⚠️ Every one of these was
+        # measured **accepted** while the sibling root list refused a non-string,
+        # a blank, a relative path and a duplicate -- so the key whose permissive
+        # reading is money was the loose one.
+        ("a rate mapping naming a client that is not a word", "billing.rates",
+         at("billing", _a_billing_of(rates={"   ": 100}))),
+        ("a rate written null for one client", "billing.rates",
+         at("billing", _a_billing_of(rates={"a-client": None}))),
+        ("a rate written blank for one client", "billing.rates",
+         at("billing", _a_billing_of(rates={"a-client": "  "}))),
+        ("a rate written as a container for one client", "billing.rates",
+         at("billing", _a_billing_of(rates={"a-client": [1]}))),
+        ("a rate written as a mapping for one client", "billing.rates",
+         at("billing", _a_billing_of(rates={"a-client": {"per-hour": 1}}))),
+        ("a rate written at zero", "billing.rates",
+         at("billing", _a_billing_of(rates={"a-client": 0}))),
+        ("a rate written below zero", "billing.rates",
+         at("billing", _a_billing_of(rates={"a-client": -50}))),
+        # ⚠️ A boolean is its own arm because `bool` is an `int` here, so a
+        # `true` would otherwise reach the sign test and pass it.
+        ("a rate written as a flag", "billing.rates",
+         at("billing", _a_billing_of(rates={"a-client": True}))),
         ("a readiness list that is not a list", "readiness", at("readiness", "all")),
         ("a readiness entry that is not a block", "readiness[0]", at("readiness", ["x"])),
         ("a readiness entry with no check", "readiness[0].check",
@@ -16314,6 +16842,29 @@ def _a_release_of(**overrides) -> dict:
     return {key: value for key, value in facet.items() if value is not _ABSENT}
 
 
+def _a_billing_of(**overrides) -> dict:
+    """§ 37's smallest facet that assembles a period, to break one key of at a time.
+
+    ⛔ The carrier is `period` in every arm that uses this, for
+    `_a_release_of`'s reason: a plant that left it `none` would be refused by
+    the stated-beside-an-absent-carrier arm instead -- a different branch under
+    a different key, green while asserting nothing about the one it was aimed
+    at.
+
+    ⛔ **And the root is absolute here**, which makes the fixture itself the
+    green side of the one rule § 37 states in prose: the relative-root arm
+    overrides this value, so that plant reddens on the thing it names rather
+    than on a fixture that was never valid.
+    """
+    facet = {
+        "carrier": "period",
+        "projects": ["/a-project"],
+        "rates": {"a-client": 1},
+    }
+    facet.update(overrides)
+    return {key: value for key, value in facet.items() if value is not _ABSENT}
+
+
 # The sentinel `_a_deploy_target` reads as *leave this key out*, which `None`
 # cannot be: `None` is itself a value several arms refuse, and a fixture that
 # used it would plant the wrong violation under the right key.
@@ -16399,6 +16950,25 @@ def _with(data: dict, path: str, value) -> dict:
         node = node.setdefault(part, {})
     node[parts[-1]] = value
     return data
+
+
+def _said(data: dict) -> str:
+    """What a refusal **said**, for the arms that share a key with a sibling.
+
+    ⛔ **`_refused` answers the key and two arms can report the same one**, so a
+    plant asserting the key alone passes with the arm it names deleted. ⚠️
+    **Measured on § 37's blank root**: every whitespace-only string also fails
+    the absoluteness test, so that plant stayed green with its own clause gone
+    -- and the duplicate arm's two stated message properties, the written form
+    of both entries, were asserted by nothing at all.
+    """
+    try:
+        with open(SURFACE, encoding="utf-8") as handle:
+            facts = surface_facts(handle.read())
+        _resolve(data, EXAMPLES, facts, False)
+    except ConfigError as error:
+        return str(error)
+    return ""
 
 
 def _refused(data: dict, *, check_paths: bool = False, facts: dict | None = None) -> str | None:

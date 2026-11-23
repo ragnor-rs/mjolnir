@@ -537,3 +537,23 @@ release:
       replace: 'version = "{version}"'
   publishes_packages: false
   changelog_ci_owned: true
+
+billing:
+  # § 37's stated arm, written the way a project with no § 28 layer has to write it: `private`
+  # above is `none` here, so `rates` is stated in this tracked file as the shape it takes rather
+  # than resolved from outside it. ⚠️ The pairing with `evidence.chat.path` above is the same arm
+  # twice — a `# private` key is *eligible* for that layer and never obliged into it, and a
+  # project whose values are reviewable where they are writes them here.
+  #
+  # ⛔ Two roots, each absolute, each a project's **skills root** — the first of them this
+  # project's own, which § 37 states the list carries like any other. What is read out of each is
+  # that project's own § 26 destination port, so this list says which projects a period spans and
+  # nothing about where their hours are kept.
+  carrier: period
+  projects:
+    - "/<the absolute path to this project's own skills root>"
+    - "/<the absolute path to a second project's skills root>"
+  # Client to rate, and the client an invocation names is the key. ⚠️ Both halves are placeholders
+  # here for the reason every value in these files is: example data, not any project's facts.
+  rates:
+    "<the client an invocation names>": "<that client's hourly rate>"

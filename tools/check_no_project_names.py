@@ -1528,16 +1528,66 @@ def check_no_private_value_is_committed(tree: Tree) -> list[str]:
             continue  # reported by `configuration_values`, which parses the same file
         for keys, value in _leaves(document):
             dotted = ".".join(keys)
-            if dotted not in marked or not isinstance(value, str):
+            # ⛔ **A marked key covers what is under it, not only what is at it.**
+            # `_leaves` descends into a mapping, so a value under a
+            # mapping-shaped marked key arrives as `the.key.<its own key>` and
+            # an equality test never matches it. ⚠️ **Measured on the first
+            # mapping-shaped mark the surface carries**: a real client and a
+            # real rate committed in a tracked example went **uncaught**, in
+            # both shapes, while the same class under a string-shaped key was
+            # caught -- so the one gate between a committed file and § 37's two
+            # values held every key but the one that is money.
+            at = next(
+                (".".join(keys[:n]) for n in range(len(keys), 0, -1)
+                 if ".".join(keys[:n]) in marked),
+                None,
+            )
+            if at is None:
                 continue
-            value = value.strip()
-            if not value or PLACEHOLDER.match(value):
+            # ⚠️ **A number is a value and cannot be a stand-in.** The
+            # exemption below is the placeholder's own form, which is a string,
+            # so a rate answered as `175` passed the sweep on the type test
+            # alone even where the path matched. ⛔ A boolean is not money and
+            # is excluded by name: `bool` is an `int` in this language, and
+            # `chat.mixed` is marked.
+            if isinstance(value, bool) or not isinstance(value, (str, int, float)):
                 continue
+            shown = str(value).strip()
+            if not shown or (isinstance(value, str) and PLACEHOLDER.match(shown)):
+                continue
+            under = dotted if at == dotted else f"{dotted}`, under the marked `{at}"
             problems.append(
-                f"{path}: carries `{value}` under `{dotted}`, which the surface marks "
+                f"{path}: carries `{shown}` under `{under}`, which the surface marks "
                 "`# private`. A tracked configuration states the key's shape and the "
                 "value is resolved through `private.source` (schema § 28)."
             )
+
+        # ⛔ **Under a marked mapping, a key is as much the value as what sits
+        # under it.** § 37 states `rates` as a mapping *from the client an
+        # invocation names* to a rate, and a client's identity is one of the two
+        # values that facet exists to keep out of a tracked file -- so a real
+        # client beside a stand-in rate is the half-stated case, and the
+        # exemption above would pass it on the rate alone. ⚠️ **The setup
+        # router already reads both halves** and said so in its own comment;
+        # this sweep read one, which is the asymmetry rather than a second rule.
+        for key in sorted(marked):
+            node = document
+            for part in key.split("."):
+                node = node.get(part) if isinstance(node, dict) else None
+            if not isinstance(node, dict):
+                continue
+            for named in node:
+                if not isinstance(named, str):
+                    continue
+                shown = named.strip()
+                if not shown or PLACEHOLDER.match(shown):
+                    continue
+                problems.append(
+                    f"{path}: names `{shown}` as a key under `{key}`, which the surface "
+                    "marks `# private`. Both halves of an entry there are the value — a "
+                    "client's identity as much as the rate beside it — and both are "
+                    "resolved through `private.source` (schema § 28)."
+                )
     return problems
 
 
@@ -2158,15 +2208,129 @@ def _plant_a_private_value_in_an_example(tree: Tree) -> Tree:
     return tree
 
 
+def _a_private_mapping_key(tree: Tree) -> str | None:
+    """The marked key the surface states as a **mapping**, read off the fences.
+
+    ⛔ Read rather than written down, for `_a_private_key`'s reason one shape
+    over: the two plants below are about the path a *mapping* takes through the
+    sweep, and a hardcoded key would go on reddening after the mark moved.
+
+    ⚠️ **The shape is the fence's own `{}`**, which is what distinguishes this
+    class from every other mark: the rest are a scalar or a list, and the sweep
+    read both of those and not this one.
+    """
+    marked = reader.surface_facts(tree.text.get(SURFACE, ""))["private"]
+    for line in tree.text.get(SURFACE, "").splitlines():
+        body = line.split("#", 1)[0]
+        if ": {}" not in body:
+            continue
+        leaf = body.strip().split(":", 1)[0].strip()
+        for key in sorted(marked):
+            if key.rsplit(".", 1)[-1] == leaf:
+                return key
+    return None
+
+
+def _a_planted_rate(tree: Tree, rate: str) -> Tree:
+    """A concrete rate under the marked key whose shape is a mapping.
+
+    ⛔ **The arm `_leaves` walks past.** A value under a mapping-shaped mark
+    arrives as `the.key.<its own key>`, so an equality test against the marked
+    set never sees it — and ⚠️ **both shapes of it were measured uncaught** in a
+    tracked example while the same class under a scalar mark was caught.
+
+    ⛔ **The client is a stand-in here, and that is what isolates the arm.**
+    ⚠️ **Measured on the first form of these plants**: written with a concrete
+    client, both of them went on reddening with the mapping arm disabled,
+    because the key half below caught them instead — two no-op plants
+    certifying the arm they were written for.
+    """
+    key = _a_private_mapping_key(tree)
+    target = next(iter(sorted(p for p in tree.text if p.startswith(EXAMPLES))), None)
+    if key is None or target is None:
+        return tree
+    parts = key.split(".")
+    block = "".join(f"{'  ' * depth}{part}:\n" for depth, part in enumerate(parts))
+    tree.text[target] += (
+        f"\n{block}{'  ' * len(parts)}\"<the client an invocation names>\": {rate}\n"
+    )
+    return tree
+
+
+def _plant_a_private_rate_written_as_a_string(tree: Tree) -> Tree:
+    """A concrete rate under a mapping-shaped mark, as a string."""
+    return _a_planted_rate(tree, '"175/hr"')
+
+
+def _plant_a_private_rate_written_as_a_number(tree: Tree) -> Tree:
+    """The same, as a number — the shape a rate is most naturally written in.
+
+    ⛔ **Its own arm, because the exemption cannot describe it.** A placeholder
+    is a string by construction, so a value that is not one was skipped on the
+    type test alone even where the path matched.
+    """
+    return _a_planted_rate(tree, "175")
+
+
+def _plant_a_private_key_naming_a_client(tree: Tree) -> Tree:
+    """A concrete **key** under the same mark, its value left a stand-in.
+
+    ⛔ **Both halves of an entry there are the value**, which is § 37's own
+    sentence about a client's identity: the half-stated case is a real client
+    beside a placeholder rate, and an exemption reading the value alone passes
+    it. ⚠️ The setup role's router already read both halves; this sweep read
+    one, and that asymmetry is what this plant holds.
+    """
+    key = _a_private_mapping_key(tree)
+    target = next(iter(sorted(p for p in tree.text if p.startswith(EXAMPLES))), None)
+    if key is None or target is None:
+        return tree
+    parts = key.split(".")
+    block = "".join(f"{'  ' * depth}{part}:\n" for depth, part in enumerate(parts))
+    tree.text[target] += (
+        f"\n{block}{'  ' * len(parts)}a-planted-client: \"<that client's rate>\"\n"
+    )
+    return tree
+
+
 def _plant_a_surface_marking_nothing_private(tree: Tree) -> Tree:
     """A surface with the private marks stripped off every key that carries one.
 
     ⛔ What this asserts is that the class is read **from the marks**: a sweep
     carrying its own list of eligible keys would not notice, and would go on
     reporting green about a surface that no longer names the class at all.
+
+    ⛔ **The clause is dropped from among its siblings and not off the end of the
+    line**, which is the surface's own grammar: several markers on one line are
+    separated by `;` **in any order**, so a mark sitting before a
+    `required_when` is as much a mark as one sitting last. ⚠️ **Measured, and the
+    first form of this plant read the convention instead**: it anchored on the
+    end of the line, and the first key marked `# private; required_when: …` left
+    one mark standing -- so the class stayed readable, this plant stayed green,
+    and a plant that cannot fail asserts nothing.
+
+    ⛔ **And only inside a fence**, which is where a mark can be. ⚠️ **Measured:
+    the first form of the sibling-split rewrite took the first `#` on every line
+    of the document**, so every one of the 170 markdown headings became
+    `# # Heading` and every in-document anchor gained a space -- 780 lines
+    changed to reach the 7 that carry a mark. It reddened on the thing it names
+    even so, because the surface's reader looks at fences and never at a
+    heading; ⛔ **what it cost was the claim that it reddens *only* for that
+    reason**, which is the whole of what a plant is for.
     """
-    body = tree.text.get(SURFACE, "")
-    tree.text[SURFACE] = re.sub(r";?\s*#?\s*\bprivate\b(?=\s*$)", "", body, flags=re.M)
+    out = []
+    in_fence = False
+    for line in tree.text.get(SURFACE, "").splitlines():
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+            out.append(line)
+            continue
+        body, hash_, comment = line.partition("#")
+        if in_fence and hash_:
+            kept = [c.strip() for c in comment.split(";") if c.strip() != "private"]
+            line = f"{body}# {'; '.join(kept)}" if kept else body.rstrip()
+        out.append(line)
+    tree.text[SURFACE] = "\n".join(out) + "\n"
     return tree
 
 
@@ -2325,6 +2489,14 @@ VIOLATIONS = [
      _plant_a_private_value_in_the_own_config),
     ("no private value is committed", "a concrete value under a private key in an example",
      _plant_a_private_value_in_an_example),
+    ("no private value is committed",
+     "a concrete rate under a mapping-shaped private key, written as a string",
+     _plant_a_private_rate_written_as_a_string),
+    ("no private value is committed",
+     "a concrete rate under that same mark, written as a number",
+     _plant_a_private_rate_written_as_a_number),
+    ("no private value is committed", "a concrete client as a key under that same mark",
+     _plant_a_private_key_naming_a_client),
     ("no private value is committed", "a surface whose private marks cannot be read",
      _plant_a_surface_publishing_nothing),
     ("no private value is committed", "a surface that marks no private key",
