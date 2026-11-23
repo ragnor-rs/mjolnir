@@ -162,6 +162,7 @@ CLOSED_BY = "closed_by"
 CURRENT = "current"
 GROUPING_ITEMS = "grouping_items"
 MARK_RELEASED = "mark_grouping_released"
+CREATE_GROUPING = "create_grouping"
 
 # The operation a writer refusal is reported against where the caller named none.
 # ⛔ § 4.2's guard is shared by three directions now -- the advance, § 32's step
@@ -1436,6 +1437,32 @@ class Port:
         block = self.config.grouping(grouping)
         self._valued(block, args, GROUPING_ITEMS)
         outcome = self.invoke(GROUPING_ITEMS, *args, grouping=block, **kwargs)
+        outcome.grouping = block.get("name")
+        return outcome
+
+    def create_in(self, grouping: str | None = None, *args, **kwargs) -> Outcome:
+        """One of § 4.8's groupings brought into existence (§ 39).
+
+        ⛔ **A method rather than a bare `invoke`, for `items_in`'s reason**: what
+        it resolves is the *block*, so an implementation is handed where the
+        grouping is held rather than re-reading § 4.8 for itself -- and a caller
+        that assembled the block would be the second reader of that facet.
+
+        ⛔ **No writer is consulted, and that is § 4.8's own division rather than
+        an omission.** `closed_by` says who may *close* a grouping, which is a
+        statement about a published set; nothing on that facet says who may bring
+        one into existence, and the surface states the create as the ordinary act
+        of the role whose record it is (§ 39). ⚠️ A project wanting that act held
+        to a writer is a key § 4.8 would have to grow, not a guard to be invented
+        here.
+
+        ⛔ **A project planning in no grouping raises**, exactly as the two above
+        do and for the same reason: there is no grouping for the ask to be about.
+        """
+        self._stated(CREATE_GROUPING)
+        block = self.config.grouping(grouping)
+        self._valued(block, args, CREATE_GROUPING)
+        outcome = self.invoke(CREATE_GROUPING, *args, grouping=block, **kwargs)
         outcome.grouping = block.get("name")
         return outcome
 

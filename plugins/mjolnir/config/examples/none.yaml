@@ -207,6 +207,13 @@ ordering:
   absent_reason: >-
     No tracker is configured, so there is no backlog to order and nothing that could print a
     takeable item.
+  record:
+    # § 39, absent for the reason above it: an order of work is an order of items, and there are
+    # no items here.
+    carrier: none
+    absent_reason: >-
+      No tracker is configured, so there is no set of items an order could be kept over.
+    revisit_when: A tracker is configured.
   revisit_when: A tracker is configured.
 
 people:

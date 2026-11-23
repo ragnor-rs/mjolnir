@@ -1750,6 +1750,30 @@ def _grouping_facet(data: dict, facts: dict) -> dict[str, dict]:
                 f"is {named!r}, which `{GROUPING_KEY}` does not carry — it carries "
                 f"{', '.join(repr(k) for k in sorted(carried))} (§ 33, § 4.8).",
             )
+
+    # ⛔ § 39's record read against this facet, and read **here** for the reason
+    # § 33's half above is: under the collection form the names it may hold sit
+    # one level deeper than any absolute path in `validate` reaches, and this
+    # facet's own refusals have to come first -- a project with a malformed
+    # grouping is told about its grouping rather than about its ordering.
+    # ⚠️ `carried` and not `groupings`: a grouping carried by nothing is one the
+    # project has told this surface it does not have, and a membership test over
+    # the names alone would admit an order kept in it.
+    if _get(data, "ordering.record.carrier") == "grouping":
+        named = _get(data, "ordering.record.grouping")
+        if named not in carried:
+            raise ConfigError(
+                "ordering.record.grouping",
+                f"is {named!r}, and the groupings `{GROUPING_KEY}` carries here "
+                + (
+                    "are " + ", ".join(repr(one) for one in sorted(carried))
+                    if carried else
+                    "are none at all"
+                )
+                + ". The order of work is kept in a grouping this project states, "
+                "so a name that facet does not answer to is an order kept in "
+                "something no `grouping_items` can read (§ 39, § 4.8).",
+            )
     return carried
 
 
@@ -3210,6 +3234,21 @@ class Config:
                 "invoked with no item asks for one by number rather than "
                 f"choosing: {' '.join(str(reason).split())}"
             )
+        # § 39, and a different statement from the one above it rather than its
+        # second half: that key says how an order is **read** and this says where
+        # it is **kept**, so a project may carry one and not the other -- which is
+        # the pair the shipped Trello example is written on. ⛔ Reported as a
+        # record this toolkit cannot read or write, never as a project with no
+        # order of work: the two read identically from here, and the project's own
+        # reason is what tells them apart.
+        if self.get("ordering.record.carrier") == "none":
+            reason = self.get("ordering.record.absent_reason")
+            out.append(
+                "No ordering record is kept (`ordering.record.carrier: none`), so "
+                "the closing-out role has nothing to bring the backlog and the "
+                "relations into agreement with, and this project maps no such "
+                f"role: {' '.join(str(reason).split())}"
+            )
         # § 27, and reported for the reason § 15's is: a role that would have
         # asked who holds a role learns that the project keeps no map, rather
         # than meeting a block that is not there. ⛔ And it is reported as
@@ -3726,6 +3765,14 @@ GROUPING_REF_CHECK = "grouping_ref_exists"
 GROUPING_ENTRY_KEY = "grouping"
 FIELD_ENTRY_KEY = "field"
 FIELD_PRESENT_CHECK = "field_present"
+
+# § 39's role key in `carriers`. ⛔ The only role key this module names, and it is
+# named because this is the one role whose whole subject is a facet the reader
+# resolves -- every other role's key is the project's to write and nothing here
+# compares one. ⚠️ The facet's own paths are written out where they are read, the
+# way every other block's are in this module: a constant for one of them and
+# literals for the rest would be the mixed spelling a constant exists against.
+CLOSE_OUT_ROLE = "close_out"
 
 # § 30's block and the three keys under it. ⛔ The two facets a class is built out
 # of are named here because a class entry's keys are **not** walked off the
@@ -7704,6 +7751,34 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
             "rather than report one it could not read (§ 12).",
         )
 
+    # § 39. The two rules a marker cannot reach, each carrying an argument a
+    # marker's message has nowhere to put -- the division § The file itself draws
+    # for §§ 10, 11 and 12 and the shape § 25 already has between a carrier and
+    # the third that writes it.
+    # ⛔ One direction only, and the other is legitimate: a project may keep this
+    # record by hand and map no role, which is § The loop's absent-leg case. What
+    # is refused is a role whose whole subject is the record, mapped against a
+    # project stating there is none -- a role that will compose one.
+    #
+    # ⚠️ The record's *other* rule -- that a `grouping` carrier names a grouping
+    # § 4.8 actually carries -- is **not** here, and the position is the rule:
+    # under the collection form the keys it reads sit one level deeper than any
+    # absolute path in this function reaches, and § 4.8's own refusals have to
+    # come first or a project with a malformed grouping is told about its ordering
+    # instead. It is `_grouping_facet`'s, for that facet's own stated reason.
+    if _get(data, "ordering.record.carrier") == "none" and CLOSE_OUT_ROLE in _absent_as(
+        _get(data, "carriers"), {}
+    ):
+        raise ConfigError(
+            "ordering.record.carrier",
+            f"is `none` while `carriers.{CLOSE_OUT_ROLE}` maps the role whose "
+            "whole subject is that record (§ 39). The two are one statement made "
+            "twice: either the project keeps an order of work somewhere this "
+            "toolkit can read and write, or it maps no role to keep it. "
+            "⚠️ The other direction is legitimate -- a record kept by hand with no "
+            "role mapped is § The loop's absent-leg case.",
+        )
+
     # § 15. The two keys of this facet whose *shape* the comparisons walk, held
     # here for the reason `environment.inherits` is: requiredness is marked on
     # the surface and answers whether the key is written, never what it is.
@@ -9510,6 +9585,7 @@ MARKED_REQUIRED = [
     "loop_exempt.classes",
     "memory.carrier",
     "ordering.carrier",
+    "ordering.record.carrier",
     "people.carrier",
     f"{PRIVATE_KEY}.carrier",
     "readiness",
@@ -9605,6 +9681,16 @@ MARKED_REQUIRED_WHEN = [
     ("memory.store", "memory.carrier", "path"),
     ("memory.write_from", "memory.carrier", "derived"),
     ("memory.write_from", "memory.carrier", "path"),
+    # § 39's three. ⚠️ `dir` is two entries for one key, which is what the
+    # marker's own keying is for: the baseline needs a place to stand under
+    # either carrier that keeps a record, which is `memory.write_from`'s shape
+    # above. ⚠️ And it is also `# private`, the pairing
+    # `day_log.evidence.chat.path` already demonstrates: the condition fires, and
+    # what satisfies it is § 28's list rather than a value in the tracked file.
+    ("ordering.record.dir", "ordering.record.carrier", "document"),
+    ("ordering.record.dir", "ordering.record.carrier", "grouping"),
+    ("ordering.record.document", "ordering.record.carrier", "document"),
+    ("ordering.record.grouping", "ordering.record.carrier", "grouping"),
     # § 27's two, each meaningless where the project keeps no map: the pointer
     # the lookup opens, and where on an item a person is read from. ⚠️ That
     # axis's own discriminators -- `field` and `label_prefix` -- are **not**
@@ -9768,6 +9854,11 @@ MARKED_PRIVATE = [
     # identity reach no destination key *because no key of that port is marked*,
     # so a rate becoming statable at all is this entry and nothing else.
     "billing.rates",
+    # § 39's, and the mark § 28 predicted rather than one argued from scratch:
+    # that section states that a store whose address a project may not name is a
+    # mark the surface has to add, and an ordering document outlives the work and
+    # sits in no tree -- so its directory is a path on whoever's machine keeps it.
+    "ordering.record.dir",
 ]
 
 MARKED_ABSENT_CAPABLE = [
@@ -9778,6 +9869,7 @@ MARKED_ABSENT_CAPABLE = [
     "executed",
     "memory",
     "ordering",
+    "ordering.record",
     "people",
     PRIVATE_KEY,
     "release",
@@ -11421,12 +11513,84 @@ def self_test() -> int:
                      slice(None),
                      [entry for entry in _get(data, "readiness")
                       if entry.get(GROUPING_ENTRY_KEY) != named[0]]),
+                 # ⚠️ And § 39's record with them, pointed at the sibling the
+                 # project does still plan in: an order kept in the grouping that
+                 # just went absent is refused by that section's own rule, which
+                 # is correct and is not what this arm is asserting.
+                 _unkeep_record(data, in_grouping=named[-1]),
              )),
         ):
             data = _a_grouping_collection()
             mutate(data)
             broken = _refused(data)
             check(f"{label}", broken is None, f"refused {broken!r}")
+
+        # --- § 39's record, read against this facet and against `carriers` ----
+        #
+        # ⛔ Planted here rather than beside `validate`'s own fixtures, because
+        # the rule is read where the facet is resolved: under the collection form
+        # the names it may hold sit one level deeper than any absolute path
+        # `validate` reaches, which is that function's own division.
+        for label, name in (
+            ("a grouping the facet does not carry at all", "a grouping nobody plans in"),
+            ("no grouping at all", None),
+        ):
+            data = _a_grouping_collection()
+            _get(data, "ordering.record")[GROUPING_ENTRY_KEY] = name
+            broken = _refused(data)
+            check(
+                f"an order kept in {label} is refused, with the key named",
+                broken == "ordering.record.grouping",
+                f"reported {broken!r}",
+            )
+        # ⛔ And the green side, which is what keeps the refusal above from
+        # holding every configuration: the shipped collection states this record
+        # and loads, so the plants are about the name rather than about the key
+        # existing.
+        check(
+            "the shipped collection's own record names a grouping it carries, and loads",
+            _refused(_a_grouping_collection()) is None,
+            f"refused {_refused(_a_grouping_collection())!r}",
+        )
+        # ⛔ § 25's carrier-against-the-third shape, one facet over: a role whose
+        # whole subject is the record, mapped against a project stating there is
+        # none, is a role that will compose one. ⚠️ Both directions, the second
+        # being the one that must **not** be refused — a record kept by hand with
+        # no role mapped is § The loop's absent-leg case, and a rule written
+        # symmetrically would refuse it.
+        mapped = _a_grouping_collection()
+        _unkeep_record(mapped)
+        _absent_as(_get(mapped, "carriers"), {})[CLOSE_OUT_ROLE] = "skill"
+        broken = _refused(mapped)
+        check(
+            "a closing-out role mapped against a record that is absent is refused, "
+            "with the key named",
+            broken == "ordering.record.carrier",
+            f"reported {broken!r}",
+        )
+        unmapped = _a_grouping_collection()
+        _unkeep_record(unmapped)
+        _absent_as(_get(unmapped, "carriers"), {}).pop(CLOSE_OUT_ROLE, None)
+        check(
+            "and a record kept by hand with no role mapped is a configuration, not "
+            "a refusal",
+            _refused(unmapped) is None,
+            f"refused {_refused(unmapped)!r}",
+        )
+        # ⛔ And that absence is **reported** rather than left to be discovered,
+        # which is the half a load-time rule cannot cover: a project keeping no
+        # record and a project nobody asked read identically otherwise, and the
+        # project's own reason is the only thing that tells them apart.
+        with open(SURFACE, encoding="utf-8") as handle:
+            shape = surface_facts(handle.read())
+        told = _resolve(unmapped, EXAMPLES, shape, False).unavailable()
+        check(
+            "a record that is kept nowhere is named in the report, with the "
+            "project's own reason",
+            any("ordering record" in line and "no longer planned" in line
+                for line in told),
+            str([line for line in told if "ordering" in line]),
+        )
 
         # ⛔ § 5's "named where several, omitted where one" rule, on the **single**
         # form — the half no shipped file reaches. ⚠️ The collection's half is
@@ -11616,6 +11780,9 @@ def self_test() -> int:
         # project that plans in none has no set to publish, so the shipped file's
         # targets write `none` here exactly as its gate drops the checks above.
         _unscope_targets(stated_absent)
+        # ⛔ § 39's half of the same absence, for `_unscope_targets`' reason: an
+        # order kept in a grouping the project no longer plans in is refused.
+        _unkeep_record(stated_absent)
         loaded_absent = _refused(stated_absent)
         check(
             "a project that plans in no grouping is a configuration, not a refusal",
@@ -11660,6 +11827,7 @@ def self_test() -> int:
             if entry.get("check") not in (IN_GROUPING_CHECK, GROUPING_REF_CHECK)
         ]
         _unscope_targets(all_absent)
+        _unkeep_record(all_absent)
         refused_all_absent = _refused(all_absent)
         check(
             "a collection whose every grouping is absent is a configuration, not a refusal",
@@ -15415,8 +15583,15 @@ def _planted_violations():
          at("language.prose_width", "wide")),
         ("a worktree model with nowhere to cut a tree", "branch_model.tree_dir",
          _cuts_trees_nowhere),
+        # ⚠️ The block is written whole, § 39's record included: this plant is
+        # about the command the carrier above it needs, and a block that dropped
+        # the record would be refused for that instead -- which is the plant
+        # passing on a rule it did not name.
         ("a `command` ordering with no command", "ordering.command",
-         at("ordering", {"carrier": "command"})),
+         at("ordering", {
+             "carrier": "command",
+             "record": {"carrier": "none", "absent_reason": "planted"},
+         })),
         ("a field-carried date with no field named", "work_item.due_date.field",
          at("work_item.due_date", {"carrier": "field"})),
         # § 4.6's branches. ⚠️ Each writes the facet whole rather than editing one
@@ -17329,6 +17504,31 @@ def _unscope_targets(data: dict) -> dict:
         if isinstance(entry, dict):
             entry[GROUPING_ENTRY_KEY] = "none"
             entry["publishes"] = False
+    return data
+
+
+def _unkeep_record(data: dict, *, in_grouping: str | None = None) -> dict:
+    """§ 39's record moved off a grouping `data` no longer carries.
+
+    ⛔ The same shape `_unscope_targets` has above and for the same reason: an
+    order of work kept in a grouping the project has stopped planning in is
+    refused, which is § 39 working rather than the fixture's problem. ⚠️ Two
+    outcomes, because the honest configuration differs: where a sibling grouping
+    survives, that is where such a project would keep the order -- so the record
+    is **pointed at it** rather than emptied, which keeps the fixture exercising
+    the carrier it was written under.
+    """
+    record = _absent_as(_get(data, "ordering.record"), {})
+    if not isinstance(record, dict) or record.get("carrier") != "grouping":
+        return data
+    if in_grouping is not None:
+        record[GROUPING_ENTRY_KEY] = in_grouping
+        return data
+    record.clear()
+    record["carrier"] = "none"
+    record["absent_reason"] = (
+        "the grouping the order was kept in is no longer planned in here."
+    )
     return data
 
 

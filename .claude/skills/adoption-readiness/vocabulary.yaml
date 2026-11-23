@@ -15,7 +15,7 @@
 # The roles of the loop, by the key a `carriers:` block uses for each. No count is written here:
 # the length of this list is the statement, and a figure beside it would drift by the next role.
 #
-# ⚠️ The surface states the loop in prose (schema.md § "The loop — thirteen roles") and states no
+# ⚠️ The surface states the loop in prose (schema.md § "The loop — fourteen roles") and states no
 # key per role, so this list is the only place the keys are written down — and the check holds
 # it to the surface both ways: the heading's count word and the number of `·`-separated phrases
 # in the paragraph under it must both equal the length of this list. A role added to the surface
@@ -40,6 +40,10 @@ roles:
   - session_summary
   - billing_report
   - hours_breakdown
+  # The leg after a batch lands: the starting role reads an ordering and nothing produced one
+  # (#98). ⛔ On this list because the route needs a leg there, which is the only reason anything
+  # is — not because a copy of it was found in more than one project. It has exactly one.
+  - close_out
 
 # How a carrier's own name maps to a role. Keyed by the carrier's basename — a skill directory,
 # a command file without its extension, a hook script.
@@ -132,6 +136,10 @@ carriers:
                                             # no entry came with it — the recurrence the hook
                                             # block below names, arriving on a skill as it did
                                             # for `setup` below
+  # ⚠️ The one carrier here that was classified as this build's own tooling until the item making
+  # it a role landed, which is why the entry *moved* rather than being added: a basename in the
+  # tooling block below and a role key here are two different answers about one directory.
+  close-out:      { role: close_out }    # the closing-out role, shipped by #98
   cut-release:    { role: release }      # the release role, shipped by #36 — and the one shipped
                                          # carrier whose basename is not its role key, because
                                          # the word `release` is already taken above by a
@@ -147,7 +155,6 @@ carriers:
 
   # Project-local tooling of the build itself, not carriers of the loop. Each has a work item
   # that would make it a role; until one lands, what is on disk is tooling.
-  close-out:          { class: utility }  # backlog, graph and ordering reconciled (#98)
   adoption-readiness: { class: utility }  # this check's own carrier (#104)
 
   db-stats:                  { class: utility }

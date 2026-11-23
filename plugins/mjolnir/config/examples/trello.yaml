@@ -472,6 +472,18 @@ ordering:
   # and this says which card to offer. One statement of the order, read by two roles.
   carrier: command
   command: "<the command that prints the queue list top to bottom, one card id per line>"
+  record:
+    # § 39, and the one combination that shows the two keys are different questions: the order
+    # here is read (above) and is kept in a list on the board, which is neither a § 4.8 grouping —
+    # this project carries none — nor a document. ⛔ So the record is absent while the ordering is
+    # carried, and the closing-out role is unmapped rather than pointed at the wrong thing.
+    carrier: none
+    absent_reason: >-
+      The order is the position of a card in a list on the board, written by whoever drags it.
+      There is no grouping on this board for one to live in and no document beside it.
+    revisit_when: >-
+      A grouping is carried here, which § 4.8 above already states the trigger for — the same
+      moment the order could live somewhere this toolkit is able to read and write.
 
 people:
   # § 27, and the richer of the two shapes — this is the one example that configures the gate's

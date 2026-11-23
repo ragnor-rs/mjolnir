@@ -431,6 +431,17 @@ ordering:
   # whether a procedure may compute it.
   carrier: command
   command: "<the command that prints the current time box's ranked issues, one key per line>"
+  record:
+    # § 39, and the arm the facet was written for: this tracker plans in sets, so the order of
+    # work *is* one of § 4.8's groupings and nothing here keeps a document beside it. ⚠️ Named
+    # rather than resolved — this project carries two groupings, and the release scope is not
+    # where work is ordered.
+    carrier: grouping
+    grouping: "time_box"
+    # ⛔ Still a directory, under the carrier that keeps no document: what sits here is the
+    # baseline a pass measures drift against, and a relation added or removed is readable from
+    # nothing this tracker holds — no item's modification time moves when an edge changes.
+    dir: "<the directory outside every tree the baseline sits in>"
 
 people:
   # § 27's absent case on the tracker that has the most places to put the answer, and the reason is

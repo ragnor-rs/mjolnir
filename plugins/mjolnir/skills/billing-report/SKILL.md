@@ -143,7 +143,7 @@ a field: ⛔ **no provenance is written into an entry and none is asked for**, �
 - ⚠️ **every root that answered with no hours**, said out loud as answered. An absent project and a
   project with nothing in it read alike on an artifact that lists only what it found.
 
-⛔ **The conversion is this role's and no other's.** [§ The loop](../../config/schema.md#the-loop--thirteen-roles)
+⛔ **The conversion is this role's and no other's.** [§ The loop](../../config/schema.md#the-loop--fourteen-roles)
 rules that this is the only one of the three roles that converts hours to money — so the narrative
 distribution of a period's hours is a different role, reads no rate, and is not entered from here.
 

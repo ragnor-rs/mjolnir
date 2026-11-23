@@ -241,13 +241,24 @@ key either way. The remedy is the same act in both cases — make the file match
 what is marked required and deleting what is marked retired — so what is given up is a diagnostic,
 not a behaviour, and no reader has to be told what to do with a revision it can no longer read.
 
-## The loop — thirteen roles
+## The loop — fourteen roles
 
 File a work item · gate it into committed work · start it · finish it · review it · deploy ·
-cut a release · log the day · keep the session's books · restore a session's context ·
-summarise a session for a reader outside the build · bill a period's hours as line items ·
-break a given total of hours down over the work a period shipped. Two utilities travel beside
-the loop without being part of it.
+cut a release · close out a batch · log the day · keep the session's books · restore a session's
+context · summarise a session for a reader outside the build · bill a period's hours as line
+items · break a given total of hours down over the work a period shipped. Two utilities travel
+beside the loop without being part of it.
+
+⚠️ **Closing out a batch is the leg that was admitted on what the route already reads**, which is
+[§ 36](#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)'s test and not a second
+one: the starting role reads [§ 12](#12-ordering)'s ordering to decide which item to offer, and no
+leg of the route produced one. ⛔ **A route that consumes an ordering and never maintains it is a
+route whose first act reads a stale answer** — an item that landed an hour ago still placed, an item
+filed since placed nowhere at all — and the reading is silent, because an ordering with a landed
+item in it answers exactly like one without. ⚠️ **Its subject is the backlog rather than an item**,
+which is what the placement in the list above states: it is reached when a batch has landed rather
+than when any one change has, so no item's own leg hands to it and
+[the table below](#what-carries-the-item-forward-and-where-it-stops-to-ask) gains no row.
 
 ⚠️ **Keeping the session's books and restoring its context are one pair**, and the loop grew by one
 when the second of them was written: bookkeeping persists what happened at a boundary and
@@ -327,6 +338,12 @@ lost is every check the skipped role owns. Measured on this repository, in
 ⚠️ **The table runs from a started item to a merged change and claims nothing outside that.**
 Filing and gating are entered by a person, and so is whatever a project puts after a merge; the
 route was measured broken between starting and merging, and that is what it states.
+⚠️ **Closing out a batch is one of those, and is entered by a person for a reason of its own rather
+than by inheriting that sentence**: a leg is entered by the leg before it *on* something, and what
+this one is entered on is a set of landings rather than any one of them — so a row here would have
+the second finishing pass enter it once per merge, which is a pass over the whole backlog for each
+item that lands. ⛔ **Which is not a licence for it to be skipped**: the role's own invocation names
+when it is reached, and the cost of nobody reaching it is the stale ordering stated above.
 
 ⛔ **And which changes enter the first leg at all is
 [§ 30](#30-the-changes-that-do-not-go-through-the-loop)**, which is a project's configured fact
@@ -373,6 +390,12 @@ than a reason to trust it.
 - ⛔ **An absent finishing role is where the route ends**, not a leg to hand past: nothing else opens
   a change, so implemented work stops there. The starting role says so in its reply, since a route
   that ends silently is the defect this section exists to close.
+- ⚠️ **An absent closing-out role leaves [§ 12](#12-ordering)'s ordering to whatever else a project
+  keeps it with**, which is a legitimate configuration and not a leg to hand past: nothing else here
+  writes an ordering, so a project mapping no such role is one whose ordering is maintained outside
+  this toolkit or not at all. ⛔ **The starting role does not thereby stop reading it** — it reads
+  what § 12's command prints either way — so what such a project accepts is that the answer may be
+  stale with nothing reporting that it is.
 - ⚠️ **An unmapped role is not the same thing as a mis-mapped one**, and `carriers` carries no
   statement of its own keys — so a role nobody mapped and a key somebody misspelled read alike. ⛔
   **No leg treats that reading as authority to skip a question**, by the first bullet.
@@ -1790,6 +1813,8 @@ operations the survey reached and says which it did not.
 | `link_dependency` | one item recorded as blocked by another | the dependency is written into both items' bodies as prose, which is the one case [`An edge is a relation`](#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it) below admits prose carrying an edge at all |
 | `read_blockers` | the items one item is recorded as blocked by, each with its own state — ⛔ never a verdict about whether the item may start, the bar being § 5's and not a tracker's | § 5's `no_open_blockers` has no source, so it reports **no answer** and never *no blockers*, by § 2's rule that absence of signal is not an answer; and a prose edge `link_dependency`'s fallback wrote is read for the report rather than for the verdict |
 | `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
+| `read_closing_change` | `link_for_close`'s own read, after the fact: the change that closed one item and the commit that change landed as — ⛔ never a verdict about whether the item is done, which is the item's state and is `read_item`'s | the landed record names the item and reports the closing change **unread**: never *no change closed it*, and never the newest change on the branch, by § 2's rule that absence of signal is not an answer |
+| `create_grouping` | one of § 4.8's groupings brought into existence, by the value that facet keys it on — the one write about a grouping that is made before any item is in it | nothing is created, and the role **names the grouping it would have created** for whoever creates it by hand; ⛔ no file and no record of a grouping is written anywhere else instead, a grouping the tracker does not hold being a grouping no `grouping_items` can read |
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `grouping_items` | the items the tracker holds in one of § 4.8's groupings, each with its own state — ⛔ never a verdict about whether the grouping may be published, the bar being [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s and not a tracker's | the publishing set cannot be read, so § 33's precondition reports **no answer** and never *nothing is short*, by § 2's rule that absence of signal is not an answer; the advance is made over the batch's own candidates and the report says the grouping went unread |
 | `mark_grouping_released` | one of § 4.8's groupings marked as published — the one write a release makes that is about the grouping rather than about an item in it | the run names the step and the grouping it is about, by the value this deploy read, **continues**, and the report records the grouping as still open; ⛔ never skipped in silence, and a grouping nothing marked is never reported as marked. ⚠️ **The address a person performs it at is the tracker's own and the procedure composes none** — the boundary's rule, so where the port cannot supply one the report names the grouping and not a link |
@@ -2861,7 +2886,7 @@ and not by a reader rejecting a configuration.
 ### What a hook refuses, and the record it reads
 
 ⛔ **A hook refuses an act on the strength of a record, never on a reading of the work.** The
-division is [§ The loop](#the-loop--thirteen-roles)'s — procedure produces a record and enforcement
+division is [§ The loop](#the-loop--fourteen-roles)'s — procedure produces a record and enforcement
 reads it — and this subsection is the enforcement half of it: what a guard reads, what a refusal
 has to name, and what a project with nothing to guard gets.
 
@@ -3082,7 +3107,7 @@ writes the day log in a technical register for itself where a third writes it in
 register for someone outside the build. These are three settings, not one.
 
 ⛔ **The three roles one name used to cover are three keys here, each with its own reader.**
-[§ The loop](#the-loop--thirteen-roles) names the roles apart and this is where each one's audience
+[§ The loop](#the-loop--fourteen-roles) names the roles apart and this is where each one's audience
 is stated: the session summary's is somebody outside the build, the billing report's is whoever
 pays the invoice, and the hours breakdown's is whoever is being told where a period's hours went.
 ⛔ **One key answering for all three is the merge naming them apart was for**, so each carries its
@@ -4437,7 +4462,7 @@ done:
   refuse one of two correct configurations.
 - ⛔ **`answered_by: human` is not satisfiable by the procedure, and no amount of reading the diff
   satisfies it.** The answer is **recorded** where something else can read it and the record says
-  **who** answered — the division [§ The loop](#the-loop--thirteen-roles) already states:
+  **who** answered — the division [§ The loop](#the-loop--fourteen-roles) already states:
   procedure produces a record and enforcement reads it, so the record is written whether or not a
   hook refuses the merge on it.
   ⚠️ **It is the record and not the report**: a verdict that exists only in a role's reply is a
@@ -6898,7 +6923,7 @@ loop_exempt:
 # procedure: lines_changed
 ```
 
-Which changes never enter [§ The loop](#the-loop--thirteen-roles) at all — no work item, no gate, no
+Which changes never enter [§ The loop](#the-loop--fourteen-roles) at all — no work item, no gate, no
 branch of their own, no change opened and no review — and which branch the ones that skip it are
 committed to instead.
 
@@ -8374,7 +8399,7 @@ argument**: one failed that test and one passed it cleanly, and the answer for b
 the test cannot be what the answer came from
 ([the measurement](../../../docs/configuration-surface.md#two-skills-outside-the-loop-counted-rather-than-taken-on-the-claim)).
 
-⛔ **The list that decides is [§ The loop](#the-loop--thirteen-roles)'s, and it is closed.** A role
+⛔ **The list that decides is [§ The loop](#the-loop--fourteen-roles)'s, and it is closed.** A role
 is on it because the route needs a leg there, which is a statable reason and the same one every
 time. ⚠️ **A utility admitted beside them would be admitted on no such reason**, and a list with one
 entry of that kind has nothing to refuse the next one with.
@@ -8435,7 +8460,7 @@ billing:
   revisit_when: "…"
 ```
 
-**[§ The loop](#the-loop--thirteen-roles) carries a role that bills a period's hours as line items,
+**[§ The loop](#the-loop--fourteen-roles) carries a role that bills a period's hours as line items,
 and this section says which projects a period is read from.** ⛔ **It is the one role on that list
 whose subject is more than one project**, so it is the one role [§ 1](#1-roots)'s skills root does
 not scope: every other role narrows to the project the reader resolved, and a period somebody is
@@ -8500,7 +8525,7 @@ only avoided because the seam is the port.** A role that opened another project'
 tooling or read its commits would be measuring four projects' days under a rule that binds it to
 one, which is the shape this section exists to forbid rather than to permit.
 
-⛔ **And it may not replace a figure § 9 produced**, which is [§ The loop](#the-loop--thirteen-roles)'s
+⛔ **And it may not replace a figure § 9 produced**, which is [§ The loop](#the-loop--fourteen-roles)'s
 rule for the hours-breakdown role reaching this one: the hours on a line item are the hours the
 store holds. A period short of what somebody expected is reported short.
 
@@ -8550,7 +8575,7 @@ the first whose shape is a mapping. ⚠️
 client's identity never reach a destination key because no key of that port is marked, and the mark
 is what makes this one eligible.
 
-⛔ **The conversion is this role's alone**, which is [§ The loop](#the-loop--thirteen-roles)'s ruling
+⛔ **The conversion is this role's alone**, which is [§ The loop](#the-loop--fourteen-roles)'s ruling
 and not a second one: a project wanting the narrative distribution of hours configures no rate,
 because that role has no key here to configure.
 
@@ -8604,7 +8629,7 @@ of names**, which is the shape [§ 34](#34-the-files-that-carry-a-version-and-wh
 is carried on and for the same stated reason — the two implementations this facet was read out of
 arrive already written as data.
 
-⛔ **This is a facet and no fourteenth leg of [§ The loop](#the-loop--thirteen-roles).** Nothing is
+⛔ **This is a facet and no leg of [§ The loop](#the-loop--fourteen-roles).** Nothing is
 added to that list, no `carriers` key answers for it and no role enters it: what is carried is a
 block of configuration and the check that consumes it, which is the shape
 [§ 15](#15-end-to-end-coverage-recorded), [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
@@ -8771,6 +8796,157 @@ case, discharged the way that section states: the absent form is stated here and
 example in the same change, and the record the change lands with says that configurations outside
 this repository are refused until each writes the key. ⚠️ **No check here can reach them**, they
 being files in repositories this one cannot open.
+
+## 39. The record a project's ordering is kept in, and what brings one into existence
+
+```yaml
+ordering:
+  record:
+    carrier: grouping | document | none    # required; absent_reason
+    grouping: "<the § 4.8 grouping the order is kept in>"   # required_when: ordering.record.carrier = grouping
+    dir: "<the directory outside every tree the baseline sits in>"   # required_when: ordering.record.carrier = grouping; required_when: ordering.record.carrier = document; private
+    document: "<the document inside it, where the record is one>"   # required_when: ordering.record.carrier = document
+    absent_reason: "…"                     # required when carrier is none
+    revisit_when: "…"
+```
+
+**[§ 12](#12-ordering) states how an ordering is *read* and this section states where it is
+*kept*.** That key is a command whose output the procedure does not interpret, which is the whole of
+what a role taking the next item needs; ⛔ **a role that brings the ordering back into agreement with
+the backlog needs the record itself**, and until this section there was no key naming one — so the
+closing-out leg [§ The loop](#the-loop--fourteen-roles) admits had a subject it could not address.
+
+⚠️ **This is a facet and not one of the axes**, which is the shape
+[§ 11](#11-session-context)'s artifact store and [§ 25](#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)'s
+memory store already have: whether the `document` carrier is reachable at all is decided by
+`branch_model.kind` ([§ 10](#10-branch-model)) and by where the directory sits, and the rules below
+are read off those rather than stated independently of them.
+
+### The two carriers, and the one thing neither of them is
+
+⛔ **A tracker that plans in sets already holds the ordering, and a project whose tracker does not
+keeps it in a document.** Those are the two measured shapes and the carrier is which one a project
+is — ⛔ **never a branch inside the procedure.** The closing-out role names *the record*, and what a
+read or a write of it means is the carrier's: the same pass that moves an item between rows on one
+project moves it between groupings on another, and neither spelling reaches the role's own text.
+
+| `carrier` | where the ordering is | what brings one into existence |
+|---|---|---|
+| `grouping` | one of [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s groupings, named by `grouping` here — the tracker's own iteration, version or milestone | [§ 3](#the-operations-and-what-an-absent-capability-does)'s `create_grouping`, which is a **write through the port**. ⛔ Never a file beside the tracker: a grouping the tracker does not hold is one no `grouping_items` can read |
+| `document` | the one document `dir` and `document` address, outside every tree | drafted by the role from the live state, **summarised, and written only on the person's approval** — the subsection below |
+| `none` | nowhere here | nothing. ⚠️ Not a project with no order of work but one whose order is kept where this toolkit cannot see it, which `absent_reason` states |
+
+⚠️ **`dir` is written under both of the first two and not only under `document`**, the baseline
+being what needs it rather than the record, which the subsection after next states.
+
+⛔ **`grouping` names an entry § 4.8 carries, and the reader refuses a name that facet does not
+state** — including every name under `work_item.grouping.carrier: none`, which is a project
+ordering into a grouping it has told the surface it does not have. ⚠️ **It is the grouping's key and
+not its value**: which iteration is current is § 4.8's `current` question and arrives where that
+section says it does, so this key says *which grouping the order lives in* and says nothing about
+which one is open.
+
+⛔ **So under this carrier the grouping's own value arrives on the role's invocation, and a pass
+given none stops.** § 4.8 states that nothing in the procedure performs the `discoverable` read, so
+that holds under either value of `current` — and ⚠️ **the permissive reading is the expensive one
+here exactly as it is there**: an order read off whichever grouping a tracker answered with is the
+one wrong answer that looks entirely right, every figure in the report being correct about the wrong
+set.
+
+⛔ **The reader refuses `carrier: none` beside a mapped closing-out role**, which is
+[§ 25](#the-carrier-and-the-third-have-to-agree-in-both-directions)'s shape between a carrier and the
+third that writes it: a role whose whole subject is the record, mapped against a project that states
+there is no record, is a role that will compose one. ⚠️ **The other direction is legitimate and is
+[§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)'s absent-leg case** — a
+project may keep this record by hand and map no role — so only one of the two pairs is refused, and
+the refusal names both keys.
+
+### The one directory, why it is marked, and what is not a key here
+
+⛔ **`dir` is required under *both* carriers, and the reason is the baseline rather than the
+document.** The drift a pass reports — what was filed, what landed, and which **relations** were
+added or removed — is readable from nothing a tracker holds: no tracker bumps an item's own
+modification time when an edge changes, so a query keyed on that time cannot see one. A pass
+therefore compares against a baseline it wrote, and that baseline needs a place to stand whichever
+carrier the record itself is on. ⚠️ **So a project whose order lives in a grouping still names a
+directory**, and what it keeps there is the baseline alone.
+
+⛔ **It carries the `# private` mark, because a file that outlives the work and sits in no tree is a
+path on somebody's machine.** [§ 28](#28-a-configured-value-a-repository-may-not-hold) is what
+resolves it, and the mark is the whole of what makes the key eligible for that layer — a project
+whose directory it may commit simply writes it, the mark obliging nothing.
+⚠️ **This is the mark that section names as the one its own argument predicts**: a store whose
+address a project may not name is a mark the surface has to add rather than a list entry § 28
+already allows.
+
+⛔ **The directory is outside every tree under `branch_model.kind: worktree`, and this is not a
+second statement of [§ 11](#the-store-and-when-an-in-tree-store-is-safe)'s rule but a different
+lifetime.** That store is crossed at a role boundary and spent with the item; this one states the
+order of **work nobody has started yet**, so a teardown that takes it takes the backlog's plan.
+⚠️ **A directory under a system temp root does not survive a reboot**, which § 11 states about its
+own store and which bites harder here for the same reason.
+
+⛔ **Three things a project might expect to configure are deliberately not keys, each with its own
+reason:**
+
+- **the baseline's own name.** It is derived from the record, under the carrier's own rule, and
+  ⛔ **a key would let a project point the record and its baseline at different places** — which
+  reads as a pass that found no drift. What the baseline is *for* is the paragraph above.
+- **the tiers an ordering is allowed to carry.** That is [§ 4.6](#46-priority)'s `values`, read
+  there and not restated: an item outside the set is named by the role and ⛔ **the role writes no
+  priority on either carrier**, a tier being importance and a place in the ordering being yield.
+- **the document's own grammar** — what places an item, what retires a row. ⚠️ **Procedure, and the
+  `document` carrier's rather than the facet's**: a project that could reword it would be a project
+  whose ordering the shared role cannot read, which is the one thing the carrier is for. It is
+  stated with the carrier's implementation, where the parser is.
+
+### An ordering that does not exist yet, and the one act that is the person's
+
+⛔ **Bringing a project to its first ordering is this role's and nothing else's, and under the
+`document` carrier the write waits for an approval.** The live set, the tiers and the graph's
+**layers** are reported — a layer being what the relations already force — and then the ordering is
+summarised and written once the person running the role has said so.
+⛔ **A layer is not a place in the ordering.** The layers are the hard constraints; the order
+*inside* one is yield, which nothing derives, so a role that wrote the document unasked would be
+ordering the work on this toolkit's judgement — [§ 12](#12-ordering)'s own refusal, arriving on the
+write side.
+
+⛔ **And no existing ordering is overwritten.** A record that is already there is read and edited;
+the bootstrap is refused where one exists, naming it — which is also why the refusal is not itself a
+bootstrap: a run taken from the wrong place can fail to find a record that exists, and drafting on
+that refusal writes a second ordering nobody reads.
+
+⚠️ **Under `carrier: grouping` the same act is `create_grouping` and carries no approval of its
+own**, the grouping being a named set rather than an order of work: what goes *into* it is the
+role's ordinary pass, and what the tracker holds about which is current is § 4.8's.
+
+### What a pass may not do, whatever the carrier
+
+⛔ **A pass that finds nothing to change writes nothing** — ⛔ **including no record of having
+run.** The record states the order that is true now, which is
+[§ The loop → An artifact states what is true now](#an-artifact-states-what-is-true-now)'s rule
+arriving on this artifact, and what is true of a *pass* goes in the reply
+([§ 8](#the-reply-to-the-person-running-a-role)). ⚠️ **The baseline is not an exception to it**: it
+holds the state the drift is measured from rather than an account of a pass, and a relation added or
+removed is readable from nothing else — no tracker bumps an item's own modification time when an
+edge changes, so a query keyed on that time cannot see one.
+
+⛔ **Another session's residue is reported and never repaired.** Two sessions share one backlog
+([§ 10](#the-claim-on-a-work-item) being what they share a *claim* through) and the record has no
+lock, so a pass that tidied a sibling's half-made edit would be resolving a disagreement only the
+sibling can. ⚠️ **What makes the report possible is the baseline above**: what moved under the pass
+is a fact about the record's own placements, which neither a query nor a modification time answers.
+
+⛔ **And whose the residue is cannot be established from the record, so it is reported as
+unestablished rather than guessed.** Neither carrier's record carries an author — a document outside
+every tree has none, and a grouping a tracker holds says who changed an item and not who changed the
+order. ⚠️ **So what is nameable is *which* placements moved and never *who* moved them**, and a
+report naming a session would be [§ 27](#27-the-role-to-person-map)'s own substitution arriving one
+artifact over: an identity composed because one was expected.
+
+⛔ **And every open item is in scope, whoever filed it.** An item with no place in the ordering is
+unprocessed whether this session filed it or not, and leaving one for its filer is how an ordering
+comes to be missing exactly the items nobody is looking at.
 
 ## What the toolkit installs into a project, and what takes it out
 

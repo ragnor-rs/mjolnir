@@ -759,8 +759,119 @@ def advance_on_merge(number: int) -> dict:
     }
 
 
-def _milestone(value: str) -> dict:
-    """The milestone this repository holds under `value`, by title.
+def read_closing_change(number: int) -> dict:
+    """The change that closed this item, and the commit it landed as.
+
+    `link_for_close`'s own read, after the fact: that operation composes the
+    reference and this one reports what the host did with it. ⚠️ **Not
+    `advance_on_merge` under another name** -- that one answers whether the
+    automation moved the item and carries a verdict about the item's state, while
+    this answers *which change* and *which commit*, which is what a landed record
+    carries. One query serves both and the two readings are deliberately apart:
+    a role wanting the pull request has no use for an `advanced` boolean, and a
+    role wanting the move has no use for a commit.
+
+    ⛔ **The last reference wins where the host names several.** The list is the
+    host's own order and the newest is the one that closed it; an answer carrying
+    all of them would leave every consumer picking, which is this choice made
+    once rather than per reader. ⚠️ **Every reference is still returned** beside
+    it, so a consumer that needs to see the pile can.
+
+    ⛔ **An item with no closing reference comes back with `change: None`**, which
+    is a real answer and not an absence: the capability is present and the host
+    holds nothing -- an item closed by hand. ⚠️ The port's stated fallback covers
+    a tracker that cannot be asked, and a role must not read this as that.
+
+    ⛔ **A merged reference with no commit is reported as it reads.** The commit
+    is the host's and a reference that merged always carries one, so a null there
+    is the host declining to answer rather than a change that landed nowhere --
+    and it is handed on as null rather than filled in from the branch.
+
+    ⚠️ **Read through `read_item` first**, for `advance_on_merge`'s reason: the
+    query addresses `issue(number:)`, which answers null for a pull request, and
+    null here is indistinguishable from an item that is not there.
+    """
+    repo = _repo()
+    addressed = read_item(number)["number"]
+    owner, name = repo.split("/")
+    issue = _gh([
+        "api", "graphql", "-f", f"query={CLOSED_BY_QUERY}",
+        "-f", f"owner={owner}", "-f", f"name={name}", "-F", f"number={addressed}",
+    ])["data"]["repository"]["issue"]
+    if issue is None:
+        raise port.HostUnavailable(
+            f"`gh api graphql` (closedByPullRequestsReferences) answered null for "
+            f"#{addressed} in {repo}, so what closed it could not be read."
+        )
+    references = [
+        {
+            "change": node["number"],
+            "merged": bool(node["merged"]),
+            "commit": (node["mergeCommit"] or {}).get("oid"),
+        }
+        for node in issue["closedByPullRequestsReferences"]["nodes"]
+    ]
+    closing = references[-1] if references else None
+    return {
+        "number": addressed,
+        "state": issue["state"],
+        "change": closing["change"] if closing else None,
+        "merged": closing["merged"] if closing else None,
+        "commit": closing["commit"] if closing else None,
+        "references": references,
+    }
+
+
+def create_grouping(value: str, *, grouping: dict) -> dict:
+    """The milestone this grouping names, brought into existence.
+
+    ⛔ **Idempotent, by reading before writing**, which is
+    `mark_grouping_released`'s rule at the same object: a second create answers
+    with the milestone that is already there rather than refusing, because a run
+    that retried after a failure partway through would otherwise be stopped by
+    its own first attempt. ⚠️ **And `created` says which happened**, a grouping
+    this call found being a different fact from one it made.
+
+    ⛔ **A closed milestone of that title is answered as found and never
+    reopened.** Reopening is a state change about a published grouping, which is
+    `mark_grouping_released`'s own direction, so a create that silently undid one
+    would be making a release's mark on the strength of a name collision.
+
+    ⛔ **The title is the project's own word for the grouping**, matched the way
+    `_milestone` matches it, and nothing here invents one: § 4.8's value is what
+    sits on the item.
+    """
+    _native_milestone(grouping, "create_grouping")
+    # ⛔ `_held_milestone` and not `_milestone`, which is the one place the two
+    # differ and the reason the pair exists: *no such milestone* is what this
+    # operation is for, while an **ambiguous** title still refuses here -- two
+    # milestones a project cannot tell apart is a defect in the text either way,
+    # and a create that caught that refusal would answer *already there* about a
+    # grouping it could not name.
+    held = _held_milestone(value)
+    if held is not None:
+        return {
+            "grouping": (grouping or {}).get("name"),
+            "value": held["title"],
+            "state": held.get("state"),
+            "created": False,
+            "already": True,
+        }
+    made = _gh([
+        "api", "--method", "POST", f"repos/{_repo()}/milestones",
+        "-f", f"title={value}",
+    ])
+    return {
+        "grouping": (grouping or {}).get("name"),
+        "value": made.get("title", value),
+        "state": made.get("state"),
+        "created": True,
+        "already": False,
+    }
+
+
+def _held_milestone(value: str) -> dict | None:
+    """The milestone this repository holds under `value`, or `None` for none.
 
     ⛔ **Across both states**, which is this host's own trap: the listing
     defaults to the open ones, so a release already marked would come back
@@ -774,6 +885,11 @@ def _milestone(value: str) -> dict:
     ⚠️ Exactly, then case-insensitively, and ⛔ an ambiguous fold is refused
     rather than resolved: two milestones a project cannot tell apart is a
     defect in the text, and closing the wrong release is not recoverable.
+
+    ⛔ **Absence is returned and ambiguity is raised**, which is the whole reason
+    this is not `_milestone` below: one caller exists to create what is not there
+    and every other caller addresses what must already be, so the *absent* answer
+    is a value and the *unnameable* one is a refusal for all of them.
     """
     repo = _repo()
     held = _gh(["api", "--paginate", f"repos/{repo}/milestones?state=all"])
@@ -793,19 +909,33 @@ def _milestone(value: str) -> dict:
     if len(folded) == 1:
         return folded[0]
     if not folded:
-        raise port.ConfigError(
-            "work_item.grouping",
-            f"names the grouping {value!r}, which is not a milestone {repo} holds. "
-            "The value is the word on the item and the milestone is addressed by "
-            f"its title, so a grouping this repository has no milestone for is a "
-            "defect in the text rather than a capability that is absent.",
-        )
+        return None
     raise port.ConfigError(
         "work_item.grouping",
         f"names the grouping {value!r}, which {len(folded)} milestones in {repo} "
         "answer to once case is set aside. Which one a release closes is not this "
         "implementation's to choose.",
     )
+
+
+def _milestone(value: str) -> dict:
+    """The milestone `value` names, refusing where this repository holds none.
+
+    The reading every operation but `create_grouping` takes: a grouping that is
+    not there is a defect in the text rather than a capability that is absent,
+    so it is refused with the key named instead of coming back as an empty set.
+    """
+    held = _held_milestone(value)
+    if held is None:
+        raise port.ConfigError(
+            "work_item.grouping",
+            f"names the grouping {value!r}, which is not a milestone {_repo()} "
+            "holds. The value is the word on the item and the milestone is "
+            "addressed by its title, so a grouping this repository has no "
+            "milestone for is a defect in the text rather than a capability that "
+            "is absent.",
+        )
+    return held
 
 
 def _native_milestone(grouping: dict, operation: str) -> None:
@@ -1003,8 +1133,10 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "link_dependency": link_dependency,
     "read_blockers": read_blockers,
     "link_for_close": link_for_close,
+    "read_closing_change": read_closing_change,
     "advance_on_merge": advance_on_merge,
     "grouping_items": grouping_items,
+    "create_grouping": create_grouping,
     "mark_grouping_released": mark_grouping_released,
     # ⛔ The operations this tracker has nothing to implement against are named
     # once, below, and read from there by the suite.

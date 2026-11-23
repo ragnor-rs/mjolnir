@@ -352,6 +352,18 @@ ordering:
   # and not where the project got the order from.
   carrier: command
   command: "<the command that prints the board's ranked column, one item id per line>"
+  record:
+    # § 39. The order is kept in the iteration column § 4.8 above declares, so the record is that
+    # grouping and the closing-out role writes to the board through the port. ⚠️ The rank *inside*
+    # one iteration is the board's own and is yield: this says which grouping an item belongs in,
+    # which is the half the role answers, and nothing here derives a position within it.
+    carrier: grouping
+    # The single-form grouping resolves under this key, which is what a report names it by (§ 4.8).
+    grouping: "grouping"
+    # ⛔ A directory under this carrier too, and the baseline is the whole of what it holds: the
+    # board states no modification time that moves when a relation changes, so what a pass
+    # compares against is a file it wrote.
+    dir: "<the directory outside every tree the baseline sits in>"
 
 people:
   # § 27, and the arm that shows the inverse rule: this project carries the map and configures no
