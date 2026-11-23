@@ -3808,9 +3808,8 @@ project's prose.
 A role that turns raw source material into a specification and then into work items was named as
 missed by the survey that produced the loop's roles, with **two independent implementations** behind
 the claim. ⛔ **Both exist and the count behind the word *two* is the first thing that moves**: one
-is a project's own skill and the other is the
-[public plugin cited as prior art](#prior-art), so across the six projects here there has only ever
-been **one** copy of this role.
+is a project's own skill and the other is the [public plugin cited as prior art](#prior-art), so
+across the six projects here there has only ever been **one** copy of this role.
 
 | what was claimed | what the count says |
 |---|---|

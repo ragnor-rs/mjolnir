@@ -8424,16 +8424,15 @@ a project could write down.
 
 ⛔ **Data-shaped values are that shape only where a role or a check *reads* them.** ⚠️ **The five
 sections above each meet that condition**, which is why it is stated rather than left to be read off
-them. ⚠️ **A
-candidate whose values nothing reads is not a thinner facet but a different thing** — a template
-with a configuration wrapper, which is what § 38 refuses in as many words for prose by declaring no
-document's content, no heading, no wording and no style. ⛔ **The measured candidate is a role that
-writes a specification from raw sources**: its per-project values are a document set, a section list
-per document, a directory convention and a validation pass per document, every one of them arriving
-as data, and ⛔ **not one of them read by any leg of the route** — nothing downstream waits on a
-specification, and a project keeping none files its items unchanged. ⚠️ **What is left once those
-values are configuration is a role that asks the configured questions and writes the configured
-headings**, which is the pointer
+them. ⚠️ **A candidate whose values nothing reads is not a thinner facet but a different thing** —
+a template with a configuration wrapper, which is what § 38 refuses in as many words for prose by
+declaring no document's content, no heading, no wording and no style. ⛔ **The measured candidate is
+a role that writes a specification from raw sources**: its per-project values are a document set,
+a section list per document, a directory convention and a validation pass per document, every one
+of them arriving as data, and ⛔ **not one of them read by any leg of the route** — nothing
+downstream waits on a specification, and a project keeping none files its items unchanged.
+⚠️ **What is left once those values are configuration is a role that asks the configured questions
+and writes the configured headings**, which is the pointer
 [the subsection below](#why-a-utility-has-no-home-on-this-surface-from-either-direction) forecloses —
 the boundary's letter satisfied and nothing delivered — rather than a thin leg
 ([the measurement](../../../docs/configuration-surface.md#the-role-that-writes-a-specification-two-implementations-and-the-half-already-carried)).
