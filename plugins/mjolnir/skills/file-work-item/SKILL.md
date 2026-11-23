@@ -72,6 +72,15 @@ found nothing is not a clearance**, per
 [`§ 14`](../../config/schema.md#the-hidden-half-is-shown-before-a-role-acts-on-the-text) — what it
 guarantees is that the body about to be filed and the request behind it are the same bytes.
 
+⛔ **Whether the request *supports* the body is the other question about the same text, and
+[`§ 11`](../../config/schema.md#what-a-source-establishes-and-the-hole-a-distillation-reads-over)
+states it** — named here and **not restated**, its three rules being one statement. ⚠️ **What this
+role owes on top of them is where the stop falls**: a source short of what the split needs is asked
+about **before section 1 proposes a split at all**, because every section after this one — the
+duplicate search, the relations, and the acceptance a gate will later read — inherits whatever this
+one let through. ⛔ **And the reply names what the source could not establish**, which is that
+rule's own reporting half and has no quiet form.
+
 ⚠️ **A question is not a work item.** A request that is an open question or a proposal belongs in
 the conversation with whoever asked it; say so and stop. Filing it converts somebody's uncertainty
 into a commitment nobody made.

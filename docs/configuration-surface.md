@@ -3802,3 +3802,111 @@ them is a defect in that project:
 ⚠️ **Its own gate is green**, which is how the five were told apart from findings: the comparison
 was run against a project whose checker passes, so a difference is this facet's shape and not that
 project's prose.
+
+## The role that writes a specification: two implementations, and the half already carried
+
+A role that turns raw source material into a specification and then into work items was named as
+missed by the survey that produced the loop's roles, with **two independent implementations** behind
+the claim. ⛔ **Both exist and the count behind the word *two* is the first thing that moves**: one
+is a project's own skill and the other is the
+[public plugin cited as prior art](#prior-art), so across the six projects here there has only ever
+been **one** copy of this role.
+
+| what was claimed | what the count says |
+|---|---|
+| a project skill turning sources into a requirements document, a screens-and-components breakdown and a cross-session task list | **confirmed, and one copy.** 95 lines, in one project. Every skill and command directory across the six holds no second one, and no other project's history carries the path |
+| a superseded plugin carrying it as five skills plus a brainstorm front end | **confirmed.** Six carriers, 902 lines — 337, 195, 143, 114, 63 and 50 — in a third-party repository, not in any project here |
+
+⚠️ **The one copy has had two carriers and never two copies.** It was a slash command until
+2026-09-01 and has been a skill since, on a pass whose subject was making that project's
+configuration skills-only — which is [§ 7](../plugins/mjolnir/config/schema.md#7-carrier)'s axis
+moving under a role that stayed put, and the reason a sweep keyed on either carrier alone reports a
+different number from a sweep keyed on the role.
+
+### The adopting project drew the seam itself, in its own migration
+
+**The strongest evidence about where this role belongs is a diff that already exists.** On
+2026-11-19 the project holding it moved its development process onto this toolkit, and what that
+commit did to this 95-line file is **six insertions and six deletions**, leaving it 95 lines:
+
+| what changed | what it means |
+|---|---|
+| four references to that project's own former role carriers became references to this toolkit's starting and finishing roles | the legs this toolkit carries are called rather than reimplemented |
+| a hard-coded tracker field identifier became a read of `work_item.grouping.sprint` out of that project's configuration | the per-project value is read from the one file rather than written twice |
+| *follow that role's steps 4–5 verbatim* became a pointer at `branch_model.tree_dir` and that project's own tree-mechanics file | ⚠️ **the direction worth noting** — the migration **removed** the instruction to follow another role's steps and replaced it with two configuration keys |
+
+**Nothing moved out of the file.** An adopter mid-migration, with every incentive to hand this work
+to the toolkit it was adopting, kept the document-writing local and rewired the three things it
+wanted from the loop into calls and keys.
+
+### What the overlap is, measured against the roles that have landed
+
+The item carried the claim that *roughly half* of that skill is already the filing and starting
+roles. ⛔ **Measured, the overlap is the whole of what it names and not half of anything**: creating
+the item, a duplicate search of two or more keyword passes over summary and description in both
+languages with no status filter, and the branch cut in its own tree. All three are the filing role's
+duplicate check and the starting role's claim, both landed.
+
+⚠️ **As a share of the file it is 9 lines of 95** — one step of eight, two rules, and one phrase of
+the closing report. The *capability* share and the *line* share differ by an order of magnitude, and
+only the second can be checked.
+
+### The two residues do not meet
+
+With the overlap removed, what is left of each implementation is disjoint from the other — ⛔ **not
+two copies of one procedure, but two procedures that share a sentence of description**:
+
+| | the project skill | the plugin |
+|---|---|---|
+| where the content comes from | provided artifacts, distilled | the person, interviewed question by question |
+| what it writes | three documents per feature, in a per-feature numbered directory | four documents per project, plus one file per entry in a flat tree |
+| what it validates | each document against the sources, in both directions | each document against the others, for consistency |
+| where the items go | a tracker, through this toolkit's own roles | a file per entry, or one of that plugin's own tracker adapters |
+
+⛔ **Reconciling them would mean adopting one and configuring the other away**, which is a copy with
+a configuration wrapper rather than a procedure over configuration — the shape
+[`schema.md § 36`](../plugins/mjolnir/config/schema.md#why-a-utility-has-no-home-on-this-surface-from-either-direction)
+already refuses from both ends.
+
+⚠️ **And the plugin's residue is mostly its own machinery.** 126 of its principal skill's 337 lines
+are about a specification at all — its six numbered steps, the rest being its layout and
+tracker-mode probes, its resolver entry, its creation path, its commit gate and its closing-summary
+token contract. The 211 that remain name that plugin's own helper modules, probe names, refusal
+shapes, approval-marker protocol and token ledger; and even inside the 126, the milestone-identity
+guard and the branch gate are its own again.
+
+### The part with nothing per-project in it
+
+**Three rules are the residue that generalises, and all three are about the *source* rather than
+about the document.** They are stated once, at
+[`schema.md § 11`](../plugins/mjolnir/config/schema.md#what-a-source-establishes-and-the-hole-a-distillation-reads-over),
+and are not repeated here. ⛔ **They come from one of the two implementations and not from both**,
+which is the weaker provenance and is stated rather than netted out: the project skill carries them
+as a pass its own text calls mandatory, and the plugin carries no source-validation step at all —
+it interviews a person, so there is no export for it to parse and no referenced artifact for it to
+go looking for.
+
+⚠️ **Their per-project values are none**, which
+[`schema.md § 36`](../plugins/mjolnir/config/schema.md#why-a-utility-has-no-home-on-this-surface-from-either-direction)
+makes the sign that a shared **file** is what is wanted — except that these are not a utility: the
+filing role already reads a request somebody else wrote and already distils it into an item, so the
+leg that owes them exists. ⛔ **Which is why they ship as procedure on that leg** and not as a
+reference two projects point at.
+
+### What the dependent project holds, which is what *dropped* has to be true of
+
+The project that depended on the superseded plugin keeps its specification in that plugin's layout,
+and the figures are what any answer here has to be honest about:
+
+| what it holds | the count |
+|---|---|
+| top-level specification | **870 lines** across three documents — 107, 621 and 142 |
+| active entries | 6 files, 411 lines |
+| archived entries | 12 files, 1,039 lines |
+| the active plan, and the finished ones | 1 file of 44 lines, and 2 of 192 |
+
+⚠️ **None of that is in the path of this question.** The entries move onto a real tracker and the
+documents stay documents under that project's own migration item; what holds them afterwards is
+[§ 38](../plugins/mjolnir/config/schema.md#38-the-documents-a-project-holds-to-a-checkable-property),
+and which copy of them governs a given item is the filing role's read side. ⛔ **What is dropped is
+the authoring**, and nothing that project holds depends on this toolkit authoring it.

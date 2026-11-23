@@ -4258,6 +4258,34 @@ carries the ingestion step that shows the hidden half, the refusal on what leave
 of the three. The rule is stated here and held there; a role names this subsection and runs that
 step.
 
+### What a source establishes, and the hole a distillation reads over
+
+⛔ **A role that writes from an outside source is held to what that source establishes.** ⚠️ **This
+is the other question about the same text**, and the two come apart cleanly: the rule above asks
+what the text may be believed to *ask for*, and this one asks whether the text *supports* what is
+about to be written from it. ⛔ **Nothing enforces it** — there is no form to scan for, which is why
+it is stated rather than held, and why the three rules below are each a stop rather than a warning.
+
+- ⛔ **An exported artifact governs, and conversation prose is reconstruction.** Where the two
+  disagree the artifact wins, and a statement traceable to neither is labelled as reconstruction or
+  carried as an open question rather than written as a fact.
+- ⛔ **A structured source is parsed before anything is distilled from it**, and a parse that fails
+  is a stop naming the file. ⚠️ **A source read as prose because it would not parse** is a source
+  whose structure nothing checked, and it reads in the result exactly like one that parsed.
+- ⛔ **A path the source names may not exist here.** Every artifact the source references is looked
+  for, and the ones that did not arrive are **asked for before** anything is written from it — never
+  distilled around, which produces a confident statement about material nobody has.
+
+⚠️ **The permissive direction is the one that reads like success.** A source distilled around a hole
+produces a complete-looking artifact with the hole invisible in it, so ⛔ **the report names the
+artifacts it looked for and did not find**, by
+[the subsection below](#a-report-names-what-it-could-not-establish) — and a run that looked for none
+is never reported as one that needed none. ⚠️ **Nothing per-project is in any of this**, which is
+[§ 36](#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)'s sign that a shared file
+rather than a facet is wanted; what makes these procedure instead is that a leg of the route already
+reads a source somebody else wrote, so they attach to a role that exists rather than asking for one
+([the measurement](../../../docs/configuration-surface.md#the-part-with-nothing-per-project-in-it)).
+
 ### A report names what it could not establish
 
 ⛔ **A role's report names what it could not establish, rather than omitting it.** An absence
@@ -8391,6 +8419,23 @@ below are what tell the two cases apart**: a candidate whose per-project values 
 nothing for this surface to carry, and one whose values are a host or a credential routes through a
 project's own script — ⛔ **a candidate whose values are neither, arriving already written as data,
 is the shape a facet is carried on**, which is § 34's own argument and § 38's.
+
+⛔ **Data-shaped values are that shape only where a role or a check *reads* them.** ⚠️ **The five
+sections above each meet that condition and the third case above does not state it**, which is why
+it is stated here: read without it, *arriving already written as data* admits anything a project
+could write down. ⚠️ **A
+candidate whose values nothing reads is not a thinner facet but a different thing** — a template
+with a configuration wrapper, which is what § 38 refuses in as many words for prose by declaring no
+document's content, no heading, no wording and no style. ⛔ **The measured candidate is a role that
+writes a specification from raw sources**: its per-project values are a document set, a section list
+per document, a directory convention and a validation pass per document, every one of them arriving
+as data, and ⛔ **not one of them read by any leg of the route** — nothing downstream waits on a
+specification, and a project keeping none files its items unchanged. ⚠️ **What is left once those
+values are configuration is a role that asks the configured questions and writes the configured
+headings**, which is the pointer
+[the subsection below](#why-a-utility-has-no-home-on-this-surface-from-either-direction) forecloses —
+the boundary's letter satisfied and nothing delivered — rather than a thin leg
+([the measurement](../../../docs/configuration-surface.md#the-role-that-writes-a-specification-two-implementations-and-the-half-already-carried)).
 
 ### Why a utility has no home on this surface, from either direction
 
