@@ -9016,10 +9016,10 @@ rather than dismissed.** It costs nothing, it keeps a ruling beside the prose th
 it is the only disposition that **deletes** nothing. ⛔ **What it costs is this toolkit's own
 founding argument applied one level in**: a correction somebody paid for once stays readable by one
 project's sessions and by no other's, which is the condition the roles were extracted out of. ⚠️
-**It was also the only safe disposition while the homes were unbuilt, and that is no longer the
-state**: a ruling whose key or subsection exists is promoted without being lost, and one whose home
-does not exist is **named** rather than left where it is by default. ⛔ **So *local* is a disposition
-a ruling is given and never the one it keeps for want of a reading.**
+**And what answers it is that the homes exist**: a ruling whose key or subsection is on this surface
+is promoted without being lost, and one whose home is nowhere is **named** rather than left where it
+is by default. ⛔ **So *local* is a disposition a ruling is given, and never the one it keeps for
+want of a reading.**
 
 ### What each store owes, and why the two are mechanically different
 

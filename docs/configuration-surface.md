@@ -2469,8 +2469,8 @@ what follows is the measurement it was taken on.
 **Measured 2026-11-24, on project E**, which is the project whose two surfaces are in the shape the
 question was raised about. ⚠️ **The date carries the same weight it does in
 [`build-surface.md`](build-surface.md)**: these are living stores that move independently of this
-repository, so every figure below is a figure re-taken rather than trusted — and the re-take is
-what moved the answer, as the last subsection records.
+repository, so every figure below is a figure re-taken rather than trusted, which the last
+subsection makes a bound on re-using any of it.
 
 ### The instructions file, and the four ways it states a loop that has moved
 
@@ -2547,37 +2547,37 @@ and the class is the finding.
 follows is not** ([`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls))
 — **and neither of them is stated anywhere.**
 
-- **An acceptance condition states the failure being prevented, not an absolute.** An absolute
-  outlives the reasoning that produced it and becomes the thing a later measurement is taken
-  against — measured where it cost a correct, merged change being reported as not meeting its own
-  criterion. ⚠️ **Four legs read an acceptance condition**: the filing role writes it, the gate
+- **An acceptance condition states the failure being prevented, not an absolute** — #277. An
+  absolute outlives the reasoning that produced it and becomes the thing a later measurement is
+  taken against — measured where it cost a correct, merged change being reported as not meeting its
+  own criterion. ⚠️ **Four legs read an acceptance condition**: the filing role writes it, the gate
   checks it is present, the starting role bounds the work by it, and *implemented* is defined as it
   being answered. ⛔ **So it cannot live in one role's carrier**, by the reasoning ruling (11) gives,
   and [`§ 4.4`](../plugins/mjolnir/config/schema.md#44-template) names the section without saying
   anything about how it is phrased.
-- **A duplicate search is only as current as the moment before the write.** Measured three times in
-  one day on this repository's own backlog: a listing read, a drafting pass, and six items filed by
-  other projects' sessions in between — once taking three of four gaps the pass was about to file,
+- **A duplicate search is only as current as the moment before the write** — #278. Measured three
+  times in one day on this repository's own backlog: a listing read, a drafting pass, and six items
+  filed by other projects' sessions in between — once taking three of four gaps a pass was drafting,
   and one of those ruling against the shape it was about to propose. ⛔ **The filing role states the
   three search layers and no window**, so a search run an hour before the write reads as a search.
 
-**What happened to each: filed as its own item, citing the one this classification was made under.**
-That is the convention the inventory above has a row of its own for — a missing facet is a numbered
-item, a question inside an open one is an edit to that item — and it is what keeps a named residue
-from being a note nothing acts on.
+**What happened to each is the item named beside it**, which is where a ruling's outcome lives until
+it is on the surface. ⚠️ That is the convention the inventory above has a row of its own for — a
+missing facet is a numbered item, a question inside an open one is an edit to that item — and it is
+what keeps a named residue from being a note nothing acts on.
 
-### What the first reading predicted, and what re-taking it moved
+### A disposition is re-taken and never cited
 
-⚠️ **The question was raised when the homes did not exist, and three of them have since landed** —
-so the first reading's own residue is not this one's. Recorded because the difference is the
-argument for re-taking a measurement rather than citing it:
+⛔ **Both of this classification's inputs move: the store is live, and so is the surface the
+dispositions name.** Three of the sections the table above sends a ruling to are newer than the
+question it answers, and the figures in the item that raised that question are that item's —
+⛔ **not repeated here**, by the rule that an artifact states what is true now
+([`schema.md § An artifact states what is true now`](../plugins/mjolnir/config/schema.md#an-artifact-states-what-is-true-now)).
 
-| what the first reading held | what the re-take found |
-|---|---|
-| nineteen entries, thirteen of them rulings | 23 entries, 17 of them rulings — and the four added are the fourth class above, which the first reading had no row for |
-| two loop rulings were residue, there being no key a ruling fits | neither is: one is stated more strictly in the reviewing role than in the store, the other by § The loop's route and § 19's *per* |
-| leaving everything local was the only option that deleted nothing | true then and no longer: every disposition above but two names a section or a key that exists |
-| two rulings would need a home that did not exist yet | both have one, and the residue is a different pair entirely |
+⚠️ **So the rule this subsection exists to state is a bound on re-use**: a disposition above holds
+as of the date at the head of this section, and is **re-derived** rather than quoted by whoever
+classifies the next store. ⛔ **The one thing that does not need re-deriving is the form** — the
+three dispositions, and that a homeless ruling is named — which is procedure and is on the surface.
 
 ### What the forbidding kind cannot hold here, and why no entry is written for this repository
 
