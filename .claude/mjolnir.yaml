@@ -69,6 +69,12 @@ host:
     - workflow: "Adoption check"
       mirrors: "python3 plugins/mjolnir/skills/adoption/scripts/adoption.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ What this run holds is the rule the `commit-msg` rail carries and not whether any clone has
+    # one installed: the hook fires on a developer's machine, and neither route survives a clone, so
+    # what reports an absent rail is the install step's own per-route answer read in the repository.
+    - workflow: "Attribution rail"
+      mirrors: "python3 plugins/mjolnir/scripts/strip_attribution.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ What this run holds is the one arm no other suite can reach: § 28's layer resolved for
     # one client, the shape of a rate the tracked file never held, and that what the carrier
     # prints carries neither that rate nor the money it produces. ⛔ The projects it assembles a
