@@ -22,11 +22,18 @@ runs it.
 
 **The address decides, never the display name.** ⛔ A `Co-Authored-By:` line is
 stripped on the strength of the **address** it carries, and a display name is
-read for nothing at all. ⚠️ The reason is a measured collision rather than
-taste: `Claude` is an ordinary given name, so a rule matching the name would eat
-a human co-author -- which is the one outcome § 6 forbids outright, pairing
-credit being legitimate and the rule having only ever excluded tools. An address
-is a vendor's own, and a person's is theirs.
+read for nothing a person could have chosen. ⚠️ The reason is a measured
+collision rather than taste: `Claude` is an ordinary given name, so a rule
+matching the name would eat a human co-author -- which is the one outcome § 6
+forbids outright, pairing credit being legitimate and the rule having only ever
+excluded tools. An address is a vendor's own, and a person's is theirs.
+
+⚠️ **One marker is read across the whole trailer, and it is the stated exception
+rather than a hole in that rule**: the host's `[bot]` suffix, which it writes in
+the display name as often as in the address. ⛔ **It is admissible because it is
+not a name anybody chooses** -- the host reserves it for an account that is not a
+person -- so it cannot collide with a human the way a product name collides with
+a given name.
 
 **What the recognition list cannot be, and the direction it fails in.** ⛔ There
 is no shape that identifies a tool, so what is recognised is a **list**, and a
@@ -68,6 +75,15 @@ commit and the file is left as it was; 2 the file could not be read or written,
 which aborts the commit deliberately -- a rail that cannot read the message
 cannot hold the rule, and § 11's rule that a report names what it could not
 establish means it may not pass in silence.
+
+⚠️ **A repository stating a non-UTF-8 `i18n.commitEncoding` reaches that 2 and
+is told so**, the message being read as UTF-8. ⛔ Stated rather than left to be
+discovered: the direction is the safe one -- the commit stops instead of
+attribution passing -- but a developer meeting it needs to know it is the
+encoding and not their message. ⚠️ **A repository stating a non-default
+`core.commentChar`** has its comment lines counted as content by the emptiness
+test, which also fails safe: this rail does not abort, and git's own cleanup then
+strips the comments and aborts on the empty message itself.
 """
 
 from __future__ import annotations
@@ -172,10 +188,22 @@ def tool_co_author(value: str) -> str | None:
     address = _address_of(value)
     if address is None:
         return None
-    local, _, _rest = address.partition("@")
-    if BOT_MARKER in local.lower() or BOT_MARKER in value.lower():
-        return (f"the address `{address}` carries `{BOT_MARKER}`, the host's own "
-                "marker for an account that is not a person")
+    # ⛔ **The one read of the whole trailer and the one exception to the rule
+    # above, stated here because the code would otherwise contradict its own
+    # docstring.** The host writes this marker in the **display name** as often
+    # as in the address -- a bot whose address is a numeric login carries it
+    # nowhere else -- so a read of the address alone loses exactly the trailers
+    # this arm exists for. ⚠️ **It is not the display-name rule readmitted**:
+    # `[bot]` is a suffix the host reserves for an account that is not a person,
+    # not a name anybody chooses, so it cannot collide with a human the way a
+    # product name collides with a given name.
+    #
+    # ⚠️ One condition and not two: the address is part of the value, so a
+    # separate test of its local part was a second spelling of a question this
+    # one already answers.
+    if BOT_MARKER in value.lower():
+        return (f"the trailer carries `{BOT_MARKER}`, the host's own marker for an "
+                "account that is not a person")
     domain = _domain(address)
     if domain is None:
         return None
@@ -551,6 +579,11 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         ("the host's bot marker", bot, True),
         ("a bot marker in the display name",
          "Co-Authored-By: some-app[bot] <an-app@invalid>", True),
+        # ⛔ Both placements, because the host uses both and the record claims
+        # both. ⚠️ The display-name arm alone was the first form of this, which
+        # left the address placement asserted in the record and held by nothing.
+        ("a bot marker in the address and not the name",
+         "Co-Authored-By: Some App <some-app[bot]@invalid>", True),
         ("a person", human, False),
         ("a person named for the product", namesake, False),
         ("a domain that merely ends with the vendor's",

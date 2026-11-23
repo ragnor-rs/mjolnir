@@ -3746,9 +3746,9 @@ mechanism under it is the prose the item was written against.
 human co-author kept; a squashed message with both kinds interleaved losing every tool line and
 keeping every human one; a second pass over the first pass's output changing nothing; a message that
 is nothing but attribution refused with the file left as it was, rather than written out empty; the
-trailing run of blank lines a removed final trailer leaves behind taken off, in five shapes
-including a message with no final newline; and the hook's own invocation — one argument, written in
-place — run as a process against a planted message file. ⚠️ **The arm that makes every block
+trailing run of blank lines a removed final trailer leaves behind taken off, a message with no final
+newline among the shapes; and the hook's own invocation — one argument, written in place — run as a
+process against a planted message file. ⚠️ **The arm that makes every block
 load-bearing is asked of the *first* block**, because that is the one a rule scoped to the final
 paragraph keeps; a count over the whole message stays green against that defect and was measured
 doing so.
@@ -3761,9 +3761,21 @@ which reddened that arm and two others. The domain comparison is held against a 
 with a vendor's and one that merely starts with it, both of which belong to whoever registered them;
 against a subdomain, which does not; against the host's own marker for an account that is not a
 person, in the address and in the display name alike; against a trailer carrying no address at all,
-which is kept; against three spellings and spacings of the token; against a `Signed-off-by` naming
+which is kept; against the token's own spellings and spacings; against a `Signed-off-by` naming
 the same vendor, which is a person's attestation and is left alone; and against a line that merely
 quotes a trailer in prose.
+
+⛔ **That marker is the one read of the whole trailer and is the stated exception to the
+address rule, not a hole in it**, which is
+[§ 6 → The rail](../plugins/mjolnir/config/schema.md#the-rail-under-the-authorship-rule-and-the-three-halves-it-cannot-reach)'s
+own second row. The host writes `[bot]` in the display name as often as in the address — a bot
+whose address is a numeric login carries it nowhere else — so a read of the address alone loses
+exactly the trailers that arm exists for. ⚠️ **What makes it admissible is that it is
+not a name anybody chooses**: the host reserves the suffix for an account that is not a person, so
+it cannot collide with a human the way a product name collides with a given name. ⚠️ **Found by
+this change's own review** — the code read the whole trailer while its docstring said a display name
+decided nothing, which is a rule contradicted by its own implementation and the direction nothing
+would have reported.
 
 **The recognition list is data and is held as data.** ⛔ There is no shape that identifies a tool, so
 what is recognised is a list — vendor domains for the trailer rule, product and vendor spellings for
@@ -3772,9 +3784,8 @@ stated once, and carrying a reason of at least five words; the domains are addit
 be domains rather than addresses. ⚠️ **A mistyped member of a shipped list is otherwise silent.**
 **The marker rule is held on both halves** — the phrase and a recognised name, which is
 [§ 6 → The rail](../plugins/mjolnir/config/schema.md#the-rail-under-the-authorship-rule-and-the-three-halves-it-cannot-reach)'s
-list rule reaching the one line that carries no address — and the suite plants three ordinary
-sentences carrying the phrase, one of them a sentence about this very rule, and asserts each is
-kept.
+list rule reaching the one line that carries no address — and the suite plants ordinary sentences
+carrying the phrase, one of them a sentence about this very rule, and asserts each is kept.
 
 **The copy an adopting repository is given.** Everything above a sentinel line is the rule and is
 what the install step vendors; everything below is the renderer and the suite. The arms assert the
