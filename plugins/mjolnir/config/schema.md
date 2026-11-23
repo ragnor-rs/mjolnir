@@ -8418,12 +8418,13 @@ route and each of which carries per-project facts a role or a check reads. ⚠�
 below are what tell the two cases apart**: a candidate whose per-project values are *none* has
 nothing for this surface to carry, and one whose values are a host or a credential routes through a
 project's own script — ⛔ **a candidate whose values are neither, arriving already written as data,
-is the shape a facet is carried on**, which is § 34's own argument and § 38's.
+is the shape a facet is carried on**, which is § 34's own argument and § 38's. ⛔ **Under the
+condition the next paragraph states, and never read without it**: the sentence alone admits anything
+a project could write down.
 
 ⛔ **Data-shaped values are that shape only where a role or a check *reads* them.** ⚠️ **The five
-sections above each meet that condition and the third case above does not state it**, which is why
-it is stated here: read without it, *arriving already written as data* admits anything a project
-could write down. ⚠️ **A
+sections above each meet that condition**, which is why it is stated rather than left to be read off
+them. ⚠️ **A
 candidate whose values nothing reads is not a thinner facet but a different thing** — a template
 with a configuration wrapper, which is what § 38 refuses in as many words for prose by declaring no
 document's content, no heading, no wording and no style. ⛔ **The measured candidate is a role that

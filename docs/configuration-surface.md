@@ -3814,7 +3814,7 @@ been **one** copy of this role.
 
 | what was claimed | what the count says |
 |---|---|
-| a project skill turning sources into a requirements document, a screens-and-components breakdown and a cross-session task list | **confirmed, and one copy.** 95 lines, in one project. Every skill and command directory across the six holds no second one, and no other project's history carries the path |
+| a project skill turning sources into a requirements document, a screens-and-components breakdown and a cross-session task list | **confirmed, and one copy.** 95 lines, in one project. Every skill and command directory across the six holds no second one, and no other project's history carries the path. ⚠️ **The sweep was keyed on the path and not on the mechanism**, so a copy under a wholly unrelated name is outside what it covered — the step [the earlier count](#the-counts-and-the-one-of-the-two-that-has-only-ever-had-one-copy) did take and this one did not |
 | a superseded plugin carrying it as five skills plus a brainstorm front end | **confirmed.** Six carriers, 902 lines — 337, 195, 143, 114, 63 and 50 — in a third-party repository, not in any project here |
 
 ⚠️ **The one copy has had two carriers and never two copies.** It was a slash command until
@@ -3829,11 +3829,11 @@ different number from a sweep keyed on the role.
 2026-11-19 the project holding it moved its development process onto this toolkit, and what that
 commit did to this 95-line file is **six insertions and six deletions**, leaving it 95 lines:
 
-| what changed | what it means |
+| what changed, over six lines | what it means |
 |---|---|
-| four references to that project's own former role carriers became references to this toolkit's starting and finishing roles | the legs this toolkit carries are called rather than reimplemented |
-| a hard-coded tracker field identifier became a read of `work_item.grouping.sprint` out of that project's configuration | the per-project value is read from the one file rather than written twice |
-| *follow that role's steps 4–5 verbatim* became a pointer at `branch_model.tree_dir` and that project's own tree-mechanics file | ⚠️ **the direction worth noting** — the migration **removed** the instruction to follow another role's steps and replaced it with two configuration keys |
+| **four lines** naming that project's own former role carriers now name this toolkit's starting and finishing roles — five references, one line carrying two | the legs this toolkit carries are called rather than reimplemented |
+| **one line** where *per that role's rules* became *which is `work_item.grouping.sprint` in the configuration*. ⚠️ The tracker field identifier beside it is unchanged — what moved is where its value is **stated**, not the value | the per-project fact is read from the one file rather than depending on another role's text |
+| **one line** where *follow that role's steps 4–5 verbatim* became a pointer at `branch_model.tree_dir` and that project's own tree-mechanics file | ⚠️ **the direction worth noting** — the migration **removed** the instruction to follow another role's steps and replaced it with a key |
 
 **Nothing moved out of the file.** An adopter mid-migration, with every incentive to hand this work
 to the toolkit it was adopting, kept the document-writing local and rewired the three things it
@@ -3906,7 +3906,10 @@ and the figures are what any answer here has to be honest about:
 | the active plan, and the finished ones | 1 file of 44 lines, and 2 of 192 |
 
 ⚠️ **None of that is in the path of this question.** The entries move onto a real tracker and the
-documents stay documents under that project's own migration item; what holds them afterwards is
+documents stay documents under that project's own migration item, and the two things that then bear
+on such a corpus are ⛔ **at different stages and are not presented as one**: what *holds* it is
 [§ 38](../plugins/mjolnir/config/schema.md#38-the-documents-a-project-holds-to-a-checkable-property),
-and which copy of them governs a given item is the filing role's read side. ⛔ **What is dropped is
-the authoring**, and nothing that project holds depends on this toolkit authoring it.
+which is shipped and readable from a project's own configuration today, while which *copy* of it
+governs a given item is the filing role's read side and is an **open item** with nothing built.
+⛔ **What is dropped is the authoring**, and nothing that project holds depends on this toolkit
+authoring it.
