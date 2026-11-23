@@ -95,6 +95,13 @@ can read nothing but a file, the toolkit writes that file itself, under
 marked as generated, byte-identical on a second run, and removed again when your configuration stops
 asking for it.
 
+**One cost is not a file anybody writes, and it is the one worth knowing before you start.** If your
+project **already** describes its own process — in the file your agent reads every session, or in
+the memory it keeps about your repository — that description does not stop being read when the local
+copies go, and the toolkit cannot reach it to take it out. What is owed there, ruling by ruling, and
+which half of it a check can hold at all, is
+[stated rather than left to you to discover](plugins/mjolnir/config/schema.md#what-a-project-already-holds-that-states-the-loop-and-what-adopting-it-does-to-that).
+
 ## What you type
 
 Skills are addressed **namespaced, with no alias** — the rule, and why it is procedure rather than

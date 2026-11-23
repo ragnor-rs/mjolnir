@@ -9679,6 +9679,14 @@ MARKED_PROCEDURE = [
     "lines_changed",
     "max_lines",
     "readings",
+    # § What a project already holds's. ⛔ The marked key whose rule is about what
+    # an adopting project already had before this surface reached it: a pointer
+    # at its own store of rulings, which is the shape a reader meeting that
+    # section reaches for first and the one § 27 makes look admissible. What
+    # refuses it is that a pointer carries values a role reads, and a ruling is
+    # not a value -- so a project writing this would be configuring the
+    # procedure to be read out of a file nobody shares.
+    "rulings",
     # § What a project is asked's. ⛔ The marked key whose rule is about the step
     # that writes a configuration rather than about one a configuration carries:
     # a project writing this would be configuring its own interrogation, which is

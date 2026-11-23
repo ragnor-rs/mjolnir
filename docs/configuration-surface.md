@@ -2458,6 +2458,142 @@ status a caller reads keeps a stale fact off the one a current fact gets. Whethe
 reading of the premise against the tree is right is outside it — the same split the admission
 carries one half over.
 
+## The third surface: one store read whole, and the classes the loop's share misses
+
+The facet above says where a project's memory store **is**. This section is about what is **in**
+one, together with the project's own instructions file — the two stores a migration leaves standing
+when it deletes a project's loop carriers and writes its configuration. The ruling is
+[`schema.md § What a project already holds`](../plugins/mjolnir/config/schema.md#what-a-project-already-holds-that-states-the-loop-and-what-adopting-it-does-to-that);
+what follows is the measurement it was taken on.
+
+**Measured 2026-11-24, on project E**, which is the project whose two surfaces are in the shape the
+question was raised about. ⚠️ **The date carries the same weight it does in
+[`build-surface.md`](build-surface.md)**: these are living stores that move independently of this
+repository, so every figure below is a figure re-taken rather than trusted — and the re-take is
+what moved the answer, as the last subsection records.
+
+### The instructions file, and the four ways it states a loop that has moved
+
+A 1,139-line file, and the loop is in it four times over:
+
+| what it carries | where |
+|---|---|
+| three loop invocations in their **bare** form, `/<name>` with no namespace | twice: a status blockquote at the head, and the tracker section 77 lines down |
+| the carrier directory, **by path** | the same tracker section, naming the three roles again as its own files |
+| the gating rule, in its own words — *refuses an issue with any open blocker* | a sentence of its own, which is [`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)'s `no_open_blockers` restated |
+| the status vocabulary and two label conventions, as document bullets rather than as keys | four lines of the same section — which are [`schema.md § 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)'s ordered set and [`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority)'s carrier and values |
+
+⛔ **The third row is the one that makes this a second authority rather than a stale link.** A path
+that no longer resolves is discoverable; a gating rule stated in prose beside a configured one is
+two statements of a predicate, and the prose copy is the one a session reads first — which is why
+the file is held as a governed document rather than merely edited
+([`schema.md § What each store owes`](../plugins/mjolnir/config/schema.md#what-each-store-owes-and-why-the-two-are-mechanically-different)).
+⚠️ **The first row is the half that has a second reader**: the bare form stays matched for ever by
+the day log's ritual list while the document is rewritten to the namespaced one, which is
+[`schema.md § The invocation changes`](../plugins/mjolnir/config/schema.md#the-invocation-changes-and-the-two-surfaces-move-in-opposite-directions).
+
+### The store, read whole: 23 entries, of which 17 are rulings
+
+One file per fact plus the index, with a row in the index for every file and no file the index
+misses. ⚠️ **Classified against the homes that exist now**, which is the point of the exercise: a
+disposition is only sound against a surface somebody can open. The three dispositions and the rule
+that the subject is the whole store rather than its loop rulings are
+[`schema.md § Every ruling in those stores is classified`](../plugins/mjolnir/config/schema.md#every-ruling-in-those-stores-is-classified-and-the-subject-is-the-whole-store).
+
+| the entry, by its content | class | disposition |
+|---|---|---|
+| work is not done until committed, pushed, reviewed, green and merged — with *fixed locally* and *committed to a branch* named as in progress | the loop | **configuration**: [`§ 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)'s ordered `done:` list, whose entries are the states this names as near misses |
+| a manual pass on the running application is required before a merge, a green gate not being sufficient | the loop | **configuration**: a `done:` check whose `answered_by` is a person, same section |
+| a class of change commits straight to the integration branch and skips the loop | the loop | **configuration**: [`§ 30`](../plugins/mjolnir/config/schema.md#30-the-changes-that-do-not-go-through-the-loop)'s `classes` and its destination |
+| a reviewing tool's confidence cut hides real findings clustered under it | the loop | **promoted, already stated** — and more strictly: the reviewing role separates *real* from *firing*, makes a reproduction the score, and carries both into a delegation |
+| finishing one item does not authorise starting the next | the loop | **promoted, already stated**: [`§ The loop`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s route ends at the merge and claims nothing past it, and *an approval is per act* is [`§ 19`](../plugins/mjolnir/config/schema.md#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs)'s |
+| assert values, never key sets | review | **promoted**: [`§ What earns a test`](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable) |
+| a fixture thinner than the production shape tests the fixture | review | **promoted**: the same subsection |
+| a message may claim a specific cause only where the layer below reported that cause | review | **promoted, already stated** for a role's own report — a precondition's failure is never folded into the conclusion ([`§ 2`](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)) and a report names what it could not establish ([`§ 11`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)) — and **deliberately local** for the artifact the project ships |
+| an absolute in an acceptance condition becomes the thing measured against later | review | ⛔ **residue, named** — see below |
+| text the user typed and the system silently capped must be said to be capped | review | **deliberately local**: the same report rule as above, applied to a product's own output rather than a role's |
+| structure a provider already reports is read rather than asked for | review | **deliberately local**: the same shape as *detect what is detectable, and read nothing twice* ([`§ What a project is asked`](../plugins/mjolnir/config/schema.md#what-a-project-is-asked-and-the-one-file-the-answers-are-written-into)), applied to a model's output |
+| a schema migration's version is chosen against the order branches merge in | technology | **deliberately local**, and generalising to no other project of the six |
+| an applied migration is immutable, a comment change included | technology | **deliberately local**, same |
+| re-read the shared tracker's list immediately before filing, because other projects' sessions file into it | the toolkit | ⛔ **residue, named** — see below |
+| every item filed here carries at least the second priority value, and the first is never lowered | the toolkit | **configuration**, and already written: [`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority)'s values and writer, in this repository's own file |
+| a missing facet is its own item; a question inside an open one is an edit to that item | the toolkit | **promoted, already stated**: the filing role's **parent** relationship, whose default is a check item on the parent rather than a new item |
+| this toolkit names no technology and no project | the toolkit | **promoted, already stated**: [`§ What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls), and the sweep that holds it |
+| the project's whole build state, as one 1,952-line entry with a *resume here* heading | not a ruling | **configuration**: [`§ 11`](../plugins/mjolnir/config/schema.md#11-session-context)'s artifact, living in the memory store instead of where that facet puts it |
+| parked ideas nobody has scheduled, and *do not open an item for one unasked* | not a ruling, plus one | the queue is **deliberately local**; the rule in it is **already stated** — filing is entered by a person, by § The loop's own table |
+| a product requirement about which layer owns localisation | not a ruling | **deliberately local** |
+| which of two service accounts a local run uses, with a live credential written out in full | not a ruling | **deliberately local** — and ⚠️ the one entry that makes the carrier's *neither committed nor ignored* a security property rather than a tidiness one |
+| a retrieval floor that is relative rather than absolute, with one sentence about a test that encoded the bug | not a ruling, plus one | **deliberately local**; the sentence is **promoted** already, as *a test is read off what was asked for* |
+| that this project's loop is being replaced by this toolkit, naming the carrier directory it deletes | not a ruling | ⚠️ **the entry whose premise the migration itself removes**, reported under [`§ 25`](../plugins/mjolnir/config/schema.md#the-standing-a-recalled-fact-is-reported-under)'s standing rather than rewritten into a claim |
+
+### The fourth class, which a reading scoped to the loop does not surface at all
+
+**Four of the seventeen rulings are about the shared toolkit and are held in a consumer's store.**
+They are not that project's rulings at all: they state how to file into this backlog, what priority
+an item here carries, where a gap goes, and that nothing here names a technology. ⛔ **Left where
+they are, they are read by the one project's sessions and by no other's, which is this argument in
+its purest form** — the subject is the shared thing and the store is one consumer's.
+
+⚠️ **The class is confirmed independently in a second store**, measured the same day: another
+project of the set carries an entry whose subject is a guard **in this repository**, naming this
+repository by a path on the machine. ⛔ **So the direction is not one project's habit.** That second
+store is otherwise a different shape entirely — hundreds of entries, an index whose rows are rolled
+up rather than one line each, and its own language — which is why the inventory above is one store's
+and the class is the finding.
+
+### The two rulings with no home, named
+
+⛔ **Both are procedure by the surface's own test — a value a role reads is a key and a rule it
+follows is not** ([`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls))
+— **and neither of them is stated anywhere.**
+
+- **An acceptance condition states the failure being prevented, not an absolute.** An absolute
+  outlives the reasoning that produced it and becomes the thing a later measurement is taken
+  against — measured where it cost a correct, merged change being reported as not meeting its own
+  criterion. ⚠️ **Four legs read an acceptance condition**: the filing role writes it, the gate
+  checks it is present, the starting role bounds the work by it, and *implemented* is defined as it
+  being answered. ⛔ **So it cannot live in one role's carrier**, by the reasoning ruling (11) gives,
+  and [`§ 4.4`](../plugins/mjolnir/config/schema.md#44-template) names the section without saying
+  anything about how it is phrased.
+- **A duplicate search is only as current as the moment before the write.** Measured three times in
+  one day on this repository's own backlog: a listing read, a drafting pass, and six items filed by
+  other projects' sessions in between — once taking three of four gaps the pass was about to file,
+  and one of those ruling against the shape it was about to propose. ⛔ **The filing role states the
+  three search layers and no window**, so a search run an hour before the write reads as a search.
+
+**What happened to each: filed as its own item, citing the one this classification was made under.**
+That is the convention the inventory above has a row of its own for — a missing facet is a numbered
+item, a question inside an open one is an edit to that item — and it is what keeps a named residue
+from being a note nothing acts on.
+
+### What the first reading predicted, and what re-taking it moved
+
+⚠️ **The question was raised when the homes did not exist, and three of them have since landed** —
+so the first reading's own residue is not this one's. Recorded because the difference is the
+argument for re-taking a measurement rather than citing it:
+
+| what the first reading held | what the re-take found |
+|---|---|
+| nineteen entries, thirteen of them rulings | 23 entries, 17 of them rulings — and the four added are the fourth class above, which the first reading had no row for |
+| two loop rulings were residue, there being no key a ruling fits | neither is: one is stated more strictly in the reviewing role than in the store, the other by § The loop's route and § 19's *per* |
+| leaving everything local was the only option that deleted nothing | true then and no longer: every disposition above but two names a section or a key that exists |
+| two rulings would need a home that did not exist yet | both have one, and the residue is a different pair entirely |
+
+### What the forbidding kind cannot hold here, and why no entry is written for this repository
+
+[`schema.md § 38`](../plugins/mjolnir/config/schema.md#38-the-documents-a-project-holds-to-a-checkable-property)'s
+`forbidden` is what holds the instructions-file half in an adopting project. ⛔ **This repository
+writes no such entry for itself, and the reason is measured rather than conceded.** Swept over the
+21 governed documents, a pattern for the bare form of every loop name matches **exactly one line** —
+a measurement in a role's own carrier, stating that one project's transcripts carry the namespaced
+and the bare form side by side, which is why the day log's ritual list reads both. ⛔ **That document
+is correct**, and a lexical ban cannot tell it from one naming a dead route. ⚠️ **It is the failure
+[the sweep for the role-resolution shortcut](#the-shortcut-one-copy-names-outright) reproduced inside
+the change that introduced it**, arriving one facet over and in the same direction: a forbidding
+check about a rule is the one most likely to forbid the prose that states it. ⛔ **An adopting
+project is not in that position** — its documents have no reason to quote the form as evidence — so
+the entry is sound there and stated as that project's rather than as this one's.
+
 ## The day log's destination port
 
 The destination was on this surface from the start, and as one key: a directory, in the section
