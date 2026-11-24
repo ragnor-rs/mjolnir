@@ -64,6 +64,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import spend as position  # noqa: E402 -- the one reading of where a command is
 
+# What this carrier is, read from this file and declared nowhere else, by schema.md
+# § Whether a project can adopt this procedure at all. ⛔ The class is the hook's own and not
+# the role's: a role's carrier declares itself in its own file, and one script can be both.
+CARRIER_CLASS = "guard"
+
 # --- where the rules live --------------------------------------------------
 
 SURFACE = Path(__file__).resolve().parent.parent / "config" / "schema.md"

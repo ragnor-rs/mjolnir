@@ -103,6 +103,11 @@ work_item:
     closes_items: false
     # Whoever ordered the work decides a grouping is finished; no role in the loop does.
     closed_by: orderer
+    # The milestones here are named after releases and a branch is cut per release, so the ref is
+    # the prefix joined onto the milestone's own title. ⚠️ `kind: milestone` above and a ref named
+    # after it is not a contradiction: `kind` says what the grouping is to the plan, and this key
+    # says a ref carries its value — which is why § 39 reads this key and not that one.
+    ref_prefix: "release/"
 
 # ⛔ Two statuses, because an issue has two states and there is no field to carry a third.
 # No `in_flight` role at all: nothing on this tracker can hold "someone is working on it",
@@ -486,7 +491,28 @@ documents:
         correct sentence can carry it.
   quoted: []
 
-# § 39's absent case, in its other shape: `deploy: []` above, so there is no target for a
+# § 39's live arm, and the one example that carries it. The specification is a tree in this
+# repository and the release branch for each version carries it as it stood there, so a filing
+# role reads it at the ref `work_item.grouping.ref_prefix` composes and never out of the working
+# tree — which under § 10 is some other item's branch.
+#
+# ⛔ `spec/` and not `docs/`, which is the coherence worth reading twice: `documents.files` above
+# governs `*.md` and `docs/**/*.md`, and this corpus is deliberately outside both. § 38's checks
+# read the index — the files in the tree now — while this facet reads a **ref**, so a document at
+# an old release's branch is not a file any graph check can open. Governing one set with both
+# would be a graph held to whichever version happened to be checked out.
+#
+# ⚠️ No `grouping` key, because this project carries one grouping: § 4.8 resolves the single form
+# to one entry and naming it here would be the entry spelling a key the configuration states.
+spec_corpus:
+  carrier: repository
+  files: ["spec/**/*.md"]
+  # ⛔ The requirements are read whole and the rest of the corpus is matched on keywords from the
+  # request. A corpus large enough to need this distinction is the only kind worth configuring:
+  # reading all of it every time is what projects do until the read stops fitting.
+  load_bearing: ["spec/requirements/**/*.md"]
+
+# § 40's absent case, in its other shape: `deploy: []` above, so there is no target for a
 # criterion to be measurable **on**. ⛔ Not a project whose work goes unjudged — somebody reads
 # the change — and nothing here says whether anybody looks at a running copy by hand.
 verify:

@@ -573,14 +573,82 @@ no merge, and the reply says whether the place is free; asking the holder to rel
 and taking it is not. A teardown that stops every holder on the machine belongs between items, never
 inside one.
 
+⛔ **Launching this project's test tiers is this step's, and the tiers are read rather than
+remembered.**
+[`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask) names
+this role as what launches one and the deploy role as what launches none, and
+[`§ 31`](../../config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) states
+what each tier needs before it can run at all. ⛔ **One reading, taken through the reader** — a role
+parsing that facet for itself is a second reader of it, free to disagree with the first about what
+the project wrote:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --tier <each tier § 31 states> \
+  --against-target <the target this change is verified on, where the project states one>
+```
+
+- ⛔ **Which suites this is owed for is read off the verdict source, never off a tier's name.** A
+  suite whose verdict is a `workflow` was answered by that workflow's own triggers
+  ([`§ 2`](../../config/schema.md#2-code-host)) and read at the head of this step, so nothing here
+  starts it; a suite whose verdict is a `command` is a `checks_local` entry, and ⚠️ **whether that
+  command runs here was already decided above** — by the mirrored-or-not division and the `done:`
+  carve-out, which this reading does not re-decide and may not contradict. ⛔ **What this reading
+  decides is the other question: whether the tier may run at all**, which
+  [`§ 31`](../../config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) holds
+  and § 17 does not — ⛔ **so a suite the division above sends elsewhere is reported with its tier's
+  own answer and launched by nobody twice.** ⚠️ **A project whose whole suite the host runs
+  therefore configures nothing and gets today's behaviour.**
+- ⛔ **Every suite so identified whose preconditions hold is launched, and this step runs whole**:
+  one that fails does not stop the ones after it, and a change failing two hears about both.
+  ⚠️ **The order is the project's own list order**, never one composed here.
+- ⛔ **The preconditions are the suite's own `needs`, and each is established before the suite is
+  started rather than discovered by starting it.** ⛔ **A need this pass cannot establish is
+  reported unestablished and the suite is not launched on the guess**
+  ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)) — a suite launched
+  without what it needs produces the reading this whole step exists to prevent, which is a number
+  that measured nothing.
+- ⛔ **A suite the reading comes back `refused` on is stopped before any case runs**, and reported
+  refused with that rule. ⛔ **Never run and then discounted** — the refusal is about a target, so a
+  suite run first has already spent whatever the refusal was protecting.
+- ⛔ **A suite reported `started: asked` is never started unasked**, and what performs the asking is
+  [`§ 19`](../../config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)'s
+  guard rather than a question composed here. ⛔ **A pass without it names the suite and what that
+  leaves unmeasured**, because a run that measured little must not read like one that measured
+  everything.
+- ⛔ **A suite whose `verdict` comes back `null` is reported as the reading reports it, and this
+  step folds it into no green.** ⚠️ **What that reading means is § 31's no-answer arm and is not
+  restated here**; what is this step's is the act of not counting it. ⚠️ **And the
+  person-judged tier is not that shape**: it is answered by
+  [`§ 13`](../../config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)'s
+  own person-answered check, the reader says which of the two a sourceless suite is, and ⛔ this step
+  never decides it from the absence of a source
+  ([`§ 31`](../../config/schema.md#where-a-tiers-verdict-comes-from-and-the-tier-that-has-none)).
+- ⛔ **A case the run deselected is reported as deselected with the criterion it was dropped by** —
+  `selects`, off the same reading — and ⛔ **the cases asserting only that the target came up still
+  run and still fail.** ⚠️ **Where the reading reports the criterion `unheld`, say so**: nothing
+  compares it against the suite in either direction, so a healthy count can be a count over a
+  shrinking set.
+- ⛔ **A pass produced where a stated invalidation was not applied is not reported as proof**, which
+  is [`§ 17`](../../config/schema.md#what-a-pass-does-not-prove-and-the-command-that-defeats-a-stale-one)'s
+  form and not this file's. ⚠️ **The vacuous pass is this tier's characteristic defect** and an exit
+  status cannot show it: a case whose whole subject is new behaviour passing against a build that
+  predates it has proved nothing.
+- ⚠️ **A project stating the facet absent has nothing here to launch**, and the reading says so as
+  **unavailable** rather than as nothing to run — today's behaviour unchanged, and ⛔ not a project
+  whose suites passed.
+
+⛔ **The report is per suite and names which of three happened: it ran and what it proved, it was
+refused and by which rule, or it could not run and what was lacking.** ⛔ **A suite that did not run
+is never folded into a verdict.**
+
 ⚠️ **A tier that could not run at all is not a tier that passed.** A missing credential, a service
 that never came up, material a run needed and did not have, a case set silently narrowed: each
 reports less than it looks like. ⛔ **A skip is reported as a skip and never folded into the
 count**, and a tier reporting several numbers is reported by all of them, since one of them cannot
 say whether a fluent answer is hiding a failed retrieval — a dimension reporting nothing measured
-nothing. ⛔ **Report by name which checks ran, and say plainly when one did not and why.** The
-surface holds no facet for a tier's own preconditions, so this is procedure held by the report
-rather than by a key.
+nothing. ⛔ **Report by name which checks ran, and say plainly when one did not and why.** ⚠️ **What
+a tier needs before it can run at all is § 31's and is read there**, the reading above being where
+this step gets it; what stays procedure here is that the report distinguishes the three outcomes.
 
 ⛔ **A tier with a real per-run cost is run on a stated test over the diff, and a skip taken for
 cost is reported with its reason** — a quiet omission is indistinguishable from a pass, and a step
@@ -816,3 +884,12 @@ enters it.
   strand the change where nothing resumes it** — no leg is entered on *an open change with an
   unanswered question* — and the merging leg's own ask is where silence does stop things, which is
   the one place it can stop them safely.
+
+## What this carrier is
+
+```yaml
+# carrier: review
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).

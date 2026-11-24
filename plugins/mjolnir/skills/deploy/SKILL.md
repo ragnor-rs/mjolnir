@@ -360,7 +360,9 @@ What a run delivered is read from its **log**, through the port's own operation,
 - **What is read is the project's and is named rather than described.** Where the verification is a
   suite, which tiers ran is
   [`§ 31`](../../config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s
-  classification and launching them is not this role's: ⛔ **report which ran, by name**, and report
+  classification and launching them is not this role's but the reviewing one's
+  ([`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)):
+  ⛔ **report which ran, by name**, and report
   one that skipped as *the gate did not run* rather than as *the gate passed*.
 - **Then the `after` steps, and only those** — the `before` ones were performed in step 4b, and
   ⛔ **a step placed `after` is never brought forward to here from there or the other way round**,
@@ -520,3 +522,12 @@ the facts, with a table where the content enumerates.
   ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): a target that could not
   be chosen, a precondition nobody can supply, a batch nothing could assemble. Nothing is noted for
   later.
+
+## What this carrier is
+
+```yaml
+# carrier: deploy
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).

@@ -743,7 +743,26 @@ documents:
   revisit_when: >-
     A document moves into the repository, which is the first one a check here could read.
 
-# § 39's absent case. Two environments and no accepted role: a release branch is verified on the
+# § 39's absent case, and it is the **wiki** reading rather than a project with no specification:
+# this one has a specification and it is not in the repository, so there is no ref to read it at
+# and the filing role files without one. ⛔ The pairing with `documents` above is the whole of why
+# it reads this way — the same wiki, answered twice because the two facets ask different
+# questions: that one asks what holds the prose a check can open, this one asks which copy of the
+# specification governs an item. ⚠️ And the grouping half is beside the point here: a release
+# scope with a `ref_prefix` is carried above, so the ref could be composed — what is missing is a
+# corpus at the end of it.
+spec_corpus:
+  carrier: none
+  absent_reason: >-
+    The specification lives in a wiki outside this repository, so no branch carries a copy of it
+    and there is nothing for a filing role to read at a ref. A reader that took the wiki as the
+    corpus would be reading whatever is current rather than the copy that governs the version.
+  revisit_when: >-
+    The specification moves into the repository — the first moment a release branch carries the
+    copy that governs its own version — or a port is grown for the wiki, which § 3 declines to do
+    for one measured shape.
+
+# § 40's absent case. Two environments and no accepted role: a release branch is verified on the
 # first and shipped from the second, and both moves write the finished state — so there is no
 # state a verdict could be recorded into, and ⛔ nothing here reads one as a precondition either.
 verify:

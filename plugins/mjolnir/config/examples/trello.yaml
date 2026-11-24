@@ -667,7 +667,18 @@ documents:
   revisit_when: >-
     A second document is added, which is the first moment two files here can disagree.
 
-# § 39's stated arm, and the only shipped example that carries one: this is the ladder with an
+# § 39's absent case. One readme and no grouping above, so there is neither a corpus to read nor a
+# version to read it at.
+spec_corpus:
+  carrier: none
+  absent_reason: >-
+    The one document here is a readme describing the service as it is now. Nothing states what it
+    was for an earlier version, and nothing groups the cards on this board into one.
+  revisit_when: >-
+    Somebody outside the two people who work on this service starts being told what a version of
+    it does — the first reader of a copy that is not the current one.
+
+# § 40's stated arm, and the only shipped example that carries one: this is the ladder with an
 # `accepted` role in it, so it is the one project here where somebody judges a deployed item
 # before a release may carry it. ⛔ `identity` is keyed by a target's own `name` from `deploy`
 # above and never by a name invented here — one entry, for the shared environment, because that

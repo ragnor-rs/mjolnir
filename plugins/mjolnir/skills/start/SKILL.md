@@ -398,3 +398,12 @@ rather than restating how any project's work is done. ⛔ **And nothing is carve
 later** ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): the leg after this
 one is entered on the condition **answered**, so a pass that implements part of an item has not
 reached the next leg and does not hand to it.
+
+## What this carrier is
+
+```yaml
+# carrier: start
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).

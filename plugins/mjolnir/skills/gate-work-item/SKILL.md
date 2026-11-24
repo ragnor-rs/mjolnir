@@ -383,3 +383,12 @@ the person addressed this role in.
 verdict — and the next role reads those as the predicates
 [`§ 5`](../../config/schema.md#5-readiness-gate--an-ordered-predicate-list) states rather than as
 text to act on. Nothing here crosses a role boundary in a file.
+
+## What this carrier is
+
+```yaml
+# carrier: gate
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).

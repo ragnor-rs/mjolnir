@@ -340,7 +340,22 @@ documents:
   revisit_when: >-
     Somebody other than the author starts relying on one of these documents being current.
 
-# § 39's absent case, and on this project both of its shapes hold at once: no deploy target and no
+# § 39's absent case, on the configuration that has the least to say about anything: the plan
+# document above is the nearest thing here to a specification, it is read at the tree the person
+# is standing in, and `work_item.grouping.carrier` is `none` — so there is no version, no ref and
+# no second copy. ⚠️ Stated rather than left out, which is the whole of what the absent case buys:
+# a project with no corpus and a project that has not thought about one read identically otherwise.
+spec_corpus:
+  carrier: none
+  absent_reason: >-
+    One person, one plan document, one copy of it. Nothing here is grouped into a version and no
+    branch carries a copy of the plan as it stood for one, so there is no ref a filing role could
+    read it at that is not simply the tree.
+  revisit_when: >-
+    This project gains a grouping that names versions, which § 4.8 above is the trigger for and
+    which is also the first moment one copy of the plan governs an item and another does not.
+
+# § 40's absent case, and on this project both of its shapes hold at once: no deploy target and no
 # status ladder at all. ⛔ The absence is still written rather than left out — a project that never
 # looked and a project that decided read identically otherwise.
 verify:

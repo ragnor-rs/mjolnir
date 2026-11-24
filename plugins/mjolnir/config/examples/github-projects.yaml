@@ -569,7 +569,22 @@ documents:
     A second document starts being built from the content of a first — the point at which one of
     them can go stale against the other with nothing saying so.
 
-# § 39's absent case, and the shape worth showing: this project **deploys** and still judges
+# § 39's absent case, and the reading is the grouping's rather than the corpus's: this project
+# plans in iterations and ships continuously, so nothing here is a version and no branch carries a
+# copy of anything as it stood for one. ⛔ Not a project whose notes are thin — that is the facet
+# above — and not one keeping its specification outside the repository either, which is the other
+# reading of this carrier and a different sentence to write.
+spec_corpus:
+  carrier: none
+  absent_reason: >-
+    There is no version here to read a corpus at: the grouping above is a time box, the service is
+    deployed from the integration branch continuously, and the notes that describe it are read as
+    they stand rather than as they stood for a release.
+  revisit_when: >-
+    This project starts cutting versions and a branch per version, which is the first moment one
+    copy of its prose governs an item and another does not.
+
+# § 40's absent case, and the shape worth showing: this project **deploys** and still judges
 # nothing through the procedure, because its ladder maps no `accepted` role at all — an item goes
 # from code landed to finished and there is no state between them for a verdict to be written
 # into. ⛔ So the accepting role runs nothing here and is asked for no verdict, and the

@@ -32,6 +32,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import io
 import json
 import os
@@ -48,6 +49,11 @@ if _SCRIPTS not in sys.path:
     sys.path.insert(0, _SCRIPTS)
 
 import claim  # noqa: E402
+
+# What this carrier is, read from this file and declared nowhere else, by schema.md
+# § Whether a project can adopt this procedure at all. ⛔ The class is the hook's own and not
+# the role's: a role's carrier declares itself in its own file, and one script can be both.
+CARRIER_CLASS = "guard"
 
 SURFACE = Path(__file__).resolve().parent.parent / "config" / "schema.md"
 CARRIER = Path(__file__).resolve().parent.parent / "hooks" / "hooks.json"
@@ -781,19 +787,33 @@ def answer(payload: dict, *, run=None) -> dict:
         return {}
     cwd = str(payload.get("cwd") or ".")
     try:
-        if not reader.configured(cwd):
-            return {}
+        loaded, stop = reader.read_or_why(cwd)
     except Exception:  # noqa: BLE001 -- an unreachable reader says nothing, as above
         return {}
-    try:
-        loaded = reader.load(cwd, check_paths=False)
-    except Exception as error:  # noqa: BLE001 -- a stated configuration that does not resolve
+    if stop:
         # ⚠️ Absent and unreadable are different answers and only the first is silent (§ 7): a
         # project whose file has a typo in it would otherwise read as a project that wrote none.
+        #
+        # ⛔ **And the answer carries the reader's own stop whole**, which is § 19's rule at *the
+        # answer carries the reader's own stop* and the reason this arm asks `read_or_why` rather
+        # than `load`: the class name this arm used to send — `ConfigError` — is the one word a
+        # reader cannot act on, while the stop the reader had already composed names the key.
+        # Measured on an adopting project refused by a newly required key: about twenty tool calls
+        # through this plugin's source to recover a string the hook had been handed and discarded.
+        # ⚠️ **And it is the only thing this event says about that state**, which is why the cause
+        # belongs in it rather than only in the CLI arm: this answer is a line to the person by the
+        # docstring's own channel rule, so nothing else carries the key to whoever opened the
+        # session.
+        #
+        # ⛔ The cut and the class prefix are `refusal_text`'s and are not composed here, by that
+        # subsection's own one-implementation rule: copies of a cut disagree the first time one of
+        # them is reworded.
         return {"systemMessage": (
-            f"Landed trees: this project's configuration did not resolve ({type(error).__name__}), "
-            "so no tree was examined."
+            "Landed trees: this project's configuration did not resolve, so no tree was examined. "
+            f"{reader.REFUSAL_PREFACE} {stop}"
         )}
+    if loaded is None:
+        return {}
     if loaded.get("branch_model.kind") != "worktree":
         return {}
     run = run if run is not None else sweep
@@ -1564,21 +1584,90 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             str(said),
         )
 
+    # ⛔ What a configuration that is stated and does not resolve is answered with, held against
+    # **the reader's own answer for that root** and never against a substring of this arm's fixed
+    # prefix. The assertion these replace matched `did not resolve`, which is the arm's own text:
+    # it was green with the reason absent, which is the state #257 was filed on, and green with
+    # the exception absent too.
+    shipped = Path(__file__).resolve().parent.parent / "config" / "examples"
+    reader = shared_reader()
+
     with tempfile.TemporaryDirectory() as tmp:
-        where = Path(tmp) / "broken"
+        where = Path(tmp) / "one-key-short"
         (where / ".claude").mkdir(parents=True)
-        (where / ".claude" / "mjolnir.yaml").write_text("roots: [this is not a block]\n")
+        # A configuration one **required** key short, which is the state § 1 says a change making
+        # a key required creates on purpose: the stop names the key and the repair is one line.
+        whole = (shipped / "github-issues.yaml").read_text(encoding="utf-8")
+        kept, dropping = [], False
+        for line in whole.splitlines(keepends=True):
+            if line.startswith("deploy:"):
+                dropping = True
+                continue
+            if dropping and (not line.strip() or line.startswith((" ", "#"))):
+                continue
+            dropping = False
+            kept.append(line)
+        (where / ".claude" / "mjolnir.yaml").write_text("".join(kept), encoding="utf-8")
+
+        stop = reader.why_refused(str(where))
         said = answer({"cwd": str(where)})
+        message = str(said.get("systemMessage", ""))
         suite.ok(
             "⚠️ while a configuration that is stated and does not resolve is reported",
-            "did not resolve" in str(said.get("systemMessage", "")),
+            bool(message),
             str(said),
+        )
+        suite.ok(
+            "⛔ and the message carries the reader's own first stop, not the exception's class",
+            bool(stop) and stop in message,
+            f"the reader said {stop!r}; the arm said {message!r}",
+        )
+        suite.ok(
+            "⛔ and a configuration stopped on by a required key is answered with that key",
+            "deploy" in message and "ConfigError" not in message,
+            message,
+        )
+        suite.ok(
+            "and the arm interrupts nothing: one message to the person and no decision",
+            set(said) == {"systemMessage"} and "hookSpecificOutput" not in json.dumps(said),
+            str(said),
+        )
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = main(["sweep", "--skills-root", str(where)])
+        suite.ok(
+            "⛔ and the CLI arm answers with the same reason for the same configuration",
+            code == 1 and stop in out.getvalue(),
+            out.getvalue(),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        where = Path(tmp) / "long-stop"
+        (where / ".claude").mkdir(parents=True)
+        # ⚠️ A refusal that interpolates the project's own stated value, which is the case
+        # `refusal_text`'s cut exists for: sixty thousand characters of it here.
+        (where / ".claude" / "mjolnir.yaml").write_text(
+            (shipped / "github-issues.yaml")
+            .read_text(encoding="utf-8")
+            .replace("kind: worktree", 'kind: "' + "x" * 60000 + '"', 1),
+            encoding="utf-8",
+        )
+        stop = reader.why_refused(str(where))
+        message = str(answer({"cwd": str(where)}).get("systemMessage", ""))
+        suite.ok(
+            "⛔ and a long stop is cut by the one implementation rather than by a copy here",
+            len(stop) <= reader.STOP_LIMIT + len(" […]") and stop.endswith("[…]"),
+            f"{len(stop)} characters, ending {stop[-8:]!r}",
+        )
+        suite.ok(
+            "and the arm appends that stop whole, cutting nothing of its own",
+            message.endswith(stop),
+            message[-80:],
         )
 
     with tempfile.TemporaryDirectory() as tmp:
         where = Path(tmp) / "configured"
         (where / ".claude").mkdir(parents=True)
-        shipped = Path(__file__).resolve().parent.parent / "config" / "examples"
         shutil.copy(shipped / "github-issues.yaml", where / ".claude" / "mjolnir.yaml")
         quiet = answer({"cwd": str(where)}, run=lambda *a, **k: Report())
         suite.ok(
@@ -1906,7 +1995,6 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     with tempfile.TemporaryDirectory() as tmp:
         where = Path(tmp) / "configured"
         (where / ".claude").mkdir(parents=True)
-        shipped = Path(__file__).resolve().parent.parent / "config" / "examples"
         shutil.copy(shipped / "github-issues.yaml", where / ".claude" / "mjolnir.yaml")
         # A repository, because the arm below runs the real sweep and a directory that is not one
         # answers *which trees this repository has* rather than answering about trees.
@@ -2073,17 +2161,28 @@ def main(argv: list[str]) -> int:
         if reader is None:
             print("⛔ the configuration reader is not reachable, so no tree was examined.")
             return 1
-        if not reader.configured(args.skills_root):
+        # ⛔ The same question the hook arm asks, through the same call, so the two arms answer
+        # with one reason for one configuration: this arm already carried the cause and that one
+        # did not, which is the disagreement #257 was filed on. ⚠️ And the three answers below
+        # come off one reading — stated-and-broken, stated-and-resolved, and stated-at-all —
+        # rather than off a `configured` question asked before it.
+        try:
+            loaded, stop = reader.read_or_why(args.skills_root)
+        except Exception as error:  # noqa: BLE001 -- a verdict rather than a traceback
+            print(f"⛔ the configuration reader stopped, so no tree was examined: {error}")
+            return 1
+        if stop:
+            print(
+                "⛔ this project's configuration did not resolve, so no tree was examined. "
+                f"{reader.REFUSAL_PREFACE} {stop}"
+            )
+            return 1
+        if loaded is None:
             print(
                 "this project states no configuration, so there is nothing to sweep and no tree "
                 "this procedure knows about."
             )
             return 0
-        try:
-            loaded = reader.load(args.skills_root, check_paths=False)
-        except Exception as error:  # noqa: BLE001 -- a verdict rather than a traceback
-            print(f"⛔ this project's configuration did not resolve, so no tree was examined: {error}")
-            return 1
         if loaded.get("branch_model.kind") != "worktree":
             print("`branch_model.kind` is `in_place` here, so no tree is ever cut or pruned.")
             return 0

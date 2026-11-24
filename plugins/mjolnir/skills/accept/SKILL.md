@@ -1,6 +1,6 @@
 ---
 name: accept
-description: Judge a deployed work item against its own acceptance criteria and record the readings the verdict is given on — the target and the commit it serves read from configuration rather than from a branch, every criterion carrying a reading, the environment, the instrument and a date, the machine half launched through the tier-launching role rather than a second launcher, the before-and-after comparison built where it can be opened and opened, the residue of what no criterion covers named rather than filed, and the verdict itself left to the person who ordered the work. Use when asked to accept an item, verify a deploy, check whether what shipped matches what was asked for, judge a deployed change against its criteria, or say what is holding a release.
+description: Judge a deployed work item against its own acceptance criteria and record the readings the verdict is given on — the target and the commit it serves read from configuration rather than from a branch, every criterion carrying a reading, the environment, the instrument and a date, the machine half read off the reviewing leg's own launch rather than launched a second time, the before-and-after comparison built where it can be opened and opened, the residue of what no criterion covers named rather than filed, and the verdict itself left to the person who ordered the work. Use when asked to accept an item, verify a deploy, check whether what shipped matches what was asked for, judge a deployed change against its criteria, or say what is holding a release.
 argument-hint: "[<the item>] [<the target's name>]"
 ---
 
@@ -13,13 +13,13 @@ person who ordered the work, with the item's status untouched.
 ⛔ **This role writes no status.**
 [`§ 4.2`](../../config/schema.md#42-status--an-ordered-set-of-name-role-writer) gives the accepted
 state to the person who ordered the work, and
-[`§ 39`](../../config/schema.md#what-the-role-records-and-what-it-may-not-record) states that there
+[`§ 40`](../../config/schema.md#what-the-role-records-and-what-it-may-not-record) states that there
 is no writer this role could even ask as. ⛔ **And it fixes nothing it finds**: a failing criterion
 steps the item back, which is
 [`§ 32`](../../config/schema.md#32-a-status-that-moves-backwards)'s edge and not this role's to
 invent.
 
-⛔ **The facet is [`§ 39`](../../config/schema.md#39-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed)
+⛔ **The facet is [`§ 40`](../../config/schema.md#40-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed)
 and this file states none of it again.** A copy of a rule here is a second authority allowed to
 disagree with the one the reader performs.
 
@@ -34,7 +34,7 @@ from a sibling project with a configuration of its own, this role judges **that*
 
 ⛔ **Read the `unavailable` list before acting on anything.** A project stating
 `verify.carrier: none` is a **stop naming that key** — nothing here is judged on a target, which
-[`§ 39`](../../config/schema.md#carrier-none-and-the-two-shapes-of-that-absence) makes a stated
+[`§ 40`](../../config/schema.md#carrier-none-and-the-two-shapes-of-that-absence) makes a stated
 configuration rather than a gap, and ⛔ **never an invitation to improvise a reading**. ⚠️ **The
 reply says which of that absence's two shapes the project is in**, the reason being the project's
 own: no criterion measurable on an environment, or no status mapping the accepted role.
@@ -67,7 +67,7 @@ the item was clean.
 
 **Then the criteria, from the item's own acceptance section**
 ([`§ 4.4`](../../config/schema.md#44-template)). ⛔ **Read per criterion, and before any instrument
-is chosen** — [`§ 39`](../../config/schema.md#what-the-criteria-are-read-from-and-the-four-buckets-one-falls-in)
+is chosen** — [`§ 40`](../../config/schema.md#what-the-criteria-are-read-from-and-the-four-buckets-one-falls-in)
 states which four buckets one falls in and what each owes the record; what this step does is place
 each one.
 
@@ -79,7 +79,7 @@ each one.
 - ⛔ **A criterion that is genuinely wrong for this target is rewritten on the item before the
   move**, never silently dropped —
   [`§ An artifact states what is true now`](../../config/schema.md#an-artifact-states-what-is-true-now).
-  ⚠️ **And one that merely cannot be met until a later target stays as it is**: § 39 rules that it
+  ⚠️ **And one that merely cannot be met until a later target stays as it is**: § 40 rules that it
   does not split the item.
 
 ## 3. Which target, and the commit it serves
@@ -114,7 +114,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify.py" commit --target "<the target's
 
 - ⛔ **This is the only source, and the two readings that look like answers are neither**: an
   artefact's digest is identical from another commit under a reproducible build, and the integration
-  branch runs ahead of every target. § 39 states both; the carrier has nowhere else to read from.
+  branch runs ahead of every target. § 40 states both; the carrier has nowhere else to read from.
 - ⛔ **A command that printed nothing is reported unestablished and never as unchanged**
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)), and the pass stops:
   a reading taken against a target serving nothing is a reading about nothing.
@@ -124,14 +124,17 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify.py" commit --target "<the target's
 ## 4. The machine readings, taken before a person is asked for anything
 
 ⛔ **Every non-visual reading is taken first, and only what is left is handed over.** The reason is
-[`§ 39`](../../config/schema.md#the-machine-half-is-launched-elsewhere-and-the-handover-is-what-is-left)'s
+[`§ 40`](../../config/schema.md#the-machine-half-is-launched-elsewhere-and-the-handover-is-what-is-left)'s
 — a person's attention is the scarcest input the loop spends, so the handover is made one criterion
 wide rather than one item wide.
 
-⛔ **The tiers are launched through the tier-launching role and never a second launcher.** Which
-tiers exist and what each needs is
-[`§ 31`](../../config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s, and
-⛔ **this role launches nothing itself**: a second launcher is a second set of skip rules.
+⛔ **This role launches no tier.** Launching a change's test tiers is the **reviewing leg's**, by
+[`§ The loop`](../../config/schema.md#the-loop--the-roles-and-the-legs-between-them), which states
+that no role on that list launches one anywhere else — so what this step does is **read what that
+launch reported**, exactly as the deploying role does. Which tiers exist and what each needs is
+[`§ 31`](../../config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s.
+⚠️ **And where the project maps no reviewing role nothing launched one at all**: the machine half is
+whatever that project's own build already ran, said as that rather than filled in here.
 
 - ⛔ **A skip is a precondition and never a hope.** What a run executed is read against the count the
   deployed commit declares, by
@@ -227,7 +230,7 @@ verdict comes back on the image.
 ⛔ **The move waits on the person who ordered the work, and this role says so in as many words.**
 What is asked for is their judgement on the record and the picture — ⛔ **not permission for this
 role to write the status**, which no writer it could ask as would let it do
-([`§ 39`](../../config/schema.md#what-the-role-records-and-what-it-may-not-record)).
+([`§ 40`](../../config/schema.md#what-the-role-records-and-what-it-may-not-record)).
 
 ⛔ **Their answer is never recorded on their behalf.** A pass writing a person's judgement where they
 did not give it has fabricated an attestation, which is refused wherever it is reachable
@@ -290,3 +293,12 @@ the facts, with a table where the content enumerates.
   ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): a target that could not be
   chosen, a criterion nobody can supply a referent for, a judgement that is theirs. Nothing is noted
   for later.
+
+## What this carrier is
+
+```yaml
+# carrier: accept
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).

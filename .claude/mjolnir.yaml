@@ -59,6 +59,16 @@ host:
     - workflow: "Adapter suites"
       mirrors: "python3 plugins/mjolnir/scripts/adapter_suites.py"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ What this run holds is everything about the adoption check that needs no adoption target:
+    # the two closed vocabularies and their disjointness, the loop's size agreeing with the
+    # surface, that every carrier this toolkit ships declares its own class in its own file, and
+    # all three verdicts out of one path — each stood up on the suite's own trees, since a
+    # property asserted against the live targets would pass or fail for reasons outside this
+    # repository. ⛔ The targets themselves are never named here: they arrive on an invocation,
+    # so no run can measure them and this gate holds the check rather than the migration.
+    - workflow: "Adoption check"
+      mirrors: "python3 plugins/mjolnir/skills/adoption/scripts/adoption.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ What this run holds is the rule the `commit-msg` rail carries and not whether any clone has
     # one installed: the hook fires on a developer's machine, and neither route survives a clone, so
     # what reports an absent rail is the install step's own per-route answer read in the repository.
@@ -237,6 +247,15 @@ host:
       triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Single source of truth"
       mirrors: "python3 tools/check_single_source.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The same reading as the entries above whose facet this project does not state:
+    # `spec_corpus` below is `none`, so pointed at this tree the carrier answers that there is no
+    # corpus and no verdict about one. ⛔ One entry and not two, unlike the documents pair above:
+    # there is no corpus here for a second run to read, so what this holds is the three outcomes
+    # against repositories the suite builds — a branch per version, a dirty tree on a third
+    # branch, and a single-branch clone, which is the only place the unread arm exists at all.
+    - workflow: "Spec corpus"
+      mirrors: "python3 plugins/mjolnir/scripts/spec_corpus.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Spend guard"
       mirrors: "python3 plugins/mjolnir/scripts/spend.py --self-test"
@@ -521,9 +540,9 @@ day_log:
   streams: [sessions, commits]
   attribute_to: null
   # ⚠️ Measured rather than assumed: every command name in this project's own transcripts is
-  # either on the shared closed list or is work — the loop's roles, `close-out` and
-  # `adoption-readiness`. Nothing bookkeeping has been retired, so the list is empty, and the
-  # reader reports that by name.
+  # either on the shared closed list or is work — the loop's roles, `close-out` and the adoption
+  # check. Nothing bookkeeping has been retired, so the list is empty, and the reader reports
+  # that by name.
   ritual_retired: []
   exclusions: [log_upkeep, rework, overhead]
   sections: billed_only
@@ -949,6 +968,12 @@ documents:
         - "docs/single-source-of-truth.md"
         - "docs/test-first-for-a-model-writer.md"
       derived_from: ["docs/configuration-surface.md", "docs/divergences-and-rulings.md"]
+    # ⚠️ The one carrier that is no leg of the loop, and the row is where that sits: it names the
+    # surface alone, like every role carrier, because what admits it and every rule it follows
+    # are stated there — and it is derived from the surface for the same reason.
+    - document: "plugins/mjolnir/skills/adoption/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
     # ⚠️ The one carrier that names another: the billing role states what the hours-breakdown role
     # is, those two having been told apart from each other and from a third by one ruling.
     - document: "plugins/mjolnir/skills/billing-report/SKILL.md"
@@ -1003,8 +1028,28 @@ documents:
   # is what the reader warns about rather than refuses.
   quoted: []
 
+# § 39. No specification corpus, and the reason is the one § 39 writes the absence down for: this
+# repository's specification **is** the configuration surface, which `documents` above already
+# governs as prose and which no branch carries a second copy of. ⛔ Not a project that has one
+# somewhere the surface cannot reach — a wiki, a document store — which is the other reading of
+# this carrier and the one `revisit_when` is the trigger for. ⚠️ And the grouping half is absent
+# twice over: `work_item.grouping.carrier` is `none` here, so there is no version for a ref to be
+# named after even if a corpus existed.
+spec_corpus:
+  carrier: none
+  absent_reason: >-
+    The specification of this toolkit is `plugins/mjolnir/config/schema.md`, read at the tree a
+    role is standing in and held by the `documents` facet above. There is no second copy per
+    version: nothing here is versioned (`release.carrier` is `none`), so no branch carries the
+    surface as it stood for a version and there is no ref for a filing role to read it at.
+  revisit_when: >-
+    This toolkit starts being versioned for consumers, which is the first moment a branch carries
+    a copy of the surface that differs from the default branch's — or a project adopting these
+    roles keeps its specification in its own repository, which is the shape § 39 was written from
+    and which this project is not.
+
 verify:
-  # § 39's absent case, and it holds here for the first of that section's two shapes: `deploy: []`
+  # § 40's absent case, and it holds here for the first of that section's two shapes: `deploy: []`
   # above, so nothing this repository ships reaches an environment through the procedure and there
   # is no commit being served for a reading to be taken against. ⛔ Not a statement about whether
   # the work is judged — it is reviewed on the host, and an adopting project's own acceptance pass
