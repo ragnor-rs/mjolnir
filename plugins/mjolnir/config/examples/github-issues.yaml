@@ -273,12 +273,24 @@ context:
     committed: false
 
 ordering:
-  # The absent case, and what a new adopter has on their first day: issues in filing order and
-  # nothing that says which to take. A role invoked with no item says so and asks for a number.
-  carrier: none
-  absent_reason: >-
-    Plain issues with no board, no rank field and no ordering document. Which item is next is
-    decided in conversation, and a list sorted by number would read as an answer.
+  # Plain issues carry no rank and no board, so the order of work is written down beside the
+  # backlog rather than held in it. What the surface fixes is the command's *output* — the
+  # takeable items, most takeable first, one per line — and not where the order came from.
+  # ⚠️ The absent case for this facet is the trackerless example's, where there are no items for
+  # an order to be over at all.
+  carrier: command
+  command: "<the command that prints the ordering document's takeable items, one number per line>"
+  record:
+    # § 40, and the carrier a tracker with no grouping leaves: the order lives in a document, and
+    # the closing-out role is what keeps it in agreement with the backlog. ⚠️ Read by the command
+    # above and written by that role — one record, two readers, which is why the two keys are
+    # different questions rather than one asked twice.
+    carrier: document
+    # ⛔ Outside every tree, because a worktree teardown would take the plan for work nobody has
+    # started. § 28 is what resolves this value: the mark on the key is why a project whose
+    # directory it may not commit can keep it in its own untracked file.
+    dir: "<the directory outside every tree the ordering document sits in>"
+    document: "<the ordering document inside it>"
   revisit_when: >-
     A second person takes work from this backlog, or the issue count passes what one person
     holds in their head.

@@ -762,6 +762,25 @@ ANSWERED_BY: dict[str, Answer] = {
         "interpreter in front of it.",
     ),
 
+    # --- § 40. The record the ordering is kept in --------------------------
+    "ordering.record.carrier": ask(
+        "Where is that order *kept* — in one of this tracker's own groupings, or "
+        "in a document outside every tree? ⚠️ A different question from the one "
+        "above: that says how the order is read, and this says what the "
+        "closing-out role edits.",
+    ),
+    "ordering.record.grouping": ask(
+        "Which grouping? ⚠️ The grouping's own key, not which one is current.",
+    ),
+    "ordering.record.dir": ask(
+        "Which directory does the baseline a pass measures drift against sit in — "
+        "and the document with it, where the record is one? ⚠️ Outside every "
+        "tree, or a teardown takes the plan for work nobody has started.",
+    ),
+    "ordering.record.document": ask(
+        "And which document inside it?",
+    ),
+
     # --- § 11. Session context ---------------------------------------------
     "context.artifacts.carrier": ask(
         "Where does an artifact that crosses a role boundary live?",

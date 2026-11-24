@@ -1,0 +1,45 @@
+name: Close-out carrier
+
+# The carrier that brings a project's backlog, dependency relations and ordering record back into
+# agreement. What a gate can hold about it is every reading that needs no tracker and no project's
+# own record: the document carrier's grammar, coverage on both carriers, the landed record read
+# through the port, the drift a baseline makes visible, and the four modes' own refusals.
+#
+# ⚠️ Two of those readings are quiet, and they are the reason this runs at all. A grouping has no
+# order between its places (§ 4.8), so *no violations* there would be a check that never ran and
+# is reported unavailable instead; and a pass that found nothing to change must write nothing,
+# including no record of having run (§ 39, § The loop). Both are asserted as facts about what the
+# tracker was asked and what the filesystem holds, over a fake that records every call.
+#
+# ⚠️ What this cannot hold is stated rather than assumed away: whether an ordering somebody
+# approved is a *good* order of work is a judgement about yield, which nothing derives and which
+# the person running the role answers. The gate holds the readings, not the ordering.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. Every tracker read in the suite goes to a fake built in the process,
+# so a run that needed one would be a run doing something this one does not.
+permissions: {}
+
+jobs:
+  close-out-carrier:
+    name: Close-out carrier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, and the same string `host.checks` states this run mirrors. ⚠️ Held
+      # together by eye, and § 2 rules that it must be: the mapping from a run to the command it
+      # mirrors is configured and never inferred. The workflow *name* above is held mechanically,
+      # by the `Host checks drift` run.
+      - name: Assert both record carriers are read, and that a pass with nothing to do writes nothing
+        run: python3 plugins/mjolnir/scripts/close_out.py --self-test

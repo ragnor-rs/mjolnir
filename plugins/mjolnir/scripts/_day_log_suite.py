@@ -136,12 +136,18 @@ PROMPTS = [
     (WORK, "Base directory for this skill: /x/plugins/mjolnir/skills/review # Review a change"),
     (WORK, "Base directory for this skill: /x/plugins/mjolnir/skills/file-work-item # File a work item"),
     (WORK, "Base directory for this skill: /x/plugins/mjolnir/skills/gate-work-item # Gate a work item"),
-    # ⛔ A project's own skills are work too, whatever they are about. Bringing a
-    # backlog and an ordering document into agreement is this project's work, not
-    # the session's bookkeeping -- and it is the nearest miss there is.
+    # ⛔ Bringing a backlog, its relations and an ordering record into agreement is
+    # **work** and not the session's bookkeeping -- and it is the nearest miss
+    # there is, the two differing by what each is about rather than by shape.
+    # ⚠️ Every form it is addressed in, because the role is shipped: a
+    # project-local carrier, the plugin's, and the namespaced command. A corpus
+    # carrying one of them would stop holding the other two the day a project
+    # moved to the shipped carrier, which is the move that produced these rows.
     (WORK, "<command-message>close-out</command-message> <command-name>/close-out</command-name>"),
+    (WORK, "<command-name>/mjolnir:close-out</command-name>"),
     (WORK, "<command-name>/mjolnir:adoption</command-name>"),
     (WORK, "Base directory for this skill: /x/.claude/skills/close-out # Close out a batch"),
+    (WORK, "Base directory for this skill: /x/plugins/mjolnir/skills/close-out # Close out a batch"),
     (WORK, "Base directory for this skill: /x/.claude/skills/deploy # Deploy"),
     # ⛔ A name that merely begins with a bookkeeping one.
     (WORK, "<command-name>/save-the-plan</command-name>"),

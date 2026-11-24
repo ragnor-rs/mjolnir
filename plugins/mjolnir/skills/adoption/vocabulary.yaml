@@ -51,6 +51,10 @@ roles:
   - session_summary
   - billing_report
   - hours_breakdown
+  # The leg after a batch lands: the starting role reads an ordering and nothing produced one
+  # (#98). ⛔ On this list because the route needs a leg there, which is the only reason anything
+  # is — not because a copy of it was found in more than one project. It has exactly one.
+  - close_out
 
 # What a carrier that is not one of the roles above is, by the word its declaration states. ⛔ The
 # set is closed and disjoint from the roles above, and the check asserts the disjointness rather

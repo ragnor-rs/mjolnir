@@ -4222,3 +4222,141 @@ to exist. ⚠️ **And a project carrying no corpus files its items unchanged**,
 own absent case: the one test a leg of [§ The
 loop](../plugins/mjolnir/config/schema.md#the-loop) has to pass, answered by
 configuration instead of by this document.
+
+## The ordering record: the leg the route consumed and no leg produced
+
+The closing-out role is this repository's own prototype promoted, and ⛔ **it is the one candidate so
+far admitted to [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop)'s
+closed list rather than ruled a facet.** The two readings before it went the other way — one was
+ruled out of the toolkit entirely and one was carried as a block of configuration with a check — so
+the admission is the finding and the argument has to be the one
+[`schema.md § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
+states and not a new one.
+
+| what the list's test asks | the answer for this candidate |
+|---|---|
+| does the **route** need a leg here? | **yes, and the gap is readable off the surface.** [`§ 12`](../plugins/mjolnir/config/schema.md#12-ordering) is read by the starting role to decide which item to offer, and no leg of the route wrote one. A route that consumes an ordering and never maintains it reads a stale answer on its first act |
+| is the reason statable, and the same one every time? | **yes**: it is the leg after a batch lands, the same way filing is the leg before a gate. ⚠️ It is not *this thing has several copies* — the candidate has exactly one copy, in this repository |
+| would a facet and a check do instead? | **no.** The pass makes **writes** that are judgement — which item goes where in an order — and § 38's own argument is that what a facet carries is a graph, a file set or a list that arrives already written as data. An order of work does not: nothing derives it |
+
+⚠️ **The facet it needed came with it rather than instead of it**, which is the part the table above
+would otherwise read as contradicting: what a project differs on is *where the order is kept*, and
+that is [`schema.md § 40`](../plugins/mjolnir/config/schema.md#40-the-record-a-projects-ordering-is-kept-in-and-what-brings-one-into-existence)
+— a role on the list, with one block of configuration under it.
+
+⚠️ **The de-duplication test is silent here, in the direction that matters.** One copy is what ruled
+the browser skill out two sections up, and this candidate has one copy as well — so a list that
+admitted on duplication would have refused this and admitted that. The scope is what decides, which
+is § 36's own statement arriving on the first candidate it admits.
+
+### What the prototype hardcoded, which is the facet
+
+The prototype is 604 lines of implementation under a 203-line carrier, tracked in this repository's
+own skills root — so it was already under the strictest naming rule here and already free of a
+project's name. ⛔ **What it was not free of is this project's own *shape***, and the four values it
+composed are what the facet had to answer:
+
+| what the prototype held | what it is now |
+|---|---|
+| a filename glob for the ordering document | `ordering.record.document` — **one** document and not a glob. ⚠️ The glob was there because the prototype could not be told the name, and it carried a refusal for *several matched* that the key makes unreachable |
+| the directory, composed from a home directory and the working tree's own path | `ordering.record.dir`, marked `# private`. ⛔ The composition was a second implementation of the harness's own rule, which is exactly what [`§ 25`](../plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes) forbids a role to do about the memory store |
+| the baseline's filename, beside the document | **procedure, and deliberately not a key.** A key would let a project point the record and its baseline at different places, which reads as a pass that found no drift. ⚠️ Its *directory* is `ordering.record.dir`, which is why that key is required under the grouping carrier too — the baseline needs a place to stand whichever carrier the record is on |
+| the row table's grammar — an integer label places, a non-integer retires | **procedure, and the `document` carrier's.** A project that could reword it is a project whose ordering the shared role cannot read, which is the whole of what the carrier is for |
+
+⛔ **And one value it read correctly already**: the tiers an ordering may carry came out of
+[`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority) through the shipped reader rather than out
+of a constant, which is why that is not a key of this facet. The three that are deliberately not
+keys are stated together at
+[`§ 40 → The one directory`](../plugins/mjolnir/config/schema.md#the-one-directory-why-it-is-marked-and-what-is-not-a-key-here).
+
+### The second carrier came from the trackers rather than from this project
+
+⛔ **This repository exercises one of the two carriers and could not have produced the other.** It
+runs on plain issues with no board, so the only shape it can measure is a document — and a facet
+read off it alone would have shipped a path key, which is the reading
+[`§ 40 → The two carriers`](../plugins/mjolnir/config/schema.md#the-two-carriers-and-the-one-thing-neither-of-them-is)
+refuses. What the grouping carrier is read off is
+[`§ 4.8`](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s own
+survey, already recorded above: one measured tracker holds a time box and a release scope as two
+fields, and the order of work is kept in the first of them.
+
+⚠️ **Which is why the record's `grouping` key is a *name* and not a flag.** A project carrying two
+groupings has one it orders work in and one it does not, so a carrier word alone would leave the
+role choosing — and the choice is invisible on the item, which is the property § 4.8 already states
+about a grouping's wrong value.
+
+⛔ **And the third shape measured is carried by neither carrier, stated rather than smoothed over**
+([`§ 40 → The two carriers`](../plugins/mjolnir/config/schema.md#the-two-carriers-and-the-one-thing-neither-of-them-is)).
+One surveyed board's order is the **position of a card in a list**, written by whoever drags it:
+neither a grouping nor a document, and nothing here reads or writes it. That project states
+`ordering.carrier: command` with `ordering.record.carrier: none` — the one combination that shows the
+two keys are different questions — and the shipped Trello example is written that way.
+
+### Why `derived` is not one of the carriers, measured against the store that has it
+
+[`§ 25`](../plugins/mjolnir/config/schema.md#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)
+carries a `derived` carrier for the memory store and this facet carries none, and the asymmetry is
+mechanical rather than a preference: under `derived` the procedure **composes no path and resolves
+nothing inside the store**, and the memory third survives that because the harness itself does the
+reading. ⛔ **There is no second reader here.** The closing-out role has to open the document, so a
+derived carrier would state a store the role may not look inside — and the prototype's own answer to
+that was to guess the harness's layout, which is the defect rather than the precedent.
+
+### The private layer's absence is not a load-time refusal, measured
+
+[`§ 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold) states
+that a `source` which does not open is refused, and the obvious reading is that a clone without the
+untracked file cannot read its configuration at all — which for this repository would mean every
+gate that loads the configuration going red in a checkout that cannot have the file.
+⛔ **Measured, and it does not happen.** With this project's private file moved aside, the whole
+mirrored gate set returns **the same verdict on every check** as with it in place, and the reader
+itself loads and prints: the layer is held at load time for its *shape* — the pointer, the list, the
+marks, the collision with a tracked value — and the **values** are resolved where they are read.
+
+⚠️ **So the refusal moves to the role rather than disappearing**, which is the honest half: a
+closing-out pass run on a machine with no private layer is refused with the key named, and that is
+the one place the absence can be reported to somebody who can fix it. ⚠️ **And it is why this
+repository could adopt the facet at all** — it is the toolkit itself, it is public, and until this
+section it carried `private.carrier: none` on the stated ground that every value it holds may be
+committed. An ordering document's directory is the first value here for which that is false.
+
+### The two operations the port did not state
+
+The prototype reached the host directly — one client call for the repository and two GraphQL queries
+— and ⛔ **two of those reads and one write had no operation on
+[`§ 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)'s
+closed list**, which is what a role carrying its own client hides:
+
+| what the pass needs | what answered it before | what answers it now |
+|---|---|---|
+| the open set and each item's tier | a GraphQL query over every issue | `search_items`, which already states both states and the fields |
+| the whole relation graph | the same query's `blockedBy` edges | `read_blockers`, asked per item — the adapter is free to batch, and the **role** no longer names a tracker's word for the relation |
+| the change that closed a landed item, and its commit | a second GraphQL query | **`read_closing_change`**, new: `link_for_close`'s own read after the fact |
+| an ordering that does not exist yet, where it is a grouping | nothing — the prototype has no such arm | **`create_grouping`**, new: the one write about a grouping made before any item is in it, which is what [`§ 39 → An ordering that does not exist yet`](../plugins/mjolnir/config/schema.md#an-ordering-that-does-not-exist-yet-and-the-one-act-that-is-the-persons) makes the bootstrap on that carrier |
+
+⛔ **Neither new operation is implemented by every adapter, and the absences are stated rather than
+left to read as gaps**
+([`§ 3 → The operations`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)).
+The closing-change read is implemented on both GitHub kinds, where an item
+*is* an issue on the host that holds the change, and absent on the other two: a Trello card holds no
+reference to a change in either direction, and what a Jira item shows is written by a code-host
+integration somebody installed, which is a fact about that installation rather than about the
+tracker. The grouping create is implemented on plain issues alone, the milestone being an object;
+everywhere else the grouping is a **field's value**, and a field's value is not an object anything
+creates — which is the same argument `mark_grouping_released` is already absent on for those kinds.
+
+### The prototype's own rule the promotion kept, and the one it had to make general
+
+⛔ **The prototype already left no audit trail** — its carrier says the ordering document states what
+is true now and that everything about a pass goes in the reply — and
+[`§ 40 → What a pass may not do`](../plugins/mjolnir/config/schema.md#what-a-pass-may-not-do-whatever-the-carrier)
+is that rule stated where a check can be pointed at it rather than in one project's skill. ⚠️ **Its
+own note said no gate reaches that document**, which is still true of a document outside every tree
+and is the reason the rule is written on the surface rather than relied on.
+
+⚠️ **What had to become general is the residue rule.** The prototype's statement about another
+session's half-made edit is about *the plan file*, which has no lock; under the facet the same
+situation on the grouping carrier is two sessions writing one tracker. ⛔ **So what the surface
+states is the act and not the file** — reported, never repaired, with whose it is named — and the
+baseline is what makes the report possible on either carrier, no tracker bumping an item's own
+modification time when a relation changes.

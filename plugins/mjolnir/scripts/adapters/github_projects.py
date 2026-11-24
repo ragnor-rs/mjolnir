@@ -1521,6 +1521,60 @@ def advance_on_merge(number: int) -> dict:
     }
 
 
+def read_closing_change(number: int) -> dict:
+    """The change that closed this item, and the commit it landed as.
+
+    `link_for_close`'s own read after the fact, on the query beside it: this
+    tracker's items are issues on the same host, so the reference the host holds
+    is readable here and the operation is implemented rather than absent.
+
+    ⚠️ **Not `advance_on_merge` narrowed.** That operation judges whether the two
+    automations moved the item and carries the card's column to say so; this one
+    answers *which change* and *which commit*, which is what a landed record
+    carries and what no verdict about a column can supply.
+
+    ⛔ **The last reference wins where the host names several**, with all of them
+    returned beside it -- the sibling kind's choice, made once here rather than in
+    every consumer. ⛔ **And an item with no reference comes back with `change:
+    None`**, which is a real answer: the capability is present and the host holds
+    nothing, an item somebody closed by hand.
+
+    ⚠️ **A draft card is refused by `read_item` before this reads anything**, that
+    being where a card with no issue behind it is answered: a draft has no change
+    that could have closed it, and this must not report that as *none*.
+    """
+    item = read_item(number)
+    owner, name = _repo().split("/")
+    addressed = item["number"]
+    answer = _graphql(CLOSED_BY_QUERY, owner=owner, name=name, number=addressed)
+    issue = (answer.get("repository") or {}).get("issue")
+    if issue is None:
+        raise HostUnavailable(
+            f"the host answered null for #{addressed} in {owner}/{name} when asked "
+            "what closed it, so the closing change could not be read."
+        )
+    references = [
+        {
+            "change": node["number"],
+            "merged": bool(node.get("merged")),
+            "commit": (node.get("mergeCommit") or {}).get("oid"),
+        }
+        for node in _whole(
+            issue.get("closedByPullRequestsReferences"),
+            f"the pull requests that closed #{addressed}",
+        )
+    ]
+    closing = references[-1] if references else None
+    return {
+        "number": addressed,
+        "state": issue.get("state"),
+        "change": closing["change"] if closing else None,
+        "merged": closing["merged"] if closing else None,
+        "commit": closing["commit"] if closing else None,
+        "references": references,
+    }
+
+
 def grouping_items(value: str, *, grouping: dict) -> dict:
     """The cards this board holds in one grouping, off the board read whole.
 
@@ -1670,6 +1724,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "link_dependency": link_dependency,
     "read_blockers": read_blockers,
     "link_for_close": link_for_close,
+    "read_closing_change": read_closing_change,
     "advance_on_merge": advance_on_merge,
     "grouping_items": grouping_items,
     # ⛔ The operations this tracker has nothing to implement against are named
@@ -1689,8 +1744,16 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # names the step and the address, carries on, and reports the grouping still
 # open. ⛔ Not implemented against the iteration's dates, which would be this
 # module inventing a release out of a calendar.
+#
+# `create_grouping` is that same argument one act earlier and is absent for the
+# same reason: an iteration is an **option on the board's own field**, so bringing
+# one into existence is a change to the field's configuration rather than a write
+# about one grouping, and the endpoint that would do it is the board's settings.
+# ⚠️ So § 3's stated fallback is what the bootstrap gets here: the run names the
+# grouping it would have created and writes nothing anywhere else.
 DELIBERATELY_ABSENT = (
     "mark_grouping_released",
+    "create_grouping",
     "checklist_read",
     "checklist_write",
     "checklist_item_delete",

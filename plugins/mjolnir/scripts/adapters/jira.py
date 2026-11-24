@@ -1781,9 +1781,27 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # tracker's own version object instead**, which is a different carrier and a
 # different endpoint; until one does, an implementation here would be answering
 # for a shape nothing measured.
+# `read_closing_change` is `link_for_close`'s absence read from the other side and
+# is absent for the same measured reason: nothing on this tracker relates an item
+# to the change that closed it. What a surveyed installation shows under an item is
+# written there by a code-host integration somebody installed, which is a fact
+# about that installation rather than about this tracker -- so an implementation
+# here would answer for a shape nothing measured, and answer *no change* about
+# every project that has not installed it.
+#
+# `create_grouping` is `mark_grouping_released`'s absence one act earlier, on the
+# same argument: the grouping here is a **field's value**, which is the shape the
+# example beside this module carries, and a field's value is not an object
+# anything creates. A project would add the value to the field's own allowed set,
+# which is a configuration of the tracker rather than a write about one grouping.
+# ⚠️ **What would change it is a project holding its order of work in this
+# tracker's own sprint or version object**, which is a different carrier and a
+# different endpoint -- the same condition the release mark already names.
 DELIBERATELY_ABSENT = (
     "link_for_close",
+    "read_closing_change",
     "mark_grouping_released",
+    "create_grouping",
     "checklist_read",
     "checklist_write",
     "checklist_item_delete",
