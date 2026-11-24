@@ -9019,8 +9019,8 @@ is [§ 38](#38-the-documents-a-project-holds-to-a-checkable-property)'s subject 
 way.
 
 ⛔ **This is a facet and no further leg of [§ The loop](#the-loop)**, which is § 38's own rule
-beside it: nothing is added to that list, no `carriers` key answers for it and no role enters it. What is carried is a block of configuration and the read the filing role performs
-with it.
+beside it: nothing is added to that list, no `carriers` key answers for it and no role enters it.
+What is carried is a block of configuration and the read the filing role performs with it.
 
 ### Which copy governs, and why the working tree is never it
 

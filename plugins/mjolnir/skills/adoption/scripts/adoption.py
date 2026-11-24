@@ -1124,16 +1124,26 @@ def self_test() -> int:
         ("a heading this check cannot find is a refusal, not a loop of nothing",
          lambda text: text.replace("\n## The loop\n", "\n## The loop of roles\n", 1),
          "no longer carries a `## The loop` heading"),
+        # ⚠️ Every separator and not the mid-line ones: the list wraps, so a plant written as
+        # `" · "` leaves the line-end separators standing and the count never falls to one --
+        # measured, as a plant that reported green over an unchanged reading.
         ("a list with no separators left is a refusal, not a loop of one",
-         lambda text: text.replace(" · ", ", "),
+         lambda text: text.replace("·", ","),
          "separates no roles with `·`"),
     ):
+        # ⛔ Every exception caught and not only the refusal, so the arm survives the defect it
+        # tests: with the refusal removed the reading raises on the state it no longer rejects,
+        # and an arm that let that out would kill the suite at this line and take every arm
+        # below it with it -- measured, as a traceback in place of a verdict.
         try:
             loop_role_count(mutate(surface_text))
         except CannotEstablish as error:
-            check(what, wanted in str(error))
+            held = wanted in str(error)
+        except Exception:
+            held = False
         else:
-            check(what, False)
+            held = False
+        check(what, held)
 
     # --- every carrier this toolkit ships declares itself -------------------
     live = shipped_carriers()
