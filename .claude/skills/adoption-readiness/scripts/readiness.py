@@ -73,13 +73,13 @@ SKILLS_DIR = "skills"
 COMMANDS_DIR = "commands"
 HOOKS_DIR = "hooks"
 
-NUMBER_WORDS = {
-    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
-    "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
-    "thirteen": 13, "fourteen": 14,
-}
-
-LOOP_HEADING = re.compile(r"^##\s+The loop\s+—\s+(\w+)\s+roles\s*$", re.MULTILINE)
+# ⛔ The heading states no count and this check reads none out of it. The surface rules that the
+# role list carries no count anywhere -- not in its own heading, not on the front page, not in a
+# document beside it -- so the paragraph under the heading is the only statement of the loop's size
+# there is, and a word read out of the heading would be this check asking for the restatement the
+# surface forbids. ⚠️ The heading is still what locates the paragraph, which is why it is matched
+# at all.
+LOOP_HEADING = re.compile(r"^##\s+The loop\s*$", re.MULTILINE)
 
 
 class CannotEstablish(Exception):
@@ -117,21 +117,21 @@ def parse_pair(argument: str, what: str) -> tuple[str, str]:
 # --- the surface, held against the declaration ------------------------------
 
 
-def loop_role_count(surface_text: str) -> tuple[int, int]:
-    """The two statements of the loop's size the surface carries, read apart.
+def loop_role_count(surface_text: str) -> int:
+    """The loop's size as the surface states it: the phrases of the list under the heading.
 
-    The heading counts the roles in a word; the paragraph under it lists them separated by `·`.
-    Returning both lets the caller refuse a disagreement instead of picking one.
+    ⛔ One statement and not two, which is the surface's own rule rather than a reading dropped
+    for convenience: the list carries no count, so the paragraph is the whole of what this list
+    can be held against. ⚠️ A paragraph that no longer separates its roles with `·` reads as a
+    loop of one and is refused here rather than being reported as a disagreement, which is the
+    shape a reworded list arrives in.
     """
     match = LOOP_HEADING.search(surface_text)
     if not match:
         raise CannotEstablish(
-            "schema.md no longer carries a `## The loop — <count> roles` heading, so the role "
-            "vocabulary in vocabulary.yaml is held to nothing."
+            "schema.md no longer carries a `## The loop` heading, so the role vocabulary in "
+            "vocabulary.yaml is held to nothing."
         )
-    word = match.group(1).lower()
-    if word not in NUMBER_WORDS:
-        raise CannotEstablish(f"schema.md's loop heading counts the roles as `{word}`.")
 
     rest = surface_text[match.end():].lstrip("\n")
     paragraph = []
@@ -140,7 +140,12 @@ def loop_role_count(surface_text: str) -> tuple[int, int]:
             break
         paragraph.append(line.strip())
     phrases = " ".join(paragraph).split("·")
-    return NUMBER_WORDS[word], len(phrases)
+    if len(phrases) < 2:
+        raise CannotEstablish(
+            "the paragraph under schema.md's `## The loop` heading separates no roles with `·`, "
+            "so the role vocabulary in vocabulary.yaml is held to nothing."
+        )
+    return len(phrases)
 
 
 # --- what the plugin ships --------------------------------------------------
@@ -552,11 +557,11 @@ def main(argv: list[str]) -> int:
     # longer matches the loop would make every count below wrong in the same direction.
     role_keys = declared["roles"]
     try:
-        counted, listed = loop_role_count(surface_text)
-        if not counted == listed == len(role_keys):
+        listed = loop_role_count(surface_text)
+        if listed != len(role_keys):
             unestablished.append(
-                f"the loop's size disagrees three ways — heading says {counted}, the paragraph "
-                f"lists {listed}, vocabulary.yaml declares {len(role_keys)} role keys"
+                f"the loop's size disagrees — the surface's list carries {listed} roles, "
+                f"vocabulary.yaml declares {len(role_keys)} role keys"
             )
     except CannotEstablish as error:
         unestablished.append(str(error))

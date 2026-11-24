@@ -8,25 +8,30 @@
 # answer is only as good as the list whoever runs the check hands it.
 #
 # What is left is vocabulary of two kinds. The role keys are the loop's own, held to the surface
-# both ways by the check. The carrier map is the one thing here that was *measured* from the
+# by the check. The carrier map is the one thing here that was *measured* from the
 # projects rather than derived from the surface — it is carrier basenames and no project's name —
 # and #104's decision 4 is where it gives way to each project's own `carriers:` block.
 
 # The roles of the loop, by the key a `carriers:` block uses for each. No count is written here:
 # the length of this list is the statement, and a figure beside it would drift by the next role.
 #
-# ⚠️ The surface states the loop in prose (schema.md § "The loop — thirteen roles") and states no
-# key per role, so this list is the only place the keys are written down — and the check holds
-# it to the surface both ways: the heading's count word and the number of `·`-separated phrases
-# in the paragraph under it must both equal the length of this list. A role added to the surface
-# reddens this check rather than being silently uncounted — measured each time it has happened and
-# reported each time as the loop's size disagreeing three ways. ⛔ No tally of those occurrences is
-# kept here: a count of them goes stale by the next role exactly as a count of the entries would,
-# and the first version of this comment carried one and was wrong by the next role that landed.
+# ⚠️ The surface states the loop in prose (schema.md § "The loop") and states no key per role, so
+# this list is the only place the keys are written down — and the check holds it to the surface:
+# the number of `·`-separated phrases in the paragraph under that heading must equal the length of
+# this list. A role added to the surface reddens this check rather than being silently uncounted —
+# measured each time it has happened and reported each time as the loop's size disagreeing. ⛔ No
+# tally of those occurrences is kept here: a count of them goes stale by the next role exactly as
+# a count of the entries would, and the first version of this comment carried one and was wrong by
+# the next role that landed.
+#
+# ⛔ The heading is no longer one of the two readings, and that is the surface's own rule rather
+# than a reading this check gave up: the heading carries no count of the list below it, so the
+# paragraph is the only statement of the loop's size there is to hold this list against.
 roles:
   - file
   - gate
   - start
+  - implement
   - finish
   - review
   - deploy
@@ -119,6 +124,9 @@ carriers:
   gate-work-item: { role: gate }         # the reconciled gating role (#8)
   finish:         { role: finish }       # the reconciled finishing role (#10, shipped by #113)
   start:          { role: start }        # the starting half, still project-local (#9)
+  implement:      { role: implement }    # the implementing leg's carrier (#232) — the leg the
+                                         # route named twice and nothing carried, so there is no
+                                         # surveyed copy of it for this map to have measured
   review:         { role: review }       # the reconciled reviewing role (#11)
   # ⚠️ The three roles #14 named apart are no longer in one state. The billing report's carrier is
   # shipped and is classified below; #265's session summary and #267's hours breakdown carry no
