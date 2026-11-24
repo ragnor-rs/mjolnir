@@ -7,9 +7,8 @@ alike any more, and the lines that differ are the corrections you paid for once 
 everywhere else. You find out which copy is wrong when it is already wrong.
 
 mjolnir is that process as **one shared procedure over per-project configuration** —
-[fourteen roles](plugins/mjolnir/config/schema.md#the-loop--fourteen-roles), from filing a work
-item to the day's log, reading whatever differs between your projects out of one file you
-write once.
+[every role of the loop](plugins/mjolnir/config/schema.md#the-loop), from filing a work item to the
+day's log, reading whatever differs between your projects out of one file you write once.
 
 Installed as a Claude Code plugin. **No clone, no submodule, no symlink, and no copy of the
 procedure in your project.** Adopting it in the next project costs that one file you write.
@@ -115,21 +114,22 @@ a setting, is [`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
 | `/mjolnir:file-work-item` | Turns a request — or a chat log — into well-formed items, checked against everything your tracker already holds and related to what they block |
 | `/mjolnir:gate-work-item` | Runs your own readiness checks whole on an item somebody else wrote, and admits it to committed work |
 | `/mjolnir:start` | Takes the next item your ordering makes available, claims it where a sibling session cannot take it twice, and cuts its branch into its own tree |
+| `/mjolnir:implement` | Works the item's own acceptance condition into the tree, under the testing discipline it reads rather than restates, and hands over on that condition answered — not on a diff that looks finished. Opens no change and merges nothing |
 | `/mjolnir:finish` | Commits, pushes, opens the change, reads the host's answer about it, asks before merging, and releases the tree once the merge is read back from state |
 | `/mjolnir:review` | Reads the conversation, reads the diff, reproduces what it finds, fixes it under the same item, and drives the gate green |
 | `/mjolnir:deploy` | Puts what has landed onto one of your own targets, asks for the go on this deploy and not on the last one, reads whether it actually arrived instead of whether the command exited, and moves every item it carried |
 | `/mjolnir:cut-release` | Turns landed work into a released version: the version you asked for rather than one derived behind your back, every file that carries one bumped from your configuration without the role knowing your stack, and the whole edit made together or not at all |
-| `/mjolnir:close-out` | Brings your backlog, your dependency relations and your order of work back into agreement after a batch lands: one read instead of four, every disagreement named — a landed item still placed, an item placed nowhere, a blocker ranked after what it blocks — and the relations that moved since the last pass, which no query on any tracker can find. It edits what is mechanical and asks about what is judgement, and it leaves no trace of having run |
+| `/mjolnir:close-out` | Brings your backlog, your dependency relations and your order of work back into agreement once a batch has landed: every landed item your ordering still places, every item filed since that it places nowhere, every blocker ranked below the thing it blocks — and **which relations moved since the last pass**, which no tracker's own query can tell you, because nothing bumps an item's modification time when an edge changes. It makes the mechanical edits and asks you about the judgement |
 | `/mjolnir:save` | Keeps the session's books: your tracker brought current, memory refreshed, then the commit — and the durable artifact a later pass resumes from, with the boundary it was taken at named |
 | `/mjolnir:load` | The counterpart: tells you where the work actually stands when you come back to it — the commits nothing outside your tree has, the branch behind the ref its claim is published on, what the last pass was doing and what its compaction dropped, whether a working file that is gone can be replayed and from what. Read-only, and it decides nothing |
 | `/mjolnir:day-report` | Builds a day's time-log entry from session transcripts, git, the host, chat and the calendar |
 | `/mjolnir:billing-report` | Bills a period's hours as line items, one per project per day, every figure naming the entry it was read from — and the rate resolved outside your repository, so it reaches the invoice and never a transcript |
 
-You type `/mjolnir:file-work-item`, and the loop carries the item from there: `start` hands the
-finished branch to `finish`, which enters `review` on the open change, which comes back to `finish`
-for the merge.
-Each hand-off happens on a stated condition rather than on being asked, and the one place it stops
-to ask you is stated too — the merge, which is yours —
+You type `/mjolnir:file-work-item`, and the loop carries the item from there: `start` hands the cut
+tree to `implement`, which hands the finished branch to `finish`, which enters `review` on the open
+change, which comes back to `finish` for the merge. Each hand-off happens on a stated condition
+rather than on being asked, and the one place it stops to ask you is stated too — the merge, which
+is yours —
 [§ The loop](plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask).
 **Past the merge you type again**: a deploy is a decision about *when*, so nothing starts one for
 you, and what it then carries is derived rather than remembered.
@@ -143,11 +143,12 @@ you, and what it then carries is derived rather than remembered.
 | [`plugins/mjolnir/skills/file-work-item/`](plugins/mjolnir/skills/file-work-item/) | Turn a request into work items: the split confirmed, a three-layer duplicate check with a human gate, the parent case where the request is a piece of an open item, and the body rendered from the project's own template |
 | [`plugins/mjolnir/skills/gate-work-item/`](plugins/mjolnir/skills/gate-work-item/) | Gate a work item into committed work: the project's own checks run whole on an item somebody else wrote, who repairs what failed asked once, and then the two things written here and nowhere else — the estimate and the date — before the item is admitted |
 | [`plugins/mjolnir/skills/start/`](plugins/mjolnir/skills/start/) | Take a work item: the one named or the next the project's ordering offers, the readiness gate run whole, the claim published as the item's ref, and the branch cut into a tree the session then works in |
+| [`plugins/mjolnir/skills/implement/`](plugins/mjolnir/skills/implement/) | Carry the leg between a started item and the first finishing pass: the item's own acceptance condition worked into the tree, the testing discipline read off the surface rather than copied into the role, no ordering imposed on when a test is written, and a condition nobody can answer reported as a stop rather than handed on as done |
 | [`plugins/mjolnir/skills/finish/`](plugins/mjolnir/skills/finish/) | Take a finished branch to a landed pull request: the commit, the push, the pull request, the host's answer about it, what the project counts as done and who answers each of those checks, the merge read back from state, the item's move through the port, and the tree released |
 | [`plugins/mjolnir/skills/review/`](plugins/mjolnir/skills/review/) | Review an open change and drive its gate green: the conversation read first, the diff read whatever else reads it, every finding reproduced and fixed under the same item, every thread answered, and a record of how deeply the change was actually read — which this role writes, never acts on, and never stops to ask anybody for |
 | [`plugins/mjolnir/skills/deploy/`](plugins/mjolnir/skills/deploy/) | Deploy to one of the project's own targets: the target read from configuration rather than from what it is called, a preflight that writes nothing, one go for *this* deploy, whatever that target states as its invocation — a command, a run the host makes, or commands handed to a person — the delivery read out of what the run printed, and the batch it carried advanced one role each |
 | [`plugins/mjolnir/skills/cut-release/`](plugins/mjolnir/skills/cut-release/) | Turn landed work into a released version: the version asked for rather than derived, every file that carries one bumped from configuration without the role knowing the stack, a changelog written or refused to the host's own run, and the whole edit made together or not at all |
-| [`plugins/mjolnir/skills/close-out/`](plugins/mjolnir/skills/close-out/) | Bring the backlog, the dependency relations and the ordering record into agreement: one read of all four things that have to agree, the record read wherever the project keeps it — one of its tracker's own groupings, or a document outside every tree — the landed items it still places named with the change that closed them, and the relations added or removed since the last pass, which no tracker's modification time reveals. ⛔ It writes no priority, repairs no other session's edit, and records nothing about itself |
+| [`plugins/mjolnir/skills/close-out/`](plugins/mjolnir/skills/close-out/) | Bring a project's backlog, its dependency relations and its ordering record back into agreement after work lands: one read of the live state, then the edits it names — the order kept in the tracker's own grouping or in a document outside every tree, the drift measured against a baseline a pass wrote, and every judgement asked rather than taken |
 | [`plugins/mjolnir/skills/save/`](plugins/mjolnir/skills/save/) | Keep the session's books: the thirds your project runs and nothing else, in one order — the tracker current, memory refreshed, the commit staged the way *this* role is configured — with no status whose writer is somebody else, and the artifact a later pass resumes from written before the boundary rather than after it |
 | [`plugins/mjolnir/skills/load/`](plugins/mjolnir/skills/load/) | Restore what is in flight at the start of a pass: every reading reported — where the work is, what the item says, what the last pass was doing, what the environment is, what memory claims and what the resumed window states — with the ones it could not take named rather than left out, and nothing fetched, stashed, moved or decided |
 | [`plugins/mjolnir/skills/day-report/`](plugins/mjolnir/skills/day-report/) | Build a working day's time-log entry from session transcripts, git, the code host, chat and the calendar |

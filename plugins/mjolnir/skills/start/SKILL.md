@@ -16,9 +16,10 @@ makes the work a leg of the route and names this role as what enters it, which s
 means this file does not say how to implement an item, which is true, and the other means the pass
 ends at the reply, which is the defect § The loop was written against.
 
-⛔ **Naming the leg *after* the work belongs here too**, that being the other leg no role owns: the
-same section states what *implemented* means and that the session holding the item enters the
-finishing role on it, and step 6 is where this role says so.
+⛔ **Naming the leg *after* the work belongs here too**, since a route that ends silently is what
+that section's statement exists to prevent: the same section states what *implemented* means and
+that the session holding the item enters the finishing role on it, and step 6 is where this role
+says so.
 
 ⛔ **The gate and the claim are the whole of what this role is for, so neither is skipped for an
 item somebody asked for by name.** An item named on the invocation changes which item, and nothing
@@ -46,9 +47,10 @@ rather than a fault, and a key named there that this role needs is a stop with t
 Five things are read here and ⛔ **never copied into this file**: the branch prefix per item type,
 the readiness list, the branch model that decides whether a tree is cut and where, what states
 which item is next, and the language the branch slug is written in. Each has a section of the
-surface and this file cites it. ⚠️ **A sixth is read in step 3 rather than here** — what carries
-which code repository an item belongs to, where the project has more than one — because it is read
-*against an item* and no item is in hand yet.
+surface and this file cites it. ⚠️ **Two more are read later rather than here, each where its
+subject arrives**: what carries which code repository an item belongs to, in step 3, because it is
+read *against an item* and no item is in hand yet; and which roles this project maps, in step 7,
+because what that answers is which carrier the leg after this one is entered through.
 
 **And what the shell holds is reported once, here**, since this is where an item's work begins and
 the one place a report costs one reading rather than one per turn:
@@ -349,6 +351,11 @@ first sentence, then the facts, with a table where the content enumerates.
 - ⛔ anything that could not be established, **named rather than omitted**
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)), which has no
   quiet form;
+- ⛔ **that the work itself is under way, and which carrier the leg was entered through** — the
+  implementing role where the project maps one, or that it maps none and this session is doing the
+  work, by step 7. ⚠️ **Said rather than left to be inferred from the turn continuing**: a reply
+  that ends without it reads as a pass that stopped at the claim, which is the state this role's
+  last act exists to prevent;
 - ⛔ **what happens when the work is done, named rather than left to whoever reads this later**:
   the item's stated acceptance condition answered in the tree is what the finishing role is entered
   on, and the session holding the item is what enters it —
@@ -376,6 +383,12 @@ makes *the work itself* a leg entered by **this role, as its last act**, on a tr
 which steps 4 and 5 have just produced. ⚠️ **A role that waits to be asked is a role that is skipped
 whenever nobody asks**, which is that section's own rule, and it binds this leg exactly as it binds
 the finishing one.
+
+⛔ **Which carrier the leg is entered through is `carriers`'s answer and never this role's choice**
+([`§ 7`](../../config/schema.md#7-carrier)). Where the project maps the implementing role, this step
+addresses it by name — [`skills/implement/`](../implement/) is what this toolkit ships for it — and
+⚠️ **where the project maps none, the leg is not skipped**: this session does the work itself in
+this same pass, which is § The loop's own statement for an absent role on this one leg.
 
 ⛔ **So there is no hand-back here**: no *ready to start?*, no *shall I begin?*, and no reply whose
 last line offers the work rather than reporting it under way. ⚠️ **The reply register forbids it

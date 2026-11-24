@@ -14,8 +14,8 @@ what carry the argument anyway.
 ## The survey found nine roles, not eight
 
 The loop's statement is
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--fourteen-roles), and among
-the roles it carries is one this survey could not read as a role at all: the subsection below,
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop), and among the roles it
+carries is one this survey could not read as a role at all: the subsection below,
 which the survey found in every project's tooling and in no project's implementation. ⛔ **No count
 of the loop's own roles is written here**: the loop grows, and a figure beside this citation would
 state a number the surface already disagrees with. What the survey established about the nine it
@@ -139,8 +139,8 @@ The reverse also happens, and a name-keyed merge produces nonsense on it:
   command alone leaves the skill copy local in a project declared migrated. ⛔ **No count of the
   copies is written here**: the number rose once already, and the statement is that a name-keyed
   merge of this entry is wrong however many there turn out to be. The roles are named apart in
-  [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--fourteen-roles), and what
-  the one basename does to the readiness check — which cannot answer for it and says so — is the
+  [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop), and what the one basename
+  does to the readiness check — which cannot answer for it and says so — is the
   `ambiguous:` entry in that check's own vocabulary.
 - **One name, a subset role.** A bookkeeping carrier can be the *commit third* of the role with
   the board and memory halves absent. Counting such a copy as a full one overstates adoption;
@@ -177,9 +177,9 @@ completion that some reason about explicitly and others do not have.
 ## The axes, and why each is independent
 
 The axes are stated in
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--fourteen-roles) — which
-carries the list, and no count, so this document does not hold a copy of one. There are more than
-the three that are obvious. The measurements that forced each to be independent:
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop) — which carries the list, and
+no count, so this document does not hold a copy of one. There are more than the three that are
+obvious. The measurements that forced each to be independent:
 
 1. **Work-item tracker.** Four models were in play — GitHub Projects in three projects, Jira in
    one, Trello in one, and **none** in one, whose work items were entries in a specification tree
@@ -737,8 +737,8 @@ this repository's own roles are handed holds neither.
 ## What is an ordered list of named checks rather than procedure
 
 No count is given, for the reason [`schema.md § The
-loop`](../plugins/mjolnir/config/schema.md#the-loop--fourteen-roles) gives for the axes — a count
-restated elsewhere drifts the moment one is added — and this section is the demonstration: it gained
+loop`](../plugins/mjolnir/config/schema.md#the-loop) gives for the axes — a count restated
+elsewhere drifts the moment one is added — and this section is the demonstration: it gained
 what counts as done after it was written, which would have made a number in the heading wrong while
 the gate stayed green.
 
@@ -1160,14 +1160,13 @@ than against these copies ([the reading](test-first-for-a-model-writer.md)). So 
 six projects had, and never the subsection's own inventory.
 
 **Why the surface, and not either of the two homes it was weighed against.** The discipline is read
-by two legs — the implementing one, which no role owns, and the reviewing role — and
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--fourteen-roles) already
-settles what follows: a rule read by two roles and written in one of their skills is a second
-authority for the other. Promoting these rules into the reviewing role's own text is therefore the
-option with a precedent against it rather than the cheap one, and it is ruling 11's reasoning
-arriving a second
-time. A per-project pointer — the shape the role-to-person map takes — fails a different test: a
-pointer carries values a role reads, and none of this is a value. Six copies free to disagree is the
+by two legs — the implementing one and the reviewing role — and
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop) already settles what follows:
+a rule read by two roles and written in one of their skills is a second authority for the other.
+Promoting these rules into the reviewing role's own text is therefore the option with a precedent
+against it rather than the cheap one, and it is ruling 11's reasoning arriving a second time. A
+per-project pointer — the shape the role-to-person map takes — fails a different test: a pointer
+carries values a role reads, and none of this is a value. Six copies free to disagree is the
 defect the extraction deletes rather than a configuration of it.
 
 **What was not promoted, and the measurement is the reason.** A coverage figure is set in one
@@ -1361,8 +1360,8 @@ own run's output.
 
 What is stable enough to state without a number going stale: **a single role runs to thousands of
 tokens and carries dozens of ⛔ and ⚠️ markers, and there is one of them per leg the loop names**
-([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--fourteen-roles)). A window
-largely spent on procedure before a line of anyone's code is read is what § 11 exists to notice,
+([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop)). A window largely spent on
+procedure before a line of anyone's code is read is what § 11 exists to notice,
 and the harness vendor's own guidance is that an over-long instructions file is not read
 selectively — it is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
 
@@ -3726,11 +3725,11 @@ nothing, asks no project for a key, and keeps a rate and a client's name out of 
 never bringing them near it. ⚠️ **Nothing in the de-duplication properties overrides that** — the
 skill has one copy.
 
-⛔ **What overrides it is the role list**, at [`schema.md § The loop — fourteen
-roles`](../plugins/mjolnir/config/schema.md#the-loop--fourteen-roles) and read as [`schema.md
+⛔ **What overrides it is the role list**, at
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop) and read as [`schema.md
 § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
-reads it. The role was already named apart on it, by the ruling
-that split one directory name into three roles, and the ruling after that one made the list what
+reads it. The role was already named apart on it, by the ruling that split one directory name into
+three roles, and the ruling after that one made the list what
 admits a skill at all. **Both would have had to be reopened to leave this one out**, which is a
 different and much larger claim than *this skill is awkward*: a leg of the route cannot be refused
 for being hard to place.
@@ -3896,8 +3895,8 @@ nothing about a facet**, which is what
 [`schema.md § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
 now states outright. The reading to refuse is the one the item invites by calling itself a role: on
 that reading
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--fourteen-roles)'s closed list
-refuses this work, because holding documents to a property is no leg of the route.
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop)'s closed list refuses this
+work, because holding documents to a property is no leg of the route.
 
 ⛔ **What shows the reading is wrong is that it refuses half the surface.** Five sections already
 carry per-project facts whose only consumer is a check or a hook rather than a role, and none of
@@ -4221,13 +4220,13 @@ the ref the item's grouping names
 — so the thing a spec-writing leg would produce is already consumed by a leg that never needed one
 to exist. ⚠️ **And a project carrying no corpus files its items unchanged**, which is that facet's
 own absent case: the one test a leg of [§ The
-loop](../plugins/mjolnir/config/schema.md#the-loop--fourteen-roles) has to pass, answered by
+loop](../plugins/mjolnir/config/schema.md#the-loop) has to pass, answered by
 configuration instead of by this document.
 
 ## The ordering record: the leg the route consumed and no leg produced
 
 The closing-out role is this repository's own prototype promoted, and ⛔ **it is the one candidate so
-far admitted to [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--fourteen-roles)'s
+far admitted to [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop)'s
 closed list rather than ruled a facet.** The two readings before it went the other way — one was
 ruled out of the toolkit entirely and one was carried as a block of configuration with a check — so
 the admission is the finding and the argument has to be the one

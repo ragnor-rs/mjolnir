@@ -485,6 +485,10 @@ carriers:
   day_log: skill
   file: skill
   start: skill
+  # § The loop's implementing leg. ⚠️ Mapped here because this is where the leg was measured as
+  # carried by nothing: the route named it twice and no entry of this block answered for it, so
+  # every session held itself to whatever it decided about the discipline that leg reads.
+  implement: skill
   finish: skill
   review: skill
   session: skill
@@ -919,9 +923,9 @@ documents:
   # dropped, are each a failure, which is the direction a hand-written graph is worth having for.
   carrier: list
   files: ["*.md", "docs/**/*.md", "plugins/**/*.md"]
-  # ⛔ One glob and not twelve paths. A role carrier is addressed **by name** by the harness that
-  # loads it, so it is arrived at without any document naming it — the class is the reason, and
-  # listing the members would state the reason twelve times and lose it.
+  # ⛔ One glob and not a path per carrier. A role carrier is addressed **by name** by the harness
+  # that loads it, so it is arrived at without any document naming it — the class is the reason,
+  # and listing the members would state the reason once per member and lose it.
   entry_points: ["README.md", "plugins/mjolnir/skills/*/SKILL.md"]
   graph:
     - document: "README.md"
@@ -1014,6 +1018,15 @@ documents:
     - document: "plugins/mjolnir/skills/gate-work-item/SKILL.md"
       may_name: ["plugins/mjolnir/config/schema.md"]
       derived_from: ["plugins/mjolnir/config/schema.md"]
+    # ⚠️ The reading is a `derived_from` and not a `may_name`: this leg declines an ask that reading
+    # supports and names the cost of declining it, but a carrier root may carry no path a
+    # configuration supplies, so the citation goes through the surface and the edge is the one that
+    # records where content flowed in rather than the one held against the text.
+    - document: "plugins/mjolnir/skills/implement/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from:
+        - "plugins/mjolnir/config/schema.md"
+        - "docs/test-first-for-a-model-writer.md"
     - document: "plugins/mjolnir/skills/load/SKILL.md"
       may_name: ["plugins/mjolnir/config/schema.md"]
       derived_from: ["plugins/mjolnir/config/schema.md"]
