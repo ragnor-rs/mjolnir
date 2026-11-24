@@ -185,8 +185,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify.py" record --target "<the target's
   stamp.
 - **What comes back is readings and a standing**, and ⛔ **the standing is not the verdict**: it says
   whether anything on the record stops the item being accepted.
-- ⛔ **Residue — a defect this pass found belonging to no item — is carried in one line and not
-  filed.** Opening an item is the person's call, and ⚠️ **this is no exception to
+- ⛔ **Residue — a defect belonging to no item — is carried in one line and not filed.** Opening an
+  item is the person's call, and ⚠️ **this is no exception to
   [`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)**: nothing is carved out of
   *this* item, and separate work is what that rule already admits.
 
