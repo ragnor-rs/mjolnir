@@ -88,12 +88,13 @@ SKILLS_DIR = "skills"
 COMMANDS_DIR = "commands"
 HOOKS_DIR = "hooks"
 
-# The heading that opens the loop's own section. ⛔ It carries **no count**, and that is the
-# surface's own ruling rather than a shape this check tolerates: a figure in a heading is restated
-# by every citation of it, so the surface dropped the word and the list under it is the statement.
-# What this pattern is for is finding the paragraph; the only size statements left are that
-# paragraph's own phrases and `vocabulary.yaml`'s list.
-LOOP_HEADING = re.compile(r"^##\s+The loop\s+—\s+\S.*$", re.MULTILINE)
+# ⛔ The heading states no count and this check reads none out of it. The surface rules that the
+# role list carries no count anywhere -- not in its own heading, not on the front page, not in a
+# document beside it -- so the paragraph under the heading is the only statement of the loop's size
+# there is, and a word read out of the heading would be this check asking for the restatement the
+# surface forbids. ⚠️ The heading is still what locates the paragraph, which is why it is matched
+# at all.
+LOOP_HEADING = re.compile(r"^##\s+The loop\s*$", re.MULTILINE)
 
 # How a carrier declares what it is, in its own file.
 #
@@ -164,18 +165,18 @@ def read_carrier_map(path: str | None) -> dict:
 
 
 def loop_role_count(surface_text: str) -> int:
-    """The surface's own statement of the loop's size: the phrases the paragraph lists.
+    """The loop's size as the surface states it: the phrases of the list under the heading.
 
-    ⛔ **One statement and not two.** The heading used to carry the size in a word and this
-    function read both, refusing a disagreement; the surface has since dropped the word, so the
-    paragraph under the heading is the whole of what the surface says and the comparison left is
-    against `vocabulary.yaml`'s list. ⚠️ A heading that goes missing is still **unestablished**
-    rather than a count of zero -- there would be no paragraph to find.
+    ⛔ One statement and not two, which is the surface's own rule rather than a reading dropped
+    for convenience: the list carries no count, so the paragraph is the whole of what this list
+    can be held against. ⚠️ A paragraph that no longer separates its roles with `·` reads as a
+    loop of one and is refused here rather than being reported as a disagreement, which is the
+    shape a reworded list arrives in.
     """
     match = LOOP_HEADING.search(surface_text)
     if not match:
         raise CannotEstablish(
-            "schema.md no longer carries a `## The loop — …` heading, so the role vocabulary in "
+            "schema.md no longer carries a `## The loop` heading, so the role vocabulary in "
             "vocabulary.yaml is held to nothing."
         )
 
@@ -186,6 +187,11 @@ def loop_role_count(surface_text: str) -> int:
             break
         paragraph.append(line.strip())
     phrases = " ".join(paragraph).split("·")
+    if len(phrases) < 2:
+        raise CannotEstablish(
+            "the paragraph under schema.md's `## The loop` heading separates no roles with `·`, "
+            "so the role vocabulary in vocabulary.yaml is held to nothing."
+        )
     return len(phrases)
 
 
@@ -782,7 +788,7 @@ def main(argv: list[str]) -> int:
         listed = loop_role_count(surface_text)
         if listed != len(role_keys):
             unestablished.append(
-                f"the loop's size disagrees — the surface's paragraph lists {listed} roles, "
+                f"the loop's size disagrees — the surface's list carries {listed} roles, "
                 f"vocabulary.yaml declares {len(role_keys)} role keys"
             )
     except CannotEstablish as error:
@@ -1107,9 +1113,44 @@ def self_test() -> int:
 
     with open(os.path.join(PLUGIN_ROOT, "config", "schema.md"), encoding="utf-8") as handle:
         surface_text = handle.read()
-    listed = loop_role_count(surface_text)
-    check(f"the loop's size agrees with the surface's own paragraph ({len(role_keys)})",
-          listed == len(role_keys))
+    # ⛔ The agreement arm is read through the same guard as the plants below it, and for the same
+    # reason: the reading raises where the surface it reads has moved, so an arm that let that out
+    # would die here and take every arm after it -- which is the whole suite's own measurement
+    # applied to its first use of this reading rather than only to the plants.
+    try:
+        agrees = loop_role_count(surface_text) == len(role_keys)
+    except Exception:
+        agrees = False
+    check(f"the loop's size agrees with the surface's own list ({len(role_keys)})", agrees)
+
+    # ⛔ Both refusals planted against the mechanism rather than asserted, the surface being the
+    # only statement of the loop's size left: a heading this check cannot find, and a list whose
+    # roles are no longer separated. ⚠️ Each is read for the sentence it refuses with, because the
+    # two say different things to whoever has to fix them.
+    for what, mutate, wanted in (
+        ("a heading this check cannot find is a refusal, not a loop of nothing",
+         lambda text: text.replace("\n## The loop\n", "\n## The loop of roles\n", 1),
+         "no longer carries a `## The loop` heading"),
+        # ⚠️ Every separator and not the mid-line ones: the list wraps, so a plant written as
+        # `" · "` leaves the line-end separators standing and the count never falls to one --
+        # measured, as a plant that reported green over an unchanged reading.
+        ("a list with no separators left is a refusal, not a loop of one",
+         lambda text: text.replace("·", ","),
+         "separates no roles with `·`"),
+    ):
+        # ⛔ Every exception caught and not only the refusal, so the arm survives the defect it
+        # tests: with the refusal removed the reading raises on the state it no longer rejects,
+        # and an arm that let that out would kill the suite at this line and take every arm
+        # below it with it -- measured, as a traceback in place of a verdict.
+        try:
+            loop_role_count(mutate(surface_text))
+        except CannotEstablish as error:
+            held = wanted in str(error)
+        except Exception:
+            held = False
+        else:
+            held = False
+        check(what, held)
 
     # --- every carrier this toolkit ships declares itself -------------------
     live = shipped_carriers()

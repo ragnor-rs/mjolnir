@@ -129,7 +129,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify.py" commit --target "<the target's
 wide rather than one item wide.
 
 ⛔ **This role launches no tier.** Launching a change's test tiers is the **reviewing leg's**, by
-[`§ The loop`](../../config/schema.md#the-loop--the-roles-and-the-legs-between-them), which states
+[`§ The loop`](../../config/schema.md#the-loop), which states
 that no role on that list launches one anywhere else — so what this step does is **read what that
 launch reported**, exactly as the deploying role does. Which tiers exist and what each needs is
 [`§ 31`](../../config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s.
