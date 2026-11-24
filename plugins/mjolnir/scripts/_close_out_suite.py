@@ -180,17 +180,25 @@ def _a_record(path: str, rows: list[tuple[str, str]]) -> None:
 
 
 def _ran(configuration, tracker, argv: list[str]) -> tuple[int, str]:
-    """One run of the role's own entry point, with what it printed."""
+    """One run of the role's own entry point, with what it printed.
+
+    ⛔ **The streams that were there are what get put back, never `sys.__stdout__`** -- which is the
+    rule `--queue` states about its own capture, held here too: a caller that had already
+    redirected these (a harness running the suite in-process) would otherwise have its capture
+    replaced by the process's original, and everything after the first case would print where
+    nobody is reading.
+    """
     held, errors = io.StringIO(), io.StringIO()
     opened = tracker.port(configuration)
     real_load, real_port = close_out.reader.load, close_out.ports.Port
+    standing_out, standing_err = sys.stdout, sys.stderr
     close_out.reader.load = lambda *a, **k: configuration
     close_out.ports.Port = lambda *a, **k: opened
     try:
         sys.stdout, sys.stderr = held, errors
         code = close_out.main(argv)
     finally:
-        sys.stdout, sys.stderr = sys.__stdout__, sys.__stderr__
+        sys.stdout, sys.stderr = standing_out, standing_err
         close_out.reader.load, close_out.ports.Port = real_load, real_port
     return code, held.getvalue() + errors.getvalue()
 
@@ -533,6 +541,28 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
             code == 2 and "--in <value>" in said,
             f"exit {code}: {said}",
         )
+        # ⛔ The bootstrap has to be **reachable** on this carrier, and its refusal is keyed on the
+        # record placing something rather than on the places a read answered with. ⚠️ The quiet
+        # failure both arms hold: a grouping always resolves to its own one place, empty or not, so
+        # a test on the places themselves told every project on this carrier that it already
+        # orders its backlog -- the one state `--bootstrap` exists for.
+        empty = _Tracker(live, blockers={SECOND: [FIRST]}, held=[])
+        code, said = _ran(configuration, empty, ["--bootstrap", "--in", A_VALUE])
+        check(
+            "--bootstrap on a grouping that holds nothing reports the layers and writes nothing",
+            code == 1
+            and "layers               : 2" in said
+            and "nothing written" in said
+            and not empty.wrote,
+            f"exit {code}, wrote {empty.wrote!r}:\n{said}",
+        )
+        code, said = _ran(configuration, _Tracker(live, held=[FIRST]),
+                          ["--bootstrap", "--in", A_VALUE])
+        check(
+            "and on a grouping that holds an item it is refused by name, as on a document",
+            code == 2 and "already orders its backlog" in said,
+            f"exit {code}: {said}",
+        )
 
     # --- `--startable`, which reads no record at all -------------------------
     with tempfile.TemporaryDirectory() as store:
@@ -546,6 +576,17 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
             f"#{FIRST}" in said and f"#{SECOND}" not in said
             and "which items MAY be started" in said,
             f"exit {code}: {said}",
+        )
+        # ⛔ And the one flag in that mode's guard whose omission was silent: `--create` is a
+        # **write**, so a pass asked for both answered the read, exited 0 and created nothing.
+        # ⚠️ Asserted as a fact about the calls, not about the text: a refusal that still wrote
+        # would read the same in the report.
+        both = _Tracker([an_item(FIRST)])
+        code, said = _ran(configuration, both, ["--startable", "--create", "--in", "a value"])
+        check(
+            "--startable beside --create is refused, naming it, and writes nothing",
+            code == 2 and "--create" in said and not both.wrote,
+            f"exit {code}, wrote {both.wrote!r}: {said}",
         )
 
     if failures:

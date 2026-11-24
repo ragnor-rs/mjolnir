@@ -935,6 +935,28 @@ def self_test() -> int:
         and partial.get("commit") is None,
         f"answered {partial!r}",
     )
+    # ⛔ A connection the host says has more is refused rather than read short,
+    # which is the sibling kind's rule over this same connection. ⚠️ The failure
+    # it holds is not a missing reference but a wrong one: *the last of what came
+    # back* is the newest only where everything came back, so a truncated answer
+    # names a change that did not close the item and reads exactly like one that
+    # did.
+    truncated = _Host({"closedByPullRequestsReferences": {
+        "data": {"repository": {"issue": {
+            "state": "CLOSED",
+            "closedByPullRequestsReferences": {
+                "pageInfo": {"hasNextPage": True},
+                "nodes": [{"number": 22, "merged": True, "mergeCommit": {"oid": "bbb2222"}}],
+            },
+        }}},
+    }})
+    said = with_host(truncated,
+                     lambda: unavailable(lambda: under_test.read_closing_change(BLOCKED)))
+    check(
+        "a closing-change answer the host says is short is refused, not read",
+        said is not None and "more" in said,
+        f"said {said!r}",
+    )
     # ⛔ Read through the guard, so a pull request number is refused before the
     # query -- the number this operation is keyed on naming the wrong object is
     # the one way its answer is wrong and reads right.

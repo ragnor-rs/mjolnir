@@ -9165,6 +9165,13 @@ memory store already have: whether the `document` carrier is reachable at all is
 `branch_model.kind` ([§ 10](#10-branch-model)) and by where the directory sits, and the rules below
 are read off those rather than stated independently of them.
 
+⛔ **This key is required of every project, so it invalidates every configuration written before
+it** — [§ 1](#the-surface-is-resolved-beside-the-configuration)'s own case, discharged the way that
+section states and §§ 38 and 39 discharged it in the two changes before this one: the absent form is
+stated here and in every shipped example in the same change, and the record the change lands with
+says that configurations outside this repository are refused until each writes the key.
+⚠️ **No check here can reach them**, they being files in repositories this one cannot open.
+
 ### The two carriers, and the one thing neither of them is
 
 ⛔ **A tracker that plans in sets already holds the ordering, and a project whose tracker does not

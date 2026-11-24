@@ -701,6 +701,7 @@ query($owner:String!, $name:String!, $number:Int!) {
     issue(number:$number) {
       state
       closedByPullRequestsReferences(first:10, includeClosedPrs:true) {
+        pageInfo { hasNextPage }
         nodes { number merged mergeCommit { oid } }
       }
     }
@@ -775,7 +776,9 @@ def read_closing_change(number: int) -> dict:
     host's own order and the newest is the one that closed it; an answer carrying
     all of them would leave every consumer picking, which is this choice made
     once rather than per reader. ⚠️ **Every reference is still returned** beside
-    it, so a consumer that needs to see the pile can.
+    it, so a consumer that needs to see the pile can. ⛔ **And that choice is
+    exactly why a short answer is refused below rather than read**: *the last of
+    what came back* is only the newest where everything came back.
 
     ⛔ **An item with no closing reference comes back with `change: None`**, which
     is a real answer and not an absence: the capability is present and the host
@@ -803,13 +806,27 @@ def read_closing_change(number: int) -> dict:
             f"`gh api graphql` (closedByPullRequestsReferences) answered null for "
             f"#{addressed} in {repo}, so what closed it could not be read."
         )
+    # ⛔ **A connection the host says has more is refused and never taken short**,
+    # which is the sibling kind's own rule over this same connection: the query
+    # asks for one page because it is nested inside a single object with no
+    # cursor to follow, so a truncated answer would hand a *last reference* that
+    # is the newest of ten rather than the newest there is -- and a landed record
+    # naming the wrong change reads exactly like one naming the right one.
+    closed_by = issue["closedByPullRequestsReferences"]
+    if (closed_by.get("pageInfo") or {}).get("hasNextPage"):
+        raise port.HostUnavailable(
+            f"the pull requests that closed #{addressed} came back with "
+            f"{len(closed_by['nodes'])} node(s) and the host saying it has more, in "
+            "a shape this query asks for in one page. The answer is short and "
+            "nothing in it says so, so it is refused rather than read."
+        )
     references = [
         {
             "change": node["number"],
             "merged": bool(node["merged"]),
             "commit": (node["mergeCommit"] or {}).get("oid"),
         }
-        for node in issue["closedByPullRequestsReferences"]["nodes"]
+        for node in closed_by["nodes"]
     ]
     closing = references[-1] if references else None
     return {

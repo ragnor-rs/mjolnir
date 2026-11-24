@@ -340,6 +340,11 @@ def same_place_order(cell: str, blocker: int, dependent: int) -> str:
     `reading`      -- the blocker is written first with no arrow, so the order is implied only.
                       ⛔ A notation gap and not an order: reading order states nothing.
     `contradicted` -- the dependent is written first, so the cell says the opposite of the graph.
+
+    ⛔ **A cell naming only one of the two reads as `contradicted` as well**, which is stated
+    because it is a fourth case folded into a third: the pair is same-place by the placements this
+    same cell produced, so a cell that does not name both is one whose text and whose membership
+    disagree -- and the permissive reading of that is an order nobody wrote.
     """
     first: dict[int, int] = {}
     for match in AN_ITEM.finditer(cell):
@@ -893,9 +898,14 @@ def main(argv: list[str] | None = None) -> int:
             # ⛔ Before the record is resolved, which is the whole of what this mode is for: the
             # *may* question is answered by the tracker and § 4.6, so a project whose record does
             # not exist yet must not be a refusal here.
-            if args.stamp or args.tested or args.queue or args.bootstrap:
+            # ⛔ `--create` is in this list because it is a **write**: every other mode refuses the
+            # flags that have nothing to act on, and the one flag left out of this guard was the
+            # one whose omission is silent -- a pass asked to bring a grouping into existence
+            # reported a startable set, exited 0 and created nothing.
+            if args.stamp or args.tested or args.queue or args.bootstrap or args.create:
                 raise Stop("--startable answers from the tracker alone and writes nothing, so "
-                           "--stamp, --tested, --queue and --bootstrap have nothing to act on")
+                           "--stamp, --tested, --queue, --bootstrap and --create have nothing to "
+                           "act on")
             return startable(configuration, tracker)
         record = record_of(configuration)
         if args.create:
@@ -908,7 +918,14 @@ def main(argv: list[str] | None = None) -> int:
                 raise Stop("--bootstrap writes nothing, so --stamp, --tested and --queue have "
                            "nothing to act on here")
             places, unread = places_of(tracker, record, args.value)
-            if unread is None and places:
+            # ⛔ **An ordering exists where the record places something, which is one reading for
+            # both carriers and never a branch here.** A row table that is not there resolves to no
+            # places at all, but a grouping always resolves to its own single place -- empty or not
+            # -- so a test on the places themselves refused **every** bootstrap on that carrier,
+            # telling a project whose ordering does not exist yet that it already orders its
+            # backlog. ⚠️ A place that holds nothing is not an order of work: it is the set this
+            # mode exists to report the layers of.
+            if unread is None and any(held for _cell, held in places.values()):
                 raise Stop(
                     f"this project already orders its backlog in {record['names']!r}, and "
                     "nothing here overwrites one. Run without --bootstrap (§ 40)."

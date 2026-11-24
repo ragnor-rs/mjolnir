@@ -190,7 +190,8 @@ none.
 whether it arrived from a parallel session, changes nothing: an item with no place, no tier answer
 or an untested relation is unprocessed, and processing it is what this role is for.
 
-⛔ **Another session's residue is reported and never repaired**, with whose it is named
+⛔ **Another session's residue is reported and never repaired** — as the placements that moved, and
+⛔ **whose it is as unestablished**, neither carrier's record carrying an author
 ([`§ 40`](../../config/schema.md#what-a-pass-may-not-do-whatever-the-carrier)). Several sessions
 share one backlog and the record has no lock, which is a collision hazard rather than an ownership
 rule, and it is handled by **how** the edit is made:
@@ -224,7 +225,8 @@ sentence, then the facts, with a table where the content enumerates.
   blockers went unread, a closing change the tracker holds nothing about, an item no status maps, a
   read that filled its bound, and the ordering question a grouping-carried record cannot be asked;
 - every relation test run, with its answer **either way**;
-- another session's residue, with whose it is;
+- another session's residue, as the placements that moved, with ⛔ **whose it is stated as
+  unestablished** rather than attributed;
 - ⛔ anything that needs the person running this, **asked with the options**
   ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): a tier outside the stated
   set, a contradicted record, a place whose argument you cannot write, an ordering that has to be
