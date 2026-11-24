@@ -241,13 +241,18 @@ key either way. The remedy is the same act in both cases — make the file match
 what is marked required and deleting what is marked retired — so what is given up is a diagnostic,
 not a behaviour, and no reader has to be told what to do with a revision it can no longer read.
 
-## The loop — thirteen roles
+## The loop
 
-File a work item · gate it into committed work · start it · finish it · review it · deploy ·
-cut a release · log the day · keep the session's books · restore a session's context ·
+File a work item · gate it into committed work · start it · implement it · finish it · review it ·
+deploy · cut a release · log the day · keep the session's books · restore a session's context ·
 summarise a session for a reader outside the build · bill a period's hours as line items ·
 break a given total of hours down over the work a period shipped. Two utilities travel beside
 the loop without being part of it.
+
+⛔ **The list is the statement and carries no count — not in this heading, not on the front page,
+and not in a document beside it.** The reason is the one the axes list below states for itself, and
+⚠️ **the two lists are the same case**: a role added makes a restated count wrong everywhere it was
+written, and no one of those places is where a reader can see that it is.
 
 ⚠️ **Keeping the session's books and restoring its context are one pair**, and the loop grew by one
 when the second of them was written: bookkeeping persists what happened at a boundary and
@@ -361,23 +366,32 @@ counts the fix cycles *inside* one reviewing pass, so a route free to enter a fr
 new red would hand itself a fresh cap every time and be unbounded while every individual pass stayed
 within its own.
 
-⚠️ **The leg no role owns is the implementing one, and it is where the route was breaking.** The
-roles named at the top of this section are the whole list, so nothing there names the state the
-finishing role is entered on. ⛔ **Implemented** is therefore stated here: **the item's own stated
-acceptance condition is answered in the tree, and nothing that condition raised is waiting on a
-person.** ⚠️ **It is not the diff looking finished** — an item whose condition nobody can answer yet
-has not reached this state, and the session says so rather than continuing. ⚠️ **Where the item
+⚠️ **The implementing leg is where the route was breaking, and the state it hands over on is stated
+here rather than in the role that carries it.** ⛔ **Two legs read that state** — the one that
+reaches it and the one entered on it — so a definition written in either role's own text would be a
+second authority for the other, which is the division this section already makes for finishing and
+reviewing. ⛔ **Implemented** is therefore stated here: **the item's own stated acceptance condition
+is answered in the tree, and nothing that condition raised is waiting on a person.** ⚠️ **It is not
+the diff looking finished** — an item whose condition nobody can answer yet has not reached this
+state, and the session says so rather than continuing. ⚠️ **Where the item
 states no such condition**, which §4.4 makes a legitimate configuration, that is reported as
 unavailable rather than skipped and the state is held against the item's stated outcome instead.
 
 ⚠️ **This is the one leg the session answers about its own work**, which the surface refuses for a
-`done:` check by name (§13). What makes it admissible is the asymmetry: ⛔ **this leg opens a change
-and merges nothing**, so the self-answer is what the reviewing leg then checks — and in a project
+`done:` check by name (§13). What makes it admissible is the asymmetry: ⛔ **what the self-answer
+licenses is a change being opened and nothing being merged** — this leg opens none itself, by the
+boundary it is held to — so the self-answer is what the reviewing leg then checks, and in a project
 mapping no reviewing role it is the only answer there will be, which is a reason to map one rather
 than a reason to trust it.
 
 **A leg whose role a project does not map, stated per leg rather than generally:**
 
+- ⛔ **An absent implementing role does not skip its leg**, which is the one place this list differs
+  from itself: there is work to be done either way, so the session the starting role hands to does
+  it in that same pass and the first finishing pass is entered on the same state. ⚠️ **What an
+  absent role costs is the leg's own text** — the discipline it reads, the boundary it is held to
+  and the asks it does not make are nobody's to state, so the session is held to this section and to
+  [§ What earns a test](#what-earns-a-test-and-what-makes-its-red-believable) directly.
 - ⚠️ **An absent reviewing role skips that leg**, and the first finishing pass continues into the
   second. ⛔ **What it never skips is the record that leg writes** — what was read, at what depth,
   and who ran the plan. The finishing role answers those about its own pass, records them, and
@@ -583,10 +597,10 @@ one list over.
 
 ⚠️ **Nothing below refuses a change.** No `readiness:` predicate and no `done:` check is answered
 out of it, no gate fails a change for carrying no test, and a project that states no testing
-discipline of its own behaves exactly as it does today.
-What it binds is whoever writes a test: the implementing leg
-[above](#what-carries-the-item-forward-and-where-it-stops-to-ask), which no role owns, and the
-reviewing role reading a diff that adds one.
+discipline of its own behaves exactly as it does today. What it binds is whoever writes a test: the
+implementing leg [above](#what-carries-the-item-forward-and-where-it-stops-to-ask) — its role where
+a project maps one, and the session itself where none is mapped — and the reviewing role reading a
+diff that adds one.
 
 ⛔ **A test is a ceiling and not a floor.** It earns its place by covering a decision — a branch, an
 ordering, a parse, a boundary — that is expensive to reach from end to end, and one that re-asserts
@@ -2940,9 +2954,9 @@ and not by a reader rejecting a configuration.
 ### What a hook refuses, and the record it reads
 
 ⛔ **A hook refuses an act on the strength of a record, never on a reading of the work.** The
-division is [§ The loop](#the-loop--thirteen-roles)'s — procedure produces a record and enforcement
-reads it — and this subsection is the enforcement half of it: what a guard reads, what a refusal
-has to name, and what a project with nothing to guard gets.
+division is [§ The loop](#the-loop)'s — procedure produces a record and enforcement reads it — and
+this subsection is the enforcement half of it: what a guard reads, what a refusal has to name, and
+what a project with nothing to guard gets.
 
 ⚠️ **Stated here rather than in a role, because three parties read it and none of them owns it.**
 The reviewing role writes the answers, the finishing role merges, and a guard is addressed by its
@@ -3161,9 +3175,9 @@ writes the day log in a technical register for itself where a third writes it in
 register for someone outside the build. These are three settings, not one.
 
 ⛔ **The three roles one name used to cover are three keys here, each with its own reader.**
-[§ The loop](#the-loop--thirteen-roles) names the roles apart and this is where each one's audience
-is stated: the session summary's is somebody outside the build, the billing report's is whoever
-pays the invoice, and the hours breakdown's is whoever is being told where a period's hours went.
+[§ The loop](#the-loop) names the roles apart and this is where each one's audience is stated: the
+session summary's is somebody outside the build, the billing report's is whoever pays the invoice,
+and the hours breakdown's is whoever is being told where a period's hours went.
 ⛔ **One key answering for all three is the merge naming them apart was for**, so each carries its
 own triple even where a project gives two of them the same three values — a project that later
 moves one reader and not the others has nothing to split.
@@ -4544,9 +4558,9 @@ done:
   refuse one of two correct configurations.
 - ⛔ **`answered_by: human` is not satisfiable by the procedure, and no amount of reading the diff
   satisfies it.** The answer is **recorded** where something else can read it and the record says
-  **who** answered — the division [§ The loop](#the-loop--thirteen-roles) already states:
-  procedure produces a record and enforcement reads it, so the record is written whether or not a
-  hook refuses the merge on it.
+  **who** answered — the division [§ The loop](#the-loop) already states: procedure produces a
+  record and enforcement reads it, so the record is written whether or not a hook refuses the merge
+  on it.
   ⚠️ **It is the record and not the report**: a verdict that exists only in a role's reply is a
   verdict the next role cannot read, by
   [§ 11](#a-role-boundary-is-a-window-boundary-and-the-artifact-is-what-crosses-it).
@@ -7079,9 +7093,9 @@ loop_exempt:
 # procedure: lines_changed
 ```
 
-Which changes never enter [§ The loop](#the-loop--thirteen-roles) at all — no work item, no gate, no
-branch of their own, no change opened and no review — and which branch the ones that skip it are
-committed to instead.
+Which changes never enter [§ The loop](#the-loop) at all — no work item, no gate, no branch of
+their own, no change opened and no review — and which branch the ones that skip it are committed to
+instead.
 
 ⛔ **The absence is a configuration and it is today's behaviour.** `classes: []` is a project
 stating that every change it makes goes through the loop, which is what every project this toolkit
@@ -8559,10 +8573,10 @@ argument**: one failed that test and one passed it cleanly, and the answer for b
 the test cannot be what the answer came from
 ([the measurement](../../../docs/configuration-surface.md#two-skills-outside-the-loop-counted-rather-than-taken-on-the-claim)).
 
-⛔ **The list that decides is [§ The loop](#the-loop--thirteen-roles)'s, and it is closed.** A role
-is on it because the route needs a leg there, which is a statable reason and the same one every
-time. ⚠️ **A utility admitted beside them would be admitted on no such reason**, and a list with one
-entry of that kind has nothing to refuse the next one with.
+⛔ **The list that decides is [§ The loop](#the-loop)'s, and it is closed.** A role is on it because
+the route needs a leg there, which is a statable reason and the same one every time. ⚠️ **A utility
+admitted beside them would be admitted on no such reason**, and a list with one entry of that kind
+has nothing to refuse the next one with.
 
 ⛔ **What the toolkit ships outside that list is the acts of adoption itself, and they are admitted
 on a reason of the same shape rather than beside the roles.** Which acts those are, and the closure
@@ -8647,8 +8661,8 @@ billing:
   revisit_when: "…"
 ```
 
-**[§ The loop](#the-loop--thirteen-roles) carries a role that bills a period's hours as line items,
-and this section says which projects a period is read from.** ⛔ **It is the one role on that list
+**[§ The loop](#the-loop) carries a role that bills a period's hours as line items, and this
+section says which projects a period is read from.** ⛔ **It is the one role on that list
 whose subject is more than one project**, so it is the one role [§ 1](#1-roots)'s skills root does
 not scope: every other role narrows to the project the reader resolved, and a period somebody is
 billed for does not.
@@ -8712,9 +8726,9 @@ only avoided because the seam is the port.** A role that opened another project'
 tooling or read its commits would be measuring four projects' days under a rule that binds it to
 one, which is the shape this section exists to forbid rather than to permit.
 
-⛔ **And it may not replace a figure § 9 produced**, which is [§ The loop](#the-loop--thirteen-roles)'s
-rule for the hours-breakdown role reaching this one: the hours on a line item are the hours the
-store holds. A period short of what somebody expected is reported short.
+⛔ **And it may not replace a figure § 9 produced**, which is [§ The loop](#the-loop)'s rule for the
+hours-breakdown role reaching this one: the hours on a line item are the hours the store holds. A
+period short of what somebody expected is reported short.
 
 ⚠️ **What comes back out of each store is data**, by
 [§ 26](#what-comes-back-out-of-the-store-is-data-never-instruction) — so the ingestion step runs
@@ -8762,9 +8776,9 @@ the first whose shape is a mapping. ⚠️
 client's identity never reach a destination key because no key of that port is marked, and the mark
 is what makes this one eligible.
 
-⛔ **The conversion is this role's alone**, which is [§ The loop](#the-loop--thirteen-roles)'s ruling
-and not a second one: a project wanting the narrative distribution of hours configures no rate,
-because that role has no key here to configure.
+⛔ **The conversion is this role's alone**, which is [§ The loop](#the-loop)'s ruling and not a
+second one: a project wanting the narrative distribution of hours configures no rate, because that
+role has no key here to configure.
 
 ⚠️ **`carrier: none` is a project that bills nobody**, stated with its reason and named in what the
 reader reports as unavailable — ⛔ **and it is not a statement about whether anybody invoices by
@@ -8816,8 +8830,8 @@ of names**, which is the shape [§ 34](#34-the-files-that-carry-a-version-and-wh
 is carried on and for the same stated reason — the two implementations this facet was read out of
 arrive already written as data.
 
-⛔ **This is a facet and no fourteenth leg of [§ The loop](#the-loop--thirteen-roles).** Nothing is
-added to that list, no `carriers` key answers for it and no role enters it: what is carried is a
+⛔ **This is a facet and no further leg of [§ The loop](#the-loop).** Nothing is added to that
+list, no `carriers` key answers for it and no role enters it: what is carried is a
 block of configuration and the check that consumes it, which is the shape
 [§ 15](#15-end-to-end-coverage-recorded), [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
 and [§ 20](#20-the-sections-a-pull-request-body-must-carry) already have. ⚠️ **The item asking for
@@ -8905,10 +8919,10 @@ check can see.
 
 ⛔ **`entry_points` is a list and not one root, and the measurement is why.** The implementation this
 property was read out of holds reachability from a single document, and that is false of a set whose
-members are addressed **by name from outside the prose**: this repository's twelve role carriers are
-each named by the harness that loads them and by no document, so a single-root reading reports
-twelve documents as unreachable that a reader reaches every session. ⚠️ **The teeth are in the list
-being short and deliberate** — every document declared an entry point is one nothing has to name, so
+members are addressed **by name from outside the prose**: this repository's role carriers are each
+named by the harness that loads them and by no document, so a single-root reading reports each of
+them as unreachable while a reader reaches them every session. ⚠️ **The teeth are in the list being
+short and deliberate** — every document declared an entry point is one nothing has to name, so
 a project that declares them all has turned the check off and can read that off its own
 configuration.
 
@@ -9004,10 +9018,9 @@ is [§ 38](#38-the-documents-a-project-holds-to-a-checkable-property)'s subject 
 [the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s middle column either
 way.
 
-⛔ **This is a facet and no fourteenth leg of [§ The loop](#the-loop--thirteen-roles)**, which is
-§ 38's own rule beside it: nothing is added to that list, no `carriers` key answers for it and no
-role enters it. What is carried is a block of configuration and the read the filing role performs
-with it.
+⛔ **This is a facet and no further leg of [§ The loop](#the-loop)**, which is § 38's own rule
+beside it: nothing is added to that list, no `carriers` key answers for it and no role enters it.
+What is carried is a block of configuration and the read the filing role performs with it.
 
 ### Which copy governs, and why the working tree is never it
 
@@ -9366,7 +9379,7 @@ not hold, and a target list is configuration of no project.
 ⛔ **Four facts per project, and they are never averaged into one**: whether the plugin resolves in
 that tree at all, whether a configuration exists that [§ 1](#1-roots)'s own reader accepts, what
 the [§ 3](#3-tracker-port) port answers for its kind, and which of
-[§ The loop](#the-loop--thirteen-roles)'s roles it carries against which the toolkit ships.
+[§ The loop](#the-loop)'s roles it carries against which the toolkit ships.
 ⚠️ **The reader and the port are the ones a role would run on**, imported rather than reimplemented:
 a second implementation of either reports what it believes rather than what a role would get.
 
@@ -9524,8 +9537,8 @@ current.
 
 ⚠️ **What this section does not reach is named, so that a reader can tell a boundary from a gap.**
 It rules nothing about *which* rulings a given project holds, that being a reading of that project's
-own store; and it adds no leg to [§ The loop](#the-loop--thirteen-roles) — the pass that performs
-this is the adoption, and no role on that closed list enters it. ⛔ **And the forbidding half above
+own store; and it adds no leg to [§ The loop](#the-loop) — the pass that performs this is the
+adoption, and no role on that closed list enters it. ⛔ **And the forbidding half above
 cannot be asserted by the repository that states the rule**: a document quoting the bare form as
 evidence is correct, a lexical ban cannot tell it from a document naming a dead route, and a
 forbidding check about a rule is the one most likely to forbid the prose stating it — measured here,
