@@ -9409,7 +9409,8 @@ the role and not refused by the reader: a project that judges on one of three ta
 exactly what it means.
 
 ⛔ **The command reads a file inside the running target.** Two readings that look like the answer are
-refused by the rule rather than by a key:
+refused by the rule rather than by a key
+([the measurement](../../../docs/configuration-surface.md#the-two-wrong-readings-of-a-deployed-commit-and-why-neither-is-a-key)):
 
 - **An artefact's digest is not the commit.** A reproducible build yields the same artefact from a
   different commit, so an identical digest is no evidence that a deploy is current.
@@ -9539,9 +9540,12 @@ what the step contradicts in the body is this role's obligation rather than the 
 
 ⛔ **A project that judges nothing on a target states `carrier: none` with its reason, and this role
 runs nothing and is asked for no verdict.** The reader names it among what is unavailable, with the
-consequence rather than the key alone. ⚠️ **The two measured shapes of that absence are one
-configuration**: a project whose items carry no acceptance criteria, and a project that maps no
-`accepted` status at all.
+consequence rather than the key alone. ⚠️ **Two shapes reach that one carrier, and the shipped
+examples state each of them**: a project that deploys nothing, so no target serves a commit for a
+reading to be taken against; and a project that deploys and maps no `accepted` status, so there is
+no state a verdict could be recorded as. ⛔ **Only the first is refused from the other direction** —
+`carrier: list` beside `deploy: []`, above — because the second is a ladder this surface permits a
+project to map a subset of and no reader may infer an absence from it.
 
 ⛔ **A key stated beside `none` is refused rather than ignored** — § 34's rule for the same shape: an
 `identity` mapping under a carrier that reads none is a judgement somebody configured and nothing

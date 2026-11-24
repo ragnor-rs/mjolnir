@@ -36,8 +36,8 @@ from a sibling project with a configuration of its own, this role judges **that*
 `verify.carrier: none` is a **stop naming that key** — nothing here is judged on a target, which
 [`§ 41`](../../config/schema.md#carrier-none-and-the-two-shapes-of-that-absence) makes a stated
 configuration rather than a gap, and ⛔ **never an invitation to improvise a reading**. ⚠️ **The
-reply says which of that absence's two shapes the project is in**, the reason being the project's
-own: no criterion measurable on an environment, or no status mapping the accepted role.
+reply says which of that absence's two shapes the project is in**, as that subsection states them,
+with the reason being the project's own.
 
 ⚠️ **What the shell holds is reported by the starting role once per item** and is not re-read here.
 
@@ -112,14 +112,14 @@ judges nothing**, which is step 1's stop reached at a command rather than a run 
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify.py" commit --target "<the target's name>"
 ```
 
-- ⛔ **This is the only source, and the two readings that look like answers are neither**: an
-  artefact's digest is identical from another commit under a reproducible build, and the integration
-  branch runs ahead of every target. § 41 states both; the carrier has nowhere else to read from.
+- ⛔ **This is the only source, and the two readings that look like answers are refused by that
+  rather than by a key** —
+  [`§ 41 → `identity``](../../config/schema.md#identity-and-the-two-readings-of-a-deployed-commit-that-are-wrong)
+  names both, and the carrier has nowhere else to read from. ⛔ **So neither is argued with here**:
+  the command is run and what it printed is the answer.
 - ⛔ **A command that printed nothing is reported unestablished and never as unchanged**
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)), and the pass stops:
   a reading taken against a target serving nothing is a reading about nothing.
-- ⚠️ **An earlier note is not this reading.** Two notes written the same afternoon can disagree,
-  which is why the command is run in this pass.
 
 ## 4. The machine readings, taken before a person is asked for anything
 
@@ -148,19 +148,23 @@ whatever that project's own build already ran, said as that rather than filled i
   enters a transcript.
 - ⚠️ **What makes a reading defensible is cheapest first**: identity of the artefact, arithmetic
   that closes against the subject's own data, and the property read where the subject reads it
-  rather than where it is embedded. ⛔ **A negative reading expires with the copy it came from**, so
-  an absence names the copy and its date and is taken again before it is asserted.
+  rather than where it is embedded — ⚠️ **the third being the one that misleads**, since styling
+  reaching a nested surface lives in that surface's own document and a search of the parent reports
+  it absent on a screen where it works. ⛔ **And an absence is taken again before it is asserted**,
+  by [`§ 41 → What the role records`](../../config/schema.md#what-the-role-records-and-what-it-may-not-record).
 
 ## 5. The comparison, where the change touched more than a scenario covers
 
 ⛔ **Two copies, identical in data and runtime, differing only in the code under judgement**, built
-under the baseline's own durable path. ⛔ **Content parity is measured and carried as a reading**,
-never assumed — a comparison whose two sides differ in their data is a diff nobody can attribute.
+under the baseline's own durable path. **What the instrument is, what parity it owes as a reading
+and what a provisioning run owes beside it are
+[`§ 41 → `baseline``](../../config/schema.md#baseline-and-what-the-comparison-is-for)'s** — ⛔ **and
+the carrier refuses a record missing either pair**, so this step builds the comparison and hands
+both to step 6 rather than deciding what they are.
 
-- ⛔ **A component with no standing instance is provisioned, not skipped**, through the project's own
-  write path, reverted, and reported with its checksum pair and that nothing was left. ⚠️ **A
-  fixture existing on one side only is a fixture and not a comparison**, and the record says which
-  it is.
+**What is this step's rather than that subsection's is how a reading goes wrong where nothing
+refuses it:**
+
 - ⛔ **Measuring the element that changed is not checking the change.** What the changed box now
   intersects is queried, and those neighbours are named: an element drawn over another produces no
   overflow at all.

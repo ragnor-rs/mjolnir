@@ -5445,12 +5445,18 @@ def _validate_release(data: dict, facts: dict) -> None:
             )
 
 
-def _validate_verify(data: dict, facts: dict) -> None:
+def _validate_verify(data: dict) -> None:
     """§ 41's block, whose shape no marker on the surface can reach.
 
     The carrier's own alternation and the requiredness of the keys beside it are
     marked and answered before this runs; what the keys have to *be* is here,
     which is the division §§ 31, 32, 33 and 34 already have.
+
+    ⚠️ **It takes no surface facts, unlike § 34's**, and the reason is that this
+    facet declares no key *inside a list*: every key it has sits at a path a
+    marker reaches, so what is left here is the relation between keys and the
+    type of a value. A parameter for facts nothing reads would read as a surface
+    this arm consulted.
 
     ⛔ **Three rules, and each is a judgement that would otherwise read as
     taken.** A target name no `deploy` entry carries is a judgement aimed at an
@@ -8519,10 +8525,10 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # **not** here: it needs that facet's own carried set rather than the raw
     # block, so it runs in `_grouping_facet` where the set exists.
     _validate_spec_corpus(data)
-    # § 40's block, and ⛔ **after § 33's rather than beside it**: the names its
+    # § 41's block, and ⛔ **after § 33's rather than beside it**: the names its
     # `identity` is keyed on are a target's own, so this reads a list the arm
     # above has already held to being a list of targets at all.
-    _validate_verify(data, facts)
+    _validate_verify(data)
 
     readiness = _absent_as(_get(data, "readiness"), [])
     if not isinstance(readiness, list):
