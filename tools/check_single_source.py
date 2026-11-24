@@ -78,9 +78,11 @@ EXPLAINS, RECORDS, PROCEDURE = "explains", "records", "procedure"
 # fallback below it, and a rule matching no file at all is reported rather than
 # left to rot.
 ROLE_RULES = [
-    # ⛔ The twelve role carriers as one rule, which is where the enumeration
-    # genuinely was a copy: every one of them is a carrier because of where it
-    # sits, and a thirteenth would have had to be written down twice.
+    # ⛔ The role carriers as one rule, which is where the enumeration genuinely
+    # was a copy: every one of them is a carrier because of where it sits, and
+    # each further one would have had to be written down twice. ⛔ No count of
+    # them here either -- the first form of this comment carried one, and the
+    # loop growing by a role made it wrong.
     (f"{CARRIERS}/*/SKILL.md", PROCEDURE),
     (RULINGS, RECORDS),
     ("docs/building-itself.md", RECORDS),

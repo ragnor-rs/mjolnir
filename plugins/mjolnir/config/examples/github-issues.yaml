@@ -485,3 +485,15 @@ documents:
         The name was removed rather than renamed — there is no component it now refers to, so no
         correct sentence can carry it.
   quoted: []
+
+# § 39's absent case, in its other shape: `deploy: []` above, so there is no target for a
+# criterion to be measurable **on**. ⛔ Not a project whose work goes unjudged — somebody reads
+# the change — and nothing here says whether anybody looks at a running copy by hand.
+verify:
+  carrier: none
+  absent_reason: >-
+    Nothing here is deployed through the procedure, so there is no environment serving a commit
+    for a reading to be taken against and no accepted state in the two-status ladder.
+  revisit_when: >-
+    A deploy target is stated, which is the first moment there is something for a criterion to be
+    measured on.

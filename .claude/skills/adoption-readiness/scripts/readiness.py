@@ -73,13 +73,12 @@ SKILLS_DIR = "skills"
 COMMANDS_DIR = "commands"
 HOOKS_DIR = "hooks"
 
-NUMBER_WORDS = {
-    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
-    "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
-    "thirteen": 13, "fourteen": 14,
-}
-
-LOOP_HEADING = re.compile(r"^##\s+The loop\s+—\s+(\w+)\s+roles\s*$", re.MULTILINE)
+# The heading that opens the loop's own section. ⛔ It carries **no count**, and that is the
+# surface's own ruling rather than a shape this check tolerates: a figure in a heading is restated
+# by every citation of it, so the surface dropped the word and the list under it is the statement.
+# What this pattern is for is finding the paragraph; the only size statements left are that
+# paragraph's own phrases and `vocabulary.yaml`'s list.
+LOOP_HEADING = re.compile(r"^##\s+The loop\s+—\s+\S.*$", re.MULTILINE)
 
 
 class CannotEstablish(Exception):
@@ -117,21 +116,21 @@ def parse_pair(argument: str, what: str) -> tuple[str, str]:
 # --- the surface, held against the declaration ------------------------------
 
 
-def loop_role_count(surface_text: str) -> tuple[int, int]:
-    """The two statements of the loop's size the surface carries, read apart.
+def loop_role_count(surface_text: str) -> int:
+    """The surface's own statement of the loop's size: the phrases the paragraph lists.
 
-    The heading counts the roles in a word; the paragraph under it lists them separated by `·`.
-    Returning both lets the caller refuse a disagreement instead of picking one.
+    ⛔ **One statement and not two.** The heading used to carry the size in a word and this
+    function read both, refusing a disagreement; the surface has since dropped the word, so the
+    paragraph under the heading is the whole of what the surface says and the comparison left is
+    against `vocabulary.yaml`'s list. ⚠️ A heading that goes missing is still **unestablished**
+    rather than a count of zero — there would be no paragraph to find.
     """
     match = LOOP_HEADING.search(surface_text)
     if not match:
         raise CannotEstablish(
-            "schema.md no longer carries a `## The loop — <count> roles` heading, so the role "
-            "vocabulary in vocabulary.yaml is held to nothing."
+            "schema.md no longer carries a `## The loop — …` heading, so the role vocabulary in "
+            "vocabulary.yaml is held to nothing."
         )
-    word = match.group(1).lower()
-    if word not in NUMBER_WORDS:
-        raise CannotEstablish(f"schema.md's loop heading counts the roles as `{word}`.")
 
     rest = surface_text[match.end():].lstrip("\n")
     paragraph = []
@@ -140,7 +139,7 @@ def loop_role_count(surface_text: str) -> tuple[int, int]:
             break
         paragraph.append(line.strip())
     phrases = " ".join(paragraph).split("·")
-    return NUMBER_WORDS[word], len(phrases)
+    return len(phrases)
 
 
 # --- what the plugin ships --------------------------------------------------
@@ -552,11 +551,11 @@ def main(argv: list[str]) -> int:
     # longer matches the loop would make every count below wrong in the same direction.
     role_keys = declared["roles"]
     try:
-        counted, listed = loop_role_count(surface_text)
-        if not counted == listed == len(role_keys):
+        listed = loop_role_count(surface_text)
+        if listed != len(role_keys):
             unestablished.append(
-                f"the loop's size disagrees three ways — heading says {counted}, the paragraph "
-                f"lists {listed}, vocabulary.yaml declares {len(role_keys)} role keys"
+                f"the loop's size disagrees — the surface's paragraph lists {listed} roles, "
+                f"vocabulary.yaml declares {len(role_keys)} role keys"
             )
     except CannotEstablish as error:
         unestablished.append(str(error))

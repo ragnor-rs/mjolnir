@@ -14,7 +14,7 @@ what carry the argument anyway.
 ## The survey found nine roles, not eight
 
 The loop's statement is
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles), and among
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--the-roles-and-the-legs-between-them), and among
 the roles it carries is one this survey could not read as a role at all: the subsection below,
 which the survey found in every project's tooling and in no project's implementation. ⛔ **No count
 of the loop's own roles is written here**: the loop grows, and a figure beside this citation would
@@ -139,7 +139,7 @@ The reverse also happens, and a name-keyed merge produces nonsense on it:
   command alone leaves the skill copy local in a project declared migrated. ⛔ **No count of the
   copies is written here**: the number rose once already, and the statement is that a name-keyed
   merge of this entry is wrong however many there turn out to be. The roles are named apart in
-  [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles), and what
+  [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--the-roles-and-the-legs-between-them), and what
   the one basename does to the readiness check — which cannot answer for it and says so — is the
   `ambiguous:` entry in that check's own vocabulary.
 - **One name, a subset role.** A bookkeeping carrier can be the *commit third* of the role with
@@ -177,7 +177,7 @@ completion that some reason about explicitly and others do not have.
 ## The axes, and why each is independent
 
 The axes are stated in
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) — which
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--the-roles-and-the-legs-between-them) — which
 carries the list, and no count, so this document does not hold a copy of one. There are more than
 the three that are obvious. The measurements that forced each to be independent:
 
@@ -737,7 +737,7 @@ this repository's own roles are handed holds neither.
 ## What is an ordered list of named checks rather than procedure
 
 No count is given, for the reason [`schema.md § The
-loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) gives for the axes — a count
+loop`](../plugins/mjolnir/config/schema.md#the-loop--the-roles-and-the-legs-between-them) gives for the axes — a count
 restated elsewhere drifts the moment one is added — and this section is the demonstration: it gained
 what counts as done after it was written, which would have made a number in the heading wrong while
 the gate stayed green.
@@ -1161,7 +1161,7 @@ six projects had, and never the subsection's own inventory.
 
 **Why the surface, and not either of the two homes it was weighed against.** The discipline is read
 by two legs — the implementing one, which no role owns, and the reviewing role — and
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) already
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--the-roles-and-the-legs-between-them) already
 settles what follows: a rule read by two roles and written in one of their skills is a second
 authority for the other. Promoting these rules into the reviewing role's own text is therefore the
 option with a precedent against it rather than the cheap one, and it is ruling 11's reasoning
@@ -1361,7 +1361,7 @@ own run's output.
 
 What is stable enough to state without a number going stale: **a single role runs to thousands of
 tokens and carries dozens of ⛔ and ⚠️ markers, and there is one of them per leg the loop names**
-([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles)). A window
+([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--the-roles-and-the-legs-between-them)). A window
 largely spent on procedure before a line of anyone's code is read is what § 11 exists to notice,
 and the harness vendor's own guidance is that an over-long instructions file is not read
 selectively — it is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
@@ -3726,8 +3726,8 @@ nothing, asks no project for a key, and keeps a rate and a client's name out of 
 never bringing them near it. ⚠️ **Nothing in the de-duplication properties overrides that** — the
 skill has one copy.
 
-⛔ **What overrides it is the role list**, at [`schema.md § The loop — thirteen
-roles`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles) and read as [`schema.md
+⛔ **What overrides it is the role list**, at
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--the-roles-and-the-legs-between-them) and read as [`schema.md
 § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
 reads it. The role was already named apart on it, by the ruling
 that split one directory name into three roles, and the ruling after that one made the list what
@@ -3896,7 +3896,7 @@ nothing about a facet**, which is what
 [`schema.md § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
 now states outright. The reading to refuse is the one the item invites by calling itself a role: on
 that reading
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--thirteen-roles)'s closed list
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop--the-roles-and-the-legs-between-them)'s closed list
 refuses this work, because holding documents to a property is no leg of the route.
 
 ⛔ **What shows the reading is wrong is that it refuses half the surface.** Five sections already
@@ -3911,11 +3911,13 @@ loop, no `carriers` key answers for this, and no role enters it.
 ### One root is false for a set whose members are addressed by name
 
 The implementation this property came from holds reachability from a **single** document. ⛔ **That
-is false of this repository and the measurement is twelve documents**, which is why
+is false of this repository, and the measurement is every role carrier it ships**, which is why
 [`schema.md § 38 → The two edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)
-states a list of entry points instead: the twelve role carriers here are each loaded by name by the
-harness and named by no document, so a single-root reading reports twelve unreachable documents that
-a reader reaches every session.
+states a list of entry points instead: each carrier here is loaded by name by the harness and named
+by no document, so a single-root reading reports every one of them as unreachable while a reader
+reaches them all every session. ⛔ **No count is written for it**: the figure is the length of the
+carrier directory, which the loop growing by a role changes, and a number here would then be a
+measurement that reads as current and is not.
 
 ⚠️ **The teeth survive because the list is short and declared.** A project that states every
 document an entry point has turned the check off and can read that off its own configuration, which
@@ -3999,3 +4001,63 @@ them is a defect in that project:
 ⚠️ **Its own gate is green**, which is how the five were told apart from findings: the comparison
 was run against a project whose checker passes, so a difference is this facet's shape and not that
 project's prose.
+
+## The stage between a deploy and a release, measured where there is no copy of it
+
+⛔ **This is the one role whose facet was derived from no shipped carrier at all**, and the
+measurement is what makes that a finding rather than an excuse —
+[`schema.md § 39`](../plugins/mjolnir/config/schema.md#39-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed)
+is the facet, and
+[`schema.md § 39 → Its own role`](../plugins/mjolnir/config/schema.md#its-own-role-and-the-two-grounds-that-rule-it-apart-from-the-reviewing-one)
+is the ruling that separates it from the reviewing one. Every other facet on the surface was
+read out of several copies and reconciled; this one had exactly one artefact behind it.
+
+| what was there | and what that costs |
+|---|---|
+| **A draft runbook for the stage, written against one consumer and held outside every tree.** Nothing loads it, no gate reads it, and no project's configuration points at it | the same cost two other carriers record one stage later: a document nothing holds is a document free to disagree with whatever the loop actually does, and nobody finds out |
+| **One recorded run of it against that consumer's deployed target**, carrying a scenario count and, inside it, one tier **held** rather than run — a form submission there would have reached real recipients | a reading that is a **precondition** and not a verdict, which is why the facet makes a skip name itself rather than fold into a pass |
+
+⛔ **So the keys are argued from the surface's existing sections rather than from a survey**, and
+each of them is a question one of those sections leaves open —
+[`schema.md § 39`](../plugins/mjolnir/config/schema.md#39-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed)
+states all three, and
+[`schema.md § 39 → The four buckets`](../plugins/mjolnir/config/schema.md#what-the-criteria-are-read-from-and-the-four-buckets-one-falls-in)
+states what each criterion they are read for owes the record:
+
+| the key | what already existed, and what it did not answer |
+|---|---|
+| `verify.identity` | [`schema.md § 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes) states what a target **is** and what reaching it invokes. ⛔ It states nothing about reading what a target is **serving**, which a judgement is about: the facet keys a command per target and holds the keys to that list |
+| `verify.baseline` | [`§ 31`](../plugins/mjolnir/config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) states what a tier needs before it can run. ⛔ The before-and-after comparison is not a tier by that section's own test — it selects no set of cases — so its two inputs had nowhere to be stated |
+| `verify.breakpoints` | ⛔ Surface by the test that admits a facet at all: a **shared role** reads it to decide what to hand over. A project-local list would have left the one question a person is asked keyed on a value no role could reach |
+
+### The two wrong readings of a deployed commit, and why neither is a key
+
+⛔ **Both were available and both are refused by the mechanism rather than by a setting**, which is
+[`schema.md § 39 → `identity``](../plugins/mjolnir/config/schema.md#identity-and-the-two-readings-of-a-deployed-commit-that-are-wrong).
+The facet states one command per target and the role has nowhere else to read from, so neither
+reading is reachable to be configured:
+
+| the reading | why it is wrong |
+|---|---|
+| an artefact's digest | a reproducible build yields the same artefact from a different commit, so an identical digest is **no evidence** that a deploy is current |
+| the integration branch | it runs ahead of every target routinely, so a reading taken off it accepts code nobody deployed |
+| an earlier note | two notes written the same afternoon can disagree, which is why the command is run in the pass rather than read out of a record |
+
+### The writer bar turned out to be stronger than the facet assumed
+
+⚠️ **Measured against the port rather than argued.** The facet's first form said the accepting role
+is refused the `accepted` write *unless it asks as the status's own writer* — which would have made
+the bar a wrong-writer mistake. [`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)
+closes the set an ask may be **made** as to the procedure and the deploy, and the measured
+configuration maps that status to the person who ordered the work, so:
+
+| the ask | what came back |
+|---|---|
+| as the procedure, or the deploy | refused against the configured writer |
+| as the configured writer itself | refused **before the configuration is read at all**, as a claim to be somebody |
+
+⛔ **So there is no writer the role could ask as**, and the record it produces carries a standing
+rather than a status word —
+[`schema.md § 39 → What the role records`](../plugins/mjolnir/config/schema.md#what-the-role-records-and-what-it-may-not-record). The suite beside the carrier asserts both arms and the green side with
+them — a role the procedure does write is not refused — so the four refusals are about this role
+rather than about every move being barred.

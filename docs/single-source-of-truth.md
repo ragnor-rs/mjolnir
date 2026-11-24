@@ -4504,3 +4504,56 @@ only through its carrier's suite is a facet nothing has ever run over real text 
   assert is every commit after it** — an edge added with no row, and a row whose edge the text
   dropped, are each a failure ([`schema.md § 38 → The two
   edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)).
+
+## What a deployed item is judged against, and the verdict the carrier is barred from
+
+`plugins/mjolnir/scripts/verify.py --self-test`, mirrored by the `Verify carrier` run that
+[`.claude/mjolnir.yaml`](../.claude/mjolnir.yaml) states and
+[`.github/workflows/verify-carrier.yml`](../.github/workflows/verify-carrier.yml) defines. The facet
+is [`schema.md § 39`](../plugins/mjolnir/config/schema.md#39-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed),
+and no copy of it is carried here.
+
+**What it holds.** Each arm reddens on a planted violation of its own:
+
+| the arm | the plant it reddens on |
+|---|---|
+| a target resolves to its own command | a name no `deploy` entry carries, and a target the project deploys to and states no command for — the second reported as *no pass may be taken against it* rather than as a fault |
+| the commit a target serves is read by running that command | a command that prints nothing, and one that exits non-zero: each reported **unestablished** and never as a commit that did not change |
+| a criterion carries its reading, environment, instrument and date | each of the four dropped on its own, so a record is refused rather than rendered with a blank cell |
+| the four buckets are a closed set | a bucket outside them, a criterion with no referent and no owner, and a criterion measured elsewhere stating no reason the target could not be it |
+| a criterion with no referent holds the item, and one not measurable until a later target does not | both directions, the second being § 39's deadlock ruling: splitting it would meet a release gate that refuses to carry an unaccepted item |
+| **a reading taken before the commit the target serves is refused** | a reading one second before a real commit's own date, against a repository the suite makes — with the green side one second after it and one *at* it |
+| a date carries its offset | a stamp written without one, refused rather than read as local |
+| a provisioning run reports its checksum pair, and a fixture left behind holds the item | a pair with one half missing, and a non-zero count left |
+| **the role is refused the `accepted` write however it asks** | asserted against the tracker port rather than described: as the procedure, the deploy, the automation and the sweep it is refused against the configured writer, and as that writer itself it is refused before the configuration is read at all |
+
+⛔ **The arithmetic arm runs against a repository the suite makes a commit in**, not against a
+stubbed stamp reader — the rule it asserts being
+[`schema.md § 39 → `identity``](../plugins/mjolnir/config/schema.md#identity-and-the-two-readings-of-a-deployed-commit-that-are-wrong). A fake at that seam would have compared a reading against a value the suite
+chose, which is the arm rather than the subject — and the first form of the fixture set only the
+**author** date, so the commit's arrival time was *now* and every arm was asserting against the
+clock. The fixture sets the committer date, which is the stamp the module reads.
+
+⛔ **Every green-side call in that suite goes through one helper that turns an unexpected refusal
+into a red rather than a raise**, which is this repository's own rule about a planted violation
+read against [`schema.md § 38 → Every check carries a violation`](../plugins/mjolnir/config/schema.md#every-check-carries-a-violation-it-reddens-on). An arm has to survive the defect it tests: a refusal raised where
+the suite expected an answer would otherwise stop the run at that line and take every arm after it,
+reported as one red where the truth is one red and a dozen unrun.
+
+### What this check deliberately does not hold
+
+- **Any project's own readings.** This repository states `verify.carrier: none` — nothing here is
+  deployed, so no environment serves a commit — so pointed at this tree the carrier reports the
+  absence and exits with no subject. Every arm above runs against a tree of the suite's own making,
+  which is the only place they can run.
+- **Whether a reading is *true*.** The carrier holds a record's **shape** and one ordering. Whether
+  the instrument named measured what the criterion asks about is the pass's own judgement, and
+  nothing here reads it.
+- **Whether the comparison was built, or opened.** Both are acts the role performs and neither
+  leaves a record this check can read; what the facet holds is the baseline's two inputs being
+  stated and durable.
+- **Whether the widths a handover named are the project's own.** The carrier hands back the list and
+  the role reads it; a handover that named a width outside it would be caught by nothing here.
+- **Whether a person actually judged anything.** The record carries a standing and says whose the
+  move is. ⛔ The status itself is `orderer`'s, and no run here can establish that somebody looked —
+  which is the same limit the merge guard's own record carries one role over.

@@ -249,6 +249,14 @@ host:
     - workflow: "Title form"
       mirrors: "python3 plugins/mjolnir/scripts/title_form.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The same reading again, and the strongest case of it: `verify.carrier: none` below, so
+    # pointed at this tree the carrier answers that nothing here is judged on an environment and
+    # exits with no subject. ⛔ What this run holds is the two arms no configuration can supply —
+    # that a reading taken before the commit a target serves is refused, and that a role is refused
+    # the `accepted` write however it asks — each planted against a tree of the suite's own.
+    - workflow: "Verify carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/verify.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
   # ⛔ No `runner` here, and that absence is the statement § 2 makes it: every workflow above runs
   # on this host kind's own default, which the surface deliberately does not name, so there is
   # nothing to write down. ⚠️ What it costs is stated rather than discovered — the drift run two
@@ -880,9 +888,9 @@ documents:
   # dropped, are each a failure, which is the direction a hand-written graph is worth having for.
   carrier: list
   files: ["*.md", "docs/**/*.md", "plugins/**/*.md"]
-  # ⛔ One glob and not twelve paths. A role carrier is addressed **by name** by the harness that
-  # loads it, so it is arrived at without any document naming it — the class is the reason, and
-  # listing the members would state the reason twelve times and lose it.
+  # ⛔ One glob and not one path per carrier. A role carrier is addressed **by name** by the
+  # harness that loads it, so it is arrived at without any document naming it — the class is the
+  # reason, and listing the members would state the reason once per carrier and lose it.
   entry_points: ["README.md", "plugins/mjolnir/skills/*/SKILL.md"]
   graph:
     - document: "README.md"
@@ -948,6 +956,9 @@ documents:
         - "plugins/mjolnir/config/schema.md"
         - "plugins/mjolnir/skills/day-report/SKILL.md"
       derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/accept/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
     - document: "plugins/mjolnir/skills/cut-release/SKILL.md"
       may_name: ["plugins/mjolnir/config/schema.md"]
       derived_from: ["plugins/mjolnir/config/schema.md"]
@@ -991,3 +1002,19 @@ documents:
   # reworded into its opposite, so an entry here would be a check whose green says nothing — which
   # is what the reader warns about rather than refuses.
   quoted: []
+
+verify:
+  # § 39's absent case, and it holds here for the first of that section's two shapes: `deploy: []`
+  # above, so nothing this repository ships reaches an environment through the procedure and there
+  # is no commit being served for a reading to be taken against. ⛔ Not a statement about whether
+  # the work is judged — it is reviewed on the host, and an adopting project's own acceptance pass
+  # is exactly what the role this facet configures is for.
+  carrier: none
+  absent_reason: >-
+    Nothing here is deployed: the plugin is installed from the tree at its default branch, so no
+    environment serves a commit and no criterion of an item here is measurable on one. The status
+    ladder is open and closed with nothing between them, so there is no accepted state for a
+    verdict to be recorded as either.
+  revisit_when: >-
+    This project states a deploy target, which is the same trigger the release and deploy facets
+    above carry and would be answered by the same reading.

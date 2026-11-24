@@ -742,3 +742,16 @@ documents:
     tracked markdown is a short readme and nothing is derived from anything.
   revisit_when: >-
     A document moves into the repository, which is the first one a check here could read.
+
+# § 39's absent case. Two environments and no accepted role: a release branch is verified on the
+# first and shipped from the second, and both moves write the finished state — so there is no
+# state a verdict could be recorded into, and ⛔ nothing here reads one as a precondition either.
+verify:
+  carrier: none
+  absent_reason: >-
+    Verification happens on the release branch's own environment and is signed off in the
+    tracker's workflow rather than as a status this procedure writes, so there is no accepted
+    role for a judgement to be recorded as.
+  revisit_when: >-
+    The ladder grows a state between code landed and finished, or a release target starts
+    refusing to carry an item nobody has judged.

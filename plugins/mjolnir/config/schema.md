@@ -241,13 +241,18 @@ key either way. The remedy is the same act in both cases — make the file match
 what is marked required and deleting what is marked retired — so what is given up is a diagnostic,
 not a behaviour, and no reader has to be told what to do with a revision it can no longer read.
 
-## The loop — thirteen roles
+## The loop — the roles, and the legs between them
 
 File a work item · gate it into committed work · start it · finish it · review it · deploy ·
-cut a release · log the day · keep the session's books · restore a session's context ·
-summarise a session for a reader outside the build · bill a period's hours as line items ·
-break a given total of hours down over the work a period shipped. Two utilities travel beside
-the loop without being part of it.
+accept a deployed item · cut a release · log the day · keep the session's books ·
+restore a session's context · summarise a session for a reader outside the build ·
+bill a period's hours as line items · break a given total of hours down over the work a period
+shipped. Two utilities travel beside the loop without being part of it.
+
+⛔ **The heading carries no count, and that is this surface's own rule against a restated list
+applied to itself.** Every citation of this section carries its heading, so a count in it is a
+figure that has to be edited in every citing document the moment the loop grows — and in none of
+those places is the list itself. The list is the statement.
 
 ⚠️ **Keeping the session's books and restoring its context are one pair**, and the loop grew by one
 when the second of them was written: bookkeeping persists what happened at a boundary and
@@ -2920,7 +2925,7 @@ and not by a reader rejecting a configuration.
 ### What a hook refuses, and the record it reads
 
 ⛔ **A hook refuses an act on the strength of a record, never on a reading of the work.** The
-division is [§ The loop](#the-loop--thirteen-roles)'s — procedure produces a record and enforcement
+division is [§ The loop](#the-loop--the-roles-and-the-legs-between-them)'s — procedure produces a record and enforcement
 reads it — and this subsection is the enforcement half of it: what a guard reads, what a refusal
 has to name, and what a project with nothing to guard gets.
 
@@ -3141,7 +3146,7 @@ writes the day log in a technical register for itself where a third writes it in
 register for someone outside the build. These are three settings, not one.
 
 ⛔ **The three roles one name used to cover are three keys here, each with its own reader.**
-[§ The loop](#the-loop--thirteen-roles) names the roles apart and this is where each one's audience
+[§ The loop](#the-loop--the-roles-and-the-legs-between-them) names the roles apart and this is where each one's audience
 is stated: the session summary's is somebody outside the build, the billing report's is whoever
 pays the invoice, and the hours breakdown's is whoever is being told where a period's hours went.
 ⛔ **One key answering for all three is the merge naming them apart was for**, so each carries its
@@ -4496,7 +4501,7 @@ done:
   refuse one of two correct configurations.
 - ⛔ **`answered_by: human` is not satisfiable by the procedure, and no amount of reading the diff
   satisfies it.** The answer is **recorded** where something else can read it and the record says
-  **who** answered — the division [§ The loop](#the-loop--thirteen-roles) already states:
+  **who** answered — the division [§ The loop](#the-loop--the-roles-and-the-legs-between-them) already states:
   procedure produces a record and enforcement reads it, so the record is written whether or not a
   hook refuses the merge on it.
   ⚠️ **It is the record and not the report**: a verdict that exists only in a role's reply is a
@@ -7030,7 +7035,7 @@ loop_exempt:
 # procedure: lines_changed
 ```
 
-Which changes never enter [§ The loop](#the-loop--thirteen-roles) at all — no work item, no gate, no
+Which changes never enter [§ The loop](#the-loop--the-roles-and-the-legs-between-them) at all — no work item, no gate, no
 branch of their own, no change opened and no review — and which branch the ones that skip it are
 committed to instead.
 
@@ -7476,8 +7481,11 @@ folded the first into the second would redden a project for a tier it had honest
 by the derivation above, so a machine verdict read for it is the failure § 13 calls
 **indistinguishable from success** — a check only a person can answer, answered by reasoning about
 it — arriving one facet early; and what starts a person looking is that section's record rather than
-a key here. ⚠️ **Not § 13's *check somebody turns off***, which names the opposite mistake: a
-machine reading handed to a person.
+a key here. ⚠️ **What takes the machine readings before that person is reached is
+[§ 39](#39-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed)'s role**,
+which launches this tier through the tier-launching one and carries no suite of its own — so a
+reader meeting this tier is not meeting a tier nothing runs. ⚠️ **Not § 13's *check somebody turns
+off***, which names the opposite mistake: a machine reading handed to a person.
 ⚠️ **Which makes the sourceless shape the only one `acceptance` has**,
 and the no-answer rule above is **not** what it means: the tier is answered, by § 13, and ⛔ **a
 reader that reported it as unanswered would be giving the wrong one of those two answers** — this
@@ -7551,11 +7559,15 @@ nobody decided** — measured on one project, where the tracker's own automation
 code-landed status off every closing merge and so steps an already-deployed item back with no rule
 anywhere and nothing reporting it.
 
-⚠️ **The forward half of that pair now has a caller and the reverse half still has none.**
+⚠️ **Both halves of that pair now have a caller, and they are different roles.**
 [§ 33](#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong)'s role reads an item's role
-where it advances it and is held to the rule below; what no role does is **ask for a step back**, so
-the reverse direction's guard is still reached by no invocation and what is stated for it is the
-rule rather than a report of one being made.
+where it advances it and is held to the rule below; the **ask for a step back** is
+[§ 39](#what-a-failing-criterion-does-and-the-step-this-facet-does-not-invent)'s, made on this
+section's `acceptance_rejected` trigger when a criterion fails against the target the item was
+deployed to. ⛔ **That caller invents no edge of its own**: a project ruling none has the ask
+refused with this key named, which is this facet working rather than that role failing.
+⚠️ **The other two triggers are still reached by no invocation**, and what is stated for each of
+them is the rule rather than a report of one being made.
 
 **The trigger set is closed on what the survey measured a project's work actually doing**, ruled or
 not, which is what makes it a vocabulary rather than a guess
@@ -7928,7 +7940,11 @@ waiting on and not where the reader stopped.
 ⚠️ **The procedure cannot produce that state, which is what makes this a precondition rather than a
 step.** § 4.2 maps the role to a status somebody else writes — the person who ordered the work,
 judging a change against the item's own criteria, or a lower environment's own deploy — so a target
-that tried harder would be refused all the same. It is
+that tried harder would be refused all the same. ⚠️ **What the procedure does do is hand that person
+the readings**, which is
+[§ 39](#39-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed)'s role and is
+not a weaker form of writing the status: that role is refused the write exactly as a target is.
+It is
 [§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)'s `answered_by`
 one state later: a verdict somebody else records, blocking a step the procedure would otherwise
 take.
@@ -8506,7 +8522,7 @@ argument**: one failed that test and one passed it cleanly, and the answer for b
 the test cannot be what the answer came from
 ([the measurement](../../../docs/configuration-surface.md#two-skills-outside-the-loop-counted-rather-than-taken-on-the-claim)).
 
-⛔ **The list that decides is [§ The loop](#the-loop--thirteen-roles)'s, and it is closed.** A role
+⛔ **The list that decides is [§ The loop](#the-loop--the-roles-and-the-legs-between-them)'s, and it is closed.** A role
 is on it because the route needs a leg there, which is a statable reason and the same one every
 time. ⚠️ **A utility admitted beside them would be admitted on no such reason**, and a list with one
 entry of that kind has nothing to refuse the next one with.
@@ -8567,7 +8583,7 @@ billing:
   revisit_when: "…"
 ```
 
-**[§ The loop](#the-loop--thirteen-roles) carries a role that bills a period's hours as line items,
+**[§ The loop](#the-loop--the-roles-and-the-legs-between-them) carries a role that bills a period's hours as line items,
 and this section says which projects a period is read from.** ⛔ **It is the one role on that list
 whose subject is more than one project**, so it is the one role [§ 1](#1-roots)'s skills root does
 not scope: every other role narrows to the project the reader resolved, and a period somebody is
@@ -8632,7 +8648,7 @@ only avoided because the seam is the port.** A role that opened another project'
 tooling or read its commits would be measuring four projects' days under a rule that binds it to
 one, which is the shape this section exists to forbid rather than to permit.
 
-⛔ **And it may not replace a figure § 9 produced**, which is [§ The loop](#the-loop--thirteen-roles)'s
+⛔ **And it may not replace a figure § 9 produced**, which is [§ The loop](#the-loop--the-roles-and-the-legs-between-them)'s
 rule for the hours-breakdown role reaching this one: the hours on a line item are the hours the
 store holds. A period short of what somebody expected is reported short.
 
@@ -8682,7 +8698,7 @@ the first whose shape is a mapping. ⚠️
 client's identity never reach a destination key because no key of that port is marked, and the mark
 is what makes this one eligible.
 
-⛔ **The conversion is this role's alone**, which is [§ The loop](#the-loop--thirteen-roles)'s ruling
+⛔ **The conversion is this role's alone**, which is [§ The loop](#the-loop--the-roles-and-the-legs-between-them)'s ruling
 and not a second one: a project wanting the narrative distribution of hours configures no rate,
 because that role has no key here to configure.
 
@@ -8736,7 +8752,7 @@ of names**, which is the shape [§ 34](#34-the-files-that-carry-a-version-and-wh
 is carried on and for the same stated reason — the two implementations this facet was read out of
 arrive already written as data.
 
-⛔ **This is a facet and no fourteenth leg of [§ The loop](#the-loop--thirteen-roles).** Nothing is
+⛔ **This is a facet and no fourteenth leg of [§ The loop](#the-loop--the-roles-and-the-legs-between-them).** Nothing is
 added to that list, no `carriers` key answers for it and no role enters it: what is carried is a
 block of configuration and the check that consumes it, which is the shape
 [§ 15](#15-end-to-end-coverage-recorded), [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
@@ -8825,9 +8841,9 @@ check can see.
 
 ⛔ **`entry_points` is a list and not one root, and the measurement is why.** The implementation this
 property was read out of holds reachability from a single document, and that is false of a set whose
-members are addressed **by name from outside the prose**: this repository's twelve role carriers are
-each named by the harness that loads them and by no document, so a single-root reading reports
-twelve documents as unreachable that a reader reaches every session. ⚠️ **The teeth are in the list
+members are addressed **by name from outside the prose**: every role carrier in this repository is
+named by the harness that loads it and by no document, so a single-root reading reports every one
+of them as unreachable while a reader reaches them all every session. ⚠️ **The teeth are in the list
 being short and deliberate** — every document declared an entry point is one nothing has to name, so
 a project that declares them all has turned the check off and can read that off its own
 configuration.
@@ -8903,6 +8919,228 @@ case, discharged the way that section states: the absent form is stated here and
 example in the same change, and the record the change lands with says that configurations outside
 this repository are refused until each writes the key. ⚠️ **No check here can reach them**, they
 being files in repositories this one cannot open.
+
+## 39. What a deployed item is judged against, and the readings a person is handed
+
+```yaml
+verify:
+  carrier: list | none             # required; absent_reason
+  identity:                        # required_when: verify.carrier = list
+    staging: "<the command printing the commit this target serves>"
+  baseline:
+    ref: "<the ref the comparison calls before>"  # required_when: verify.carrier = list
+    harness: "<durable; never a temp directory>"  # required_when: verify.carrier = list
+  breakpoints: []                  # required_when: verify.carrier = list
+  absent_reason: "…"               # required where the carrier is none
+  revisit_when: "…"
+```
+
+[§ 4.2](#42-status--an-ordered-set-of-name-role-writer) maps a status to the `accepted` role and
+gives it `writer: orderer`; [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)
+refuses a release while any item in its publishing set is short of that role. So the state is
+**read by a release and written by nobody the procedure can ask as** — and between the deploy that
+puts code on a target and the release that ships it there was a stage no section described: somebody
+other than the session that built the thing looks at it **on the target** and judges it against the
+item's own criteria. ⛔ **This facet is what that stage reads, and the role it configures records
+readings rather than the verdict.**
+
+⛔ **It states no host, no service, no recipient, no credential, no breakpoint *name* and no stack**
+— [the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s middle column read
+against this role, exactly as § 33 reads it against the deploying one.
+
+### Its own role, and the two grounds that rule it apart from the reviewing one
+
+⛔ **This is a role of [§ The loop](#the-loop--the-roles-and-the-legs-between-them)'s and not an arm
+of the reviewing one**, and the ruling is recorded here rather than left to a reader to infer from
+the keys. Two grounds, and each is a thing the reviewing role does that this one may not:
+
+| the reviewing role | this role |
+|---|---|
+| writes the record a merge is refused on, and drives the change's own plan | ⛔ **writes no status at all**, the one it is about being `orderer`'s by § 4.2 |
+| fixes what it finds, under the same work item | ⛔ **fixes nothing**, a failing criterion stepping the item back instead |
+
+⚠️ **Neither ground is about when the two run.** A reviewing pass that happened to run against a
+deployed target would still be refused the status and would still fix what it found, so a facet that
+told them apart by position would have told them apart by nothing.
+
+⛔ **And it is entered by a person**, as filing and gating are: § The loop's leg table runs from a
+started item to a merged change and claims nothing after it, and what this role needs — a target
+already serving the commit, and somebody's attention for the residue — exists on nobody's schedule
+but theirs. ⚠️ **Which is that section's own cost paid knowingly**: a role entered by a person is a
+role skipped whenever nobody asks, and what the skip loses here is read by § 33's precondition
+rather than silently — the release stops, naming every item short of the role.
+
+### What the criteria are read from, and the four buckets one falls in
+
+⛔ **The criteria are the item's own**, by [§ 4.4](#44-template)'s `acceptance` section, and
+⛔ **they are read per criterion before any instrument is chosen.** The criteria decide which tiers
+are needed; the available tiers never decide which criteria get read.
+
+| the bucket | what the record carries |
+|---|---|
+| measurable on the target | the reading, and the target it was taken on |
+| measurable only elsewhere | the environment, **and why the target could not be it** |
+| not measurable until a later target | the criterion stays on the item and ⛔ **the item is still accepted** |
+| no referent at all | ⛔ **unanswerable, naming whose it is to supply** |
+
+⛔ **The third bucket does not split the item**, and that is a rail rather than a preference:
+§ 33's precondition refuses to carry an unaccepted item, and a criterion that cannot be met until
+that release runs would deadlock the gate against itself. ⚠️ **A criterion left on an accepted item
+is a promise nobody owns**, so one that is genuinely wrong for the target is **rewritten** before
+the move — which is [§ An artifact states what is true now](#an-artifact-states-what-is-true-now)
+rather than a licence to drop it.
+
+⛔ **The fourth holds the item whatever the measurable half says**, and it is reported rather than
+resolved: a criterion naming a state no design source ever drew is somebody's to supply, and
+[§ 11](#a-report-names-what-it-could-not-establish) makes naming them the report's job.
+
+### `identity`, and the two readings of a deployed commit that are wrong
+
+⛔ **`identity` is a mapping from a target's own `name` to the command that prints the commit that
+target serves, and the names are § 33's.** A key naming no target is refused with the names the
+project states — [§ 31](#which-target-a-tier-is-refused-against)'s resolution against the same list
+— and ⛔ **this facet carries no target vocabulary of its own**, which is why the mapping is keyed
+rather than listed. ⚠️ **A target with no entry is one no pass may be taken against**, reported by
+the role and not refused by the reader: a project that judges on one of three targets has written
+exactly what it means.
+
+⛔ **The command reads a file inside the running target.** Two readings that look like the answer are
+refused by the rule rather than by a key:
+
+- **An artefact's digest is not the commit.** A reproducible build yields the same artefact from a
+  different commit, so an identical digest is no evidence that a deploy is current.
+- **The integration branch is not the target.** It runs ahead of every target routinely, so a
+  reading taken off the branch accepts code nobody deployed.
+
+⚠️ **And an earlier note is not the reading either**: two notes written the same afternoon can
+disagree, which is why this is a command run in the pass rather than a value the configuration
+states.
+
+⛔ **A reading taken before the commit the target serves cannot accept the item that commit
+changed.** That is the one arithmetic this facet has and it is asserted by the carrier rather than
+described here: a reading whose own stamp precedes the commit's is refused, naming both, because
+it is a measurement of code the target was not yet running.
+
+⛔ **The project carrying `verify.carrier: list` and `deploy: []` is refused with both keys named.**
+There is no target for `identity` to be keyed on and nothing for a criterion to be measurable *on*,
+so the configuration describes a judgement against nothing. ⚠️ **The converse is not refused**: a
+project may deploy and have somebody accept by hand, which is this facet's own `none`.
+
+### `baseline`, and what the comparison is for
+
+⛔ **`baseline.ref` is the side the comparison calls *before* and `baseline.harness` is the durable
+path both sides are built under.** What the comparison answers is the half no suite does: what the
+change did to every page nobody wrote a scenario for. ⛔ **The harness is never a temporary
+directory** — a comparison whose two sides are gone cannot be re-read when somebody disputes it,
+and the dispute is the only reason it was built.
+
+⚠️ **Content parity is measured rather than assumed.** Two copies differing only in the code under
+judgement is the instrument; two copies differing also in their data is a diff nobody can attribute,
+so the pair of counts is a **reading the record carries** and not a precondition the role asserts.
+
+⛔ **A component with no standing instance is provisioned, not skipped**, and the provisioning run
+carries its own pair: a checksum of the subject's data before and after, and that no fixture was
+left. ⚠️ **A fixture existing on one side only is a fixture and not a comparison**, and the record
+says which it is — capturing a new component on the baseline side photographs an absence.
+
+### `breakpoints`, and why it is surface rather than a list the role is handed
+
+⛔ **`breakpoints` is the widths a handover may name, and a width it does not carry may not be
+named.** It is surface by [§ 36](#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)'s
+test — a role reads it to decide what to hand over, so it is a fact about a project that a shared
+role needs rather than a project's own tooling.
+
+⛔ **The values are widths and never names.** A name reads like a device class and is not one, so a
+project writing one is refused with the rule named; and ⛔ **`[]` is the statement that no width may
+be named**, which is a project whose handover has nothing to say about geometry rather than a
+project that has not written the key yet.
+
+⚠️ **A width no drawing covers is unspecified rather than wrong**, and the gap is reported: this key
+states which widths a handover may be *about* and says nothing about what any of them should show.
+
+### What the role records, and what it may not record
+
+⛔ **Every criterion carries a reading, the environment it came from, the instrument and a date**,
+and that record is **content** rather than an account of a pass — the carve-out
+[§ An artifact states what is true now](#an-artifact-states-what-is-true-now) makes for an artifact
+the procedure exists to produce. ⚠️ **A negative reading expires with the copy it came from**:
+*nothing carries this* is what a snapshot taken before the other side did it reports, with full
+confidence, so an absence names the copy and its date.
+
+⛔ **What the role may not record is the verdict, and the division is where the authorship rule puts
+it.** The readings are what is true now and are this role's; *who judged it and when* is provenance,
+and the only thing carrying it is the status move itself — which § 4.2 gives to `orderer` and
+⛔ **this role never asks as.** A pass writing a person's judgement on their behalf has fabricated an
+attestation, which is refused wherever it is reachable
+([§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)).
+
+⛔ **So the role says plainly that the move waits on that person's word**, and the carrier asserts
+the refusal rather than this section describing it. ⚠️ **And the bar is stronger than a wrong
+writer**: § 4.2 closes the set an ask may be *made* as to the procedure and the deploy, and this
+status's configured writer is neither — so an ask naming `procedure` is refused against the
+configured writer, and one naming `orderer` is refused **before the configuration is read at all**,
+as a claim to be somebody. ⛔ **There is therefore no writer this role could ask as**, which is why
+the record carries a standing and no status word.
+
+⛔ **Residue — a defect the pass found that belongs to no item — is named in the report in one line
+and is not filed.** Opening an item is the person's call, and ⚠️ **this is no exception to
+[§ Nothing is deferred](#nothing-is-deferred)**: that rule forbids carving work out of *this* item,
+and a defect belonging to no item is the separate work it already admits, which the person files or
+does not.
+
+### The machine half is launched elsewhere, and the handover is what is left
+
+⛔ **Every non-visual reading is taken first, and only what is left is handed to a person.** The
+person-judged tier is the one place on [§ 31](#the-four-values-are-derived-so-no-adopter-adopts-a-vocabulary)'s
+axis where the answerer is human, and a person's attention is the scarcest input the loop spends:
+taking the machine readings first makes the handover **one criterion wide rather than one item
+wide**. ⚠️ **So this is not *the manual tier*.** Its machine half is larger than its judged half.
+
+⛔ **And that half is launched through the tier-launching role and never a second launcher.** Which
+tiers exist and what each needs is § 31's; what a run executed and the floor it is judged against is
+[§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s. ⛔ **A skip is a
+precondition and never a hope**: a scenario that did not run is reported against the count the
+deployed commit declares, by that section's arithmetic, and ⛔ **a tier that did not run is never
+reported as a tier that passed**.
+
+⛔ **An environment failure consumes no cycle of the pass and is reported as a precondition**, never
+as a defect in the subject. ⚠️ **The direction is what matters**: a target that would not come up
+reads exactly like a subject that is broken, and only one of the two is the item's.
+
+⛔ **A credential reaches a run through the environment and never an argument**, which is
+[§ 14](#14-what-a-role-holds-and-what-may-cross-the-boundary)'s rule met here rather than restated —
+and never enters a transcript.
+
+### What a failing criterion does, and the step this facet does not invent
+
+⛔ **A failing criterion steps the item back under its own number, and the step is
+[§ 32](#32-a-status-that-moves-backwards)'s.** The role **asks** for it, naming that section's
+`acceptance_rejected` trigger, and ⛔ **invents no backwards edge**: a project ruling none has the
+ask refused with the key named, which is that facet's own behaviour and not a failure of this one.
+⚠️ **Then the pass is re-run against the deploy carrying the fix**, the same item and the same
+number, because what was judged was a commit on a target rather than a change on the host.
+
+⛔ **Only the role moves**, by § 32: the item's text is not rewritten by the step back, and naming
+what the step contradicts in the body is this role's obligation rather than the port's.
+
+### `carrier: none`, and the two shapes of that absence
+
+⛔ **A project that judges nothing on a target states `carrier: none` with its reason, and this role
+runs nothing and is asked for no verdict.** The reader names it among what is unavailable, with the
+consequence rather than the key alone. ⚠️ **The two measured shapes of that absence are one
+configuration**: a project whose items carry no acceptance criteria, and a project that maps no
+`accepted` status at all.
+
+⛔ **A key stated beside `none` is refused rather than ignored** — § 34's rule for the same shape: an
+`identity` mapping under a carrier that reads none is a judgement somebody configured and nothing
+performs.
+
+⛔ **This key is required of every project, so it invalidates every configuration written before
+it** — [§ 1](#the-surface-is-resolved-beside-the-configuration)'s case, discharged the way that
+section states: the absent form is stated here and in every shipped example in the same change, and
+the record the change lands with says that configurations outside this repository are refused until
+each writes the key. ⚠️ **No check here can reach them**, they being files in repositories this one
+cannot open.
 
 ## What the toolkit installs into a project, and what takes it out
 
@@ -9198,7 +9436,7 @@ current.
 
 ⚠️ **What this section does not reach is named, so that a reader can tell a boundary from a gap.**
 It rules nothing about *which* rulings a given project holds, that being a reading of that project's
-own store; and it adds no leg to [§ The loop](#the-loop--thirteen-roles) — the pass that performs
+own store; and it adds no leg to [§ The loop](#the-loop--the-roles-and-the-legs-between-them) — the pass that performs
 this is the adoption, and no role on that closed list enters it. ⛔ **And the forbidding half above
 cannot be asserted by the repository that states the rule**: a document quoting the bare form as
 evidence is correct, a lexical ban cannot tell it from a document naming a dead route, and a

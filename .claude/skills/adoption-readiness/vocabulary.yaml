@@ -15,14 +15,16 @@
 # The roles of the loop, by the key a `carriers:` block uses for each. No count is written here:
 # the length of this list is the statement, and a figure beside it would drift by the next role.
 #
-# ⚠️ The surface states the loop in prose (schema.md § "The loop — thirteen roles") and states no
-# key per role, so this list is the only place the keys are written down — and the check holds
-# it to the surface both ways: the heading's count word and the number of `·`-separated phrases
-# in the paragraph under it must both equal the length of this list. A role added to the surface
-# reddens this check rather than being silently uncounted — measured each time it has happened and
-# reported each time as the loop's size disagreeing three ways. ⛔ No tally of those occurrences is
-# kept here: a count of them goes stale by the next role exactly as a count of the entries would,
-# and the first version of this comment carried one and was wrong by the next role that landed.
+# ⚠️ The surface states the loop in prose (schema.md § "The loop") and states no key per role, so
+# this list is the only place the keys are written down — and the check holds it to the surface:
+# the number of `·`-separated phrases in the paragraph under that heading must equal the length of
+# this list. A role added to the surface reddens this check rather than being silently uncounted.
+# ⛔ The heading itself carries no count any more, so there is no third statement to disagree with
+# the other two — that word was a figure every citation of the section restated, which is the
+# surface's own rule against a restated list, and the check reads the paragraph instead. ⛔ No
+# tally of occurrences is kept here: a count of them goes stale by the next role exactly as a
+# count of the entries would, and the first version of this comment carried one and was wrong by
+# the next role that landed.
 roles:
   - file
   - gate
@@ -30,6 +32,9 @@ roles:
   - finish
   - review
   - deploy
+  # The role that judges a deployed item against its own criteria and records the readings, with
+  # the verdict itself left to the person who ordered the work (schema.md § 39).
+  - accept
   - release
   - day_log
   - session
@@ -120,6 +125,10 @@ carriers:
   finish:         { role: finish }       # the reconciled finishing role (#10, shipped by #113)
   start:          { role: start }        # the starting half, still project-local (#9)
   review:         { role: review }       # the reconciled reviewing role (#11)
+  accept:         { role: accept }       # the accepting role (#130). ⚠️ No surveyed carrier is
+                                         # mapped to this role and none ever will be: the role was
+                                         # written from a draft runbook held outside every tree,
+                                         # so there is no copy of it in any project to reconcile
   # ⚠️ The three roles #14 named apart are no longer in one state. The billing report's carrier is
   # shipped and is classified below; #265's session summary and #267's hours breakdown carry no
   # entry here yet, and that is correct rather than an omission — neither is reconciled, so no

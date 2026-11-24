@@ -3620,6 +3620,20 @@ def self_test() -> int:
         try:
             named = _ran("--invoke", "set_state", "--argument", "1")
             by_role = _ran("--advance-to", "initial", "--argument", "1")
+            # ⛔ The reverse direction's own route, which had no invocation at
+            # all until § 39's role came to ask for one. ⚠️ This project rules
+            # `reversals: []`, so what is asserted is that the ask **reaches the
+            # facet and is refused by it** -- never that a move was made, which
+            # would be an assertion about a configuration this arm must not
+            # depend on.
+            by_trigger = _ran(
+                "--revert-on", "acceptance_rejected", "--argument", "1"
+            )
+            both_ways = _ran(
+                "--advance-to", "initial",
+                "--revert-on", "acceptance_rejected",
+                "--argument", "1",
+            )
             # ⛔ An operation asked for with arguments it does not take, which
             # was a traceback out of `invoke` until the arm below was written.
             # ⚠️ The operation is read off this port's own report rather than
@@ -3661,6 +3675,29 @@ def self_test() -> int:
                 "and no traceback reaches the person running it either",
                 "Traceback (most recent call last)" not in by_role.stderr,
                 f"stderr carried {by_role.stderr.strip()[:160]!r}",
+            )
+            try:
+                reverted = json.loads(by_trigger.stdout)
+            except ValueError:
+                reverted = None
+            check(
+                "asking by trigger reaches the reverse route and answers as an outcome",
+                isinstance(reverted, dict)
+                and reverted.get("operation") == "set_state",
+                f"answered {by_trigger.stdout.strip()[:160]!r}",
+            )
+            check(
+                "and a project ruling no edge for it is refused with `reversals` named",
+                isinstance(reverted, dict)
+                and REVERSALS in json.dumps(reverted),
+                f"answered {by_trigger.stdout.strip()[:220]!r}",
+            )
+            check(
+                "naming both directions at once is refused rather than ordered",
+                both_ways.returncode == 2
+                and "--revert-on" in both_ways.stderr,
+                f"exited {both_ways.returncode} saying "
+                f"{both_ways.stderr.strip()[:160]!r}",
             )
             check(
                 "an operation asked for with too few arguments is a refusal, not a "
@@ -3732,6 +3769,17 @@ def main(argv: list[str]) -> int:
         "is refused for exactly that reason",
     )
     parser.add_argument(
+        "--revert-on",
+        metavar="TRIGGER",
+        help="ask for a step **back**, on one of § 32's triggers. The role it "
+        "steps to is the project's own entry and never the caller's, and that "
+        "entry's writer guard decides -- checked exactly as the forward one is. "
+        "⛔ This is the only route that reaches the reverse edge: `--invoke "
+        "set_state` is refused for the same reason it is refused for an advance, "
+        "and ⚠️ a project ruling no edge for the trigger refuses the ask with "
+        "`reversals` named, which is that facet working rather than an obstacle",
+    )
+    parser.add_argument(
         "--mark-released",
         metavar="GROUPING",
         nargs="?",
@@ -3799,12 +3847,28 @@ def main(argv: list[str]) -> int:
     # the caller chose, which is the indirection § 3 forbids a role and the guard
     # § 33's advance rests on. ⚠️ It refuses rather than silently rerouting --
     # the two take different arguments, and a reroute would guess which.
-    if args.invoke == "set_state" and not args.advance_to:
+    # ⛔ **Both directions, which is why the condition names both flags.** § 32
+    # states that the reverse edge is checked exactly as the forward one is, so a
+    # refusal that cleared only on `--advance-to` would leave the step back
+    # reachable through the operation alone -- the guard avoidable in the one
+    # direction whose writer is most often a person.
+    if args.invoke == "set_state" and not (args.advance_to or args.revert_on):
         print(
-            "Refused: `set_state` is reached through `--advance-to <role>`, which "
-            "resolves § 4.2's role to the status word this project mapped and is "
-            "where that section's writer guard sits. Naming the operation instead "
-            "would write a status word the caller chose, past the guard.",
+            "Refused: `set_state` is reached through `--advance-to <role>` or "
+            "`--revert-on <trigger>`, which resolve § 4.2's role and § 32's edge "
+            "to the status word this project mapped and are where the writer "
+            "guard sits. Naming the operation instead would write a status word "
+            "the caller chose, past the guard.",
+            file=sys.stderr,
+        )
+        return 2
+    # ⛔ Neither direction at once. The two name different things -- a role to
+    # advance into and a trigger to step back on -- and a call stating both has
+    # asked for two moves on one item with nothing saying which happens first.
+    if args.advance_to and args.revert_on:
+        print(
+            "Refused: `--advance-to` and `--revert-on` are two moves on one item "
+            "and the order between them is stated nowhere. Ask for one.",
             file=sys.stderr,
         )
         return 2
@@ -3944,11 +4008,11 @@ def main(argv: list[str]) -> int:
         if answer is None:
             return 0
         return 0 if not (answer["short"] or answer["unanswered"]) else 1
-    if args.advance_to:
+    if args.advance_to or args.revert_on:
         if args.ports:
             print(
-                "Refused: `--advance-to` moves one item on one port, so it is not "
-                "asked of every port at once.",
+                "Refused: a status move touches one item on one port, so it is "
+                "not asked of every port at once.",
                 file=sys.stderr,
             )
             return 2
@@ -3959,8 +4023,18 @@ def main(argv: list[str]) -> int:
                 root=args.root,
                 check_paths=not args.no_check_paths,
             )
-            outcome = answering.advance_to(
-                args.advance_to, *args.argument, as_writer=args.as_writer
+            # ⛔ One shared branch for the two directions, which is § 32's rule
+            # read as code: the reports, the exit status and the refusal handling
+            # are the same because a reverse move reported differently from a
+            # forward one is a move a reader weighs differently.
+            outcome = (
+                answering.revert_to(
+                    args.revert_on, *args.argument, as_writer=args.as_writer
+                )
+                if args.revert_on
+                else answering.advance_to(
+                    args.advance_to, *args.argument, as_writer=args.as_writer
+                )
             )
         except ConfigError as error:
             print(

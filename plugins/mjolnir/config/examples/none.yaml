@@ -339,3 +339,15 @@ documents:
     no check has been written over either.
   revisit_when: >-
     Somebody other than the author starts relying on one of these documents being current.
+
+# § 39's absent case, and on this project both of its shapes hold at once: no deploy target and no
+# status ladder at all. ⛔ The absence is still written rather than left out — a project that never
+# looked and a project that decided read identically otherwise.
+verify:
+  carrier: none
+  absent_reason: >-
+    There is no environment and no status ladder here, so nothing is deployed for a reading to be
+    taken against and no state exists for a verdict to be recorded as.
+  revisit_when: >-
+    This project states a deploy target, which is the first thing a criterion could be measured
+    on.

@@ -7,9 +7,9 @@ alike any more, and the lines that differ are the corrections you paid for once 
 everywhere else. You find out which copy is wrong when it is already wrong.
 
 mjolnir is that process as **one shared procedure over per-project configuration** —
-[thirteen roles](plugins/mjolnir/config/schema.md#the-loop--thirteen-roles), from filing a work
-item to the day's log, reading whatever differs between your projects out of one file you
-write once.
+[one role per leg](plugins/mjolnir/config/schema.md#the-loop--the-roles-and-the-legs-between-them),
+from filing a work item to the day's log, reading whatever differs between your projects out of
+one file you write once.
 
 Installed as a Claude Code plugin. **No clone, no submodule, no symlink, and no copy of the
 procedure in your project.** Adopting it in the next project costs that one file you write.
@@ -116,6 +116,7 @@ a setting, is [`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
 | `/mjolnir:finish` | Commits, pushes, opens the change, reads the host's answer about it, asks before merging, and releases the tree once the merge is read back from state |
 | `/mjolnir:review` | Reads the conversation, reads the diff, reproduces what it finds, fixes it under the same item, and drives the gate green |
 | `/mjolnir:deploy` | Puts what has landed onto one of your own targets, asks for the go on this deploy and not on the last one, reads whether it actually arrived instead of whether the command exited, and moves every item it carried |
+| `/mjolnir:accept` | Judges what you deployed against the item's own criteria: the commit read off the running target rather than off a branch that has already moved past it, every criterion carrying a reading, the environment, the instrument and a date, the one judgement left over handed to you as a picture — and the verdict yours, because nothing here can write it |
 | `/mjolnir:cut-release` | Turns landed work into a released version: the version you asked for rather than one derived behind your back, every file that carries one bumped from your configuration without the role knowing your stack, and the whole edit made together or not at all |
 | `/mjolnir:save` | Keeps the session's books: your tracker brought current, memory refreshed, then the commit — and the durable artifact a later pass resumes from, with the boundary it was taken at named |
 | `/mjolnir:load` | The counterpart: tells you where the work actually stands when you come back to it — the commits nothing outside your tree has, the branch behind the ref its claim is published on, what the last pass was doing and what its compaction dropped, whether a working file that is gone can be replayed and from what. Read-only, and it decides nothing |
@@ -141,6 +142,7 @@ you, and what it then carries is derived rather than remembered.
 | [`plugins/mjolnir/skills/finish/`](plugins/mjolnir/skills/finish/) | Take a finished branch to a landed pull request: the commit, the push, the pull request, the host's answer about it, what the project counts as done and who answers each of those checks, the merge read back from state, the item's move through the port, and the tree released |
 | [`plugins/mjolnir/skills/review/`](plugins/mjolnir/skills/review/) | Review an open change and drive its gate green: the conversation read first, the diff read whatever else reads it, every finding reproduced and fixed under the same item, every thread answered, and a record of how deeply the change was actually read — which this role writes, never acts on, and never stops to ask anybody for |
 | [`plugins/mjolnir/skills/deploy/`](plugins/mjolnir/skills/deploy/) | Deploy to one of the project's own targets: the target read from configuration rather than from what it is called, a preflight that writes nothing, one go for *this* deploy, whatever that target states as its invocation — a command, a run the host makes, or commands handed to a person — the delivery read out of what the run printed, and the batch it carried advanced one role each |
+| [`plugins/mjolnir/skills/accept/`](plugins/mjolnir/skills/accept/) | Judge a deployed work item against its own acceptance criteria: the target and the commit it serves read from configuration rather than from a branch, every criterion carrying a reading, the environment, the instrument and a date, the machine half launched through the tier-launching role rather than a second launcher, the residue of what no criterion covers named rather than filed, and the verdict left to the person who ordered the work — there being no writer this role could ask as |
 | [`plugins/mjolnir/skills/cut-release/`](plugins/mjolnir/skills/cut-release/) | Turn landed work into a released version: the version asked for rather than derived, every file that carries one bumped from configuration without the role knowing the stack, a changelog written or refused to the host's own run, and the whole edit made together or not at all |
 | [`plugins/mjolnir/skills/save/`](plugins/mjolnir/skills/save/) | Keep the session's books: the thirds your project runs and nothing else, in one order — the tracker current, memory refreshed, the commit staged the way *this* role is configured — with no status whose writer is somebody else, and the artifact a later pass resumes from written before the boundary rather than after it |
 | [`plugins/mjolnir/skills/load/`](plugins/mjolnir/skills/load/) | Restore what is in flight at the start of a pass: every reading reported — where the work is, what the item says, what the last pass was doing, what the environment is, what memory claims and what the resumed window states — with the ones it could not take named rather than left out, and nothing fetched, stashed, moved or decided |
