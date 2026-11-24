@@ -275,6 +275,14 @@ host:
     - workflow: "Title form"
       mirrors: "python3 plugins/mjolnir/scripts/title_form.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The same reading again, and the strongest case of it: `verify.carrier: none` below, so
+    # pointed at this tree the carrier answers that nothing here is judged on an environment and
+    # exits with no subject. ⛔ What this run holds is the two arms no configuration can supply —
+    # that a reading taken before the commit a target serves is refused, and that a role is refused
+    # the `accepted` write however it asks — each planted against a tree of the suite's own.
+    - workflow: "Verify carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/verify.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
   # ⛔ No `runner` here, and that absence is the statement § 2 makes it: every workflow above runs
   # on this host kind's own default, which the surface deliberately does not name, so there is
   # nothing to write down. ⚠️ What it costs is stated rather than discovered — the drift run two
@@ -997,6 +1005,9 @@ documents:
         - "plugins/mjolnir/config/schema.md"
         - "plugins/mjolnir/skills/day-report/SKILL.md"
       derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/accept/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
     - document: "plugins/mjolnir/skills/close-out/SKILL.md"
       may_name: ["plugins/mjolnir/config/schema.md"]
       derived_from: ["plugins/mjolnir/config/schema.md"]
@@ -1072,3 +1083,19 @@ spec_corpus:
     a copy of the surface that differs from the default branch's — or a project adopting these
     roles keeps its specification in its own repository, which is the shape § 39 was written from
     and which this project is not.
+
+verify:
+  # § 40's absent case, and it holds here for the first of that section's two shapes: `deploy: []`
+  # above, so nothing this repository ships reaches an environment through the procedure and there
+  # is no commit being served for a reading to be taken against. ⛔ Not a statement about whether
+  # the work is judged — it is reviewed on the host, and an adopting project's own acceptance pass
+  # is exactly what the role this facet configures is for.
+  carrier: none
+  absent_reason: >-
+    Nothing here is deployed: the plugin is installed from the tree at its default branch, so no
+    environment serves a commit and no criterion of an item here is measurable on one. The status
+    ladder is open and closed with nothing between them, so there is no accepted state for a
+    verdict to be recorded as either.
+  revisit_when: >-
+    This project states a deploy target, which is the same trigger the release and deploy facets
+    above carry and would be answered by the same reading.

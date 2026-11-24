@@ -361,3 +361,15 @@ spec_corpus:
   revisit_when: >-
     This project gains a grouping that names versions, which § 4.8 above is the trigger for and
     which is also the first moment one copy of the plan governs an item and another does not.
+
+# § 40's absent case, and on this project both of its shapes hold at once: no deploy target and no
+# status ladder at all. ⛔ The absence is still written rather than left out — a project that never
+# looked and a project that decided read identically otherwise.
+verify:
+  carrier: none
+  absent_reason: >-
+    There is no environment and no status ladder here, so nothing is deployed for a reading to be
+    taken against and no state exists for a verdict to be recorded as.
+  revisit_when: >-
+    This project states a deploy target, which is the first thing a criterion could be measured
+    on.

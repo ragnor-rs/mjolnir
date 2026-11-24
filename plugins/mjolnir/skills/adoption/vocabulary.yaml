@@ -41,6 +41,9 @@ roles:
   - finish
   - review
   - deploy
+  # The role that judges a deployed item against its own criteria and records the readings, with
+  # the verdict itself left to the person who ordered the work (schema.md § 41).
+  - accept
   - release
   - day_log
   - session

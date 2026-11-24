@@ -2906,6 +2906,29 @@ class Config:
             "changelog_ci_owned": self.get("release.changelog_ci_owned"),
         }
 
+    def verify(self) -> dict | None:
+        """§ 41's `verify`, or `None` where nothing here is judged on a target.
+
+        The facet's whole public face, and the carrier beside this module is its
+        one reader. ⚠️ `None` is the project's **stated** absence — no criterion
+        of an item here is measurable on an environment, or no status maps the
+        `accepted` role, so the accepting role runs nothing and is asked for no
+        verdict. ⛔ Never a statement about whether anybody looks at a running
+        copy by hand, which this facet reports nothing about.
+
+        ⚠️ `identity` is handed back keyed exactly as the project wrote it. The
+        keys are § 33's target names, held to that list at load, so a caller
+        resolves a target by the name it already has rather than by a second
+        spelling of it.
+        """
+        if self.get("verify.carrier") != "list":
+            return None
+        return {
+            "identity": dict(self.get("verify.identity") or {}),
+            "baseline": dict(self.get("verify.baseline") or {}),
+            "breakpoints": list(self.get("verify.breakpoints") or ()),
+        }
+
     @property
     def billing(self) -> dict | None:
         """§ 37's `billing`, or `None` where this project bills nobody.
@@ -3271,6 +3294,21 @@ class Config:
                 "No executed count is carried (`executed.carrier: none`), so "
                 "what a run executed is **unavailable** here rather than zero, "
                 "and no run is held to a floor: "
+                f"{' '.join(str(reason).split())}"
+            )
+        # § 41, and reported for the reason § 34's is: a role that would have
+        # judged a deployed item learns that nothing here is judged on a target,
+        # rather than meeting a key that is not there. ⛔ Reported as no judgement
+        # being taken through the procedure and never as work that goes unjudged
+        # -- a change here is still reviewed, and whether anybody looks at a
+        # running copy by hand is something this facet says nothing about.
+        if self.get("verify.carrier") == "none":
+            reason = self.get("verify.absent_reason")
+            out.append(
+                "Nothing is judged on a deploy target (`verify.carrier: none`), "
+                "so the accepting role runs nothing here and is asked for no "
+                "verdict. ⛔ Not a statement about whether the work is judged at "
+                "all, nor about anybody looking at a running copy by hand: "
                 f"{' '.join(str(reason).split())}"
             )
         # § 37, and reported for the reason § 34's is: a role that would have
@@ -5405,6 +5443,143 @@ def _validate_release(data: dict, facts: dict) -> None:
                 "reads, so a word read as truthy would move the ask or the "
                 "changelog without anything saying so.",
             )
+
+
+def _validate_verify(data: dict) -> None:
+    """§ 41's block, whose shape no marker on the surface can reach.
+
+    The carrier's own alternation and the requiredness of the keys beside it are
+    marked and answered before this runs; what the keys have to *be* is here,
+    which is the division §§ 31, 32, 33 and 34 already have.
+
+    ⚠️ **It takes no surface facts, unlike § 34's**, and the reason is that this
+    facet declares no key *inside a list*: every key it has sits at a path a
+    marker reaches, so what is left here is the relation between keys and the
+    type of a value. A parameter for facts nothing reads would read as a surface
+    this arm consulted.
+
+    ⛔ **Three rules, and each is a judgement that would otherwise read as
+    taken.** A target name no `deploy` entry carries is a judgement aimed at an
+    environment this project does not have; a breakpoint written as a name is a
+    device class standing in for a width it may not be; and a `list` carrier on a
+    project stating `deploy: []` describes a judgement against nothing at all.
+    """
+    carrier = _get(data, "verify.carrier")
+    if carrier != "list":
+        # ⛔ The complement is **not** silence, by § 34's rule for the same shape:
+        # an `identity` mapping under a carrier that reads none is a judgement
+        # somebody configured and nothing performs.
+        stated = [
+            key
+            for key in ("identity", "baseline", "breakpoints")
+            if key in _absent_as(_get(data, "verify"), {})
+        ]
+        if stated:
+            raise ConfigError(
+                f"verify.{stated[0]}",
+                f"is stated while `verify.carrier` is {carrier!r}, which reads "
+                "none of it (§ 41). A project that judges nothing on a target "
+                "states the carrier and its reason; one that does states the "
+                "carrier as `list`.",
+            )
+        return
+
+    # ⛔ Refused against **both** keys, which is the pairing § 31 has with § 16 one
+    # facet over: the names `identity` is keyed on are a target's, and a project
+    # with no target has nothing for a criterion to be measurable on either.
+    targets = _get(data, "deploy") or []
+    if not targets:
+        raise ConfigError(
+            "verify.carrier",
+            "is `list` while `deploy` is empty (§ 41). There is no target for "
+            "`verify.identity` to be keyed on and nothing for a criterion to be "
+            "measurable on, so the configuration describes a judgement against "
+            "nothing. A project that deploys by hand and accepts by hand states "
+            "`carrier: none` with its reason.",
+        )
+    named = [
+        entry.get("name")
+        for entry in targets
+        if isinstance(entry, dict) and isinstance(entry.get("name"), str)
+    ]
+
+    identity = _get(data, "verify.identity")
+    if not isinstance(identity, dict) or not identity:
+        raise ConfigError(
+            "verify.identity",
+            "must be a non-empty mapping from a `deploy` target's own `name` to "
+            "the command that prints the commit that target serves (§ 41). A "
+            "project judging nothing on any of its targets states "
+            "`carrier: none` with its reason, which is a different fact from an "
+            "empty mapping.",
+        )
+    for target, command in identity.items():
+        # ⛔ Held to § 33's list and never to a root of it: a target names its own
+        # repository, so which repository the command runs in is read off the
+        # entry rather than stated again here.
+        if target not in named:
+            raise ConfigError(
+                f"verify.identity.{target}",
+                "names no `deploy` target of this project, so the command would "
+                "read a commit from an environment nothing here reaches (§ 41). "
+                f"The targets it states are: {', '.join(repr(n) for n in named)}.",
+            )
+        if not isinstance(command, str) or not command.strip():
+            raise ConfigError(
+                f"verify.identity.{target}",
+                "must be a non-empty string: the whole command that prints the "
+                "commit this target serves, read off a file inside it (§ 41).",
+            )
+
+    baseline = _absent_as(_get(data, "verify.baseline"), {})
+    if not isinstance(baseline, dict):
+        raise ConfigError(
+            "verify.baseline",
+            "must be a mapping stating the ref the comparison calls before and "
+            "the durable path both sides are built under (§ 41).",
+        )
+    for key in ("ref", "harness"):
+        value = baseline.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(
+                f"verify.baseline.{key}",
+                "required, and a non-empty string (§ 41).",
+            )
+
+    breakpoints = _get(data, "verify.breakpoints")
+    if not isinstance(breakpoints, list):
+        raise ConfigError(
+            "verify.breakpoints",
+            "must be a list of the widths a handover may name (§ 41). `[]` is "
+            "the statement that none may be named, which is a project whose "
+            "handover says nothing about geometry.",
+        )
+    seen: dict[int, int] = {}
+    for index, width in enumerate(breakpoints):
+        where = f"verify.breakpoints[{index}]"
+        # ⛔ A boolean is an integer in this language and is refused by name, for
+        # § 34's reason on `optional` read the other way round: `true` written
+        # where a width belongs would be accepted as the width 1.
+        if isinstance(width, bool) or not isinstance(width, int):
+            raise ConfigError(
+                where,
+                f"is {width!r}; a breakpoint is a **width** and never a name "
+                "(§ 41). A name reads like a device class and is not one, so a "
+                "handover keyed on it would be about whatever that name meant "
+                "when somebody wrote it.",
+            )
+        if width <= 0:
+            raise ConfigError(
+                where, f"is {width!r}; a width is a positive number (§ 41)."
+            )
+        if width in seen:
+            raise ConfigError(
+                where,
+                f"is {width}, which verify.breakpoints[{seen[width]}] already "
+                "names (§ 41). One width named twice is one width, and a "
+                "handover reading the list would offer it twice.",
+            )
+        seen[width] = index
 
 
 def _one_root(root: str) -> str:
@@ -8350,6 +8525,10 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # **not** here: it needs that facet's own carried set rather than the raw
     # block, so it runs in `_grouping_facet` where the set exists.
     _validate_spec_corpus(data)
+    # § 41's block, and ⛔ **after § 33's rather than beside it**: the names its
+    # `identity` is keyed on are a target's own, so this reads a list the arm
+    # above has already held to being a list of targets at all.
+    _validate_verify(data)
 
     readiness = _absent_as(_get(data, "readiness"), [])
     if not isinstance(readiness, list):
@@ -9928,6 +10107,7 @@ MARKED_REQUIRED = [
     "statuses",
     "test_tiers.carrier",
     "tracker.kind",
+    "verify.carrier",
     "work_item.due_date.carrier",
     "work_item.estimate.carrier",
     "work_item.priority.carrier",
@@ -10073,6 +10253,16 @@ MARKED_REQUIRED_WHEN = [
     # and that neither is derivable from the other, so a configuration carrying
     # one of them is as unaddressable as one carrying neither.
     ("tracker.site", "tracker.kind", "jira"),
+    # § 41's four, each meaningless where nothing is judged on a target: the
+    # per-target command a commit is read with, the two halves of the comparison's
+    # baseline, and the widths a handover may name. ⚠️ `breakpoints` is marked
+    # while `[]` is a legitimate value, which is § 38's pairing on the same
+    # question -- the marker answers *must this key be written* and the empty list
+    # is the project's statement that no width may be named.
+    ("verify.baseline.harness", "verify.carrier", "list"),
+    ("verify.baseline.ref", "verify.carrier", "list"),
+    ("verify.breakpoints", "verify.carrier", "list"),
+    ("verify.identity", "verify.carrier", "list"),
 ]
 
 # The keys the surface marks procedure, stated here for the reason the lists
@@ -10237,6 +10427,7 @@ MARKED_ABSENT_CAPABLE = [
     "release",
     SPEC_CORPUS_KEY,
     "test_tiers",
+    "verify",
     "work_item.code_root",
     "work_item.due_date",
     "work_item.estimate",
@@ -14469,6 +14660,186 @@ def self_test() -> int:
             f"the surface shows no `(?P<{VERSION_CAPTURE}>` capture",
         )
 
+    print("\n§ 41, what a deployed item is judged against -- both sides of it:")
+    # ⛔ The plants first, each one key of the fixture at a time, and each aimed at
+    # a judgement that would otherwise read as taken: an environment this project
+    # does not have, a device class standing in for a width, and a judgement with
+    # no target under it at all.
+    for label, data, expected in (
+        (
+            "a target name no `deploy` entry carries is refused, naming the key",
+            _judging_one_target(identity={"not-a-target": "a-command"}),
+            "verify.identity.not-a-target",
+        ),
+        (
+            "an empty `identity` mapping is refused rather than read as none",
+            _judging_one_target(identity={}),
+            "verify.identity",
+        ),
+        (
+            "a command stated as nothing is refused",
+            _judging_one_target(identity={_a_deploy_target()["name"]: "  "}),
+            f"verify.identity.{_a_deploy_target()['name']}",
+        ),
+        (
+            "a baseline missing the ref the comparison calls before is refused",
+            _judging_one_target(baseline={"harness": "/a/durable/path"}),
+            "verify.baseline.ref",
+        ),
+        (
+            "a baseline missing the path both sides are built under is refused",
+            _judging_one_target(baseline={"ref": "a-ref"}),
+            "verify.baseline.harness",
+        ),
+        (
+            "a breakpoint written as a name is refused, the value being a width",
+            _judging_one_target(breakpoints=["a-device-class"]),
+            "verify.breakpoints[0]",
+        ),
+        # ⛔ A boolean is an integer in this language, so this plant is the one
+        # that certifies the type arm reads more than `isinstance(int)`: `true`
+        # accepted there is the width 1, and a handover would offer it.
+        (
+            "a breakpoint written `true` is refused rather than read as the width 1",
+            _judging_one_target(breakpoints=[True]),
+            "verify.breakpoints[0]",
+        ),
+        (
+            "a width that is not positive is refused",
+            _judging_one_target(breakpoints=[0]),
+            "verify.breakpoints[0]",
+        ),
+        (
+            "one width named twice is refused, naming the entry that already has it",
+            _judging_one_target(breakpoints=[640, 640]),
+            "verify.breakpoints[1]",
+        ),
+        (
+            "a list carrier on a project stating no target is refused on the carrier",
+            {**_a_valid_example(), "deploy": [], "verify": _a_verify_of()},
+            "verify.carrier",
+        ),
+    ):
+        refusal = _refused(data)
+        check(label, refusal == expected, f"reported {refusal!r}")
+
+    # ⛔ The complement, which is the arm that makes the absence a statement
+    # rather than silence: a key stated beside `carrier: none` is a judgement
+    # somebody configured and nothing performs.
+    for key in ("identity", "baseline", "breakpoints"):
+        stated = _a_valid_example()
+        stated["verify"] = {
+            "carrier": "none",
+            "absent_reason": "a reason",
+            key: _a_verify_of()[key],
+        }
+        refusal = _refused(stated)
+        check(
+            f"`{key}` stated beside an absent carrier is refused, naming it",
+            refusal == f"verify.{key}",
+            f"reported {refusal!r}",
+        )
+
+    # ⛔ And the green side, which every plant above reddens and none of them
+    # asserts: the configuration the surface's own fence shows has to load.
+    for label, overrides in (
+        ("the facet the surface shows loads", {}),
+        ("a project naming no width loads, `[]` being its own statement",
+         {"breakpoints": []}),
+        ("a project naming widths loads", {"breakpoints": [640, 1024]}),
+    ):
+        refusal = _refused(_judging_one_target(**overrides))
+        check(label, refusal is None, f"refused on {refusal!r}")
+
+    # ⚠️ A project with two targets and one entry, which is § 41's stated shape
+    # for *a target no pass may be taken against*: it loads, the reader reporting
+    # nothing about which targets are judged on.
+    two = _a_valid_example()
+    two["deploy"] = [_a_deploy_target(), _a_deploy_target(name="a-second-target")]
+    two["verify"] = _a_verify_of()
+    check(
+        "a target with no entry loads rather than being refused",
+        _refused(two) is None,
+        f"refused on {_refused(two)!r}",
+    )
+
+    # ⛔ And the facet is **read back**, not merely validated: the role reads its
+    # per-target command, its baseline and its widths out of the resolved
+    # configuration, so a key the reader accepts and no reader renders is a key
+    # nothing holds. ⚠️ The example is found by the facet rather than named.
+    carried = next(
+        (
+            data for data in (
+                _load_yaml(open(path, encoding="utf-8").read(), CONFIG_PATH)
+                for path in _examples()
+            )
+            if _get(data, "verify.carrier") == "list"
+        ),
+        None,
+    )
+    check(
+        "an example states a judgement, so the arms below have a subject",
+        carried is not None,
+        "no example states a judgement on a deploy target",
+    )
+    if carried is not None:
+        with open(SURFACE, encoding="utf-8") as handle:
+            resolved = _resolve(carried, EXAMPLES, surface_facts(handle.read()), False)
+        read = resolved.verify()
+        check(
+            "the resolved configuration carries the per-target commands it states",
+            isinstance(read, dict)
+            and read["identity"] == _get(carried, "verify.identity"),
+            f"carries {read!r}",
+        )
+        check(
+            "and every key it is keyed on is a target that example deploys to",
+            set(read["identity"]) <= {
+                entry.get("name") for entry in _get(carried, "deploy") or []
+            },
+            f"keyed on {sorted(read['identity'])!r}",
+        )
+        check(
+            "and the baseline's two halves come back with it",
+            {"ref", "harness"} <= set(read["baseline"] or {}),
+            f"carries {read['baseline']!r}",
+        )
+        check(
+            "and the widths come back as numbers rather than as text",
+            all(isinstance(width, int) for width in read["breakpoints"]),
+            f"carries {read['breakpoints']!r}",
+        )
+        # ⚠️ The absent arm read back off a project that states it, which is the
+        # answer every role asks this facet first.
+        absent = next(
+            (
+                data for data in (
+                    _load_yaml(open(path, encoding="utf-8").read(), CONFIG_PATH)
+                    for path in _examples()
+                )
+                if _get(data, "verify.carrier") == "none"
+            ),
+            None,
+        )
+        if absent is not None:
+            with open(SURFACE, encoding="utf-8") as handle:
+                stood = _resolve(absent, EXAMPLES, surface_facts(handle.read()), False)
+            check(
+                "a project judging nothing reads back as no facet rather than empty",
+                stood.verify() is None,
+                f"read back {stood.verify()!r}",
+            )
+            check(
+                "and it is reported as unavailable, carrying the project's own reason",
+                any(
+                    "verify.carrier: none" in entry
+                    and " ".join(str(_get(absent, "verify.absent_reason")).split())
+                    in entry
+                    for entry in stood.unavailable()
+                ),
+                f"reported {stood.unavailable()!r}",
+            )
+
     print("\n§ 20, where a collected step falls and who answers it:")
     # ⛔ The arm the plant list cannot reach, the surface's own fence being what it
     # is about rather than a configuration: with no key declared under
@@ -18199,6 +18570,45 @@ def _a_release_of(**overrides) -> dict:
     }
     facet.update(overrides)
     return {key: value for key, value in facet.items() if value is not _ABSENT}
+
+
+def _a_verify_of(**overrides) -> dict:
+    """§ 41's smallest facet that states a judgement, to break one key of at a time.
+
+    ⛔ The carrier is `list` in every plant built on this, for `_a_release_of`'s
+    reason: a plant that left it `none` would be refused by the
+    stated-beside-an-absent-carrier arm instead -- a different branch under a
+    different key, green while asserting nothing about the one it was aimed at.
+
+    ⚠️ `identity` is keyed on `_a_deploy_target`'s own name, so a plant built on
+    this has to be placed into a configuration carrying **that** target. The
+    helper below is what does it, and nothing here reads a shipped example's
+    target names: a fixture that did would stop asserting the moment the example
+    it borrowed from renamed an environment.
+    """
+    facet = {
+        "carrier": "list",
+        "identity": {_a_deploy_target()["name"]: "a-command"},
+        "baseline": {"ref": "a-ref", "harness": "/a/durable/path"},
+        "breakpoints": [],
+    }
+    facet.update(overrides)
+    return {key: value for key, value in facet.items() if value is not _ABSENT}
+
+
+def _judging_one_target(**overrides) -> dict:
+    """A complete example carrying one § 33 target and § 41's facet over it.
+
+    ⛔ The target is replaced rather than appended to, which is what keeps the
+    arms independent of whichever example `_a_valid_example` reads: a project
+    whose own `deploy` list grew an entry would otherwise give the `identity`
+    rules a second name to resolve against and the green arms would stop being
+    about the mapping this fixture states.
+    """
+    data = _a_valid_example()
+    data["deploy"] = [_a_deploy_target()]
+    data["verify"] = _a_verify_of(**overrides)
+    return data
 
 
 def _a_document_row(**overrides) -> dict:

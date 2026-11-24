@@ -166,6 +166,10 @@ COLLECTIONS = {
     "work_item.code_root.roots":
         "each key is the carrier's own value and each value a root's name "
         "(§ 4.7), so the question is asked once per pair",
+    "verify.identity":
+        "each key is a deploy target's own name (§ 33), chosen by the project, "
+        "so the question is asked once per target it judges on rather than once "
+        "per name",
 }
 
 # The two leaf names that are a facet's own absence record. ⛔ Covered by the
@@ -1306,6 +1310,33 @@ ANSWERED_BY: dict[str, Answer] = {
         "single entry, and the ref is that grouping's `ref_prefix` joined onto "
         "the value the item carries — no second key states a branch-naming "
         "scheme (§ 39, § 4.8).",
+    ),
+
+    # --- § 41. What a deployed item is judged against ----------------------
+    "verify.carrier": ask(
+        "Does anybody judge a deployed item against its own criteria here? ⚠️ "
+        "Asked apart from the deploy above: a project can deploy every day and "
+        "judge nothing through the procedure, and ⛔ a ladder with no accepted "
+        "state in it has nowhere for a verdict to go (§ 41).",
+    ),
+    "verify.identity.*": ask(
+        "For this target, which command prints the commit it serves? ⛔ Read off "
+        "a file inside the running target -- never an artefact digest, which a "
+        "reproducible build makes identical from another commit, and never the "
+        "integration branch, which runs ahead of every target (§ 41).",
+    ),
+    "verify.baseline.ref": ask(
+        "Which ref does the comparison call `before`?",
+    ),
+    "verify.baseline.harness": ask(
+        "And which path are both sides built under? ⛔ A durable one: a "
+        "comparison whose two sides are gone cannot be re-read when somebody "
+        "disputes it, and the dispute is the only reason it was built (§ 41).",
+    ),
+    "verify.breakpoints": ask(
+        "Which widths may a handover name? ⛔ Widths and never device-class "
+        "names -- a name reads like one and is not one. `[]` is the answer for a "
+        "project whose handover says nothing about geometry (§ 41).",
     ),
 }
 

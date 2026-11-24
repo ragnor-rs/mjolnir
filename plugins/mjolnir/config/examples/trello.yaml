@@ -689,3 +689,22 @@ spec_corpus:
   revisit_when: >-
     Somebody outside the two people who work on this service starts being told what a version of
     it does — the first reader of a copy that is not the current one.
+
+# § 40's stated arm, and the only shipped example that carries one: this is the ladder with an
+# `accepted` role in it, so it is the one project here where somebody judges a deployed item
+# before a release may carry it. ⛔ `identity` is keyed by a target's own `name` from `deploy`
+# above and never by a name invented here — one entry, for the shared environment, because that
+# is the target items are judged on. The release target and the local stack carry none, which is
+# this project saying no acceptance pass may be taken against either.
+verify:
+  carrier: list
+  identity:
+    "<the shared environment work is published to>": "<the command printing the commit that environment serves, read off a file inside it>"
+  # The side the comparison calls *before*, and the path both sides are built under. ⛔ Durable:
+  # a comparison whose two sides are gone cannot be re-read when somebody disputes it.
+  baseline:
+    ref: "<the integration branch>"
+    harness: "<a durable path outside every work tree>"
+  # The widths a handover may name, by value. ⛔ Never a device-class name — a name reads like one
+  # and is not one, and this project's own layout switches at these two numbers.
+  breakpoints: [640, 1024]

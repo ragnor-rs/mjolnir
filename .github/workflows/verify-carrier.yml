@@ -1,0 +1,48 @@
+name: Verify carrier
+
+# What a deployed item is judged against, read once for the one role that accepts one.
+# Held to the section of plugins/mjolnir/config/schema.md that states the facet; no copy of it is
+# carried here.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+#
+# ⚠️ This repository states `verify.carrier: none`, so pointed at this tree the carrier answers
+# that nothing here is judged on an environment and exits without a subject. What this run holds is
+# the carrier's own suite against planted trees — which is the only place it can be held, since the
+# project the facet was drafted against is not this one.
+#
+# ⛔ Two of that suite's arms need a repository it can make a commit in, the arithmetic it asserts
+# being a reading's date against a commit's own. Git is on the runner image and the checkout step
+# below is not what supplies it; a runner without git fails those arms loudly rather than skipping
+# them.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The carrier reads a configuration, runs a project's own command in a
+# temporary tree of the suite's own making, and asks the tracker port for a status move it is
+# refused — it reaches no host, no tracker and no environment.
+permissions: {}
+
+jobs:
+  verify-carrier:
+    name: Verify carrier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Pinned rather than relying on whatever the runner image ships, for the reason the sibling
+      # workflows pin it: the carrier runs on the shared reader, which needs the parser, and a
+      # check that silently stops running is the failure this job exists to catch.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` states this run mirrors.
+      - name: Hold the acceptance carrier to the surface
+        run: python3 plugins/mjolnir/scripts/verify.py --self-test

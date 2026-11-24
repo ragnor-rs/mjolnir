@@ -595,3 +595,19 @@ spec_corpus:
   revisit_when: >-
     This project starts cutting versions and a branch per version, which is the first moment one
     copy of its prose governs an item and another does not.
+
+# § 40's absent case, and the shape worth showing: this project **deploys** and still judges
+# nothing through the procedure, because its ladder maps no `accepted` role at all — an item goes
+# from code landed to finished and there is no state between them for a verdict to be written
+# into. ⛔ So the accepting role runs nothing here and is asked for no verdict, and the
+# `acceptance` tier declared above is a suite a person looks at rather than a role's own readings.
+verify:
+  carrier: none
+  absent_reason: >-
+    The status ladder here has no accepted state, so there is nothing for a judgement to be
+    recorded as and no release precondition reading one. What somebody looks at on the
+    environment is the acceptance tier declared under test_tiers, which this project runs
+    without a verdict being written on an item.
+  revisit_when: >-
+    A state between code landed and finished is added to the ladder, which is the first moment a
+    verdict has somewhere to go.

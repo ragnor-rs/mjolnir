@@ -3910,11 +3910,13 @@ loop, no `carriers` key answers for this, and no role enters it.
 ### One root is false for a set whose members are addressed by name
 
 The implementation this property came from holds reachability from a **single** document. ⛔ **That
-is false of this repository and the measurement is twelve documents**, which is why
+is false of this repository, and the measurement is every role carrier it ships**, which is why
 [`schema.md § 38 → The two edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)
-states a list of entry points instead: the twelve role carriers here are each loaded by name by the
-harness and named by no document, so a single-root reading reports twelve unreachable documents that
-a reader reaches every session.
+states a list of entry points instead: each carrier here is loaded by name by the harness and named
+by no document, so a single-root reading reports every one of them as unreachable while a reader
+reaches them all every session. ⛔ **No count is written for it**: the figure is the length of the
+carrier directory, which the loop growing by a role changes, and a number here would then be a
+measurement that reads as current and is not.
 
 ⚠️ **The teeth survive because the list is short and declared.** A project that states every
 document an entry point has turned the check off and can read that off its own configuration, which
@@ -4360,3 +4362,63 @@ situation on the grouping carrier is two sessions writing one tracker. ⛔ **So 
 states is the act and not the file** — reported, never repaired, with whose it is named — and the
 baseline is what makes the report possible on either carrier, no tracker bumping an item's own
 modification time when a relation changes.
+
+## The stage between a deploy and a release, measured where there is no copy of it
+
+⛔ **This is the one role whose facet was derived from no shipped carrier at all**, and the
+measurement is what makes that a finding rather than an excuse —
+[`schema.md § 41`](../plugins/mjolnir/config/schema.md#41-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed)
+is the facet, and
+[`schema.md § 41 → Its own role`](../plugins/mjolnir/config/schema.md#its-own-role-and-the-two-grounds-that-rule-it-apart-from-the-reviewing-one)
+is the ruling that separates it from the reviewing one. Every other facet on the surface was
+read out of several copies and reconciled; this one had exactly one artefact behind it.
+
+| what was there | and what that costs |
+|---|---|
+| **A draft runbook for the stage, written against one consumer and held outside every tree.** Nothing loads it, no gate reads it, and no project's configuration points at it | the same cost two other carriers record one stage later: a document nothing holds is a document free to disagree with whatever the loop actually does, and nobody finds out |
+| **One recorded run of it against that consumer's deployed target**, carrying a scenario count and, inside it, one tier **held** rather than run — a form submission there would have reached real recipients | a reading that is a **precondition** and not a verdict, which is why the facet makes a skip name itself rather than fold into a pass |
+
+⛔ **So the keys are argued from the surface's existing sections rather than from a survey**, and
+each of them is a question one of those sections leaves open —
+[`schema.md § 41`](../plugins/mjolnir/config/schema.md#41-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed)
+states all three, and
+[`schema.md § 41 → The four buckets`](../plugins/mjolnir/config/schema.md#what-the-criteria-are-read-from-and-the-four-buckets-one-falls-in)
+states what each criterion they are read for owes the record:
+
+| the key | what already existed, and what it did not answer |
+|---|---|
+| `verify.identity` | [`schema.md § 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes) states what a target **is** and what reaching it invokes. ⛔ It states nothing about reading what a target is **serving**, which a judgement is about: the facet keys a command per target and holds the keys to that list |
+| `verify.baseline` | [`§ 31`](../plugins/mjolnir/config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) states what a tier needs before it can run. ⛔ The before-and-after comparison is not a tier by that section's own test — it selects no set of cases — so its two inputs had nowhere to be stated |
+| `verify.breakpoints` | ⛔ Surface by the test that admits a facet at all: a **shared role** reads it to decide what to hand over. A project-local list would have left the one question a person is asked keyed on a value no role could reach |
+
+### The two wrong readings of a deployed commit, and why neither is a key
+
+⛔ **Both were available and both are refused by the mechanism rather than by a setting**, which is
+[`schema.md § 41 → `identity``](../plugins/mjolnir/config/schema.md#identity-and-the-two-readings-of-a-deployed-commit-that-are-wrong).
+The facet states one command per target and the role has nowhere else to read from, so neither
+reading is reachable to be configured:
+
+| the reading | why it is wrong |
+|---|---|
+| an artefact's digest | a reproducible build yields the same artefact from a different commit, so an identical digest is **no evidence** that a deploy is current |
+| the integration branch | it runs ahead of every target routinely, so a reading taken off it accepts code nobody deployed |
+| an earlier note | two notes written the same afternoon can disagree, which is why the command is run in the pass rather than read out of a record |
+
+### The writer bar turned out to be stronger than the facet assumed
+
+⚠️ **Measured against the port rather than argued.** The facet's first form said the accepting role
+is refused the `accepted` write *unless it asks as the status's own writer* — which would have made
+the bar a wrong-writer mistake. [`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)
+closes the set an ask may be **made** as to the procedure and the deploy, and the measured
+configuration maps that status to the person who ordered the work, so:
+
+| the ask | what came back |
+|---|---|
+| as the procedure, or the deploy | refused against the configured writer |
+| as the configured writer itself | refused **before the configuration is read at all**, as a claim to be somebody |
+
+⛔ **So there is no writer the role could ask as**, and the record it produces carries a standing
+rather than a status word —
+[`schema.md § 41 → What the role records`](../plugins/mjolnir/config/schema.md#what-the-role-records-and-what-it-may-not-record). The suite beside the carrier asserts both arms and the green side with
+them — a role the procedure does write is not refused — so the four refusals are about this role
+rather than about every move being barred.
