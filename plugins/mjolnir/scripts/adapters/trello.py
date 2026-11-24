@@ -1528,10 +1528,21 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # be held to a bar nothing could ever publish. ⚠️ The example beside this module
 # states `carrier: none` with its own reason, which is the same fact from the
 # project's side rather than a second statement of this one.
+# `read_closing_change` joins `link_for_close` for the same reason it is here: a
+# card holds no reference to a change at all, in either direction, so there is
+# nothing to compose and nothing to read back.
+#
+# `create_grouping` joins `grouping_items` and `mark_grouping_released` for
+# theirs: this board carries no grouping -- the lists on it are the statuses --
+# so there is no object of that kind to create, read or mark. ⚠️ All three move
+# together the moment a project here carries one, which is one condition rather
+# than three.
 DELIBERATELY_ABSENT = (
     "link_dependency",
     "read_blockers",
     "link_for_close",
+    "read_closing_change",
+    "create_grouping",
     "advance_on_merge",
     "grouping_items",
     "mark_grouping_released",

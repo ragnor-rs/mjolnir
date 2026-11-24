@@ -4561,7 +4561,7 @@ case`](../plugins/mjolnir/config/schema.md#carrier-none-and-the-two-answers-it-m
 `plugins/mjolnir/scripts/verify.py --self-test`, mirrored by the `Verify carrier` run that
 [`.claude/mjolnir.yaml`](../.claude/mjolnir.yaml) states and
 [`.github/workflows/verify-carrier.yml`](../.github/workflows/verify-carrier.yml) defines. The facet
-is [`schema.md § 40`](../plugins/mjolnir/config/schema.md#40-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed),
+is [`schema.md § 41`](../plugins/mjolnir/config/schema.md#41-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed),
 and no copy of it is carried here.
 
 **What it holds.** Each arm reddens on a planted violation of its own:
@@ -4580,7 +4580,7 @@ and no copy of it is carried here.
 
 ⛔ **The arithmetic arm runs against a repository the suite makes a commit in**, not against a
 stubbed stamp reader — the rule it asserts being
-[`schema.md § 40 → `identity``](../plugins/mjolnir/config/schema.md#identity-and-the-two-readings-of-a-deployed-commit-that-are-wrong). A fake at that seam would have compared a reading against a value the suite
+[`schema.md § 41 → `identity``](../plugins/mjolnir/config/schema.md#identity-and-the-two-readings-of-a-deployed-commit-that-are-wrong). A fake at that seam would have compared a reading against a value the suite
 chose, which is the arm rather than the subject — and the first form of the fixture set only the
 **author** date, so the commit's arrival time was *now* and every arm was asserting against the
 clock. The fixture sets the committer date, which is the stamp the module reads.

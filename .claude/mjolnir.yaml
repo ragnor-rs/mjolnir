@@ -93,6 +93,13 @@ host:
     - workflow: "Claim carrier"
       mirrors: "python3 plugins/mjolnir/scripts/claim.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # § 40's carrier. ⚠️ What a gate can hold about it is every reading that needs no tracker:
+    # both record carriers are driven over a fake, so the two quiet readings — a grouping having
+    # no order between its places, and a pass that writes where it should not — are asserted as
+    # facts about the calls rather than as the absence of a crash.
+    - workflow: "Close-out carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/close_out.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Config reader"
       mirrors: "python3 plugins/mjolnir/scripts/config.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -497,6 +504,11 @@ carriers:
   # closes was measured: the phrase every one of the surveyed projects' tooling already classified
   # as a bookkeeping turn, with no implementation anywhere.
   load: skill
+  # § 40's role, mapped because this project keeps its order of work in the record that facet
+  # states and runs this role over it — `ordering.command` below is this carrier's own queue read.
+  # ⛔ Not the absent-leg case the reader admits beside it: a record kept by hand with no role
+  # mapped is legitimate, and it would be a false statement about this project.
+  close_out: skill
 
 # § 23. All three thirds: the backlog is this project's own tracker, memory is what a later
 # session reads this build's rulings out of, and the commit is § 6's above.
@@ -626,12 +638,19 @@ context:
     committed: false
 
 ordering:
-  # ⚠️ The ordering here is a row table in a document that lives in the agent harness's per-project
-  # store — outside every tree, and reachable by nothing shipped from the plugin. That is why this
-  # facet is a command rather than a tracker query: the command is the project's, the contract on
-  # its output is the surface's, and the argument for the order stays in the document beside it.
+  # ⚠️ The ordering here is a row table in a document that lives outside every tree. That is why
+  # this facet is a command rather than a tracker query: the command is the project's, the contract
+  # on its output is the surface's, and the argument for the order stays in the document beside it.
   carrier: command
-  command: "python3 .claude/skills/close-out/scripts/plan-status.py --queue"
+  command: "python3 plugins/mjolnir/scripts/close_out.py --queue"
+  record:
+    # § 40. There is no board and no `in_flight` role here, so there is no grouping for an order to
+    # live in — the document carrier is what a plain-issues tracker leaves.
+    carrier: document
+    # ⛔ `dir` is not here: it is a path on whoever's machine keeps the document, which this
+    # repository may not hold, so `private` below is what supplies it (§ 28, § 40). The
+    # document's own name is committed — it names nothing.
+    document: "execution-plan-2026-10-17.md"
 
 people:
   # § 27. One person writes every line here and nobody else takes work from this backlog, so there
@@ -654,13 +673,14 @@ private:
   # the class of value this facet names — and it holds none, for the reason below. ⛔ Which is a
   # measurement of this file rather than a policy: the gate beside it sweeps every tracked
   # configuration for a value under a `# private` key, and this one is what it sweeps.
-  carrier: none
-  absent_reason: >-
-    Every value this project states may be committed, and is: the day is measured from its own
-    sessions and commits, no chat archive and no calendar is read, and nobody is named anywhere.
-  revisit_when: >-
-    A chat archive or a calendar becomes evidence here, which is the first value this repository
-    would be unable to carry.
+  carrier: file
+  source: ".claude/mjolnir.private.yaml"
+  # ⛔ One key, and it is the one § 28 predicted: § 40's ordering document outlives the work and
+  # sits in no tree, so its directory is a path on whoever's machine keeps it — the one class of
+  # value with no absent case, and the class the gate beside this file sweeps every tracked
+  # configuration for. The document's own name is committed above, naming nothing.
+  keys:
+    - ordering.record.dir
 
 loop_exempt:
   # § 30, and the empty form is this repository's own measured convention rather than caution:
@@ -986,6 +1006,9 @@ documents:
         - "plugins/mjolnir/skills/day-report/SKILL.md"
       derived_from: ["plugins/mjolnir/config/schema.md"]
     - document: "plugins/mjolnir/skills/accept/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/close-out/SKILL.md"
       may_name: ["plugins/mjolnir/config/schema.md"]
       derived_from: ["plugins/mjolnir/config/schema.md"]
     - document: "plugins/mjolnir/skills/cut-release/SKILL.md"

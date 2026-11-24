@@ -6,3 +6,8 @@ __pycache__/
 # states where those go. Named here because this is the project's own file:
 # the toolkit's shared code may not name a harness's directory, and does not.
 .claude/worktrees/
+
+# The untracked half of this project's configuration -- `private.source` addresses it and
+# `private.keys` names what it supplies (schema § 28). Ignored because the whole point of the
+# facet is that these values are not committed.
+.claude/mjolnir.private.yaml

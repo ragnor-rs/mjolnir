@@ -75,7 +75,9 @@ COVERED = {
     "set_labels",
     "set_state",
     "grouping_items",
+    "create_grouping",
     "mark_grouping_released",
+    "read_closing_change",
     "read_vocabulary",
 }
 
@@ -798,6 +800,175 @@ def self_test() -> int:
         and answered.get("marked") is False
         and answered.get("already") is True,
         f"sent {again.sent!r}, answered {answered!r}",
+    )
+
+    # --- § 40's bootstrap half: a milestone brought into existence ------------
+    #
+    # ⛔ A carrier plain issues have no object for is refused here as it is for the
+    # two operations above, and it is asserted rather than assumed: this one
+    # *writes*, so a guard that was there for the reads and not for the create
+    # would be the half that matters.
+    where = with_host(
+        _with_milestones(HELD),
+        lambda: refused(
+            lambda: under_test.create_grouping(A_RELEASE, grouping={"carrier": "label"})
+        ),
+    )
+    check(
+        "`create_grouping` on a carrier plain issues cannot hold is refused, naming "
+        "the key",
+        where == "work_item.grouping.carrier",
+        f"reported {where!r}",
+    )
+    # ⛔ A title no milestone answers to is POSTed, which is the one direction
+    # `_held_milestone` exists to separate from the refusal the reads take.
+    making = _with_milestones(
+        HELD, patched={"title": "a new release", "number": 7, "state": "open"})
+    making.answers["milestones"] = {"title": "a new release", "number": 7, "state": "open"}
+    made = with_host(making, lambda: under_test.create_grouping(
+        "a new release", grouping=MILESTONE))
+    posted = [args for args in making.sent if "POST" in args]
+    check(
+        "a grouping no milestone answers to is POSTed and reported as created",
+        len(posted) == 1
+        and f"repos/{A_REPO}/milestones" in posted[0]
+        and "title=a new release" in posted[0]
+        and made.get("created") is True
+        and made.get("already") is False,
+        f"sent {posted!r}, answered {made!r}",
+    )
+    # ⛔ Idempotent by reading first, which is `mark_grouping_released`'s rule at
+    # the same object: a run retried after a failure partway through would
+    # otherwise create a second milestone under one title.
+    # ⚠️ **The one already held is the `closed` one**, which is the arm that
+    # matters: a create that reopened it would be making a release's own mark on
+    # the strength of a name collision.
+    standing = _with_milestones(HELD)
+    found = with_host(standing, lambda: under_test.create_grouping(
+        "another release", grouping=MILESTONE))
+    check(
+        "a grouping already held is answered as found, writing nothing and reopening "
+        "nothing",
+        not [args for args in standing.sent if "POST" in args or "PATCH" in args]
+        and found.get("created") is False
+        and found.get("already") is True
+        and str(found.get("state")) == "closed",
+        f"sent {standing.sent!r}, answered {found!r}",
+    )
+    # ⛔ And the ambiguous fold still refuses here, which is the whole reason the
+    # absent answer is a value and the unnameable one is a refusal: a create that
+    # caught both would answer *already there* about a grouping it cannot name.
+    folded = with_host(
+        _with_milestones([
+            {"title": "A Release", "number": 5, "state": "open"},
+            {"title": "a release", "number": 6, "state": "open"},
+        ]),
+        lambda: refused(
+            lambda: under_test.create_grouping("A RELEASE", grouping=MILESTONE)
+        ),
+    )
+    check(
+        "a title two milestones fold onto is refused by `create_grouping` rather "
+        "than read as already there",
+        folded == "work_item.grouping",
+        f"reported {folded!r}",
+    )
+
+    # --- the landed record: which change closed an item -----------------------
+    #
+    # ⛔ The **last** reference is the closing one and every reference comes back
+    # beside it, which is the choice made once here rather than in each consumer.
+    closed_by = _Host({"closedByPullRequestsReferences": {
+        "data": {"repository": {"issue": {
+            "state": "CLOSED",
+            "closedByPullRequestsReferences": {"nodes": [
+                {"number": 19, "merged": False, "mergeCommit": None},
+                {"number": 20, "merged": True, "mergeCommit": {"oid": "abc1234"}},
+            ]},
+        }}},
+    }})
+    landed = with_host(closed_by, lambda: under_test.read_closing_change(BLOCKED))
+    check(
+        "the closing change is the last reference the host names, with its commit "
+        "and every reference beside it",
+        landed.get("change") == 20
+        and landed.get("commit") == "abc1234"
+        and landed.get("merged") is True
+        and [one["change"] for one in landed.get("references") or []] == [19, 20],
+        f"answered {landed!r}",
+    )
+    # ⛔ An item with no reference is a real answer and not an absence: the
+    # capability is present and the host holds nothing, which is an item somebody
+    # closed by hand. ⚠️ The state comes back either way, so a role can tell that
+    # case from an open one.
+    by_hand = _Host({"closedByPullRequestsReferences": {
+        "data": {"repository": {"issue": {
+            "state": "CLOSED",
+            "closedByPullRequestsReferences": {"nodes": []},
+        }}},
+    }})
+    unlinked = with_host(by_hand, lambda: under_test.read_closing_change(BLOCKED))
+    check(
+        "an item no change closed answers with no change rather than refusing",
+        unlinked.get("change") is None
+        and unlinked.get("commit") is None
+        and unlinked.get("references") == []
+        and unlinked.get("state") == "CLOSED",
+        f"answered {unlinked!r}",
+    )
+    # ⛔ A merged reference the host gives no commit for is handed on as null and
+    # never filled in from somewhere else: the commit is the host's, so a null
+    # there is the host declining to answer.
+    commitless = _Host({"closedByPullRequestsReferences": {
+        "data": {"repository": {"issue": {
+            "state": "CLOSED",
+            "closedByPullRequestsReferences": {"nodes": [
+                {"number": 21, "merged": True, "mergeCommit": None},
+            ]},
+        }}},
+    }})
+    partial = with_host(commitless, lambda: under_test.read_closing_change(BLOCKED))
+    check(
+        "a merged change the host gives no commit for is reported as it reads",
+        partial.get("change") == 21
+        and partial.get("merged") is True
+        and partial.get("commit") is None,
+        f"answered {partial!r}",
+    )
+    # ⛔ A connection the host says has more is refused rather than read short,
+    # which is the sibling kind's rule over this same connection. ⚠️ The failure
+    # it holds is not a missing reference but a wrong one: *the last of what came
+    # back* is the newest only where everything came back, so a truncated answer
+    # names a change that did not close the item and reads exactly like one that
+    # did.
+    truncated = _Host({"closedByPullRequestsReferences": {
+        "data": {"repository": {"issue": {
+            "state": "CLOSED",
+            "closedByPullRequestsReferences": {
+                "pageInfo": {"hasNextPage": True},
+                "nodes": [{"number": 22, "merged": True, "mergeCommit": {"oid": "bbb2222"}}],
+            },
+        }}},
+    }})
+    said = with_host(truncated,
+                     lambda: unavailable(lambda: under_test.read_closing_change(BLOCKED)))
+    check(
+        "a closing-change answer the host says is short is refused, not read",
+        said is not None and "more" in said,
+        f"said {said!r}",
+    )
+    # ⛔ Read through the guard, so a pull request number is refused before the
+    # query -- the number this operation is keyed on naming the wrong object is
+    # the one way its answer is wrong and reads right.
+    as_change = _Host(issues={
+        BLOCKED: dict(_issue(BLOCKED), url=f"https://e.invalid/{A_REPO}/pull/{BLOCKED}"),
+    })
+    with_host(as_change,
+              lambda: unavailable(lambda: under_test.read_closing_change(BLOCKED)))
+    check(
+        "a pull request is refused before the closing change is asked for",
+        not [args for args in as_change.sent if "graphql" in " ".join(args)],
+        f"sent {as_change.sent!r}",
     )
 
     # --- the vocabularies this tracker states, before a configuration --------
