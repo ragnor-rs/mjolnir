@@ -795,12 +795,14 @@ def answer(payload: dict, *, run=None) -> dict:
         # reader cannot act on, while the stop the reader had already composed names the key.
         # Measured on an adopting project refused by a newly required key: about twenty tool calls
         # through this plugin's source to recover a string the hook had been handed and discarded.
-        # ⚠️ **This is the arm whose answer reaches the session as context**, so the cause being
-        # here rather than only in the CLI arm is what a session can act on.
+        # ⚠️ **And it is the only thing this event says about that state**, which is why the cause
+        # belongs in it rather than only in the CLI arm: this answer is a line to the person by the
+        # docstring's own channel rule, so nothing else carries the key to whoever opened the
+        # session.
         #
         # ⛔ The cut and the class prefix are `refusal_text`'s and are not composed here, by that
-        # subsection's own one-implementation rule: four copies of a cut disagree the first time
-        # one of them is reworded.
+        # subsection's own one-implementation rule: copies of a cut disagree the first time one of
+        # them is reworded.
         return {"systemMessage": (
             "Landed trees: this project's configuration did not resolve, so no tree was examined. "
             f"{reader.REFUSAL_PREFACE} {stop}"
@@ -1661,7 +1663,6 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     with tempfile.TemporaryDirectory() as tmp:
         where = Path(tmp) / "configured"
         (where / ".claude").mkdir(parents=True)
-        shipped = Path(__file__).resolve().parent.parent / "config" / "examples"
         shutil.copy(shipped / "github-issues.yaml", where / ".claude" / "mjolnir.yaml")
         quiet = answer({"cwd": str(where)}, run=lambda *a, **k: Report())
         suite.ok(
@@ -1989,7 +1990,6 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     with tempfile.TemporaryDirectory() as tmp:
         where = Path(tmp) / "configured"
         (where / ".claude").mkdir(parents=True)
-        shipped = Path(__file__).resolve().parent.parent / "config" / "examples"
         shutil.copy(shipped / "github-issues.yaml", where / ".claude" / "mjolnir.yaml")
         # A repository, because the arm below runs the real sweep and a directory that is not one
         # answers *which trees this repository has* rather than answering about trees.
