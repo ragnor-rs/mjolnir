@@ -9197,9 +9197,10 @@ are needed; the available tiers never decide which criteria get read.
 ⛔ **The third bucket does not split the item**, and that is a rail rather than a preference:
 § 33's precondition refuses to carry an unaccepted item, and a criterion that cannot be met until
 that release runs would deadlock the gate against itself. ⚠️ **A criterion left on an accepted item
-is a promise nobody owns**, so one that is genuinely wrong for the target is **rewritten** before
-the move — which is [§ An artifact states what is true now](#an-artifact-states-what-is-true-now)
-rather than a licence to drop it.
+is a promise the item makes and nothing answers for**, so one that is genuinely wrong for the target
+is **rewritten** before the move — which is
+[§ An artifact states what is true now](#an-artifact-states-what-is-true-now) rather than a licence
+to drop it.
 
 ⛔ **The fourth holds the item whatever the measurable half says**, and it is reported rather than
 resolved: a criterion naming a state no design source ever drew is somebody's to supply, and
