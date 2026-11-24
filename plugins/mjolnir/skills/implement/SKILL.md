@@ -134,9 +134,14 @@ same rules from the other side, and a count beside a list drifts the moment a ru
 ⛔ **Which tier the rules bind, and what a local run proves, are read with them** and are
 [`§ 31`](../../config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)'s and
 [`§ 17`](../../config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s.
-⚠️ **Launching the tiers past the one this project's ordinary build runs is not this role's** — it
-is [`skills/review/`](../review/)'s work on the change's own plan, and a pass that stood a
-dependency up here has left the tier this leg works in.
+
+⛔ **Launching a change's test tiers is not this role's act.**
+[`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
+reserves it to the reviewing leg at [`skills/review/`](../review/) and names no other role that
+launches one anywhere. ⚠️ **Running a case inside the tier the project's ordinary build runs is not
+that act** — it is how the work is driven — and ⛔ **a pass that stood a dependency up to make a
+case pass has left that tier** rather than widened it, which is the boundary § What earns a test
+states for itself.
 
 ⛔ **This role imposes no sequence between a test and the code it tests**, that subsection having
 ruled against one, and ⛔ **it reads a sequence as evidence of nothing** — least of all of what a
@@ -256,3 +261,12 @@ sentence, then the facts, with a table where the content enumerates.
 - ⛔ anything that needs the person running this, **asked with the options**
   ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)). Nothing is noted for
   later — the pass is not finished while a question it raised is open.
+
+## What this carrier is
+
+```yaml
+# carrier: implement
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).

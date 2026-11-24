@@ -163,7 +163,7 @@ theoretical, which is a different kind of evidence than an example configuration
 
 - **`day_log.ritual_retired` is stated empty on purpose.** Every command name in this
   repository's own transcripts is either on the shared script's closed bookkeeping list or is
-  work — the loop's roles, and this project's `close-out` and `adoption-readiness` — so nothing
+  work — the loop's roles, this project's `close-out`, and the adoption check — so nothing
   bookkeeping has been retired here. ⚠️ **Measured rather than assumed**, by reading the
   `<command-name>` tags out of the store, which is the only way that claim can be made. The
   reader names the emptiness, because the failure it guards is a total that is quietly *high*:
@@ -187,13 +187,19 @@ theoretical, which is a different kind of evidence than an example configuration
 ## What the loop carries here, derived
 
 ```bash
-python3 .claude/skills/adoption-readiness/scripts/readiness.py <this checkout>:github-issues \
-  --adapter-item github-issues=27 --no-host
+python3 plugins/mjolnir/skills/adoption/scripts/adoption.py <this checkout>:github-issues \
+  --carriers <a map kept outside this repository> --adapter-item github-issues=27 --no-host
 ```
 
 It reads the loop's size off the surface, then reports which roles the plugin ships, which ones this
 project carries locally, and which of those are still unshipped — the target is an argument, so the
-command above names this checkout rather than carrying a path.
+command above names this checkout rather than carrying a path, and so is the map saying what each
+carrier on that checkout's disk is.
+
+⚠️ **Which is this repository being its own adoption target**, and the one reading above that is
+not free: the map is a per-project fact, so running the command needs a file this repository does
+not hold. What *is* held here is the half that needs no target at all — the shipped carriers'
+own declarations and the loop's size — and the `Adoption check` run is what holds it.
 
 ⛔ No figure it prints is copied into this document. The loop is stated once, in
 [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop), and a count beside it here

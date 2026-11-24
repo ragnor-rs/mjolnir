@@ -3998,3 +3998,227 @@ them is a defect in that project:
 ⚠️ **Its own gate is green**, which is how the five were told apart from findings: the comparison
 was run against a project whose checker passes, so a difference is this facet's shape and not that
 project's prose.
+
+## The specification corpus: a block of three keys, one of which was already carried
+
+The item asking for this wrote the shape it wanted, and ⛔ **one of its three keys is a second
+record of a fact that had already landed.** Read against the surface as it now stands:
+
+| what the item asked for | what the surface already says |
+|---|---|
+| `root`, a path the corpus hangs under | **no root.** § 38 states its governed set as glob lists against repository-relative paths and carries none, so a `root` beside globs would make every glob relative to a second thing — and the two spellings of one path would be free to disagree. The item notices the absence and still asks for the key |
+| `load_bearing`, the part read whole | **carried as asked**, with `[]` legitimate and the corpus's own list refused empty — § 38's division between a marker's question and a shape rule's |
+| `ref_for_version`, how a version names a ref | **already there.** [`schema.md § 4.8`](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s `ref_prefix` is a ref named after a grouping's own value, and [`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)'s `grouping_ref_exists` already composes it. A key here would be two records of one branch-naming scheme |
+
+So what the facet carries is a carrier, two glob lists and ⛔ **one key naming which of § 4.8's
+groupings the corpus hangs off** —
+[`schema.md § 39 → The ref is the grouping's`](../plugins/mjolnir/config/schema.md#the-ref-is-the-groupings-and-this-facet-declares-none).
+⚠️ **Written as a rule of the reader rather than a marked condition**, because what its
+requiredness turns on is *how many* groupings a project carries, which is `work_item.code_root`'s
+own reason for the same choice.
+
+### The obvious rule about `kind` is refused by a shipped example
+
+⛔ **Refusing every grouping whose `kind` is not `version` reads as the natural rule and is wrong**,
+and the measurement is in this repository's own examples: the cheapest configuration there is names
+its releases with the tracker's **milestones** and cuts a branch per release, so `kind` is
+`milestone` and a ref is named after it. That rule would refuse it.
+
+⚠️ **What `kind` and `ref_prefix` each answer is therefore stated rather than conflated**: the first
+says what a grouping is **to the plan** and the second says that a ref carries its value, and it is
+only the second this facet needs —
+[`schema.md § 39 → The ref is the grouping's`](../plugins/mjolnir/config/schema.md#the-ref-is-the-groupings-and-this-facet-declares-none).
+⛔ **What not reading it gives up is stated too**: a `ref_prefix` on a time box, named here, gets the
+corpus read at an iteration's branch and nothing refuses it.
+
+### Three outcomes, and the third was found by building the read
+
+The item names two — the version's own ref, and the fallback where that branch does not exist yet.
+⛔ **A third exists and only appears once the read is actually taken**, which is why
+[`schema.md § 39 → The fallback`](../plugins/mjolnir/config/schema.md#the-fallback-is-correct-and-it-is-the-one-thing-here-that-must-be-said-out-loud)
+states the pair it must not be folded into: the branch is on the remote and is **not in this
+clone**, so there is no object to read.
+
+| the outcome | what it means | the wrong answer it is not |
+|---|---|---|
+| the version's ref resolved | the copy that governs | — |
+| the branch does not exist | the integration branch was read instead. ⚠️ Correct, and reported on every run that takes it | a verdict about the governing copy |
+| the branch is on the remote and not in this clone | **nothing was read** | the fallback. ⛔ Folding the two would read the governing copy's absence from a clone as the version's absence from the project |
+
+⚠️ **The limit this makes explicit is that the read is a read.** It reaches the remote for one
+question and opens objects only out of the clone, so a version nobody has fetched is reported
+unread with the one command that would fetch it — rather than fetched, which is the role's call and
+not the carrier's.
+
+### The negative is asserted, and one arm's first form reported the right colour
+
+⛔ **"Nothing is checked out" is asserted rather than promised**: the branch, the head, the porcelain
+status and a corpus file's own uncommitted text are digested before and after a read taken from a
+third branch with a dirty tree, and compared. The read it takes is the version's copy and not the
+uncommitted one, which is the whole of what
+[`schema.md § 39 → Which copy governs`](../plugins/mjolnir/config/schema.md#which-copy-governs-and-why-the-working-tree-is-never-it)
+is for.
+
+⚠️ **The arm needed a second tree, and a plant is what found it.** Planting a plain `git checkout`
+into the read reported **green**: on a dirty tree git refuses that checkout, because it would
+overwrite the local change — so the arm was reached only by a *forcing* checkout, and a plant
+nobody forced certified nothing. ⛔ **So the negative is asserted twice**, on the dirty tree and on
+a clean one, the clean tree being where a plain checkout succeeds; and the suite asserts that the
+clean tree really was clean, or the pair would be the dirty arm written out twice.
+
+### A bare-revision candidate was two of the defects the facet exists against
+
+⛔ **The reading resolves two candidates and no third: the remote-tracking ref and the local
+branch**, which is what
+[`schema.md § 39 → The ref is the grouping's`](../plugins/mjolnir/config/schema.md#the-ref-is-the-groupings-and-this-facet-declares-none)
+means by a ref composed from a prefix. The first form carried the composed name as a bare revision
+beside them, which reads as a convenience and is two defects:
+
+| what the third candidate admitted | what it would have reported |
+|---|---|
+| a **tag** of the composed name | *at the version* — while the arm that decides the unread outcome reads the remote's **heads** only, so the same name is simultaneously *there* and *not advertised*. The two answers § 39 keeps apart, reached through a candidate nothing on the surface asks for |
+| a `ref_prefix` leaving the composed name a revision expression | the working tree's own commit, read as the version's copy — the one thing the facet is for |
+
+⚠️ **Found by reading the diff rather than by a red**, and closed with the arm that reproduces it: a
+tag named with the facet's own prefix, at the version's commit, with no branch of that name. It
+reddens when the candidate is put back. ⛔ **So a branch is what the facet composes throughout**,
+which is what § 4.8's `ref_prefix` already means — `grouping_ref_exists` looks for it among the
+remote's heads.
+
+### The claim about contradictions covers every outcome, not the arms that mentioned it
+
+⛔ **No outcome carries a verdict about whether the request contradicts the corpus**, that reading
+being the filing role's by
+[`schema.md § 39 → the absent case`](../plugins/mjolnir/config/schema.md#carrier-none-and-the-two-answers-it-must-not-collapse-into-one).
+⚠️ **Two of the four arms asserted it and two did not**, which is a claim
+about two answers wearing the shape of a claim about all of them — so every answer the suite takes
+is collected and the claim is made once over the set, with the **reached** set asserted beside it: a
+collector nothing fed would make the claim vacuously true.
+
+⚠️ **And one arm's first form was measured wrong rather than failing.** The grouping rule asked its
+question against the raw `work_item.grouping` block, where a grouping whose carrier is `none` is
+still written; § 4.8's own rules drop it, and the gate's checks read the set that remains. So a
+project planning in no grouping was refused for stating no `ref_prefix` — the right colour under
+the wrong key, and a plant certifying the wrong arm. ⛔ **The fix was to ask the resolved set**, in
+the one function that produces it, which is why this rule sits beside § 5's rather than with the
+facet's own glob arms.
+
+## The role that writes a specification: two implementations, and the half already carried
+
+A role that turns raw source material into a specification and then into work items was named as
+missed by the survey that produced the loop's roles, with **two independent implementations** behind
+the claim. ⛔ **Both exist and the count behind the word *two* is the first thing that moves**: one
+is a project's own skill and the other is the [public plugin cited as prior art](#prior-art), so
+across the six projects here there has only ever been **one** copy of this role.
+
+| what was claimed | what the count says |
+|---|---|
+| a project skill turning sources into a requirements document, a screens-and-components breakdown and a cross-session task list | **confirmed, and one copy.** 95 lines, in one project. Every skill and command directory across the six holds no second one, and no other project's history carries the path. ⚠️ **The sweep was keyed on the path and not on the mechanism**, so a copy under a wholly unrelated name is outside what it covered — the step [the earlier count](#the-counts-and-the-one-of-the-two-that-has-only-ever-had-one-copy) did take and this one did not |
+| a superseded plugin carrying it as five skills plus a brainstorm front end | **confirmed.** Six carriers, 902 lines — 337, 195, 143, 114, 63 and 50 — in a third-party repository, not in any project here |
+
+⚠️ **The one copy has had two carriers and never two copies.** It was a slash command until
+2026-09-01 and has been a skill since, on a pass whose subject was making that project's
+configuration skills-only — which is [§ 7](../plugins/mjolnir/config/schema.md#7-carrier)'s axis
+moving under a role that stayed put, and the reason a sweep keyed on either carrier alone reports a
+different number from a sweep keyed on the role.
+
+### The adopting project drew the seam itself, in its own migration
+
+**The strongest evidence about where this role belongs is a diff that already exists.** On
+2026-11-19 the project holding it moved its development process onto this toolkit, and what that
+commit did to this 95-line file is **six insertions and six deletions**, leaving it 95 lines:
+
+| what changed, over six lines | what it means |
+|---|---|
+| **four lines** naming that project's own former role carriers now name this toolkit's starting and finishing roles — five references, one line carrying two | the legs this toolkit carries are called rather than reimplemented |
+| **one line** where *per that role's rules* became *which is `work_item.grouping.sprint` in the configuration*. ⚠️ The tracker field identifier beside it is unchanged — what moved is where its value is **stated**, not the value | the per-project fact is read from the one file rather than depending on another role's text |
+| **one line** where *follow that role's steps 4–5 verbatim* became a pointer at `branch_model.tree_dir` and that project's own tree-mechanics file | ⚠️ **the direction worth noting** — the migration **removed** the instruction to follow another role's steps and replaced it with a key |
+
+**Nothing moved out of the file.** An adopter mid-migration, with every incentive to hand this work
+to the toolkit it was adopting, kept the document-writing local and rewired the three things it
+wanted from the loop into calls and keys.
+
+### What the overlap is, measured against the roles that have landed
+
+The item carried the claim that *roughly half* of that skill is already the filing and starting
+roles. ⛔ **Measured, the overlap is the whole of what it names and not half of anything**: creating
+the item, a duplicate search of two or more keyword passes over summary and description in both
+languages with no status filter, and the branch cut in its own tree. All three are the filing role's
+duplicate check and the starting role's claim, both landed.
+
+⚠️ **As a share of the file it is 9 lines of 95** — one step of eight, two rules, and one phrase of
+the closing report. The *capability* share and the *line* share differ by an order of magnitude, and
+only the second can be checked.
+
+### The two residues do not meet
+
+With the overlap removed, what is left of each implementation is disjoint from the other — ⛔ **not
+two copies of one procedure, but two procedures that share a sentence of description**:
+
+| | the project skill | the plugin |
+|---|---|---|
+| where the content comes from | provided artifacts, distilled | the person, interviewed question by question |
+| what it writes | three documents per feature, in a per-feature numbered directory | four documents per project, plus one file per entry in a flat tree |
+| what it validates | each document against the sources, in both directions | each document against the others, for consistency |
+| where the items go | a tracker, through this toolkit's own roles | a file per entry, or one of that plugin's own tracker adapters |
+
+⛔ **Reconciling them would mean adopting one and configuring the other away**, which is a copy with
+a configuration wrapper rather than a procedure over configuration — the shape
+[`schema.md § 36`](../plugins/mjolnir/config/schema.md#why-a-utility-has-no-home-on-this-surface-from-either-direction)
+already refuses from both ends.
+
+⚠️ **And the plugin's residue is mostly its own machinery.** 126 of its principal skill's 337 lines
+are about a specification at all — its six numbered steps, the rest being its layout and
+tracker-mode probes, its resolver entry, its creation path, its commit gate and its closing-summary
+token contract. The 211 that remain name that plugin's own helper modules, probe names, refusal
+shapes, approval-marker protocol and token ledger; and even inside the 126, the milestone-identity
+guard and the branch gate are its own again.
+
+### The part with nothing per-project in it
+
+**Three rules are the residue that generalises, and all three are about the *source* rather than
+about the document.** They are stated once, at
+[`schema.md § 11`](../plugins/mjolnir/config/schema.md#what-a-source-establishes-and-the-hole-a-distillation-reads-over),
+and are not repeated here. ⛔ **They come from one of the two implementations and not from both**,
+which is the weaker provenance and is stated rather than netted out: the project skill carries them
+as a pass its own text calls mandatory, and the plugin carries no source-validation step at all —
+it interviews a person, so there is no export for it to parse and no referenced artifact for it to
+go looking for.
+
+⚠️ **Their per-project values are none**, which
+[`schema.md § 36`](../plugins/mjolnir/config/schema.md#why-a-utility-has-no-home-on-this-surface-from-either-direction)
+makes the sign that a shared **file** is what is wanted — except that these are not a utility: the
+filing role already reads a request somebody else wrote and already distils it into an item, so the
+leg that owes them exists. ⛔ **Which is why they ship as procedure on that leg** and not as a
+reference two projects point at.
+
+### What the dependent project holds, which is what *dropped* has to be true of
+
+The project that depended on the superseded plugin keeps its specification in that plugin's layout,
+and the figures are what any answer here has to be honest about:
+
+| what it holds | the count |
+|---|---|
+| top-level specification | **870 lines** across three documents — 107, 621 and 142 |
+| active entries | 6 files, 411 lines |
+| archived entries | 12 files, 1,039 lines |
+| the active plan, and the finished ones | 1 file of 44 lines, and 2 of 192 |
+
+⚠️ **None of that is in the path of this question.** The entries move onto a real tracker and the
+documents stay documents under that project's own migration item, and the two things that bear on
+such a corpus are **both carried**: what *holds* it is
+[§ 38](../plugins/mjolnir/config/schema.md#38-the-documents-a-project-holds-to-a-checkable-property),
+and which *copy* of it governs a given item is
+[the corpus facet](#the-specification-corpus-a-block-of-three-keys-one-of-which-was-already-carried)
+the filing role reads. ⛔ **What is dropped is the authoring**, and nothing that project holds
+depends on this toolkit authoring it.
+
+⛔ **That second one is the strongest form this section's own test takes, and it is a shipped facet
+rather than an argument.** The filing role reads a specification corpus **it did not author**, at
+the ref the item's grouping names
+([`schema.md § 39`](../plugins/mjolnir/config/schema.md#39-the-specification-corpus-and-which-copy-of-it-governs))
+— so the thing a spec-writing leg would produce is already consumed by a leg that never needed one
+to exist. ⚠️ **And a project carrying no corpus files its items unchanged**, which is that facet's
+own absent case: the one test a leg of [§ The
+loop](../plugins/mjolnir/config/schema.md#the-loop) has to pass, answered by
+configuration instead of by this document.

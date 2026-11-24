@@ -245,3 +245,12 @@ sentence, then the facts, with a table where the content enumerates.
   ([§ Nothing is deferred](../../config/schema.md#nothing-is-deferred)): a client the rates do not
   name, a root that could not be read, a period whose days are partly unreadable. Nothing is noted
   for later — the pass is not finished while a question it raised is open.
+
+## What this carrier is
+
+```yaml
+# carrier: billing_report
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).

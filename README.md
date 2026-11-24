@@ -60,6 +60,7 @@ file, that file. Every row below is checkable in the tree it links.
 | **Your commands, run and reported** | What counts as done is an ordered list of checks you name, each with who answers it ([`§ 13`](plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)), and which item is next comes from a command you configure ([`§ 12`](plugins/mjolnir/config/schema.md#12-ordering)). Your build, your suites, your ordering argument |
 | **A pass that proves nothing is not a pass** | Say what each local check's verdict establishes, the command that defeats a cached one, what it needs before it can run, and which changes its verdict is the one to read for — and a replayed pass, an unmet precondition or a condition nothing could establish is reported rather than counted ([`§ 17`](plugins/mjolnir/config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)). A project whose host runs nothing still has a definition of done that can be asked |
 | **Your documents, held to something other than attention** | Which documents you keep, which may name which, what each was built from, and the names that may appear in none of them — read from your configuration and held in both directions, so a reference added without a row and a row whose reference the text dropped are each a failure. Your own domain checks stay in your own script: what is shared is the graph, the forbidden list and the blocks a renderer reads differently from their author ([`§ 38`](plugins/mjolnir/config/schema.md#38-the-documents-a-project-holds-to-a-checkable-property)) |
+| **The version of the spec that governs, not the one checked out** | Your specification has a copy per version, and a session files work from whatever branch it happens to be standing on. Say which files are the corpus and which grouping names its branch, and a new item is checked against the copy belonging to *its* version — read at that ref, nothing checked out, and the fallback to your integration branch said out loud rather than passed off as the governing copy ([`§ 39`](plugins/mjolnir/config/schema.md#39-the-specification-corpus-and-which-copy-of-it-governs)). Keep your spec in a wiki and you write one line saying so |
 | **Your repository's shape, not a tidier one** | Two package roots and no manifest at the top. One command name that means a check in one of them and a fixer in the other. A linter that only reproduces the host's finding when it is reached through a container. Name the directory each command runs in — or the form that reaches it — and no role changes directory, guesses a package manager flag, or answers about the wrong root ([`§ 1`](plugins/mjolnir/config/schema.md#a-command-root-is-not-a-code-root)). Where your commands all run at the root, you write none of it |
 
 So it is not a spec-driven kit. It ships no spec format, no test taxonomy and no opinion about your
@@ -108,6 +109,7 @@ a setting, is [`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
 
 | | |
 |---|---|
+| `/mjolnir:adoption` | Answers whether this can replace a project's loop **today**, and names what is missing where it cannot — four facts per project it never averages into one: whether the plugin resolves there, whether a configuration exists that the reader accepts, what your tracker's port answers, and which of the loop's roles you carry against which ship. Ready, not ready, or *could not establish* — and the third is never folded into the second |
 | `/mjolnir:setup` | Writes your one file by asking for it: a question per fact, your own tracker's words read rather than asked for, a menu instead of a free-text field wherever there is a closed set, an absence captured as a decision with its reason, and anything your repository may not hold routed outside it |
 | `/mjolnir:file-work-item` | Turns a request — or a chat log — into well-formed items, checked against everything your tracker already holds and related to what they block |
 | `/mjolnir:gate-work-item` | Runs your own readiness checks whole on an item somebody else wrote, and admits it to committed work |
@@ -122,10 +124,11 @@ a setting, is [`schema.md § 7`](plugins/mjolnir/config/schema.md#invocation).
 | `/mjolnir:day-report` | Builds a day's time-log entry from session transcripts, git, the host, chat and the calendar |
 | `/mjolnir:billing-report` | Bills a period's hours as line items, one per project per day, every figure naming the entry it was read from — and the rate resolved outside your repository, so it reaches the invoice and never a transcript |
 
-You type the first one, and the loop carries the item from there: `start` hands the cut tree to
-`implement`, which hands the finished branch to `finish`, which enters `review` on the open change,
-which comes back to `finish` for the merge. Each hand-off happens on a stated condition rather than
-on being asked, and the one place it stops to ask you is stated too — the merge, which is yours —
+You type `/mjolnir:file-work-item`, and the loop carries the item from there: `start` hands the cut
+tree to `implement`, which hands the finished branch to `finish`, which enters `review` on the open
+change, which comes back to `finish` for the merge. Each hand-off happens on a stated condition
+rather than on being asked, and the one place it stops to ask you is stated too — the merge, which
+is yours —
 [§ The loop](plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask).
 **Past the merge you type again**: a deploy is a decision about *when*, so nothing starts one for
 you, and what it then carries is derived rather than remembered.
@@ -134,6 +137,7 @@ you, and what it then carries is derived rather than remembered.
 
 | | |
 |---|---|
+| [`plugins/mjolnir/skills/adoption/`](plugins/mjolnir/skills/adoption/) | Answer whether this procedure can replace a project's loop today, and name what is missing where it cannot: four facts per project read from its live tree rather than declared, carriers swept across skills, commands *and* hooks because a sweep of one undercounts a project by six roles, a probe of the port never reported as a project's own fact, and a carrier nothing classifies refusing the answer rather than lowering it. Which projects it measures, and every value about them, arrives on the invocation — so nothing in it names a project, and a target you leave off is not reported as missing |
 | [`plugins/mjolnir/skills/setup/`](plugins/mjolnir/skills/setup/) | Write a project's configuration by asking for it: the question set derived from the surface's own keys rather than listed beside them, a menu wherever there is a closed set, an absence captured as a decision with its reason, and a value the repository may not hold routed outside it |
 | [`plugins/mjolnir/skills/file-work-item/`](plugins/mjolnir/skills/file-work-item/) | Turn a request into work items: the split confirmed, a three-layer duplicate check with a human gate, the parent case where the request is a piece of an open item, and the body rendered from the project's own template |
 | [`plugins/mjolnir/skills/gate-work-item/`](plugins/mjolnir/skills/gate-work-item/) | Gate a work item into committed work: the project's own checks run whole on an item somebody else wrote, who repairs what failed asked once, and then the two things written here and nowhere else — the estimate and the date — before the item is admitted |

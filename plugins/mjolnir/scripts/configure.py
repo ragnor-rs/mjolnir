@@ -1258,6 +1258,36 @@ ANSWERED_BY: dict[str, Answer] = {
         "sentence quoted at a document outside the governed set is a check over "
         "a file nothing else here reads (§ 38).",
     ),
+
+    # --- § 39. The specification corpus, and which copy of it governs -------
+    "spec_corpus.carrier": ask(
+        "Is this project's specification a tree in this repository, with a copy "
+        "per version on each version's own branch? ⚠️ Answering no is a "
+        "configuration rather than a gap, and a specification kept in a wiki or "
+        "a document store is that no: it would be a port rather than a ref "
+        "read. ⛔ The filing role then files normally and says that no corpus is "
+        "configured — never that nothing contradicts the request (§ 39).",
+    ),
+    "spec_corpus.files": ask(
+        "Which files are the corpus, as globs from the code root? ⚠️ `*` stops "
+        "at a separator here and `**` crosses one, the same semantics the "
+        "governed set above carries. ⛔ There is no root key: one would make "
+        "every glob relative to a second thing, and the two spellings of a path "
+        "would be free to disagree (§ 39).",
+    ),
+    "spec_corpus.load_bearing": ask(
+        "And which of them are read **whole**? ⛔ The rest is matched on "
+        "keywords from the request, so this is the part a reading may not miss. "
+        "⚠️ `[]` is a real answer and means every document is reached by "
+        "keyword — unlike the corpus itself, which may not be empty (§ 39).",
+    ),
+    "spec_corpus.grouping": ask(
+        "Which of this project's groupings names the ref the corpus is read at? "
+        "⛔ Asked only where several are carried: the one above resolves to a "
+        "single entry, and the ref is that grouping's `ref_prefix` joined onto "
+        "the value the item carries — no second key states a branch-naming "
+        "scheme (§ 39, § 4.8).",
+    ),
 }
 
 

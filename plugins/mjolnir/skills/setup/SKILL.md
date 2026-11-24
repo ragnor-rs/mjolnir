@@ -170,3 +170,12 @@ sentence, then the facts, with a table where the content enumerates.
 ⛔ **And where the configuration is now written, say what comes next rather than leaving it to
 whoever reads this later**: the artifacts the toolkit writes into a repository are a step of their
 own, invoked by name, and it waits on nothing this role answered.
+
+## What this carrier is
+
+```yaml
+# carrier: beside
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).
