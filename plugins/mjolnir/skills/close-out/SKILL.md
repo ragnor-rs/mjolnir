@@ -15,7 +15,7 @@ edits that are mechanical, and ⛔ **asks about the ones that are judgement**.
 different string by that section's rule**, so a key read for this role is that one and reading
 another role's is the defect those keys exist against.
 
-⛔ **Where the record lives is [`§ 39`](../../config/schema.md#39-the-record-a-projects-ordering-is-kept-in-and-what-brings-one-into-existence)
+⛔ **Where the record lives is [`§ 40`](../../config/schema.md#40-the-record-a-projects-ordering-is-kept-in-and-what-brings-one-into-existence)
 and is never assumed.** A project keeps its order of work in one of its tracker's own groupings or
 in a document outside every tree, and ⛔ **neither spelling is in this file**: the reader resolves
 the carrier and the command below reads it. A project whose record is `none` is a **stop with the
@@ -23,7 +23,7 @@ key named**, which is that section's own answer rather than a fault.
 
 ⛔ **And this role leaves no audit trail**, by
 [`§ The loop → An artifact states what is true now`](../../config/schema.md#an-artifact-states-what-is-true-now)
-and [`§ 39 → What a pass may not do`](../../config/schema.md#what-a-pass-may-not-do-whatever-the-carrier).
+and [`§ 40 → What a pass may not do`](../../config/schema.md#what-a-pass-may-not-do-whatever-the-carrier).
 The record states the order that is true **now**; everything about the pass itself goes in the reply
 (step 6). ⚠️ **The baseline is not an exception to that** — it holds the state drift is measured
 from rather than an account of a pass.
@@ -89,7 +89,7 @@ The *may* question alone: every live item whose blockers have all left the live 
 tier [`§ 4.6`](../../config/schema.md#46-priority) carries. ⛔ **It reads no record and no
 baseline**, so it is the one mode that answers for a project whose record does not exist yet.
 ⚠️ **It is not an ordering and must not be read as one** — which item to take next is
-[`§ 12`](../../config/schema.md#12-ordering)'s answer, read from the record § 39 states.
+[`§ 12`](../../config/schema.md#12-ordering)'s answer, read from the record § 40 states.
 
 ### No ordering record yet
 
@@ -126,7 +126,7 @@ blockers all sit above, and every item carries the blockers that hold it.
    ```
 
    ⚠️ **That act carries no approval of its own**, by
-   [`§ 39`](../../config/schema.md#an-ordering-that-does-not-exist-yet-and-the-one-act-that-is-the-persons):
+   [`§ 40`](../../config/schema.md#an-ordering-that-does-not-exist-yet-and-the-one-act-that-is-the-persons):
    what the person approves is an *order of work*, and a grouping is a named set. Placing items
    into it is the ordinary pass.
 
@@ -140,7 +140,7 @@ the carrier, the values and their order, read by the command above and printed i
 item carrying no tier is **unranked**, which is a legitimate state and not the lowest one.
 
 ⛔ **Never derive a tier from a place, a relation, or this report**, which is
-[`§ 39`](../../config/schema.md#the-one-directory-why-it-is-marked-and-what-is-not-a-key-here)'s
+[`§ 40`](../../config/schema.md#the-one-directory-why-it-is-marked-and-what-is-not-a-key-here)'s
 rule: a place is yield and a relation is a hard constraint, and neither is importance.
 ⛔ **Raising or lowering a tier its author or the person running this already set is not this role's
 call** — ask, with the options. Same for anything the report prints as outside the stated set.
@@ -191,7 +191,7 @@ whether it arrived from a parallel session, changes nothing: an item with no pla
 or an untested relation is unprocessed, and processing it is what this role is for.
 
 ⛔ **Another session's residue is reported and never repaired**, with whose it is named
-([`§ 39`](../../config/schema.md#what-a-pass-may-not-do-whatever-the-carrier)). Several sessions
+([`§ 40`](../../config/schema.md#what-a-pass-may-not-do-whatever-the-carrier)). Several sessions
 share one backlog and the record has no lock, which is a collision hazard rather than an ownership
 rule, and it is handled by **how** the edit is made:
 
@@ -230,3 +230,12 @@ sentence, then the facts, with a table where the content enumerates.
   set, a contradicted record, a place whose argument you cannot write, an ordering that has to be
   brought into existence. Nothing is noted for later — the pass is not finished while a question it
   raised is open.
+
+## What this carrier is
+
+```yaml
+# carrier: close_out
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).

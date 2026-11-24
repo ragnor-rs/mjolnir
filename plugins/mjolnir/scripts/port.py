@@ -1441,7 +1441,7 @@ class Port:
         return outcome
 
     def create_in(self, grouping: str | None = None, *args, **kwargs) -> Outcome:
-        """One of § 4.8's groupings brought into existence (§ 39).
+        """One of § 4.8's groupings brought into existence (§ 40).
 
         ⛔ **A method rather than a bare `invoke`, for `items_in`'s reason**: what
         it resolves is the *block*, so an implementation is handed where the
@@ -1452,7 +1452,7 @@ class Port:
         an omission.** `closed_by` says who may *close* a grouping, which is a
         statement about a published set; nothing on that facet says who may bring
         one into existence, and the surface states the create as the ordinary act
-        of the role whose record it is (§ 39). ⚠️ A project wanting that act held
+        of the role whose record it is (§ 40). ⚠️ A project wanting that act held
         to a writer is a key § 4.8 would have to grow, not a guard to be invented
         here.
 
@@ -1826,6 +1826,31 @@ def _refused(call) -> str | None:
     except ConfigError as error:
         return error.key
     return None
+
+
+def _slug_kinds() -> list[str]:
+    """Every kind, of every port, whose spelling is a slug rather than a word.
+
+    ⛔ **The subject of the forbidding sweep below is wider than one port, and the
+    test is the spelling.** A kind compounded out of two words is a *name* and is
+    the one spelling nobody writes in prose, which is the whole reason
+    `names_a_tracker` joins the parts with a separator class. A single-word kind
+    is not reachable this way and is deliberately not swept: `file` is in
+    `__file__`, in *a file name*, and in half the prose beside this.
+
+    ⚠️ **So this is not the sweep the tracker port gets** — that one is every kind
+    that port states, word-shaped ones included, because each of them is a service
+    and this file may name none. The two are unioned at the point of use, and
+    what each one reaches is stated rather than left to be read off a run.
+    """
+    with open(config.SURFACE, encoding="utf-8") as handle:
+        facts = config.surface_facts(handle.read())
+    return sorted(
+        kind
+        for name in surface_ports(None)
+        for kind in facts["enums"].get(name, [])
+        if kind != NONE and re.search(r"[-_]", kind)
+    )
 
 
 def _real_tracker_kinds() -> list[str]:
@@ -3367,6 +3392,24 @@ def self_test() -> int:
     # Each port's own kinds, needed below and asserted before anything indexes it.
     kinds = _real_tracker_kinds()
     check("the surface states a tracker kind to sweep for", bool(kinds))
+    # ⛔ And the slug-shaped kinds of **every** port, which is the other half of
+    # the subject the sweep below has. Asserted non-empty for the same reason:
+    # with nothing in it the sweep holds nothing while reporting green.
+    slugs = _slug_kinds()
+    check("the surface states a slug-shaped kind to sweep for", bool(slugs))
+    swept = sorted(set(kinds) | set(slugs))
+    # ⛔ And the plants for the new half come off a kind the old half does **not**
+    # already reach. Measured: `slugs` is sorted and its first member is a
+    # *tracker* kind, so the second half's evidence was taken off a subject the
+    # first half had covered since before this port existed -- which is the
+    # failure the comment beside the plants names, produced by the plants
+    # themselves.
+    others = [kind for kind in slugs if kind not in set(kinds)]
+    check(
+        "a slug-shaped kind of some port other than the tracker is stated",
+        bool(others),
+        f"slug-shaped {slugs!r} against tracker {kinds!r}",
+    )
 
     for name, spec in sorted(specs.items()):
         print(f"\n--- the `{name}` port, § {spec.section} " + "-" * max(0, 24 - len(name)))
@@ -3452,27 +3495,37 @@ def self_test() -> int:
             f"states {config.facts_for(name)!r}",
         )
 
-    # ⛔ The contract names no tracker, **in either spelling**. This is the
-    # mechanical half of "no shared procedure contains a tracker-specific
-    # branch": a carrier root is swept for tracker names by the gate in
-    # `tools/`, and `scripts/` sits outside that sweep's strict set, so the
-    # contract holds itself here -- and to the same grammar, because a slug is
-    # the one spelling nobody writes in prose. The planted violation below is
-    # what shows it can fail at all.
+    # ⛔ The contract names **nothing behind any port**, in either spelling. This
+    # is the mechanical half of "no shared procedure contains a kind-specific
+    # branch": a carrier root is swept by the gate in `tools/`, and `scripts/`
+    # sits outside that sweep's strict set, so the contract holds itself here --
+    # and to the same grammar, because a slug is the one spelling nobody writes
+    # in prose. The planted violations below are what show it can fail at all.
+    #
+    # ⚠️ **The subject is the union above and not the tracker's kinds alone**, and
+    # which half reaches which kind is `_slug_kinds`'s docstring: every tracker
+    # kind, plus every slug-shaped kind of every other port. ⛔ A word-shaped kind
+    # of another port is **not** held here, which is stated rather than left to be
+    # discovered -- `file` cannot be forbidden in a file about files.
     with open(os.path.abspath(__file__), encoding="utf-8") as handle:
         source = handle.read()
     check(
-        "the contract itself names no tracker the surface declares",
-        not names_a_tracker(source, kinds),
-        f"names {names_a_tracker(source, kinds)!r}",
+        "the contract itself names nothing behind a port the surface declares",
+        not names_a_tracker(source, swept),
+        f"names {names_a_tracker(source, swept)!r}",
     )
-    if kinds:
-        for spelling in (kinds[0], kinds[0].replace("-", " ").title(), kinds[0].upper()):
+    # ⛔ One planted spelling set per half, so neither half can be the only one
+    # the evidence covers: a sweep extended to a second port with its plant taken
+    # off the first port's kind would report green over a subject it never read.
+    for label, pool in (("tracker", kinds), ("non-tracker slug-shaped", others)):
+        if not pool:
+            continue
+        for spelling in (pool[0], pool[0].replace("-", " ").title(), pool[0].upper()):
             planted = source + f"\n# a branch on {spelling} would go here\n"
             check(
-                f"a tracker named as `{spelling}` reddens that check",
-                names_a_tracker(planted, kinds) == [kinds[0]],
-                f"reported {names_a_tracker(planted, kinds)!r}",
+                f"a {label} kind named as `{spelling}` reddens that check",
+                names_a_tracker(planted, swept) == [pool[0]],
+                f"reported {names_a_tracker(planted, swept)!r}",
             )
 
     # ⛔ *Three answers, never a traceback* held on the path a role actually

@@ -33,7 +33,7 @@ import close_out  # noqa: E402
 import config  # noqa: E402
 import port  # noqa: E402
 
-# The example every fixture starts from: the one that states § 39's `document` carrier, since that
+# The example every fixture starts from: the one that states § 40's `document` carrier, since that
 # is the carrier whose grammar there is anything to parse. ⛔ Resolved by the carrier it states
 # rather than by filename, so renaming an example does not silently take this suite off it.
 A_PLACE, ANOTHER_PLACE = 1, 2
@@ -206,7 +206,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
             failures += 1
             print(f"  FAIL  {label}{': ' + detail if detail else ''}")
 
-    # --- the document carrier's grammar, which is procedure (§ 39) ------------
+    # --- the document carrier's grammar, which is procedure (§ 40) ------------
     #
     # ⛔ Only the issues cell places an item, and a label that is not an integer is a retired row.
     # Both arms in one table, because a parser that read the argument column would place items the
@@ -247,7 +247,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
         configuration = _configuration(close_out.A_DOCUMENT, store, document="the-order.md")
         record = close_out.record_of(configuration)
         document, baseline = record["document"], record["baseline"]
-        # ⛔ Derived and never configured, which is § 39's reason: the two cannot be pointed at
+        # ⛔ Derived and never configured, which is § 40's reason: the two cannot be pointed at
         # different places, and a pass that found no drift because they were is the failure.
         check(
             "the baseline is derived beside the record rather than configured",

@@ -1,0 +1,71 @@
+# The two closed sets the adoption check classifies a carrier with.
+#
+# ⛔ NO PROJECT AND NO PATH IS NAMED HERE, which is what lets this file be tracked. It sits in a
+# carrier root, where the strictest rule in the repository applies — no other project, no tracker,
+# no stack, no value a configuration supplies, no path under anyone's home directory. Every one of
+# those arrives on the invocation instead, by
+# `schema.md § Whether a project can adopt this procedure at all → Every per-project value arrives
+# on the invocation`.
+#
+# ⚠️ What used to be here and is not any more: a map from a carrier's basename to its role or its
+# class, covering both the carriers this toolkit ships and the ones its adoption targets carry.
+# Both halves moved, in opposite directions, and where each went is stated at
+# `schema.md § Whether a project can adopt → Which carriers are classified, and where each
+# classification lives` — ⛔ cited rather than repeated, so this file cannot come to disagree with
+# the rule it is the vocabulary for.
+#
+# ⛔ So nothing in this file goes stale when a carrier lands anywhere. What is left is vocabulary:
+# the words those declarations are written in, and nothing that names a thing.
+
+# The roles of the loop, by the key a carrier's declaration uses for each. No count is written
+# here: the length of this list is the statement, and a figure beside it would drift by the next
+# role.
+#
+# ⚠️ The surface states the loop in prose (schema.md § "The loop — fourteen roles") and states no
+# key per role, so this list is the only place the keys are written down — and the check holds it
+# to the surface both ways: the heading's count word and the number of `·`-separated phrases in
+# the paragraph under it must both equal the length of this list. A role added to the surface
+# reddens this check rather than being silently uncounted — measured each time it has happened and
+# reported each time as the loop's size disagreeing three ways. ⛔ No tally of those occurrences is
+# kept here: a count of them goes stale by the next role exactly as a count of the entries would,
+# and the first version of this comment carried one and was wrong by the next role that landed.
+roles:
+  - file
+  - gate
+  - start
+  - finish
+  - review
+  - deploy
+  - release
+  - day_log
+  - session
+  - load
+  # The three roles one directory name used to cover, named apart by #14 and stated apart on the
+  # surface. ⛔ Three keys and not one with a mode: a carrier basename alone cannot say which of
+  # them a copy implements, which is what an `ambiguous:` entry in an invocation's own map is for.
+  - session_summary
+  - billing_report
+  - hours_breakdown
+  # The leg after a batch lands: the starting role reads an ordering and nothing produced one
+  # (#98). ⛔ On this list because the route needs a leg there, which is the only reason anything
+  # is — not because a copy of it was found in more than one project. It has exactly one.
+  - close_out
+
+# What a carrier that is not one of the roles above is, by the word its declaration states. ⛔ The
+# set is closed and disjoint from the roles above, and the check asserts the disjointness rather
+# than assuming it: one word meaning both a role and a class would make every classification
+# ambiguous and nothing would say so.
+#
+# ⚠️ `guard`, `rule` and `reading` split a hook three ways, and the split is schema § The loop →
+# "Procedure produces a record and enforcement reads it". One of the three reads what was written
+# and refuses on it; the other two supply the session something before it writes, and #166's
+# ruling is that those are not checks over what was written. Classifying either of them as a guard
+# would restate exactly the conflation that ruling deleted.
+classes:
+  beside: a role that travels beside the loop without being part of it
+  utility: project-local tooling the loop does not contain
+  guard: a hook that refuses an act on the strength of a record somebody else wrote
+  rule: a hook that puts a rule into a session rather than holding anything to it
+  reading: a hook that puts a reading into a session — neither a rule nor a refusal
+  library: implementation a carrier calls, not a carrier itself
+  notes: a loose document in a carrier root, which is not a carrier at all

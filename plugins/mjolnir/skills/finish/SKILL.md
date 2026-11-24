@@ -146,6 +146,13 @@ style, and the authorship rule that
 [binds every author field](../../config/schema.md#authorship-is-procedure-not-configuration). This
 file states none of it and the configuration supplies the part that varies.
 
+⚠️ **The message is held by a rail as well as by the rule**, which is
+[`§ 6 → The rail`](../../config/schema.md#the-rail-under-the-authorship-rule-and-the-three-halves-it-cannot-reach):
+a `commit-msg` hook takes tool attribution out of the message as it is written, wherever the install
+step put one. ⛔ **It is not a reason to write the message any other way** — what it covers is a
+message that reached git carrying attribution, and its own section states the residue — and ⛔ **it
+reaches nothing in step 5 below**, which is where that matters.
+
 ⛔ **The staging mode read is this role's own entry and never another role's.** It is per role
 ([`§ 6`](../../config/schema.md#what-staging-is-per-and-the-two-rules-that-hold-regardless)), and
 the project measured holding two different modes held them in two of its own carriers — this commit
@@ -181,6 +188,13 @@ with, the language and register, the authorship rule, and the body being held to
 deferred*](../../config/schema.md#nothing-is-deferred). ⛔ **This file does not restate any of
 them.** What it carries is the **shape** those rules leave open, which is the part that lived in
 the five copies:
+
+⛔ **The body carries no generated-by marker and credits no tool, and this role is the only thing
+holding that.** The rail under step 3 is a `commit-msg` hook, no git hook is given a pull request
+body, and the host offers no equivalent — so the marker an agent would otherwise append to a
+description is **not written here**, rather than written and taken out later. ⚠️ **The commit being
+covered by a mechanism is what makes this easy to get wrong**: the body looks covered by the same
+rail and is covered by nothing.
 
 ⛔ **What the title opens with is read through the one consumer, never composed by eye.** The form
 is [`§ 2`](../../config/schema.md#what-a-pull-request-title-opens-with)'s and the gate that refuses
@@ -723,3 +737,12 @@ sentence, then the facts, with a table where the content enumerates.
   quiet form;
 - ⛔ anything needing the person running this, **asked with the options**. The pass is not finished
   while a question it raised is open.
+
+## What this carrier is
+
+```yaml
+# carrier: finish
+```
+
+⛔ **Read from this file and declared nowhere else**, by
+[`§ Whether a project can adopt`](../../config/schema.md#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it).

@@ -145,7 +145,7 @@ PROMPTS = [
     # moved to the shipped carrier, which is the move that produced these rows.
     (WORK, "<command-message>close-out</command-message> <command-name>/close-out</command-name>"),
     (WORK, "<command-name>/mjolnir:close-out</command-name>"),
-    (WORK, "<command-name>/adoption-readiness</command-name>"),
+    (WORK, "<command-name>/mjolnir:adoption</command-name>"),
     (WORK, "Base directory for this skill: /x/.claude/skills/close-out # Close out a batch"),
     (WORK, "Base directory for this skill: /x/plugins/mjolnir/skills/close-out # Close out a batch"),
     (WORK, "Base directory for this skill: /x/.claude/skills/deploy # Deploy"),

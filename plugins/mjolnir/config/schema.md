@@ -312,6 +312,22 @@ reviewing role **records** — the verdicts, and the answer to every ask it make
 **never merges and never waives**; a hook (§7) is what refuses an act on the strength of that
 record, and the record is written whether or not one is installed.
 
+⛔ **Launching a change's test tiers is the reviewing leg's, and no role on this list launches one
+anywhere else.** Stated here for the reason the division above is: two roles read it, and a rule
+read by two roles and written in one of their skills is a second authority for the other.
+[§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) states what each tier needs
+before it can run at all, and the launch is the act over that list. ⛔ **What the act comprises and
+which suites it is owed for are the role's own and are not stated here** — the first because the
+report's form is procedure, the second because it is a question about what the project's own build
+already runs. ⛔ **The deploy role reads which tiers
+ran out of what its invocation delivered and launches none**, which is that role's own statement and
+not a restriction added here. ⚠️ **It is an arm of a leg and not a leg of its own**, by the test
+this section splits a role on: what it may do is what the reviewing role may do — run a command in a
+tree, record a verdict, merge nothing — and a role free to do no more than another role is a step of
+it. ⛔ **So the leg table above is unchanged**, and ⚠️ **a project mapping no reviewing role loses
+the launch with that leg** — the absent-reviewing-role bullet below, which names what the skipped
+leg owned rather than leaving the loss to be discovered.
+
 **The surface's axes are independent, and there are more of them than the obvious three:** the
 work-item tracker (§3), the code host (§2), the code root (§1), each role's carrier (§7),
 language/register/audience per artifact (§8), and the branch model (§10). The list is the
@@ -386,7 +402,11 @@ than a reason to trust it.
   changes what the person is deciding. ⚠️ **No question changes hands**: the ask was already the
   finishing role's. ⛔ **And neither half is a `done:` check a project could configure** — §13
   refuses both, because a check an adopter answers is either a route's own thoroughness turned down
-  by configuration or a merge licensed by it.
+  by configuration or a merge licensed by it. ⛔ **What the skipped leg also takes with it is the
+  launch**: the finishing role launches no tier, so such a project has its § 31 suites answered by
+  whatever its own build runs and by nothing else — ⛔ **named in the merge ask beside the missing
+  leg**, since a suite nobody launched is a suite nothing reports, and that facet exists to keep a
+  tier that never ran from reading as one that passed.
 - ⛔ **An absent finishing role is where the route ends**, not a leg to hand past: nothing else opens
   a change, so implemented work stops there. The starting role says so in its reply, since a route
   that ends silently is the defect this section exists to close.
@@ -2717,6 +2737,60 @@ signature.
   but the key it reads has to exist, and until §10 was written this derivation named a value no
   configuration carried.
 
+### The rail under the authorship rule, and the three halves it cannot reach
+
+⛔ **The rule above is held by a `commit-msg` hook and not by prose.** There are three layers it
+could rest on and the first two both leak: an agent setting, which reports have shown is not
+honoured when the commit is made by a shell command rather than through an internal commit path —
+the common case for a procedure made of commands — and an instruction in a project's rules file,
+which survives neither a compaction nor a new agent arriving. A git hook runs below all of that, on
+every commit from any path, and is the only one of the three that cannot be talked out of.
+
+⛔ **It is procedure like the rule it holds, so no project configures it and no key turns it off.**
+It is one of
+[the artifacts the install step writes](#what-the-toolkit-installs-into-a-project-and-what-takes-it-out),
+and it is the one that reads **no** configured value: a project that could state its own recognition
+list would be stating which tools it credits.
+
+⚠️ **A git hook and not one of [§ 7](#7-carrier)'s.** A different mechanism with a different
+lifecycle: those fire on tool events inside a session, and this fires on `git commit` whoever runs
+it. ⛔ **Neither substitutes for the other and they are not merged.**
+
+**What decides that a line is a tool's, and the direction the decision fails in:**
+
+| | |
+|---|---|
+| **The address, never the display name** | A co-author trailer is taken out on the strength of the **address** it carries, and a display name decides nothing a person could have chosen. ⚠️ **A measured collision rather than taste**: the vendor product name in use here is also an ordinary given name, so a rule reading the name eats a human co-author — the one outcome the rule above forbids outright, pairing credit being legitimate and the rule having only ever excluded tools |
+| **One marker is read across the whole trailer** | The host's `[bot]` suffix, which it writes in the display name as often as in the address — a bot whose address is a numeric login carries it nowhere else. ⛔ **The stated exception and not a hole in the row above**: it is admissible because it is not a name anybody chooses, the host reserving it for an account that is not a person, so it cannot collide with a human the way a product name collides with a given name |
+| **A list, because there is no shape** | Nothing in a trailer identifies a tool structurally, so what is recognised is a list of vendor domains plus the host's own marker for an account that is not a person. ⛔ **Every entry states what it is on the list for**, a list whose members carry no reason being one nobody can audit |
+| **An unrecognised tool keeps its trailer** | ⚠️ **The safe direction, chosen rather than met.** A trailer that survives is visible in the message to whoever reads it and comes out of the next commit once the list grows; a human co-author eaten by a rule that guessed is gone from the record and nothing reports the loss. ⛔ **So the residue is stated and never closed by widening the match** |
+| **Every block, never the last one** | A squashed message concatenates many messages, so one message legitimately carries several trailer blocks with human co-authors among them. ⚠️ Measured against a rule scoped to the final paragraph: the earlier blocks kept every tool trailer they had |
+| **A message that is nothing but attribution is refused** | The commit is stopped and the message file left as it was, rather than a message being written out empty. ⛔ **Not a collapse to nothing** — there is no message left to commit, and the person writes one |
+
+⚠️ **The only whitespace it touches is the trailing run of blank lines** a removed final trailer
+leaves behind. Blank lines left in the *middle* stay exactly as they are: collapsing them is a
+change to the project's own text, and git's own cleanup already does it.
+
+⛔ **Three halves of the rule no `commit-msg` hook can reach, named rather than left to be assumed
+covered:**
+
+- **The author and the committer.** They are headers rather than message text and no hook is given
+  them. What holds those is the host's own authenticated identity.
+- **A pull request body.** No git hook sees one, so the marker that goes in a description is the
+  finishing role's to not write —
+  [the subsection below](#the-pull-request-title-and-body) states it there for exactly this reason,
+  a reader who found the rail having no way to tell otherwise.
+- **Existing history.** The rail rewrites the message being written and nothing else, which is the
+  forward-only carve-out above. ⛔ **It is not a licence to run over a past full of tool trailers.**
+
+⚠️ **No route carries the rail across a fresh clone, and which gap a project gets is the one thing
+the repository decides.** A hooks directory git answers with is inside the git directory, which a
+clone does not carry; a tracked directory selected by `core.hooksPath` is carried and **not called**,
+that key being repository configuration rather than content. ⛔ **So the install step reports what a
+clone would have at whichever route answered**, and the first is what a repository stating nothing
+gets because it is the honest of the two: an absent file reads as absent to anything that looks,
+while a present file git is not calling reads as installed.
+
 ### The pull request title and body
 
 Like authorship, this is procedure rather than configuration — the per-project facts it reads are
@@ -2736,7 +2810,12 @@ reference form ([§ 2](#what-a-pull-request-title-opens-with)), the language and
   project's split-by-audience rule makes different from its tracker's — and neither is
   hard-wrapped, by [§ 8 → Prose line width](#prose-line-width).
 - **The authorship rule above binds the pull request as it binds the commit**: no generated-by
-  marker, no tool credited.
+  marker, no tool credited. ⛔ **And nothing enforces it here, which is why it is stated here.**
+  [The rail](#the-rail-under-the-authorship-rule-and-the-three-halves-it-cannot-reach) is a
+  `commit-msg` hook, no git hook is given a pull request body, and the host offers no equivalent —
+  so this half of the rule is held by the role composing the body and by nothing else. ⚠️ **A
+  reader who knows the rail exists is the reader this statement is for**: the commit being covered
+  by a mechanism is exactly what makes the body look covered too.
 - **The body is held to [*Nothing is deferred*](#nothing-is-deferred)**, which is where the
   open-items statement and what reads it back are ruled.
 
@@ -4283,6 +4362,34 @@ carries the ingestion step that shows the hidden half, the refusal on what leave
 of the three. The rule is stated here and held there; a role names this subsection and runs that
 step.
 
+### What a source establishes, and the hole a distillation reads over
+
+⛔ **A role that writes from an outside source is held to what that source establishes.** ⚠️ **This
+is the other question about the same text**, and the two come apart cleanly: the rule above asks
+what the text may be believed to *ask for*, and this one asks whether the text *supports* what is
+about to be written from it. ⛔ **Nothing enforces it** — there is no form to scan for, which is why
+it is stated rather than held, and why the three rules below are each a stop rather than a warning.
+
+- ⛔ **An exported artifact governs, and conversation prose is reconstruction.** Where the two
+  disagree the artifact wins, and a statement traceable to neither is labelled as reconstruction or
+  carried as an open question rather than written as a fact.
+- ⛔ **A structured source is parsed before anything is distilled from it**, and a parse that fails
+  is a stop naming the file. ⚠️ **A source read as prose because it would not parse** is a source
+  whose structure nothing checked, and it reads in the result exactly like one that parsed.
+- ⛔ **A path the source names may not exist here.** Every artifact the source references is looked
+  for, and the ones that did not arrive are **asked for before** anything is written from it — never
+  distilled around, which produces a confident statement about material nobody has.
+
+⚠️ **The permissive direction is the one that reads like success.** A source distilled around a hole
+produces a complete-looking artifact with the hole invisible in it, so ⛔ **the report names the
+artifacts it looked for and did not find**, by
+[the subsection below](#a-report-names-what-it-could-not-establish) — and a run that looked for none
+is never reported as one that needed none. ⚠️ **Nothing per-project is in any of this**, which is
+[§ 36](#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)'s sign that a shared file
+rather than a facet is wanted; what makes these procedure instead is that a leg of the route already
+reads a source somebody else wrote, so they attach to a role that exists rather than asking for one
+([the measurement](../../../docs/configuration-surface.md#the-part-with-nothing-per-project-in-it)).
+
 ### A report names what it could not establish
 
 ⛔ **A role's report names what it could not establish, rather than omitting it.** An absence
@@ -4839,7 +4946,8 @@ one's — ⚠️ **cited and not stated again here**, which is the division the 
 for the shape rules of their own keys.
 
 **What reads this facet.** The verdict is produced by the carrier shipped with this surface, run as
-a host check like any other (§ 2). ⚠️ **The role that launches a tier is #128's** and is not this
+a host check like any other (§ 2). ⚠️ **The role that launches a tier is the reviewing one**
+([§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)) and is not this
 facet's to state: what is configuration here is the declaration, the report and the floor, and what
 is procedure is the arithmetic over them.
 
@@ -6312,7 +6420,7 @@ that exists so that it does not.
 ```yaml
 day_log:
   destination:
-    kind: file | none          # default: file; port: destinations
+    kind: file | google-sheet | none    # default: file; port: destinations
 ```
 
 **[§ 9](#9-day-log) measures a working day; this section says where the two values it produces are
@@ -6455,6 +6563,75 @@ reader names the key in its own report of what this configuration cannot do, exa
 names every facet whose carrier is `none` in that report's `unavailable` list — so the role stops
 rather than joining a path onto a null.
 
+```yaml
+day_log:
+  destination:
+    kind: google-sheet
+    sheet: "<the spreadsheet's own identifier>"   # private
+    tab: "<the tab an entry is one row of>"
+    columns:
+      date: "<the header word over the day column>"
+      hours: "<the header word over the hours column>"
+      description: "<the header word over the description column>"
+```
+
+**A spreadsheet is the kind the reading half of this port was stated for.** § 9's two values are a
+figure and a sentence, and what reads them back is a column of numbers over a range of days — which
+is what `read_hours` is asked for and what a consumer of it sums. ⚠️ **The descriptions ride in a
+column of their own for whoever keeps the record and are not a period's line items**: those are
+stated at a grain § 9 is deliberately below, and nothing here promotes one to the other.
+
+⛔ **The sheet's shape is the project's, so `columns` is a mapping and not a layout this surface
+fixes.** A person who already keeps a timesheet has their own header words in their own order, and a
+kind that fixed three columns would refuse every such sheet or, worse, write into whichever cell
+happened to be third. ⚠️ **The three roles are the surface's and the words are the project's**: what
+is configured is which header word carries the day, which the hours and which the description, and
+the order they sit in is read off the sheet rather than stated here.
+
+⛔ **So the mapping is resolved against the tab's own header row before anything is written, and
+every way it fails to resolve is a refusal naming the key.** A header word the sheet does not carry,
+a word two of its columns carry, and two roles configured onto one column are each a mapping that
+cannot address three cells — ⚠️ **and the direction that matters is that none of them is a write
+into a default column**: a mapping that silently missed the hours word and wrote the figure into the
+description reads as a run that worked, and a period read back out of that sheet is short with
+nothing saying so.
+
+⛔ **Values, never formulas, and the rule binds the read as well as the write.** A summing formula in
+the sheet is a second statement of the period's hours and a stale one is a wrong invoice, so what is
+written is the figure § 9's `round_to` and `enforce_grid` already produced, written as a value the
+sheet does not evaluate and does not re-round. ⚠️ **Read back, a cell holding a formula is an
+*unreadable* day and never the number it currently displays** — the `unreadable` reading one
+subsection up, arriving by a person's edit rather than by the store's own hand, and the one shape of
+it that answers with a plausible number instead of with nothing.
+
+⛔ **The day is § 9's day and never the write's timestamp.** `day_start` makes a working day
+something other than a calendar day, and a backfilled day is recorded against the day it was
+measured for — so the date cell is the entry's key, and a row carrying a date this kind cannot place
+is `read_hours`'s `unplaced` rather than a day of the period.
+
+⛔ **Nothing holds a spreadsheet against two writers, and that is stated rather than designed
+around.** [§ 10](#the-claim-on-a-work-item)'s claim is a ref and has a test-and-set; a sheet has
+neither, so two sessions of one project can each read no row for a day and each append one. ⚠️ **The
+write therefore reads the day back and reports two rows where it finds them**, naming both: *one
+entry per day* is a property this kind can report on and not one it can hold, and a second row
+reported is a person's to remove. ⛔ **Never folded into a success**, which is the doubled total
+`read_hours` would otherwise answer with.
+
+⛔ **The spreadsheet's identifier is marked `# private`, and that mark is what
+[§ 28](#28-a-configured-value-a-repository-may-not-hold) needs to resolve it from outside the
+repository.** A sheet somebody's hours are kept in is an address a project may not be able to
+commit, which is that facet's own class — ⚠️ **and it is the address and not the credential**: the
+credential is held out of every configured value by
+[§ 14](#14-what-a-role-holds-and-what-may-cross-the-boundary) and is named in `environment.inherits`
+rather than carried here, which is how a kind behind a service is reachable at all.
+
+⛔ **Which bounds what `locate` may answer with under this kind: the place inside the store, and
+never the store's own identifier.** § 28 keeps a private value out of every report, and a role says
+where an entry landed out loud — so what is named is the tab and the row, which is what whoever can
+already reach the sheet needs and what whoever cannot learns nothing from. ⚠️ **That is the
+capability answering rather than the absent case**: the fallback one subsection up names the store
+by its configuration, and a tab and a row say more than that without saying the thing § 28 forbids.
+
 ⚠️ **`none` carries no block, and a configuration naming it and stopping is complete**: it addresses
 nothing at all, every operation above takes its stated fallback, and the role measures the day and
 reports the two values with nowhere to put them. ⛔ **That is a configuration and not a broken
@@ -6488,21 +6665,23 @@ back out of a store — *log this as four hours* — is named and stopped on, ne
 
 ⛔ **A destination block carries an address and never a credential.**
 [§ 14](#14-what-a-role-holds-and-what-may-cross-the-boundary) holds a credential out of every
-configured value, so this surface declares no key for one: a kind that cannot be reached without a
-secret is a kind this surface cannot state yet, which is a bound on what may be added here rather
-than a hole in what is.
+configured value, so this surface declares no key for one — ⚠️ **which is a bound on what may be
+*written* here and not on which kinds may exist**. A kind behind a service is reached by naming the
+variable its secret arrives in, in `environment.inherits`, exactly as a tracker kind behind one is:
+named and never valued, so the block addresses the store and the shell carries the secret.
 
-⚠️ **The `file` kind needs none**, which is part of why it is the one stated — a directory is an
-address, and `$TMPDIR/<project>` is a name the role's own command expands rather than a value the
-reader resolves ([§ 11](#the-store-and-when-an-in-tree-store-is-safe)).
+⚠️ **The `file` kind needs no variable at all**, which is part of why it is the one defaulted to — a
+directory is an address, and `$TMPDIR/<project>` is a name the role's own command expands rather than
+a value the reader resolves ([§ 11](#the-store-and-when-an-in-tree-store-is-safe)).
 
 ⛔ **And an address is not reportable by default.** `locate` exists so a report can say where an
 entry landed; its absent case names the store **by its configuration** instead, which is what keeps
 a private address out of a report that goes somewhere else. ⚠️ **A configuration is a tracked
-file** — [§ 28](#28-a-configured-value-a-repository-may-not-hold)'s layer being the exception, and
-one no key of this port is marked for — so hours, rates and a client's identity never reach a
+file** — [§ 28](#28-a-configured-value-a-repository-may-not-hold)'s layer being the exception, which
+`google-sheet`'s own identifier is marked for — so hours, rates and a client's identity never reach a
 destination key either: § 9's ban on writing hours into a tracked file, read against the key that
-says where they go.
+says where they go. ⛔ **A kind whose address is private bounds what its own `locate` answers
+with**, which is that kind's block above and not a second rule here.
 
 ## 27. The role-to-person map
 
@@ -6722,8 +6901,10 @@ is this facet one facet early, and the two are the same rule rather than two mec
 every configured value by [§ 14](#14-what-a-role-holds-and-what-may-cross-the-boundary) — named and
 never valued, which is that section's own rule and not this one's — and is not a private value to be
 relocated; § 26's `out_dir` is an address the role's own command
-expands and carries no mark, so a project whose store sits somewhere it may not name is a mark this
-surface would have to add rather than a list entry it already allows. ⛔ **And a reader older than a
+expands and carries no mark, while that section's `sheet` is a store's identifier a project may not
+be able to commit and is marked — ⚠️ **which is the shape of the extension rather than an exception
+to it**: a store somewhere a project may not name is reached by marking the key that names it, and
+never by listing a key the surface leaves unmarked. ⛔ **And a reader older than a
 mark reads the tracked file alone, which splits by requiredness rather than failing one way**: a
 listed key that the surface marks `# required` or `# required_when` is **refused** there with the key
 named — § 1's obligation arriving from the other side, measured against the installed reader on the
@@ -7331,7 +7512,11 @@ refused on a target says nothing about which repository either is in. ⚠️ **A
 is refused against were measured on a project whose tiers and whose deploys were read apart, which
 is why the reference is one way round and not a pair.
 
-⚠️ **The role that launches a tier is #128's**, and the refusal is that role's to perform. What is
+⚠️ **The role that launches a tier is the reviewing one**
+([§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask)), and the refusal is that
+role's to perform. ⛔ **Performed on a reading rather than on this list parsed again**: the reader
+answers whether a named target refuses a suite, so the act and the vocabulary resolution are one
+call and the role matches no target name of its own. What is
 configuration here is the list; what this reader owes that role is one reading of it, which is why a
 tier's record is printable rather than only validated — a field nothing renders is a field nothing
 holds.
@@ -8404,6 +8589,16 @@ is on it because the route needs a leg there, which is a statable reason and the
 time. ⚠️ **A utility admitted beside them would be admitted on no such reason**, and a list with one
 entry of that kind has nothing to refuse the next one with.
 
+⛔ **What the toolkit ships outside that list is the acts of adoption itself, and they are admitted
+on a reason of the same shape rather than beside the roles.** Which acts those are, and the closure
+that refuses another, are stated once at
+[§ Whether a project can adopt](#whether-a-project-can-adopt-this-procedure-at-all-and-the-check-that-answers-it)
+— ⛔ **cited and not enumerated here**, an enumeration written in a second place being a copy of
+something that lives in the first. ⚠️ **That is not this section being narrowed**: a utility is
+refused by every sentence above and is no act of adoption, so that class closes rather than opens
+the list, and a candidate arriving as one more of its members is what that section refuses in this
+one's place.
+
 ⛔ **What this section rules on is a *skill*, and a block of configuration whose consumer is a check
 is not one.** The closed list decides which **roles** are carried; it has never been what admits a
 facet, and reading it that way would refuse [§ 15](#15-end-to-end-coverage-recorded),
@@ -8415,7 +8610,24 @@ route and each of which carries per-project facts a role or a check reads. ⚠�
 below are what tell the two cases apart**: a candidate whose per-project values are *none* has
 nothing for this surface to carry, and one whose values are a host or a credential routes through a
 project's own script — ⛔ **a candidate whose values are neither, arriving already written as data,
-is the shape a facet is carried on**, which is § 34's own argument and § 38's.
+is the shape a facet is carried on**, which is § 34's own argument and § 38's. ⛔ **Under the
+condition the next paragraph states, and never read without it**: the sentence alone admits anything
+a project could write down.
+
+⛔ **Data-shaped values are that shape only where a role or a check *reads* them.** ⚠️ **The five
+sections above each meet that condition**, which is why it is stated rather than left to be read off
+them. ⚠️ **A candidate whose values nothing reads is not a thinner facet but a different thing** —
+a template with a configuration wrapper, which is what § 38 refuses in as many words for prose by
+declaring no document's content, no heading, no wording and no style. ⛔ **The measured candidate is
+a role that writes a specification from raw sources**: its per-project values are a document set,
+a section list per document, a directory convention and a validation pass per document, every one
+of them arriving as data, and ⛔ **not one of them read by any leg of the route** — nothing
+downstream waits on a specification, and a project keeping none files its items unchanged.
+⚠️ **What is left once those values are configuration is a role that asks the configured questions
+and writes the configured headings**, which is the pointer
+[the subsection below](#why-a-utility-has-no-home-on-this-surface-from-either-direction) forecloses —
+the boundary's letter satisfied and nothing delivered — rather than a thin leg
+([the measurement](../../../docs/configuration-surface.md#the-role-that-writes-a-specification-two-implementations-and-the-half-already-carried)).
 
 ### Why a utility has no home on this surface, from either direction
 
@@ -8797,7 +9009,138 @@ example in the same change, and the record the change lands with says that confi
 this repository are refused until each writes the key. ⚠️ **No check here can reach them**, they
 being files in repositories this one cannot open.
 
-## 39. The record a project's ordering is kept in, and what brings one into existence
+## 39. The specification corpus, and which copy of it governs
+
+```yaml
+spec_corpus:
+  carrier: repository | none              # required; absent_reason
+  files: ["<a glob the corpus matches>"]  # required_when: spec_corpus.carrier = repository
+  load_bearing: ["<a glob read whole>"]   # required_when: spec_corpus.carrier = repository
+  grouping: "<the release scope>"         # where the project carries several groupings
+  absent_reason: "…"                      # required where the carrier is none
+  revisit_when: "…"
+```
+
+**A project whose specification lives in its own repository has one copy of it per version** — the
+branch for each version carries the corpus as it stood for that version — so which copy governs is
+a fact about the **item** and not about the working tree. ⛔ **This states where that corpus is and
+nothing about what is in it**: not a section list, not a heading, not a document's own shape, which
+is [§ 38](#38-the-documents-a-project-holds-to-a-checkable-property)'s subject one facet over and
+[the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s middle column either
+way.
+
+⛔ **This is a facet and no leg of [§ The loop](#the-loop--fourteen-roles)**, which is
+§ 38's own rule beside it: nothing is added to that list, no `carriers` key answers for it and no
+role enters it. What is carried is a block of configuration and the read the filing role performs
+with it.
+
+### Which copy governs, and why the working tree is never it
+
+A session files an item while standing on some other item's branch, on the integration branch, or
+in a tree cut from an old release. ⛔ **Each of those is a different copy, and the one that governs
+is the one belonging to the version the item is *for*** — read at that ref, never out of the
+working tree and ⛔ **never by checking anything out**, which under
+[§ 10](#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it)'s tree per item would move a
+checkout a parallel session is standing in.
+
+⚠️ **The cost of the wrong copy is a confident wrong answer in the one step whose whole value is
+confidence.** The filing role decides *duplicate, parent, or new* and then classifies the
+dependency: read against a corpus two versions stale, behaviour that was removed reads as current
+and behaviour the item is about reads as missing. That role is also required to surface a
+**contradiction** between the request and the corpus before filing, which is meaningless unless the
+corpus is the one that governs the target version.
+
+### The ref is the grouping's, and this facet declares none
+
+⛔ **No key here states how a version names a ref.** `grouping` names one of
+[§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s own groupings, and the ref is that
+grouping's `ref_prefix` joined onto the value the item carries — the same composition
+[§ 5](#5-readiness-gate--an-ordered-predicate-list)'s `grouping_ref_exists` performs, used for a
+different purpose. A second key would be two records of one branch-naming scheme, free to disagree
+about which branch a version is on, which is this surface's own subject applied to itself.
+
+⛔ **So two refusals follow from the one key**: a `grouping` naming no grouping the project carries,
+and a grouping stating no `ref_prefix` — there being no ref for the read to be taken at.
+
+⛔ **And `kind` is deliberately not read, which is the arm the obvious procedure gets wrong.** The
+facet is about a copy per *version*, so refusing every grouping whose `kind` is not `version` reads
+as the natural rule and is **measured wrong**: the shipped `github-issues` example names its
+releases with the tracker's own milestones, `kind: milestone`, and cuts a branch per release — so
+that rule would refuse the commonest shape there is. `kind` says what a grouping is **to the plan**
+and `ref_prefix` says that a ref carries its value, and it is the second of those this facet needs.
+⚠️ **What is given up by not reading it is stated rather than discovered**: a project that puts a
+`ref_prefix` on a time box and names it here gets the corpus read at an iteration's branch, and
+nothing refuses it. The key naming the grouping is the project's own statement of which one carries
+the corpus, and no reading of `kind` can second-guess it.
+
+⛔ **`grouping` is required where the project carries several groupings and omitted where it
+carries one**, which is § 5's rule for the same key on its own entries. It is stated in prose
+rather than marked for [§ 1](#the-file-itself)'s reason and `work_item.code_root.carrier`'s: the
+marker answers *must this key be written*, and what this turns on is *how many* groupings a project
+carries, which no condition on a key's value can reach.
+
+### The fallback is correct, and it is the one thing here that must be said out loud
+
+⚠️ **A version whose branch does not exist yet falls back to the integration branch, and that is
+the right behaviour.** ⛔ **It is also reported, on every run that takes it** — a corpus written for
+a later version is otherwise read as the governing one and the run gives no sign, which is
+[§ 2](#2-code-host)'s rule that absence of signal is not an answer arriving at a ref. A report
+naming the ref it actually read and not the one it was asked for is what discharges it.
+
+⛔ **Which branch is fallen back to is derived, and no key here states it.** § 10 speaks of the
+integration branch throughout and this surface declares none, so the derivation is the claim
+carrier's own; a key here would be a second one, and the two would be free to disagree about where
+a project's work lands.
+
+⛔ **And there is a third outcome the fallback must not absorb: a branch the remote advertises that
+the clone does not hold.** The read opens objects out of the clone, so there is nothing to read and
+the answer is **unread** — reported with the one command that would fetch it, a fetch being the
+role's call and not a read's. ⚠️ **Folding it into the fallback is the wrong answer available
+here**: that arm is for a version that does not exist, so taking it would read the governing copy's
+absence from *a clone* as the version's absence from *the project*, and produce a verdict about the
+integration branch instead. ⛔ **A remote that could not be reached at all takes this arm too** and
+never the fallback, by [§ 2](#2-code-host)'s rule: a remote nobody could ask is not a remote that
+answered *no such ref*.
+
+### `load_bearing`, and what the rest of the corpus is for
+
+`files` is the corpus; `load_bearing` is the part of it read **whole**, and the rest is matched on
+keywords taken from the request. ⛔ **Both are glob lists against repository-relative paths and
+neither is a root**, which is § 38's shape and its stated reason: `*` stops at a separator here and
+`**` crosses one, so a project can say *this subtree and not a nested one* — and a `root` key would
+make every glob relative to a second thing, with the two spellings of one path free to disagree.
+
+⛔ **`files: []` is refused and `load_bearing: []` is not**, and the pair is § 38's division between
+a marker's question and a shape rule's. An empty corpus is a step that reads nothing while reading
+as one that reads something, and `carrier: none` is how a project says that instead; an empty
+load-bearing list is a project stating that every document in its corpus is reached by keyword,
+which is a decision rather than an omission.
+
+### `carrier: none`, and the two answers it must not collapse into one
+
+⛔ **A project with no corpus of its own states `carrier: none` with its reason, and the filing role
+files normally.** The reader names it among what is unavailable, with the consequence rather than
+the key alone.
+
+⛔ **What a report must then keep apart is *no corpus is configured* from *no contradiction was
+found*.** The second is a verdict and the first is the absence of a subject for one, so a role
+printing the second where it meant the first has claimed that a corpus it never read agrees with
+the request. ⚠️ **This is the failure direction the facet is written against**, and it is reachable
+from the other side too: a corpus configured and read at the integration branch under the fallback
+above is a verdict about the wrong copy, which is why that arm is reported rather than quiet.
+
+⚠️ **A corpus kept somewhere other than the repository is this absence and not a carrier.** A wiki,
+a document store, a tracker's own pages: each is a port rather than a ref read, and
+[§ 3](#the-trackerless-adapter-and-a-kind-with-no-implementation)'s ruling on growing an adapter for
+one measured shape applies. `revisit_when` is where a project records needing one.
+
+⛔ **This key is required of every project, so it invalidates every configuration written before
+it** — [§ 1](#the-surface-is-resolved-beside-the-configuration)'s own case, discharged the way that
+section states and § 38 discharged it one section up: the absent form is stated here and in every
+shipped example in the same change, and the record the change lands with says that configurations
+outside this repository are refused until each writes the key.
+
+## 40. The record a project's ordering is kept in, and what brings one into existence
 
 ```yaml
 ordering:
@@ -8954,7 +9297,10 @@ comes to be missing exactly the items nobody is looking at.
 second half is this section. ⚠️ **One file, and a second one where
 [§ 28](#28-a-configured-value-a-repository-may-not-hold) applies** — a project holding values it may
 not commit writes those into a file it does not track, which is a cost that facet states and this
-sentence would otherwise read as denying.
+sentence would otherwise read as denying. ⚠️ **And it is a claim about what is written**: a project
+that already states its loop somewhere of its own owes a pass over that as well, which is
+[§ What a project already holds](#what-a-project-already-holds-that-states-the-loop-and-what-adopting-it-does-to-that)'s
+and is nothing this step performs.
 
 What the procedure needs and cannot express anywhere else is a file in the adopting repository: a
 host gate is a workflow file or the host never runs it, and a rail that has to fire on a git
@@ -9124,3 +9470,242 @@ outright, and it would make every run a change. ⛔ **What is removable is the m
 file** — removing a project's configuration is removing its adoption, which is a person's act — and
 ⛔ **a file a person wrote carries no marker at all**: it is edited key by key, and marking it would
 be this step claiming authorship of somebody else's file.
+
+## Whether a project can adopt this procedure at all, and the check that answers it
+
+**Adoption has three acts, and the two sections above are the second and the third.** A project is
+installed into, and it is asked what it configures — and before either is worth performing,
+something has to answer whether this procedure can replace that project's loop at all, and name
+what is missing where it cannot. ⛔ **That answer is a check the toolkit ships**, and this section
+is what admits it.
+
+```yaml
+# procedure: adoption
+```
+
+⛔ **This is procedure and declares no key.** A project that could configure how its own adoption is
+measured could turn off the facts it answers worst, and the person running the check would never
+know which — the device
+[§ An artifact states what is true now](#an-artifact-states-what-is-true-now) and the two sections
+above each use, for the same reason each time.
+
+### Why this is carried where a utility is not
+
+⛔ **[§ 36](#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here) rules that the
+loop's closed list is what admits a skill, and this is not an exception to that.** The list decides
+which **roles** are carried, a role being on it because the route needs a leg there — and this
+check is on no item's route, reads no work item and moves nothing. ⚠️ **Its subject is this
+toolkit**: its own install, its own role list, and whether a given tree can run them. That is the
+subject the two sections above share and no leg of the loop has.
+
+⛔ **So the class is adoption itself, and its membership is closed by the same argument § 36 makes
+about the loop's.** There are three acts and no fourth: putting the toolkit into a project, asking
+that project what it states, and answering whether the procedure can run there. ⚠️ **What refuses
+the next candidate is therefore statable and the same every time** — a thing admitted here has to
+be a fourth act of adoption, and a utility is not one, whatever its copy count and however little
+of it belongs to any project.
+
+⚠️ **A section about adoption is not itself an act of it**, which matters because there is one:
+[§ What a project already holds](#what-a-project-already-holds-that-states-the-loop-and-what-adopting-it-does-to-that)
+states what adopting does to two stores a project was already keeping its loop in, and names the
+configuring pass as what performs it — so it is inside the second act rather than a fourth beside
+them. ⛔ **The test is whether a thing is performed by a pass of its own**, and that is the same test
+the closure above is stated by rather than a second one.
+
+⛔ **And the property that reads as the qualification is not the reason.** A candidate with nothing
+per-project in it is refused by § 36 precisely *because* what would be shared is a file rather than
+a procedure over configuration; this check has nothing per-project in it either, and is admitted on
+its subject instead. ⚠️ **Read the other way round, this section would reopen the hole § 36
+closed**: *it costs nothing to carry* is the argument that admits everything.
+
+### Every per-project value arrives on the invocation
+
+⛔ **Which projects are measured, and every value about them, is an argument of the pass and never a
+fact written in this repository.** A project does not know it is somebody's adoption target, and
+the list belongs to whoever is adopting rather than to any project on it. ⚠️ **The naming rule a
+carrier root carries is not what decides this** — it is what made the alternative unwritable, which
+is a different statement and the weaker of the two.
+
+⚠️ **The cost is stated rather than closed: a target left off the invocation is not reported as
+missing**, because nothing in the check knows it exists. ⛔ **An empty list is reported as an empty
+list**, never resolved to nothing — a run that measured no project and printed a verdict would read
+as every project being ready, which is [§ 2](#2-code-host)'s absence-of-signal rule arriving where
+the permissive reading is a migration.
+
+⛔ **And a store outside every tree is not this surface's to name.** Where a runner keeps its list
+between runs is the runner's business:
+[§ 28](#28-a-configured-value-a-repository-may-not-hold) carves out configuration a repository may
+not hold, and a target list is configuration of no project.
+
+### Four facts, and the third value of the answer
+
+⛔ **Four facts per project, and they are never averaged into one**: whether the plugin resolves in
+that tree at all, whether a configuration exists that [§ 1](#1-roots)'s own reader accepts, what
+the [§ 3](#3-tracker-port) port answers for its kind, and which of
+[§ The loop](#the-loop--fourteen-roles)'s roles it carries against which the toolkit ships.
+⚠️ **The reader and the port are the ones a role would run on**, imported rather than reimplemented:
+a second implementation of either reports what it believes rather than what a role would get.
+
+⛔ **A project's own facts and a probe of the port are kept apart.** A target that has written no
+configuration can still have its port asked, through a configuration the invocation names or the
+shipped example for a kind — and ⛔ **nothing read that way is ever reported as that project's
+own**, which is one project's absence attributed to another.
+
+⛔ **And the answer is three-valued: ready, not ready, and *could not establish*** — the third never
+folded into the second. An uncounted role reads as a role that does not exist, so a carrier nothing
+classifies makes every count a **floor** and refuses the answer rather than lowering it.
+
+### Which carriers are classified, and where each classification lives
+
+⛔ **The class of a carrier the toolkit ships is declared beside that carrier**, so the change that
+ships one cannot ship it unclassified. A skill declares it in its own file and a hook in its own
+script; what the check reads is the plugin's own tree, and what is declared is only the class of
+each thing found there. ⚠️ **Measured, which is why it is stated here rather than left to a
+convention**: a central table of shipped carriers went stale once per landing that added one, and
+each occurrence refused the check's own answer while no target's verdict moved — so the counts were
+unestablished rather than wrong, every time.
+
+⛔ **The class of a carrier a *target* carries arrives on the invocation**, with the rest of that
+project's values. ⚠️ **[§ 7](#7-carrier)'s own block is not that answer and cannot become it**: it
+states which **roles** a project carries and by which kind, which is that project's declaration
+about itself and says nothing about a basename on its disk — and a target that has written no
+configuration, which is every target before it adopts, would have no answer at all.
+
+⛔ **A basename covering several roles is counted as none of them.** The name is known and is more
+than one role, so no entry anywhere can answer it: counted as its first role the report calls the
+others unshipped, counted as all of them it reports roles covered that nothing implements, and each
+reading is one wrong line. ⚠️ **Running again changes nothing** — what answers it is that project's
+own statement, and until there is one the role is neither covered nor unshipped.
+
+### The word, and why it is not `readiness`
+
+⛔ **The check ships under `adoption`.**
+[§ 5](#5-readiness-gate--an-ordered-predicate-list) already holds `readiness` for the gate's ordered
+predicate list over one work item, and two meanings for one word inside one toolkit is the defect a
+single authority for each fact exists to catch. ⚠️ **The collision is in the word and not in the
+subject**: both answer *may this proceed*, one about an item and one about a project — which is
+exactly why the name alone cannot tell a reader which is meant.
+
+## What a project already holds that states the loop, and what adopting it does to that
+
+**A project adopting this toolkit holds its loop in three places, and adoption reaches two.** Its
+own carriers stop being the route, and the one file the two sections above are about is written; the
+third place stands untouched — the project's **own instructions file** and the **per-project memory
+store** [§ 25](#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from) names. ⛔ **Both of
+those are read at the start of every session**, which is what makes a procedure left standing in
+them a procedure still in force rather than a leftover.
+
+⛔ **So a migration is not finished when the carriers are gone.** What it leaves if it stops there
+is this file's own subject one layer out: two statements of one rule, free to disagree, of which the
+one a session reads first is the one nobody reviewed. ⚠️ **And the two stores are not one problem in
+two places** — one is a tracked document and the other is a store § 25's carriers may put outside
+the repository entirely, which is what the mechanics below turn on.
+
+⛔ **The end state is the one this file's opening paragraphs already state for every document beside
+it: those stores may *name* where a rule of the loop lives and may not *restate* it.** A project
+keeping a description of the loop is not the failure — a project keeping a **second** one is, and
+the test is whether a reader who found the two disagreeing could tell which binds. ⚠️ **Which is why
+a pointer at the section is admissible prose and a paraphrase of it is not**: no mechanism can
+establish that a paraphrase still matches what it paraphrases — the reason the quoting kind of check
+is admitted with a warning and never relied on
+([§ 38](#the-three-kinds-of-check-and-the-one-that-is-admitted-with-a-warning)) — so a text that
+cites is checkable and a text that restates is not.
+
+⛔ **This is procedure and declares no key**, by the device
+[§ An artifact states what is true now](#an-artifact-states-what-is-true-now) and the two sections
+above each use:
+
+```yaml
+# procedure: rulings
+```
+
+⛔ **`rulings` is the key this surface will never declare**, and it names the shape a reader reaches
+for first: a pointer at a project's own store of rulings, the way
+[§ 27](#27-the-role-to-person-map) points at a role-to-person map. It is refused for the reason that
+facet is admitted — ⛔ **a pointer carries values a role reads, and a ruling is not a value.** § 27's
+map answers *who holds this role*, and a role looks that up to decide what to do next; a ruling
+**is** what to do next, which
+[§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) sends to
+procedure rather than to a key. ⚠️ **The same refusal is already recorded for the one class of these
+rulings that is stated here**, at
+[§ The loop → What earns a test](#what-earns-a-test-and-what-makes-its-red-believable), and this
+section classifies the rest against that form rather than settling it a second time.
+
+### Every ruling in those stores is classified, and the subject is the whole store
+
+⛔ **Ruling by ruling, and three dispositions.** Each one is **promoted** — to procedure on this
+surface, or to a key it already declares — **carried as configuration**, by a project writing the
+value some key asks for, or **deliberately local**. ⛔ **And a ruling that generalises to no other
+project is named rather than dropped as project colour**: an unclassified ruling reads as a project
+fact while being a procedure in force, which is the one state a migration must not leave behind.
+
+⛔ **The subject is the whole store and not its loop rulings.** A store read for those alone leaves
+most of itself unclassified, and the classes that reading misses do not resolve in the same
+direction as each other — one of them belongs to a project other than the one holding it, which no
+reading scoped to the loop would have surfaced at all
+([the measurement](../../../docs/configuration-surface.md#the-third-surface-one-store-read-whole-and-the-classes-the-loops-share-misses)).
+
+⚠️ **The case for leaving all of them where they are is the strongest of the three, and it is stated
+rather than dismissed.** It costs nothing, it keeps a ruling beside the prose that justifies it, and
+it is the only disposition that **deletes** nothing. ⛔ **What it costs is this toolkit's own
+founding argument applied one level in**: a correction somebody paid for once stays readable by one
+project's sessions and by no other's, which is the condition the roles were extracted out of. ⚠️
+**And what answers it is that the homes exist**: a ruling whose key or subsection is on this surface
+is promoted without being lost, and one whose home is nowhere is **named** rather than left where it
+is by default. ⛔ **So *local* is a disposition a ruling is given, and never the one it keeps for
+want of a reading.**
+
+### What each store owes, and why the two are mechanically different
+
+| the store | where it is | what holds it |
+|---|---|---|
+| the project's own instructions file | tracked, under a code root | [§ 38](#38-the-documents-a-project-holds-to-a-checkable-property): the file is a governed document, and a spelling the loop has moved away from is a `forbidden` entry carrying its own `reason` and `stable_because` |
+| the per-project memory store | wherever [§ 25](#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)'s carrier puts it, which under `derived` is outside the repository by construction | ⛔ **nothing this toolkit ships**, in that case: the procedure composes no path to the store, so no glob governs it and no check reaches it |
+
+⛔ **The second row is a boundary and not an omission**, and what stands where a check would be is
+two things this surface already states: § 25's admission over whatever enters that store next, and
+the classification above having been **named** in the pass that made it. ⚠️ **So the disposition of
+every entry is recorded rather than performed silently** — the one artifact a later reader can check
+the pass against, there being no run to re-read.
+
+⚠️ **A pinned store is the one case where the second row can become the first**, and it is worth an
+adopter knowing before it chooses: § 25's `store` may be stated relative to the skills root, so a
+project that pins its store **inside** the repository has a store § 38's globs can govern like any
+other prose. ⛔ **That is not a recommendation and this section makes none** — which carrier a
+project gets is a property of where its store already is, which § 25 states — but it is the
+difference between a half nothing holds and a half something can.
+
+### The invocation changes, and the two surfaces move in opposite directions
+
+⛔ **Every invocation a project's documents name is the namespaced form**, which is
+[§ 7](#invocation)'s rule rather than this section's: a bare name is a role that was a project's own
+carrier and is not one now. ⚠️ **Such a document is not merely out of date** — it names a route that
+resolves to nothing, and nothing announces that.
+
+⚠️ **What a day's measurement does about the same change is the opposite, and is already settled**:
+[§ 9](#9-day-log)'s ritual list matches the bare and the namespaced form of every name on it,
+because the bare form is in the transcripts for ever and a day backfilled from them would otherwise
+count bookkeeping as work. ⛔ **So the documents are rewritten to the new form and the measurement
+keeps reading both** — ⚠️ **and the direction matters**: a migration that narrowed the list to the
+new form alone would not lose a day's hours but inflate them, every past bookkeeping turn counting
+as work, which is the error nobody checking an invoice would catch.
+
+⛔ **A fact in the store that names a deleted carrier goes stale silently**, and is recalled as the
+next pass's premise rather than re-derived —
+[§ 24](#24-session-restore--the-readings-a-pass-is-resumed-from)'s rule met from the writing side.
+So repointing such a fact belongs to the migration rather than to a tidy-up after it, and one whose
+premise the migration itself removed is reported under
+[§ 25](#the-standing-a-recalled-fact-is-reported-under)'s standing rather than left to read as
+current.
+
+⚠️ **What this section does not reach is named, so that a reader can tell a boundary from a gap.**
+It rules nothing about *which* rulings a given project holds, that being a reading of that project's
+own store; and it adds no leg to [§ The loop](#the-loop--fourteen-roles) — the pass that performs
+this is the adoption, and no role on that closed list enters it. ⛔ **And the forbidding half above
+cannot be asserted by the repository that states the rule**: a document quoting the bare form as
+evidence is correct, a lexical ban cannot tell it from a document naming a dead route, and a
+forbidding check about a rule is the one most likely to forbid the prose stating it — measured here,
+where exactly one governed document carries the bare form and carries it as the measurement behind
+the two-form match above
+([the measurement](../../../docs/configuration-surface.md#the-third-surface-one-store-read-whole-and-the-classes-the-loops-share-misses)).
+

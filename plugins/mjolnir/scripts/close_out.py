@@ -18,7 +18,7 @@ wrote -- what was filed, what landed, and which relations were added or removed 
 
 `--queue` is what a project's `ordering.command` (§ 12) names: that facet fixes the output -- the
 takeable items, most takeable first, one identifier per line -- and leaves where the order came
-from to whoever states it, which is `ordering.record` (§ 39).
+from to whoever states it, which is `ordering.record` (§ 40).
 
 ⛔ **Every value is the configuration's and every read is the port's.** No tracker is named here, no
 path is composed, and the record's own directory is resolved through the reader -- which is what
@@ -46,7 +46,7 @@ if _HERE not in sys.path:
 import config as reader  # noqa: E402 -- the one reader of the surface and of every project
 import port as ports  # noqa: E402 -- the one way to a tracker (§ 3)
 
-# § 39's keys, spelled once each. ⛔ Read through the reader rather than out of the file, so a
+# § 40's keys, spelled once each. ⛔ Read through the reader rather than out of the file, so a
 # project that resolves `dir` from § 28's private layer is answered and one that cannot is refused
 # with the key named -- which is the one place an absent layer can be reported to somebody who
 # can fix it.
@@ -58,7 +58,7 @@ DOCUMENT = f"{RECORD}.document"
 
 A_GROUPING, A_DOCUMENT, NOTHING = "grouping", "document", "none"
 
-# The baseline's name, derived from the record rather than configured: § 39 states why there is no
+# The baseline's name, derived from the record rather than configured: § 40 states why there is no
 # key for it, and the derivation is what makes the two impossible to point at different places.
 BASELINE = ".ordering-baseline.json"
 
@@ -71,7 +71,7 @@ TERMINAL = "terminal"
 # reported: a set that exactly fills the bound is indistinguishable from one the bound cut.
 BACKLOG_LIMIT = 1000
 
-# The document carrier's grammar. ⛔ Procedure and not configuration, by § 39: a project that could
+# The document carrier's grammar. ⛔ Procedure and not configuration, by § 40: a project that could
 # reword it is a project whose ordering the shared role cannot read.
 #
 #   the row table opens at a header row whose first cell is `row`;
@@ -91,7 +91,7 @@ class Stop(Exception):
 
 
 def record_of(configuration) -> dict:
-    """§ 39's record, resolved -- or the stop a project that states none produces.
+    """§ 40's record, resolved -- or the stop a project that states none produces.
 
     ⛔ **The directory is read under both carriers**, the baseline needing a place to stand
     whichever carrier the record itself is on, and a read that cannot be answered is a **stop with
@@ -102,11 +102,11 @@ def record_of(configuration) -> dict:
         raise Stop(
             f"`{CARRIER}` is `none`, so this project keeps no ordering record for this role to "
             "bring into agreement with its backlog. The project's own stated reason is: "
-            f"{configuration.get(f'{RECORD}.absent_reason')!r} (§ 39)."
+            f"{configuration.get(f'{RECORD}.absent_reason')!r} (§ 40)."
         )
     if carrier not in (A_GROUPING, A_DOCUMENT):
         raise Stop(
-            f"`{CARRIER}` is {carrier!r}, which is not a carrier § 39 states. The reader refuses "
+            f"`{CARRIER}` is {carrier!r}, which is not a carrier § 40 states. The reader refuses "
             "that where the configuration is read, so this pass is standing on a surface it does "
             "not recognise."
         )
@@ -121,14 +121,14 @@ def record_of(configuration) -> dict:
     if not str(directory or "").strip():
         raise Stop(
             f"`{DIR}` is empty under `{CARRIER}: {carrier}`, so the baseline a pass measures "
-            "drift against has nowhere to stand (§ 39)."
+            "drift against has nowhere to stand (§ 40)."
         )
     directory = os.path.expanduser(str(directory).strip())
     out = {"carrier": carrier, "dir": directory, "baseline": os.path.join(directory, BASELINE)}
     if carrier == A_DOCUMENT:
         name = str(configuration.get(DOCUMENT) or "").strip()
         if not name:
-            raise Stop(f"`{DOCUMENT}` is empty under `{CARRIER}: {carrier}` (§ 39).")
+            raise Stop(f"`{DOCUMENT}` is empty under `{CARRIER}: {carrier}` (§ 40).")
         out["document"] = os.path.join(directory, name)
         out["names"] = name
     else:
@@ -141,7 +141,7 @@ def tiers_of(configuration) -> tuple[str | None, list[str]]:
     """§ 4.6's axis: (the label prefix where the tier is a label, the acceptable tiers).
 
     ⛔ Read and never written. An item outside the set is **named** and nothing here adds or raises
-    a tier: a tier is importance and a place in the ordering is yield, which is § 39's own rule.
+    a tier: a tier is importance and a place in the ordering is yield, which is § 40's own rule.
     ⚠️ The prefix is `None` where the carrier is not a label, and the tier is then read off the
     item's own field rather than off its labels.
     """
@@ -282,7 +282,7 @@ def layers(live: list[int], edges: list[tuple[int, int]]) -> tuple[list[list[int
 
     Layer 1 is what nothing live blocks, and each later layer is what its own blockers all sit
     above. ⛔ **A layer is not a place in an ordering**: the order *inside* one is yield and
-    nothing here derives it, which is § 39's rule on the write side.
+    nothing here derives it, which is § 40's rule on the write side.
 
     ⚠️ The second answer is acyclicity: whatever no layer can take is in or behind a cycle, which
     is exactly the set a topological pass cannot order.
@@ -359,7 +359,7 @@ def same_place_order(cell: str, blocker: int, dependent: int) -> str:
 def grouping_places(tracker, record: dict, value: str | None) -> dict[int, tuple[str, list[int]]]:
     """The one grouping's membership, in the same shape a row table resolves to.
 
-    ⛔ One place and not several: § 39's `grouping` names *the* grouping the order is kept in, so
+    ⛔ One place and not several: § 40's `grouping` names *the* grouping the order is kept in, so
     coverage here asks whether an item is in it rather than which of many it is in.
 
     ⛔ **The grouping's own value arrives on this role's invocation**, which is § 4.8's `current`
@@ -404,7 +404,7 @@ def places_of(tracker, record: dict, value: str | None = None
         return {}, (
             f"no {record['names']} in {record['dir']} -- the ordering record for this project "
             "does not exist yet, so there is nothing holding the backlog and the relations to each "
-            "other. Draft it with `--bootstrap` (§ 39)."
+            "other. Draft it with `--bootstrap` (§ 40)."
         )
     except OSError as error:
         return {}, f"{record['document']} could not be read -- {error}"
@@ -547,7 +547,7 @@ def report_order(record, places, placement, live, edges):
     """A blocker placed after its dependent, and a same-place edge the record does not order."""
     if not states_an_order(record):
         print("ordering violations  : unavailable — the record is a grouping, and the surface "
-              "states no order between two of them (§ 4.8, § 39)")
+              "states no order between two of them (§ 4.8, § 40)")
         return [], {}
     violations, same = [], []
     live_set = set(live)
@@ -604,7 +604,7 @@ def report_drift(record, baseline, state, live, edges):
     print(f"  relations removed  : {shown(one for one in gone if one[1] in set(live))}")
     print(f"  edges off with a landing: {shown(one for one in gone if one[1] not in set(live))}")
     # ⛔ Another session's residue, reported as the placements that moved and never repaired
-    # (§ 39). ⚠️ **Whose it is cannot be established from the record**, and that is stated rather
+    # (§ 40). ⚠️ **Whose it is cannot be established from the record**, and that is stated rather
     # than guessed: neither a document outside version control nor a grouping a tracker holds
     # carries an author, so what is nameable is *which* placements changed under this pass and not
     # who changed them. Naming a session would be a fabricated attestation.
@@ -621,7 +621,7 @@ def report_drift(record, baseline, state, live, edges):
         was = baseline.get("record_sha")
         if was not in (None, state.get("record_sha")):
             print("  ⚠️ the record changed since that pass — another session's edit, whose it is "
-                  "unestablished. ⛔ Re-read before editing, and repair nothing (§ 39)")
+                  "unestablished. ⛔ Re-read before editing, and repair nothing (§ 40)")
 
 
 # --- the modes -------------------------------------------------------------
@@ -632,7 +632,7 @@ def startable(configuration, tracker) -> int:
 
     ⛔ **Not an ordering, and the output says so.** What this answers is the *may* question --
     every live item all of whose blockers have left the live set -- grouped by the tier § 4.6
-    carries. Which of them to take next is § 12's answer, and § 39's record is where the argument
+    carries. Which of them to take next is § 12's answer, and § 40's record is where the argument
     for that order lives. ⚠️ **It reads no record and no baseline**, which is what makes it the one
     mode that answers for a project whose record does not exist yet.
     """
@@ -668,7 +668,7 @@ def startable(configuration, tracker) -> int:
     # unranked, so the order this prints in is arrival and not rank.
     show("unranked", sorted(by_tier.get(None, [])))
     print("\n⚠️ which items MAY be started. Which to take next is the ordering facet's answer "
-          "(§ 12), read from the record § 39 states.")
+          "(§ 12), read from the record § 40 states.")
     return 1 if any(
         one is not None and one not in acceptable for one in by_tier
     ) or unreadable else 0
@@ -681,7 +681,7 @@ def bootstrap(configuration, tracker, record) -> int:
     written once the person running the role has approved it; under the grouping carrier the
     grouping is created through the port. Either way a place in the ordering is **yield**, which
     nothing derives, so a run that wrote one would be ordering the work on this toolkit's own
-    judgement (§ 12, § 39).
+    judgement (§ 12, § 40).
     """
     held = backlog(tracker)
     edges, unreadable = relations(tracker, held["live"])
@@ -717,13 +717,13 @@ def bootstrap(configuration, tracker, record) -> int:
 
 
 def create(configuration, tracker, record, value: str | None) -> int:
-    """The grouping carrier's half of bringing an ordering into existence (§ 39).
+    """The grouping carrier's half of bringing an ordering into existence (§ 40).
 
     ⛔ **A write through the port and nowhere else.** A grouping the tracker does not hold is one
     no `grouping_items` can read, so a record kept anywhere but the tracker would be an ordering
-    the next pass cannot find -- which is why § 39 states this act as the port's.
+    the next pass cannot find -- which is why § 40 states this act as the port's.
 
-    ⚠️ **No approval of its own**, which is § 39's own division: what carries an approval is
+    ⚠️ **No approval of its own**, which is § 40's own division: what carries an approval is
     *writing an order of work*, and a grouping is a named set. What goes into it is the role's
     ordinary pass.
     """
@@ -731,7 +731,7 @@ def create(configuration, tracker, record, value: str | None) -> int:
         raise Stop(
             f"`--create` brings one of § 4.8's groupings into existence, and this project's record "
             f"is a {record['carrier']}. A document is written by the role once the person running "
-            "it has approved the ordering, which is `--bootstrap` and then the write (§ 39)."
+            "it has approved the ordering, which is `--bootstrap` and then the write (§ 40)."
         )
     if not str(value or "").strip():
         raise Stop("`--create` needs the grouping's own value: name it with `--in <value>`.")
@@ -746,7 +746,7 @@ def create(configuration, tracker, record, value: str | None) -> int:
     print("  created            : "
           + ("yes" if answer.get("created") else "no — the tracker already held it"))
     print("\n⛔ nothing is in it yet. The ordinary pass is what places items, and a place in the "
-          "ordering is yield (§ 39).")
+          "ordering is yield (§ 40).")
     return 0
 
 
@@ -911,7 +911,7 @@ def main(argv: list[str] | None = None) -> int:
             if unread is None and places:
                 raise Stop(
                     f"this project already orders its backlog in {record['names']!r}, and "
-                    "nothing here overwrites one. Run without --bootstrap (§ 39)."
+                    "nothing here overwrites one. Run without --bootstrap (§ 40)."
                 )
             return bootstrap(configuration, tracker, record)
         if args.queue:
@@ -929,7 +929,7 @@ def main(argv: list[str] | None = None) -> int:
                     f"this project keeps its order of work in the grouping {record['names']!r}, "
                     "and § 4.8 states no order between two groupings — so there is no queue for "
                     "this mode to read out. What `ordering.command` names on such a project is a "
-                    "command against the tracker's own rank (§ 12, § 39)."
+                    "command against the tracker's own rank (§ 12, § 40)."
                 )
             # The report is suppressed rather than made conditional on a flag threaded through
             # every print: a consumer reading this as data gets the items and nothing else, and a

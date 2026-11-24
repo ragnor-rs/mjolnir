@@ -802,7 +802,7 @@ def self_test() -> int:
         f"sent {again.sent!r}, answered {answered!r}",
     )
 
-    # --- § 39's bootstrap half: a milestone brought into existence ------------
+    # --- § 40's bootstrap half: a milestone brought into existence ------------
     #
     # ⛔ A carrier plain issues have no object for is refused here as it is for the
     # two operations above, and it is asserted rather than assumed: this one

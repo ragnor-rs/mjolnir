@@ -311,6 +311,7 @@ PORT_KEY = "kind"
 # being the adapter's fact (§ 3), so neither of these reaches a fallback.
 NO_DESTINATION = "none"
 FILE_DESTINATION = "file"
+SHEET_DESTINATION = "google-sheet"
 
 # The file kind's one key, and where it sits. ⛔ Spelled once here rather than in
 # each of the three places that read it -- the two reports and the load-bearing
@@ -320,6 +321,32 @@ DESTINATION_BLOCK = "day_log.destination"
 OUT_DIR_KEY = "out_dir"
 OUT_DIR_PATH = f"{DESTINATION_BLOCK}.{OUT_DIR_KEY}"
 DESTINATION_KIND_PATH = f"{DESTINATION_BLOCK}.kind"
+
+# The spreadsheet kind's own keys, spelled here for the same reason the file
+# kind's one is: the marked-private inventory, the report of what a
+# configuration cannot do, and the load-bearing absence list each read them, and
+# those three disagreeing is the failure this reader is built to not have.
+#
+# ⛔ **Three keys and not one**, which is the kind's shape rather than a choice
+# here: § 26 addresses a spreadsheet by an identifier *and* a tab, and the
+# column mapping is what makes the sheet's own layout the project's. A kind
+# addressed by two values and configured by a third has no single key whose
+# absence means *no store*, so each is reported by name.
+SHEET_KEY = "sheet"
+SHEET_TAB_KEY = "tab"
+SHEET_COLUMNS_KEY = "columns"
+SHEET_PATH = f"{DESTINATION_BLOCK}.{SHEET_KEY}"
+SHEET_TAB_PATH = f"{DESTINATION_BLOCK}.{SHEET_TAB_KEY}"
+SHEET_COLUMNS_BLOCK = f"{DESTINATION_BLOCK}.{SHEET_COLUMNS_KEY}"
+
+# ⛔ The mapping is reported **per role** and not as a block. The surface declares
+# a key per role rather than one for the mapping -- a project supplies a word
+# apiece -- so a report naming the block would name no key this surface states,
+# and a project reading it would not know which of the three it is short of.
+SHEET_COLUMN_PATHS = [
+    f"{SHEET_COLUMNS_BLOCK}.{role}" for role in ("date", "hours", "description")
+]
+SHEET_KEYS = [SHEET_PATH, SHEET_TAB_PATH, *SHEET_COLUMN_PATHS]
 
 # § 29's run port, read for the one thing this reader may say about it: that a
 # configuration states a host whose runs nothing here can be asked about. ⛔ The
@@ -1684,6 +1711,12 @@ def _grouping_facet(data: dict, facts: dict) -> dict[str, dict]:
                 "(§ 5, § 4.8).",
             )
 
+    # ⛔ § 39's corpus read against the same set, and read **here** for this
+    # function's own reason: the key it turns on sits one level deeper than any
+    # absolute path in `validate` reaches, and the set it has to ask about is the
+    # one the loop above produced rather than the raw block.
+    _spec_corpus_grouping(data, carried, collection)
+
     # ⛔ The collision § 4.8 names: one question asked twice, and the copy that
     # carries the project's own word for the grouping is the one the facet exists
     # to delete. ⚠️ The only pair this reader can decide -- what any other field
@@ -1751,7 +1784,7 @@ def _grouping_facet(data: dict, facts: dict) -> dict[str, dict]:
                 f"{', '.join(repr(k) for k in sorted(carried))} (§ 33, § 4.8).",
             )
 
-    # ⛔ § 39's record read against this facet, and read **here** for the reason
+    # ⛔ § 40's record read against this facet, and read **here** for the reason
     # § 33's half above is: under the collection form the names it may hold sit
     # one level deeper than any absolute path in `validate` reaches, and this
     # facet's own refusals have to come first -- a project with a malformed
@@ -1772,7 +1805,7 @@ def _grouping_facet(data: dict, facts: dict) -> dict[str, dict]:
                 )
                 + ". The order of work is kept in a grouping this project states, "
                 "so a name that facet does not answer to is an order kept in "
-                "something no `grouping_items` can read (§ 39, § 4.8).",
+                "something no `grouping_items` can read (§ 40, § 4.8).",
             )
     return carried
 
@@ -2027,7 +2060,7 @@ class Config:
             )
         return {"name": name, **self.groupings[name]}
 
-    def tier(self, name: str) -> dict:
+    def tier(self, name: str, against_target: str | None = None) -> dict:
         """§ 31's suites classified under one tier, and what each needs.
 
         The reading the launching role is owed, performed here for the reason
@@ -2052,6 +2085,17 @@ class Config:
         `source: null`, which the launching role reads as **no answer** and never
         as green. That is the one arm of this facet that must not weaken, so it
         is carried in the shape of the answer rather than left to a reader.
+
+        ⛔ `against_target` answers the refusal rather than describing it. § 31
+        makes the refusal the reviewing role's **act**, and an act performed on
+        `refused_on` read by the role is that role matching § 33's names for
+        itself -- a second resolution of a vocabulary this reader already holds,
+        free to disagree with it about a name's case, its spacing or its
+        presence. So the question *is this suite refused on this target* is
+        asked here and comes back per suite as `refused`, and ⛔ the name is
+        held to § 33's own list before any suite is read: a target nothing
+        deploys to is a stop and never an answer of `false`, which is the
+        reading that would run a refused suite against every target there is.
         """
         names = vocabulary(self.facts, "test_tiers.tier", "a tier")
         if name not in names:
@@ -2062,12 +2106,33 @@ class Config:
                 "enters, so a reading asked under one answers about no tier at "
                 "all rather than about the nearest one (§ 31).",
             )
+        # ⛔ Before the carrier is read, and before any suite is: the name is
+        # § 33's and the question asked under one it does not state is asked
+        # about no target at all. ⚠️ Stopping here rather than answering `false`
+        # is the direction that matters -- a misspelled target answered *not
+        # refused* runs the one suite the project refused on it.
+        if against_target is not None:
+            stated_targets = [
+                target.get("name")
+                for target in _absent_as(self.get("deploy"), [])
+                if isinstance(target, dict) and isinstance(target.get("name"), str)
+            ]
+            if against_target not in stated_targets:
+                raise ConfigError(
+                    "deploy",
+                    f"states no target named {against_target!r}. It states "
+                    f"{', '.join(repr(n) for n in sorted(stated_targets)) or 'no target'}; "
+                    "§ 31 resolves a tier's refusal against § 33's own names, so a "
+                    "refusal asked about a word nothing deploys to is asked about "
+                    "no target rather than answered.",
+                )
         if self.get("test_tiers.carrier") == "none":
             stated = " ".join(str(self.get("test_tiers.absent_reason")).split())
             return {
                 "tier": name,
                 "carried": False,
                 "stated": False,
+                "against_target": against_target,
                 "suites": [],
                 "absent_reason": stated,
                 "report": [
@@ -2107,6 +2172,14 @@ class Config:
                     "selection_held_by": entry.get("selection_held_by"),
                     "selection_held": "selection_held_by" in entry,
                     "refused_on": list(entry.get("refused_on") or []),
+                    # ⚠️ `null` where no target was asked about, and never
+                    # `false`: a suite nobody asked the question of is not a
+                    # suite cleared to run against everything.
+                    "refused": (
+                        None
+                        if against_target is None
+                        else against_target in (entry.get("refused_on") or [])
+                    ),
                     "verdict": source,
                 }
             )
@@ -2137,6 +2210,20 @@ class Config:
                     "refusal to perform rather than a note, and the target "
                     "vocabulary is not this facet's."
                 )
+            if entry["refused"] is True:
+                report.append(
+                    f"A {name!r} suite is refused against {against_target!r}: ⛔ "
+                    "the refusal is performed **before any case runs**, and a "
+                    "suite stopped this way reports refused with this rule rather "
+                    "than reporting nothing (§ 31)."
+                )
+            elif entry["refused"] is False:
+                report.append(
+                    f"A {name!r} suite is not refused against {against_target!r}, "
+                    "so nothing here stops it — ⚠️ which is not a precondition "
+                    "met: what it needs is `needs` above, and a tier that could "
+                    "not run is never folded into a verdict (§ 31)."
+                )
             if entry["started"] == "asked":
                 report.append(
                     f"A {name!r} suite is opt-in (`started: asked`), so it is "
@@ -2154,6 +2241,7 @@ class Config:
             "tier": name,
             "carried": True,
             "stated": bool(suites),
+            "against_target": against_target,
             "suites": out,
             "report": report,
         }
@@ -2877,6 +2965,39 @@ class Config:
             "quoted": [dict(entry) for entry in self.get("documents.quoted") or ()],
         }
 
+    @property
+    def spec_corpus(self) -> dict | None:
+        """§ 39's `spec_corpus`, or `None` where this project keeps none.
+
+        ⚠️ `None` is the project's **stated** absence, and it is the one absence
+        on this surface whose mis-report is a *verdict*: a role that read it as
+        *no contradiction was found* would be saying a corpus it never opened
+        agrees with the request. § 39 states that pair and the carrier beside
+        this module keeps it apart; what this property owes is the honest
+        `None`.
+
+        ⛔ **`grouping` comes back resolved to the entry's own name and the
+        prefix it carries**, rather than as the word the configuration wrote: the
+        read is taken at `ref_prefix` joined onto the value the item carries, so
+        a caller handed the name alone would have to look the prefix up a second
+        time -- and § 4.8's single form has no name to look up at all.
+        """
+        if self.get(SPEC_CORPUS_CARRIER) != SPEC_CORPUS_REPOSITORY:
+            return None
+        # ⛔ `grouping()` and not a second resolution of § 4.8's two forms: it
+        # resolves the single form to one entry, stops where a project carrying
+        # several is asked without a name, and stops where the name is not
+        # carried -- all three of which `validate` has already refused by the
+        # time any caller is handed this object, so the call here cannot raise
+        # and reads one shape either way.
+        grouping = self.grouping(self.get(SPEC_CORPUS_GROUPING))
+        return {
+            "files": list(self.get(f"{SPEC_CORPUS_KEY}.files") or ()),
+            "load_bearing": list(self.get(f"{SPEC_CORPUS_KEY}.load_bearing") or ()),
+            "grouping": grouping["name"],
+            "ref_prefix": grouping.get("ref_prefix"),
+        }
+
     def live_data_step(self, target: str) -> dict:
         """§ 35's block on one § 33 target, with which answer it is said out loud.
 
@@ -3183,6 +3304,21 @@ class Config:
                 "is stated** rather than that the documents agree: "
                 f"{' '.join(str(reason).split())}"
             )
+        # § 39, and reported for the reason § 38's is: the filing role learns
+        # that this project keeps no corpus of its own, rather than meeting a key
+        # that is not there. ⛔ Reported as *no corpus is configured* and never as
+        # *no contradiction was found* -- the second is a verdict and this is the
+        # absence of a subject for one, and a role printing the verdict here
+        # would be claiming that a corpus nothing opened agrees with the request.
+        if self.get(SPEC_CORPUS_CARRIER) == "none":
+            reason = self.get(f"{SPEC_CORPUS_KEY}.absent_reason")
+            out.append(
+                "No specification corpus is carried (`spec_corpus.carrier: "
+                "none`), so the filing role reads none and files normally, and "
+                "its report says ⛔ **no corpus is configured** rather than that "
+                "nothing contradicts the request: "
+                f"{' '.join(str(reason).split())}"
+            )
         # § 31, and reported for the reason § 15's and § 16's are: a role that
         # would have asked which tiers could not run learns that no suite here
         # can fail to run, rather than meeting a key that is not there. ⛔ And it
@@ -3234,7 +3370,7 @@ class Config:
                 "invoked with no item asks for one by number rather than "
                 f"choosing: {' '.join(str(reason).split())}"
             )
-        # § 39, and a different statement from the one above it rather than its
+        # § 40, and a different statement from the one above it rather than its
         # second half: that key says how an order is **read** and this says where
         # it is **kept**, so a project may carry one and not the other -- which is
         # the pair the shipped Trello example is written on. ⛔ Reported as a
@@ -3486,6 +3622,29 @@ class Config:
                 "is not required -- a project that maps no `day_log` carrier needs "
                 "no store -- so it is reported here rather than refused."
             )
+        elif destination == SHEET_DESTINATION:
+            # ⛔ Each absent key named, never the first one found. § 26 addresses
+            # this kind by an identifier and a tab and configures its layout with
+            # a mapping, so a project that stated one of the three hears about
+            # the other two in the same reading rather than one per fix.
+            #
+            # ⛔ A key § 28's layer **answers** counts as stated, and the value is
+            # not resolved to find out. That facet makes listing a key the
+            # statement that the layer answers it, and a report that read the
+            # value would stop on an unreadable private file while saying what
+            # this configuration cannot do -- which is the one place a stop is
+            # the wrong shape.
+            listed = set(self.private_keys)
+            for path in SHEET_KEYS:
+                if path in listed or self.get(path) is not None:
+                    continue
+                out.append(
+                    f"`{path}` is not set and `{DESTINATION_KIND_PATH}` is "
+                    f"`{SHEET_DESTINATION}`, so the day log cannot address a row "
+                    "of that spreadsheet. § 26 states the key is not required -- a "
+                    "project that maps no `day_log` carrier needs no store -- so "
+                    "it is reported here rather than refused."
+                )
         # § 29's kind that addresses nothing, reported the same way. ⛔ Not read as
         # a second statement of `checks: []`, which this reader reports nowhere and
         # § 29 holds apart from it: one says the host defines no run this surface
@@ -3766,7 +3925,17 @@ GROUPING_ENTRY_KEY = "grouping"
 FIELD_ENTRY_KEY = "field"
 FIELD_PRESENT_CHECK = "field_present"
 
-# § 39's role key in `carriers`. ⛔ The only role key this module names, and it is
+# § 39's facet, the carrier value that reads live, and the key that names which of
+# § 4.8's groupings carries the corpus. ⛔ The grouping key is spelled off
+# `GROUPING_ENTRY_KEY` rather than written again: § 39 states that it names one of
+# § 4.8's own groupings, so the two spellings are one fact and a literal here
+# would be free to disagree with the gate entry's.
+SPEC_CORPUS_KEY = "spec_corpus"
+SPEC_CORPUS_CARRIER = f"{SPEC_CORPUS_KEY}.carrier"
+SPEC_CORPUS_REPOSITORY = "repository"
+SPEC_CORPUS_GROUPING = f"{SPEC_CORPUS_KEY}.{GROUPING_ENTRY_KEY}"
+
+# § 40's role key in `carriers`. ⛔ The only role key this module names, and it is
 # named because this is the one role whose whole subject is a facet the reader
 # resolves -- every other role's key is the project's to write and nothing here
 # compares one. ⚠️ The facet's own paths are written out where they are read, the
@@ -5298,7 +5467,7 @@ def _documents_entries(facet: dict, key: str, facts: dict) -> set:
     return declared
 
 
-def _a_document(value, where: str, what: str) -> str:
+def _a_document(value, where: str, what: str, section: str = "§ 38") -> str:
     """One path a § 38 row names, or a refusal naming what the value is for.
 
     ⛔ **Four arms and not one**, because a project reaches each of them by a
@@ -5307,34 +5476,40 @@ def _a_document(value, where: str, what: str) -> str:
     container and a blank collapsed into one branch, three plants shared one
     refusal -- so the suite asserted one arm three times and reported two arms
     it had never exercised.
+
+    ⚠️ **The section is a parameter because two facets state the same path
+    rule**: § 39's corpus globs are repository-relative for § 38's stated reason
+    and are held by these four arms, so a citation fixed at `§ 38` would send a
+    project reading a § 39 refusal to the wrong section -- and a second copy of
+    the four arms is what parameterising one word avoids.
     """
     if value is None:
-        raise ConfigError(where, f"required (§ 38): {what}")
+        raise ConfigError(where, f"required ({section}): {what}")
     if not isinstance(value, str):
         raise ConfigError(
             where,
-            f"is {type(value).__name__}, where § 38 states a path: {what}. A "
+            f"is {type(value).__name__}, where {section} states a path: {what}. A "
             "container written here is a fact with a shape nothing reads.",
         )
     if not value.strip():
         raise ConfigError(
             where,
-            f"is written blank (§ 38): {what}. An empty value is not an absent "
-            "one -- it reads as a path and matches no file.",
+            f"is written blank ({section}): {what}. An empty value is not an "
+            "absent one -- it reads as a path and matches no file.",
         )
     if value != value.strip():
         raise ConfigError(
             where,
-            f"is {value!r}, which carries surrounding whitespace (§ 38). A path "
-            "that only looks like another path matches no file and is reported "
-            "as a document that is not there.",
+            f"is {value!r}, which carries surrounding whitespace ({section}). A "
+            "path that only looks like another path matches no file and is "
+            "reported as a document that is not there.",
         )
     if os.path.isabs(value):
         raise ConfigError(
             where,
-            f"is {value!r}, which is absolute (§ 38). Every path here is relative "
-            "to the code root: an absolute one names a place on one machine and "
-            "is unreadable on every other.",
+            f"is {value!r}, which is absolute ({section}). Every path here is "
+            "relative to the code root: an absolute one names a place on one "
+            "machine and is unreadable on every other.",
         )
     return value
 
@@ -5597,6 +5772,156 @@ def _validate_documents(data: dict, facts: dict) -> None:
                         "A sentence quoted against a document outside the governed "
                         "set is a check over a file nothing else here reads.",
                     )
+
+
+def _validate_spec_corpus(data: dict) -> None:
+    """§ 39's two glob lists, and the keys stated beside a carrier that reads none.
+
+    The carrier's alternation and the requiredness of the lists are marked and
+    answered before this runs; what is here is what each glob has to **be**,
+    which is the division §§ 31, 32, 33, 34 and 38 already have.
+
+    ⛔ **Which grouping the corpus hangs off is not here**, and the division is
+    stated rather than left to be found: that rule needs § 4.8's *carried* set
+    rather than the raw block, so it is `_spec_corpus_grouping` and runs where
+    that set exists.
+
+    ⛔ **Every arm refuses rather than skipping**, and the direction is the one
+    § 39 exists for: a corpus read at the wrong ref is a confident wrong answer
+    in the step whose whole value is confidence, and nothing downstream of this
+    reader can see which ref it was.
+    """
+    carrier = _get(data, SPEC_CORPUS_CARRIER)
+    if carrier != SPEC_CORPUS_REPOSITORY:
+        # ⛔ The complement is **not** silence, which is § 38's own arm one
+        # section over: a glob stated beside a carrier that reads none is a
+        # corpus somebody configured and nothing opens.
+        stated = [
+            key
+            for key in ("files", "load_bearing", GROUPING_ENTRY_KEY)
+            if key in _absent_as(_get(data, SPEC_CORPUS_KEY), {})
+        ]
+        if stated:
+            raise ConfigError(
+                f"{SPEC_CORPUS_KEY}.{stated[0]}",
+                f"is stated while `{SPEC_CORPUS_CARRIER}` is {carrier!r}, which "
+                "reads none of it (§ 39). A project that keeps no corpus of its "
+                "own in this repository states the carrier and its reason; one "
+                f"that does states the carrier as `{SPEC_CORPUS_REPOSITORY}`.",
+            )
+        return
+
+    for key in ("files", "load_bearing"):
+        value = _get(data, f"{SPEC_CORPUS_KEY}.{key}")
+        if not isinstance(value, list):
+            raise ConfigError(
+                f"{SPEC_CORPUS_KEY}.{key}",
+                "must be a list of globs relative to the code root (§ 39). One "
+                "glob written as a bare string is a list of one and is written "
+                "as such, so that a second can be added without changing shape.",
+            )
+        for index, glob in enumerate(value):
+            _a_document(
+                glob,
+                f"{SPEC_CORPUS_KEY}.{key}[{index}]",
+                "a glob a document of the corpus matches",
+                "§ 39",
+            )
+    # ⛔ `files: []` is refused and `load_bearing: []` is not, which is § 39's
+    # own pair and § 38's division between a marker's question and a shape
+    # rule's: an empty corpus is a read that opens nothing while reading as one
+    # that opens something, and `carrier: none` is how a project says that
+    # instead -- while an empty load-bearing list is a project stating that every
+    # document in its corpus is reached by keyword.
+    if not _get(data, f"{SPEC_CORPUS_KEY}.files"):
+        raise ConfigError(
+            f"{SPEC_CORPUS_KEY}.files",
+            "carries no glob (§ 39), so the corpus is empty and the read that "
+            "would surface a contradiction opens nothing -- which reports *no "
+            "contradiction* for a reason that has nothing to do with the "
+            "specification. A project with no corpus states `carrier: none` "
+            "with its reason instead.",
+        )
+
+
+def _spec_corpus_grouping(data: dict, carried: dict, collection: bool) -> None:
+    """§ 39's corpus against § 4.8's carried groupings: which ref it is read at.
+
+    ⛔ **Called from `_grouping_facet` and not from `_validate_spec_corpus`**,
+    because the set it has to read is the one § 4.8's own rules produced: a
+    grouping whose carrier is `none` is written and then dropped there, so the
+    raw block still carries it and a second resolution here would have found a
+    grouping the gate does not. ⚠️ **Measured on this facet's own plant**: asked
+    against the raw block, a project planning in no grouping was refused for
+    stating no `ref_prefix` — the right colour under the wrong key, and a plant
+    certifying the wrong arm.
+    """
+    if _get(data, SPEC_CORPUS_CARRIER) != SPEC_CORPUS_REPOSITORY:
+        return
+    named = _get(data, SPEC_CORPUS_GROUPING)
+    if not carried:
+        # ⛔ The **facet's** key and not this one, which is § 5's rule for the
+        # same pair: the remedy is a decision about what this project plans in,
+        # and naming the key here would send whoever reads it to the half that
+        # is correct.
+        stated = " ".join(str(_get(data, f"{GROUPING_KEY}.absent_reason")).split())
+        raise ConfigError(
+            f"{GROUPING_KEY}.carrier",
+            f"is `none` while `{SPEC_CORPUS_CARRIER}` is "
+            f"`{SPEC_CORPUS_REPOSITORY}`, which reads a grouping's `ref_prefix` "
+            "to compose the ref the corpus is read at (§ 39). With no grouping "
+            "there is no version, so there is no second copy of the corpus and "
+            "the tree is the only one there is. The facet's own stated reason "
+            f"for planning in no grouping is: {stated!r}. Carry the facet, or "
+            "state this one's carrier as `none`.",
+        )
+    if named is None:
+        # ⛔ Named where there are several and omitted where there is one, which
+        # is § 5's rule for the same key: the single form resolves to one entry,
+        # so a name there would spell a key the configuration already states --
+        # and a facet naming none where there are two is a stop rather than the
+        # first of them.
+        if len(carried) > 1:
+            raise ConfigError(
+                SPEC_CORPUS_GROUPING,
+                f"is not stated, while `{GROUPING_KEY}` carries "
+                f"{', '.join(repr(k) for k in sorted(carried))}. Which grouping's "
+                "value the corpus is read at is this project's statement and not "
+                "this reader's to choose, the wrong one being a copy of the "
+                "specification that reads as current (§ 39, § 4.8).",
+            )
+        name = next(iter(carried))
+    else:
+        if not collection:
+            raise ConfigError(
+                SPEC_CORPUS_GROUPING,
+                f"names the grouping {named!r}, while `{GROUPING_KEY}` is written "
+                f"as one block and resolves to the single entry `{ONE_GROUPING}`. "
+                "The name would be the entry spelling a key the configuration "
+                "already states (§ 39, § 4.8).",
+            )
+        if named not in carried:
+            raise ConfigError(
+                SPEC_CORPUS_GROUPING,
+                f"names the grouping {named!r}, which `{GROUPING_KEY}` does not "
+                f"carry — it carries {', '.join(repr(k) for k in sorted(carried))} "
+                "(§ 4.8).",
+            )
+        name = named
+    # ⛔ The prefix and not the `kind`: § 39 states that `kind` is what a grouping
+    # is to the plan while this key is what says a ref carries its value, and the
+    # shipped example that names its releases with milestones is the measurement
+    # that rules out the other reading. What is required is a ref to read at.
+    if not carried[name].get("ref_prefix"):
+        raise ConfigError(
+            f"{GROUPING_KEY}.{name}.ref_prefix" if collection
+            else f"{GROUPING_KEY}.ref_prefix",
+            f"required where `{SPEC_CORPUS_CARRIER}` is "
+            f"`{SPEC_CORPUS_REPOSITORY}` and this is the grouping the corpus is "
+            "read at: the ref is the prefix joined onto the grouping's own value, "
+            "so with no prefix there is no ref and the read would fall back to "
+            "the integration branch for every item forever (§ 39, § 4.8).",
+        )
 
 
 def _derivation_cycle(edges: dict) -> list | None:
@@ -7751,7 +8076,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
             "rather than report one it could not read (§ 12).",
         )
 
-    # § 39. The two rules a marker cannot reach, each carrying an argument a
+    # § 40. The two rules a marker cannot reach, each carrying an argument a
     # marker's message has nowhere to put -- the division § The file itself draws
     # for §§ 10, 11 and 12 and the shape § 25 already has between a carrier and
     # the third that writes it.
@@ -7772,7 +8097,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
         raise ConfigError(
             "ordering.record.carrier",
             f"is `none` while `carriers.{CLOSE_OUT_ROLE}` maps the role whose "
-            "whole subject is that record (§ 39). The two are one statement made "
+            "whole subject is that record (§ 40). The two are one statement made "
             "twice: either the project keeps an order of work somewhere this "
             "toolkit can read and write, or it maps no role to keep it. "
             "⚠️ The other direction is legitimate -- a record kept by hand with no "
@@ -8020,6 +8345,11 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # every edge names a declared document, and that the derivation record stays
     # acyclic -- each of which a per-row marker could never ask.
     _validate_documents(data, facts)
+    # § 39's two glob lists, in the same position and for the same reason. ⛔ The
+    # facet's other half — which of § 4.8's groupings the corpus hangs off — is
+    # **not** here: it needs that facet's own carried set rather than the raw
+    # block, so it runs in `_grouping_facet` where the set exists.
+    _validate_spec_corpus(data)
 
     readiness = _absent_as(_get(data, "readiness"), [])
     if not isinstance(readiness, list):
@@ -9593,6 +9923,7 @@ MARKED_REQUIRED = [
     "reversals",
     "roots.code",
     "session",
+    SPEC_CORPUS_CARRIER,
     "spend_guard.deny",
     "statuses",
     "test_tiers.carrier",
@@ -9681,7 +10012,7 @@ MARKED_REQUIRED_WHEN = [
     ("memory.store", "memory.carrier", "path"),
     ("memory.write_from", "memory.carrier", "derived"),
     ("memory.write_from", "memory.carrier", "path"),
-    # § 39's three. ⚠️ `dir` is two entries for one key, which is what the
+    # § 40's three. ⚠️ `dir` is two entries for one key, which is what the
     # marker's own keying is for: the baseline needs a place to stand under
     # either carrier that keeps a record, which is `memory.write_from`'s shape
     # above. ⚠️ And it is also `# private`, the pairing
@@ -9715,6 +10046,16 @@ MARKED_REQUIRED_WHEN = [
     # a key written empty satisfies a presence test.
     (PRIVATE_KEYS_PATH, f"{PRIVATE_KEY}.carrier", PRIVATE_FILE),
     (PRIVATE_SOURCE_PATH, f"{PRIVATE_KEY}.carrier", PRIVATE_FILE),
+    # § 39's two glob lists, each meaningless where the project keeps no corpus
+    # in this repository. ⚠️ `grouping` is **not** here, and the reason is § 1's
+    # own: what its requiredness turns on is how many groupings a project
+    # carries, which no condition on a key's value can reach — so it is a rule
+    # of the reader beside the markers rather than a second spelling of one.
+    # ⛔ `files` is marked while `load_bearing` carries a legitimate `[]`, which
+    # is § 38's division between a marker's question and a shape rule's: both
+    # must be written, and only one of them may be written empty.
+    (f"{SPEC_CORPUS_KEY}.files", SPEC_CORPUS_CARRIER, SPEC_CORPUS_REPOSITORY),
+    (f"{SPEC_CORPUS_KEY}.load_bearing", SPEC_CORPUS_CARRIER, SPEC_CORPUS_REPOSITORY),
     # § 31's one: the list of suites, needed by the carrier that states one and
     # meaningless where the project says no suite of its own can fail to run.
     # ⛔ `absent_reason` is **not** here, the absent-capable class below carrying
@@ -9740,6 +10081,12 @@ MARKED_REQUIRED_WHEN = [
 # since the reader keeps no list of its own to compare against -- drop the clause
 # from the surface and this is what reddens.
 MARKED_PROCEDURE = [
+    # § Whether a project can adopt's. ⛔ The marked key whose subject is the three
+    # acts of adoption rather than anything a project's loop does: a project
+    # writing this would be configuring how its own adoption is measured, which is
+    # a project turning off the facts it answers worst -- the same shape as `setup`
+    # below and the same reason, one act over.
+    "adoption",
     "audit_trail",
     # § 27's. ⛔ The one marked key whose rule is about how a *value* is reached
     # rather than about a rail being switched off: a project writing this would
@@ -9765,6 +10112,14 @@ MARKED_PROCEDURE = [
     "lines_changed",
     "max_lines",
     "readings",
+    # § What a project already holds's. ⛔ The marked key whose rule is about what
+    # an adopting project already had before this surface reached it: a pointer
+    # at its own store of rulings, which is the shape a reader meeting that
+    # section reaches for first and the one § 27 makes look admissible. What
+    # refuses it is that a pointer carries values a role reads, and a ruling is
+    # not a value -- so a project writing this would be configuring the
+    # procedure to be read out of a file nobody shares.
+    "rulings",
     # § What a project is asked's. ⛔ The marked key whose rule is about the step
     # that writes a configuration rather than about one a configuration carries:
     # a project writing this would be configuring its own interrogation, which is
@@ -9837,6 +10192,12 @@ SHOWN_LISTS = {
 # about the set.
 MARKED_PRIVATE = [
     "day_log.attribute_to",
+    # § 26's, and the one marked key that is a **store's address**. ⚠️ It is why
+    # the argument beside `billing.rates` below is stated the way it is rather
+    # than as *no key of that port is marked*: the destination port marks the
+    # identifier of the store and nothing else, so hours, a rate and a client's
+    # identity still reach no key of it.
+    SHEET_PATH,
     "day_log.evidence.calendars",
     f"{CHAT_BLOCK}.exclude",
     f"{CHAT_BLOCK}.mixed",
@@ -9851,10 +10212,11 @@ MARKED_PRIVATE = [
     #
     # § 37's, and the one marked key that is money. ⚠️ Its eligibility is argued
     # from this list's own bound: § 26 rules that hours, rates and a client's
-    # identity reach no destination key *because no key of that port is marked*,
-    # so a rate becoming statable at all is this entry and nothing else.
+    # identity reach no destination key, which holds with that port's one mark in
+    # place because the mark is on a *store's identifier* -- so a rate becoming
+    # statable at all is still this entry and nothing else.
     "billing.rates",
-    # § 39's, and the mark § 28 predicted rather than one argued from scratch:
+    # § 40's, and the mark § 28 predicted rather than one argued from scratch:
     # that section states that a store whose address a project may not name is a
     # mark the surface has to add, and an ordering document outlives the work and
     # sits in no tree -- so its directory is a path on whoever's machine keeps it.
@@ -9873,6 +10235,7 @@ MARKED_ABSENT_CAPABLE = [
     "people",
     PRIVATE_KEY,
     "release",
+    SPEC_CORPUS_KEY,
     "test_tiers",
     "work_item.code_root",
     "work_item.due_date",
@@ -11513,7 +11876,7 @@ def self_test() -> int:
                      slice(None),
                      [entry for entry in _get(data, "readiness")
                       if entry.get(GROUPING_ENTRY_KEY) != named[0]]),
-                 # ⚠️ And § 39's record with them, pointed at the sibling the
+                 # ⚠️ And § 40's record with them, pointed at the sibling the
                  # project does still plan in: an order kept in the grouping that
                  # just went absent is refused by that section's own rule, which
                  # is correct and is not what this arm is asserting.
@@ -11525,7 +11888,7 @@ def self_test() -> int:
             broken = _refused(data)
             check(f"{label}", broken is None, f"refused {broken!r}")
 
-        # --- § 39's record, read against this facet and against `carriers` ----
+        # --- § 40's record, read against this facet and against `carriers` ----
         #
         # ⛔ Planted here rather than beside `validate`'s own fixtures, because
         # the rule is read where the facet is resolved: under the collection form
@@ -11780,7 +12143,7 @@ def self_test() -> int:
         # project that plans in none has no set to publish, so the shipped file's
         # targets write `none` here exactly as its gate drops the checks above.
         _unscope_targets(stated_absent)
-        # ⛔ § 39's half of the same absence, for `_unscope_targets`' reason: an
+        # ⛔ § 40's half of the same absence, for `_unscope_targets`' reason: an
         # order kept in a grouping the project no longer plans in is refused.
         _unkeep_record(stated_absent)
         loaded_absent = _refused(stated_absent)
@@ -12676,7 +13039,7 @@ def self_test() -> int:
     # matched case-sensitively like every other clause here. What catches both is
     # the inventory comparison above -- the port leaves the derived set and the
     # sets stop matching -- which is why that comparison is not derived.
-    for word in (NO_DESTINATION, FILE_DESTINATION):
+    for word in (NO_DESTINATION, FILE_DESTINATION, SHEET_DESTINATION):
         stated = surface["enums"].get(PLANTED_PORT[0]) or []
         check(
             f"the surface still states `{word}` among this port's own kinds",
@@ -14255,6 +14618,110 @@ def self_test() -> int:
         any("refusal to perform rather than a note" in line for line in full["report"]),
         f"reported {full['report']!r}",
     )
+    # ⛔ The refusal as the reviewing role performs it, which § 31 makes that
+    # role's **act** rather than a field it reads: the question is asked of the
+    # reader against one target and the answer is per suite. ⚠️ Three arms and
+    # not one, because the three answers are distinguishable and the reader
+    # collapsing any two of them is the defect -- `null` is nobody asked,
+    # `false` is asked and clear, and a name § 33 does not state is a stop. A
+    # reader answering `false` to the third would run, against every target
+    # there is, the one suite the project refused.
+    refusing = _a_deploy_target()["name"]
+    check(
+        "a suite nobody asked about a target reports no refusal, and never false",
+        suite["refused"] is None and full["against_target"] is None,
+        f"reported {suite['refused']!r} against {full['against_target']!r}",
+    )
+    refused_here = _tier_read(
+        "integration",
+        _a_test_tiers_block(workflow=_SAME, refused_on=[_SAME]),
+        against_target=refusing,
+    )
+    check(
+        "a suite asked about the target it is refused on comes back refused",
+        refused_here["suites"][0]["refused"] is True
+        and refused_here["against_target"] == refusing,
+        f"answered {refused_here['suites'][0]['refused']!r}",
+    )
+    check(
+        "and the report says the refusal is performed before any case runs",
+        any(
+            "**before any case runs**" in line for line in refused_here["report"]
+        ),
+        f"reported {refused_here['report']!r}",
+    )
+    # ⚠️ The green side of the same scope, which is what keeps the arm above
+    # from passing on a reader that answered `true` to everything.
+    cleared = _tier_read(
+        "integration",
+        _and_a_second_deploy_target(
+            _a_test_tiers_block(workflow=_SAME, refused_on=[_SAME])
+        ),
+        against_target="another-target",
+    )
+    check(
+        "a suite asked about a target that does not refuse it comes back clear",
+        cleared["suites"][0]["refused"] is False,
+        f"answered {cleared['suites'][0]['refused']!r}",
+    )
+    check(
+        "and clear is reported as nothing stopping it rather than as runnable",
+        any("not a precondition" in line for line in cleared["report"]),
+        f"reported {cleared['report']!r}",
+    )
+    try:
+        unknown = _tier_read(
+            "integration",
+            _a_test_tiers_block(workflow=_SAME, refused_on=[_SAME]),
+            against_target="a-target-nothing-deploys-to",
+        )
+    except ConfigError as error:
+        unknown = f"stop {error.key}"
+    check(
+        "a refusal asked about a target no deploy entry states is a stop",
+        unknown == "stop deploy",
+        f"answered {unknown!r}",
+    )
+    # ⛔ § 31 rules the refusal "held to the list and never to a root of it": a
+    # tier is the project's and a target names its own repository, so a tier
+    # refused on a target says nothing about which repository either is in.
+    # ⚠️ The stop above reads that list through `get`, so a narrowing that
+    # answered with one root's targets would turn a target the project **does**
+    # state into a stop -- under a root, silently, and only for the targets
+    # belonging to the other one. Found by probing the narrowed read rather than
+    # by reading it; the arm is what keeps the answer.
+    narrowing = _a_collection_example()
+    if narrowing is None:
+        failures += 1
+        print("  FAIL  no example carries § 1's collection, so the per-root refusal is unasserted")
+    else:
+        with open(SURFACE, encoding="utf-8") as handle:
+            narrowing_facts = surface_facts(handle.read())
+        across = [
+            target["name"]
+            for target in _absent_as(_get(narrowing, "deploy"), [])
+            if isinstance(target, dict) and isinstance(target.get("name"), str)
+        ]
+        check(
+            "the collection example states targets, so this arm has a subject",
+            len(across) > 1,
+            f"found {across!r}",
+        )
+        unseen = []
+        for root in list(_get(narrowing, "roots.code") or {}):
+            narrowed = _resolve(
+                copy.deepcopy(narrowing), EXAMPLES, narrowing_facts, False
+            ).root(root)
+            for name in across:
+                try:
+                    narrowed.tier("integration", name)
+                except ConfigError as error:
+                    unseen.append((root, name, error.key))
+        check(
+            "every target the project states answers under every root, not just its own",
+            not unseen,
+            f"stopped on {unseen!r}",
+        )
     # ⛔ The arm that must not weaken, asserted on the answer and not on the
     # prose: a suite stating neither source comes back with no verdict, and the
     # report says so in the words § 31 uses. A reading that defaulted it to the
@@ -14400,6 +14867,21 @@ def self_test() -> int:
         code == 0 and '"tier": "unit"' in printed,
         f"exited {code} having printed {printed[:160]!r} and {failed.getvalue()[:160]!r}",
     )
+    # ⛔ The target asked about with no tier named, which is the one shape of this
+    # pair that answers nothing: § 31 states the refusal per suite, so a target
+    # alone is a question about which of nothing is refused. ⚠️ Held on the
+    # invocation rather than on the method, the pairing being the parser's.
+    buffer, failed = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(failed):
+        code = main(
+            ["--skills-root", REPO_ROOT, "--no-check-paths", "--against-target", "a-target"]
+        )
+    check(
+        "a target asked about with no tier named is a stop rather than a reading",
+        code != 0 and "refused_on" in failed.getvalue(),
+        f"exited {code} having printed {buffer.getvalue()[:160]!r} "
+        f"and {failed.getvalue()[:160]!r}",
+    )
 
     if failures:
         print(f"\n{failures} assertion(s) did not hold.")
@@ -14429,6 +14911,18 @@ def _load_bearing_absences(config: Config) -> list[str]:
         and config.get(OUT_DIR_PATH) is None
     ):
         absent.append(OUT_DIR_PATH)
+    # ⛔ The spreadsheet kind's three, by the same rule and keyed the same way. ⚠️ A
+    # key § 28's layer answers is **stated**, and is read off the list rather than
+    # resolved -- the reason the report above gives, which binds here harder: this
+    # runs for every carrier a project maps, so a value read here would stop a
+    # reading that is about which keys are absent.
+    if carriers.get("day_log") and config.get(DESTINATION_KIND_PATH) == SHEET_DESTINATION:
+        listed = set(config.private_keys)
+        absent.extend(
+            path
+            for path in SHEET_KEYS
+            if path not in listed and config.get(path) is None
+        )
     return absent
 
 
@@ -15228,6 +15722,73 @@ def _planted_violations():
          "documents.quoted[0].document",
          at("documents", _a_documents_of(
              quoted=[{"sentence": "a claim", "document": "b-document.md"}]))),
+        # § 39, and every arm no marker reaches. ⛔ They fail in one direction:
+        # a corpus read at the wrong ref, or at no ref, is a confident wrong
+        # answer in the step whose whole value is confidence, and nothing
+        # downstream of this reader can see which ref was opened.
+        #
+        # ⚠️ The complement first, which is § 38's own arm one section over: a
+        # glob stated beside a carrier that reads none is a corpus somebody
+        # configured and nothing opens.
+        ("a glob list stated beside a corpus carrier that reads none",
+         f"{SPEC_CORPUS_KEY}.files",
+         at(SPEC_CORPUS_KEY, {"carrier": "none", "absent_reason": "no corpus here",
+                              "files": ["spec/**/*.md"]})),
+        ("a load-bearing list stated beside a corpus carrier that reads none",
+         f"{SPEC_CORPUS_KEY}.load_bearing",
+         at(SPEC_CORPUS_KEY, {"carrier": "none", "absent_reason": "no corpus here",
+                              "load_bearing": ["spec/**/*.md"]})),
+        ("a grouping named beside a corpus carrier that reads none",
+         SPEC_CORPUS_GROUPING,
+         at(SPEC_CORPUS_KEY, {"carrier": "none", "absent_reason": "no corpus here",
+                              GROUPING_ENTRY_KEY: "a-scope"})),
+        ("a corpus glob list that is not a list", f"{SPEC_CORPUS_KEY}.files",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(files="spec/**/*.md"))),
+        # ⚠️ The empty list is its own arm and not a spelling of the complement
+        # above, which is § 38's reason for the same pair: `carrier: none` is how
+        # § 39 says there is no corpus, so `[]` is a project that keeps one and
+        # named no part of it -- a read that opens nothing and then reports no
+        # contradiction.
+        ("a corpus matching nothing by construction", f"{SPEC_CORPUS_KEY}.files",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(files=[]))),
+        ("a corpus glob that is not a path", f"{SPEC_CORPUS_KEY}.files[0]",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(files=[{"glob": "spec/**/*.md"}]))),
+        ("a corpus glob written blank", f"{SPEC_CORPUS_KEY}.files[0]",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(files=["   "]))),
+        # ⛔ Absolute for § 38's measured reason one section over: a path naming a
+        # place on one machine governs a different set per checkout, and under
+        # § 10's tree per item that is a different set per *item*.
+        ("a corpus glob written absolutely", f"{SPEC_CORPUS_KEY}.files[0]",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(files=["/spec/a-document.md"]))),
+        ("a load-bearing list that is not a list", f"{SPEC_CORPUS_KEY}.load_bearing",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(load_bearing="spec/**/*.md"))),
+        ("a load-bearing glob written absolutely",
+         f"{SPEC_CORPUS_KEY}.load_bearing[0]",
+         at(SPEC_CORPUS_KEY,
+            _a_spec_corpus_of(load_bearing=["/spec/requirements.md"]))),
+        # ⛔ The grouping arms, which are the ones about *which ref* rather than
+        # about a key being present. ⚠️ The first names § 4.8's own carrier and
+        # not this facet's key, which is § 5's rule for the same pair: the remedy
+        # is a decision about what the project plans in.
+        ("a corpus carried while the project plans in no grouping",
+         f"{GROUPING_KEY}.carrier",
+         at(GROUPING_KEY, {"carrier": "none", "absent_reason": "a flat backlog"})),
+        ("a corpus carried on a grouping no ref is named after",
+         f"{GROUPING_KEY}.ref_prefix",
+         lambda data: _without(data, f"{GROUPING_KEY}.ref_prefix")),
+        ("a grouping named while the facet is written as one block",
+         SPEC_CORPUS_GROUPING,
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(grouping="a-scope"))),
+        # ⛔ And the collection form's two, which is where the permissive reading
+        # is worst: a facet handed no name among several would read the corpus at
+        # whichever grouping was written first, and § 4.8 states that a
+        # grouping's wrong value is the one that is invisible on the item itself.
+        ("no grouping named while the project carries several",
+         SPEC_CORPUS_GROUPING,
+         lambda data: _two_groupings(data)),
+        ("a grouping named that the project does not carry", SPEC_CORPUS_GROUPING,
+         lambda data: at(SPEC_CORPUS_KEY, _a_spec_corpus_of(
+             grouping="a-scope-nobody-carries"))(_two_groupings(data))),
         ("a readiness list that is not a list", "readiness", at("readiness", "all")),
         ("a readiness entry that is not a block", "readiness[0]", at("readiness", ["x"])),
         ("a readiness entry with no check", "readiness[0].check",
@@ -15583,7 +16144,7 @@ def _planted_violations():
          at("language.prose_width", "wide")),
         ("a worktree model with nowhere to cut a tree", "branch_model.tree_dir",
          _cuts_trees_nowhere),
-        # ⚠️ The block is written whole, § 39's record included: this plant is
+        # ⚠️ The block is written whole, § 40's record included: this plant is
         # about the command the carrier above it needs, and a block that dropped
         # the record would be refused for that instead -- which is the plant
         # passing on a rule it did not name.
@@ -16329,6 +16890,27 @@ def _a_test_tiers_block(**overrides):
 _SAME = object()
 
 
+def _and_a_second_deploy_target(mutate, name: str = "another-target"):
+    """`mutate`'s project with a second § 33 target beside the one it states.
+
+    ⛔ The not-refused arm cannot be written without it: a project stating one
+    target can only be asked about the target its suite is already refused on,
+    so `refused: false` would be a reading no fixture reaches and the arm
+    holding it would be green on an answer the reader never produces.
+    """
+
+    def composed(data: dict) -> dict:
+        data = mutate(data)
+        targets = data.get("deploy")
+        if not isinstance(targets, list):
+            targets = []
+            data["deploy"] = targets
+        targets.append(_a_deploy_target(name=name))
+        return data
+
+    return composed
+
+
 def _an_absent_test_tiers_block(**overrides):
     """§ 31's facet stated absent, with a value written beside the absence.
 
@@ -16652,20 +17234,25 @@ def _answer_on(paths, kind=None, *, classes=None, borderline=None,
     return _resolve(data, EXAMPLES, facts, False).exempt_for(paths, kind)
 
 
-def _tier_read(tier: str, mutate=None):
+def _tier_read(tier: str, mutate=None, against_target: str | None = None):
     """§ 31's reading of one tier, or the `ConfigError` it refused with.
 
     ⛔ The whole answer rather than a rendering, for the reason `_answer_on`
     above returns one: the arms below read the fields the launching role reads,
     and a rendering would let a field be replaceable by a constant with the
     suite still green — which is exactly how an unrendered field goes unheld.
+
+    ⚠️ `against_target` is passed through rather than defaulted to a name, so
+    the no-target reading stays the one the arms below assert `refused: null`
+    on: a helper that always asked about some target would make that answer
+    unreachable and the arm holding it green on nothing.
     """
     data = _a_valid_example()
     if mutate is not None:
         data = mutate(data)
     with open(SURFACE, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
-    return _resolve(data, EXAMPLES, facts, False).tier(tier)
+    return _resolve(data, EXAMPLES, facts, False).tier(tier, against_target)
 
 
 def _verdict_on(paths, kind=None, **overrides) -> str:
@@ -17508,11 +18095,11 @@ def _unscope_targets(data: dict) -> dict:
 
 
 def _unkeep_record(data: dict, *, in_grouping: str | None = None) -> dict:
-    """§ 39's record moved off a grouping `data` no longer carries.
+    """§ 40's record moved off a grouping `data` no longer carries.
 
     ⛔ The same shape `_unscope_targets` has above and for the same reason: an
     order of work kept in a grouping the project has stopped planning in is
-    refused, which is § 39 working rather than the fixture's problem. ⚠️ Two
+    refused, which is § 40 working rather than the fixture's problem. ⚠️ Two
     outcomes, because the honest configuration differs: where a sibling grouping
     survives, that is where such a project would keep the order -- so the record
     is **pointed at it** rather than emptied, which keeps the fixture exercising
@@ -17648,6 +18235,60 @@ def _a_documents_of(**overrides) -> dict:
     }
     facet.update(overrides)
     return {key: value for key, value in facet.items() if value is not _ABSENT}
+
+
+def _a_spec_corpus_of(**overrides) -> dict:
+    """§ 39's smallest facet that carries a corpus, for the arms above the globs.
+
+    ⛔ The carrier is `repository` in every one of them, for `_a_documents_of`'s
+    reason: a plant that left it `none` would be refused by the
+    stated-beside-an-absent-carrier arm instead, which is a different branch
+    under a different key -- green while asserting nothing about the one it was
+    aimed at.
+
+    ⚠️ **No `grouping` key**, because the example this is planted into carries
+    § 4.8's single form: a fixture stating the name would be refused by the
+    name-on-the-single-form arm before any glob arm could run, so each grouping
+    plant states its own half instead.
+    """
+    facet = {
+        "carrier": SPEC_CORPUS_REPOSITORY,
+        "files": ["spec/**/*.md"],
+        "load_bearing": [],
+    }
+    facet.update(overrides)
+    return {key: value for key, value in facet.items() if value is not _ABSENT}
+
+
+def _a_grouping_carrying_a_ref(name: str) -> dict:
+    """One § 4.8 entry a ref is named after, for § 39's collection-form plants.
+
+    ⛔ Every key § 4.8 requires of a carried grouping is stated, so a plant
+    about *which* grouping a corpus names is not refused by a half-written entry
+    first -- which is the way a plant certifies nothing while reading green.
+    """
+    return {
+        "carrier": "native_milestone",
+        "kind": "version",
+        "current": "stated",
+        "has_own_acceptance": False,
+        "closes_items": False,
+        "closed_by": "orderer",
+        "ref_prefix": f"{name}/",
+    }
+
+
+def _two_groupings(data: dict, *, names=("one-scope", "another-scope")) -> dict:
+    """`data` with § 4.8 written as a collection of two, both carrying a ref.
+
+    ⛔ Written over the single form the example ships rather than beside it: the
+    two forms are told apart by a `carrier` at the top, so a collection left
+    with one would be read as the single form and the plant would land on an
+    alternation instead of on § 39's which-grouping arm.
+    """
+    node = data.setdefault("work_item", {})
+    node[ONE_GROUPING] = {name: _a_grouping_carrying_a_ref(name) for name in names}
+    return data
 
 
 def _a_forbidden_name(**overrides) -> dict:
@@ -18379,6 +19020,15 @@ def main(argv: list[str]) -> int:
         "tier with nothing to lack rather than as one that passed",
     )
     parser.add_argument(
+        "--against-target",
+        metavar="TARGET",
+        help="one of § 33's deploy targets, by the name that facet keys it on: "
+        "every suite `--tier` reports comes back with whether this target "
+        "refuses it, which is the reading the reviewing role performs its § 31 "
+        "refusal on. ⛔ A name no `deploy` entry states is a stop and never an "
+        "answer of not-refused",
+    )
+    parser.add_argument(
         "--self-test",
         action="store_true",
         help="hold this reader to the surface and the examples",
@@ -18403,7 +19053,15 @@ def main(argv: list[str]) -> int:
         # facet is the project's rather than a root's, so either form resolves
         # it and a role that has narrowed to a root asks the same question.
         if args.tier:
-            answer = config.tier(args.tier)
+            answer = config.tier(args.tier, args.against_target)
+        elif args.against_target:
+            raise ConfigError(
+                "test_tiers.tiers.refused_on",
+                "cannot be asked about a target with no tier named: § 31 states "
+                "the refusal per suite, so a target alone asks which of nothing "
+                "is refused. Pass `--tier` with it, or read the targets this "
+                "project states out of the report this run prints without either.",
+            )
         # ⛔ After the root narrowing for § 27's reason, and ⚠️ **the kind is
         # read whether or not it was given**: a run that passed paths and no
         # kind is asking the question § 30's third verdict answers, so dropping
