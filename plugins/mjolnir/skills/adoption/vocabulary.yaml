@@ -30,9 +30,9 @@
 # a count of the entries would, and the first version of this comment carried one and was wrong by
 # the next role that landed.
 #
-# ⛔ The heading is not one of two readings any more, and that is the surface's own rule rather
-# than a reading this check gave up: the heading carries no count of the list below it, so the
-# paragraph is the only statement of the loop's size there is to hold this list against.
+# ⛔ The heading itself states no count, which is the surface's own rule rather than a reading this
+# check declines to take: the role list carries no count anywhere, so the paragraph is the only
+# statement of the loop's size there is to hold this list against.
 roles:
   - file
   - gate

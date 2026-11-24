@@ -1113,8 +1113,15 @@ def self_test() -> int:
 
     with open(os.path.join(PLUGIN_ROOT, "config", "schema.md"), encoding="utf-8") as handle:
         surface_text = handle.read()
-    check(f"the loop's size agrees with the surface's own list ({len(role_keys)})",
-          loop_role_count(surface_text) == len(role_keys))
+    # ⛔ The agreement arm is read through the same guard as the plants below it, and for the same
+    # reason: the reading raises where the surface it reads has moved, so an arm that let that out
+    # would die here and take every arm after it -- which is the whole suite's own measurement
+    # applied to its first use of this reading rather than only to the plants.
+    try:
+        agrees = loop_role_count(surface_text) == len(role_keys)
+    except Exception:
+        agrees = False
+    check(f"the loop's size agrees with the surface's own list ({len(role_keys)})", agrees)
 
     # ⛔ Both refusals planted against the mechanism rather than asserted, the surface being the
     # only statement of the loop's size left: a heading this check cannot find, and a list whose

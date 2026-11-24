@@ -47,9 +47,10 @@ rather than a fault, and a key named there that this role needs is a stop with t
 Five things are read here and ⛔ **never copied into this file**: the branch prefix per item type,
 the readiness list, the branch model that decides whether a tree is cut and where, what states
 which item is next, and the language the branch slug is written in. Each has a section of the
-surface and this file cites it. ⚠️ **A sixth is read in step 3 rather than here** — what carries
-which code repository an item belongs to, where the project has more than one — because it is read
-*against an item* and no item is in hand yet.
+surface and this file cites it. ⚠️ **Two more are read later rather than here, each where its
+subject arrives**: what carries which code repository an item belongs to, in step 3, because it is
+read *against an item* and no item is in hand yet; and which roles this project maps, in step 7,
+because what that answers is which carrier the leg after this one is entered through.
 
 **And what the shell holds is reported once, here**, since this is where an item's work begins and
 the one place a report costs one reading rather than one per turn:

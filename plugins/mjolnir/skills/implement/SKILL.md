@@ -46,14 +46,18 @@ and two sets drift apart with nothing noticing.
 ⛔ **Read the `unavailable` list before acting on anything.** An entry there is a stated absence
 rather than a fault, and a key named there that this role needs is a stop with the key named.
 
-Four things are read here and ⛔ **never copied into this file**: the branch model that decides
+Five things are read here and ⛔ **never copied into this file**: the branch model that decides
 which tree every edit lands in, the tracker port's capabilities and what each absent one falls back
-to, the language and register the reply and anything this pass writes are held to, and the tiers
-this project's own build can run at all. Each has a section of the surface and this file cites it.
+to, the language and register the reply and anything this pass writes are held to, the tiers this
+project's own build can run at all, and which roles this project maps — which is what step 7 reads
+to know whether there is a leg after this one at all. Each has a section of the surface and this
+file cites it.
 
-Throughout, `<work-root>` is the tree the work is in — which
-[`§ 10`](../../config/schema.md#where-the-work-happens) decides and this file does not — and every
-`git` call names it. ⚠️ **`§ N` always names a section of the surface, never a step of this file.**
+Throughout, `<code-root>` is the repository the item belongs to and `<work-root>` the tree the work
+is in — which [`§ 10`](../../config/schema.md#where-the-work-happens) decides and this file does
+not — and every `git` call names one of them, per
+[`§ 1`](../../config/schema.md#1-roots). ⚠️ **`§ N` always names a section of the surface, never a
+step of this file.**
 
 ## 2. The tree, which this role finds rather than makes
 
