@@ -100,6 +100,7 @@ from adapters import _code_host_closing as closing_reading  # noqa: E402
 from adapters import _code_host_comments as conversation  # noqa: E402
 from adapters import _code_host_dependency as relation  # noqa: E402
 from adapters import _code_host_milestone as milestone  # noqa: E402
+from adapters import _code_host_type as native_type  # noqa: E402
 from port import ConfigError, HostUnavailable  # noqa: E402
 
 KIND = "github-projects"
@@ -839,7 +840,7 @@ def read_item(number: int) -> dict:
         else {}
     )
     status_name = _configuration().get(STATUS_FIELD_NAME)
-    return {
+    item = {
         "number": found["number"],
         "title": found.get("title"),
         "body": found.get("body"),
@@ -856,6 +857,11 @@ def read_item(number: int) -> dict:
         # configuration -- so both are reported rather than collapsed.
         "status": fields.get(str(status_name)) if status_name else None,
     }
+    # ⛔ Asked only where § 4.1's carrier is the host's own, so a project carrying
+    # its type elsewhere spends no call on it and its answer has no such key.
+    if native_type.carried(_configuration()):
+        item["type"] = native_type.type_of(_gh, _repo(), answered)
+    return item
 
 
 def item_number(item: dict | int | str, *, operation: str = "item_number") -> int:
@@ -1196,7 +1202,9 @@ def _write_value(card: str, field: dict, value) -> None:
     )
 
 
-def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
+def create_item(
+    title: str, body: str, labels: list[str] | None = None, *, type: str | None = None
+) -> dict:
     """A new item: the issue, then its card on the board.
 
     ⚠️ **Two writes, and the first one is what makes the item exist.** A card that
@@ -1209,8 +1217,12 @@ def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
     for by **role** (§ 4.2) and this operation has no role to resolve -- the filing
     role's own advance does that, through `set_state`, and a card this leaves with
     an empty column is a card whose status nobody has claimed yet.
+
+    The type goes on with the issue where the filing states one (§ 4.1): it belongs
+    to the issue, and a board draws its cards over it.
     """
     args = ["issue", "create", "--repo", _repo(), "--title", title, "--body", body]
+    args += native_type.flags(_gh, _configuration(), _repo(), type)
     for label in labels or []:
         args += ["--label", label]
     url = _gh(args, parse=False)
@@ -1224,7 +1236,8 @@ def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
     if not item["on_board"]:
         _graphql(ADD_CARD, project=_board()["id"], content=item["id"])
         item = read_item(int(tail))
-    return item
+    # ⛔ After the card, so a type that did not land leaves no item off the board.
+    return native_type.hold(item, type)
 
 
 def _require_card(item: dict) -> str:
@@ -1889,13 +1902,14 @@ def read_vocabulary() -> dict:
     menu rather than a guess.
 
     ⚠️ **The types are the same shape as plain issues'** -- a board's items are
-    issues, and this host states a type vocabulary above the repository.
+    issues, filed into the one repository the configuration names, so the types
+    are that repository's and do not depend on the board being read.
     """
-    reading: dict[str, dict] = {}
+    reading: dict[str, dict] = {"types": native_type.vocabulary(_gh, _repo)}
     try:
         board = _board()
     except (ConfigError, port.HostUnavailable) as error:
-        for name in ("statuses", "status_fields", "labels", "types"):
+        for name in ("statuses", "status_fields", "labels"):
             reading[name] = {
                 "answer": port.VOCABULARY_UNESTABLISHED,
                 "values": None,
@@ -1936,14 +1950,6 @@ def read_vocabulary() -> dict:
             "there is no one label set for a board to state. ⛔ Not read as a "
             "board with no labels: the set exists per repository and this address "
             "does not name one",
-    }
-    reading["types"] = {
-        "answer": port.VOCABULARY_UNESTABLISHED,
-        "values": None,
-        "because":
-            "a board's items are this host's issues and it states their types "
-            "above the repository, so whether a type is native, a prefixed label "
-            "or absent is asked rather than read (§ 4.1)",
     }
     return reading
 

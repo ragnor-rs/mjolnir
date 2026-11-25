@@ -50,8 +50,10 @@ from adapters.github_issues import (  # noqa: E402
     KIND,
     advance_on_merge,
     bind,
+    create_item,
     link_dependency,
     read_blockers,
+    read_item,
     read_vocabulary,
 )
 
@@ -65,6 +67,7 @@ A_REPO = "an-owner/a-name"
 # leaves: two lists are two statements allowed to disagree, and the hand-written
 # one had already dropped an operation.
 COVERED = {
+    "create_item",
     "link_dependency",
     "read_blockers",
     "advance_on_merge",
@@ -1117,9 +1120,8 @@ def self_test() -> int:
     #
     # ⛔ Three decisions, each silent if it is wrong: the status pair is this
     # host's own and is **not** a call, a label listing that did not answer is
-    # unestablished rather than a repository with no labels, and the type
-    # vocabulary is unestablished rather than `none` -- this host stating it
-    # above the repository, where there is no read here that answers for one.
+    # unestablished rather than a repository with no labels, and a type listing
+    # that did not answer is the same rather than a repository with no types.
     labelled = _Host({"label list": [{"name": "P: Highest"}, {"name": "infra"}]})
     vocabulary = with_host(labelled, read_vocabulary) or {}
     statuses = vocabulary.get("statuses") or {}
@@ -1139,7 +1141,7 @@ def self_test() -> int:
         f"answered {labels!r} after {labelled.calls!r}",
     )
     check(
-        "the type vocabulary is unestablished rather than `none`",
+        "types answered in no shape the host writes are unestablished, not `none`",
         types.get("answer") == port.VOCABULARY_UNESTABLISHED
         and types.get("values") is None,
         f"answered {types!r}",
@@ -1183,6 +1185,160 @@ def self_test() -> int:
         f"answered {reading!r}",
     )
     bind({"host.repo": A_REPO})
+
+    # --- the host's own types (§ 4.1) ----------------------------------------
+    def repository(inside) -> dict:
+        return {"data": {"repository": inside}}
+
+    def stating(*names: str, more: bool = False, disabled: str | None = None) -> dict:
+        nodes = [{"name": name, "isEnabled": True} for name in names]
+        if disabled:
+            nodes.append({"name": disabled, "isEnabled": False})
+        return repository({"issueTypes": {
+            "pageInfo": {"hasNextPage": more}, "nodes": nodes}})
+
+    def carrying(name: str | None) -> dict:
+        return repository({"issue": {"issueType": name and {"name": name}}})
+
+    def typed_host(landed: str | None = "Bug", **answers) -> _Host:
+        return _Host({
+            "query IssueTypes": stating("Bug", "Feature", disabled="Retired"),
+            "query TypeOf": carrying(landed),
+            "issue create": f"https://example.invalid/{A_REPO}/issues/{BLOCKED}",
+            **answers,
+        })
+
+    def filing(host, **given):
+        return with_host(host, lambda: create_item("a title", "a body", **given))
+
+    def writes(host) -> list[list[str]]:
+        return [args for args in host.sent if args[:2] == ["issue", "create"]]
+
+    def type_reads(host) -> list[list[str]]:
+        return [args for args in host.sent if args[:2] == ["api", "graphql"]]
+
+    for carrier in (None, "none", "label"):
+        bind({"host.repo": A_REPO, "work_item.type.carrier": carrier})
+        host = typed_host()
+        filed = filing(host)
+        check(
+            f"a filing stating no type under carrier {carrier!r} asks about none",
+            filed.get("number") == BLOCKED and "type" not in filed
+            and not type_reads(host)
+            and writes(host) == [["issue", "create", "--repo", A_REPO, "--title",
+                                  "a title", "--body", "a body"]],
+            f"answered {filed!r} after {host.sent!r}",
+        )
+        host = typed_host()
+        key = with_host(host, lambda: refused(
+            lambda: create_item("a title", "a body", type="Bug")))
+        check(
+            f"a native type stated under carrier {carrier!r} is refused unwritten",
+            key == "work_item.type.carrier" and not writes(host),
+            f"refused on {key!r} after {host.calls!r}",
+        )
+
+    bind({"host.repo": A_REPO, "work_item.type.carrier": "native"})
+    host = typed_host()
+    filed = filing(host, labels=["port"], type="Bug")
+    check(
+        "a filed item carries the type the filing states, and comes back with it",
+        filed.get("type") == "Bug" and len(writes(host)) == 1
+        and writes(host)[0][-4:] == ["--type", "Bug", "--label", "port"],
+        f"answered {filed!r} after {host.sent!r}",
+    )
+    for label, unknown in (("the host does not know", "Chore"),
+                           ("the owner disabled", "Retired"),
+                           ("in another case", "bug"), ("left blank", "")):
+        host = typed_host()
+        def named(host=host, unknown=unknown):
+            try:
+                create_item("a title", "a body", type=unknown)
+            except ConfigError as error:
+                return error.key, str(error)
+            return None
+        told = with_host(host, named)
+        check(
+            f"a type {label} is refused by name, with nothing filed",
+            isinstance(told, tuple) and told[0] == "work_item.type"
+            and f"`{unknown}`" in told[1] and "Bug, Feature" in told[1]
+            and not writes(host),
+            f"answered {told!r} after {host.calls!r}",
+        )
+    for landed in (None, "Feature"):
+        host = typed_host(landed)
+        told = with_host(host, lambda: unavailable(
+            lambda: create_item("a title", "a body", type="Bug")))
+        check(
+            f"a type that landed as {landed!r} is a failed filing naming the item",
+            told is not None and f"#{BLOCKED}" in told and "'Bug'" in told
+            and len(writes(host)) == 1,
+            f"answered {told!r}",
+        )
+    host = typed_host(None)
+    filed = filing(host)
+    check(
+        "a filing stating none under the native carrier is filed without one",
+        filed.get("type", "absent") is None and "--type" not in writes(host)[0],
+        f"answered {filed!r}",
+    )
+    host = typed_host("Feature")
+    held = with_host(host, lambda: read_item(BLOCKED))
+    check(
+        "the type is read off the item that was asked for",
+        held.get("type") == "Feature"
+        and f"number={BLOCKED}" in type_reads(host)[0],
+        f"answered {held!r} after {host.sent!r}",
+    )
+    for label, answer in (
+        ("an error", {"data": {"repository": None}, "errors": [{"message": "x"}]}),
+        ("no repository", repository(None)),
+        ("no issue", repository({"issue": None})),
+        ("no type field", repository({"issue": {}})),
+        ("a type with no name", repository({"issue": {"issueType": {}}})),
+    ):
+        told = with_host(typed_host(**{"query TypeOf": answer}),
+                         lambda: unavailable(lambda: read_item(BLOCKED)))
+        check(
+            f"a type reading answered with {label} is not an item with no type",
+            told is not None and not told.startswith("<"),
+            f"answered {told!r}",
+        )
+    for label, answer in (
+        ("an error", {"data": {"repository": {"issueTypes": None}},
+                      "errors": [{"message": "x"}]}),
+        ("no field", repository({})),
+        ("no list", repository({"issueTypes": {}})),
+        ("another page", stating("Bug", more=True)),
+    ):
+        host = typed_host(**{"query IssueTypes": answer})
+        told = with_host(host, lambda: unavailable(
+            lambda: create_item("a title", "a body", type="Bug")))
+        reading = with_host(typed_host(**{"query IssueTypes": answer, "label list": []}),
+                            read_vocabulary).get("types") or {}
+        check(
+            f"types answered with {label} file nothing and leave them unestablished",
+            told is not None and not told.startswith("<") and not writes(host)
+            and reading.get("answer") == port.VOCABULARY_UNESTABLISHED
+            and reading.get("values") is None,
+            f"answered {told!r} and {reading!r}",
+        )
+    # ⛔ Before a configuration exists, so with no carrier stated at all.
+    bind({"host.repo": A_REPO})
+    for label, answer, word, values in (
+        ("the types an item can be given", stating("Bug", disabled="Retired"),
+         port.VOCABULARY_READ, ["Bug"]),
+        ("a host stating null", repository({"issueTypes": None}),
+         port.VOCABULARY_NONE, []),
+        ("a host stating an empty list", stating(), port.VOCABULARY_NONE, []),
+    ):
+        reading = with_host(typed_host(**{"query IssueTypes": answer, "label list": []}),
+                            read_vocabulary).get("types") or {}
+        check(
+            f"the type vocabulary answers for {label}",
+            reading.get("answer") == word and reading.get("values") == values,
+            f"answered {reading!r}",
+        )
 
     # --- the operation set, against what the surface states -------------------
     #

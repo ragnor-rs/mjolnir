@@ -377,7 +377,10 @@ An identifier is owed only where the source has one.
 
 ## 5. Write it, and record the relations
 
-Write the item through `create_item`. ⚠️ **An item exists the moment that call returns**: a later
+Write the item through `create_item`. ⛔ **Where § 4.1's carrier is `native`, the filing states its
+type** — the port's `--type` beside `--invoke create_item`, in the tracker's own word — and a type
+refused by name is corrected before the create is asked for again, nothing having been filed.
+⚠️ **An item exists the moment that call returns**: a later
 label, relation or field call that fails leaves an item that is on the tracker and incomplete, not
 absent. Say that, and fix it — never retry the create.
 

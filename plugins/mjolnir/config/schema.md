@@ -1890,7 +1890,7 @@ operations the survey reached and says which it did not.
 | Operation | What the procedure asks for | When the capability is absent |
 |---|---|---|
 | `search_items` | the items matching a query — terms, or a field's value with no terms at all — across every state the tracker holds, the closed ones included | the duplicate check cannot run, so the filing role **asks** before writing and never reports a check it did not perform; an unsearchable tracker is not a tracker with no duplicates, by § 2's rule that absence of signal is not an answer |
-| `create_item` | a new work item, from the body the filing role wrote | nothing is filed, and the run report carries the body and says what it would have created |
+| `create_item` | a new work item, from the body the filing role wrote, carrying [§ 4.1](#41-type)'s type where that is native and the filing states one | nothing is filed, and the run report carries the body and says what it would have created |
 | `read_item` | the item's own facts: its body, its state, its fields | the role proceeds on what its argument and its branch already state, and the report names what could not be read |
 | `set_state` | a move to a **role**, never to a status word (§ 4.2) — an advance, or the step backwards [§ 32](#32-a-status-that-moves-backwards) rules | the move is reported for whoever does make it; § 4.2's writer refusal is the second, stricter reason the same move is not made |
 | `item_number` | the identifier the branch name and the pull request carry | the number is read from the argument the role was given, and a role with neither stops rather than inventing one |
@@ -2102,8 +2102,17 @@ work_item:
     absent_reason: "…"           # required when carrier is none
 ```
 
-Native on one tracker, absent on another — a user-owned repository on one host has no issue
-types at all. The procedure asks for "the type" without knowing which carrier answers.
+Native on one tracker, absent on another. The procedure asks for "the type" without knowing which
+carrier answers. ⚠️ **A tracker stating native types is not a project carrying its type in them**:
+one host states types for every repository measured, whoever owns it, so what it states is offered
+as vocabulary and the carrier stays the project's to state.
+
+⛔ **Where the carrier is `native`, the type a filing states goes on with the create and is read
+back.** A type the tracker does not state for that project is refused by name with nothing filed;
+one that did not land is a failed filing naming the item that now exists, never a create made again.
+A native type stated under any other carrier is refused, the type having one carrier. ⚠️ **A filing
+that states none is filed without one**, except where the tracker will not create an item untyped:
+there it is refused, since picking one would be choosing what the work is.
 
 ```yaml
   type_branch_prefix:
