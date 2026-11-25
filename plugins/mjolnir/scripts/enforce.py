@@ -600,7 +600,7 @@ def _cell(text: str) -> str:
 def record_body(question: str, given: str, by: str, at: str, head: str = "",
                 verdict: str = "") -> str:
     """The comment a recorded answer is, in the form the surface states."""
-    cells = [question, verdict, _cell(given), _cell(by), at, head]
+    cells = [question, verdict, _cell(given), _cell(by), _cell(at), head]
     return "\n".join([
         RECORD_MARKER,
         "",
@@ -635,7 +635,13 @@ def answers_in(text: str) -> list[dict]:
         if cells == named:
             columns = cells
             continue
-        if len(cells) != len(columns) or set("".join(cells)) <= set("-: "):
+        if set("".join(cells)) <= set("-: "):
+            continue
+        if len(cells) != len(columns):
+            # ⛔ Kept with nothing in it rather than skipped: a row that cannot be
+            # read may be a refusal, and skipping it leaves the one before standing.
+            cells = [cells[0], *[""] * (len(RECORD_COLUMNS) - 1)]
+            found.append(dict(zip(RECORD_COLUMNS, cells)))
             continue
         found.append({**dict.fromkeys(OPTIONAL_COLUMNS, ""), **dict(zip(columns, cells))})
     return found
@@ -981,7 +987,7 @@ def merge_guard(config, command: str, *, host=None) -> dict:
     # one: a refusal whose remedy has to be worked out is a refusal somebody gets
     # past by editing the guard. The path is this file's own, so it names whichever
     # copy of the plugin the session actually loaded.
-    if answer and answer["verdict"] in known:
+    if answer and answer["verdict"] and (not known or answer["verdict"] in known):
         found = (
             f"the answer to `{MERGE_QUESTION}` recorded last on it is `{answer['verdict']}`: "
             f"{answer['answer']!r}, by {answer['answered by']}"
@@ -994,13 +1000,14 @@ def merge_guard(config, command: str, *, host=None) -> dict:
             + f": {answer['answer']!r}, by {answer['answered by']}"
         )
     else:
-        found = f"no answer to `{MERGE_QUESTION}` is recorded on it"
+        found = f"no complete answer to `{MERGE_QUESTION}` is the last one recorded on it"
     return _deny(
         f"This command merges {slug}#{number}, and {found} ({RECORD_CITATION}). ⛔ Only a "
         f"recorded `{APPROVED}` allows a merge. The question is whether this change goes in "
         "now, put to a person once everything that would have stopped the merge is "
         "established — and it is procedure rather than a setting. ⛔ Ask it before recording "
-        "it: an answer written on somebody's behalf is a fabricated attestation, which is the one thing this record may not "
+        "it: an answer written on somebody's behalf is a fabricated attestation, which is the "
+        "one thing this record may not "
         f"carry. What unblocks this is their answer written onto the change:\n{again}"
     )
 
@@ -2883,6 +2890,15 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                                record_body(MERGE_QUESTION, "", "a-person", "y",
                                            verdict="declined")],
                               MERGE_QUESTION) is None)
+        approval = record_body(MERGE_QUESTION, "yes", "a-person", "x", verdict=APPROVED)
+        broken = record_body(MERGE_QUESTION, "no", "a-person", "y", verdict="declined")
+        check("nor does a last record whose row cannot be read",
+              recorded_answer([approval, broken.replace("| no |", "| no | way |")],
+                              MERGE_QUESTION) is None)
+        check("and a time of several lines does not cut the row",
+              [a["verdict"] for a in answers_in(
+                  record_body(MERGE_QUESTION, "no", "a-person", "y\nz", verdict="declined"))]
+              == ["declined"])
         lines = recorded_answer(
             [record_body(MERGE_QUESTION, "no\nnot\r\nthis week", "a\nperson", "x",
                          verdict="later")],
@@ -3053,8 +3069,8 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                 name for name in RECORD_COLUMNS if name != "at commit") + " |",
             "|---|---|---|---|---|", f"| {MERGE_QUESTION} | {APPROVED} | yes | a-person | x |"])
         answered = merging(comments=[without])
-        check("and an approval with no commit column covers no commit", denied(answered) and "no commit" in reason(answered),
-              reason(answered)[:200])
+        check("and an approval with no commit column covers no commit",
+              denied(answered) and "no commit" in reason(answered), reason(answered)[:200])
         for label, stated in (("no commit", ""), ("an abbreviated one", A_HEAD[:7])):
             check(f"a merge answer recorded with {label} is refused",
                   write_record("an-owner/a-repository#7", MERGE_QUESTION, "yes", "a-person",
