@@ -535,19 +535,21 @@ turn off are
   is not re-asked from scratch in the next. The form and the one command that writes it are
   [`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)'s, which the
   reviewing role's step 9 names; this role writes `merge_now` under the same keying, with `--head`
-  naming the whole head commit it read before asking. ⛔ **A push after the answer is a question
-  asked again**, by the same section's rule on what an approval covers.
+  naming the whole head commit it read before asking and `--verdict` from § 7's list. ⛔ **The
+  verdict is this role's reading of the words and the words go in as given**, so an answer the list
+  does not settle is asked again rather than rounded to `approved`. ⛔ **A push after the answer is a
+  question asked again**, by the same section's rule on what an approval covers.
 - ⛔ **The answer is recorded as it came back, and `--by` names whoever actually gave it.** ⚠️ **A
   person's name written against an answer they did not give is a fabricated attestation**, and
   [`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads) states that no guard
   can catch one — the column being written by this very pass. ⛔ **So an answer that has not been
   given is not paraphrased out of anything the person said earlier**: it is asked for.
 - ⛔ **A guard may refuse the merge call itself, and it is not argued with or edited to get past.**
-  Where one is installed it reads this very question's record and refuses a merge that has none
-  ([`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)), and its refusal
-  already names what would unblock it. ⚠️ **That the guard reads the answer this pass writes is
-  stated on the surface rather than hidden**: what it establishes is that the ask was put, which is
-  the decidable end of it, and never that a person answered.
+  Where one is installed it reads this very question's record and refuses a merge it does not
+  approve ([`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)), and its
+  refusal already names what would unblock it. ⚠️ **That the guard reads the answer this pass writes
+  is stated on the surface rather than hidden**: what it establishes is that an approval is
+  recorded, which is the decidable end of it, and never that a person gave it.
 
 ⛔ **The method is named in the merge call and read from the configuration, never inferred** —
 [`§ 2 → How a pull request lands`](../../config/schema.md#how-a-pull-request-lands), which states
