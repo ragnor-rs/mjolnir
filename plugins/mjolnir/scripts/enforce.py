@@ -198,20 +198,20 @@ BEHIND_TIMEOUT = 3
 # --- the record a guard reads ----------------------------------------------
 #
 # The form is the surface's: one comment on the change, keyed by the repository
-# and the change's own number, stating the question, the answer as it came back,
-# who answered and when. It is a visible table rather than a hidden marker, for
+# and the change's own number, stating the question, its verdict, the answer as it
+# came back, who answered and when. It is a visible table rather than a hidden marker, for
 # two reasons: the boundary carrier reports an HTML comment as a span that
 # renders as nothing, so a record written as one would be surfaced as a finding
 # every time a role ingested the change; and a record a person cannot read on the
 # change is a record only a machine can audit.
 
 RECORD_MARKER = "**mjolnir · recorded answer**"
-RECORD_COLUMNS = ["question", "answer", "answered by", "answered at", "at commit"]
+RECORD_COLUMNS = ["question", "verdict", "answer", "answered by", "answered at", "at commit"]
 
-# ⚠️ A record of four columns carries no commit. It is still read, so that the
-# questions no guard holds keep their answers and the merge guard can say that
-# the answer is there and names no commit, rather than that there is no answer.
-COLUMNS_WITHOUT_A_COMMIT = RECORD_COLUMNS[:-1]
+# ⚠️ A record written without a verdict or a commit is still read, so that the
+# questions no guard holds keep their answers and the merge guard can say what the
+# answer lacks rather than that there is no answer.
+OPTIONAL_COLUMNS = ("verdict", "at commit")
 
 # ⛔ The whole commit and never a prefix: a comparison with an abbreviation is a
 # comparison something has to resolve, and the guard resolves nothing.
@@ -239,12 +239,16 @@ COVERS_CONTENT = "content"
 # measured, and the reason the key moved here from `read_by_a_person`, which the
 # surface has since retired from the alternation entirely.
 #
-# ⚠️ What this guard therefore establishes is that the ask was put and answered,
-# never that a person answered it: the `answered by` cell is written by the same
-# pass that writes the answer. § 7 states that bound rather than implying the
+# ⚠️ What this guard therefore establishes is that an approval is recorded, never
+# that a person gave it: the verdict and the `answered by` cell are written by the
+# same pass that writes the answer. § 7 states that bound rather than implying the
 # stronger one, and what holds that cell honest is the authorship rule.
 MERGE_QUESTION = "merge_now"
 QUESTION_VOCABULARY = "recorded_answer.question"
+
+# The one verdict that allows a merge, held to the surface's list the same way.
+APPROVED = "approved"
+VERDICT_VOCABULARY = "recorded_answer.verdict"
 
 # A change named the way the record is keyed. ⛔ The repository is part of the
 # address and not context: a bare number names a different change in every
@@ -587,15 +591,16 @@ def release(store: Path, session: str, scope: str, command: str, now: float) -> 
 # --- reading the record ----------------------------------------------------
 
 
-def record_body(question: str, given: str, by: str, at: str, head: str = "") -> str:
+def _cell(text: str) -> str:
+    # ⛔ One line: a newline inside a cell cuts the row in two, and a refusal that
+    # does not parse would leave the approval before it standing.
+    return " ".join(text.split()).replace(PIPE, PIPE_ESCAPED)
+
+
+def record_body(question: str, given: str, by: str, at: str, head: str = "",
+                verdict: str = "") -> str:
     """The comment a recorded answer is, in the form the surface states."""
-    cells = [
-        question,
-        given.replace(PIPE, PIPE_ESCAPED),
-        by.replace(PIPE, PIPE_ESCAPED),
-        at,
-        head,
-    ]
+    cells = [question, verdict, _cell(given), _cell(by), at, head]
     return "\n".join([
         RECORD_MARKER,
         "",
@@ -617,6 +622,7 @@ def answers_in(text: str) -> list[dict]:
     if RECORD_MARKER not in text:
         return []
     found = []
+    columns: list[str] = []
     for line in text.splitlines():
         if not line.strip().startswith(PIPE):
             continue
@@ -624,15 +630,14 @@ def answers_in(text: str) -> list[dict]:
             cell.strip().replace(PIPE_ESCAPED, PIPE)
             for cell in re.split(r"(?<!\\)\|", line.strip().strip(PIPE))
         ]
-        if len(cells) == len(COLUMNS_WITHOUT_A_COMMIT):
-            if cells == COLUMNS_WITHOUT_A_COMMIT:
-                continue
-            cells = [*cells, ""]
-        if len(cells) != len(RECORD_COLUMNS):
+        named = [name for name in RECORD_COLUMNS
+                 if name in cells or name not in OPTIONAL_COLUMNS]
+        if cells == named:
+            columns = cells
             continue
-        if cells == RECORD_COLUMNS or set("".join(cells)) <= set("-: "):
+        if len(cells) != len(columns) or set("".join(cells)) <= set("-: "):
             continue
-        found.append(dict(zip(RECORD_COLUMNS, cells)))
+        found.append({**dict.fromkeys(OPTIONAL_COLUMNS, ""), **dict(zip(columns, cells))})
     return found
 
 
@@ -641,15 +646,19 @@ def recorded_answer(comments: list[str], question: str) -> dict | None:
 
     ⛔ The last and not the first: an answer recorded twice is a question asked
     again, and the standing answer is the one given most recently -- the same
-    reading `§ An artifact states what is true now` gives every artifact.
+    reading `§ An artifact states what is true now` gives every artifact. ⛔ And
+    chosen before it is judged whole: an incomplete record dropped first would
+    leave an earlier approval standing under a later answer.
     """
-    answered = [
+    recorded = [
         answer
         for text in comments
         for answer in answers_in(text)
-        if answer["question"] == question and answer["answer"] and answer["answered by"]
+        if answer["question"] == question
     ]
-    return answered[-1] if answered else None
+    if not recorded or not recorded[-1]["answer"] or not recorded[-1]["answered by"]:
+        return None
+    return recorded[-1]
 
 
 def host_comments(slug: str, number: str, run=None) -> tuple[list[str], str | None]:
@@ -892,7 +901,7 @@ def _deny(reason: str) -> dict:
 
 
 def merge_guard(config, command: str, *, host=None) -> dict:
-    """Refuse a merge where the merge ask has no recorded answer for this commit.
+    """Refuse a merge unless the merge ask's last record approves this commit.
 
     ⛔ Refused rather than waved through where the record could not be read at
     all, which is the surface's fail direction for an act that cannot be undone.
@@ -942,12 +951,14 @@ def merge_guard(config, command: str, *, host=None) -> dict:
             f"commit it was given for, and a merge is not undone ({RECORD_CITATION}). Re-run "
             "once the host answers."
         )
+    known = verdicts()
     again = (
         f"  python3 {Path(__file__).resolve()} record \\\n"
         f"    --change {slug}#{number} --question {MERGE_QUESTION} --head {head} \\\n"
+        f"    --verdict '<{' | '.join(known) or 'the verdict'}>' \\\n"
         "    --given '<the answer as it came back>' --by '<who answered>'"
     )
-    if answer:
+    if answer and answer["verdict"] == APPROVED:
         approved = answer["at commit"]
         if approved == head:
             return {}
@@ -970,13 +981,26 @@ def merge_guard(config, command: str, *, host=None) -> dict:
     # one: a refusal whose remedy has to be worked out is a refusal somebody gets
     # past by editing the guard. The path is this file's own, so it names whichever
     # copy of the plugin the session actually loaded.
+    if answer and answer["verdict"] in known:
+        found = (
+            f"the answer to `{MERGE_QUESTION}` recorded last on it is `{answer['verdict']}`: "
+            f"{answer['answer']!r}, by {answer['answered by']}"
+        )
+    elif answer:
+        found = (
+            f"the answer to `{MERGE_QUESTION}` recorded last on it states "
+            + (f"`{answer['verdict']}`, which is no verdict" if answer["verdict"]
+               else "no verdict")
+            + f": {answer['answer']!r}, by {answer['answered by']}"
+        )
+    else:
+        found = f"no answer to `{MERGE_QUESTION}` is recorded on it"
     return _deny(
-        f"This command merges {slug}#{number}, and no answer to `{MERGE_QUESTION}` is "
-        f"recorded on it ({RECORD_CITATION}). ⛔ The question is whether this change goes in "
+        f"This command merges {slug}#{number}, and {found} ({RECORD_CITATION}). ⛔ Only a "
+        f"recorded `{APPROVED}` allows a merge. The question is whether this change goes in "
         "now, put to a person once everything that would have stopped the merge is "
-        "established — and it is procedure rather than a setting, so *later* is an answer and "
-        "so is unanswered. ⛔ Ask it before recording it: an answer written on somebody's "
-        "behalf is a fabricated attestation, which is the one thing this record may not "
+        "established — and it is procedure rather than a setting. ⛔ Ask it before recording "
+        "it: an answer written on somebody's behalf is a fabricated attestation, which is the one thing this record may not "
         f"carry. What unblocks this is their answer written onto the change:\n{again}"
     )
 
@@ -1889,7 +1913,8 @@ def _inert(session: str, stop: str) -> dict:
 # --- the arms a role invokes ------------------------------------------------
 
 
-def questions(surface_text: str | None = None) -> list[str]:
+def questions(surface_text: str | None = None,
+              vocabulary: str = QUESTION_VOCABULARY) -> list[str]:
     """The questions an answer may be recorded for, read out of the surface.
 
     ⛔ Through the surface's own reader and never parsed here, which is what makes
@@ -1912,13 +1937,18 @@ def questions(surface_text: str | None = None) -> list[str]:
             if surface_text is not None
             else Path(reader.surface_for()).read_text(encoding="utf-8")
         )
-        return list(reader.surface_facts(text)["enums"].get(QUESTION_VOCABULARY) or [])
+        return list(reader.surface_facts(text)["enums"].get(vocabulary) or [])
     except Exception:  # noqa: BLE001 -- any failure is a named absence to the caller
         return []
 
 
+def verdicts(surface_text: str | None = None) -> list[str]:
+    """The verdicts the merge ask is answered with, read as the questions are."""
+    return questions(surface_text, VERDICT_VOCABULARY)
+
+
 def write_record(address: str, question: str, given: str, by: str, at: str,
-                 head: str = "", run=None) -> tuple[str, int]:
+                 head: str = "", run=None, *, verdict: str = "") -> tuple[str, int]:
     """Write a recorded answer onto a change, and say where it went.
 
     ⛔ A question outside the surface's own vocabulary is refused rather than
@@ -1941,6 +1971,33 @@ def write_record(address: str, question: str, given: str, by: str, at: str,
             f"reads leaves the act refused however it was answered ({RECORD_CITATION}).",
             2,
         )
+    allowed = verdicts()
+    if question == MERGE_QUESTION and not allowed:
+        return (
+            "⛔ Not established: the surface's own list of verdicts could not be read, so "
+            "nothing was recorded.",
+            1,
+        )
+    if question == MERGE_QUESTION and verdict not in allowed:
+        return (
+            f"Refused: an answer to `{MERGE_QUESTION}` is recorded with a verdict, and "
+            f"{verdict!r} is not one ({' | '.join(allowed)}). Nothing was written: add "
+            f"`--verdict` with the one the answer gives, and leave the words as given "
+            f"({RECORD_CITATION}).",
+            2,
+        )
+    if question != MERGE_QUESTION and verdict:
+        return (
+            f"Refused: `{question}` carries no verdict, only `{MERGE_QUESTION}` does "
+            f"({RECORD_CITATION}). Nothing was written.",
+            2,
+        )
+    if not given.strip() or not by.strip():
+        return (
+            "Refused: a record states the answer as it came back and who gave it, and one of "
+            f"the two is empty ({RECORD_CITATION}). Nothing was written.",
+            2,
+        )
     found = CHANGE_ADDRESS.match(address.strip())
     if not found:
         return (
@@ -1959,7 +2016,7 @@ def write_record(address: str, question: str, given: str, by: str, at: str,
             2,
         )
     slug, number = found.group("slug"), found.group("number")
-    body = record_body(question, given, by, at, head)
+    body = record_body(question, given, by, at, head, verdict)
     runner = run if run is not None else _run_host
     with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as out:
         out.write(body + "\n")
@@ -1977,7 +2034,8 @@ def write_record(address: str, question: str, given: str, by: str, at: str,
             1,
         )
     return (
-        f"Recorded on {slug}#{number}: `{question}` answered {given!r} by {by} at {at}.\n"
+        f"Recorded on {slug}#{number}: `{question}` answered {given!r} by {by} at {at}"
+        + (f", verdict `{verdict}`" if verdict else "") + ".\n"
         f"{printed.strip()}",
         0,
     )
@@ -2819,15 +2877,45 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
              record_body(MERGE_QUESTION, "second", "a-person", "y")],
             MERGE_QUESTION,
         )
+        check("and an incomplete last record leaves no earlier one standing",
+              recorded_answer([record_body(MERGE_QUESTION, "yes", "a-person", "x",
+                                           verdict=APPROVED),
+                               record_body(MERGE_QUESTION, "", "a-person", "y",
+                                           verdict="declined")],
+                              MERGE_QUESTION) is None)
+        lines = recorded_answer(
+            [record_body(MERGE_QUESTION, "no\nnot\r\nthis week", "a\nperson", "x",
+                         verdict="later")],
+            MERGE_QUESTION)
+        check("an answer of several lines is still one row",
+              lines is not None and lines["answer"] == "no not this week"
+              and lines["verdict"] == "later", repr(lines))
         check("and the standing answer is the last one recorded",
               later and later["answer"] == "second", repr(later))
         check("an address with no repository in it is refused",
-              write_record("7", MERGE_QUESTION, "yes", "a-person", "x")[1] == 2)
+              write_record("7", MERGE_QUESTION, "yes", "a-person", "x", A_HEAD,
+                           verdict=APPROVED)[1] == 2)
         # ⛔ The vocabulary is the surface's, so a near-miss spelling is refused
         # rather than written under a name no guard reads.
         refused, status = write_record("an-owner/a-repository#7", "merge-now", "yes",
                                        "a-person", "x")
         check("a question outside the surface's own list is refused", status == 2)
+        for label, question, verdict, given in (
+            ("a merge answer with no verdict", MERGE_QUESTION, "", "yes"),
+            ("a merge answer with a verdict outside the list", MERGE_QUESTION, "yes", "yes"),
+            ("a verdict under another question", "review_depth", APPROVED, "quick"),
+            ("a merge answer with no words", MERGE_QUESTION, APPROVED, " "),
+        ):
+            stopped: list[str] = []
+            said, status = write_record(
+                "an-owner/a-repository#7", question, given, "a-person", "x", A_HEAD,
+                run=lambda args, _t: (stopped.append(args), (0, ""))[1], verdict=verdict)
+            check(f"{label} is refused and nothing reaches the host",
+                  status == 2 and not stopped, said[:140])
+            if question == MERGE_QUESTION and given != " ":
+                check(f"{label}: the refusal says how to record one",
+                      "--verdict" in said and all(word in said for word in verdicts()),
+                      said[:200])
         check("and the refusal names the list it is not in",
               MERGE_QUESTION in refused, refused[:140])
         # ⛔ A retired question is refused by the same arm and for the same
@@ -2852,7 +2940,8 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
 
         printed, status = write_record("an-owner/a-repository#7", MERGE_QUESTION,
                                        "yes, merge it now", "a-person",
-                                       "2026-01-01T00:00:00Z", A_HEAD, run=_records)
+                                       "2026-01-01T00:00:00Z", A_HEAD, run=_records,
+                                       verdict=APPROVED)
         check("a well-formed record is written, and the arm says where", status == 0
               and "an-owner/a-repository#7" in printed, printed[:140])
         check("and what reached the host parses back as the answer that was given",
@@ -2884,7 +2973,32 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                   "--question" in reason(answered) and MERGE_QUESTION in reason(answered),
                   reason(answered)[:160])
         recorded = [record_body(MERGE_QUESTION, "yes, merge it now", "a-person",
-                                "2026-01-01T00:00:00Z", A_HEAD)]
+                                "2026-01-01T00:00:00Z", A_HEAD, APPROVED)]
+        # ⛔ The words say yes in every one of these, so what refuses is the verdict.
+        for verdict in [*(word for word in verdicts() if word != APPROVED), "", "Approved"]:
+            answered = guard_answer(
+                _call("gh pr merge 7"), config=config, now=1000.0, store=fresh("merge"),
+                host=_a_host(comments=[*recorded, record_body(
+                    MERGE_QUESTION, "yes, merge it now", "a-person", "y", A_HEAD, verdict)]))
+            check(f"a last record whose verdict is {verdict!r} refuses the merge",
+                  denied(answered), repr(answered)[:140])
+            check(f"{verdict!r}: and the refusal says what is recorded and how to record one",
+                  (f"`{verdict}`" if verdict else "no verdict") in reason(answered)
+                  and "--verdict" in reason(answered), reason(answered)[:200])
+        before = [record_body(MERGE_QUESTION, "not yet", "a-person", "x", A_HEAD, "later"),
+                  *recorded]
+        check("and an approval recorded after a later allows it",
+              guard_answer(_call("gh pr merge 7"), config=config, now=1000.0,
+                           store=fresh("merge"), host=_a_host(comments=before)) == {})
+        bare = "\n".join([
+            RECORD_MARKER, "", "| " + " | ".join(
+                name for name in RECORD_COLUMNS if name != "verdict") + " |",
+            "|---|---|---|---|---|", f"| {MERGE_QUESTION} | yes | a-person | x | {A_HEAD} |"])
+        answered = guard_answer(_call("gh pr merge 7"), config=config, now=1000.0,
+                                store=fresh("merge"), host=_a_host(comments=[bare]))
+        check("a record with no verdict column is refused as stating none",
+              denied(answered) and "no verdict" in reason(answered)
+              and "--verdict" in reason(answered), reason(answered)[:200])
         check("allowed once the person's own merge answer is on the change",
               guard_answer(_call("gh pr merge 7"), config=config, now=1000.0,
                            store=fresh("merge"), host=_a_host(comments=recorded)) == {})
@@ -2926,20 +3040,25 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             check(f"{label}: refused", denied(answered) and "could not be established"
                   in reason(answered), repr(answered)[:140])
         answered = merging(comments=recorded + [record_body(
-            MERGE_QUESTION, "yes", "a-person", "y", A_LATER_HEAD)], head=A_LATER_HEAD)
+            MERGE_QUESTION, "yes", "a-person", "y", A_LATER_HEAD, APPROVED)],
+            head=A_LATER_HEAD)
         check("asked again at the later commit, it is allowed", answered == {},
               repr(answered)[:140])
         four = "\n".join([RECORD_MARKER, "", "| question | answer | answered by | answered at |",
                           "|---|---|---|---|", f"| {MERGE_QUESTION} | yes | a-person | x |"])
         check("a record of four columns is read, and once",
               [a["at commit"] for a in answers_in(four)] == [""], repr(answers_in(four)))
-        answered = merging(comments=[four])
-        check("and covers no commit", denied(answered) and "no commit" in reason(answered),
+        without = "\n".join([
+            RECORD_MARKER, "", "| " + " | ".join(
+                name for name in RECORD_COLUMNS if name != "at commit") + " |",
+            "|---|---|---|---|---|", f"| {MERGE_QUESTION} | {APPROVED} | yes | a-person | x |"])
+        answered = merging(comments=[without])
+        check("and an approval with no commit column covers no commit", denied(answered) and "no commit" in reason(answered),
               reason(answered)[:200])
         for label, stated in (("no commit", ""), ("an abbreviated one", A_HEAD[:7])):
             check(f"a merge answer recorded with {label} is refused",
                   write_record("an-owner/a-repository#7", MERGE_QUESTION, "yes", "a-person",
-                               "x", stated, run=_records)[1] == 2)
+                               "x", stated, run=_records, verdict=APPROVED)[1] == 2)
         moved = {A_HEAD: _a_diff(), A_LATER_HEAD: _a_diff(at=40, blob="3333333")}
         wide = _a_config([])
         wide.data["host"]["landing"] = {"approval_covers": COVERS_CONTENT}
@@ -3838,6 +3957,13 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     check("and reddens when the surface stops stating it",
           MERGE_QUESTION not in questions(
               surface.replace(MERGE_QUESTION, "something_else", 1)))
+    check("the verdict the guard allows a merge on is one the surface states",
+          APPROVED in verdicts(surface), f"the surface states {verdicts(surface)}")
+    check("and the verdicts that refuse one are the surface's too",
+          {"declined", "later", "unanswered"} <= set(verdicts(surface)))
+    check("and reddens when the surface stops stating it",
+          APPROVED not in verdicts(
+              surface.replace(f"verdict: {APPROVED} |", "verdict: something_else |")))
 
     # ⛔ The four answer names and the word a probe is compared against are a
     # vocabulary § 18 publishes, carried here as strings because the code needs
@@ -3963,6 +4089,9 @@ def main(argv: list[str]) -> int:
                          help="the change, keyed the way a record is: <owner>/<repo>#<number>")
     writing.add_argument("--question", required=True, help="which question was answered")
     writing.add_argument("--given", required=True, help="the answer, as it came back")
+    writing.add_argument("--verdict", default="",
+                         help=f"what the answer comes to, required on {MERGE_QUESTION} and "
+                              "refused on any other question")
     writing.add_argument("--by", required=True, help="who answered it")
     writing.add_argument("--at", default=None, help="when; now where omitted")
     writing.add_argument("--head", default="",
@@ -3983,7 +4112,7 @@ def main(argv: list[str]) -> int:
     if args.arm == "record":
         stamp = args.at or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         report, status = write_record(args.change, args.question, args.given, args.by, stamp,
-                                      args.head)
+                                      args.head, verdict=args.verdict)
         print(report)
         return status
     if args.arm == "held":

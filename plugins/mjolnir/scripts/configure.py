@@ -584,6 +584,12 @@ ANSWERED_BY: dict[str, Answer] = {
         "guard resolves",
     ),
 
+    "recorded_answer.verdict": skip(
+        "the verdicts a merge answer is recorded under are § 7's own closed list "
+        "and no project states them: the guard allows one of them, and a project "
+        "that could add a word would be adding one that holds every merge",
+    ),
+
     # --- § 6. Commit behaviour ---------------------------------------------
     "commit.staging.session": ask(
         "Does the bookkeeping role stage what it commits explicitly, or take the "

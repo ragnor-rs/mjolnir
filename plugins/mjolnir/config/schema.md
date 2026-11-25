@@ -3072,12 +3072,12 @@ anything. A rule read by three parties and written in one of their files is a se
 the other two.
 
 ⛔ **A recorded answer is one comment on the change, keyed by the repository and the change's own
-number, stating the question, the answer as it came back, who answered it, when, and the commit that
-was the change's head when the question was put.** The commit is required on the merge ask, and an
-answer no guard holds to a commit may leave it empty. The keying
-is the load-bearing half: a bare number names a different change in every repository the route
-carries, so an answer recorded against one is an answer no guard can resolve, and the act stays
-refused however it was answered.
+number, stating the question, the verdict where the question has one, the answer as it came back,
+who answered it, when, and the commit that was the change's head when the question was put.** The
+commit is required on the merge ask, and an answer no guard holds to a commit may leave it empty.
+The keying is the load-bearing half: a bare number names a different change in every repository the
+route carries, so an answer recorded against one is an answer no guard can resolve, and the act
+stays refused however it was answered.
 
 The questions an answer is recorded for are the one ask
 [§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) states and the answers the
@@ -3088,6 +3088,7 @@ settled there:
 ```yaml
     recorded_answer:
       question: review_depth | plan_run_by | merge_now
+      verdict: approved | declined | later | unanswered
 ```
 
 ⛔ **A question outside that list is refused rather than written**, since a record under a name no
@@ -3095,13 +3096,21 @@ guard resolves is a record that reads as absent at exactly the moment it matters
 retires a question**: `read_by_a_person` was in this list, is not now, and an answer offered under it
 is refused with the list named.
 
-⛔ **`unanswered` is an answer and is written down as one.** Silence may narrow the work and never
-license an act, by the section above, so a question nothing answered is recorded as unanswered —
-and a guard reading that as *no record* would hold a change nothing on the route resumes.
+⛔ **The merge ask's record states a verdict, and no other question's does.** The verdict is the
+recording pass's reading of the words, from the list above, and the words stand beside it as given
+so that a reader can hold one against the other. A merge record offered with no verdict, or with one
+outside the list, is refused rather than written; so is a verdict offered under another question.
 
-⛔ **The guard on a merge refuses where the merge ask has no recorded answer.** That is the ask the
-route puts immediately before the act, so the answer that authorizes the merge and the answer the
-guard reads are one record rather than two.
+⛔ **`unanswered` is an answer and is written down as one.** Silence may narrow the work and never
+license an act, by the section above, so an ask nothing answered is recorded with that verdict, and
+it holds the merge as `declined` and `later` do. What resumes the change is the ask put again and
+its own answer recorded.
+
+⛔ **The guard on a merge allows one verdict, `approved`, on the last record the merge ask has, and
+refuses everything else** — no record, another verdict, and a record stating none. That is the ask
+the route puts immediately before the act, so the answer that authorizes the merge and the answer
+the guard reads are one record rather than two. ⛔ **The last record stands even where it cannot be
+used**: an incomplete record is never a reason to fall back to an earlier approval.
 
 ⛔ **A merge approval covers the commit it was given for and no later one.** The guard refuses a
 merge whose head is not the recorded commit, naming both and how to ask again; a record naming no
@@ -3120,11 +3129,11 @@ answer does not satisfy is the guard somebody edits**, which the rule below exis
 leaves the person running the role one route past it, which is editing the guard — and a guard
 edited to get past is a guard nobody ever has to satisfy again.
 
-⛔ **What this guard establishes is that the ask was put and answered — never that a person answered
-it.** The `answered by` column is written by the same pass that writes the answer, so what a guard
-reads it off is a claim rather than an attestation. ⚠️ **Stated rather than left implied, because
-the stronger reading is the one a reader takes**, and a mechanism credited with a guarantee it does
-not have is one nobody checks.
+⛔ **What this guard establishes is that an approval is recorded — never that a person gave it.** The
+verdict and the `answered by` column are written by the same pass that writes the answer, so what a
+guard reads it off is a claim rather than an attestation. ⚠️ **Stated rather than left implied,
+because the stronger reading is the one a reader takes**, and a mechanism credited with a guarantee
+it does not have is one nobody checks.
 
 ⚠️ **The independence a guard reading some other leg's record would have had is available to no
 guard here, under any configuration.** What it reads is the merge ask, and the merging pass is what
