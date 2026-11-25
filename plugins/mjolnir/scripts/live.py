@@ -304,9 +304,12 @@ def holds(config, command: str) -> list[dict]:
     stated = entries(config)
     if not stated:
         return []
-    if not position.readable(command):
+    launchers = position.launchers_of(config)
+    if not position.readable(command, launchers):
         found = []
-        for token in position.words(command):
+        tokens = [word for text in (command, *position.launched_texts(command, launchers))
+                  for word in position.words(text)]
+        for token in tokens:
             for entry in stated:
                 if _names_a_tool(token, entry):
                     found.append({
@@ -319,8 +322,8 @@ def holds(config, command: str) -> list[dict]:
                     })
         return found
     found = []
-    for at, segment in enumerate(position.segments(command), start=1):
-        for called, arguments in position.command_chain(segment):
+    for at, segment in enumerate(position.segments(command, launchers), start=1):
+        for called, arguments in position.command_chain(segment, launchers):
             for entry in stated:
                 if not _names_a_tool(called, entry):
                     continue
@@ -814,6 +817,18 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             command = shape.replace("<tool>", tool).replace("<live>", LIVE)
             answered = guard_answer(_call(command), config=one)
             check(label, decision(answered) == "ask", f"{command[:60]!r} → {answered!r}"[:140])
+        one.data["command_position"] = {"launchers": [
+            {"command": "a-shell", "string_flags": ["-c"], "operands": "command"}]}
+        for shape in ("a-shell -c '<tool> <live>'", "a-shell -c \"<tool> <live> 'x\"",
+                      "a-shell <tool> <live>"):
+            command = shape.replace("<tool>", tool).replace("<live>", LIVE)
+            check(f"inside a listed launcher: {shape}",
+                  decision(guard_answer(_call(command), config=one)) == "ask")
+        check("and one it only prints is not held", guard_answer(
+            _call(f"a-shell -c 'a-printing-command {tool} {LIVE}'"), config=one) == {})
+        del one.data["command_position"]
+        check("and an unlisted launcher's text is not read", guard_answer(
+            _call(f"a-shell -c '{tool} {LIVE}'"), config=one) == {})
         for label, shape in MUST_HOLD_ON_THE_FLAGS_VALUE:
             command = shape.replace("<tool>", tool).replace("<live>", ALLOWED)
             answered = guard_answer(_call(command), config=one)

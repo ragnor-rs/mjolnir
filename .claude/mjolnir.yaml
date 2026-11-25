@@ -828,6 +828,11 @@ spend_guard:
   # no spend beside it for the figure to be worth interrupting a person about. The key is
   # legitimately unset, and the arm that would read it says nothing.
 
+# No launcher is listed: the lists the guards read are empty here, so there is no command for one to
+# hide.
+command_position:
+  launchers: []
+
 live_guard:
   # ⛔ No command this repository runs opens a session anywhere else. Every check here is a suite
   # over the tree it runs in, the code host is reached by its own client and the tracker through
