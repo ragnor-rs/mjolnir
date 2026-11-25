@@ -3159,6 +3159,53 @@ class Config:
             )
         return out
 
+    def outliving_directories(self) -> dict[str, str | None]:
+        """Each directory § 40 says outlives a checkout, by key, as this project states it.
+
+        ⛔ Only under the carrier that reads it, and `None` where the value could not be read --
+        a listed key whose private layer is absent is unestablished rather than clean (§ 11).
+        """
+        out: dict[str, str | None] = {}
+        for key, carrier, words in OUTLIVING_DIRECTORIES:
+            try:
+                if self.get(carrier) not in words:
+                    continue
+                value = self.get(key)
+            except (ConfigError, OSError):
+                out[key] = None
+                continue
+            if isinstance(value, str) and value.strip():
+                out[key] = value.strip()
+        return out
+
+    def harness_derived_directories(self) -> dict[str, str]:
+        """What to say about each such directory the harness derived, or that went unread.
+
+        ⛔ Names the key and never the value, the key being one § 28 may keep out of a report.
+        """
+        out: dict[str, str] = {}
+        for key, value in self.outliving_directories().items():
+            if value is None:
+                out[key] = (
+                    f"`{key}` could not be read, so whether it names a directory the agent "
+                    "harness derived is unestablished (§ 40)."
+                )
+                continue
+            if not derived_by_the_harness(value):
+                continue
+            out[key] = (
+                f"`{key}` names a directory inside the agent harness's own per-project "
+                "store. That folder's name encodes the whole path of one checkout, the "
+                "account included, so a moved or renamed checkout, a tree and another "
+                "machine each derive a different one and the value goes stale. Write a "
+                "directory that depends on neither, such as "
+                f"`{offered_directory(key, None)}`"
+                + ("; or, where the harness's own store is what is meant, "
+                   f"`{MEMORY_KEY}.carrier: derived`" if key == f"{MEMORY_KEY}.store" else "")
+                + " (§ 40)."
+            )
+        return out
+
     def unavailable(self) -> list[str]:
         """What this configuration cannot support, and why.
 
@@ -3795,7 +3842,8 @@ class Config:
             for key in self.private_keys:
                 _place_marker(shown, key, f"<private: {PRIVATE_SOURCE_PATH}>")
             out["config"] = shown
-        out["unavailable"] = self.unavailable()
+        out["unavailable"] = [
+            *self.unavailable(), *self.harness_derived_directories().values()]
         return out
 
 
@@ -10491,6 +10539,69 @@ def _surface_without_retirements() -> str:
         )
 
 
+# --- § 40's directories that outlive a checkout ------------------------------
+#
+# ⛔ § 40's list, held once here: the key, the carrier that decides whether anything reads it, and
+# the words under which it is read.
+OUTLIVING_DIRECTORIES = (
+    ("ordering.record.dir", "ordering.record.carrier", ("document", "grouping")),
+    ("memory.store", "memory.carrier", ("path",)),
+    ("day_log.destination.out_dir", "day_log.destination.kind", ("file",)),
+)
+
+# What each offered directory ends in, so that two stores never share one.
+OFFERED_LEAF = {
+    "ordering.record.dir": "ordering",
+    "memory.store": "memory",
+    "day_log.destination.out_dir": "day-log",
+}
+
+# The harness's own names: what relocates its configuration directory, that directory's name under
+# a home, and the per-project store inside it. A convention of the harness, and no path on
+# anybody's machine.
+HARNESS_CONFIG_DIR = "CLAUDE_CONFIG_DIR"
+HARNESS_DIR = ".claude"
+HARNESS_STORE = "projects"
+
+# A folder named for an absolute path, whose separators the harness writes as `-`: a leading `-`,
+# or a drive letter and two.
+_ENCODED_CHECKOUT = re.compile(r"^(-|[A-Za-z]--)")
+
+
+def derived_by_the_harness(stated: str) -> bool:
+    """Whether a stated directory is inside the harness's per-project store (§ 40).
+
+    ⛔ **Recognised and never composed.** Two readings: the form, which holds for another account's
+    home as well as this one's, and the harness's own root where the shell states a relocated one.
+    Both are asked of the path as written and of what it resolves to, a link being one more way
+    to arrive there.
+    """
+    expanded = os.path.expanduser(os.path.expandvars(stated.strip()))
+    relocated = (os.environ.get(HARNESS_CONFIG_DIR) or "").strip()
+    stores = []
+    if relocated:
+        store = os.path.join(os.path.expanduser(relocated), HARNESS_STORE)
+        stores = [os.path.normpath(store), os.path.realpath(store)]
+    for path in (os.path.normpath(expanded), os.path.realpath(expanded)):
+        parts = path.replace(os.sep, "/").split("/")
+        for at in range(len(parts) - 2):
+            if (parts[at:at + 2] == [HARNESS_DIR, HARNESS_STORE]
+                    and _ENCODED_CHECKOUT.match(parts[at + 2])):
+                return True
+        if any(path.startswith(store + os.sep) for store in stores):
+            return True
+    return False
+
+
+def offered_directory(key: str, repo: str | None) -> str:
+    """A directory for one of § 40's keys that names no account and no checkout.
+
+    ⚠️ `~` is expanded by whatever reads the key, so the text written is the same on every machine.
+    """
+    named = str(repo or "").strip().strip("/") or "<the project's name>"
+    return "/".join(("~", ".local", "state", "mjolnir", named, OFFERED_LEAF[key]))
+
+
 def self_test() -> int:
     failures = 0
 
@@ -10505,10 +10616,79 @@ def self_test() -> int:
     paths = _examples()
     check("the examples directory holds configurations", bool(paths))
 
-    # ⛔ What a guard's answer carries about a configuration that did not
-    # resolve (§ 19), asserted here rather than left to the four callers.
     import tempfile  # noqa: PLC0415 -- one of the arms that needs a directory
 
+    # --- § 40's directories that outlive a checkout ---------------------------
+    standing = os.environ.pop(HARNESS_CONFIG_DIR, None)
+    try:
+        for stated, derived in (
+            ("/h/an-account/.claude/projects/-h-an-account-a-checkout", True),
+            ("/u/another/.claude/projects/-u-another-x/memory", True),
+            (os.path.join("~", HARNESS_DIR, HARNESS_STORE, "-a-checkout", ""), True),
+            ("/a/./.claude/x/../projects/C--a-checkout", True),
+            ("/h/an-account/.claude/projects", False),
+            ("/a-checkout/.claude/projects/a-name", False),
+            ("/h/an-account/.claude/plans/-a", False),
+            (offered_directory("memory.store", "an-owner/a-name"), False),
+        ):
+            check(f"{stated!r} {'is' if derived else 'is not'} a harness-derived directory",
+                  derived_by_the_harness(stated) is derived)
+        with tempfile.TemporaryDirectory() as under:
+            inside = os.path.join(under, "moved", HARNESS_STORE, "any-name")
+            os.makedirs(inside)
+            link = os.path.join(under, "a-link")
+            os.symlink(inside, link)
+            check("a relocated harness root is not recognised where nothing states it",
+                  not derived_by_the_harness(inside))
+            os.environ[HARNESS_CONFIG_DIR] = os.path.join(under, "moved")
+            check("and is where the environment does, through a link as well",
+                  derived_by_the_harness(inside) and derived_by_the_harness(link))
+            check("a sibling whose name opens the same way is not inside it",
+                  not derived_by_the_harness(
+                      os.path.join(under, "moved", HARNESS_STORE + "-other", "x")))
+            del os.environ[HARNESS_CONFIG_DIR]
+    finally:
+        os.environ.pop(HARNESS_CONFIG_DIR, None)
+        if standing is not None:
+            os.environ[HARNESS_CONFIG_DIR] = standing
+    a_stale = "/h/an-account/.claude/projects/-h-an-account-a-checkout"
+    for key, carrier, words in OUTLIVING_DIRECTORIES:
+        for word in words:
+            found = _example_meeting(carrier, word)
+            check(f"an example states `{carrier}: {word}`", found is not None)
+            if found is None:
+                continue
+            for value, reported in ((a_stale, True), ("/srv/a-place", False)):
+                with open(SURFACE, encoding="utf-8") as handle:
+                    facts = surface_facts(handle.read())
+                held = _resolve(copy.deepcopy(found), EXAMPLES, facts, False)
+                # Listed against a layer that is not there, then not listed at all.
+                held.data["private"] = {"carrier": "file", "source": "no-such-layer.yaml",
+                                        "keys": [key]}
+                held._private_listed, held._private_read = [key], None
+                check(f"`{key}` under `{word}` whose private layer is absent is reported unread",
+                      "could not be read" in held.harness_derived_directories().get(key, ""))
+                held.data["private"] = {"carrier": "none", "absent_reason": "a fixture"}
+                held._private_listed = []
+                node = held.data
+                *above, leaf = key.split(".")
+                for part in above:
+                    node = node.setdefault(part, {})
+                node[leaf] = value
+                said = held.harness_derived_directories().get(key)
+                check(
+                    f"`{key}` under `{word}` {'is' if reported else 'is not'} reported",
+                    (bool(said) and key in said and "goes stale" in said
+                     and offered_directory(key, None) in said and a_stale not in said)
+                    if reported else said is None,
+                    f"said {said!r}",
+                )
+                check(f"and the reader's report {'carries' if reported else 'omits'} it",
+                      any("per-project store" in one and key in one
+                          for one in held.to_dict()["unavailable"]) is reported)
+
+    # ⛔ What a guard's answer carries about a configuration that did not
+    # resolve (§ 19), asserted here rather than left to the four callers.
     with tempfile.TemporaryDirectory() as directory:
         stated = os.path.join(directory, CONFIG_PATH)
         os.makedirs(os.path.dirname(stated))

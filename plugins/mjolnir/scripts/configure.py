@@ -779,7 +779,8 @@ ANSWERED_BY: dict[str, Answer] = {
     "ordering.record.dir": ask(
         "Which directory does the baseline a pass measures drift against sit in — "
         "and the document with it, where the record is one? ⚠️ Outside every "
-        "tree, or a teardown takes the plan for work nobody has started.",
+        "tree, or a teardown takes the plan for work nobody has started. ⛔ Not a "
+        "folder the agent harness derived from a checkout's path (§ 40).",
     ),
     "ordering.record.document": ask(
         "And which document inside it?",
@@ -966,7 +967,8 @@ ANSWERED_BY: dict[str, Answer] = {
         "states, the harness's own, or nowhere?",
     ),
     "memory.store": ask(
-        "Which directory holds it?",
+        "Which directory holds it? ⛔ Not a folder the agent harness derived from "
+        "a checkout's path (§ 40).",
     ),
     "memory.index": ask(
         "And which file indexes it?",
@@ -1618,6 +1620,12 @@ def questions(
             ),
             "default": facts["defaults"].get(path, None),
             "has_default": path in facts["defaults"],
+            # § 40's directories: an offer and not a default, so silence does not take it.
+            "offered": (
+                config.offered_directory(
+                    path, detected.get("host.repo") or _at(answers or {}, "host.repo"))
+                if path in config.OFFERED_LEAF else None
+            ),
             "required": path in {normalized(k) for k in facts["required"]},
             "required_when": condition,
             "private": path in {normalized(k) for k in facts["private"]},
@@ -2735,6 +2743,17 @@ def self_test() -> int:
           asked["context_guard.reread"]["has_default"]
           and asked["context_guard.reread"]["default"] == "refuse",
           f"carried {asked['context_guard.reread']!r}")
+    offered = {one["key"]: one["offered"] for one in questions(
+        surface_text, detected={"host.repo": "an-owner/a-name"})}
+    check("each directory that outlives a checkout is offered one naming no account (§ 40)",
+          all(str(offered[key]).startswith("~/") and "an-owner/a-name" in offered[key]
+              and not config.derived_by_the_harness(offered[key])
+              for key, _on, _words in config.OUTLIVING_DIRECTORIES)
+          and len({offered[key] for key in config.OFFERED_LEAF}) == len(config.OFFERED_LEAF),
+          f"offered {offered!r}")
+    check("and no other key is offered one",
+          {key for key, value in offered.items() if value} == set(config.OFFERED_LEAF),
+          f"offered {offered!r}")
     check("the first questions are about where the code is",
           questions(surface_text)[0]["key"].startswith("roots."),
           f"opened with {questions(surface_text)[0]['key']!r}")
