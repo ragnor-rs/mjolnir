@@ -154,6 +154,9 @@ host:
     - workflow: "Executed count"
       mirrors: "python3 plugins/mjolnir/scripts/executed.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Filing window"
+      mirrors: "python3 plugins/mjolnir/scripts/file_window.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ The one entry of this list whose own run reads the list. Its suite answers from planted
     # configurations rather than from this one, so the circularity is confined to a single
     # assertion — that every entry here states a trigger the consumer can parse, which is the

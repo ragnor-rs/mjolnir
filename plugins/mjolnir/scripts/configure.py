@@ -584,6 +584,12 @@ ANSWERED_BY: dict[str, Answer] = {
         "guard resolves",
     ),
 
+    "recorded_answer.verdict": skip(
+        "the verdicts a merge answer is recorded under are § 7's own closed list "
+        "and no project states them: the guard allows one of them, and a project "
+        "that could add a word would be adding one that holds every merge",
+    ),
+
     # --- § 6. Commit behaviour ---------------------------------------------
     "commit.staging.session": ask(
         "Does the bookkeeping role stage what it commits explicitly, or take the "
@@ -759,6 +765,10 @@ ANSWERED_BY: dict[str, Answer] = {
     "branch_model.exclusive_resources.grace": ask(
         "How many seconds after a launch does the resource's own count include it? ⚠️ "
         "Unstated, every live lease is added to that count.",
+    ),
+    "branch_model.exclusive_resources.wait_up_to": ask(
+        "How many seconds may a role wait for a place that is not free? ⚠️ Unstated, a "
+        "call over the cap is refused and nothing waits.",
     ),
     "branch_model.exclusive_resources.probe_timeout": ask(
         "How many seconds may asking the resource take?",

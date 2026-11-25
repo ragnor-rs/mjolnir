@@ -3090,12 +3090,12 @@ anything. A rule read by three parties and written in one of their files is a se
 the other two.
 
 ⛔ **A recorded answer is one comment on the change, keyed by the repository and the change's own
-number, stating the question, the answer as it came back, who answered it, when, and the commit that
-was the change's head when the question was put.** The commit is required on the merge ask, and an
-answer no guard holds to a commit may leave it empty. The keying
-is the load-bearing half: a bare number names a different change in every repository the route
-carries, so an answer recorded against one is an answer no guard can resolve, and the act stays
-refused however it was answered.
+number, stating the question, the verdict where the question has one, the answer as it came back,
+who answered it, when, and the commit that was the change's head when the question was put.** The
+commit is required on the merge ask, and an answer no guard holds to a commit may leave it empty.
+The keying is the load-bearing half: a bare number names a different change in every repository the
+route carries, so an answer recorded against one is an answer no guard can resolve, and the act
+stays refused however it was answered.
 
 The questions an answer is recorded for are the one ask
 [§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) states and the answers the
@@ -3106,6 +3106,7 @@ settled there:
 ```yaml
     recorded_answer:
       question: review_depth | plan_run_by | merge_now
+      verdict: approved | declined | later | unanswered
 ```
 
 ⛔ **A question outside that list is refused rather than written**, since a record under a name no
@@ -3113,13 +3114,21 @@ guard resolves is a record that reads as absent at exactly the moment it matters
 retires a question**: `read_by_a_person` was in this list, is not now, and an answer offered under it
 is refused with the list named.
 
-⛔ **`unanswered` is an answer and is written down as one.** Silence may narrow the work and never
-license an act, by the section above, so a question nothing answered is recorded as unanswered —
-and a guard reading that as *no record* would hold a change nothing on the route resumes.
+⛔ **The merge ask's record states a verdict, and no other question's does.** The verdict is the
+recording pass's reading of the words, from the list above, and the words stand beside it as given
+so that a reader can hold one against the other. A merge record offered with no verdict, or with one
+outside the list, is refused rather than written; so is a verdict offered under another question.
 
-⛔ **The guard on a merge refuses where the merge ask has no recorded answer.** That is the ask the
-route puts immediately before the act, so the answer that authorizes the merge and the answer the
-guard reads are one record rather than two.
+⛔ **`unanswered` is an answer and is written down as one.** Silence may narrow the work and never
+license an act, by the section above, so an ask nothing answered is recorded with that verdict, and
+it holds the merge as `declined` and `later` do. What resumes the change is the ask put again and
+its own answer recorded.
+
+⛔ **The guard on a merge allows one verdict, `approved`, on the last record the merge ask has, and
+refuses everything else** — no record, another verdict, and a record stating none. That is the ask
+the route puts immediately before the act, so the answer that authorizes the merge and the answer
+the guard reads are one record rather than two. ⛔ **The last record stands even where it cannot be
+used**: an incomplete record is never a reason to fall back to an earlier approval.
 
 ⛔ **A merge approval covers the commit it was given for and no later one.** The guard refuses a
 merge whose head is not the recorded commit, naming both and how to ask again; a record naming no
@@ -3138,11 +3147,11 @@ answer does not satisfy is the guard somebody edits**, which the rule below exis
 leaves the person running the role one route past it, which is editing the guard — and a guard
 edited to get past is a guard nobody ever has to satisfy again.
 
-⛔ **What this guard establishes is that the ask was put and answered — never that a person answered
-it.** The `answered by` column is written by the same pass that writes the answer, so what a guard
-reads it off is a claim rather than an attestation. ⚠️ **Stated rather than left implied, because
-the stronger reading is the one a reader takes**, and a mechanism credited with a guarantee it does
-not have is one nobody checks.
+⛔ **What this guard establishes is that an approval is recorded — never that a person gave it.** The
+verdict and the `answered by` column are written by the same pass that writes the answer, so what a
+guard reads it off is a claim rather than an attestation. ⚠️ **Stated rather than left implied,
+because the stronger reading is the one a reader takes**, and a mechanism credited with a guarantee
+it does not have is one nobody checks.
 
 ⚠️ **The independence a guard reading some other leg's record would have had is available to no
 guard here, under any configuration.** What it reads is the merge ask, and the merging pass is what
@@ -3218,6 +3227,14 @@ for, and a path whose event the harness does not publish, read identically from 
 | it was cancelled while it ran | nothing fires for the call or for the turn the cancellation ended, so the next sweep this session reaches is what releases it, and expiry where it reaches none | `Stop`, `StopFailure`, `SessionEnd` |
 | the turn ended, the session ended, or a subagent stopped | the sweep, over every place this session holds — and a turn an API error ended is published as an event of its own | `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop` |
 | it was put in the background | ⛔ **expiry alone.** The call itself finishes at launch, so every sweep would hand the place back while the work ran, and each one skips it deliberately | none |
+
+⛔ **A call over the cap is refused by the guard at once, and what waits is a command a role runs.**
+A wait inside the hook is ended by the hook's own time limit, and a guard ended there lets its call
+through unheld. Where the resource states a `wait_up_to` ([§ 10](#exclusive-resources)) the refusal
+names the command that waits, which rests until a place is free or the bound is reached, and never
+past the time its caller says it has. ⛔ **A wait that runs out refuses and names who holds the
+places.** ⚠️ **It holds nothing**: the call is made again afterwards and its own guard takes the
+place, so another holder may be ahead of it.
 
 ⛔ **So `ttl` bounds what a leak costs rather than merely tidying up after one.** Measured on the
 same project: two leases left behind by calls refused before they ran pinned a cap of two with
@@ -4152,9 +4169,9 @@ named.
 A resource the trees cannot all help themselves to — a local service stack, a build daemon's
 slots, a machine-wide lock. How many may be held at once is `cap`, and what holds a place is
 `subject`, so neither "one" nor "a tree" is built into the facet. ⛔ **Every key of an entry but
-`grace` and `probe_timeout` is stated and none of them is defaulted**, because every one of them is
-a measurement of the resource rather than a preference about it, and a default here would be the
-procedure describing somebody else's machine:
+`grace`, `probe_timeout` and `wait_up_to` is stated and none of them is defaulted**, because every
+one of them is a measurement of the resource rather than a preference about it, and a default here
+would be the procedure describing somebody else's machine:
 
 ```yaml
 branch_model:
@@ -4166,6 +4183,7 @@ branch_model:
       probe:      "<prints how many are held right now, as one number on one line>"
       grace:      60             # seconds; may be left unwritten
       probe_timeout: 5           # seconds; may be left unwritten
+      wait_up_to: 300            # seconds, or null; may be left unwritten
       ttl:        1800
 ```
 
@@ -4192,6 +4210,8 @@ branch_model:
   eight, the guard's own budget being shared by every probe one call reaches and its other reads.
   Unwritten, the guard's own limit applies.
   ⛔ **Refused beside `probe: null`**, for the same reason.
+- **`wait_up_to`** — the seconds a role may wait for a place that is not free. `null`, and the key
+  left unwritten, each say refuse.
 - **`ttl`** — the seconds a lease counts for before it expires, which bounds what one leaked lease
   costs. ⚠️ **It is not a timeout on the work**: the work is not watched, and nothing here stops
   anything.
@@ -4214,8 +4234,7 @@ not implied — a project may cut a tree per item for isolation while never runn
 and whether a second tree can be live is what decides whether an exclusive resource is ever
 contended.
 
-What happens *on* contention — wait, queue, refuse, or ask — is the enforcing hook's to state, and
-is not configuration here:
+What happens *on* contention is stated once, and this facet adds only that bound to it:
 [§ 7 → A lease on an exclusive resource](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
 is where it is stated, along with how the count is read and what releases a place. This facet
 states what is exclusive, how many of it there are, what holds a place, which calls put it at

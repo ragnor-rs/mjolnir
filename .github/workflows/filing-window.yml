@@ -1,0 +1,36 @@
+name: Filing window
+
+# The two readings the filing role's duplicate search is judged between, and the reply that has to
+# carry both. The rule is the role's, in plugins/mjolnir/skills/file-work-item/SKILL.md; no copy of
+# it is carried here.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The suite drives a planted tracker and reaches no host.
+permissions: {}
+
+jobs:
+  filing-window:
+    name: Filing window
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Pinned rather than relying on whatever the runner image ships, for the reason the sibling
+      # workflows pin it: the module runs on the shared reader, which needs the parser, and a
+      # check that silently stops running is the failure this job exists to catch.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` states this run mirrors.
+      - name: Hold the two readings and the reply that carries them
+        run: python3 plugins/mjolnir/scripts/file_window.py --self-test
