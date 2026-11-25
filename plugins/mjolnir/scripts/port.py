@@ -164,6 +164,9 @@ GROUPING_ITEMS = "grouping_items"
 MARK_RELEASED = "mark_grouping_released"
 CREATE_GROUPING = "create_grouping"
 
+# § 3's read of what a merge will close, which the comparison below is made over.
+CLOSING_LIST = "read_closing_list"
+
 # The operation a writer refusal is reported against where the caller named none.
 # ⛔ § 4.2's guard is shared by three directions now -- the advance, § 32's step
 # backwards and § 33's grouping close -- and the two status directions report
@@ -1549,6 +1552,72 @@ class Port:
             "detail": f"{len(short)} of {len(items)} in the set are short of the "
             f"`{role}` role (`{status.get('name')}`), and {len(unanswered)} could "
             "not be placed at all.",
+        }
+
+    def closing_against(self, change, intended: list, landing: tuple = ()) -> dict:
+        """Whether what a merge closes is what was meant (§ 3 -> What a merge closes).
+
+        ⛔ **Three answers**: `matches` is true, false, or `None` for a list that
+        could not be read -- which is never a match, and carries the fallback or
+        the host's own words in `detail`.
+
+        ⛔ **An extra is judged on everything that could close it and a missing
+        one on what certainly does.** Under a squash the branch's own messages may
+        or may not reach the base, so a commit naming an item is enough to stop
+        for it and not enough to rely on.
+        """
+        outcome = self.invoke(CLOSING_LIST, change, *landing)
+        if not outcome.performed:
+            return {
+                "change": change, "matches": None, "failed": outcome.failed,
+                "extra": [], "missing": [], "detail": outcome.detail,
+            }
+        read = outcome.result
+        meant = {str(one).strip().lstrip("#").casefold() for one in intended}
+        listed, said = read["listed"], read["mentions"]
+        kept = (
+            ("landing",)
+            if self.config.get("host.landing.method") == "squash"
+            else ("landing", "commit")
+        )
+        certain, possible = [], []
+        if read["closes_on_merge"]:
+            certain = listed + [m["item"] for m in said if m["where"] in kept]
+            possible = listed + [m["item"] for m in said if m["where"] != "body"]
+
+        def responsible(item: str) -> list[dict]:
+            return [m for m in said if m["item"].casefold() == item.casefold()]
+
+        firm = {one.casefold() for one in certain}
+        extra = []
+        for item in dict.fromkeys(possible):
+            if item.casefold() not in meant:
+                extra.append({
+                    "item": item,
+                    "text": responsible(item),
+                    "why": "a closing phrase names it"
+                    if responsible(item)
+                    else "the host lists it and no text here names it, so it is "
+                    "linked on the change itself",
+                })
+        missing = []
+        for item in sorted(meant - firm):
+            if not read["closes_on_merge"]:
+                why = (f"the base is {read['base']!r} and a reference closes nothing "
+                       f"before {read['default_branch']!r}")
+            elif responsible(item):
+                why = "a closing phrase names it and the host does not list it"
+            else:
+                why = "no closing phrase in anything read names it"
+            missing.append({"item": item, "text": responsible(item), "why": why})
+        return {
+            "change": change,
+            "matches": not (extra or missing),
+            "failed": False,
+            "extra": extra,
+            "missing": missing,
+            "detail": f"{len(extra)} item(s) the merge may close and nobody meant, "
+            f"{len(missing)} meant and not certain to close.",
         }
 
     # -- what this configuration cannot do, as a report and never as a fault
@@ -3041,6 +3110,98 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         f"answered {barless!r}",
     )
 
+    # § 3's comparison before a merge. Every reading is derived from the item's
+    # own acceptance statement: an extra, a missing one, a commit, no answer.
+    def comparing(method: str, intended: list, *, closes=True, listed=(), said=()):
+        configuration = _set(_any_example(), "host.landing.method", method)
+        answer = {
+            "change": 9, "base": "a-base", "default_branch": "a-default",
+            "closes_on_merge": closes, "listed": list(listed),
+            "mentions": [
+                {"item": item, "where": where, "source": None, "text": text}
+                for item, where, text in said
+            ],
+        }
+        return Port(
+            configuration, spec, stated=stated,
+            adapter=Adapter({CLOSING_LIST: lambda change, *landing: answer}),
+        ).closing_against(9, intended)
+
+    negated = ("34", "body", "does not close #34")
+    wanted = ("21", "body", "Closes #21")
+    stray = ("35", "commit", "fixes #35")
+    stopped = comparing("squash", ["21"], listed=["21", "34"], said=[wanted, negated])
+    check(
+        "an item the host will close and nobody meant stops, with the negated text",
+        stopped["matches"] is False
+        and [one["item"] for one in stopped["extra"]] == ["34"]
+        and stopped["extra"][0]["text"][0]["text"] == "does not close #34"
+        and not stopped["missing"],
+        f"answered {stopped!r}",
+    )
+    agreed = comparing("squash", ["#21"], listed=["21"], said=[wanted, negated])
+    check(
+        "a body phrase the host does not list is no extra, the list being the authority",
+        agreed["matches"] is True,
+        f"answered {agreed!r}",
+    )
+    lacking = comparing("squash", ["21", "22"], listed=["21"], said=[wanted])
+    check(
+        "an intended item the host will not close stops, and says what is absent",
+        lacking["matches"] is False
+        and [one["item"] for one in lacking["missing"]] == ["22"]
+        and "no closing phrase" in lacking["missing"][0]["why"],
+        f"answered {lacking!r}",
+    )
+    check(
+        "a commit message that closes an item is an extra under every method",
+        all(
+            [one["item"] for one in
+             comparing(method, ["21"], listed=["21"], said=[wanted, stray])["extra"]]
+            == ["35"]
+            for method in ("squash", "merge_commit", "rebase")
+        ),
+    )
+    check(
+        "a commit carries an intended item where it lands whole, and not under a squash",
+        comparing("rebase", ["35"], said=[stray])["matches"] is True
+        and comparing("squash", ["35"], said=[stray])["matches"] is False,
+    )
+    titled = [("35", "title", "Fix #35")]
+    check(
+        "a title that closes an item is an extra, and is never relied on for one",
+        comparing("squash", [], said=titled)["matches"] is False
+        and comparing("rebase", ["35"], said=titled)["matches"] is False,
+    )
+    unnamed = comparing("squash", [], listed=["34"])
+    check(
+        "an extra no text names is reported as linked on the change",
+        unnamed["extra"] and "linked on the change" in unnamed["extra"][0]["why"],
+        f"answered {unnamed!r}",
+    )
+    elsewhere = comparing("squash", ["21"], closes=False, said=[wanted, stray])
+    check(
+        "a base that closes nothing has no extra, and says why an item is missing",
+        not elsewhere["extra"]
+        and ["a-base" in one["why"] for one in elsewhere["missing"]] == [True],
+        f"answered {elsewhere!r}",
+    )
+
+    def _silent(*_args):
+        raise HostUnavailable("a reason the host gave")
+
+    unreadable_list = [
+        Port(_any_example(), spec, stated=stated, adapter=adapter).closing_against(9, [])
+        for adapter in (Adapter(), Adapter({CLOSING_LIST: _silent}))
+    ]
+    check(
+        "a list nothing could read is no match, and an absence is not a failure",
+        [one["matches"] for one in unreadable_list] == [None, None]
+        and [one["failed"] for one in unreadable_list] == [False, True]
+        and all(one["detail"] for one in unreadable_list),
+        f"answered {unreadable_list!r}",
+    )
+
 
 def _hold_registration(check, spec: PortSpec) -> None:
     """Registration and discovery, against one port's own package.
@@ -3838,6 +3999,29 @@ def main(argv: list[str]) -> int:
         "carries no verdict about whether the target may be invoked",
     )
     parser.add_argument(
+        "--closing-of",
+        metavar="CHANGE",
+        help="whether what merging one change closes is what was meant, which is "
+        "§ 3's comparison before a merge. Exits 0 where the two are the same, 1 "
+        "where they differ, and 3 where the list could not be read",
+    )
+    parser.add_argument(
+        "--intend",
+        metavar="ITEM",
+        action="append",
+        default=[],
+        help="one item the change is meant to close, for `--closing-of`; repeated, "
+        "and left off where it is meant to close none",
+    )
+    parser.add_argument(
+        "--landing-text",
+        metavar="TEXT",
+        action="append",
+        default=[],
+        help="text the merge call itself will supply, for `--closing-of`: a "
+        "squash subject is the case",
+    )
+    parser.add_argument(
         "--as-writer",
         metavar="WRITER",
         default=ASKED_AS,
@@ -3953,6 +4137,45 @@ def main(argv: list[str]) -> int:
             )
         )
         return 0 if outcome.performed else 1
+
+    if (args.intend or args.landing_text) and args.closing_of is None:
+        print(
+            "Refused: `--intend` and `--landing-text` say what one change is "
+            "compared with, and `--closing-of` names no change.",
+            file=sys.stderr,
+        )
+        return 2
+    if args.closing_of is not None:
+        if args.ports:
+            print(
+                "Refused: what a merge closes is one port's answer, so it is not "
+                "asked of every port at once.",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            answering = load(
+                args.skills_root,
+                args.port,
+                root=args.root,
+                check_paths=not args.no_check_paths,
+            )
+            verdict = answering.closing_against(
+                args.closing_of, args.intend, tuple(args.landing_text)
+            )
+        except ConfigError as error:
+            print(
+                json.dumps(
+                    refusal_report(args.port, CLOSING_LIST, error),
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+            # ⛔ 2 and never 1: a question that could not be put is not a merge
+            # that closes the wrong items.
+            return 2
+        print(json.dumps(verdict, indent=2, ensure_ascii=False))
+        return {True: 0, False: 1, None: 3}[verdict["matches"]]
 
     if args.in_grouping is not None or args.short_of:
         if args.ports:
