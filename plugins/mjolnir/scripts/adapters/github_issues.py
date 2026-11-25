@@ -84,6 +84,7 @@ import port  # noqa: E402
 
 from adapters import _code_host_closing as closing_reading  # noqa: E402
 from adapters import _code_host_dependency as relation  # noqa: E402
+from adapters import _code_host_milestone as milestone  # noqa: E402
 
 KIND = "github-issues"
 
@@ -908,26 +909,13 @@ def create_grouping(value: str, *, grouping: dict) -> dict:
     }
 
 
-def _held_milestone(value: str) -> dict | None:
-    """The milestone this repository holds under `value`, or `None` for none.
+def _milestones() -> list:
+    """Every milestone this repository holds.
 
     ⛔ **Across both states**, which is this host's own trap: the listing
     defaults to the open ones, so a release already marked would come back
     absent and the next ask would read as *no such milestone* rather than as
     *already closed*.
-
-    ⛔ **Matched on the title and never on the number.** § 4.8's value is the
-    project's own word for the grouping -- the word on the item -- and the
-    number is this host's internal one, so a reader that took the value for a
-    number would address a different milestone whenever the two disagreed.
-    ⚠️ Exactly, then case-insensitively, and ⛔ an ambiguous fold is refused
-    rather than resolved: two milestones a project cannot tell apart is a
-    defect in the text, and closing the wrong release is not recoverable.
-
-    ⛔ **Absence is returned and ambiguity is raised**, which is the whole reason
-    this is not `_milestone` below: one caller exists to create what is not there
-    and every other caller addresses what must already be, so the *absent* answer
-    is a value and the *unnameable* one is a refusal for all of them.
     """
     repo = _repo()
     held = _gh(["api", "--paginate", f"repos/{repo}/milestones?state=all"])
@@ -936,44 +924,28 @@ def _held_milestone(value: str) -> dict | None:
             f"`gh api repos/{repo}/milestones` answered something that is not a "
             "list, so which milestones this repository holds could not be read."
         )
-    exact = [one for one in held if one.get("title") == value]
-    if len(exact) == 1:
-        return exact[0]
-    folded = [
-        one
-        for one in held
-        if str(one.get("title", "")).casefold() == str(value).casefold()
-    ]
-    if len(folded) == 1:
-        return folded[0]
-    if not folded:
-        return None
-    raise port.ConfigError(
-        "work_item.grouping",
-        f"names the grouping {value!r}, which {len(folded)} milestones in {repo} "
-        "answer to once case is set aside. Which one a release closes is not this "
-        "implementation's to choose.",
-    )
+    return held
+
+
+def _held_milestone(value: str) -> dict | None:
+    """The milestone this repository holds under `value`, or `None` for none.
+
+    ⛔ **Absence is returned and ambiguity is raised**, which is the whole reason
+    this is not `_milestone` below: one caller exists to create what is not there
+    and every other caller addresses what must already be, so the *absent* answer
+    is a value and the *unnameable* one is a refusal for all of them. The matching
+    itself is `_code_host_milestone`'s.
+    """
+    return milestone.held(_milestones(), value, _repo())
 
 
 def _milestone(value: str) -> dict:
     """The milestone `value` names, refusing where this repository holds none.
 
     The reading every operation but `create_grouping` takes: a grouping that is
-    not there is a defect in the text rather than a capability that is absent,
-    so it is refused with the key named instead of coming back as an empty set.
+    not there is a defect in the text rather than a capability that is absent.
     """
-    held = _held_milestone(value)
-    if held is None:
-        raise port.ConfigError(
-            "work_item.grouping",
-            f"names the grouping {value!r}, which is not a milestone {_repo()} "
-            "holds. The value is the word on the item and the milestone is "
-            "addressed by its title, so a grouping this repository has no "
-            "milestone for is a defect in the text rather than a capability that "
-            "is absent.",
-        )
-    return held
+    return milestone.named(_milestones(), value, _repo())
 
 
 def _native_milestone(grouping: dict, operation: str) -> None:
