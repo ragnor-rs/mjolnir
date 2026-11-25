@@ -660,6 +660,9 @@ absorbed.** Where it is null there is nothing to run, and that is an answer. ⛔
 states a `teardown`, the release below runs it and this role does not**
 ([`§ 10`](../../config/schema.md#the-teardown-a-removal-runs-first)): one that failed fails the
 command with the claim whole, and the reply carries its reason.
+⛔ **So does a tree whose resource is still up, or whose check went unanswered**
+([`§ 10`](../../config/schema.md#the-resource-a-tree-started-and-the-removal-it-holds)): the reply
+names the resource or the reason, and the command is run again once that is cleared.
 
 ⛔ **Confirm the landing from the host before removing anything**, per step 8 above — the tree and
 the branch are the only copies of the work until the merge is read back. ⚠️ **What this step

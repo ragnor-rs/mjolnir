@@ -3696,6 +3696,7 @@ branch_model:
   tree_dir: "<the directory a tree is cut under>"   # required under worktree; null under in_place; relative to the checkout, and under the agent harness's own managed root
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
   teardown: "<the command that stops what a tree started>"   # may be left unwritten; read only under worktree
+  resource_up: "<the command that prints what a tree started and is still up>"   # may be left unwritten; read only under worktree
   regenerable: ["<an ignored path a rebuild writes again>"]   # required_when: branch_model.kind = worktree
   exclusive_resources:           # [] where nothing in this project is exclusive; required
     - { name: "…", cap: 1, subject: tree, claimed_by: "…", probe: "…",  ttl: 1800 }
@@ -3731,7 +3732,8 @@ for — which is the condition that was met for § 9's `script`, and that retire
 
 ⛔ **`teardown` is the one step the procedure runs rather than names**, as a command stated whole:
 a removal happens where no role is reading steps. What runs it, and when, is
-[below](#the-teardown-a-removal-runs-first).
+[below](#the-teardown-a-removal-runs-first). ⛔ **`resource_up` is a reading and not a step**: it
+answers whether anything a tree started [is still up](#the-resource-a-tree-started-and-the-removal-it-holds).
 
 ⛔ **`mechanics` is steps and never a location, and `tree_dir` is the location.** The two were conflated
 while the second key was absent, which left *where a tree goes* stated in no facet and carried by
@@ -4379,9 +4381,9 @@ holder, what shows background work has ended, and how long a lease counts.
 ### The teardown a removal runs first
 
 ⛔ **Where `teardown` is stated, the release and the sweep each run it before removing a tree**, after
-every reading that could keep that tree and before the published ref goes. So a tree those readings
-keep is never torn down, and a teardown that fails leaves the claim whole. A project stating none
-has none run.
+every reading that could keep that tree, the resource check below apart, and before the published
+ref goes. So a tree those readings keep is never torn down, and a teardown that fails leaves the
+claim whole. A project stating none has none run.
 
 - **The tree it is for is `MJOLNIR_TREE`**, an absolute path in its environment. It runs at the
   repository's main checkout, whichever tree the removal was asked from, so a path in the command
@@ -4398,9 +4400,32 @@ has none run.
   teardown; the sweep has none.
 
 ⛔ **The release reads the key itself**, from the configuration at the skills root, and no caller
-passes it. A configuration that does not resolve refuses the release, since whether it states a
-teardown is unknown; one that is absent, or that states no code root in this repository, is named in
-what the release reports.
+passes it, and `resource_up` with it. A configuration that does not resolve refuses the release,
+since whether it states either is unknown; one that is absent, or that states no code root in this
+repository, is named in what the release reports.
+
+### The resource a tree started, and the removal it holds
+
+⛔ **Where `resource_up` is stated, the release and the sweep each ask it before removing a tree**,
+after the teardown and before the published ref goes. So it reads what the teardown left, and a tree
+it keeps keeps its claim whole. A project stating none has none asked.
+
+| what the command does | what the removal does |
+|---|---|
+| exits zero and prints nothing | goes ahead |
+| exits zero and prints | keeps the tree, and names each line as a resource that is up |
+| exits nonzero, cannot be started, or does not finish in `10` seconds | keeps the tree, and says the check was unanswered and why |
+
+- **It is told the tree and run as the teardown above is**: `MJOLNIR_TREE`, at the main checkout.
+- ⛔ **Only what it prints to standard output is an answer.** A warning on the error stream is not a
+  resource.
+- ⚠️ **A pipeline exits as its last command does**, so one whose first command failed can print
+  nothing and exit zero, which reads as down. A command written as one has to fail where its source
+  does.
+- ⛔ **No override skips it.** What clears it is the resource being stopped, or the command being
+  made to answer.
+- ⛔ **The sweep asks inside its own bound.** With less than a second of it left the check is not
+  asked, which is the unanswered row.
 
 ### Pruning a tree whose branch has landed
 

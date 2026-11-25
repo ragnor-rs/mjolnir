@@ -1304,6 +1304,7 @@ with no remote claims locally and says so.
 | 15 | A merged pull request that **predates the ref** does not land it, and either instant unreadable makes the arm decline | the comparison, with the measured timestamps | computed |
 | 16 | A ref **gone between the listing and the read** holds the item against nobody, and the report says it is gone rather than printing `free` under a `taken` verdict | one reading, constructed | computed |
 | 17 | The **window in front of the orphaned reading**, held on both sides of its bound and on the half it declines on — planted by setting the bound to zero, which is the carrier as the defect was measured on it | two clones, with both instants stated | computed |
+| 18 | A **resource check** that names something, fails, does not finish in time or is left no time keeps the tree and the claim whole, `--force` included; one naming nothing lets the removal through; it is asked after a teardown and read by the release itself | two clones, the check answered each way | computed |
 
 ⚠️ **Check 0 is run once per arm, and that is the finding this suite was written by rather than
 for.** The surface states two arms because the first draft of the script shipped only the second —
@@ -1526,6 +1527,7 @@ it on the event that opens a session.
 | 27 | A tree whose contents could not be read is unestablished, never empty; an unreadable directory is not all-symlinks | a directory with its mode taken away | computed |
 | 28 | A worktree registered **inside** a work tree is outside the scope, being a level deeper than the leaf, while the work tree itself stays this project's — and that work tree is then kept, with the nested path named as a reader would want it | a real worktree cut inside a work tree, in a project whose tree directory is inside its checkout | computed |
 | 29 | A stated teardown runs before the removal and is told the tree; one that failed, outlasted what is left of the bound or had too little left to start keeps the tree and reaches the person; a kept tree is never torn down | one landed tree, the clock stated | computed |
+| 30 | A landed tree whose resource check names something is kept and the name reported; one whose check failed, or that the bound left no time for, is kept and reported unanswered; one whose check names nothing is removed; the event hands the sweep the configured check | one landed tree, its check answered each way, and the arguments captured at the boundary | computed |
 
 ⚠️ **Check 16 is the one that looks like bookkeeping and is not**, for the reason § 10 gives about
 a carrier the harness kills: what the check holds is that the timeout covers the budget **plus**
