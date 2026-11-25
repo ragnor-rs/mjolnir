@@ -760,6 +760,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "How many seconds after a launch does the resource's own count include it? ⚠️ "
         "Unstated, every live lease is added to that count.",
     ),
+    "branch_model.exclusive_resources.wait_up_to": ask(
+        "How many seconds may a role wait for a place that is not free? ⚠️ Unstated, a "
+        "call over the cap is refused and nothing waits.",
+    ),
     "branch_model.exclusive_resources.probe_timeout": ask(
         "How many seconds may asking the resource take?",
     ),

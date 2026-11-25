@@ -3201,6 +3201,14 @@ for, and a path whose event the harness does not publish, read identically from 
 | the turn ended, the session ended, or a subagent stopped | the sweep, over every place this session holds — and a turn an API error ended is published as an event of its own | `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop` |
 | it was put in the background | ⛔ **expiry alone.** The call itself finishes at launch, so every sweep would hand the place back while the work ran, and each one skips it deliberately | none |
 
+⛔ **A call over the cap is refused by the guard at once, and what waits is a command a role runs.**
+A wait inside the hook is ended by the hook's own time limit, and a guard ended there lets its call
+through unheld. Where the resource states a `wait_up_to` ([§ 10](#exclusive-resources)) the refusal
+names the command that waits, which rests until a place is free or the bound is reached, and never
+past the time its caller says it has. ⛔ **A wait that runs out refuses and names who holds the
+places.** ⚠️ **It holds nothing**: the call is made again afterwards and its own guard takes the
+place, so another holder may be ahead of it.
+
 ⛔ **So `ttl` bounds what a leak costs rather than merely tidying up after one.** Measured on the
 same project: two leases left behind by calls refused before they ran pinned a cap of two with
 nothing running, after which every call queued and was then refused for the leases' whole lifetime.
@@ -4134,9 +4142,9 @@ named.
 A resource the trees cannot all help themselves to — a local service stack, a build daemon's
 slots, a machine-wide lock. How many may be held at once is `cap`, and what holds a place is
 `subject`, so neither "one" nor "a tree" is built into the facet. ⛔ **Every key of an entry but
-`grace` and `probe_timeout` is stated and none of them is defaulted**, because every one of them is
-a measurement of the resource rather than a preference about it, and a default here would be the
-procedure describing somebody else's machine:
+`grace`, `probe_timeout` and `wait_up_to` is stated and none of them is defaulted**, because every
+one of them is a measurement of the resource rather than a preference about it, and a default here
+would be the procedure describing somebody else's machine:
 
 ```yaml
 branch_model:
@@ -4148,6 +4156,7 @@ branch_model:
       probe:      "<prints how many are held right now, as one number on one line>"
       grace:      60             # seconds; may be left unwritten
       probe_timeout: 5           # seconds; may be left unwritten
+      wait_up_to: 300            # seconds, or null; may be left unwritten
       ttl:        1800
 ```
 
@@ -4174,6 +4183,8 @@ branch_model:
   eight, the guard's own budget being shared by every probe one call reaches and its other reads.
   Unwritten, the guard's own limit applies.
   ⛔ **Refused beside `probe: null`**, for the same reason.
+- **`wait_up_to`** — the seconds a role may wait for a place that is not free. `null`, and the key
+  left unwritten, each say refuse.
 - **`ttl`** — the seconds a lease counts for before it expires, which bounds what one leaked lease
   costs. ⚠️ **It is not a timeout on the work**: the work is not watched, and nothing here stops
   anything.
@@ -4196,8 +4207,7 @@ not implied — a project may cut a tree per item for isolation while never runn
 and whether a second tree can be live is what decides whether an exclusive resource is ever
 contended.
 
-What happens *on* contention — wait, queue, refuse, or ask — is the enforcing hook's to state, and
-is not configuration here:
+What happens *on* contention is stated once, and this facet adds only that bound to it:
 [§ 7 → A lease on an exclusive resource](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
 is where it is stated, along with how the count is read and what releases a place. This facet
 states what is exclusive, how many of it there are, what holds a place, which calls put it at
