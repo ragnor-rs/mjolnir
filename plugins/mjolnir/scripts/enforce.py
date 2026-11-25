@@ -2375,14 +2375,17 @@ def wait_for(config, number: int, *, within: float | None = None, cwd: str = "."
     # is held to what the caller has where the caller says.
     most = within
     while True:
+        asked = clock()
         counted, unestablished = probe_count(entry, config.skills_root, run=probe, most=most)
         moment = clock()
         if unestablished and (full is None or moment < deadline):
             return (f"{name}: {unestablished}, so there is nothing to wait for and no place "
                     f"is held ({LEASE_CITATION})."), 0
         if not unestablished:
-            unknown = end_background([entry], where, moment, config.skills_root, run=probe,
-                                     most=most)
+            unknown = end_background(
+                [entry], where, moment, config.skills_root, run=probe,
+                most=None if most is None else most - (moment - asked),
+            )
             leases = live_leases(where, moment)
             standing, keys, _added = occupancy(entry, leases, counted, moment)
             if standing < cap or key in keys:
@@ -3333,6 +3336,27 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("what the probe is told reaches a command run for real",
               _run_in_shell('printf %s "$MJOLNIR_PLACE_KEY"', ".", 5,
                             {"MJOLNIR_PLACE_KEY": "a-key"}) == (0, "a-key"))
+        where = fresh("background-probe-waited")
+        spent = _a_config([_a_resource(cap=1, wait_up_to=60, probe="a-count", ttl=120,
+                                       background_end="probe", background_grace=1,
+                                       background_probe="a-command-that-says")])
+        guard_answer(_call("a-claiming-command", background=True), config=spent, now=1000.0,
+                     store=where, probe=lambda *_a: (0, "0"))
+        at, limits = [1010.0], []
+
+        def slow(_command, _root, limit, told=None):
+            if told is None:
+                at[0] += 4
+                return 0, "1"
+            limits.append(limit)
+            return 0, "running"
+
+        def rests(seconds):
+            at[0] += seconds
+
+        wait_for(spent, 1, within=5, store=where, probe=slow, clock=lambda: at[0], rest=rests)
+        check("a wait gives the background probe only the time its count left",
+              bool(limits) and max(limits) <= 1, repr(limits))
         where = fresh("background-probe-foreground")
         guard_answer(_call("a-claiming-command"), config=config, now=1000.0, store=where)
         check("a call not put in the background is not asked about",
