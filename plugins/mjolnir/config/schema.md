@@ -2463,6 +2463,21 @@ of their own holds the fact there. ⛔ **No operation is added to
 [§ 4.6](#46-priority)'s terms rather than on a second statement of them: a milestone and a field
 each ride `read_item` and `set_field`, and a label rides `read_item` and `set_labels`.
 
+⛔ **Where a tracker plans on a board over the items that carry the milestone, the set is the
+milestone's and the board supplies the status.** A set read that way leaves things out by nature, so
+`grouping_items` says which rather than leaving them unmentioned:
+
+| what it is | where it is reported |
+|---|---|
+| an item in the milestone with no card on the board | in the set, named under `off_board`; with no status to place it by, it holds [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s precondition as an item nobody could place |
+| an item in the milestone whose card carries no status | in the set, with the reason it could not be placed |
+| a draft, which carries no milestone | `outside`, every draft the board holds |
+| a card from a repository other than the one the milestone is in | `outside` |
+| a change in the milestone, which is not a work item | `outside`, as a count |
+
+⚠️ **What is `outside` holds nothing**: it is the board's whole rather than a candidate list, since
+a card that cannot carry the milestone cannot say whether it was meant to.
+
 ⛔ **A grouping's name is the project's own, and a name spelled like one of the keys above is
 refused by construction rather than by a rule.** The set a named grouping may carry is derived
 from this section's own single-form fence, so a grouping named after a key deletes that key from

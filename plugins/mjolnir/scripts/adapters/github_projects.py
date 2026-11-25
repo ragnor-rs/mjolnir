@@ -98,6 +98,7 @@ import port  # noqa: E402
 
 from adapters import _code_host_closing as closing_reading  # noqa: E402
 from adapters import _code_host_dependency as relation  # noqa: E402
+from adapters import _code_host_milestone as milestone  # noqa: E402
 from port import ConfigError, HostUnavailable  # noqa: E402
 
 KIND = "github-projects"
@@ -1595,8 +1596,206 @@ def read_closing_list(change: int, *landing: str) -> dict:
     )
 
 
+MILESTONES_QUERY = """
+query Milestones($owner:String!, $name:String!, $after:String) {
+  repository(owner:$owner, name:$name) {
+    milestones(first:100, after:$after, states:[OPEN, CLOSED]) {
+      pageInfo { hasNextPage endCursor }
+      nodes { number title state }
+    }
+  }
+}
+"""
+
+# ⛔ The cards are asked for **on the issue** and not found in the board's own
+# list: that list leaves out a card added seconds earlier, and an issue whose card
+# it left out would be reported as off the board. Archived ones are included for
+# the same reason. ⚠️ No state filter on the issues: a closed one is in the set.
+MILESTONE_ITEMS_QUERY = VALUE_FACTS + """
+query MilestoneItems($owner:String!, $name:String!, $number:Int!, $after:String) {
+  repository(owner:$owner, name:$name) {
+    milestone(number:$number) {
+      pullRequests { totalCount }
+      issues(first:25, after:$after) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          number
+          title
+          state
+          url
+          labels(first:100) { pageInfo { hasNextPage endCursor } nodes { name } }
+          projectItems(first:20, includeArchived:true) {
+            pageInfo { hasNextPage endCursor }
+            nodes {
+              id
+              isArchived
+              project { id }
+              fieldValues(first:100) {
+                pageInfo { hasNextPage endCursor }
+                nodes { ...valueFacts }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+
+def _repository(answer: dict, what: str) -> dict:
+    found = answer.get("repository")
+    if found is None:
+        raise HostUnavailable(
+            f"the host answered nothing for {_repo()}, so {what} could not be read."
+        )
+    return found
+
+
+def _milestone_entry(issue: dict, board_id: str, status_field: str | None) -> dict:
+    """One issue of a milestone, with where it stands on **this** board.
+
+    ⛔ Its board is matched by the project's own id: a project number is unique
+    under one owner, and an issue may be on two owners' boards of one number.
+
+    ⛔ `unplaced` states why there is no board status to read, where there is
+    none. The issue's own open-or-closed state is carried beside it and is not a
+    stand-in for a column, so the port is told not to place the item by it (§ 33).
+    """
+    number = issue.get("number")
+    cards = _whole(issue.get("projectItems"), f"the cards of item #{number}")
+    card = next(
+        (one for one in cards if (one.get("project") or {}).get("id") == board_id), None
+    )
+    fields = (
+        values_by_field(_whole(card.get("fieldValues"), f"the fields of #{number}'s card"))
+        if card
+        else {}
+    )
+    status = fields.get(status_field) if status_field else None
+    entry = {
+        "kind": "issue",
+        "number": number,
+        "title": issue.get("title"),
+        "state": issue.get("state"),
+        "url": issue.get("url"),
+        "labels": _whole(issue.get("labels"), f"the labels of #{number}"),
+        "on_board": card is not None,
+        "card": {"id": card["id"], "archived": card.get("isArchived")} if card else None,
+        "fields": fields,
+        "status": status,
+    }
+    if card is None:
+        entry["unplaced"] = "off the board"
+    elif not status:
+        entry["unplaced"] = (
+            f"no `{status_field}` on its card" if status_field else
+            f"no `{STATUS_FIELD_NAME}` configured"
+        )
+    return entry
+
+
+def _milestone_items(value: str, grouping: dict) -> dict:
+    """The issues one milestone holds, and what a board holds that it cannot.
+
+    ⛔ **An issue with no card here stays in the set**: the milestone is what was
+    planned, and an item missing from the board is one a release must not pass
+    over. It is named again under `off_board`.
+
+    ⛔ **What no milestone of this repository can hold is named under `outside`**:
+    a draft is no issue, a card from another repository has that repository's own
+    milestones, and a pull request in the milestone is not a work item. ⚠️ The
+    drafts and the foreign cards are the board's whole, since a card that cannot
+    carry the value cannot say whether it was meant to.
+    """
+    repo = _repo()
+    owner, name = repo.split("/")
+    held = milestone.named(
+        _paged(
+            lambda cursor: _repository(
+                _graphql(MILESTONES_QUERY, owner=owner, name=name, after=cursor),
+                "its milestones",
+            ).get("milestones"),
+            what=f"the milestones of {repo}",
+        ),
+        value,
+        repo,
+    )
+    pull_requests = None
+
+    def page(cursor):
+        nonlocal pull_requests
+        found = _repository(
+            _graphql(
+                MILESTONE_ITEMS_QUERY,
+                owner=owner, name=name, number=held["number"], after=cursor,
+            ),
+            f"the milestone {held['title']!r}",
+        ).get("milestone")
+        if found is None:
+            raise HostUnavailable(
+                f"the host listed the milestone {held['title']!r} in {repo} and then "
+                "answered nothing for it, so its items could not be read."
+            )
+        pull_requests = (found.get("pullRequests") or {}).get("totalCount")
+        return found.get("issues")
+
+    status_field = _configuration().get(STATUS_FIELD_NAME)
+    status_field = str(status_field) if status_field else None
+    if status_field:
+        # ⛔ Resolved against the board: a column it does not carry would read as
+        # every card having no status.
+        _field(status_field, key=STATUS_FIELD_NAME)
+    board_id = _board()["id"]
+    items = [
+        _milestone_entry(issue, board_id, status_field)
+        for issue in _paged(page, what=f"the issues of the milestone {held['title']!r}")
+    ]
+    board_owner, number = _address()
+    entries = [
+        card_entry(node, status_field)
+        for node in _paged(
+            lambda cursor: _page(board_owner, number, cursor),
+            what=f"the items of project {number}",
+        )
+    ]
+    here = f"/{repo}/issues/".casefold()
+    return {
+        "grouping": (grouping or {}).get("name"),
+        "value": held["title"],
+        "state": held.get("state"),
+        "matched_on": f"the milestone `{held['title']}` of {repo}",
+        "scanned": len(entries),
+        "items": items,
+        "off_board": [
+            {"number": one["number"], "title": one["title"], "url": one["url"]}
+            for one in items
+            if not one["on_board"]
+        ],
+        "outside": {
+            "drafts": [
+                {"card": one["card"]["id"], "title": one["title"]}
+                for one in entries
+                if one["kind"] == "draft"
+            ],
+            "other_repositories": [
+                {"title": one["title"], "url": one["url"]}
+                for one in entries
+                if one["kind"] == "issue"
+                and here not in str(one["url"] or "").casefold()
+            ],
+            "pull_requests": pull_requests,
+        },
+    }
+
+
 def grouping_items(value: str, *, grouping: dict) -> dict:
-    """The cards this board holds in one grouping, off the board read whole.
+    """The items this board holds in one grouping, read whole.
+
+    A milestone is the issue's rather than the card's, so it is read off the
+    milestone and joined to the board: `_milestone_items` above. The rest of this
+    is the two carriers a card holds itself.
 
     ⛔ **The board is read whole and the grouping is matched on the card**, which
     is `search_items`' shape one question over: a grouping here is a column's
@@ -1605,21 +1804,17 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
     about this read too -- a card added seconds earlier may be absent, and
     nothing here waits on an index to make that go away.
 
-    ⛔ **A carrier this board has no card-level answer for is refused with the
-    key named**, which is `set_state`'s answer for a status word the board cannot
-    hold. A milestone is the issue's rather than the card's, and a board holds
-    draft items that are no issue at all -- so a set read off milestones would be
-    a set missing whatever the board carries that is not an issue, silently.
+    ⛔ **A carrier this board has no answer for is refused with the key named**,
+    which is `set_state`'s answer for a status word the board cannot hold.
     """
     carrier = (grouping or {}).get("carrier")
+    if carrier == "native_milestone":
+        return _milestone_items(value, grouping)
     if carrier not in ("field", "label"):
         raise ConfigError(
             "work_item.grouping.carrier",
-            f"is {carrier!r}, and a grouping on a board is read off the card: a "
-            "field's value, or a prefixed label. A milestone belongs to the issue "
-            "behind a card and a board holds draft items that are no issue at "
-            "all, so a set read that way would be short by whatever is not an "
-            "issue and say nothing about it.",
+            f"is {carrier!r}, and a grouping on a board is a field's value, a "
+            "prefixed label, or the milestone of the issue behind a card.",
         )
     owner, number = _address()
     status_field = _configuration().get(STATUS_FIELD_NAME)
@@ -1758,8 +1953,9 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # otherwise be an operation nobody noticed going missing.
 #
 # `mark_grouping_released` is the newest of them and the reason is the sharpest:
-# a grouping here is a **field's value** -- an iteration option, a text -- and a
-# field value is not an object that can be marked anything. There is no endpoint
+# a grouping a **board** holds is a field's value -- an iteration option, a text --
+# and a field value is not an object that can be marked anything. ⚠️ A milestone is
+# an object, and it is the repository's rather than the board's. There is no endpoint
 # that closes one, and the board's own rollover is a date passing rather than an
 # act. ⚠️ So § 3's stated fallback is what a release on this tracker gets: the run
 # names the step and the address, carries on, and reports the grouping still
