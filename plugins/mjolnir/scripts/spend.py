@@ -273,6 +273,15 @@ def launchers_of(config) -> list[dict]:
     return [entry for entry in stated if isinstance(entry, dict)] if isinstance(stated, list) else []
 
 
+def _lexes(text: str) -> bool:
+    """Whether the lexer can read this one text, whatever it launches."""
+    try:
+        list(_lexer(text))
+    except ValueError:
+        return False
+    return True
+
+
 def readable(command: str, launchers=()) -> bool:
     """Whether this call is one the lexer could read, rather than fall back on.
 
@@ -289,13 +298,8 @@ def readable(command: str, launchers=()) -> bool:
     report, and the fallback is what keeps such a call guarded rather than
     waved through.
     """
-    try:
-        list(_lexer(command))
-        for text in launched_texts(command, launchers):
-            list(_lexer(text))
-    except ValueError:
-        return False
-    return True
+    return _lexes(command) and all(
+        _lexes(text) for text in launched_texts(command, launchers))
 
 
 def words(command: str) -> list[str]:
@@ -322,11 +326,6 @@ def words(command: str) -> list[str]:
         # and the fallback reads the words between the separators rather than
         # answering nothing at all: a quote nobody closed must not be the way
         # past a guard.
-        # ⚠️ A here-document's body is taken out first: an apostrophe in one is the
-        # ordinary way a call the shell reads is one this lexer cannot.
-        bare = HEREDOC_BODY.sub(r"\3", command)
-        if bare != command:
-            return words(bare)
         return [w for w in re.split(r"([;&|()\n{}])", command) for w in w.split() if w]
 
 
@@ -411,7 +410,11 @@ def _segments_of(call: str) -> list[list[str]]:
     for the reason stated beside `HEREDOC`.
     """
     out: list[list[str]] = [[]]
-    tokens = words(call)
+    # ⚠️ An apostrophe in a here-document is the ordinary way a call the shell
+    # reads is one this lexer cannot, so its body is taken out before the words
+    # are read. ⛔ Here and not in `words`: a guard that holds an unparseable call
+    # on its tokens reads them there, a body's among them.
+    tokens = words(call if _lexes(call) else HEREDOC_BODY.sub(r"\3", call))
     index = 0
     while index < len(tokens):
         token = tokens[index]
