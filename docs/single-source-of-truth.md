@@ -2534,7 +2534,7 @@ which of the three designs was the one that worked.
 
 | arm | what it reads | kind | what it does |
 |---|---|---|---|
-| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge and that change's head commit, the runs the host made for this commit, and the count a project's probe prints | **computed** for the count and the runs, **forbidding** for the record's presence | denies the call, or takes a place |
+| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge and that change's head commit, the runs the host made for this commit, and the count a project's probe prints | **computed** for the count and the runs, **forbidding** for the record's verdict and commit | denies the call, or takes a place |
 | `release` (`PostToolUse`, `PostToolUseFailure`, `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
 | `release` again, at two of those (`Stop`, and a `PostToolUse` whose call merged) | the tree the event names, the head the remote reports for the base, and the base's commits against this branch by patch | **computed** | reports `level`, `behind` with its figure, or `unestablished` — and ⛔ **refuses nothing, there being no call in hand at either point** |
 | `record` | nothing | — | writes the answer a guard reads onto the change |
