@@ -1741,6 +1741,7 @@ def self_test() -> int:
                     board_card(8, "somebody/elsewhere"),
                     _item_card(9, "a draft", kind="DraftIssue"),
                     _item_card(10, "a change", kind="PullRequest"),
+                    {**_item_card(11, "hidden"), "type": "REDACTED", "content": None},
                 ])
             )}}},
         }
@@ -1782,11 +1783,12 @@ def self_test() -> int:
     )
     outside = at(in_milestone, "outside") or {}
     check(
-        "drafts, another repository's cards and the milestone's pull requests are "
-        "reported as outside the set",
+        "drafts, another repository's cards, the milestone's pull requests and a "
+        "card this credential cannot see are reported as outside the set",
         [one["title"] for one in outside.get("drafts") or []] == ["a draft"]
         and [one["title"] for one in outside.get("other_repositories") or []] == ["item 8"]
-        and outside.get("pull_requests") == 2,
+        and outside.get("pull_requests") == 2
+        and outside.get("unreadable") == 1,
         f"reported {outside!r}",
     )
     check(

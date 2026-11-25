@@ -1786,6 +1786,11 @@ def _milestone_items(value: str, grouping: dict) -> dict:
                 and here not in str(one["url"] or "").casefold()
             ],
             "pull_requests": pull_requests,
+            # A card this credential may not see the content of, which could be
+            # any of the kinds above.
+            "unreadable": sum(
+                1 for one in entries if one["kind"] not in CONTENT_KINDS.values()
+            ),
         },
     }
 

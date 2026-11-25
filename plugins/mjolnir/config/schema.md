@@ -2474,6 +2474,7 @@ milestone's and the board supplies the status.** A set read that way leaves thin
 | a draft, which carries no milestone | `outside`, every draft the board holds |
 | a card from a repository other than the one the milestone is in | `outside` |
 | a change in the milestone, which is not a work item | `outside`, as a count |
+| a card whose content the credential may not see | `outside`, as a count |
 
 ⚠️ **What is `outside` holds nothing**: it is the board's whole rather than a candidate list, since
 a card that cannot carry the milestone cannot say whether it was meant to.
