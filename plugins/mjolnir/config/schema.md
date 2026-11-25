@@ -4701,6 +4701,15 @@ about to write carries one, the write does not happen and the role reports the k
 position, ⛔ **never the value**: a report that quotes the secret has published it to the one
 surface the refusal was protecting.
 
+⛔ **What is refused is a value, and a value that only says where to read is not one.** A reference
+to a variable, a stand-in and a query's own field path carry nothing out, whatever the key beside
+them is called — so a role may read a change's conversation with the writer of each comment, and a
+report of a refusal may quote what was refused.
+
+⛔ **A refusal names the direction the call has**, and neither direction where none was established.
+The direction is what the message says and never what decides: a credential written into a read's
+own arguments leaves with it and is refused as a read.
+
 ⚠️ **The refusal reads the text, which makes it narrower than it sounds.** A credential reaching an
 outward surface through a tool this procedure does not drive is outside what any arm here can see,
 and the report says so rather than implying the surface is covered. § 3's `policy.forbid_on_item`

@@ -2000,10 +2000,10 @@ words: the arms surface, and nothing here clears.
 redden — one per hidden form, one per imperative pattern, one per position an address can open at,
 one per credential shape, one per hook decision — and an exemption plant per excluded case, each of
 which must stay green: an emoji's variation selector, a collapsed block a person can open, a commit
-hash, a branch name, a variable reference, a placeholder, a redaction, each of the environment names
-whose anchors were added after a false report, and one sentence quoted out of every document whose
-ordinary prose a false report claimed. The run prints what it planted; no count of either is written
-down here.
+hash, a branch name, a variable reference, a field path, a placeholder, a redaction, each of the
+environment names whose anchors were added after a false report, and one sentence quoted out of
+every document whose ordinary prose a false report claimed. The run prints what it planted; no
+count of either is written down here.
 
 ⚠️ **Every plant is assembled from pieces at run time**, and that is not stylistic. A literal of a
 credential shape written into the file would be a secret committed to a repository by the check that
@@ -2105,6 +2105,14 @@ What the corpus is scoped to, and what that scope costs, is the next subsection'
   The `write` arm reads the text a role is about to write and the hook reads a `Bash` command. A
   file written into a directory something else synchronises, a credential passed to a tool that is
   not `Bash`, or a value already in the clipboard are all outside what either can see.
+- **A credential shaped exactly like a field path.** A leading dot and segments of letters and
+  underscores only is what a query's filter writes, so a passphrase of dotted words with a dot in
+  front passes under any key. A digit, a hyphen, an absent leading dot or punctuation a filter does
+  not put after a path is enough to be refused. A path reaching a field whose name carries a digit
+  is therefore still read as a value.
+- **Which way every call goes.** The direction a refusal names is read from the host client's own
+  verbs and methods and from `curl`'s flags. Another tool, an unlisted verb, a query held in a file
+  and a call inside an expansion are reported with no direction rather than a guessed one.
 - **A body this procedure assembles in flight.** The hook reads the command and the files it names
   by a body-file flag, bounded at a size so a hook cannot be stalled. A body piped in from another
   process, or assembled by a shell expansion the hook would have to execute to see, is not read —
