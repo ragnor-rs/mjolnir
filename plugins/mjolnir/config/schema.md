@@ -2107,12 +2107,13 @@ carrier answers. ⚠️ **A tracker stating native types is not a project carryi
 one host states types for every repository measured, whoever owns it, so what it states is offered
 as vocabulary and the carrier stays the project's to state.
 
-⛔ **Where the carrier is `native`, the type a filing states goes on with the create and is read
-back.** A type the tracker does not state for that project is refused by name with nothing filed;
-one that did not land is a failed filing naming the item that now exists, never a create made again.
-A native type stated under any other carrier is refused, the type having one carrier. ⚠️ **A filing
-that states none is filed without one**, except where the tracker will not create an item untyped:
-there it is refused, since picking one would be choosing what the work is.
+⛔ **Where the carrier is `native`, the type a filing states goes on with the create, and it is the
+tracker's own word.** On a tracker that also creates items without one, a type it does not state is
+refused by name with nothing filed; one that did not land is a failed filing naming the item that
+now exists, never a create made again; a native type stated under any other carrier is refused, the
+type having one carrier; and a filing that states none is filed without one. ⚠️ **A tracker that will
+not create an item untyped refuses a filing that states none**, since picking one would be choosing
+what the work is.
 
 ```yaml
   type_branch_prefix:
