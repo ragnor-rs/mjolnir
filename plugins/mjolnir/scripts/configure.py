@@ -552,7 +552,9 @@ ANSWERED_BY: dict[str, Answer] = {
     "writer": ask(
         "Who is allowed to move an item into this status? ⛔ The writer question "
         "again, and the reason § 4.2 gives for it: nothing in any tracker records "
-        "who may set a status.",
+        "who may set a status. ⚠️ Where it is a different party for a different "
+        "class of item, the status states `writers` in place of this key: each "
+        "party with the paths of its class, and at most one taking the rest.",
     ),
     "readiness": ask(
         "Which of the shared predicates gate an item into committed work here? "
@@ -1168,6 +1170,22 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "deploy.inputs": ask(
         "Which inputs?",
+    ),
+    "deploy.choices.name": ask(
+        "Which inputs may a run of this target choose for itself? ⚠️ None is an "
+        "answer: the key is then omitted (§ 33).",
+    ),
+    "deploy.choices.values": ask(
+        "Which values may that input take?",
+    ),
+    "deploy.choices.default": ask(
+        "Which of them does a run take when it chooses nothing?",
+    ),
+    "deploy.choices.joined_by": ask(
+        "May a run choose several of them at once, and what joins them?",
+    ),
+    "deploy.choices.warnings": ask(
+        "Is there a value a person should be warned about before they approve it?",
     ),
     "deploy.requires": ask(
         "Which preconditions does it need that it does not check itself?",

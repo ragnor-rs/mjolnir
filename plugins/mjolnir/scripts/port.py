@@ -80,6 +80,8 @@ from __future__ import annotations
 
 import argparse
 import inspect
+import contextlib
+import io
 import json
 import os
 import re
@@ -1217,7 +1219,49 @@ class Port:
             )
         return None
 
-    def advance_to(self, role: str, *args, as_writer: str = ASKED_AS, **kwargs) -> Outcome:
+    def _writer_for(
+        self, status: dict, paths, as_writer: str, role: str
+    ) -> tuple[str | None, Outcome | None]:
+        """The one writer this item's move belongs to, or why there is not one (§ 4.2).
+
+        ⛔ **The askable set is read first here as in the guard below**, so an ask
+        made as a party this procedure is not is refused as a claim and never
+        answered with which class the item is in.
+
+        ⛔ **The writer is selected by the item's class and then held to the ask**,
+        and never the other way round: matching the asker against the list would
+        let any writer of the status move an item in another writer's class.
+        """
+        if config.STATUS_WRITERS not in status or as_writer not in ASKABLE_AS:
+            return status.get("writer"), None
+        stated = config.writers_of(status)
+        found = config.classed_writers(status, paths)
+        if len(found) == 1:
+            return found[0], None
+        named = ", ".join(f"`{writer}`" for writer in stated)
+        if not paths:
+            why = "no changed path was handed over, so its class is unread"
+        elif found:
+            why = "its changed paths are in the class of each of " + ", ".join(
+                f"`{writer}`" for writer in found
+            )
+        else:
+            why = "no class covers every one of its changed paths: " + ", ".join(
+                repr(path) for path in paths
+            )
+        return None, Outcome(
+            "set_state",
+            performed=False,
+            refused=True,
+            to_role=role,
+            detail=f"Refused: the `{role}` status (`{status.get('name')}`) is written "
+            f"by {named}, a class of item each (§ 4.2), and for this item {why}. "
+            "The move is reported for a person rather than made.",
+        )
+
+    def advance_to(
+        self, role: str, *args, as_writer: str = ASKED_AS, paths=(), **kwargs
+    ) -> Outcome:
         """Ask for an advance to a status **role**, never to a status word.
 
         `as_writer` is the writer the caller is asking as (§ 4.2), defaulting to
@@ -1235,6 +1279,10 @@ class Port:
         raise is one layer down**, in `_mapped_status`, for a role two status
         words answer. ⚠️ **No count of either list is written here**, a figure
         over them being a copy of what the code does.
+
+        `paths` is what the item's change touched, read only where the status
+        states several writers with a class each (§ 4.2); an item in no class or
+        in two is a refusal naming neither as the one to move it.
 
         ⛔ **It asks for an advance and never discovers a reversal.** A step
         backwards is `revert_to` below, asked for as one, by § 32 -- so what this
@@ -1262,8 +1310,11 @@ class Port:
                 "nothing to advance to. A project maps a subset and an absent "
                 "role is a legitimate configuration.",
             )
+        writer, unclassed = self._writer_for(status, paths, as_writer, role)
+        if unclassed is not None:
+            return unclassed
         refusal = self._refused_by_writer(
-            status.get("writer"),
+            writer,
             f"the `{role}` status (`{status.get('name')}`)",
             asked_as=as_writer,
             to_role=role,
@@ -2512,6 +2563,98 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
             wrong.refused and wrong.writer == writer and writer in wrong.detail,
             f"got {str(wrong)!r}",
         )
+    # § 4.2's classed form. ⛔ Both writers are askable, so what separates the arms
+    # is the item's class alone.
+    def _classed_ask(paths, as_writer, *writers) -> Outcome:
+        return Port(
+            _with_statuses(
+                [{"name": "a status", "role": a_role, "writers": list(writers)}]
+            ),
+            spec,
+            adapter=Adapter(
+                {"set_state": lambda *a, **k: k.get("status", "<no status>")}
+            ),
+            stated=stated,
+        ).advance_to(a_role, as_writer=as_writer, paths=paths)
+
+    built = {"writer": PROCEDURE, "paths": ["ci/*"]}
+    shipped = {"writer": DEPLOY, "paths": ["app/*"]}
+    the_rest = {"writer": DEPLOY, "rest": True}
+    for label, paths, writers, belongs_to in (
+        ("in one class", ["ci/a"], (built, shipped), PROCEDURE),
+        ("in the other class", ["app/a"], (built, shipped), DEPLOY),
+        ("in the remainder", ["app/a"], (built, the_rest), DEPLOY),
+        ("split between a class and the rest", ["ci/a", "app/a"],
+         (built, the_rest), DEPLOY),
+        ("wholly in a class stated beside the rest", ["ci/a", "ci/a"],
+         (built, the_rest), PROCEDURE),
+    ):
+        for asker in ASKABLE_AS:
+            answer = _classed_ask(paths, asker, *writers)
+            check(
+                f"an item {label}, asked for as `{asker}`, is moved by `{belongs_to}` alone",
+                answer.performed and answer.result == "a status"
+                if asker == belongs_to
+                else answer.refused and answer.writer == belongs_to,
+                f"got {str(answer)!r}",
+            )
+    for label, paths, writers, says in (
+        ("in no class", ["other/a"], (built, shipped), "'other/a'"),
+        ("split between two classes", ["ci/a", "app/a"], (built, shipped), "no class"),
+        ("in two classes", ["ci/app"],
+         (built, {"writer": DEPLOY, "paths": ["*/app"]}), "each of"),
+        ("whose paths were not handed over", [], (built, the_rest), "unread"),
+    ):
+        for asker in ASKABLE_AS:
+            answer = _classed_ask(paths, asker, *writers)
+            check(
+                f"an item {label} is refused an ask made as `{asker}`, and the reason named",
+                answer.refused
+                and not answer.performed
+                and answer.writer is None
+                and answer.to_role == a_role
+                and says in answer.detail,
+                f"got {str(answer)!r}",
+            )
+    for asker in [w for w in config.facts_for("writer") if w not in ASKABLE_AS]:
+        answer = _classed_ask(
+            ["ci/a"], asker, {"writer": asker, "paths": ["ci/*"]}, the_rest
+        )
+        check(
+            f"a classed status refuses an ask made as `{asker}`, as a claim to be it",
+            answer.refused and "claiming to be somebody" in answer.detail,
+            f"got {str(answer)!r}",
+        )
+        # ⛔ And on an item in no class, where a class read first would answer the
+        # claim with which paths it lacks.
+        answer = _classed_ask(
+            [], asker, {"writer": asker, "paths": ["ci/*"]}, the_rest
+        )
+        check(
+            f"and refuses the ask made as `{asker}` as a claim before any class is read",
+            answer.refused and "claiming to be somebody" in answer.detail,
+            f"got {str(answer)!r}",
+        )
+    for bad in ("../ci/a", "/ci/a", "  ", "ci/../app/a", "./ci/a"):
+        try:
+            answer = _classed_ask([bad], PROCEDURE, built, the_rest)
+        except ConfigError as error:
+            answer = error.key
+        check(
+            f"a changed path written {bad!r} is refused rather than classed",
+            answer == f"statuses.{config.STATUS_WRITERS}",
+            f"got {str(answer)!r}",
+        )
+    unread = _with_statuses([{"name": "a status", "role": a_role, "writer": PROCEDURE}])
+    same = Port(
+        unread, spec, adapter=Adapter({"set_state": lambda *a, **k: sorted(k)}),
+        stated=stated,
+    ).advance_to(a_role, paths=["anything"])
+    check(
+        "a status with one writer reads no path and hands none on",
+        same.performed and same.result == ["status"],
+        f"got {str(same)!r}",
+    )
     # ⛔ And `never` is refused whatever a caller claims to be, which is the arm
     # a parameter like this invites getting wrong: it is the writer that is not a
     # party, so there is nobody for a caller to claim to be.
@@ -3898,6 +4041,38 @@ def self_test() -> int:
         try:
             named = _ran("--invoke", "set_state", "--argument", "1")
             by_role = _ran("--advance-to", "initial", "--argument", "1")
+            # § 4.2's class is read off `--path`, on this route and no other.
+            misplaced = _ran(
+                "--revert-on", "acceptance_rejected", "--argument", "1",
+                "--path", "ci/a",
+            )
+            check(
+                "a path handed to any route but the advance is refused, named",
+                misplaced.returncode == 2 and "--path" in misplaced.stderr,
+                f"exited {misplaced.returncode} saying {misplaced.stderr.strip()[:160]!r}",
+            )
+            handed: list = []
+
+            class _Records:
+                name = "tracker.kind"
+
+                def advance_to(self, role, *args, **kwargs):
+                    handed.append(kwargs.get("paths"))
+                    return Outcome("set_state", performed=False, detail="recorded")
+
+            kept_load = globals()["load"]
+            globals()["load"] = lambda *a, **k: _Records()
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    main(["--advance-to", "initial", "--argument", "1",
+                          "--path", "ci/a", "--path", "app/b"])
+            finally:
+                globals()["load"] = kept_load
+            check(
+                "and the advance is handed every path the invocation carried",
+                handed == [["ci/a", "app/b"]],
+                f"handed {handed!r}",
+            )
             # ⛔ The reverse direction's own route, which had no invocation at
             # all until § 39's role came to ask for one. ⚠️ This project rules
             # `reversals: []`, so what is asserted is that the ask **reaches the
@@ -3918,6 +4093,9 @@ def self_test() -> int:
             # named, so the arm survives a renamed capability: what is wanted is
             # any available operation taking more than one argument.
             short = _ran("--invoke", _needing_two_arguments(), "--argument", "1")
+            # ⛔ A read, so a type dropped on the way leaves nothing on a tracker.
+            typed = _ran("--invoke", "read_item", "--argument", "1", "--type", "a type")
+            typed_alone = _ran("--type", "a type")
         except subprocess.TimeoutExpired:
             check(
                 "the status-move route answered at all, rather than hanging",
@@ -3978,6 +4156,17 @@ def self_test() -> int:
                 f"{both_ways.stderr.strip()[:160]!r}",
             )
             check(
+                "a type reaches the operation, and one taking none refuses it",
+                typed.returncode == 1 and "arguments it does not take" in typed.stdout
+                and "'type'" in typed.stdout,
+                f"exited {typed.returncode} saying {typed.stdout.strip()[:160]!r}",
+            )
+            check(
+                "and a type with no operation to carry it is refused",
+                typed_alone.returncode == 2 and "--type" in typed_alone.stderr,
+                f"exited {typed_alone.returncode}",
+            )
+            check(
                 "an operation asked for with too few arguments is a refusal, not a "
                 "traceback",
                 "Traceback (most recent call last)" not in short.stderr
@@ -4036,6 +4225,13 @@ def main(argv: list[str]) -> int:
         metavar="VALUE",
         help="one argument for `--invoke`, repeated in the order the operation "
         "takes them. Always passed as text",
+    )
+    parser.add_argument(
+        "--type",
+        metavar="NAME",
+        help="the native type a `create_item` filing states (§ 4.1), in the "
+        "tracker's own word. Omitted, the filing states none; an operation taking "
+        "no type refuses it",
     )
     parser.add_argument(
         "--advance-to",
@@ -4119,6 +4315,15 @@ def main(argv: list[str]) -> int:
         "procedure, which is what every role but § 33's deploying one asks as",
     )
     parser.add_argument(
+        "--path",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="one repository-relative path the item's change touched, for "
+        "`--advance-to`; repeated. Read only where § 4.2's status states several "
+        "writers with a class each",
+    )
+    parser.add_argument(
         "--no-check-paths",
         action="store_true",
         help="resolve without testing that the configured code root exists",
@@ -4134,6 +4339,13 @@ def main(argv: list[str]) -> int:
         print("Holding the port contract to the surface and the examples:")
         return self_test()
 
+    if args.type is not None and not args.invoke:
+        print(
+            "Refused: `--type` is what a filing states, so it is asked for with "
+            "`--invoke create_item` and nothing else reads it.",
+            file=sys.stderr,
+        )
+        return 2
     # ⛔ Performing an operation is a separate request from reporting one, and the
     # two are not combined. ⚠️ This exists because a port whose operations no role
     # can reach is a contract nobody can keep: the tracker port's roles have a
@@ -4170,6 +4382,15 @@ def main(argv: list[str]) -> int:
         print(
             "Refused: `--advance-to` and `--revert-on` are two moves on one item "
             "and the order between them is stated nowhere. Ask for one.",
+            file=sys.stderr,
+        )
+        return 2
+    # ⛔ A path on any other route is a class nothing would read: § 32's reverse
+    # edge carries a writer of its own and no class.
+    if args.path and not args.advance_to:
+        print(
+            "Refused: `--path` says which of § 4.2's classes an item is in, which "
+            "only `--advance-to` reads.",
             file=sys.stderr,
         )
         return 2
@@ -4353,7 +4574,10 @@ def main(argv: list[str]) -> int:
                 )
                 if args.revert_on
                 else answering.advance_to(
-                    args.advance_to, *args.argument, as_writer=args.as_writer
+                    args.advance_to,
+                    *args.argument,
+                    as_writer=args.as_writer,
+                    paths=args.path,
                 )
             )
         except ConfigError as error:
@@ -4390,7 +4614,8 @@ def main(argv: list[str]) -> int:
                 root=args.root,
                 check_paths=not args.no_check_paths,
             )
-            outcome = answering.invoke(args.invoke, *args.argument)
+            stated = {} if args.type is None else {"type": args.type}
+            outcome = answering.invoke(args.invoke, *args.argument, **stated)
         except ConfigError as error:
             # ⛔ Reported as a refusal and never as a traceback. A value the
             # configuration states badly, or an operation this port does not
