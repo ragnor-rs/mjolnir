@@ -694,14 +694,11 @@ def _decide(
         # landed tree the removal refused is the one kept state that is neither ordinary nor
         # self-clearing, and a sweep that swallowed it would keep refusing in silence every time.
         return kept(
-            f"its branch has landed and the release was refused: {failed}", attention=True
+            f"its branch has landed and the release did not complete: {failed}", attention=True
         )
-    # ⛔ **The removal is read back, never inferred from the absence of a refusal.** Measured in
-    # the carrier this calls: a `worktree remove` that fails is not raised and its success
-    # sentence is appended anyway, so a locked tree -- which git refuses unless `--force` is given
-    # twice -- produced *removed* for a tree still on disk whose published ref had already gone.
-    # ⚠️ A destructive act reported as done when it was not is worse than a refusal, because
-    # nothing comes back to it.
+    # ⛔ **The removal is read back, never inferred from the absence of a refusal.** `claim.release`
+    # reads its own removal back and raises, which arrives above as `failed`; this holds the sweep
+    # to the disk whatever remover it was handed.
     if Path(tree.path).exists():
         return kept(
             "its branch has landed and the removal reported success while the tree is still "
@@ -1442,6 +1439,19 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             "⛔ and it reaches the person, rather than being swallowed as an ordinary kept tree",
             "refused" in report.message(),
             report.message(),
+        )
+
+    # Plant: a locked tree through the remover that ships, which git refuses to remove.
+    with tempfile.TemporaryDirectory() as tmp:
+        work, _branch, tree = _landed_world(tmp)
+        claim.git(work, "worktree", "lock", tree)
+        report = sweep(work, [], "never", tree_dir=_trees(tmp), occupants=lambda _p: [])
+        suite.ok(
+            "⛔ a locked tree is kept and the person is told it was not removed",
+            Path(tree).exists()
+            and not report.removed
+            and "**not** removed" in report.message(),
+            report.report(),
         )
 
     with tempfile.TemporaryDirectory() as tmp:

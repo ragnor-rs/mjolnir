@@ -4148,10 +4148,12 @@ one no file oracle can reach**, which is why it is stated rather than left to fo
 above.
 
 ⛔ **The removal is read back, and a removal that reported success while the tree is still there is
-not one.** Measured in the carrier this rule calls: a tree git refuses to remove — a locked one
-needs the override twice — is not raised and the success sentence is appended anyway, so the sweep
-said *removed* for a tree still on disk whose published ref had already gone. ⚠️ **A destructive
-act misreported as done is worse than a refusal**, because nothing ever comes back to it.
+not one.** It binds the release and the sweep alike. A tree git refuses to remove — a locked one
+needs the override twice — is reported as **not removed**, with git's own reason, and the command
+that gives the claim up fails rather than succeeding in part. ⛔ **What became of the published ref
+is stated beside the tree left behind**, the ref going first: a ref reported gone on its own reads
+as a claim given up whole. The local branch stays with the tree. ⚠️ **A destructive act misreported
+as done is worse than a refusal**, because nothing ever comes back to it.
 
 ⛔ **A symlink is never precious, however it is ignored.** A tree preparation step that plants
 ignored symlinks into every tree it prepares leaves every correctly prepared tree permanently
