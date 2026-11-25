@@ -3096,12 +3096,13 @@ ordinary, and the second is not a project whose count is zero.
 expiry alone.** ⚠️ **The proof is per path and is not a reading**: a path a guard registers nothing
 for, and a path whose event the harness does not publish, read identically from the carrier.
 
-| the call's exit | what releases the place |
-|---|---|
-| it finished, either way | the event after the call — a failure is an exit like any other |
-| it was refused before it ran | nothing fires, so the end-of-turn sweep is what releases it |
-| the turn ended, the session ended, or a subagent stopped | the sweep, over every place this session holds |
-| it was put in the background | ⛔ **expiry alone.** The call itself finishes at launch, so every sweep would hand the place back while the work ran, and each one skips it deliberately |
+| the call's exit | what releases the place | the events registered for it |
+|---|---|---|
+| it finished, either way | the event after the call — a failure is an exit like any other, and the harness publishes it as an event of its own | `PostToolUse`, `PostToolUseFailure` |
+| it was refused before it ran | nothing fires, so the end-of-turn sweep is what releases it | `Stop`, `StopFailure` |
+| it was cancelled while it ran | nothing fires for the call or for the turn the cancellation ended, so the next sweep this session reaches is what releases it, and expiry where it reaches none | `Stop`, `StopFailure`, `SessionEnd` |
+| the turn ended, the session ended, or a subagent stopped | the sweep, over every place this session holds — and a turn an API error ended is published as an event of its own | `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop` |
+| it was put in the background | ⛔ **expiry alone.** The call itself finishes at launch, so every sweep would hand the place back while the work ran, and each one skips it deliberately | none |
 
 ⛔ **So `ttl` bounds what a leak costs rather than merely tidying up after one.** Measured on the
 same project: two leases left behind by calls refused before they ran pinned a cap of two with
