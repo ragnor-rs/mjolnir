@@ -1832,6 +1832,9 @@ tracker:
   project_key: "KEY"            # required_when: tracker.kind = jira
   transitions:
     resolve: by_name
+  create_fields:                # the fields the site requires before it will create an item
+    - field: "<the field's name>"
+      value: []                 # absent: the filing states it
 ```
 
 ```yaml
@@ -1862,6 +1865,18 @@ the repository the host facet already names, and the second addresses nothing at
 ⚠️ **Nothing here refuses a key this surface does not declare**, so a project may carry one and
 some do — which is a gap in what holds configurations to this surface rather than a licence, and is
 recorded as such in [`docs/single-source-of-truth.md`](../../../docs/single-source-of-truth.md).
+
+⛔ **A field the site requires at creation goes with the create, and `create_fields` states which.**
+Each entry names the field the way the site does. Its `value` is sent on every filing unless the
+filing states one, and an entry with no `value` is one the filing must state: a create missing it
+is refused before it is sent, naming the field. ⚠️ The filing may state fields this list does not.
+A project writing no such list sends what a filing already sends. ⚠️ **Read by this kind's
+implementation alone**, which is why it is in this block: no other tracker here refuses a create
+for a field.
+
+⛔ **A field holding several values is written whole: the write replaces the list**, as `set_labels`
+does, and an empty list clears it. Each member takes the shape of the element type the site states,
+and an element type the implementation has no shape for is refused by name.
 
 **The test a new kind's block is written against**: a key is required when the adapter cannot
 address the right tracker without it. An address this reader accepts and the tracker rejects is

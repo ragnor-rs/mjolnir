@@ -1154,7 +1154,9 @@ document shape this tracker takes and read back from it, with the shapes that do
 in the module and asserted to come back as the text they were written as; a search bounded by the
 project, which is the host's own requirement rather than a convenience, and every term quoted into
 its operand so that no caller can narrow the states a duplicate check covers; and a field addressed
-by **name** and resolved against the site's own catalogue, every custom id being site-specific.
+by **name** and resolved against the site's own catalogue, every custom id being site-specific;
+a list written by the element type the catalogue states, replacing what was there and read back;
+and the fields a filing owes sent in the create itself, one nobody supplied refused before it.
 
 ⛔ **Two of this one's properties are about where a guard sits rather than what it says**, and both
 came out of the suite rather than out of review — which is
