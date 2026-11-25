@@ -2768,10 +2768,12 @@ of the two by the margin this whole document is about.
   itself reaches no event here. ⚠️ That is the same reach the boundary hook has, and the reason the
   record is written on the change rather than into a session: a record on the change is still there
   for whoever reads the history of one that was merged another way.
-- **A `claimed_by` that matches the wrong calls, or none.** The reader refuses a pattern that does
-  not compile — a pattern matching nothing is a resource that reads as guarded and holds nothing —
-  but a pattern that compiles and matches the wrong commands is a project's own statement about its
-  own commands, and nothing here can tell a narrow one from a mistaken one.
+- **A `claimed_by` that matches the wrong calls, or none.** One pattern is searched for in the text
+  of a call, so it takes a place for a call that prints it; a list is read at command positions, and
+  a command written after a separator inside a comment still reads as one. The reader refuses a
+  pattern that does not compile — a pattern matching nothing is a resource that reads as guarded and
+  holds nothing — but a pattern that compiles and matches the wrong commands is a project's own
+  statement about its own commands, and nothing here can tell a narrow one from a mistaken one.
 - **What a probe's count means.** The procedure runs the command and reads one number. A probe that
   counts the wrong thing, counts it twice, or reports a stale figure answers this check exactly as a
   correct one does. ⛔ That is the boundary at
