@@ -263,6 +263,15 @@ ASSIGNED = re.compile(
 # command the session ran.
 REFERENCE = re.compile(r"^(?:\$\{?[A-Za-z_][\w]*\}?|%[A-Za-z_][\w]*%|\$\(.*\))$")
 
+# A value that says where to read rather than what to send: a path of field names,
+# as a query's filter writes one, and the alternatives a filter may join to it.
+#
+# ⛔ The leading dot is required and a digit is refused in any segment, which is the
+# whole of what keeps this from passing a generated value: `aB3xQ9z` behind a dot is
+# still refused, and so is a dotted host name, having no leading dot.
+_PATH = r"(?:\.[A-Za-z_]{1,40})+"
+SELECTOR = re.compile(rf"^{_PATH}(?://{_PATH})*/{{0,2}}$")
+
 # A value that stands in for one. ⚠️ Decided word by word rather than by one
 # alternation of whole strings: the forms a person actually writes compose
 # freely -- `your-key-here`, `api_token_goes_here`, `CHANGEME` -- and an
@@ -475,7 +484,7 @@ def credentials(text: str) -> list[str]:
             )
     for match in ASSIGNED.finditer(text):
         value = match.group("value")
-        if REFERENCE.match(value) or stands_in(value):
+        if REFERENCE.match(value) or SELECTOR.match(value) or stands_in(value):
             continue
         # A shape the list above already named is one finding, not two.
         if any(p.search(match.group(0)) for p, _ in CREDENTIALS):
@@ -641,6 +650,156 @@ def outward(command: str) -> tuple[str, str] | None:
     return None
 
 
+# What the host's own client only reads with, by noun. A noun or a verb that is absent
+# here has no stated direction, which is the answer rather than a guess either way.
+GH_READS = {
+    "pr": {"view", "list", "diff", "checks", "status"},
+    "issue": {"view", "list", "status"},
+    "run": {"view", "list", "watch", "download"},
+    "release": {"view", "list", "download"},
+    "repo": {"view", "list"},
+    "workflow": {"view", "list"},
+    "label": {"list"},
+    "gist": {"view", "list"},
+    "search": {"issues", "prs", "repos", "code", "commits"},
+}
+GH_WRITES = {"comment", "create", "edit", "close", "reopen", "merge", "review", "delete",
+             "upload", "run", "lock", "unlock", "transfer", "ready"}
+READ_METHODS = {"GET", "HEAD"}
+
+# curl's one-letter flags that take a value, so the rest of a cluster is that value.
+CURL_VALUED = set("AbcCeEHKmoPQrtuUwxyYzD")
+
+
+def _api_direction(words: list[str]) -> str | None:
+    """Which way one `gh api` call goes."""
+    method, fields, unseen = None, False, False
+    for index, word in enumerate(words):
+        following = words[index + 1] if index + 1 < len(words) else ""
+        if word in ("-X", "--method"):
+            method = following.upper()
+        elif word.startswith("--method="):
+            method = word.partition("=")[2].upper()
+        elif word.startswith("-X"):
+            method = word[2:].lstrip("=").upper()
+        elif word.startswith("--input"):
+            fields = unseen = True
+        elif word.startswith(("-f", "-F", "--field", "--raw-field")):
+            fields = True
+            unseen = unseen or "=@" in word or "=@" in following
+    if "graphql" in words:
+        # Every query here is a POST, so the method says nothing and the text does.
+        if unseen:
+            return None
+        return "write" if re.search(r"\bmutation\b", " ".join(words)) else "read"
+    if method:
+        return "read" if method in READ_METHODS else "write"
+    return "write" if fields else "read"
+
+
+def _curl_direction(words: list[str]) -> str | None:
+    """Which way one `curl` call goes."""
+    method, data, as_query = None, False, False
+    for index, word in enumerate(words):
+        following = words[index + 1] if index + 1 < len(words) else ""
+        if word.startswith("--"):
+            flag, _, inline = word.partition("=")
+            if flag == "--request":
+                method = (inline or following).upper()
+            elif flag == "--get":
+                as_query = True
+            elif flag == "--config":
+                return None
+            elif flag.startswith(("--data", "--form", "--json", "--upload-file")):
+                data = True
+            continue
+        if not word.startswith("-"):
+            continue
+        for at, letter in enumerate(word[1:], 2):
+            if letter == "K":
+                return None
+            if letter in "dFT":
+                data = True
+                break
+            if letter == "X":
+                method = (word[at:] or following).upper()
+                break
+            if letter == "G":
+                as_query = True
+            if letter in CURL_VALUED:
+                break
+    if method:
+        return "read" if method in READ_METHODS else "write"
+    return "write" if data and not as_query else "read"
+
+
+def _one_direction(tool: str, words: list[str]) -> str | None:
+    if tool == "git":
+        subcommand = _git_subcommand(words)
+        if subcommand in ("push", "send-email"):
+            return "write"
+        return "read" if subcommand == "request-pull" else None
+    if tool == "curl":
+        return _curl_direction(words)
+    if tool != "gh":
+        return None
+    if words[:1] and words[0] in ("-R", "--repo"):
+        words = words[2:]
+    noun, verb = (words + ["", ""])[:2]
+    if noun == "api":
+        return _api_direction(words[1:])
+    if verb in GH_READS.get(noun, ()):
+        return "read"
+    return "write" if noun in GH_READS and verb in GH_WRITES else None
+
+
+def direction(command: str) -> str | None:
+    """`read`, `write`, or None where the call's direction is not established.
+
+    ⛔ This decides what a refusal **says** and never whether one happens: a
+    credential in a read's own arguments leaves with it. ⛔ And it answers `read`
+    only where every outward call in the command is one, since a compound command
+    reporting its first call is the wrong message for the rest of it.
+    """
+    if "$(" in command or "`" in command or "<(" in command:
+        return None  # a call inside an expansion is not one this parse can see
+    try:
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|()\n")
+        lexer.whitespace, lexer.whitespace_split, lexer.commenters = " \t\r", True, ""
+        tokens = list(lexer)
+    except ValueError:
+        return None
+    segments: list[list[str]] = [[]]
+    for token in tokens:
+        if token and set(token) <= set(";&|()\n"):
+            segments.append([])
+        else:
+            segments[-1].append(token)
+    ways = set()
+    for words in segments:
+        for index, word in enumerate(words):
+            tool = os.path.basename(word)
+            if tool not in OUTWARD:
+                continue
+            rest = words[index + 1:]
+            if tool == "git" and _git_subcommand(rest) not in GIT_OUTWARD:
+                continue
+            ways.add(_one_direction(tool, rest))
+            break
+    if "write" in ways:
+        return "write"
+    return "read" if ways == {"read"} else None
+
+
+# How a refusal names each direction. ⛔ The third is neutral on purpose: a direction
+# nothing established is not reported as either.
+REFUSED = {
+    "read": "The call reads and its own arguments leave with it, so the read is refused",
+    "write": "The write is refused",
+    None: "The call is refused",
+}
+
+
 def body_files(command: str) -> list[str]:
     """Paths whose contents this command sends outward."""
     try:
@@ -737,7 +896,8 @@ def hook_answer(payload: dict) -> dict:
             "permissionDecisionReason": (
                 f"This command reaches {reaches} and carries "
                 + "; ".join(f.split(": ", 1)[1] for f in found)
-                + f". The write is refused and no value is printed ({HOLD_CITATION}). "
+                + f". {REFUSED[direction(command)]} and no value is printed "
+                f"({HOLD_CITATION}). "
                 "Remove the credential from the text, or pass it as a variable reference "
                 "rather than a literal."
             ),
@@ -904,6 +1064,15 @@ def _plants_that_redden() -> list[tuple[str, str, object]]:
         # ⚠️ A varied body, not a run of one character: a uniform run is a
         # redaction by the rule one scope over, so a plant built from one would
         # have been testing the exclusion rather than the arm.
+        # ⛔ The other side of the selector exemption, one plant per thing it requires.
+        ("write", "a generated value behind a leading dot",
+         "auth_key: ." + _token("", "aB3xQ9z", 24)),
+        ("write", "a field path with a generated segment in it",
+         "api_token: .data." + _token("", "r7Kp2mQ", 20)),
+        ("write", "dotted words with no leading dot",
+         "password: " + ".".join(["correct", "horse", "battery"])),
+        ("write", "a selector with a literal joined to it",
+         "api_token: .data.value//" + _token("", "aB3xQ9z", 24)),
         ("write", "a value assigned to a credential name",
          "api_key = " + _token("", "aB3xQ9z", 24)),
         ("write", "a password assigned in a configuration line",
@@ -951,6 +1120,13 @@ def _plants_that_must_stay_green() -> list[tuple[str, str, object]]:
         ("read", "a mapping arrow and ordinary emphasis",
          "The **outcome** is stated: open → closed.\n"),
         ("write", "a variable reference rather than a value", "token: ${GH_TOKEN}\n"),
+        ("write", "a selector under a key spelled like a credential name",
+         ".comments[] | {author: .author.login, body}\n"),
+        ("write", "a selector with an alternative joined to it",
+         "{author:.author.login//.user.login}\n"),
+        ("write", "a quoted selector", 'author: ".commit.author.name"\n'),
+        ("write", "a report quoting the whole query that was refused",
+         "`gh pr view 1 --json comments --jq '.comments[] | {author: .author.login}'`\n"),
         ("write", "a placeholder rather than a value", 'api_key: "your-key-here"\n'),
         ("write", "a redaction", "password: ************\n"),
         ("write", "a commit hash, which entropy would have caught",
@@ -1020,9 +1196,62 @@ def _hook_payloads() -> list[tuple[str, dict, bool]]:
          {"tool_name": "Bash",
           "tool_input": {"command": "curl -H \"Authorization: Bearer $GH_TOKEN\" https://x.invalid"}},
          False),
+        # A change's whole conversation, in the spelling a role writes first.
+        ("a change's comments, with the writer of each",
+         {"tool_name": "Bash", "tool_input": {"command":
+          "gh pr view 1 --json comments --jq "
+          "'.comments[] | {author: .author.login, body: .body}'"}},
+         False),
+        ("a change's reviews, with the writer of each",
+         {"tool_name": "Bash", "tool_input": {"command":
+          "gh pr view 1 --json reviews --jq "
+          "'[.reviews[]|{author:.author.login,state,body}]'"}},
+         False),
+        ("a change's inline comments, with the writer of each",
+         {"tool_name": "Bash", "tool_input": {"command":
+          "gh api repos/o/r/pulls/1/comments --paginate --jq "
+          "'.[] | {author: .user.login, author_role: .author_association, path, body}'"}},
+         False),
+        ("a literal credential in a read's own filter",
+         {"tool_name": "Bash", "tool_input": {"command":
+          "gh pr view 1 --json comments --jq '{api_key: "
+          + _token("", "aB3xQ9z", 24) + "}'"}},
+         True),
         ("a tool this hook does not answer for",
          {"tool_name": "Write", "tool_input": {"file_path": "x", "content": secret}},
          False),
+    ]
+
+
+def _directions() -> list[tuple[str, str | None]]:
+    """(command, the direction it has) -- None where nothing establishes one."""
+    return [
+        ("gh pr view 1 --json comments", "read"),
+        ("gh -R o/r issue list", "read"),
+        ("gh api repos/o/r/pulls/1/comments --paginate", "read"),
+        ("gh api -X GET search/issues -f q=x", "read"),
+        ("gh api graphql -f query='query { viewer { login } }'", "read"),
+        ("gh api graphql -f query='mutation { x }'", "write"),
+        ("gh api graphql -F query=@q.graphql", None),
+        ("gh api repos/o/r/issues -f title=x", "write"),
+        ("gh api --method=DELETE repos/o/r/issues/1", "write"),
+        ("gh api repos/o/r/issues --input b.json", "write"),
+        ("gh pr comment 1 --body x", "write"),
+        ("gh pr unheard-of 1", None),
+        ("git -C . push origin x", "write"),
+        ("git remote -v", None),
+        ("curl -sSH 'A: b' https://x.invalid", "read"),
+        ("curl -sd a=b https://x.invalid", "write"),
+        ("curl -G -d a=b https://x.invalid", "read"),
+        ("curl -XPOST https://x.invalid", "write"),
+        ("curl -K conf https://x.invalid", None),
+        ("wget https://x.invalid", None),
+        ("gh pr view 1 | jq . && gh pr comment 1 --body x", "write"),
+        ("gh pr view 1\ngh pr comment 1 --body x", "write"),
+        ("gh pr view 1; wget https://x.invalid", None),
+        ("gh pr view 1 --json body --jq '.a|.b; (.c)'", "read"),
+        ('gh pr view "$(gh pr comment 1 --body x)"', None),
+        ("gh pr view 'unbalanced", None),
     ]
 
 
@@ -1145,6 +1374,29 @@ def self_test() -> int:
         check("the hook denies", denied.get("hookSpecificOutput", {})
               .get("permissionDecision") == "deny")
         check("and the secret is absent from its reason", secret not in reason)
+
+        out.append("")
+        out.append("A refusal names the direction the call has, and neither where none is known:")
+        for command, way in _directions():
+            check(f"{way or 'not established'}: {command!r}", direction(command) == way,
+                  repr(direction(command)))
+        for command, says, never in (
+                (f"gh pr view 1 --jq '{secret}'", "the read is refused", "write is refused"),
+                (f"gh pr comment 1 --body {secret}", "The write is refused", "read is refused"),
+                (f"wget https://x.invalid/{secret}", "The call is refused", "write is refused")):
+            answer = answered_for(command).get("hookSpecificOutput", {})
+            why = answer.get("permissionDecisionReason", "")
+            check(f"denied, saying {says!r}", says in why and never not in why, why[-260:])
+
+        out.append("")
+        out.append("A report of a false positive can be filed with the offending text in it:")
+        quoting = Path(directory) / "report.md"
+        quoting.write_text("Refused:\n\n    gh pr view 1 --json comments "
+                           "--jq '.comments[] | {author: .author.login, body}'\n")
+        check("as a body file",
+              not answered_for(f"gh issue create --title t --body-file {quoting}"))
+        check("and through the arm a role runs first",
+              write_report(quoting.read_text(), "the work item")[1] == 0)
 
         out.append("")
         out.append("A body passed by file is read, which is how a role writes one:")
