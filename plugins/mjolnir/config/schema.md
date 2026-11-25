@@ -3127,10 +3127,11 @@ here there is no act, and what an unestablished reading costs is a report naming
 read.
 
 ⛔ **It answers at the turn's end and after a merge, and at no other exit.** A session ending is a
-report nobody is left to act on, and a subagent stopping is not this tree's turn ending — it would
-repeat one answer once per subagent in a turn that has not finished. ⚠️ **Both are events a release
-arm is already registered on**, which makes this an arm beside the ones above rather than a carrier
-of its own, by the ordering argument
+report nobody is left to act on, a turn an API error ended is one whose answer the harness discards,
+and a subagent stopping is not this tree's turn ending — it would repeat one answer once per
+subagent in a turn that has not finished. ⚠️ **Both are events a release arm is already registered
+on**, which makes this an arm beside the ones above rather than a carrier of its own, by the
+ordering argument
 [§ A lease](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it) makes for the
 third refusal.
 
@@ -3808,7 +3809,7 @@ or is not reachable, the refusal still stands: the ref exists, which is the whol
 asserts, and the unestablished half is stated rather than dropped.
 
 **Release is on the item's own exit, not on a call's.** ⛔ A claim is **long-lived by
-construction** — it spans every call the item takes — so the six exit paths an `exclusive_resources`
+construction** — it spans every call the item takes — so the exit paths an `exclusive_resources`
 lease is released on do not apply to it, and a claim wired to them would release itself mid-item.
 What the two share is the failure: a claim released on the happy path alone leaks. So the claim is
 released where the item leaves — the branch landing, or the work being abandoned — and every other
