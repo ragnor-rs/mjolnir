@@ -1271,7 +1271,8 @@ The rule is
 and ⛔ this document states none of it. What the suite holds: that a second session starting an
 item already claimed is refused; that the refusal names who holds it and since when, or names
 whichever half it could not establish; that a refused start leaves no ref, no branch and no tree;
-that a released claim is takeable again and a release is re-runnable; that a claim with no work
+that a released claim is takeable again and a release is re-runnable; that a removal git refuses
+is reported as not removed, beside what became of the ref; that a claim with no work
 and no occupied tree reads as an *orphaned candidate* carrying both readings rather than being
 broken; that a ref younger than the window a start takes between publishing its ref and cutting its
 tree reads *provisional* instead, with re-reading rather than asking as its remedy; and that a root
