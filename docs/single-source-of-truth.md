@@ -2534,8 +2534,8 @@ which of the three designs was the one that worked.
 | arm | what it reads | kind | what it does |
 |---|---|---|---|
 | `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge, the runs the host made for this commit, and the count a project's probe prints | **computed** for the count and the runs, **forbidding** for the record's presence | denies the call, or takes a place |
-| `release` (`PostToolUse`, `Stop`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
-| `release` again, at two of those four (`Stop`, and a `PostToolUse` whose call merged) | the tree the event names, the head the remote reports for the base, and the base's commits against this branch by patch | **computed** | reports `level`, `behind` with its figure, or `unestablished` — and ⛔ **refuses nothing, there being no call in hand at either point** |
+| `release` (`PostToolUse`, `PostToolUseFailure`, `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
+| `release` again, at two of those (`Stop`, and a `PostToolUse` whose call merged) | the tree the event names, the head the remote reports for the base, and the base's commits against this branch by patch | **computed** | reports `level`, `behind` with its figure, or `unestablished` — and ⛔ **refuses nothing, there being no call in hand at either point** |
 | `record` | nothing | — | writes the answer a guard reads onto the change |
 | `held` | the leases and the probe | **computed** | reports what is held, and what it could not establish |
 
@@ -2658,7 +2658,7 @@ forbids each by name.
 ⛔ **Eleven breaks were applied and each reddened the assertions written for it** — the patch
 reading reduced to a line count, the base read from the tracking ref, a head this tree does not
 hold read as level, an unreachable remote read as level, a project with no remote reported as
-unestablished every turn, the arm widened to all four release events, a finished call no longer
+unestablished every turn, the arm widened to every release event, a finished call no longer
 narrowed to one that merged, the sweep's answer replacing this one instead of joining it, the tree
 left out of the words, a read that cannot run left to escape the arm, and a read that could not run
 conflated with an object that is absent — which is the discipline
@@ -2693,7 +2693,7 @@ sat red on that one forever, or been *fixed* by deleting the sweep that is doing
 is where the path's status is stated rather than here.
 
 ⚠️ **A backgrounded call is the path no event can close**, and the suite asserts the full sequence:
-the place is taken, every one of the four release events leaves it alone, and it is gone once its
+the place is taken, every one of the release events leaves it alone, and it is gone once its
 lifetime is up. A sweep that released it would hand the place back while the work ran.
 
 ⚠️ **The arithmetic is a sum and the suite plants the maximum that let a third holder through.**
