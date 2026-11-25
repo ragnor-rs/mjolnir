@@ -313,7 +313,9 @@ template's, and an item that states neither is a note rather than work.
 
 **The body is written to be validated by whoever ordered the work**, not by whoever will do it. The
 acceptance condition is the whole point of the item: work can only be rejected against what was
-agreed when it was assigned, so a vague condition now is protection given away.
+agreed when it was assigned, so a vague condition now is protection given away. ⛔ **Its form is
+[`§ What an acceptance condition is written as`](../../config/schema.md#what-an-acceptance-condition-is-written-as)'s**,
+read before the section is written.
 
 ⛔ **Observe `tracker.policy.forbid_on_item`**
 ([`§ 3`](../../config/schema.md#a-write-forbidden-by-policy-rather-than-by-capability)). Where a

@@ -389,7 +389,8 @@ here rather than in the role that carries it.** ⛔ **Two legs read that state**
 reaches it and the one entered on it — so a definition written in either role's own text would be a
 second authority for the other, which is the division this section already makes for finishing and
 reviewing. ⛔ **Implemented** is therefore stated here: **the item's own stated acceptance condition
-is answered in the tree, and nothing that condition raised is waiting on a person.** ⚠️ **It is not
+is answered in the tree, and nothing that condition raised is waiting on a person.** What that
+condition is written as is [below](#what-an-acceptance-condition-is-written-as). ⚠️ **It is not
 the diff looking finished** — an item whose condition nobody can answer yet has not reached this
 state, and the session says so rather than continuing. ⚠️ **Where the item
 states no such condition**, which §4.4 makes a legitimate configuration, that is reported as
@@ -603,6 +604,45 @@ figure in them stale and every standing fact in them already argued in a row of 
 ⛔ **`audit_trail` is the key this surface will never declare.** A rule that is procedure everywhere
 is the rule an adopting project is likeliest to reach for a switch on, and a key accepted in silence
 is the rule gone with nothing refusing it.
+
+### What an acceptance condition is written as
+
+⛔ **An acceptance condition states the failure being prevented, never an absolute.** An absolute —
+*every*, *all*, *never*, or a wording read as one of them — is wider than the failure somebody
+wanted gone, and nothing in the sentence says which part of it was meant.
+
+**What that costs arrives later.** The wording outlives the reasoning that produced it and becomes
+what a later measurement is taken against. ⚠️ **Measured where it cost something**: a condition
+asked that a listing return the entries *other* than the dominant one, which reads as *all of
+them*; the goal was that one entry cannot crowd out the rest. The change that landed capped each
+entry's share, so only some of the others could ever show — and a session that measured the
+wording called the merged change defective and proposed undoing the cap. ⛔ **The condition was
+wrong and the code was right**, which is the direction that gets this backwards: a strict wording
+looks like the safer one to write, and what it produces is correct work reported as failing its own
+criterion.
+
+⛔ **It is not a licence to read a condition down.** A leg that finds the wording and the failure
+apart says so and asks, by [*Nothing is deferred*](#nothing-is-deferred), and the item is rewritten
+by whoever may rewrite it. A reader who decided alone that an unmet condition meant something
+narrower would be the same defect pointed the other way.
+
+⚠️ **The form is stated and the wording is not.** No heading, language or template text comes from
+here, the heading half being [§ 4.4](#44-template)'s. Whether a sentence is *present*, and whether
+anybody can answer it yet, are other rules' questions; so is how much of a condition a check can
+decide, since a condition answered half by a machine and half by a person is phrased under this
+rule whichever half reads it.
+
+⚠️ **Nothing decides this rule, which is its boundary rather than an omission.** Whether a sentence
+names a failure or an absolute is a reading and not a computation: the same word is an absolute in
+one condition and the failure itself in another — *no credential is written to the log* is both
+strict and exactly what is being prevented. So no `readiness:` predicate and no `done:` check is
+answered out of it, and no gate refuses an item by it. What it binds is whoever writes an item and
+whoever reads one.
+
+⛔ **Procedure, and no key on this surface carries it**: a project supplies no value for it, which
+is the test
+[§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) states.
+It stands here rather than in a role's text because several legs read the one sentence.
 
 ### What earns a test, and what makes its red believable
 
@@ -2133,6 +2173,10 @@ The procedure names the **semantic** sections it depends on — `outcome`, `acce
 `reproduction` — and each template declares which of its own headings fills each. That keeps the
 heading text, and its language, out of the procedure while letting the procedure still check a
 section is present and tick its items later.
+
+**How the acceptance section's content is phrased is no part of this key**:
+[§ What an acceptance condition is written as](#what-an-acceptance-condition-is-written-as) states
+the form, and it holds where no template is carried too.
 
 ⚠️ **`sections` is declared once for the project rather than once per template**, so every file
 `by_type` names gives one semantic section the same heading. What differs between two templates is
