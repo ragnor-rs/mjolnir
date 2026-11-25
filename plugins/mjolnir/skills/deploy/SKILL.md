@@ -1,7 +1,7 @@
 ---
 name: deploy
 description: Put what has landed onto one of the project's own deploy targets and move the items it carried — the target read from configuration rather than from its name, a preflight that writes nothing, one go for this deploy, the project's own invocation, the delivery read from what the run printed rather than from how it exited, a batch assembled from the tracker and narrowed by the project's own command, the steps the batch's own changes owe performed where each one is placed — the ones owed before the script holding the invocation and the ones owed after it holding only the items resting on them — a release's grouping held to the role its items must already stand in, and the grouping marked released or the step handed to a person. Use when asked to deploy, to release, to ship to staging or production, to publish a batch, or to put the current branch on an environment.
-argument-hint: "[<the target's name>]"
+argument-hint: "[<the target's name>] [<a choice>=<a value> ...]"
 ---
 
 # Deploy to one of this project's targets

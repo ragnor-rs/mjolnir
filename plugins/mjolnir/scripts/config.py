@@ -3088,7 +3088,9 @@ class Config:
         answer = {
             "target": target,
             "not_live": entry["not_live"],
-            "invoke": entry["invoke"],
+            # ⚠️ Not `invoke`: the command's own resolution carries a key of that
+            # name for § 1's form, and the two are different facts.
+            "reached_by": entry["invoke"],
             DEPLOY_CODE_ROOT: entry.get(DEPLOY_CODE_ROOT),
             "choices": shown,
         }
@@ -14961,6 +14963,15 @@ def self_test() -> int:
             and got["workflow"] == dispatched["workflow"] and got["ref"] == "a-ref",
             f"answered {got!r}",
         )
+        check(
+            f"and the answer says it is reached by {shape}",
+            isinstance(got, dict) and got["reached_by"] == shape, f"answered {got!r}",
+        )
+    got = choosing(**placed)
+    check(
+        "and a command's answer says the same beside its root's own form",
+        isinstance(got, dict) and got["reached_by"] == "command", f"answered {got!r}",
+    )
     # A project that states no choice keeps every command it had, the placement's
     # own spelling included.
     got = choosing(command="ship {choose:scope}")
@@ -20363,6 +20374,12 @@ def main(argv: list[str]) -> int:
                     f"deploy.{DEPLOY_CODE_ROOT}",
                     "is the target's own statement of its repository (§ 33), so a "
                     "root is not passed beside `--deploy-target`.",
+                )
+            if args.command:
+                raise ConfigError(
+                    "deploy.command",
+                    "is the target's own statement of what it runs (§ 33), so a "
+                    "command is not passed beside `--deploy-target`.",
                 )
             answer = config.deploy_target(args.deploy_target, args.choose)
         elif args.choose:
