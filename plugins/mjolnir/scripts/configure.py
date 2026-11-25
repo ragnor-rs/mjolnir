@@ -768,7 +768,12 @@ ANSWERED_BY: dict[str, Answer] = {
         "Is a place held by a tree, or by one call?",
     ),
     "branch_model.exclusive_resources.claimed_by": ask(
-        "Which calls claim a place on it?",
+        "Which commands claim a place on it -- each a command, and a pattern its "
+        "arguments carry where the command alone does not decide?",
+    ),
+    "branch_model.exclusive_resources.never_claims": ask(
+        "Which forms of those commands claim nothing? ⚠️ Unstated, every call one of "
+        "them names does.",
     ),
     "branch_model.exclusive_resources.probe": ask(
         "Can the resource be asked how many are held? ⚠️ A resource that cannot "

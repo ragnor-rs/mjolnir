@@ -403,14 +403,23 @@ def resources(config) -> list[dict]:
     return [entry for entry in stated if isinstance(entry, dict)]
 
 
-def claims(entry: dict, command: str) -> bool:
+def claims(entry: dict, command: str, launchers=()) -> bool:
     """Does this call put that resource at stake?
 
-    ⚠️ The pattern is searched rather than matched whole: a project states what a
-    claiming command looks like, and a command is a line with flags and paths
-    around whatever the project named.
+    The two forms of `claimed_by` are `schema.md § 10 -> Exclusive resources`'s.
+    ⛔ A list is read at each command position, and a form that never claims
+    spares the position it matches and no other, so it hides no claim beside it.
     """
-    pattern = str(entry.get("claimed_by") or "")
+    stated = entry.get("claimed_by")
+    if isinstance(stated, list):
+        spared = entry.get("never_claims") or []
+        return any(
+            any(position.names_the_call(called, arguments, one) for one in stated)
+            and not any(position.names_the_call(called, arguments, one) for one in spared)
+            for segment in position.segments(command, launchers)
+            for called, arguments in position.command_chain(segment, launchers)
+        )
+    pattern = str(stated or "")
     if not pattern:
         return False
     try:
@@ -1523,9 +1532,10 @@ def capacity_guard(config, command: str, session: str, cwd: str, background: boo
     if not stated:
         return {}
     where = store if store is not None else store_for(config.skills_root)
+    launchers = position.launchers_of(config)
     refusals, notes, written, waits = [], [], [], []
     for number, entry in enumerate(stated, 1):
-        if not claims(entry, command):
+        if not claims(entry, command, launchers):
             continue
         counted, unestablished = probe_count(entry, config.skills_root, run=probe)
         if unestablished:
@@ -2766,6 +2776,61 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("the same call under the other configuration claims nothing",
               guard_answer(_call("claims-the-first"), config=two, now=1000.0,
                            store=fresh("differential-2")) == {})
+
+        # --- what claims a place ------------------------------------------
+        out.append("")
+        out.append("A list of claiming commands is read where a command stands:")
+        listed = _a_resource(
+            claimed_by=[{"command": "./a-wrapper"},
+                        {"command": "a-tool", "args_match": r"^compose (.* )?up\b"}],
+            never_claims=[{"command": "./a-wrapper", "args_match": r"(^| )--status\b"},
+                          {"command": "a-tool", "args_match": r"--dry-run\b"}],
+        )
+
+        def takes(command: str, entry=listed, launchers=None) -> bool:
+            loaded = _a_config([entry])
+            if launchers:
+                loaded.data["command_position"] = {"launchers": launchers}
+            at = Path(tempfile.mkdtemp(dir=directory))
+            guard_answer(_call(command), config=loaded, now=1000.0, store=at)
+            return bool(live_leases(at, 1000.0))
+
+        for command in (
+            "./a-wrapper build", "./a-wrapper", "a-wrapper build", "a-tool compose -f x up -d",
+            "A=1 ./a-wrapper build", "cd x && ./a-wrapper build", "ls; a-tool compose up",
+            "ls\n./a-wrapper build", "ls | ./a-wrapper build", "timeout 5 ./a-wrapper build",
+            "env A=1 ./a-wrapper build", "! ./a-wrapper build", "echo $(./a-wrapper build)",
+            "if ./a-wrapper build; then ls; fi", "while ! a-tool compose up; do ls; done",
+            "until ./a-wrapper build; do ls; done",
+            "cat > f <<'EOF'\nit's text\nEOF\n./a-wrapper build",
+            "cat <<EOF | ./a-wrapper build\nit's text\nEOF",
+            # A form that never claims spares its own position alone.
+            "./a-wrapper --status && ./a-wrapper build", "./a-wrapper build; ./a-wrapper --status",
+        ):
+            check(f"a place is taken by: {command!r}", takes(command))
+        for command in (
+            "cat ./a-wrapper", "ls -l a-wrapper", "echo a-tool compose up",
+            "grep -rn 'a-tool compose up' .", "printf '%s' './a-wrapper build'",
+            'git commit -m "x; a-tool compose up"', "a-tool compose ps",
+            "cat <<'EOF'\na-tool compose up\nEOF", "cat <<'EOF'\nit's\na-tool compose up\nEOF",
+            "./a-wrapper --status", "timeout 5 ./a-wrapper --status",
+            "a-tool compose --dry-run up", "another-a-wrapper build",
+        ):
+            check(f"no place is taken by: {command!r}", not takes(command))
+        check("a listed launcher's inner command takes a place",
+              takes("a-shell -c 'ls; ./a-wrapper build'",
+                    launchers=[{"command": "a-shell", "string_flags": ["-c"]}]))
+        check("a full resource refuses a claiming command and passes one that never claims",
+              denied(guard_answer(_call("./a-wrapper build"), config=_a_config(
+                  [{**listed, "cap": 1, "probe": "a-count"}]), now=1000.0,
+                  store=fresh("listed-full"), probe=_a_probe(1)))
+              and guard_answer(_call("./a-wrapper --status"), config=_a_config(
+                  [{**listed, "cap": 1, "probe": "a-count"}]), now=1000.0,
+                  store=fresh("listed-full"), probe=_a_probe(1)) == {})
+        check("a single pattern is still searched for in the whole call",
+              takes("echo a-claiming-command", entry=_a_resource())
+              and takes("cd x && a-claiming-command", entry=_a_resource())
+              and not takes("ls", entry=_a_resource()))
 
         # --- the exit paths -----------------------------------------------
         out.append("")

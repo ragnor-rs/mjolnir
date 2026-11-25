@@ -888,6 +888,8 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
              _a_config([_a_tool(tool)], allowlist=missing), f"{tool} {ALLOWED}", NO_LIST),
             ("the call cannot be parsed",
              one, f"a-free-command 'an unclosed quote; {tool} {ALLOWED}", UNPARSEABLE),
+            ("a call nothing can parse, naming it in a here-document's body",
+             one, f"a-shell <<'EOF'\nit's\n{tool} {ALLOWED}\nEOF", UNPARSEABLE),
             ("the machine is named by an expansion",
              one, f"{tool} $A_VARIABLE", UNREADABLE_TARGET),
             ("the call names no machine at all", one, f"{tool} --a-valued-flag v", NO_MACHINE),
