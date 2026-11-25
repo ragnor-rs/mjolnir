@@ -765,7 +765,7 @@ def as_text(node) -> str:
         return str(node.get("text") or "")
     if kind == "hardBreak":
         return "\n"
-    if not children and kind in SAID_IN_ATTRIBUTES:
+    if not children and isinstance(kind, str) and kind in SAID_IN_ATTRIBUTES:
         attributes = node.get("attrs") or {}
         said = (attributes.get(name) for name in SAID_IN_ATTRIBUTES[kind])
         return next((str(value) for value in said if value), "")
@@ -1450,7 +1450,10 @@ def read_comments(key: str) -> dict:
     for entry in entries:
         # ⛔ Before `as_text`, which answers the empty string for a shape it
         # cannot read -- a comment that says nothing, where one went unread.
-        if not isinstance(entry.get("body"), (dict, str)):
+        body = entry.get("body")
+        if not isinstance(body, str) and not (
+            isinstance(body, dict) and body.get("type") == "doc"
+        ):
             raise HostUnavailable(
                 f"`{path}` answered comment {entry.get('id')!r} with no readable "
                 "text, so the comments went unread."

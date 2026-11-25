@@ -1351,6 +1351,7 @@ def self_test() -> int:
         ("a total that moves", _in_pages(three, lambda start: 3 if start else 4)),
         ("an entry read twice", _in_pages([_said(1), _said(2), _said(2)])),
         ("a comment with no text", _in_pages([_said(1, body=None)])),
+        ("a comment whose text is no document", _in_pages([_said(1, body={"a": 1})])),
         ("a comment with no time", _in_pages([_said(1, created=None)])),
     ):
         reported = with_host(
