@@ -1532,6 +1532,8 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # card holds no reference to a change at all, in either direction, so there is
 # nothing to compose and nothing to read back.
 #
+# `read_closing_list` is absent with it, a merge closing no card.
+#
 # `create_grouping` joins `grouping_items` and `mark_grouping_released` for
 # theirs: this board carries no grouping -- the lists on it are the statuses --
 # so there is no object of that kind to create, read or mark. ⚠️ All three move
@@ -1542,6 +1544,7 @@ DELIBERATELY_ABSENT = (
     "read_blockers",
     "link_for_close",
     "read_closing_change",
+    "read_closing_list",
     "create_grouping",
     "advance_on_merge",
     "grouping_items",

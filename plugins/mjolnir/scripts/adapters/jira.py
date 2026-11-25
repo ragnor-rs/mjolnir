@@ -1789,6 +1789,9 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # here would answer for a shape nothing measured, and answer *no change* about
 # every project that has not installed it.
 #
+# `read_closing_list` is absent with them: no text in a change closes an item
+# here, so no merge has a list of what it will close.
+#
 # `create_grouping` is `mark_grouping_released`'s absence one act earlier, on the
 # same argument: the grouping here is a **field's value**, which is the shape the
 # example beside this module carries, and a field's value is not an object
@@ -1800,6 +1803,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
 DELIBERATELY_ABSENT = (
     "link_for_close",
     "read_closing_change",
+    "read_closing_list",
     "mark_grouping_released",
     "create_grouping",
     "checklist_read",

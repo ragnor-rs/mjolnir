@@ -1532,6 +1532,7 @@ host:
   landing:
     method: squash | merge_commit | rebase     # how a pull request lands; required
     delete_branch: host | procedure | never    # which side deletes the remote ref afterwards; required
+    approval_covers: commit | content          # what a merge approval covers; default: commit
 ```
 
 **Stated, because the roles that land a change read it and the shape of `main` is not a reading.**
@@ -1580,6 +1581,14 @@ nobody wrote.
 [§ 10](#the-claim-on-a-work-item)'s release, which no host setting touches, so nothing reads this
 key as an answer about either; a ref the host deleted is one of the ways a landed claim stops
 existing, and that release's own test is *landed or held here* either way.
+
+**`approval_covers` is read by [§ 7's guard on a merge](#what-a-hook-refuses-and-the-record-it-reads)
+and by nothing else.** `commit` is the rule stated there. `content` keeps an approval across a push
+that leaves the change's diff against its base the same — a rebase onto the base is the case. What
+is compared is every line of the diff but the line numbers and blob names. ⛔ **A diff that could
+not be read whole keeps nothing**: a binary file it does not show, a commit the host no longer
+answers for, or a size the host refuses. ⚠️ **What it does not see is position**: one hunk moved
+between two places whose surrounding lines are identical reads as the same diff.
 
 ⛔ **A reader of this key reads what to expect, never what it may refuse to handle.** The method is
 the project's convention and not a guarantee about a given ref: a check told `merge_commit` still
@@ -1889,6 +1898,7 @@ operations the survey reached and says which it did not.
 | `read_blockers` | the items one item is recorded as blocked by, each with its own state — ⛔ never a verdict about whether the item may start, the bar being § 5's and not a tracker's | § 5's `no_open_blockers` has no source, so it reports **no answer** and never *no blockers*, by § 2's rule that absence of signal is not an answer; and a prose edge `link_dependency`'s fallback wrote is read for the report rather than for the verdict |
 | `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
 | `read_closing_change` | `link_for_close`'s own read, after the fact: the change that closed one item and the commit that change landed as — ⛔ never a verdict about whether the item is done, which is the item's state and is `read_item`'s | the landed record names the item and reports the closing change **unread**: never *no change closed it*, and never the newest change on the branch, by § 2's rule that absence of signal is not an answer |
+| `read_closing_list` | `link_for_close`'s own read, before the fact: the items the host will close when one change lands, and every text in its title, its body, its commit messages and the merge call's own text that could close one — ⛔ never a verdict about which were meant, which is [the comparison](#what-a-merge-closes-and-the-comparison-that-holds-it) below | the report says what the merge closes went **unread**, and never that nothing but the intended items closes, by § 2's rule that absence of signal is not an answer |
 | `create_grouping` | one of § 4.8's groupings brought into existence, by the value that facet keys it on — the one write about a grouping that is made before any item is in it | nothing is created, and the role **names the grouping it would have created** for whoever creates it by hand; ⛔ no file and no record of a grouping is written anywhere else instead, a grouping the tracker does not hold being a grouping no `grouping_items` can read |
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `grouping_items` | the items the tracker holds in one of § 4.8's groupings, each with its own state — ⛔ never a verdict about whether the grouping may be published, the bar being [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s and not a tracker's | the publishing set cannot be read, so § 33's precondition reports **no answer** and never *nothing is short*, by § 2's rule that absence of signal is not an answer; the advance is made over the batch's own candidates and the report says the grouping went unread |
@@ -1901,6 +1911,33 @@ operations the survey reached and says which it did not.
 | `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
 | `checklist_item_delete` | a check item removed | the item is reworded and ticked instead |
 | `read_vocabulary` | the vocabularies the tracker itself states — its status words in their own order, its label set, its item types where it has native ones — each answered as **read**, as the tracker stating none, or as unestablished, and ⛔ never a verdict about which of them this project means, that being the facets' own question and a person's to answer. ⚠️ **An implementation may publish a vocabulary of its own beyond those three** where its tracker holds one the others do not: the measured case is a board's single-select columns, which is what makes *which field carries status* a question with a menu rather than a column picked out of several | every question about a status word, a label prefix or a type is **asked** rather than filled in, and the asking step's report names the reading it could not take; an unreadable vocabulary is never an empty one, by § 2's rule that absence of signal is not an answer |
+
+### What a merge closes, and the comparison that holds it
+
+⛔ **Before a merge, the items the host will close are compared with the items meant, and a
+difference in either direction stops the merge, naming the item and the text responsible.** The
+host's own list is read rather than derived from what a role wrote: ⚠️ a keyword parser ignores
+negation, and an item was closed here by a body saying the change did not close it.
+
+⛔ **The host's list is the authority on the body, and a commit message is on no such list.** A
+message carrying a closing phrase closes its item when it reaches the default branch, so the
+change's commits are read for one, and so are its title and any text the merge call supplies. An
+item only a commit closes is enough to **stop** for and, under `squash`
+([§ 2](#how-a-pull-request-lands)), not enough to **rely on**: which messages reach the base there is
+the host's own setting, so an intended item is named in the body or in the merge call. A title is
+never relied on, whatever the method.
+
+**The items meant** are those this change's body was given a closing reference for: none where
+`link_for_close` is absent, none where the base is not the default branch, and not an item a sibling
+change still holds open. ⛔ They are stated from the work and never read back out of the body, which
+would compare it with itself.
+
+| the answer | what follows |
+|---|---|
+| the two sets are the same | the merge is asked for |
+| an extra item, or a missing one | ⛔ stop: the text is corrected, or the person rules the item intended, and the comparison is made again |
+| the capability is absent | the report and the merge ask say the list went unread |
+| the host did not answer | the same is said, and the merge is held until it does |
 
 ### Who declares a capability
 
@@ -3035,7 +3072,9 @@ anything. A rule read by three parties and written in one of their files is a se
 the other two.
 
 ⛔ **A recorded answer is one comment on the change, keyed by the repository and the change's own
-number, stating the question, the answer as it came back, who answered it and when.** The keying
+number, stating the question, the answer as it came back, who answered it, when, and the commit that
+was the change's head when the question was put.** The commit is required on the merge ask, and an
+answer no guard holds to a commit may leave it empty. The keying
 is the load-bearing half: a bare number names a different change in every repository the route
 carries, so an answer recorded against one is an answer no guard can resolve, and the act stays
 refused however it was answered.
@@ -3063,6 +3102,14 @@ and a guard reading that as *no record* would hold a change nothing on the route
 ⛔ **The guard on a merge refuses where the merge ask has no recorded answer.** That is the ask the
 route puts immediately before the act, so the answer that authorizes the merge and the answer the
 guard reads are one record rather than two.
+
+⛔ **A merge approval covers the commit it was given for and no later one.** The guard refuses a
+merge whose head is not the recorded commit, naming both and how to ask again; a record naming no
+commit covers none, and a host that cannot say what the head is refuses the merge. ⛔ **The commit is
+stated by the pass that put the question and never read when the answer is written**, since a push
+between the two would be recorded as approved. A project widens this in one way, by
+[§ 2's `approval_covers`](#how-a-pull-request-lands). ⚠️ **What is compared is the head when the
+guard reads it**: a push landing between that read and the host's merge is not seen.
 
 ⚠️ **Keyed on anything else, a guard refuses a merge its own authorization already covers.**
 Measured on this repository: a person authorized a merge, the pass recorded that answer, and the

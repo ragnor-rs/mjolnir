@@ -282,6 +282,10 @@ ANSWERED_BY: dict[str, Answer] = {
     "host.landing.delete_branch": ask(
         "Who deletes the branch once a change has landed?",
     ),
+    "host.landing.approval_covers": ask(
+        "Does a merge approval cover one commit only, or survive a push that leaves "
+        "the change's content the same?",
+    ),
     "host.checks.workflow": detect(
         HOST_CLIENT,
         "the name each of the host's own workflow definitions states, read out of "
