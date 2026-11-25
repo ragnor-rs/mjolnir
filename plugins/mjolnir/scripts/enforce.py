@@ -2020,6 +2020,8 @@ def wait_for(config, number: int, *, within: float | None = None, cwd: str = "."
     if not 1 <= number <= len(stated):
         return (f"No resource {number}: this project states {len(stated)} "
                 "(`branch_model.exclusive_resources`)."), 2
+    if within is not None and not within > 0:
+        return f"`--within` is {within}; it is the seconds this call has, above zero.", 2
     entry = stated[number - 1]
     name, cap = entry.get("name"), int(entry.get("cap") or 1)
     bound = float(entry.get("wait_up_to") or 0)
@@ -2030,13 +2032,12 @@ def wait_for(config, number: int, *, within: float | None = None, cwd: str = "."
     started = clock()
     deadline = started + bound
     full = None
+    # ⛔ A probe is given no longer than the wait has left, so the bound holds
+    # whatever the probe's own limit is. The first reading is always taken, and
+    # is held to what the caller has where the caller says.
+    most = within
     while True:
-        # ⛔ A probe is given no longer than the wait has left, so the bound holds
-        # whatever the probe's own limit is. The first reading is always taken.
-        left = deadline - clock()
-        counted, unestablished = probe_count(
-            entry, config.skills_root, run=probe, most=left if full is not None else None
-        )
+        counted, unestablished = probe_count(entry, config.skills_root, run=probe, most=most)
         moment = clock()
         if unestablished and (full is None or moment < deadline):
             return (f"{name}: {unestablished}, so there is nothing to wait for and no place "
@@ -2051,7 +2052,8 @@ def wait_for(config, number: int, *, within: float | None = None, cwd: str = "."
         if moment >= deadline:
             break
         rest(min(WAIT_REST, deadline - moment))
-        if clock() >= deadline:
+        most = deadline - clock()
+        if most <= 0:
             break
     standing, counted, leases, moment = full
     lines = [
@@ -2906,6 +2908,14 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                                   clock=_Clock().now, rest=_Clock().rest)
         check("a count nobody can read is reported and not waited on",
               status == 0 and "no place" in report, report)
+        given.clear()
+        clock = _Clock()
+        wait_for(config, 1, within=3, store=where, probe=slow(clock), clock=clock.now,
+                 rest=clock.rest)
+        check("and the first one no longer than its caller has", given == [3], repr(given))
+        for seconds in (0, -1, float("nan")):
+            check(f"a caller with {seconds} seconds is misuse",
+                  wait_for(config, 1, within=seconds, store=where)[1] == 2)
         check("a resource that is not stated is misuse",
               wait_for(config, 2, store=where)[1] == 2)
 
