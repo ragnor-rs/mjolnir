@@ -280,6 +280,8 @@ FIELD_FLAGS = ("-f", "--raw-field", "-F", "--field", "--input")
 # How long a command of somebody else's may run before its answer is no longer
 # worth waiting for. ⚠️ Bounded well inside the carrier's own timeout: a probe
 # that hangs must cost the call a known delay rather than the whole hook.
+# ⚠️ A resource's own `probe_timeout` is read in its place where the project states
+# one, and the reader bounds that value for the same reason.
 PROBE_TIMEOUT = 5
 HOST_TIMEOUT = 8
 
@@ -402,7 +404,7 @@ def probe_count(entry: dict, root: str | Path, run=None) -> tuple[int, str | Non
         return 0, None
     runner = run if run is not None else _run_in_shell
     try:
-        code, out = runner(str(command), root, PROBE_TIMEOUT)
+        code, out = runner(str(command), root, int(entry.get("probe_timeout") or PROBE_TIMEOUT))
     except Exception as error:  # noqa: BLE001 -- any failure is a named absence
         return 0, f"{type(error).__name__} while asking how many are held"
     if code != 0:
@@ -456,8 +458,16 @@ def _tree_key(cwd: str) -> str:
         return str(cwd or ".")
 
 
-def occupancy(entry: dict, leases: list[tuple[Path, dict]], counted: int) -> tuple[int, set[str]]:
+def occupancy(entry: dict, leases: list[tuple[Path, dict]], counted: int | None,
+              now: float) -> tuple[int, set[str], set[str]]:
     """What is compared against `cap`: the resource's own count plus the young leases.
+
+    Returns (the sum, every key holding a lease, the keys the sum added). ⛔ The
+    second is not the third: a holder the probe already counts still holds its
+    place, so a second call under its key is answered from its lease.
+
+    `counted` is `None` where the count could not be established, and then no
+    lease is left out: nothing reported the holder a lease would be left out for.
 
     ⛔ A sum and never a maximum of the two. Measured on one project: a build
     started outside the loop holds the resource with no lease, while one just
@@ -467,12 +477,18 @@ def occupancy(entry: dict, leases: list[tuple[Path, dict]], counted: int) -> tup
     ⛔ Distinct keys rather than lease files, which is what `subject` decides: two
     sessions in one tree share one place, and two calls each hold their own.
     """
-    keys = {
-        str(lease.get("key"))
-        for _path, lease in leases
-        if lease.get("resource") == entry.get("name")
-    }
-    return counted + len(keys), keys
+    grace = entry.get("grace")
+    asked = entry.get("probe") is not None and counted is not None
+    keys, added = set(), set()
+    for _path, lease in leases:
+        if lease.get("resource") != entry.get("name"):
+            continue
+        key = str(lease.get("key"))
+        keys.add(key)
+        age = now - float(lease.get("taken") or 0)
+        if not asked or grace is None or age <= int(grace):
+            added.add(key)
+    return (counted or 0) + len(added), keys, added
 
 
 def take(entry: dict, store: Path, key: str, session: str, command: str,
@@ -491,7 +507,7 @@ def take(entry: dict, store: Path, key: str, session: str, command: str,
     """
     cap = int(entry.get("cap") or 1)
     held = live_leases(store, now)
-    standing, keys = occupancy(entry, held, counted)
+    standing, keys, _added = occupancy(entry, held, counted, now)
     if key in keys:
         # The place is already this key's -- the `tree` case, where a second call
         # from the same tree takes no second place. ⛔ No path comes back, because
@@ -521,7 +537,7 @@ def take(entry: dict, store: Path, key: str, session: str, command: str,
         # the open direction for a call: the answer says so rather than refusing.
         return None, True, standing, cap
 
-    standing, _keys = occupancy(entry, live_leases(store, now), counted)
+    standing, _keys, _added = occupancy(entry, live_leases(store, now), counted, now)
     if standing > cap:
         path.unlink(missing_ok=True)
         return None, False, standing, cap
@@ -1840,14 +1856,16 @@ def held_report(config, *, now: float | None = None, store: Path | None = None,
     leases = live_leases(where, moment)
     for entry in stated:
         counted, unestablished = probe_count(entry, config.skills_root, run=probe)
-        standing, keys = occupancy(entry, leases, counted)
+        standing, _keys, added = occupancy(
+            entry, leases, None if unestablished else counted, moment
+        )
         lines.append("")
         lines.append(f"{entry.get('name')} — cap {entry.get('cap')}, held by {entry.get('subject')}")
         if unestablished:
             lines.append(f"  ⛔ {unestablished}")
         else:
             lines.append(f"  the resource itself reports {counted} held")
-        lines.append(f"  {len(keys)} lease(s) still counting, so {standing} against the cap")
+        lines.append(f"  {len(added)} lease(s) still counting, so {standing} against the cap")
         for _path, lease in leases:
             if lease.get("resource") != entry.get("name"):
                 continue
@@ -1855,6 +1873,8 @@ def held_report(config, *, now: float | None = None, store: Path | None = None,
             lines.append(
                 f"    - {lease.get('key')} — {age}s old of {lease.get('ttl')}s"
                 + (", backgrounded" if lease.get("background") else "")
+                + ("" if str(lease.get("key")) in added
+                   else ", past its grace and left to the resource's own count")
             )
     return "\n".join(lines), 0
 
@@ -2498,10 +2518,62 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("and the next is refused: one reported plus one young lease is the cap",
               denied(third), repr(third)[:140])
         leases = live_leases(where, 1000.0)
-        standing, keys = occupancy(config.get("branch_model.exclusive_resources")[0], leases, 1)
+        standing, keys, _added = occupancy(
+            config.get("branch_model.exclusive_resources")[0], leases, 1, 1000.0)
         check("the sum is what reached the cap", standing == 2, f"was {standing}")
         check("and a maximum would have left a place free, which is the measured defect",
               max(1, len(keys)) < 2, f"maximum was {max(1, len(keys))}")
+
+        out.append("")
+        out.append("A holder is counted once, whether its lease, the probe or both report it:")
+
+        def second_call(label: str, at: float, count: int = 1, session: str = "another",
+                        cwd: str | None = None, **stated):
+            where = fresh(label)
+            config = _a_config([_a_resource(**stated)])
+            first = _call("a-claiming-command")
+            later = _call("a-claiming-command", session=session)
+            if cwd is not None:
+                first["cwd"] = later["cwd"] = cwd
+            guard_answer(first, config=config, now=1000.0, store=where, probe=_a_probe(count=0))
+            answer = guard_answer(later, config=config, now=at, store=where,
+                                  probe=_a_probe(count=count))
+            return answer, where, config
+
+        probed = {"cap": 2, "probe": "a-command-that-counts-them", "grace": 60}
+        check("a lease past its grace is not added to the probe's count",
+              second_call("grace-past", 1061.0, **probed)[0] == {})
+        check("one exactly at its grace still is",
+              denied(second_call("grace-at", 1060.0, **probed)[0]))
+        check("a build started outside the loop and a just-launched one count as two",
+              denied(second_call("grace-young", 1001.0, **probed)[0]))
+        check("a project stating no grace adds every live lease, however old",
+              denied(second_call("grace-unstated", 1500.0, **{**probed, "grace": None})[0]))
+        check("a resource with no probe is counted by its leases alone, grace or none",
+              denied(second_call("grace-no-probe", 1061.0, cap=1, probe=None, grace=60)[0]))
+        check("a tree past its grace still holds its own place at a full cap",
+              second_call("grace-own", 1061.0, cwd=str(outside),
+                          **{**probed, "cap": 1, "subject": "tree"})[0] == {})
+        _answer, where, config = second_call("grace-report", 1061.0, **probed)
+        printed, _ = held_report(config, now=1061.0, store=where, probe=_a_probe(count=1))
+        check("the report adds only the young lease and names the one left out",
+              "1 lease(s) still counting, so 2 against" in printed
+              and printed.count("past its grace") == 1, " ".join(printed.split())[:200])
+        printed, _ = held_report(config, now=1061.0, store=where, probe=_a_probe(code=1))
+        check("and leaves none out where the count could not be established",
+              "2 lease(s) still counting" in printed and "past its grace" not in printed,
+              " ".join(printed.split())[:200])
+
+        limits = []
+
+        def _a_timed_probe(_command, _root, timeout):
+            limits.append(timeout)
+            return 0, "0\n"
+
+        probe_count(_a_resource(probe="a-command", probe_timeout=7), outside, run=_a_timed_probe)
+        probe_count(_a_resource(probe="a-command"), outside, run=_a_timed_probe)
+        check("a stated probe time limit is the one used, and an unstated one is unchanged",
+              limits == [7, 5], repr(limits))
 
         out.append("")
         out.append("A count that could not be established holds nothing, and says so:")
