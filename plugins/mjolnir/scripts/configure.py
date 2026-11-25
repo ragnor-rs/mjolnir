@@ -387,6 +387,14 @@ ANSWERED_BY: dict[str, Answer] = {
     "tracker.transitions.resolve": ask(
         "How is a transition resolved -- by the status it reaches, or by its own id?",
     ),
+    "tracker.create_fields.field": ask(
+        "Which fields does this tracker refuse to create an item without, beyond "
+        "its project, type, title and body?",
+    ),
+    "tracker.create_fields.value": ask(
+        "What value does every filing send in that field, where one value suits "
+        "them all?",
+    ),
     "tracker.policy.forbid_on_item": ask(
         "Which classes of content may not be written onto an item here?",
     ),
@@ -742,6 +750,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "What brings a new tree up and takes it down -- the project's own setup, "
         "named rather than described?",
     ),
+    "branch_model.teardown": ask(
+        "Which command stops what a tree started, before that tree is removed? "
+        "Unstated, nothing is run.",
+    ),
     "branch_model.regenerable": ask(
         "Which ignored paths does a rebuild write again? ⚠️ A new tree carries "
         "none of them, so they are read out before any removal.",
@@ -756,7 +768,12 @@ ANSWERED_BY: dict[str, Answer] = {
         "Is a place held by a tree, or by one call?",
     ),
     "branch_model.exclusive_resources.claimed_by": ask(
-        "Which calls claim a place on it?",
+        "Which commands claim a place on it -- each a command, and a pattern its "
+        "arguments carry where the command alone does not decide?",
+    ),
+    "branch_model.exclusive_resources.never_claims": ask(
+        "Which forms of those commands claim nothing? ⚠️ Unstated, every call one of "
+        "them names does.",
     ),
     "branch_model.exclusive_resources.probe": ask(
         "Can the resource be asked how many are held? ⚠️ A resource that cannot "
