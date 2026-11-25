@@ -746,6 +746,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "Which command stops what a tree started, before that tree is removed? "
         "Unstated, nothing is run.",
     ),
+    "branch_model.resource_up": ask(
+        "Which command prints what a tree started that is still up, and nothing where "
+        "nothing is? Unstated, no removal asks.",
+    ),
     "branch_model.regenerable": ask(
         "Which ignored paths does a rebuild write again? ⚠️ A new tree carries "
         "none of them, so they are read out before any removal.",

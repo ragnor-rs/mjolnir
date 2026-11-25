@@ -494,6 +494,7 @@ def sweep(
     *,
     tree_dir: str | Path | None = None,
     teardown: str | None = None,
+    resource_up: str | None = None,
     here: str | None = None,
     remote: str = "origin",
     budget: float = BUDGET_SECONDS,
@@ -516,10 +517,10 @@ def sweep(
     standing = standing if standing is not None else (lambda path: claim.standing_in(path, here))
     report = Report()
     started = clock()
-    # ⛔ The budget's remainder, asked when the teardown is about to start: the reserve past it is
-    # what the removal after the teardown still costs.
+    # ⛔ The budget's remainder, asked when a command is about to start: the reserve past it is
+    # what the removal after it still costs.
     remove = remove if remove is not None else _remover(
-        root, remote, delete_branch, teardown, lambda: budget - (clock() - started)
+        root, remote, delete_branch, lambda: budget - (clock() - started), teardown, resource_up
     )
     try:
         trees = registered(root, tree_dir)
@@ -714,7 +715,12 @@ def _decide(
 
 
 def _remover(
-    root: str | Path, remote: str, delete_branch: str, teardown: str | None = None, left=None
+    root: str | Path,
+    remote: str,
+    delete_branch: str,
+    left=None,
+    teardown: str | None = None,
+    resource_up: str | None = None,
 ):
     """The removal, with `delete_branch` deciding whether the published ref is reached.
 
@@ -744,7 +750,8 @@ def _remover(
                     remote,
                     keep_ref=delete_branch != PROCEDURE_DELETES,
                     teardown=teardown,
-                    teardown_bound=left,
+                    resource_up=resource_up,
+                    seconds_left=left,
                 ),
                 None,
             )
@@ -833,6 +840,7 @@ def answer(payload: dict, *, run=None) -> dict:
             # happens to be standing in.
             tree_dir=stated,
             teardown=loaded.get("branch_model.teardown"),
+            resource_up=loaded.get("branch_model.resource_up"),
             # ⛔ **The session's directory and not this process's.** The one stop between a live
             # session and the removal of its own tree is *standing in it*, and a hook runs in a
             # process of its own; every other hook in this plugin reads the session's directory
@@ -1061,6 +1069,45 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         suite.ok(
             "and the local branch goes with it, so the claim is not left held",
             not claim._local_branch(work, branch),  # noqa: SLF001 -- the sibling's own reading
+        )
+
+    print("\na tree whose resource is up is kept:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        work, branch, tree = _landed_world(tmp)
+        ran = Path(tmp) / "ran"
+
+        def asked(command: str, **rest) -> Report:
+            return sweep(work, [], "procedure", tree_dir=_trees(tmp), resource_up=command,
+                         occupants=lambda _p: [], **rest)
+
+        report = asked("echo stack-a")
+        suite.ok(
+            "⛔ what is up keeps the landed tree, and the person is told its name",
+            Path(tree).exists() and not report.removed and "stack-a" in report.message(),
+            report.report(),
+        )
+        report = asked("echo away >&2; exit 1")
+        suite.ok(
+            "⛔ a check that fails keeps it, and the person is told it was unanswered",
+            Path(tree).exists() and not report.removed
+            and "unanswered" in report.message() and "away" in report.message(),
+            report.report(),
+        )
+        # A clock that stands at the budget's end once the tree's own readings are done.
+        ticks = iter([0.0, 0.0])
+        report = asked(f"touch '{ran}'", clock=lambda: next(ticks, float(BUDGET_SECONDS)))
+        suite.ok(
+            "⛔ a check the sweep's bound leaves no time for is not asked, and that is reported",
+            Path(tree).exists() and not ran.exists() and "was not asked" in report.message(),
+            report.report(),
+        )
+        report = asked(f'echo "$MJOLNIR_TREE" > \'{ran}\'')
+        suite.ok(
+            "a check that names nothing is told the tree, and the removal follows it",
+            not Path(tree).exists() and len(report.removed) == 1
+            and ran.read_text().strip() == os.path.realpath(_trees(tmp)) + "/1-landed",
+            report.report(),
         )
 
     print("\nthe project's teardown runs before the removal:")
@@ -2103,19 +2150,22 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             f"{handed.get('kwargs')} vs {stated}",
         )
         suite.ok(
-            "a project that states no teardown hands the sweep none",
-            handed["kwargs"]["teardown"] is None,
+            "a project that states neither command hands the sweep none",
+            handed["kwargs"]["teardown"] is None
+            and handed["kwargs"]["resource_up"] is None,
             str(handed.get("kwargs")),
         )
         configured = where / ".claude" / "mjolnir.yaml"
         as_shipped = configured.read_text()
         configured.write_text(
-            as_shipped.replace("branch_model:\n", "branch_model:\n  teardown: a-command\n", 1)
+            as_shipped.replace("branch_model:\n", "branch_model:\n  teardown: a-command\n"
+                               "  resource_up: a-check\n", 1)
         )
         answer({"cwd": str(where)}, run=record)
         suite.ok(
             "⛔ and a stated one reaches it",
-            handed["kwargs"]["teardown"] == "a-command",
+            handed["kwargs"]["teardown"] == "a-command"
+            and handed["kwargs"]["resource_up"] == "a-check",
             str(handed.get("kwargs")),
         )
         configured.write_text(as_shipped)
@@ -2284,6 +2334,7 @@ def main(argv: list[str]) -> int:
                 str(loaded.get("host.landing.delete_branch") or ""),
                 tree_dir=stated,
                 teardown=loaded.get("branch_model.teardown"),
+                resource_up=loaded.get("branch_model.resource_up"),
             )
         except claim.ClaimError as error:
             print(f"⛔ the trees of this project could not be listed, so none was examined: {error}")

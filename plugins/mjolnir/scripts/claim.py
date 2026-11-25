@@ -105,18 +105,22 @@ MINOR_WORDS = frozenset(
     """.split()
 )
 
-# How a teardown is told which tree it is for (§ 10 -> *The teardown a removal runs first*).
-TEARDOWN_TREE_VARIABLE = "MJOLNIR_TREE"
+# How a command a removal runs first is told which tree it is for (§ 10).
+TREE_VARIABLE = "MJOLNIR_TREE"
 
 # The least time worth starting a bounded teardown in. Below it the command would be stopped part
 # way through for the sake of a few seconds, so it is not started and the report says so.
 TEARDOWN_FLOOR_SECONDS = 5
 
-# How long a teardown past its bound has between being asked to stop and being killed.
-TEARDOWN_GRACE_SECONDS = 2
+# How long a command past its bound has between being asked to stop and being killed.
+GRACE_SECONDS = 2
 
-# How much of a failed teardown's own output a refusal carries: its end, where a command says why.
-TEARDOWN_SAID = 300
+# How long a resource check has to answer, and the least time worth asking it in.
+RESOURCE_UP_SECONDS = 10
+RESOURCE_UP_FLOOR_SECONDS = 1
+
+# How much of a failed command's own output a refusal carries: its end, where a command says why.
+SAID_CHARACTERS = 300
 
 # An item identifier this module can recover from a branch name on its own: a run of digits that
 # is the whole of the last segment or is followed by a hyphen. ⛔ Deliberately narrow. A tracker
@@ -1474,7 +1478,7 @@ def main_checkout(root: str | Path) -> str:
 
 
 def _stop_group(proc: subprocess.Popen) -> None:
-    """End a teardown and everything it started in its own process group."""
+    """End a command and everything it started in its own process group."""
     for sig in (signal.SIGTERM, signal.SIGKILL):
         try:
             os.killpg(proc.pid, sig)
@@ -1482,30 +1486,25 @@ def _stop_group(proc: subprocess.Popen) -> None:
             # A group whose members are all gone answers with either, by platform.
             pass
         try:
-            proc.wait(timeout=TEARDOWN_GRACE_SECONDS)
+            proc.wait(timeout=GRACE_SECONDS)
         except subprocess.TimeoutExpired:
             continue
 
 
-def tear_down(
-    root: str | Path, tree: str | Path, command: str, bound: float | None = None
-) -> str | None:
-    """Run the project's teardown for `tree`. None where it succeeded, else why it did not.
+def _run_for_tree(
+    root: str | Path, tree: str | Path, command: str, bound: float | None, stderr=None
+) -> tuple[str, str, str | None]:
+    """`(what it printed, what it complained, why it did not succeed)`, the last None where it did.
 
-    The rule is § 10's *The teardown a removal runs first* and is not restated here.
+    `stderr` is where its error stream goes, unstated being a stream of its own.
 
-    ⚠️ Its output goes to a file and not to a pipe: a process the teardown leaves behind holds a
-    pipe open, and reading one to its end would wait on that process rather than on the command.
+    ⚠️ Its output goes to files and not to pipes: a process the command leaves behind holds a pipe
+    open, and reading one to its end would wait on that process rather than on the command.
     """
-    if bound is not None and bound < TEARDOWN_FLOOR_SECONDS:
-        return (
-            f"it did not run: {max(bound, 0):.0f}s were left of the time this run may take, and "
-            f"it is not started with less than {TEARDOWN_FLOOR_SECONDS}s"
-        )
     where = main_checkout(root)
     environment = dict(os.environ)
-    environment[TEARDOWN_TREE_VARIABLE] = os.path.realpath(tree)
-    with tempfile.TemporaryFile() as output:
+    environment[TREE_VARIABLE] = os.path.realpath(tree)
+    with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as complaint:
         try:
             # A group of its own, so that stopping it reaches what the shell started.
             proc = subprocess.Popen(
@@ -1515,11 +1514,11 @@ def tear_down(
                 env=environment,
                 stdin=subprocess.DEVNULL,
                 stdout=output,
-                stderr=subprocess.STDOUT,
+                stderr=stderr if stderr is not None else complaint,
                 start_new_session=True,
             )
         except OSError as error:
-            return f"it could not be started: {error}"
+            return "", "", f"it could not be started: {error}"
         late = False
         try:
             proc.wait(timeout=bound)
@@ -1532,46 +1531,100 @@ def tear_down(
             _stop_group(proc)
             raise
         output.seek(0)
-        said = " ".join(output.read().decode("utf-8", "replace").split())[-TEARDOWN_SAID:]
-    ended = f"; it ended with: {said}" if said else ""
+        complaint.seek(0)
+        said = output.read().decode("utf-8", "replace")
+        complained = complaint.read().decode("utf-8", "replace")
     if late:
-        return f"it did not finish in {bound:.0f}s and was stopped{ended}"
+        return said, complained, f"it did not finish in {bound:.0f}s and was stopped"
     if proc.returncode != 0:
-        return f"it exited {proc.returncode}{ended}"
-    return None
+        return said, complained, f"it exited {proc.returncode}"
+    return said, complained, None
 
 
-def stated_teardown(skills_root: str | Path, root: str | Path) -> tuple[str | None, str]:
-    """`(the teardown the configuration states for this repository, what could not be read)`.
+def _ended(said: str) -> str:
+    """The end of what a command said, for a refusal to carry."""
+    end = " ".join(said.split())[-SAID_CHARACTERS:]
+    return f"; it ended with: {end}" if end else ""
+
+
+def tear_down(
+    root: str | Path, tree: str | Path, command: str, bound: float | None = None
+) -> str | None:
+    """Run the project's teardown for `tree`. None where it succeeded, else why it did not.
+
+    The rule is § 10's *The teardown a removal runs first* and is not restated here.
+    """
+    if bound is not None and bound < TEARDOWN_FLOOR_SECONDS:
+        return (
+            f"it did not run: {max(bound, 0):.0f}s were left of the time this run may take, and "
+            f"it is not started with less than {TEARDOWN_FLOOR_SECONDS}s"
+        )
+    said, _, why = _run_for_tree(root, tree, command, bound, stderr=subprocess.STDOUT)
+    return None if why is None else why + _ended(said)
+
+
+def read_resource_up(
+    root: str | Path, tree: str | Path, command: str, left: float | None = None
+) -> tuple[str, str | None]:
+    """`(what the tree's resource check says is up, why it went unanswered)`.
+
+    The rule is § 10's *The resource a tree started* and is not restated here. `left` is how many
+    seconds the caller has, unstated where nothing bounds it but the check's own limit.
+    """
+    bound = RESOURCE_UP_SECONDS if left is None else min(RESOURCE_UP_SECONDS, left)
+    if bound < RESOURCE_UP_FLOOR_SECONDS:
+        return "", f"it was not asked: {max(bound, 0):.0f}s were left of the time this run may take"
+    said, complained, why = _run_for_tree(root, tree, command, bound)
+    if why is not None:
+        return "", why + _ended(complained)
+    return ", ".join(" ".join(line.split()) for line in said.splitlines() if line.strip()), None
+
+
+@dataclass(frozen=True)
+class BeforeRemoval:
+    """The commands a project states for a removal to run first (§ 10), each None where unstated."""
+
+    teardown: str | None = None
+    resource_up: str | None = None
+
+
+def stated_before_removal(
+    skills_root: str | Path, root: str | Path
+) -> tuple[BeforeRemoval, str]:
+    """`(what the configuration states for this repository, what could not be read)`.
 
     ⛔ Read through the shared reader, by the command that performs the release rather than passed
-    to it: a flag a caller leaves off is a teardown skipped with nothing saying so.
+    to it: a flag a caller leaves off is a command skipped with nothing saying so.
 
-    ⛔ A configuration that is stated and does not resolve raises. Whether it states a teardown is
-    then unknown, and the removal is the act that cannot be taken back.
+    ⛔ A configuration that is stated and does not resolve raises. Whether it states either command
+    is then unknown, and the removal is the act that cannot be taken back.
     """
     try:
         import config  # noqa: PLC0415 -- every other subcommand runs without a configuration
     except Exception as error:  # noqa: BLE001 -- any failure is the answer here
         raise ClaimError(
             f"refused: the configuration reader could not be loaded ({error}), so whether this "
-            "project states a teardown is unknown."
+            "project states a resource check or a teardown is unknown."
         ) from None
     loaded, stop = config.read_or_why(str(skills_root))
     if stop:
         raise ClaimError(
             "refused: this project's configuration did not resolve, so whether it states a "
-            f"teardown is unknown. {config.REFUSAL_PREFACE} {stop}"
+            f"resource check or a teardown is unknown. {config.REFUSAL_PREFACE} {stop}"
         )
     if loaded is None:
-        return None, f"no configuration at `{skills_root}`, so no teardown was read"
+        return BeforeRemoval(), (
+            f"no configuration at `{skills_root}`, so no teardown and no resource check was read"
+        )
     for key in loaded.root_keys:
         view = loaded.root(key)
         if Path(view.code_root).exists() and _same_repository(root, view.code_root):
-            return view.get("branch_model.teardown"), ""
-    return None, (
+            return BeforeRemoval(
+                view.get("branch_model.teardown"), view.get("branch_model.resource_up")
+            ), ""
+    return BeforeRemoval(), (
         f"the configuration at `{skills_root}` states no code root in this repository, so no "
-        "teardown was read"
+        "teardown and no resource check was read"
     )
 
 
@@ -1616,7 +1669,8 @@ def release(
     here: str | None = None,
     tree_dir: str | Path | None = None,
     teardown: str | None = None,
-    teardown_bound=None,
+    resource_up: str | None = None,
+    seconds_left=None,
 ) -> str:
     """Give the claim up: the ref first, then the tree and the local branch.
 
@@ -1660,9 +1714,13 @@ def release(
     standing, so the item is free again either way and a kept ref holds nothing against anybody.
 
     ⛔ **`teardown` runs after every refusal above and before the ref goes**, so one that fails
-    leaves the claim whole. `teardown_bound` answers how many seconds it may take and is asked at
+    leaves the claim whole. `seconds_left` answers how many seconds it may take and is asked at
     that moment, the readings before it having cost time; unstated, nothing bounds it, a release
     being a call somebody is waiting through. `force` does not skip it.
+
+    ⛔ **`resource_up` is asked after the teardown**, so what it reads is what the teardown left, and
+    a tree it keeps keeps its claim whole. `force` does not skip it either: what clears it is the
+    resource being stopped, or the check being made to answer.
     """
     doomed = tree or tree_for_branch(root, branch, tree_dir)
     # ⛔ Before the ref deletion and not beside the tree removal: a refusal has to leave the claim
@@ -1717,7 +1775,7 @@ def release(
     done = []
     if teardown and doomed and Path(doomed).exists():
         why = tear_down(
-            root, doomed, teardown, teardown_bound() if teardown_bound is not None else None
+            root, doomed, teardown, seconds_left() if seconds_left is not None else None
         )
         if why is not None:
             raise ClaimError(
@@ -1725,10 +1783,26 @@ def release(
                 f"`{branch}` are kept: {why}."
             )
         done.append("teardown ran")
-        # ⛔ Read again: the first reading is as old as the teardown was long, and a session that
-        # entered meanwhile is one § 10 keeps the tree for.
-        if not force and Path(doomed).exists():
-            _refuse_occupied(doomed)
+    if resource_up and doomed and Path(doomed).exists():
+        up, unanswered = read_resource_up(
+            root, doomed, resource_up, seconds_left() if seconds_left is not None else None
+        )
+        if unanswered is not None:
+            raise ClaimError(
+                f"refused: whether a resource started from `{doomed}` is still up went unanswered, "
+                f"so the tree and the claim on `{branch}` are kept: {unanswered}."
+            )
+        if up:
+            raise ClaimError(
+                f"refused: a resource started from `{doomed}` is still up, so the tree and the "
+                f"claim on `{branch}` are kept: {up}.\n"
+                "Stop it and run this again."
+            )
+        done.append("no resource up")
+    # ⛔ Read again: the first reading is as old as these commands were long, and a session that
+    # entered meanwhile is one § 10 keeps the tree for.
+    if done and not force and Path(doomed).exists():
+        _refuse_occupied(doomed)
 
     if remote_url(root, remote):
         if keep_ref:
@@ -2759,7 +2833,7 @@ def self_test() -> int:
                      one, "feature/t", tree, force=True, teardown="exit 3")) or "")
                  and Path(tree).exists())
         short = _message(lambda: release(
-            one, "feature/t", tree, teardown=record, teardown_bound=lambda: 1.0)) or ""
+            one, "feature/t", tree, teardown=record, seconds_left=lambda: 1.0)) or ""
         suite.ok("⛔ a teardown with too little time left is not started, and is reported",
                  "did not run" in short and not ran.exists() and Path(tree).exists(), short)
         # The child outlives its shell unless the whole group is stopped, so what it would write
@@ -2767,10 +2841,10 @@ def self_test() -> int:
         late, began = Path(tmp) / "late", time.monotonic()
         stopped = _message(lambda: release(
             one, "feature/t", tree, teardown=f"(sleep 8; touch '{late}') & wait",
-            teardown_bound=lambda: float(TEARDOWN_FLOOR_SECONDS))) or ""
+            seconds_left=lambda: float(TEARDOWN_FLOOR_SECONDS))) or ""
         took = time.monotonic() - began
         suite.ok("⛔ a teardown past its bound is stopped, reported, and the tree kept",
-                 "did not finish in 5s" in stopped and took < 8 + TEARDOWN_GRACE_SECONDS
+                 "did not finish in 5s" in stopped and took < 8 + GRACE_SECONDS
                  and Path(tree).exists(), f"{took:.1f}s {stopped}")
         time.sleep(max(0.0, 9 - (time.monotonic() - began)))
         suite.ok("⛔ along with what it started", not late.exists())
@@ -2843,8 +2917,138 @@ def self_test() -> int:
                  printed.getvalue() + complained.getvalue())
         stated.unlink()
         suite.ok("and a root stating no configuration is named, rather than read as no teardown",
-                 stated_teardown(one, one)[0] is None
-                 and "no configuration" in stated_teardown(one, one)[1])
+                 stated_before_removal(one, one)[0] == BeforeRemoval()
+                 and "no configuration" in stated_before_removal(one, one)[1])
+
+    print("\na tree whose resource is up is kept:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+        tree, ran = str(Path(tmp) / "served"), Path(tmp) / "ran"
+        take(one, "feature/r", tree)
+
+        def whole() -> bool:
+            return (Path(tree).exists() and _local_branch(one, "feature/r")
+                    and remote_ref_sha(one, "origin", "feature/r") is not None)
+
+        def refused(command: str, **rest) -> str:
+            return _message(
+                lambda: release(one, "feature/r", tree, resource_up=command, **rest)) or ""
+
+        said = refused("echo stack-a; echo stack-b")
+        suite.ok("⛔ what is up keeps the tree and the claim whole, and every resource is named",
+                 whole() and "still up" in said and "stack-a, stack-b" in said and tree in said,
+                 said)
+        said = refused("echo stack-a", force=True)
+        suite.ok("⛔ which --force does not skip", whole() and "stack-a" in said, said)
+        said = refused("echo the daemon is away >&2; exit 1")
+        suite.ok("⛔ a check that fails is unanswered, which keeps the tree and says why",
+                 whole() and "unanswered" in said and "exited 1" in said
+                 and "the daemon is away" in said, said)
+        said = refused("echo stack-a; exit 1")
+        suite.ok("⛔ and so is one that printed before it failed",
+                 whole() and "unanswered" in said and "stack-a" not in said, said)
+        said = refused("a-command-nothing-provides")
+        suite.ok("⛔ and one that does not exist", whole() and "unanswered" in said, said)
+        said = refused(f"touch '{ran}'", seconds_left=lambda: 0.2)
+        suite.ok("⛔ a check with no time left is not asked, and the tree is kept",
+                 whole() and "was not asked" in said and not ran.exists(), said)
+        # The child outlives its shell unless the whole group is stopped, so what it would write a
+        # moment later is what says whether it was.
+        began = time.monotonic()
+        said = refused(f"(sleep 4; touch '{ran}') & wait", seconds_left=lambda: 1.0)
+        suite.ok("⛔ one that does not answer in time is stopped, and the tree is kept",
+                 whole() and "did not finish in 1s" in said and time.monotonic() - began < 4, said)
+        time.sleep(max(0.0, 5 - (time.monotonic() - began)))
+        suite.ok("⛔ along with what it started", not ran.exists())
+        held_limit, began = RESOURCE_UP_SECONDS, time.monotonic()
+        globals()["RESOURCE_UP_SECONDS"] = 1
+        said = refused("sleep 8")
+        globals()["RESOURCE_UP_SECONDS"] = held_limit
+        suite.ok("⛔ the limit is the check's own where the caller states no bound",
+                 whole() and "did not finish in 1s" in said and time.monotonic() - began < 8, said)
+        # What the command can see is written down by the command.
+        record = (
+            f"(echo \"$MJOLNIR_TREE\"; test -d \"$MJOLNIR_TREE\" && echo standing; "
+            f"git ls-remote --heads origin feature/r | grep -c feature/r; pwd) > '{ran}'; "
+            "echo a warning >&2; echo"
+        )
+        said = release(one, "feature/r", tree, resource_up=record)
+        saw = ran.read_text().split("\n")
+        suite.ok("a check that names nothing lets the removal through, a warning beside it or not",
+                 "no resource up" in said and not Path(tree).exists(), said)
+        suite.ok("⛔ it was told which tree, and asked with the tree and the ref both standing",
+                 saw[0] == os.path.realpath(tmp) + "/served" and saw[1:3] == ["standing", "1"],
+                 str(saw))
+        suite.ok("from the main checkout", os.path.realpath(saw[3]) == os.path.realpath(one),
+                 str(saw))
+        ran.unlink()
+        release(one, "feature/r", tree, resource_up=record)
+        suite.ok("a tree already gone is not asked about", not ran.exists())
+        flag = Path(tmp) / "flag"
+        flag.write_text("")
+        take(one, "feature/x", tree)
+        said = release(one, "feature/x", tree, teardown=f"rm '{flag}'",
+                       resource_up=f"test ! -e '{flag}' || echo stack-a")
+        suite.ok("⛔ it is asked after a teardown, so it reads what the teardown left",
+                 "teardown ran, no resource up" in said and not Path(tree).exists(), said)
+        take(one, "feature/y", tree)
+        said = _message(lambda: release(
+            one, "feature/y", tree, teardown="true", resource_up="echo stack-a")) or ""
+        suite.ok("⛔ a teardown that succeeded and stopped nothing still keeps the tree",
+                 "stack-a" in said and Path(tree).exists(), said)
+        release(one, "feature/y", tree)
+        take(one, "feature/s", tree)
+        said = release(one, "feature/s", tree)
+        suite.ok("with none stated the release says what it always said",
+                 "resource" not in said and not Path(tree).exists(), said)
+        other = str(Path(tmp) / "other")
+        take(one, "feature/v", other)
+        take(one, "feature/w", tree)
+        release(other, "feature/w", tree, resource_up=f"pwd > '{ran}'")
+        suite.ok("the main checkout it is, whichever of the repository's trees asked",
+                 os.path.realpath(ran.read_text().strip()) == os.path.realpath(one),
+                 ran.read_text())
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+        tree, ran = str(Path(tmp) / "configured"), Path(tmp) / "ran"
+        take(one, "feature/c", tree)
+        stated = Path(one) / ".claude" / "mjolnir.yaml"
+        stated.parent.mkdir()
+        shipped = Path(__file__).resolve().parent.parent / "config" / "examples"
+        example = (shipped / "github-issues.yaml").read_text()
+        call = ["release", "--repo-root", one, "--branch", "feature/c", "--tree", tree,
+                "--skills-root", one]
+        printed, complained = io.StringIO(), io.StringIO()
+        stated.write_text("roots: [")
+        with contextlib.redirect_stdout(printed), contextlib.redirect_stderr(complained):
+            code = main(call)
+        suite.ok("⛔ a configuration that does not resolve refuses the release",
+                 code == 1 and "a resource check or a teardown is unknown" in complained.getvalue()
+                 and Path(tree).exists(), complained.getvalue())
+        stated.write_text(example.replace(
+            "branch_model:\n", "branch_model:\n  resource_up: \"echo stack-c\"\n", 1))
+        with contextlib.redirect_stdout(printed), contextlib.redirect_stderr(complained):
+            code = main(call)
+        suite.ok("⛔ the command reads the configured check itself, no caller passing it",
+                 code == 1 and "stack-c" in complained.getvalue() and Path(tree).exists(),
+                 printed.getvalue() + complained.getvalue())
+        stated.write_text(example)
+        suite.ok("a project stating none has none asked, and nothing is named as unread",
+                 stated_before_removal(one, one) == (BeforeRemoval(), ""),
+                 str(stated_before_removal(one, one)))
+        stranger = str(Path(tmp) / "stranger")
+        subprocess.run(["git", "init", "--quiet", stranger], check=True)
+        suite.ok("⛔ a configuration about another repository is named as such",
+                 "no code root in this repository" in stated_before_removal(one, stranger)[1])
+        stated.unlink()
+        with contextlib.redirect_stdout(printed), contextlib.redirect_stderr(complained):
+            code = main(call)
+        suite.ok("and a root stating no configuration is named in what the release reports",
+                 code == 0 and "no configuration at" in printed.getvalue(), printed.getvalue())
 
     print("\nleaving the tree before removing it:")
 
@@ -3622,7 +3826,7 @@ def main(argv: list[str]) -> int:
                 "--skills-root",
                 default=".",
                 help="the root the configuration is resolved relative to, which is where "
-                "`branch_model.teardown` (§ 10) is read from",
+                "`branch_model.teardown` and `branch_model.resource_up` (§ 10) are read from",
             )
             # ⛔ A person saying it, which is the only thing § 10 permits to break a live claim.
             node.add_argument(
@@ -3666,7 +3870,7 @@ def main(argv: list[str]) -> int:
                 )
             )
         elif args.command == "release":
-            teardown, unread = stated_teardown(args.skills_root, args.repo_root)
+            stated, unread = stated_before_removal(args.skills_root, args.repo_root)
             said = release(
                 args.repo_root,
                 args.branch,
@@ -3676,7 +3880,8 @@ def main(argv: list[str]) -> int:
                 force=args.force,
                 keep_ref=args.keep_ref,
                 tree_dir=args.tree_dir,
-                teardown=teardown,
+                teardown=stated.teardown,
+                resource_up=stated.resource_up,
             )
             print(said + (f" {unread}." if unread else ""))
         else:

@@ -8162,6 +8162,24 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                 "is stated where no tree is ever cut, so no removal runs it (§ 10).",
             )
 
+    # § 10. What answers whether a tree's resource is up. ⛔ Absent is the ordinary
+    # answer and is never refused; what is refused is a value that reads as one and
+    # asks nothing.
+    resource_up = _get(data, "branch_model.resource_up")
+    if resource_up is not None:
+        if not isinstance(resource_up, str) or not resource_up.strip():
+            raise ConfigError(
+                "branch_model.resource_up",
+                f"is {resource_up!r}; it is a command, or `null` where nothing a tree "
+                "starts outlives it (§ 10). An empty one exits zero and prints nothing, "
+                "so every resource would read as down.",
+            )
+        if _get(data, "branch_model.kind") != "worktree":
+            raise ConfigError(
+                "branch_model.resource_up",
+                "is stated where no tree is ever cut, so no removal asks it (§ 10).",
+            )
+
     # § 10. What a rebuild writes again, which is the only half of the pruning
     # oracle a project states. ⛔ Whether the key is *written* is the surface's
     # `# required_when` marker and not a rule here; what is held here is its
@@ -16606,6 +16624,13 @@ def _planted_violations():
          "branch_model.teardown", at("branch_model.teardown", "   ")),
         ("a teardown that is no command at all", "branch_model.teardown",
          at("branch_model.teardown", ["a-command"])),
+        ("a resource check written blank, which reads every resource as down",
+         "branch_model.resource_up", at("branch_model.resource_up", "   ")),
+        ("a resource check that is no command at all", "branch_model.resource_up",
+         at("branch_model.resource_up", ["a-command"])),
+        ("a resource check stated where no tree is cut", "branch_model.resource_up",
+         lambda _data: _with(
+             _an_in_place_memory_project(), "branch_model.resource_up", "a-command")),
         # ⚠️ Both of these refuse in the permissive direction, which is why each
         # has a plant of its own: a list written as one path exempts nothing and
         # an entry that names nothing exempts nothing, and in either case the
