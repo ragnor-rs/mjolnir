@@ -704,6 +704,7 @@ same questions:
 | what a search costs | a query with **no restriction is refused outright** — *Unbounded JQL queries are not allowed here*. ⛔ So the project restriction is the only shape the host accepts, which is also why the state qualifier the plain-issues implementation has to refuse cannot arrive here: every term is quoted into an operand | a live site |
 | what a body is | a structured document rather than a string, on the interface version the adapter speaks. ⚠️ So no markdown body is simply sent: the adapter renders headings, paragraphs, bullet and ordered lists and fenced code, states that nothing else survives, and reads a document back the same way — a fuller renderer is a markdown parser, which would be the implementation deciding what a template means | both, agreeing |
 | how a custom field is addressed | by an id that is **site-specific**, so a field is named in a configuration and resolved against the site's own catalogue per run. ⚠️ And a name is not unique there, so an ambiguous one is refused rather than resolved by position | both, agreeing |
+| what a field holding several values takes | the whole list under the field's id, which replaces what was there; the catalogue states `array` and the element type beside it. An option is a member named by `value`, a user by `id` (read back as `accountId`), and text is itself. A component or a version is shown by `id` in this interface's own example and by `name` in the self-hosted product's, and `name` is what is written here. ⛔ The reference states no shape for a sprint's elements, so one is refused | the published reference, the `name` form and the replacing in the self-hosted product's alone |
 | who moved an item | the history names an author, and ⛔ **a script running under somebody's token is indistinguishable from that person in it**. So the advance-off-a-merge operation reports whether the last status change was made by something *other than this credential* and refuses to call it automation | the published reference |
 | whether the merge is visible here | **no**: the merge is on the code host, and nothing on this tracker ties a status change to one. ⛔ So `link_for_close` is absent — there is no closing keyword to compose — and the advance operation answers the tracker's half alone, with the other half read from § 2's host | both, agreeing |
 | how a search is paged | a cursor in the answer, followed until the host says it is the last page. ⚠️ A page that fills says nothing about whether more exist, which is the same silent ceiling the board implementation pays a cursor-follower to avoid | the published reference |
@@ -859,8 +860,8 @@ Each but status has a real absent case of its own — which is where the schema'
 absence-is-a-configuration rule comes from: a procedure that treats absence as an unset value
 fails on a project that is correctly configured.
 
-- **Type** — five carriers observed: a native field; a label convention, because a user-owned
-  repository on one host has no type field at all; a bare label whose absence means the other
+- **Type** — five carriers observed: a native field; a label convention, on a
+  user-owned repository; a bare label whose absence means the other
   value; a native field with nine values of which six are used; and a prefixed label mapping onto
   a five-valued branch-type vocabulary. The branch prefix is a **function** of type whose range
   differs — two values in four projects, five in another, with one type resolving to one of two

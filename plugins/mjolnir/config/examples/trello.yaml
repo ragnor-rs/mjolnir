@@ -235,6 +235,15 @@ deploy:
     # with the input unsent builds what the live target serves and reports success throughout.
     inputs:
       "<the input naming what the run builds>": "<the branch this target serves>"
+    # What a run may choose, so this stays one target rather than one per combination. ⛔ The
+    # default is what a run choosing nothing sends, and a value outside the list is a stop.
+    choices:
+      - name: services
+        values: ["<one service>", "<another service>"]
+        joined_by: ","
+        default: ["<one service>", "<another service>"]
+        warnings:
+          "<another service>": "<what a person should know before approving it>"
     advances: deployed
     batch: "<a command answering which of the identifiers handed to it this deploy carries>"
     # § 33's publishing half, and `none` on every target here because the facet above carries no
@@ -450,7 +459,13 @@ branch_model:
     - name: "<the local service stack>"
       cap: 1
       subject: tree
-      claimed_by: "<what the command that brings the stack up is matched against>"
+      # A list is read where a command stands, so printing or searching for one takes no place.
+      claimed_by:
+        - command: "<the-tool-that-runs-the-stack>"
+          args_match: "<the arguments that bring it up>"
+      never_claims:
+        - command: "<the-tool-that-runs-the-stack>"
+          args_match: "<the arguments of a form that only reports>"
       # The stated absence: nothing here can be asked how many stacks are up, so the leases are
       # the whole of the count and the lifetime has to cover the work rather than the launch.
       probe: null

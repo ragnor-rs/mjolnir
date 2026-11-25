@@ -65,8 +65,8 @@ tracker:
 
 work_item:
   type:
-    # A user-owned repository on this host has no native issue types at all,
-    # so the type is carried as a label convention.
+    # This project carries its type as a label convention. The host states native
+    # issue types too, and stating them does not make them the carrier.
     carrier: label
     label_prefix: "type:"
     values: [bug, feature, task]

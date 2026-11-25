@@ -170,6 +170,12 @@ REDIRECTIONS = set("<>&")
 # the comparison strips it rather than the token.
 HEREDOC = "<<"
 
+# A here-document whole, for the one reading that has no lexer under it: what
+# follows the delimiter on its line is kept, and the body is text.
+HEREDOC_BODY = re.compile(
+    r"<<-?[ \t]*([\"']?)([A-Za-z_]\w*)\1([^\n]*)\n(?:.*?\n)?[ \t]*\2[ \t]*(?=\n|$)", re.DOTALL
+)
+
 # A line continuation, which is not a token at all. ⚠️ Left in place, the escaped
 # newline became a separator of its own where the next line was indented, which
 # cut one command in two -- taking its arguments out of reach of an `args_match`
@@ -186,7 +192,8 @@ ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 # review, the first command of every `if`/`for`/`while` body was invisible.
 # ⚠️ `in` is deliberately absent -- the words after it are a list and not
 # commands, so skipping it would read a denied path in that list as a call of it.
-INTRODUCERS = {"then", "do", "else", "elif", "exec", "command", "coproc", "!"}
+INTRODUCERS = {"if", "while", "until", "then", "do", "else", "elif", "exec", "command", "coproc",
+               "!"}
 
 # A runner runs the command that follows it, so the command is one token further
 # right -- and its own flags move it further right again. ⛔ The flags that take
@@ -266,6 +273,15 @@ def launchers_of(config) -> list[dict]:
     return [entry for entry in stated if isinstance(entry, dict)] if isinstance(stated, list) else []
 
 
+def _lexes(text: str) -> bool:
+    """Whether the lexer can read this one text, whatever it launches."""
+    try:
+        list(_lexer(text))
+    except ValueError:
+        return False
+    return True
+
+
 def readable(command: str, launchers=()) -> bool:
     """Whether this call is one the lexer could read, rather than fall back on.
 
@@ -282,13 +298,8 @@ def readable(command: str, launchers=()) -> bool:
     report, and the fallback is what keeps such a call guarded rather than
     waved through.
     """
-    try:
-        list(_lexer(command))
-        for text in launched_texts(command, launchers):
-            list(_lexer(text))
-    except ValueError:
-        return False
-    return True
+    return _lexes(command) and all(
+        _lexes(text) for text in launched_texts(command, launchers))
 
 
 def words(command: str) -> list[str]:
@@ -399,7 +410,11 @@ def _segments_of(call: str) -> list[list[str]]:
     for the reason stated beside `HEREDOC`.
     """
     out: list[list[str]] = [[]]
-    tokens = words(call)
+    # ⚠️ An apostrophe in a here-document is the ordinary way a call the shell
+    # reads is one this lexer cannot, so its body is taken out before the words
+    # are read. ⛔ Here and not in `words`: a guard that holds an unparseable call
+    # on its tokens reads them there, a body's among them.
+    tokens = words(call if _lexes(call) else HEREDOC_BODY.sub(r"\3", call))
     index = 0
     while index < len(tokens):
         token = tokens[index]
@@ -647,6 +662,24 @@ def entries(config) -> list[dict]:
     return [entry for entry in stated if isinstance(entry, dict)] if isinstance(stated, list) else []
 
 
+def names_the_call(called: str, arguments: list[str], entry: dict) -> bool:
+    """Whether one command position is a call an entry names, its pattern included."""
+    configured = entry.get("command")
+    if not isinstance(configured, str) or not names_the_command(called, configured):
+        return False
+    pattern = entry.get("args_match")
+    if not isinstance(pattern, str) or not pattern.strip():
+        return True
+    try:
+        return bool(re.search(pattern, " ".join(arguments)))
+    except re.error:
+        # Refused at load by the shared reader (§ 19), so this is the arm nothing
+        # reaches through a validated configuration. It does not match on a
+        # pattern it cannot compile: a guard that refused every call of the
+        # command instead would be refusing on a configuration defect.
+        return False
+
+
 def matches(command: str, stated: list[dict], launchers=()) -> list[dict]:
     """Every (entry, segment) pair this call matches, in the call's own order.
 
@@ -658,21 +691,8 @@ def matches(command: str, stated: list[dict], launchers=()) -> list[dict]:
     for position, segment in enumerate(segments(command, launchers), start=1):
         for called, arguments in command_chain(segment, launchers):
             for entry in stated:
-                configured = entry.get("command")
-                if not isinstance(configured, str) or not names_the_command(called, configured):
+                if not names_the_call(called, arguments, entry):
                     continue
-                pattern = entry.get("args_match")
-                if isinstance(pattern, str) and pattern.strip():
-                    try:
-                        if not re.search(pattern, " ".join(arguments)):
-                            continue
-                    except re.error:
-                        # Refused at load by the shared reader (§ 19), so this is
-                        # the arm nothing reaches through a validated
-                        # configuration. It does not match on a pattern it cannot
-                        # compile: a guard that refused every call of the command
-                        # instead would be refusing on a configuration defect.
-                        continue
                 found.append({
                     "entry": entry,
                     "segment": position,
@@ -1166,6 +1186,11 @@ MUST_REFUSE = [
     ("inside a process substitution", "a-diffing-command <(<deny> --the-paid-tier) a-file"),
     ("inside a brace group", "{ <deny> --the-paid-tier; }"),
     ("as the body of a condition", "if a-free-command; then <deny> --the-paid-tier; fi"),
+    ("as a condition", "if <deny> --the-paid-tier; then a-free-command; fi"),
+    ("as a loop's condition", "while ! <deny> --the-paid-tier; do a-free-command; done"),
+    ("as the condition a loop ends on", "until <deny> --the-paid-tier; do a-free-command; done"),
+    ("on the line after a here-document carrying an apostrophe",
+     "a-free-command <<'EOF'\nit's text\nEOF\n<deny> --the-paid-tier"),
     ("as the body of a loop", "for i in a b; do <deny> --the-paid-tier; done"),
     ("as the alternative of a condition",
      "if a-free-command; then a-free-command; else <deny>; fi"),

@@ -1158,7 +1158,9 @@ document shape this tracker takes and read back from it, with the shapes that do
 in the module and asserted to come back as the text they were written as; a search bounded by the
 project, which is the host's own requirement rather than a convenience, and every term quoted into
 its operand so that no caller can narrow the states a duplicate check covers; and a field addressed
-by **name** and resolved against the site's own catalogue, every custom id being site-specific.
+by **name** and resolved against the site's own catalogue, every custom id being site-specific;
+a list written by the element type the catalogue states, replacing what was there and read back;
+and the fields a filing owes sent in the create itself, one nobody supplied refused before it.
 
 ⛔ **Two of this one's properties are about where a guard sits rather than what it says**, and both
 came out of the suite rather than out of review — which is
@@ -2095,6 +2097,9 @@ What the corpus is scoped to, and what that scope costs, is the next subsection'
   the obligation on *never obeying* rather than on detecting, and a green run licenses nothing.
 - **A comment the tracker withholds from the account reading it.** The read is held to what the host
   says it has, so a comment restricted to other people is in neither number and nothing reports it.
+- **What a deploy's go showed, and whether the command it printed is the one that ran.** The reader
+  resolves a target's choices and prints the command, the values and the warnings. Showing them and
+  running that command are the deploying role's, and no check reads either.
 - **Prose outside the plugin, this repository's own included.** The corpus pass reads the markdown
   that ships beside the script — the surface and the skills — and nothing else. ⛔ An adopter's
   documents are deliberately out of scope: a shipped check whose green depends on the repository it
@@ -2777,10 +2782,12 @@ of the two by the margin this whole document is about.
   itself reaches no event here. ⚠️ That is the same reach the boundary hook has, and the reason the
   record is written on the change rather than into a session: a record on the change is still there
   for whoever reads the history of one that was merged another way.
-- **A `claimed_by` that matches the wrong calls, or none.** The reader refuses a pattern that does
-  not compile — a pattern matching nothing is a resource that reads as guarded and holds nothing —
-  but a pattern that compiles and matches the wrong commands is a project's own statement about its
-  own commands, and nothing here can tell a narrow one from a mistaken one.
+- **A `claimed_by` that matches the wrong calls, or none.** One pattern is searched for in the text
+  of a call, so it takes a place for a call that prints it; a list is read at command positions, and
+  a command written after a separator inside a comment still reads as one. The reader refuses a
+  pattern that does not compile — a pattern matching nothing is a resource that reads as guarded and
+  holds nothing — but a pattern that compiles and matches the wrong commands is a project's own
+  statement about its own commands, and nothing here can tell a narrow one from a mistaken one.
 - **What a probe's count means.** The procedure runs the command and reads one number. A probe that
   counts the wrong thing, counts it twice, or reports a stale figure answers this check exactly as a
   correct one does. ⛔ That is the boundary at
