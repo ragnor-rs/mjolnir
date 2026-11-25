@@ -9852,7 +9852,8 @@ def inert_report(session: str, stop: str) -> dict:
     """
     said = (
         "The project's configuration could not be read, so every guard that reads it is "
-        "inert: each call here is held to nothing and proceeds unguarded. Said once for this "
+        "inert but for the refusal of a merge: each other call here is held to nothing and "
+        "proceeds unguarded. Said once for this "
         f"session rather than on every call. ({INERT_CITATION}){stop}"
     )
     return {"systemMessage": said} if said_once(session, said) else {}

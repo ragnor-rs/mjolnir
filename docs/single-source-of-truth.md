@@ -2704,7 +2704,8 @@ measured letting a third build through. The assertion computes both, so a carrie
 reverted to the maximum fails on the figure rather than on a wording.
 
 ⚠️ **It plants both sides, as the boundary and prose-width checks do.** On the red side: a cap
-reached, a merge with no record, a record that could not be read, a change nothing could resolve, a
+reached, a merge with no record, a merge under a configuration that does not resolve,
+a record that could not be read, a change nothing could resolve, a
 merge naming no repository, a mirrored command run while a run of it exists for this commit — in
 command position, after a separator and after a leading assignment — a run still queued, one still
 in progress, one whose job is still in progress, one that concluded red, one cancelled after

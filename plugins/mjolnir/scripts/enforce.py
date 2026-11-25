@@ -91,6 +91,7 @@ ARM_ANCHORS = {
 }
 
 RECORD_CITATION = "schema § 7 → What a hook refuses, and the record it reads"
+DIRECTION_CITATION = "schema § 7 → Which direction a guard fails in"
 LEASE_CITATION = ("schema § 7 → A lease on an exclusive resource, and the exit paths that "
                   "release it")
 ALREADY_RUN_CITATION = "schema § 18 → The guard on a command the host has already run"
@@ -982,6 +983,24 @@ def merge_guard(config, command: str, *, host=None) -> dict:
     )
 
 
+def unread_merge_guard(command: str, stop: str) -> dict:
+    """Refuse a merge where the project's configuration does not resolve.
+
+    ⛔ The grammar is `merge_target`'s and no second one, so what is a merge here
+    is what is a merge where the configuration resolves. The repository is not
+    supplied: nothing about the change is looked up, and only whether the call
+    merges is asked.
+    """
+    if merge_target(command, None) is None:
+        return {}
+    return _deny(
+        "This command merges a change, and the project's configuration is there and does not "
+        "resolve, so what the merge is held to could not be established. ⛔ A merge is not "
+        f"undone, so it is refused rather than let through ({DIRECTION_CITATION}).{stop} "
+        "Repair the configuration and re-run the merge; no other call is refused for it."
+    )
+
+
 # --- the run the host has already made -------------------------------------
 #
 # ⛔ The facet is not read here and no part of it is carried: which run mirrors a
@@ -1527,8 +1546,13 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
         return {}
     loaded, stop = (config, "") if config is not None else _read(payload.get("cwd"))
     if loaded is None:
+        # ⛔ A merge is recognised from the call alone, so it is refused here;
+        # § 7 states why, and the arm below is every other call.
+        refused = unread_merge_guard(command, stop)
+        if refused:
+            return refused
         # ⛔ Reported, and the call proceeds, by § 7's table: what a broken
-        # configuration cannot say is whether this call is one the record
+        # configuration cannot say is whether this call is one another arm
         # guards, so the refusing arm would refuse every call in the project --
         # the edit that repairs the configuration included (§ 19).
         # ⛔ And the answer is the reader's own, sent once for the session
@@ -3518,6 +3542,39 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               all(bool(guard_answer(_call("a-claiming-command", session="", cwd=unreadable),
                                     now=1000.0, store=fresh("once")).get("systemMessage"))
                   for _ in range(2)))
+        out.append("")
+        out.append("A merge is refused under a configuration that does not resolve:")
+        for merge in ("gh pr merge 7", "gh pr merge", "gh pr merge a-branch --squash",
+                      "gh pr merge 7 --repo an-owner/a-name",
+                      "cd elsewhere && gh pr merge 7",
+                      "gh api -X PUT repos/an-owner/a-name/pulls/7/merge"):
+            answer = guard_answer(_call(merge, cwd=unreadable), now=1000.0,
+                                  store=fresh("unreadable-merge"), host=_a_host())
+            said = str((answer.get("hookSpecificOutput") or {}).get("permissionDecisionReason"))
+            check(f"`{merge}` is refused, carrying the reader's own stop",
+                  denied(answer) and stop in said and DIRECTION_CITATION in said, said[:200])
+        twice = _call("gh pr merge 7", session="a-session-that-merges", cwd=unreadable)
+        check("every time it is made, the cadence being the report's and not the refusal's",
+              all(denied(guard_answer(twice, now=1000.0, store=fresh("unreadable-merge")))
+                  for _ in range(2)))
+        check("and the session's one report is still owed to the next other call",
+              bool(guard_answer(_call("a-claiming-command", session="a-session-that-merges",
+                                      cwd=unreadable), now=1000.0,
+                                store=fresh("unreadable-merge")).get("systemMessage")))
+        for other_call in ("gh pr view 7", "gh pr merge-queue", "git merge a-branch",
+                           "gh api repos/an-owner/a-name/pulls/7/merge",
+                           "sed -i s/a/b/ .claude/mjolnir.yaml"):
+            check(f"`{other_call}` proceeds",
+                  not denied(guard_answer(_call(other_call, cwd=unreadable), now=1000.0,
+                                          store=fresh("unreadable-other"))))
+        edit = _call("", cwd=unreadable)
+        edit.update(tool_name="Edit", tool_input={"command": "gh pr merge 7"})
+        check("and a call to any other tool proceeds whatever it carries, the repairing edit among them",
+              guard_answer(edit, now=1000.0, store=fresh("unreadable-other")) == {})
+        check("a merge in a project stating no configuration is unguarded and silent",
+              guard_answer(_call("gh pr merge 7", cwd=str(outside)), now=1000.0,
+                           store=fresh("unconfigured-merge")) == {})
+
         check("while a merge whose record could not be read is refused",
               denied(guard_answer(_call("gh pr merge 7"), config=_a_config([]), now=1000.0,
                                   store=fresh("merge"), host=_a_host(code=1))))

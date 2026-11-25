@@ -3164,6 +3164,14 @@ settles whether the call proceeds, and both directions have a failure that reads
 | reversible — a call that can be run again | proceeds, and the answer says the guard held nothing | a guard that refuses every call it cannot reason about is a guard somebody turns off, and then nothing is held |
 | irreversible — a merge, a deletion, a publish | refused, naming what could not be established | the same split § The loop makes for an ask nothing answered: silence is not a yes where the answer would license something irreversible |
 
+⛔ **A merge is refused where the configuration is there and does not resolve**, naming the reader's
+stop. What a merge is, is read from the call alone, so the act is known to be irreversible before
+any key is read. ⚠️ **No other call is refused for it**: the calls the project's own keys describe
+cannot be told apart without those keys, and they proceed by
+[§ 19](#the-command-position-and-why-the-whole-call-is-not-one). ⛔ **The refusal is made on every
+such call** and is no part of the once-a-session report. ⚠️ **A shell call that writes a merge as
+unquoted text reads as one**, so a repair carrying such text is made with the harness's file tools.
+
 ⚠️ **A guard that failed before it ran reports nothing at all**, and nothing in the session says
 the act was held to nothing — the residue being irreducible from inside a guard, since saying so is
 itself something the guard has to be running to do. What covers it is the gate: a carrier that
