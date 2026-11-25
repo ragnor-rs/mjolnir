@@ -6229,6 +6229,40 @@ def _derivation_cycle(edges: dict) -> list | None:
     return None
 
 
+def _validate_create_fields(data: dict) -> None:
+    """§ 3's list of the fields a filing sends, held to a shape a filing can read.
+
+    ⛔ Refused at load: every one of these otherwise surfaces at the first filing,
+    which is a role holding a finished body and no item.
+    """
+    entries = _get(data, "tracker.create_fields")
+    if entries is None:
+        return
+    if not isinstance(entries, list):
+        raise ConfigError(
+            "tracker.create_fields",
+            f"is {entries!r}; § 3 states it as a list of entries, each naming a "
+            "`field` and optionally the `value` every filing sends in it.",
+        )
+    seen = set()
+    for index, entry in enumerate(entries):
+        where = f"tracker.create_fields[{index}]"
+        name = entry.get("field") if isinstance(entry, dict) else None
+        if not isinstance(name, str) or not name.strip():
+            raise ConfigError(
+                where,
+                f"is {entry!r}, which names no `field`. A value with no field is "
+                "one nothing can send (§ 3).",
+            )
+        if name in seen:
+            raise ConfigError(
+                where,
+                f"names `{name}`, which an entry above already states. Two values "
+                "for one field have no reading of which a filing sends (§ 3).",
+            )
+        seen.add(name)
+
+
 def _validate_billing(data: dict) -> None:
     """§ 37's roots, and the one rule about them no marker can state.
 
@@ -7818,6 +7852,45 @@ def _held_to_a_status_writers(status: dict, where: str, facts: dict) -> None:
             claimed[glob] = writer
 
 
+def _a_named_call(entry, where: str) -> None:
+    """One `command`, with `args_match` where the command alone does not decide (§ 10)."""
+    if not isinstance(entry, dict):
+        raise ConfigError(
+            where,
+            f"is {entry!r}; § 10 states each as a block carrying `command`, and `args_match` "
+            "where the command alone does not decide.",
+        )
+    unknown = sorted(str(key) for key in set(entry) - {"command", "args_match"})
+    if unknown:
+        raise ConfigError(
+            where,
+            f"carries {', '.join(unknown)}; § 10 states `command` and `args_match` and no "
+            "other key. A misspelled pattern narrows nothing.",
+        )
+    command = entry.get("command")
+    if not isinstance(command, str) or len(command.split()) != 1:
+        raise ConfigError(
+            f"{where}.command",
+            f"is {command!r}; it is the one word standing in a command position, its "
+            "arguments being `args_match`'s (§ 10). Anything else matches no call.",
+        )
+    if "args_match" in entry:
+        pattern = entry["args_match"]
+        if not isinstance(pattern, str) or not pattern.strip():
+            raise ConfigError(
+                f"{where}.args_match",
+                f"is {pattern!r}; it is the pattern the arguments carry, and absent where the "
+                "command alone decides (§ 10). Blank, it matches every call of that command.",
+            )
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise ConfigError(
+                f"{where}.args_match",
+                f"does not compile as a pattern -- {error}. ⛔ It would match no call (§ 10).",
+            ) from None
+
+
 def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # ⛔ Walked rather than looked up by path, because a retired key may sit
     # inside a list: `_get` descends a dict and returns the default the moment it
@@ -8407,8 +8480,32 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                         "(§ 10). A grace past the lease's lifetime leaves no lease out, and a "
                         "probe shares the guard's own budget with every other read it makes.",
                     )
+            claimed = entry["claimed_by"]
+            spared = entry.get("never_claims")
+            if not isinstance(claimed, (str, list)) or claimed == []:
+                raise ConfigError(
+                    f"{at}.claimed_by",
+                    f"is {claimed!r}; § 10 states it as one pattern, or as a list of at least "
+                    "one claiming command.",
+                )
+            if spared is not None and not isinstance(spared, list):
+                raise ConfigError(
+                    f"{at}.never_claims",
+                    f"is {spared!r}; § 10 states it as a list of the forms that claim nothing, "
+                    "and absent where there is none.",
+                )
+            if spared and not isinstance(claimed, list):
+                raise ConfigError(
+                    f"{at}.never_claims",
+                    "is stated beside a `claimed_by` written as one pattern, which is searched "
+                    "for in the call and reads no command to spare (§ 10). State `claimed_by` "
+                    "as a list.",
+                )
+            for key, listed in (("claimed_by", claimed), ("never_claims", spared)):
+                for place, one in enumerate(listed if isinstance(listed, list) else []):
+                    _a_named_call(one, f"{at}.{key}[{place}]")
             try:
-                re.compile(str(entry["claimed_by"]))
+                re.compile(claimed if isinstance(claimed, str) else "")
             except re.error as error:
                 raise ConfigError(
                     f"{at}.claimed_by",
@@ -8750,6 +8847,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # written absolutely is a rule the surface states in prose, there being no
     # marker for it, and it is the one arm whose permissive reading is money.
     _validate_billing(data)
+    _validate_create_fields(data)
     # § 38's lists, in the same position and for the same reason. ⛔ The two rules
     # no marker reaches are the ones about the row set rather than a row: that
     # every edge names a declared document, and that the derivation record stays
@@ -15805,6 +15903,13 @@ def _planted_violations():
 
     return [
         ("a value outside an alternation", "tracker.kind", at("tracker.kind", "gitlab")),
+        # § 3's creation fields, one plant per arm.
+        ("creation fields that are not a list", "tracker.create_fields",
+         at("tracker.create_fields", "Components")),
+        ("a creation field with no name", "tracker.create_fields[0]",
+         at("tracker.create_fields", [{"value": ["a"]}])),
+        ("a creation field stated twice", "tracker.create_fields[1]",
+         at("tracker.create_fields", [{"field": "a"}, {"field": "a"}])),
         ("a carrier outside its alternation", "work_item.type.carrier",
          at("work_item.type.carrier", "telepathy")),
         # § 6's per-role block, one plant per arm. ⛔ The scalar arm is the
@@ -16772,6 +16877,39 @@ def _planted_violations():
         ("a claim pattern that does not compile, so no call ever claims it",
          "branch_model.exclusive_resources[0].claimed_by",
          _a_resource_of(claimed_by="a-command-that-claims-it(")),
+        ("a list of claiming commands naming none",
+         "branch_model.exclusive_resources[0].claimed_by", _a_resource_of(claimed_by=[])),
+        ("claiming commands written as a block",
+         "branch_model.exclusive_resources[0].claimed_by",
+         _a_resource_of(claimed_by={"command": "a-command"})),
+        ("a claiming command written as a bare string",
+         "branch_model.exclusive_resources[0].claimed_by[0]",
+         _a_resource_of(claimed_by=["a-command"])),
+        ("a claiming command naming no command",
+         "branch_model.exclusive_resources[0].claimed_by[0].command",
+         _a_resource_of(claimed_by=[{"args_match": "a-pattern"}])),
+        ("a claiming command carrying its arguments, which stands in no position",
+         "branch_model.exclusive_resources[0].claimed_by[0].command",
+         _a_resource_of(claimed_by=[{"command": "a-command build"}])),
+        ("a claiming command with a misspelled key, which would claim every call of it",
+         "branch_model.exclusive_resources[0].claimed_by[0]",
+         _a_resource_of(claimed_by=[{"command": "a-command", "arg_match": "build"}])),
+        ("a claiming command's pattern written blank",
+         "branch_model.exclusive_resources[0].claimed_by[0].args_match",
+         _a_resource_of(claimed_by=[{"command": "a-command", "args_match": " "}])),
+        ("a claiming command's pattern that does not compile",
+         "branch_model.exclusive_resources[0].claimed_by[0].args_match",
+         _a_resource_of(claimed_by=[{"command": "a-command", "args_match": "build("}])),
+        ("forms that never claim, not a list",
+         "branch_model.exclusive_resources[0].never_claims",
+         _a_resource_of(claimed_by=[{"command": "a-command"}], never_claims="--status")),
+        ("a form that never claims naming no command",
+         "branch_model.exclusive_resources[0].never_claims[0].command",
+         _a_resource_of(claimed_by=[{"command": "a-command"}],
+                        never_claims=[{"args_match": "--status"}])),
+        ("forms that never claim beside one pattern",
+         "branch_model.exclusive_resources[0].never_claims",
+         _a_resource_of(never_claims=[{"command": "a-command"}])),
         ("an exclusive entry stating no lifetime", "branch_model.exclusive_resources[0].ttl",
          _a_resource_of(ttl=None)),
         ("a lifetime of zero, which expires before the call it covers starts",
