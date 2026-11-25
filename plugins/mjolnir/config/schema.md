@@ -3115,12 +3115,13 @@ ordinary, and the second is not a project whose count is zero.
 expiry alone.** ⚠️ **The proof is per path and is not a reading**: a path a guard registers nothing
 for, and a path whose event the harness does not publish, read identically from the carrier.
 
-| the call's exit | what releases the place |
-|---|---|
-| it finished, either way | the event after the call — a failure is an exit like any other |
-| it was refused before it ran | nothing fires, so the end-of-turn sweep is what releases it |
-| the turn ended, the session ended, or a subagent stopped | the sweep, over every place this session holds |
-| it was put in the background | ⛔ **expiry alone.** The call itself finishes at launch, so every sweep would hand the place back while the work ran, and each one skips it deliberately |
+| the call's exit | what releases the place | the events registered for it |
+|---|---|---|
+| it finished, either way | the event after the call — a failure is an exit like any other, and the harness publishes it as an event of its own | `PostToolUse`, `PostToolUseFailure` |
+| it was refused before it ran | nothing fires, so the end-of-turn sweep is what releases it | `Stop`, `StopFailure` |
+| it was cancelled while it ran | nothing fires for the call or for the turn the cancellation ended, so the next sweep this session reaches is what releases it, and expiry where it reaches none | `Stop`, `StopFailure`, `SessionEnd` |
+| the turn ended, the session ended, or a subagent stopped | the sweep, over every place this session holds — and a turn an API error ended is published as an event of its own | `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop` |
+| it was put in the background | ⛔ **expiry alone.** The call itself finishes at launch, so every sweep would hand the place back while the work ran, and each one skips it deliberately | none |
 
 ⛔ **So `ttl` bounds what a leak costs rather than merely tidying up after one.** Measured on the
 same project: two leases left behind by calls refused before they ran pinned a cap of two with
@@ -3145,10 +3146,11 @@ here there is no act, and what an unestablished reading costs is a report naming
 read.
 
 ⛔ **It answers at the turn's end and after a merge, and at no other exit.** A session ending is a
-report nobody is left to act on, and a subagent stopping is not this tree's turn ending — it would
-repeat one answer once per subagent in a turn that has not finished. ⚠️ **Both are events a release
-arm is already registered on**, which makes this an arm beside the ones above rather than a carrier
-of its own, by the ordering argument
+report nobody is left to act on, a turn an API error ended is one whose answer the harness discards,
+and a subagent stopping is not this tree's turn ending — it would repeat one answer once per
+subagent in a turn that has not finished. ⚠️ **Both are events a release arm is already registered
+on**, which makes this an arm beside the ones above rather than a carrier of its own, by the
+ordering argument
 [§ A lease](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it) makes for the
 third refusal.
 
@@ -3826,7 +3828,7 @@ or is not reachable, the refusal still stands: the ref exists, which is the whol
 asserts, and the unestablished half is stated rather than dropped.
 
 **Release is on the item's own exit, not on a call's.** ⛔ A claim is **long-lived by
-construction** — it spans every call the item takes — so the six exit paths an `exclusive_resources`
+construction** — it spans every call the item takes — so the exit paths an `exclusive_resources`
 lease is released on do not apply to it, and a claim wired to them would release itself mid-item.
 What the two share is the failure: a claim released on the happy path alone leaks. So the claim is
 released where the item leaves — the branch landing, or the work being abandoned — and every other
@@ -4165,10 +4167,12 @@ one no file oracle can reach**, which is why it is stated rather than left to fo
 above.
 
 ⛔ **The removal is read back, and a removal that reported success while the tree is still there is
-not one.** Measured in the carrier this rule calls: a tree git refuses to remove — a locked one
-needs the override twice — is not raised and the success sentence is appended anyway, so the sweep
-said *removed* for a tree still on disk whose published ref had already gone. ⚠️ **A destructive
-act misreported as done is worse than a refusal**, because nothing ever comes back to it.
+not one.** It binds the release and the sweep alike. A tree git refuses to remove — a locked one
+needs the override twice — is reported as **not removed**, with git's own reason, and the command
+that gives the claim up fails rather than succeeding in part. ⛔ **What became of the published ref
+is stated beside the tree left behind**, the ref going first: a ref reported gone on its own reads
+as a claim given up whole. The local branch stays with the tree. ⚠️ **A destructive act misreported
+as done is worse than a refusal**, because nothing ever comes back to it.
 
 ⛔ **A symlink is never precious, however it is ignored.** A tree preparation step that plants
 ignored symlinks into every tree it prepares leaves every correctly prepared tree permanently
@@ -4719,6 +4723,15 @@ an item body or comment, a pull request, a review thread, a fetched endpoint. Wh
 about to write carries one, the write does not happen and the role reports the kind and the
 position, ⛔ **never the value**: a report that quotes the secret has published it to the one
 surface the refusal was protecting.
+
+⛔ **What is refused is a value, and a value that only says where to read is not one.** A reference
+to a variable, a stand-in and a query's own field path carry nothing out, whatever the key beside
+them is called — so a role may read a change's conversation with the writer of each comment, and a
+report of a refusal may quote what was refused.
+
+⛔ **A refusal names the direction the call has**, and neither direction where none was established.
+The direction is what the message says and never what decides: a credential written into a read's
+own arguments leaves with it and is refused as a read.
 
 ⚠️ **The refusal reads the text, which makes it narrower than it sounds.** A credential reaching an
 outward surface through a tool this procedure does not drive is outside what any arm here can see,

@@ -1271,7 +1271,8 @@ The rule is
 and ⛔ this document states none of it. What the suite holds: that a second session starting an
 item already claimed is refused; that the refusal names who holds it and since when, or names
 whichever half it could not establish; that a refused start leaves no ref, no branch and no tree;
-that a released claim is takeable again and a release is re-runnable; that a claim with no work
+that a released claim is takeable again and a release is re-runnable; that a removal git refuses
+is reported as not removed, beside what became of the ref; that a claim with no work
 and no occupied tree reads as an *orphaned candidate* carrying both readings rather than being
 broken; that a ref younger than the window a start takes between publishing its ref and cutting its
 tree reads *provisional* instead, with re-reading rather than asking as its remedy; and that a root
@@ -2000,10 +2001,10 @@ words: the arms surface, and nothing here clears.
 redden — one per hidden form, one per imperative pattern, one per position an address can open at,
 one per credential shape, one per hook decision — and an exemption plant per excluded case, each of
 which must stay green: an emoji's variation selector, a collapsed block a person can open, a commit
-hash, a branch name, a variable reference, a placeholder, a redaction, each of the environment names
-whose anchors were added after a false report, and one sentence quoted out of every document whose
-ordinary prose a false report claimed. The run prints what it planted; no count of either is written
-down here.
+hash, a branch name, a variable reference, a field path, a placeholder, a redaction, each of the
+environment names whose anchors were added after a false report, and one sentence quoted out of
+every document whose ordinary prose a false report claimed. The run prints what it planted; no
+count of either is written down here.
 
 ⚠️ **Every plant is assembled from pieces at run time**, and that is not stylistic. A literal of a
 credential shape written into the file would be a secret committed to a repository by the check that
@@ -2105,6 +2106,14 @@ What the corpus is scoped to, and what that scope costs, is the next subsection'
   The `write` arm reads the text a role is about to write and the hook reads a `Bash` command. A
   file written into a directory something else synchronises, a credential passed to a tool that is
   not `Bash`, or a value already in the clipboard are all outside what either can see.
+- **A credential shaped exactly like a field path.** A leading dot and segments of letters and
+  underscores only is what a query's filter writes, so a passphrase of dotted words with a dot in
+  front passes under any key. A digit, a hyphen, an absent leading dot or punctuation a filter does
+  not put after a path is enough to be refused. A path reaching a field whose name carries a digit
+  is therefore still read as a value.
+- **Which way every call goes.** The direction a refusal names is read from the host client's own
+  verbs and methods and from `curl`'s flags. Another tool, an unlisted verb, a query held in a file
+  and a call inside an expansion are reported with no direction rather than a guessed one.
 - **A body this procedure assembles in flight.** The hook reads the command and the files it names
   by a body-file flag, bounded at a size so a hook cannot be stalled. A body piped in from another
   process, or assembled by a shell expansion the hook would have to execute to see, is not read —
@@ -2526,8 +2535,8 @@ which of the three designs was the one that worked.
 | arm | what it reads | kind | what it does |
 |---|---|---|---|
 | `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge and that change's head commit, the runs the host made for this commit, and the count a project's probe prints | **computed** for the count and the runs, **forbidding** for the record's presence | denies the call, or takes a place |
-| `release` (`PostToolUse`, `Stop`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
-| `release` again, at two of those four (`Stop`, and a `PostToolUse` whose call merged) | the tree the event names, the head the remote reports for the base, and the base's commits against this branch by patch | **computed** | reports `level`, `behind` with its figure, or `unestablished` — and ⛔ **refuses nothing, there being no call in hand at either point** |
+| `release` (`PostToolUse`, `PostToolUseFailure`, `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
+| `release` again, at two of those (`Stop`, and a `PostToolUse` whose call merged) | the tree the event names, the head the remote reports for the base, and the base's commits against this branch by patch | **computed** | reports `level`, `behind` with its figure, or `unestablished` — and ⛔ **refuses nothing, there being no call in hand at either point** |
 | `record` | nothing | — | writes the answer a guard reads onto the change |
 | `held` | the leases and the probe | **computed** | reports what is held, and what it could not establish |
 
@@ -2650,7 +2659,7 @@ forbids each by name.
 ⛔ **Eleven breaks were applied and each reddened the assertions written for it** — the patch
 reading reduced to a line count, the base read from the tracking ref, a head this tree does not
 hold read as level, an unreachable remote read as level, a project with no remote reported as
-unestablished every turn, the arm widened to all four release events, a finished call no longer
+unestablished every turn, the arm widened to every release event, a finished call no longer
 narrowed to one that merged, the sweep's answer replacing this one instead of joining it, the tree
 left out of the words, a read that cannot run left to escape the arm, and a read that could not run
 conflated with an object that is absent — which is the discipline
@@ -2685,7 +2694,7 @@ sat red on that one forever, or been *fixed* by deleting the sweep that is doing
 is where the path's status is stated rather than here.
 
 ⚠️ **A backgrounded call is the path no event can close**, and the suite asserts the full sequence:
-the place is taken, every one of the four release events leaves it alone, and it is gone once its
+the place is taken, every one of the release events leaves it alone, and it is gone once its
 lifetime is up. A sweep that released it would hand the place back while the work ran.
 
 ⚠️ **The arithmetic is a sum and the suite plants the maximum that let a third holder through.**
