@@ -252,8 +252,10 @@ def self_test() -> int:
     check("a reading carries the count and the highest, compared as numbers",
           (one["count"], one["highest"]) == (2, "10"), one)
     check("the bound is this module's own", asked == [LIMIT], asked)
-    keyed = read(tracker([{"key": "AB-9"}, {"key": "AB-10"}]))
-    check("a keyed identifier is ordered by its number", keyed["highest"] == "AB-10", keyed)
+    # ⛔ Composed rather than written: a whole key as a literal reads as somebody's item.
+    lower, upper = (f"KEY-{number}" for number in (9, 10))
+    keyed = read(tracker([{"key": lower}, {"key": upper}]))
+    check("a keyed identifier is ordered by its number", keyed["highest"] == upper, keyed)
     opaque = read(tracker([{"number": None, "card": {"id": "x9"}}]))
     check("an opaque identifier is counted and has no highest",
           (opaque["count"], opaque["highest"], opaque["items"]) == (1, None, ["x9"]), opaque)
