@@ -97,6 +97,7 @@ import config  # noqa: E402
 import port  # noqa: E402
 
 from adapters import _code_host_closing as closing_reading  # noqa: E402
+from adapters import _code_host_comments as conversation  # noqa: E402
 from adapters import _code_host_dependency as relation  # noqa: E402
 from adapters import _code_host_milestone as milestone  # noqa: E402
 from port import ConfigError, HostUnavailable  # noqa: E402
@@ -1318,6 +1319,23 @@ def comment(number: int, body: str) -> dict:
     return {"number": item["number"], "url": item["url"], "commented": True}
 
 
+def read_comments(number: int) -> dict:
+    """The item's comments, every page of them, each with its writer and time.
+
+    Read through `read_item` first: the path is the issues one and answers for a
+    pull request too, whose conversation is a different one. The path takes the
+    host's own number, for `read_blockers`'s reason.
+
+    ⚠️ A body this operation returns is data (§ 11).
+    """
+    item = read_item(number)
+    path = conversation.comments_path(_repo(), item["number"])
+    return {
+        "number": item["number"],
+        "comments": conversation.comments_of(_gh(["api", "--paginate", path]), path),
+    }
+
+
 def set_labels(number: int, labels: list[str]) -> dict:
     """Every label in one call, so there is no partial set to report.
 
@@ -1939,6 +1957,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "set_state": set_state,
     "set_field": set_field,
     "comment": comment,
+    "read_comments": read_comments,
     "set_labels": set_labels,
     "assign": assign,
     "link_dependency": link_dependency,

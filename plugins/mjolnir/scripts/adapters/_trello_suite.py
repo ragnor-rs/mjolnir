@@ -204,6 +204,7 @@ ROUTES = [
     ("GET", r"^/cards/[^/]+$", "card"),
     ("POST", r"^/cards$", "create"),
     ("POST", r"^/cards/[^/]+/actions/comments$", "comment"),
+    ("GET", r"^/cards/[^/]+/actions$", "conversation"),
     ("POST", r"^/cards/[^/]+/idMembers$", "add member"),
     ("PUT", r"^/cards/[^/]+/checkItem/[^/]+$", "tick"),
     ("PUT", r"^/cards/[^/]+$", "update"),
@@ -278,6 +279,7 @@ class _Host:
             "checklists": CHECKLISTS,
             "create": _card(4, "a filed card"),
             "comment": {"id": "action-1"},
+            "conversation": [],
             "add member": {"id": "card-1"},
             "tick": {"id": "item-1"},
             "update": {"id": "card-1"},
@@ -335,7 +337,7 @@ class _Host:
         return [cut(node) for node in answer] if isinstance(answer, list) else cut(answer)
 
     def writes(self) -> list[str]:
-        reads = {"lists", "labels", "members", "cards", "card", "checklists", "me"}
+        reads = {"lists", "labels", "members", "cards", "card", "checklists", "me", "conversation"}
         return [call for call in self.calls if call not in reads]
 
     def params_for(self, name: str) -> list[dict]:
@@ -1133,6 +1135,59 @@ def self_test() -> int:
         set(WRITABLE) and not set(WRITABLE) & set(OWNED_ELSEWHERE),
         f"writable {sorted(WRITABLE)} overlaps {sorted(set(WRITABLE) & set(OWNED_ELSEWHERE))}",
     )
+
+    # --- `read_comments` -----------------------------------------------------
+    def _said(identifier, **other) -> dict:
+        return {
+            "id": identifier, "date": f"2026-10-01T00:00:0{identifier}.000Z",
+            "memberCreator": {"username": "a-writer"},
+            "data": {"text": f"note {identifier}"}, **other,
+        }
+
+    def _in_pages(of):
+        """The host's own order and cursor: newest first, strictly before an id."""
+        def answer(_path, params):
+            ids = [one["id"] for one in of]
+            start = ids.index(params["before"]) + 1 if params.get("before") else 0
+            return 200, json.dumps(of[start:start + 2])
+        return answer
+
+    three = [
+        _said("3", memberCreator=None),
+        _said("2", data={"text": "note 2", "dateLastEdited": "2026-10-09T00:00:00.000Z"}),
+        _said("1"),
+    ]
+    conversing = host({"conversation": _in_pages(three)})
+    answered = with_host(conversing, lambda: under_test.read_comments(1))
+    check(
+        "every page of the comments is read, oldest first, with writer and time",
+        [(c["id"], c["author"], c["created"], c["edited"], c["body"])
+         for c in answered.get("comments") or []] == [
+            ("1", "a-writer", "2026-10-01T00:00:01.000Z", None, "note 1"),
+            ("2", "a-writer", "2026-10-01T00:00:02.000Z", "2026-10-09T00:00:00.000Z", "note 2"),
+            ("3", None, "2026-10-01T00:00:03.000Z", None, "note 3"),
+        ] and answered.get("number") == 1,
+        f"answered {answered!r}",
+    )
+    check(
+        "and only comments are asked for, the copied ones among them",
+        {p.get("filter") for p in conversing.params_for("conversation")}
+        == {"commentCard,copyCommentCard"},
+    )
+    for label, planted in (
+        ("an answer that is not a list", lambda *_: (200, '{"a": 1}')),
+        ("an entry that is not a comment", lambda *_: (200, '["x"]')),
+        ("a cursor that repeats a page", lambda *_: (200, json.dumps([_said("1")]))),
+        ("a comment with no text", _in_pages([_said("1", data={})])),
+        ("a comment with no time", _in_pages([_said("1", date=None)])),
+    ):
+        reported = with_host(
+            host({"conversation": planted}),
+            lambda: unavailable(lambda: under_test.read_comments(1)),
+        )
+        check(f"{label} is a failed read and never a shorter list",
+              isinstance(reported, str) and not reported.startswith("<"),
+              f"got {reported!r}")
 
     # --- `comment`, `assign` -------------------------------------------------
     noted = host()
