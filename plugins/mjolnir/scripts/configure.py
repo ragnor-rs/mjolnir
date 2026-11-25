@@ -742,6 +742,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "What brings a new tree up and takes it down -- the project's own setup, "
         "named rather than described?",
     ),
+    "branch_model.teardown": ask(
+        "Which command stops what a tree started, before that tree is removed? "
+        "Unstated, nothing is run.",
+    ),
     "branch_model.regenerable": ask(
         "Which ignored paths does a rebuild write again? ⚠️ A new tree carries "
         "none of them, so they are read out before any removal.",

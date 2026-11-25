@@ -1523,6 +1523,7 @@ it on the event that opens a session.
 | 26 | An entry naming nothing exempts nothing; an entry anchored at the root matches there and nowhere else | the matching rule alone | computed |
 | 27 | A tree whose contents could not be read is unestablished, never empty; an unreadable directory is not all-symlinks | a directory with its mode taken away | computed |
 | 28 | A worktree registered **inside** a work tree is outside the scope, being a level deeper than the leaf, while the work tree itself stays this project's — and that work tree is then kept, with the nested path named as a reader would want it | a real worktree cut inside a work tree, in a project whose tree directory is inside its checkout | computed |
+| 29 | A stated teardown runs before the removal and is told the tree; one that failed, outlasted what is left of the bound or had too little left to start keeps the tree and reaches the person; a kept tree is never torn down | one landed tree, the clock stated | computed |
 
 ⚠️ **Check 16 is the one that looks like bookkeeping and is not**, for the reason § 10 gives about
 a carrier the harness kills: what the check holds is that the timeout covers the budget **plus**

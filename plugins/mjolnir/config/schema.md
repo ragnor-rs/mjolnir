@@ -3620,6 +3620,7 @@ branch_model:
   parallel_trees: true                       # required
   tree_dir: "<the directory a tree is cut under>"   # required under worktree; null under in_place; relative to the checkout, and under the agent harness's own managed root
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
+  teardown: "<the command that stops what a tree started>"   # may be left unwritten; read only under worktree
   regenerable: ["<an ignored path a rebuild writes again>"]   # required_when: branch_model.kind = worktree
   exclusive_resources:           # [] where nothing in this project is exclusive; required
     - { name: "…", cap: 1, subject: tree, claimed_by: "…", probe: "…",  ttl: 1800 }
@@ -3653,7 +3654,11 @@ is what distinguishes it from a transitional one.** A tree's setup and teardown 
 project's own build genuinely differs, so there is no shared script for this key to be standing in
 for — which is the condition that was met for § 9's `script`, and that retired it.
 
-⛔ **It is steps and never a location, and `tree_dir` is the location.** The two were conflated
+⛔ **`teardown` is the one step the procedure runs rather than names**, as a command stated whole:
+a removal happens where no role is reading steps. What runs it, and when, is
+[below](#the-teardown-a-removal-runs-first).
+
+⛔ **`mechanics` is steps and never a location, and `tree_dir` is the location.** The two were conflated
 while the second key was absent, which left *where a tree goes* stated in no facet and carried by
 each project's standing convention — readable by the person running a role and by nothing shipped.
 A path is not a step: a project with nothing to install and nothing to tear down still has to say
@@ -4265,6 +4270,32 @@ states what is exclusive, how many of it there are, what holds a place, which ca
 stake, what can be asked how many are held and for how long, when that answer covers a lease's
 holder, and how long a lease counts.
 
+### The teardown a removal runs first
+
+⛔ **Where `teardown` is stated, the release and the sweep each run it before removing a tree**, after
+every reading that could keep that tree and before the published ref goes. So a tree those readings
+keep is never torn down, and a teardown that fails leaves the claim whole. A project stating none
+has none run.
+
+- **The tree it is for is `MJOLNIR_TREE`**, an absolute path in its environment. It runs at the
+  repository's main checkout, whichever tree the removal was asked from, so a path in the command
+  reads the same for every tree.
+- ⛔ **A nonzero exit keeps the tree**, and the report names the tree, the exit and the end of what
+  the command printed. No override skips it: what clears it is the command succeeding.
+- ⛔ **It has to be repeatable.** It runs again wherever the removal after it failed, and on every
+  later sweep of a tree it left standing. One stopped part way is started from the top.
+- ⚠️ **Whatever it writes into the tree goes with the tree**, the files having been read before it
+  ran. Who is working there is read again after it.
+- ⚠️ **A process the tree started that works inside the tree reads as another session**, where it is
+  not one of the run's own, and the tree is kept before the teardown is reached. Nothing on the
+  machine tells the two apart. The override a release takes for an occupied tree reaches the
+  teardown; the sweep has none.
+
+⛔ **The release reads the key itself**, from the configuration at the skills root, and no caller
+passes it. A configuration that does not resolve refuses the release, since whether it states a
+teardown is unknown; one that is absent, or that states no code root in this repository, is named in
+what the release reports.
+
 ### Pruning a tree whose branch has landed
 
 ⛔ **A tree whose branch has landed is removed, and there are two carriers: the merge, and the
@@ -4454,6 +4485,12 @@ deletion this carrier's. ⚠️ **A kept ref costs the loop nothing** — the cl
 claim as spent whether or not its ref still stands — ⛔ **but the predicate keyed on the ref's
 *name* goes on answering `taken`**, which is the true answer about a ref that exists and is why
 the item read is the one the loop asks.
+
+⛔ **A teardown runs inside the sweep's bound and never past it.** It is given what is left of that
+bound when it starts. One with too little left is not started, one that outlasts it is stopped, and
+either way the tree is kept and the person is told. ⚠️ A teardown that takes the whole bound leaves
+the trees after it unreached, and they are named; a release has no bound and is how such a tree is
+removed.
 
 ```yaml
 branch_model:
