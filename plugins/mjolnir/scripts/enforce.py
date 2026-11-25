@@ -63,6 +63,10 @@ import time
 from pathlib import Path
 from urllib.parse import quote
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import spend as position  # noqa: E402 -- the one reading of where a command is
+
 # What this carrier is, read from this file and declared nowhere else, by schema.md
 # § Whether a project can adopt this procedure at all. ⛔ The class is the hook's own and not
 # the role's: a role's carrier declares itself in its own file, and one script can be both.
@@ -137,11 +141,6 @@ NOT_OPERATIONAL = {"startup_failure", "action_required", "stale"}
 # is the host's (§ 2), so a status nobody here has seen errs towards the check
 # rather than past it.
 IN_FLIGHT = {"queued", "in_progress", "requested", "waiting", "pending"}
-
-# The words that end one command inside a call, so what follows begins another in
-# command position. ⛔ Read as tokens rather than searched for as text: a quoted
-# argument carrying one of them is an argument.
-SEPARATORS = {"&&", "||", "|", ";", "&", "(", ")", "{", "}", "!", "\n"}
 
 # The carrier, and every event an arm here answers. ⛔ Held rather than assumed:
 # an event that stopped being registered leaves the arm dead in every session,
@@ -990,14 +989,14 @@ def merge_guard(config, command: str, *, host=None) -> dict:
 # facet cannot hold, each of them about one commit.
 
 
-def in_command_position(call: str, wanted: str) -> bool:
+def in_command_position(call: str, wanted: str, launchers=()) -> bool:
     """Does this call run `wanted`, as a command rather than as text?
 
     ⛔ **The measured defect this exists for**: a predicate matching the raw
     string took a build slot for a text search whose prose merely contained the
-    build command. So the call is parsed into words, cut at the operators that
-    end one command, and each piece is compared from its first word -- which a
-    quoted argument carrying the same text can never reach.
+    build command. Where a command stands in a call is § 19's one statement of
+    it, read through the parser the sibling guards read, so what a listed
+    launcher runs is read here too.
 
     ⚠️ **A prefix and not an equality.** A flagged form of a command is that
     command, and a project that wants one of those left alone names it in
@@ -1006,23 +1005,18 @@ def in_command_position(call: str, wanted: str) -> bool:
 
     ⛔ **§ 17's whitespace rule is not spelled again here**: both sides are cut
     into words, and runs of whitespace are gone by the time anything is compared.
-    A third statement of that comparison is what this file would otherwise carry.
+    ⚠️ A compound `wanted` stands in no one position, so it matches nothing. ⚠️ And
+    only the outermost position of each segment is compared: a command behind a
+    runner is not read as the mirrored one, in a project listing launchers or not.
     """
-    wanted_words = _words(wanted)
-    if not wanted_words:
+    stated = position.segments(wanted)
+    if len(stated) != 1:
         return False
-    segment: list[str] = []
-    for word in [*_words(call), ";"]:
-        if word in SEPARATORS:
-            # ⛔ A leading assignment is not the command: `FOO=bar a-command` runs
-            # the command, and a segment read from its first word would miss it.
-            while segment and "=" in segment[0] and not segment[0].startswith("="):
-                segment = segment[1:]
-            if segment[:len(wanted_words)] == wanted_words:
-                return True
-            segment = []
-            continue
-        segment.append(word)
+    for segment in position.segments(call, launchers):
+        # A negation stands before a command and is not one.
+        chain = position.command_chain(segment[1:] if segment[0] == "!" else segment)
+        if chain and [chain[0][0], *chain[0][1]][:len(stated[0])] == stated[0]:
+            return True
     return False
 
 
@@ -1305,10 +1299,11 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
         # means the guard is running against one nothing validated. Holding
         # nothing is the open direction, which is this guard's throughout.
         return {}
+    launchers = position.launchers_of(config)
     records = [
         record for record in config.mirrors()
         if record.get("runs_normalised")
-        and in_command_position(command, record["runs_normalised"])
+        and in_command_position(command, record["runs_normalised"], launchers)
         and _call_is_in_the_root(config, record, cwd)
     ]
     if not records:
@@ -1328,7 +1323,7 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
     records.sort(key=lambda r: -len(r["runs_normalised"]))
     exempt = next(
         (entry for entry in stated
-         if isinstance(entry, str) and in_command_position(command, entry)),
+         if isinstance(entry, str) and in_command_position(command, entry, launchers)),
         None,
     )
     if exempt is not None:
@@ -3349,6 +3344,16 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                              runs=[_a_run(status="in_progress", conclusion=None)],
                              jobs=[{"name": "a-job", "status": "in_progress",
                                     "steps": []}])))
+
+        listed = _a_project(A_MIRRORED_RUN)
+        listed.data["command_position"] = {"launchers": [
+            {"command": "a-shell", "string_flags": ["-c"], "operands": "command"}]}
+        check("a mirrored command inside a listed launcher is refused",
+              denied(already("a-shell -c 'a-mirrored-command'", project=listed)))
+        check("and one it only prints is not", not denied(already(
+            "a-shell -c 'a-printing-command a-mirrored-command'", project=listed)))
+        check("and an unlisted launcher's text is not read",
+              not denied(already("a-shell -c 'a-mirrored-command'")))
 
         # --- the two ways a refusal stands down -----------------------------
         out.append("")

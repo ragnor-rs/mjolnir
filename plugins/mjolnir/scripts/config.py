@@ -9257,6 +9257,74 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                     "never refused (§ 19).",
                 ) from None
 
+    # § 19's launchers. ⛔ Permissive again in every refusal: an entry the parse
+    # cannot act on leaves the command inside it read by no guard at all.
+    launchers = _absent_as(_get(data, "command_position.launchers"), [])
+    if not isinstance(launchers, list):
+        raise ConfigError(
+            "command_position.launchers",
+            f"is {launchers!r}; § 19 states it as a list of entries, and absent where "
+            "the project lists no launcher.",
+        )
+    listed: set[str] = set()
+    for index, entry in enumerate(launchers):
+        where = f"command_position.launchers[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}, and has to be a mapping stating the `command` and what "
+                "it runs (§ 19).",
+            )
+        command = entry.get("command")
+        if not isinstance(command, str) or not command.strip():
+            raise ConfigError(
+                f"{where}.command",
+                f"is {command!r}; § 19 states one command per entry, matched against a "
+                "command position.",
+            )
+        if command.strip() in listed:
+            raise ConfigError(
+                f"{where}.command",
+                f"lists {command!r} a second time; § 19 lists one command once, and the "
+                "entry after the first is read by nothing.",
+            )
+        listed.add(command.strip())
+        for key in ("string_flags", "valued_flags"):
+            if key not in entry:
+                continue
+            flags = entry[key]
+            if not isinstance(flags, list) or not flags:
+                raise ConfigError(
+                    f"{where}.{key}",
+                    f"is {flags!r}; § 19 states it as a list of flags, and absent where "
+                    "there is none.",
+                )
+            for at_flag, flag in enumerate(flags):
+                if (
+                    not isinstance(flag, str)
+                    or not flag.startswith("-")
+                    or len(flag.split()) != 1
+                    or flag != flag.strip()
+                ):
+                    raise ConfigError(
+                        f"{where}.{key}[{at_flag}]",
+                        f"is {flag!r}; § 19 states each as one word written with its "
+                        "dashes. Anything else matches no word of any call.",
+                    )
+        operands = entry.get("operands")
+        if "operands" in entry and operands not in ("command", "string"):
+            raise ConfigError(
+                f"{where}.operands",
+                f"is {operands!r}; § 19 states `command` or `string`, and absent where "
+                "its plain words are neither.",
+            )
+        if "string_flags" not in entry and "operands" not in entry:
+            raise ConfigError(
+                where,
+                "states neither `string_flags` nor `operands`, so it launches nothing "
+                "and reads no call (§ 19).",
+            )
+
     # § 19's other key. The bar is compared against a figure the harness states in
     # its own units, so what is refused here is a value that cannot be compared to
     # one. ⚠️ The boolean arm runs first, for the reason § 16's floor states: a
@@ -16996,6 +17064,35 @@ def _planted_violations():
         ("an argument pattern that does not compile, so no call ever matches it",
          "spend_guard.deny[0].args_match",
          _a_denial_of(args_match="--the-paid-tier(")),
+        ("a launcher list that is not a list", "command_position.launchers",
+         at("command_position", {"launchers": "a-launcher"})),
+        ("a launcher that is not a block", "command_position.launchers[0]",
+         at("command_position", {"launchers": ["a-launcher"]})),
+        ("a launcher naming no command", "command_position.launchers[0].command",
+         at("command_position", {"launchers": [{"operands": "command"}]})),
+        ("a launcher listed twice", "command_position.launchers[1].command",
+         at("command_position", {"launchers": [
+             {"command": "a-launcher", "operands": "command"},
+             {"command": "a-launcher", "operands": "string"}]})),
+        ("a string flag written without its dash",
+         "command_position.launchers[0].string_flags[0]",
+         at("command_position", {"launchers": [
+             {"command": "a-launcher", "string_flags": ["c"]}]})),
+        ("a string flag list that is one string",
+         "command_position.launchers[0].string_flags",
+         at("command_position", {"launchers": [
+             {"command": "a-launcher", "string_flags": "-c"}]})),
+        ("a valued flag that is two words",
+         "command_position.launchers[0].valued_flags[0]",
+         at("command_position", {"launchers": [
+             {"command": "a-launcher", "operands": "command",
+              "valued_flags": ["-o a-value"]}]})),
+        ("an operand reading the surface does not state",
+         "command_position.launchers[0].operands",
+         at("command_position", {"launchers": [
+             {"command": "a-launcher", "operands": "script"}]})),
+        ("a launcher that launches nothing", "command_position.launchers[0]",
+         at("command_position", {"launchers": [{"command": "a-launcher"}]})),
         ("a resume bar written as a flag, which reads as a price",
          "spend_guard.resume_bar_usd", at("spend_guard.resume_bar_usd", True)),
         ("a resume bar that is no price at all", "spend_guard.resume_bar_usd",

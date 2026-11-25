@@ -244,10 +244,11 @@ def exempt(config, command: str) -> str | None:
     the one role § 22 names as its reason could not be exempted at all.
     """
     stated = never_bound(config)
-    if not stated or not position.readable(command):
+    launchers = position.launchers_of(config)
+    if not stated or not position.readable(command, launchers):
         return None
-    for segment in position.segments(command):
-        for called, arguments in position.command_chain(segment):
+    for segment in position.segments(command, launchers):
+        for called, arguments in position.command_chain(segment, launchers):
             for entry in stated:
                 configured = entry.get("command")
                 if not isinstance(configured, str) or not _names(called, configured):
@@ -309,7 +310,7 @@ def is_the_form(command: str, instead) -> bool:
     return " ".join(command.split()) == " ".join(instead.split())
 
 
-def one_command(command: str) -> bool:
+def one_command(command: str, launchers=()) -> bool:
     """Whether this call is one command, which is the only call a rewrite is made on.
 
     ⛔ The rule is § 22's and the test is conservative on purpose: a call whose
@@ -320,14 +321,16 @@ def one_command(command: str) -> bool:
     a separator or a substitution each drop or add tokens, and the comparison
     catches all four without naming any of them.
     """
-    if not position.readable(command):
+    if not position.readable(command, launchers):
         return False
     if len(position.calls(command)) != 1:
         return False
-    found = position.segments(command)
+    # ⛔ A command inside a listed launcher is a segment of its own, so such a call
+    # is refused rather than rewritten: appended text reaches the launcher.
+    found = position.segments(command, launchers)
     if len(found) != 1:
         return False
-    if len(position.command_chain(found[0])) != 1:
+    if len(position.command_chain(found[0], launchers)) != 1:
         return False
     if END_OF_FLAGS in found[0]:
         # ⛔ Past the end-of-flags marker a word is an operand, so a bound
@@ -359,7 +362,8 @@ def holds(config, command: str) -> list[dict]:
     reports it instead.
     """
     stated = entries(config)
-    if not stated or not position.readable(command):
+    launchers = position.launchers_of(config)
+    if not stated or not position.readable(command, launchers):
         return []
     # ⛔ Against **every** entry's form and not only the matched one: a project
     # whose entries chain — one command's bounded form running a second command
@@ -368,8 +372,8 @@ def holds(config, command: str) -> list[dict]:
     if any(is_the_form(command, entry.get("instead")) for entry in stated):
         return []
     found = []
-    for at, segment in enumerate(position.segments(command), start=1):
-        for called, arguments in position.command_chain(segment):
+    for at, segment in enumerate(position.segments(command, launchers), start=1):
+        for called, arguments in position.command_chain(segment, launchers):
             if _is_exempt(config, called, arguments):
                 continue
             for entry in stated:
@@ -445,7 +449,7 @@ def bound_guard(config, command: str, tool_input: dict) -> dict:
     """Refuse an unbounded call, rewrite one a flag bounds, or answer nothing."""
     if not entries(config):
         return {}
-    if not position.readable(command):
+    if not position.readable(command, position.launchers_of(config)):
         return _held_to_nothing(UNPARSEABLE)
     # ⛔ The exemption is **not** read per call here, which it was: one exempt
     # command anywhere in a compound spared every unbounded command beside it, so
@@ -460,7 +464,7 @@ def bound_guard(config, command: str, tool_input: dict) -> dict:
     # and it is reached only where the whole call is one command and one entry
     # states a bound for it. Every other shape is refused, which is § 7's safe
     # direction for the one judgement this facet makes two ways.
-    if len(found) == 1 and one_command(command):
+    if len(found) == 1 and one_command(command, position.launchers_of(config)):
         bound = found[0]["entry"].get("bound")
         if isinstance(bound, str) and bound.strip():
             rewritten = f"{command.rstrip()} {bound.strip()}"
@@ -805,7 +809,8 @@ def result_curb(config, command: str, response) -> dict:
     # measurement replaced on a fact nothing established. Found by review on this
     # change.
     if never_bound(config) and command.strip() and (
-        not position.readable(command) or exempt(config, command) is not None
+        not position.readable(command, position.launchers_of(config))
+        or exempt(config, command) is not None
     ):
         return {}
     text = text_of(response)
@@ -1266,6 +1271,23 @@ def self_test() -> int:  # noqa: PLR0912, PLR0915 -- one assertion per rule, rea
         for command in (UNBOUNDED_COMMAND, f"sudo {UNBOUNDED_COMMAND}", "any-command-at-all"):
             answered = guard_answer(_call(command), config=nothing)
             check(f"no answer for: {command[:56]}", answered == {}, repr(answered)[:120])
+
+        out.append("")
+        out.append("What a listed launcher runs is read:")
+        for label, project in (("a form", forms), ("a bound", bounds)):
+            inside = f"a-shell -c '{UNBOUNDED_COMMAND} x'"
+            check(f"unlisted, with {label}: no answer",
+                  guard_answer(_call(inside), config=project) == {})
+            project.data["command_position"] = {"launchers": [
+                {"command": "a-shell", "string_flags": ["-c"], "operands": "command"}]}
+            answered = guard_answer(_call(inside), config=project)
+            check(f"listed, with {label}: refused and never rewritten",
+                  decision(answered) == "deny" and not rewritten(answered),
+                  repr(answered)[:140])
+            check(f"and one it only prints is not, with {label}", guard_answer(
+                _call(f"a-shell -c 'a-printing-command {UNBOUNDED_COMMAND}'"),
+                config=project) == {})
+            del project.data["command_position"]
 
         # ⛔ The lists themselves, which are a surface nothing else holds: a shape
         # that lost its placeholder, a rewrite shape that is not one command, or

@@ -292,6 +292,11 @@ spend_guard:
   # nothing to guard — and `[]` is what says that was decided rather than never asked.
   deny: []
 
+# No launcher is listed, so a call is read by its own command positions and nothing handed to a shell
+# as a string is read.
+command_position:
+  launchers: []
+
 live_guard:
   # Empty for the same reason, one guard over: the mapped role reads this machine and writes a file
   # on it, so no command it runs opens a session anywhere else. ⛔ And no `allowlist`: the key is

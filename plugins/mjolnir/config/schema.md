@@ -5349,8 +5349,10 @@ fix in one package and a pure check in another, and the paid suites its host nev
 ⛔ **The match is on the command's position and never on the text of the call.** A call whose
 *prose* carries a guarded command — a search for it, a message naming it — runs something else, and
 a predicate matching the raw string took a build slot for a text search. ⚠️ **The comparison itself
-is § 17's**, the command as both sides wrote it with only its runs of whitespace normalised; what
-this section adds is where in the call it has to appear.
+is § 17's**, the command as both sides wrote it with only its runs of whitespace normalised, and
+where in the call it has to appear is
+[§ 19's](#the-command-position-and-why-the-whole-call-is-not-one), read at the outermost position of
+each segment: a command behind a wrapper is not read as the mirrored one.
 
 ⛔ **`escape` is a variable's name and never a value** ([§ 14](#what-the-shell-inherits-is-a-list-of-names)),
 and what stands the refusal down is the person setting it to a reason. A blank value is not an
@@ -5462,8 +5464,9 @@ was meant, and a report that names the wrong one is worse than none.
 
 ⚠️ **What it does not reach is stated here rather than discovered.** A paid command invoked through
 an interpreter stands in no command position of its own — the interpreter does, and the paid script
-is its argument — so a project that invokes one that way states that spelling as an entry of its
-own. ⛔ **The toolkit names no interpreter**, by
+is its argument — so a project that invokes one that way lists it as a launcher, by
+[the subsection below](#the-launchers-a-project-lists-and-what-each-one-runs), or states that
+spelling as an entry of its own. ⛔ **The toolkit names no interpreter**, by
 [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls): a list
 of them here would be the stack entering the toolkit one token at a time, and the first project
 writing one in another language would be the one it was wrong about.
@@ -5486,6 +5489,42 @@ is cut to a length**, because a refusal interpolates the project's own stated va
 long scalar is not a message, whatever the cadence, and the cut takes the explanation rather than
 the key at the head of it. ⚠️ **How often that answer is sent is the subsection below**, and it is
 not *every call*.
+
+### The launchers a project lists, and what each one runs
+
+```yaml
+command_position:            # absent, or an empty list, where the project lists no launcher
+  launchers:
+    - command: "<a command that runs what it is handed as a command>"
+      string_flags: ["<a flag of it whose value is a command text>"]
+      valued_flags: ["<a flag of it whose value is a separate word and no command>"]
+      operands: command | string   # absent where its plain words are neither
+```
+
+⛔ **A listed launcher's command text is read as a call of its own, and every guard that reads a
+command position reads it.** The separators, the wrappers, the substitutions and the launchers
+inside it are resolved by the subsection above, so a refusal names the inner command and a string
+that only prints or searches for a command is still no call of it. ⛔ **A project that lists none is
+read exactly as the subsection above states**, and the toolkit lists none on anybody's behalf.
+
+- ⛔ **`command` is what stands in the command position**, compared as a deny entry's own `command`
+  is. It is written on every entry, and so is at least one of `string_flags` and `operands` — an
+  entry stating neither launches nothing. One command is listed once.
+- **`string_flags` names each flag whose value is a command text, as it is written in a call.** ⚠️ A
+  cluster is a flag of its own: a shell's option joined to its login option is another word, and a
+  project that writes both lists both. A flag standing between this one and the text is stepped
+  over.
+- **`valued_flags` names the flags whose value is a separate word**, so that value is never read as
+  what the launcher runs.
+- **`operands` states what the plain words are** where no string flag is given: `command` where they
+  are a command and its arguments — a script file, a command a tool runs — and `string` where they
+  are joined by single spaces and read as a command text, which is what an evaluator does.
+
+⚠️ **A launcher inside a launcher is read, to sixteen deep**, and nothing below that is. ⚠️ **What
+stays out of reach**: a text the shell would resolve and this parse cannot — an expansion handed to
+a launcher — a text arriving on standard input, and the commands *inside* a script file, whose
+position is read and whose body is not. ⚠️ **A call whose inner text cannot be parsed is an
+unparseable call**, in the direction each guard already takes for one.
 
 ### How often a configuration that does not resolve is reported
 

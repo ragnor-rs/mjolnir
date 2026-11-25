@@ -616,6 +616,11 @@ spend_guard:
   # this ask reaches, and they run it deliberately rather than rarely.
   approval: per_invocation
 
+# No launcher is listed, so a call is read by its own command positions and nothing handed to a shell
+# as a string is read.
+command_position:
+  launchers: []
+
 live_guard:
   # The simplest shape this facet has: one command that opens a session, named, with no flag list
   # beside it because the form this project writes carries the machine as its first word.
