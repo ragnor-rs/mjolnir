@@ -8283,6 +8283,24 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
             "this is readable by a person and by nothing shipped (§ 10).",
         )
 
+    # § 10. The command a removal runs first. ⛔ Absent is the ordinary answer and
+    # is never refused; what is refused is a value that reads as one and runs
+    # nothing.
+    teardown = _get(data, "branch_model.teardown")
+    if teardown is not None:
+        if not isinstance(teardown, str) or not teardown.strip():
+            raise ConfigError(
+                "branch_model.teardown",
+                f"is {teardown!r}; it is a command, or `null` where this project has "
+                "nothing to take down (§ 10). An empty one exits zero, so every removal "
+                "would report a teardown that ran.",
+            )
+        if _get(data, "branch_model.kind") != "worktree":
+            raise ConfigError(
+                "branch_model.teardown",
+                "is stated where no tree is ever cut, so no removal runs it (§ 10).",
+            )
+
     # § 10. What a rebuild writes again, which is the only half of the pruning
     # oracle a project states. ⛔ Whether the key is *written* is the surface's
     # `# required_when` marker and not a rule here; what is held here is its
@@ -16783,6 +16801,10 @@ def _planted_violations():
          "branch_model.exclusive_resources[0].probe", _a_resource_of(probe="   ")),
         ("a probe that is no command at all", "branch_model.exclusive_resources[0].probe",
          _a_resource_of(probe=["a-command-that-counts-them"])),
+        ("a teardown written blank, which exits zero having taken nothing down",
+         "branch_model.teardown", at("branch_model.teardown", "   ")),
+        ("a teardown that is no command at all", "branch_model.teardown",
+         at("branch_model.teardown", ["a-command"])),
         # ⚠️ Both of these refuse in the permissive direction, which is why each
         # has a plant of its own: a list written as one path exempts nothing and
         # an entry that names nothing exempts nothing, and in either case the
