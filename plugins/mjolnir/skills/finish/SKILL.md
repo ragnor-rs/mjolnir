@@ -650,7 +650,10 @@ contains those digits answers a search for a different item entirely. Where a si
 
 What is released once the work has landed is [`§ 10`](../../config/schema.md#10-branch-model)'s,
 and a project's own setup and teardown are its `mechanics` pointer — ⛔ **named here, never
-absorbed.** Where it is null there is nothing to run, and that is an answer.
+absorbed.** Where it is null there is nothing to run, and that is an answer. ⛔ **Where the project
+states a `teardown`, the release below runs it and this role does not**
+([`§ 10`](../../config/schema.md#the-teardown-a-removal-runs-first)): one that failed fails the
+command with the claim whole, and the reply carries its reason.
 
 ⛔ **Confirm the landing from the host before removing anything**, per step 8 above — the tree and
 the branch are the only copies of the work until the merge is read back. ⚠️ **What this step
