@@ -2107,9 +2107,9 @@ What the corpus is scoped to, and what that scope costs, is the next subsection'
   not `Bash`, or a value already in the clipboard are all outside what either can see.
 - **A credential shaped exactly like a field path.** A leading dot and segments of letters and
   underscores only is what a query's filter writes, so a passphrase of dotted words with a dot in
-  front passes under any key. A digit, a hyphen or an absent leading dot is enough to be refused,
-  and each is planted on the red side. A path reaching a field whose name carries a digit is
-  therefore still read as a value.
+  front passes under any key. A digit, a hyphen, an absent leading dot or punctuation a filter does
+  not put after a path is enough to be refused. A path reaching a field whose name carries a digit
+  is therefore still read as a value.
 - **Which way every call goes.** The direction a refusal names is read from the host client's own
   verbs and methods and from `curl`'s flags. Another tool, an unlisted verb, a query held in a file
   and a call inside an expansion are reported with no direction rather than a guessed one.

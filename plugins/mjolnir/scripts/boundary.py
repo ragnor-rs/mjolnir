@@ -269,8 +269,12 @@ REFERENCE = re.compile(r"^(?:\$\{?[A-Za-z_][\w]*\}?|%[A-Za-z_][\w]*%|\$\(.*\))$"
 # ⛔ The leading dot is required and a digit is refused in any segment, which is the
 # whole of what keeps this from passing a generated value: `aB3xQ9z` behind a dot is
 # still refused, and so is a dotted host name, having no leading dot.
+# ⛔ And the path has to end where the text does or at what a filter puts after one: a
+# value is matched up to the first character outside its class, so a path read alone
+# would also be the first half of a passphrase.
 _PATH = r"(?:\.[A-Za-z_]{1,40})+"
-SELECTOR = re.compile(rf"^{_PATH}(?://{_PATH})*/{{0,2}}$")
+SELECTOR = re.compile(rf"^{_PATH}(?://{_PATH})*$")
+SELECTOR_ENDS = re.compile(r"""[\s,;|)\]}\[?"'`]|$""")
 
 # A value that stands in for one. ⚠️ Decided word by word rather than by one
 # alternation of whole strings: the forms a person actually writes compose
@@ -484,7 +488,9 @@ def credentials(text: str) -> list[str]:
             )
     for match in ASSIGNED.finditer(text):
         value = match.group("value")
-        if REFERENCE.match(value) or SELECTOR.match(value) or stands_in(value):
+        if REFERENCE.match(value) or stands_in(value):
+            continue
+        if SELECTOR.match(value) and SELECTOR_ENDS.match(text, match.end("value")):
             continue
         # A shape the list above already named is one finding, not two.
         if any(p.search(match.group(0)) for p, _ in CREDENTIALS):
@@ -1069,6 +1075,10 @@ def _plants_that_redden() -> list[tuple[str, str, object]]:
          "auth_key: ." + _token("", "aB3xQ9z", 24)),
         ("write", "a field path with a generated segment in it",
          "api_token: .data." + _token("", "r7Kp2mQ", 20)),
+        ("write", "a passphrase whose first half is spelled like a field path",
+         "password: ." + "correcthorsebat" + "$9xQ7\n"),
+        ("write", "a selector with a quoted literal joined to it",
+         "api_token: .data.value//'" + _token("", "aB3xQ9z", 24) + "'"),
         ("write", "dotted words with no leading dot",
          "password: " + ".".join(["correct", "horse", "battery"])),
         ("write", "a selector with a literal joined to it",
