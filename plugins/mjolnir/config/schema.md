@@ -6445,6 +6445,9 @@ nothing inside a store it must not guess at, and all three under `none`, because
 A key naming a file nothing opens is a key read by nothing while reading as a store somebody
 pinned — which is the defect every marker on this surface exists to remove.
 
+⚠️ **A `store` naming a folder the harness derived is reported**, by
+[§ 40](#a-directory-that-outlives-a-checkout-and-the-two-ways-one-goes-missing)'s rule.
+
 ### `write_from`, and the pair of outcomes a refusal is one half of
 
 - **`main_tree`** — the third runs from the shared checkout alone. ⛔ **Run from a tree it refuses,
@@ -6721,6 +6724,9 @@ configuration addresses one store per item, `read_day` answers *not recorded* fo
 beside it holds, and the rule above has the role record that day a second time. ⛔ **A variable the
 role's own environment does not set is refused with the variable named**, rather than written into
 the path: an unset name is a store with no address, never a directory of that name.
+
+⚠️ **A directory the agent harness derived from a checkout's path is reported**, by
+[§ 40](#a-directory-that-outlives-a-checkout-and-the-two-ways-one-goes-missing)'s rule.
 
 ⚠️ **What the entry carries is held to what the kind can read back.** § 9 fixes the two values; a
 kind that writes a figure it cannot parse again has recorded a day and permanently cannot answer
@@ -9433,6 +9439,43 @@ reason:**
   `document` carrier's rather than the facet's**: a project that could reword it would be a project
   whose ordering the shared role cannot read, which is the one thing the carrier is for. It is
   stated with the carrier's implementation, where the parser is.
+
+### A directory that outlives a checkout, and the two ways one goes missing
+
+⛔ **A configured directory that outlives a checkout is addressed by nothing a checkout decides.**
+The agent harness keeps a store per project, in a folder whose name encodes the whole path of one
+checkout, the account included — so a moved or renamed checkout, a tree, another account and another
+machine each derive a different folder, and a literal copied from one of them goes stale with
+nothing announcing it. ⚠️ **The keys this binds are `ordering.record.dir`, `memory.store` and
+`day_log.destination.out_dir`**: what each addresses is read by a pass no checkout here outlives.
+
+⛔ **A value inside that store is reported, and not refused.** The reader names the key, why the
+value goes stale and what to write instead, beside what it reports as unavailable, where every role
+reads it. ⛔ **The report names the key and never the value**, by
+[§ 28](#28-a-configured-value-a-repository-may-not-hold). ⚠️ **A project whose memory is meant to be
+the harness's own states [§ 25](#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)'s
+`derived`**, which is that fact without a path.
+
+⛔ **It is recognised and never composed**, for the reason § 25 gives for composing no store:
+
+| what is recognised | how |
+|---|---|
+| the form | the harness's configuration directory, its per-project store, and a folder named for an absolute path — a leading `-`, or a drive letter and two. ⚠️ Under any account's home, which is what reaches a value written on another machine |
+| the harness's own root | anything inside that store, where the environment states a relocated configuration directory |
+
+Both are asked of the value as written and of what it resolves to.
+
+⛔ **An absent directory and an absent document are two answers with two remedies.** A directory that
+is not there stops the pass under either carrier, naming the key and what it resolved to, and saying
+that the record may exist elsewhere: the remedy is to check the value. A document absent from a
+directory that is there is an ordering that does not exist yet, and the remedy is the bootstrap.
+⛔ **A directory that could not be asked about is neither**, and stops as unestablished.
+⚠️ **Absence alone does not refuse the bootstrap**, a first adoption having no directory either: it
+says that the directory is missing before it reports a layer, and creates nothing.
+
+⚠️ **What [the asking step](#what-a-project-is-asked-and-the-one-file-the-answers-are-written-into)
+offers for these keys is under `~` and named by the code host's repository**, so it carries neither
+an account nor a checkout's path. ⛔ An offer and not a default: silence does not take it.
 
 ### An ordering that does not exist yet, and the one act that is the person's
 

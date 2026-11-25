@@ -468,6 +468,62 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
             f"exit {code}, wrote {made.wrote!r}: {said}",
         )
 
+    # --- a directory that is missing, and one the harness derived (§ 40) -----
+    for carrier, more, value in (
+        (close_out.A_DOCUMENT, {"document": "the-order.md"}, []),
+        (close_out.A_GROUPING, {}, ["--in", "a time box"]),
+    ):
+        with tempfile.TemporaryDirectory() as store:
+            gone = os.path.join(store, "not-there")
+            configuration = _configuration(carrier, gone, **more)
+            an_item = _items_of(configuration)
+            live = [an_item(FIRST), an_item(SECOND)]
+            for mode in ([], ["--stamp"]):
+                code, said = _ran(configuration, _Tracker(live), [*mode, *value])
+                check(
+                    f"a missing directory stops a {carrier} pass {mode}, naming it and the key",
+                    code == 2 and close_out.DIR in said and gone in said
+                    and "may exist elsewhere" in said and "does not exist yet" not in said
+                    and not os.path.exists(gone),
+                    f"exit {code}: {said}",
+                )
+            blocked = _Tracker(live, blockers={SECOND: [FIRST]})
+            code, said = _ran(configuration, blocked, ["--bootstrap", *value])
+            check(
+                f"--bootstrap on a missing directory says so before any layer ({carrier})",
+                code == 1 and "DIRECTORY MISSING" in said and "layers               : 2" in said
+                and said.index("DIRECTORY MISSING") < said.index("layers  ")
+                and not os.path.exists(gone),
+                f"exit {code}: {said}",
+            )
+            # A file where the directory should be is neither answer.
+            with open(gone, "w", encoding="utf-8"):
+                pass
+            code, said = _ran(configuration, _Tracker(live), ["--bootstrap", *value])
+            check(
+                f"a directory that is a file is neither missing nor there ({carrier})",
+                code == 2 and "not a directory" in said,
+                f"exit {code}: {said}",
+            )
+    with tempfile.TemporaryDirectory() as store:
+        for label, parts, reported in (
+            ("under the harness's store", (".claude", "projects", "-a-checkout"), True),
+            ("outside it", ("state", "a-project"), False),
+        ):
+            where = os.path.join(store, *parts)
+            os.makedirs(where)
+            configuration = _configuration(close_out.A_DOCUMENT, where, document="the-order.md")
+            an_item = _items_of(configuration)
+            _a_record(os.path.join(where, "the-order.md"), [("1", f"#{FIRST}")])
+            code, said = _ran(configuration, _Tracker([an_item(FIRST)]), [])
+            check(
+                f"a directory {label} {'is' if reported else 'is not'} reported as derived",
+                code == 0 and reported == (
+                    close_out.DIR in said and "goes stale" in said and
+                    config.offered_directory(close_out.DIR, None) in said),
+                f"exit {code}: {said}",
+            )
+
     # --- the grouping carrier ------------------------------------------------
     with tempfile.TemporaryDirectory() as store:
         configuration = _configuration(close_out.A_GROUPING, store)
