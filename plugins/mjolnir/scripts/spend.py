@@ -440,18 +440,26 @@ def launched_texts(command: str, launchers=()) -> list[str]:
     return _read_call(command, launchers)[1]
 
 
-def _read_call(command: str, launchers, depth: int = 0) -> tuple[list[list[str]], list[str]]:
+def _read_call(command: str, launchers, depth: int = 0,
+               seen: set | None = None) -> tuple[list[list[str]], list[str]]:
     found: list[list[str]] = []
     texts: list[str] = []
     for call in calls(command):
         for segment in _segments_of(call):
             if segment:
-                _expand(segment, launchers, depth, found, texts)
+                _expand(segment, launchers, depth, found, texts,
+                        set() if seen is None else seen)
     return found, texts
 
 
-def _expand(segment, launchers, depth, found, texts) -> None:
-    """Put one segment, and whatever its launchers run, onto the two lists."""
+def _expand(segment, launchers, depth, found, texts, seen) -> None:
+    """Put one segment, and whatever its launchers run, onto the two lists.
+
+    ⛔ What is already read inside one segment of the call is not read again. One
+    segment has several command positions and each may be a launcher of the same
+    tail, so without it the reading doubles at every one and a guard that never
+    answers is a guard the harness proceeds past.
+    """
     found.append(segment)
     if not launchers or depth >= LAUNCHER_DEPTH:
         return
@@ -463,12 +471,15 @@ def _expand(segment, launchers, depth, found, texts) -> None:
             text, inner = _launched(arguments, entry)
             if text is not None:
                 text = ESCAPED_EXPANSION.sub(r"\1", text)
-                texts.append(text)
-                more, deeper = _read_call(text, launchers, depth + 1)
-                found.extend(more)
-                texts.extend(deeper)
-            elif inner:
-                _expand(inner, launchers, depth + 1, found, texts)
+                if text not in seen:
+                    seen.add(text)
+                    texts.append(text)
+                    more, deeper = _read_call(text, launchers, depth + 1, seen)
+                    found.extend(more)
+                    texts.extend(deeper)
+            elif inner and tuple(inner) not in seen:
+                seen.add(tuple(inner))
+                _expand(inner, launchers, depth + 1, found, texts, seen)
             # ⛔ One entry answers for one position: a second entry naming the
             # same command would report one inner command twice.
             break
@@ -567,12 +578,14 @@ def command_chain(segment: list[str], launchers=()) -> list[tuple[str, list[str]
             # rather than reading further words, which is the whole positional
             # rule. What is still read is a flag whose value is a command: the
             # one way a command stands behind something that is not a runner.
+            owner = token
             for at in range(index + 1, len(segment) - 1):
                 # ⛔ Not where a listed launcher reads it, or one inner command is
                 # reported twice: once as a word here and once from its own text.
                 if segment[at] in COMMAND_FLAGS and not _reads_its_flag(
-                        token, segment[at], launchers):
+                        owner, segment[at], launchers):
                     out.append((segment[at + 1], list(segment[at + 2:])))
+                    owner = segment[at + 1]
             return out
         flags, positionals = runner
         index += 1
@@ -1394,6 +1407,13 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     unclosed = 'a-shell -c "a \'b"'
     check("an inner text nothing closes is unreadable, and the outer one alone is not",
           not readable(unclosed, launchers_of(listing)) and readable(unclosed))
+    once = reason(guard_answer(_call(f"a-search -exec a-shell -c {paid} ;"), config=listing))
+    check("a launcher behind a command-valued flag is reported once",
+          once.count("\n  segment ") == 1, once[:300])
+    wide = [segment for segment in segments(
+        "a-search" + " -exec a-shell" * 12 + f" {paid}", launchers_of(listing))]
+    check("a tail several positions launch is read once each, not once per route",
+          len(wide) <= 40, f"{len(wide)} segments")
     deep = "a-shell " * (LAUNCHER_DEPTH + 3000) + paid
     check("a call built past the stated depth ends rather than raising",
           guard_answer(_call(deep), config=listing) == {})
