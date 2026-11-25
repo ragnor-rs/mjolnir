@@ -326,6 +326,10 @@ branch_model:
       subject: tree
       claimed_by: "<what the command that boots the instance is matched against>"
       probe: "<prints how many instances are up>"
+      # An instance is in the probe's count within a minute of launch, and past that its lease is
+      # not added to the count a second time.
+      grace: 60
+      probe_timeout: 5
       ttl: 1800
     - name: "<the build daemon's slots>"
       cap: 2

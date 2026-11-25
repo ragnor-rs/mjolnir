@@ -752,6 +752,13 @@ ANSWERED_BY: dict[str, Answer] = {
         "Can the resource be asked how many are held? ⚠️ A resource that cannot "
         "is not a resource whose count is zero.",
     ),
+    "branch_model.exclusive_resources.grace": ask(
+        "How many seconds after a launch does the resource's own count include it? ⚠️ "
+        "Unstated, every live lease is added to that count.",
+    ),
+    "branch_model.exclusive_resources.probe_timeout": ask(
+        "How many seconds may asking the resource take?",
+    ),
     "branch_model.exclusive_resources.ttl": ask(
         "How long does a place live before it is handed back? ⚠️ A long value is "
         "the unsafe direction here, which is the opposite of how a timeout reads.",

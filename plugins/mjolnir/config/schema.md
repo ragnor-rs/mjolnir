@@ -389,7 +389,8 @@ here rather than in the role that carries it.** ⛔ **Two legs read that state**
 reaches it and the one entered on it — so a definition written in either role's own text would be a
 second authority for the other, which is the division this section already makes for finishing and
 reviewing. ⛔ **Implemented** is therefore stated here: **the item's own stated acceptance condition
-is answered in the tree, and nothing that condition raised is waiting on a person.** ⚠️ **It is not
+is answered in the tree, and nothing that condition raised is waiting on a person.** What that
+condition is written as is [below](#what-an-acceptance-condition-is-written-as). ⚠️ **It is not
 the diff looking finished** — an item whose condition nobody can answer yet has not reached this
 state, and the session says so rather than continuing. ⚠️ **Where the item
 states no such condition**, which §4.4 makes a legitimate configuration, that is reported as
@@ -603,6 +604,45 @@ figure in them stale and every standing fact in them already argued in a row of 
 ⛔ **`audit_trail` is the key this surface will never declare.** A rule that is procedure everywhere
 is the rule an adopting project is likeliest to reach for a switch on, and a key accepted in silence
 is the rule gone with nothing refusing it.
+
+### What an acceptance condition is written as
+
+⛔ **An acceptance condition states the failure being prevented, never an absolute.** An absolute —
+*every*, *all*, *never*, or a wording read as one of them — is wider than the failure somebody
+wanted gone, and nothing in the sentence says which part of it was meant.
+
+**What that costs arrives later.** The wording outlives the reasoning that produced it and becomes
+what a later measurement is taken against. ⚠️ **Measured where it cost something**: a condition
+asked that a listing return the entries *other* than the dominant one, which reads as *all of
+them*; the goal was that one entry cannot crowd out the rest. The change that landed capped each
+entry's share, so only some of the others could ever show — and a session that measured the
+wording called the merged change defective and proposed undoing the cap. ⛔ **The condition was
+wrong and the code was right**, which is the direction that gets this backwards: a strict wording
+looks like the safer one to write, and what it produces is correct work reported as failing its own
+criterion.
+
+⛔ **It is not a licence to read a condition down.** A leg that finds the wording and the failure
+apart says so and asks, by [*Nothing is deferred*](#nothing-is-deferred), and the item is rewritten
+by whoever may rewrite it. A reader who decided alone that an unmet condition meant something
+narrower would be the same defect pointed the other way.
+
+⚠️ **The form is stated and the wording is not.** No heading, language or template text comes from
+here, the heading half being [§ 4.4](#44-template)'s. Whether a sentence is *present*, and whether
+anybody can answer it yet, are other rules' questions; so is how much of a condition a check can
+decide, since a condition answered half by a machine and half by a person is phrased under this
+rule whichever half reads it.
+
+⚠️ **Nothing decides this rule, which is its boundary rather than an omission.** Whether a sentence
+names a failure or an absolute is a reading and not a computation: the same word is an absolute in
+one condition and the failure itself in another — *no credential is written to the log* is both
+strict and exactly what is being prevented. So no `readiness:` predicate and no `done:` check is
+answered out of it, and no gate refuses an item by it. What it binds is whoever writes an item and
+whoever reads one.
+
+⛔ **Procedure, and no key on this surface carries it**: a project supplies no value for it, which
+is the test
+[§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) states.
+It stands here rather than in a role's text because several legs read the one sentence.
 
 ### What earns a test, and what makes its red believable
 
@@ -2134,6 +2174,10 @@ The procedure names the **semantic** sections it depends on — `outcome`, `acce
 heading text, and its language, out of the procedure while letting the procedure still check a
 section is present and tick its items later.
 
+**How the acceptance section's content is phrased is no part of this key**:
+[§ What an acceptance condition is written as](#what-an-acceptance-condition-is-written-as) states
+the form, and it holds where no template is carried too.
+
 ⚠️ **`sections` is declared once for the project rather than once per template**, so every file
 `by_type` names gives one semantic section the same heading. What differs between two templates is
 therefore **which** of those sections each one carries — a reproduction on the defect template and
@@ -3088,6 +3132,12 @@ project: a build started outside the loop holds the resource with no lease, whil
 holds a lease the resource does not report yet, and reading the two as a maximum let a third
 through a cap of two.
 
+⛔ **A lease is too young while it is no older than the resource's `grace`**
+([§ 10](#exclusive-resources)), and past that its holder is left to the probe's count, so one that
+both report counts once. ⚠️ **A lease left out of the sum still holds its place**: a call under its
+key takes no second one, and what releases it is unchanged. Where no `grace` is stated, every live
+lease is too young.
+
 ⛔ **`probe: null` is that key's stated absence, and then the leases are the whole of the count.**
 A project whose resource can be asked how many are held and one whose resource cannot are both
 ordinary, and the second is not a project whose count is zero.
@@ -4036,10 +4086,10 @@ named.
 
 A resource the trees cannot all help themselves to — a local service stack, a build daemon's
 slots, a machine-wide lock. How many may be held at once is `cap`, and what holds a place is
-`subject`, so neither "one" nor "a tree" is built into the facet. ⛔ **Every key of an entry is
-stated and none of them is defaulted**, because every one of them is a measurement of the resource
-rather than a preference about it, and a default here would be the procedure describing somebody
-else's machine:
+`subject`, so neither "one" nor "a tree" is built into the facet. ⛔ **Every key of an entry but
+`grace` and `probe_timeout` is stated and none of them is defaulted**, because every one of them is
+a measurement of the resource rather than a preference about it, and a default here would be the
+procedure describing somebody else's machine:
 
 ```yaml
 branch_model:
@@ -4049,6 +4099,8 @@ branch_model:
       subject:    tree | call
       claimed_by: "<what the command a call runs is matched against>"
       probe:      "<prints how many are held right now, as one number on one line>"
+      grace:      60             # seconds; may be left unwritten
+      probe_timeout: 5           # seconds; may be left unwritten
       ttl:        1800
 ```
 
@@ -4068,6 +4120,13 @@ branch_model:
   procedure cannot answer about somebody else's resource. ⛔ **`null` is a stated absence**, not a
   count of zero, and what each value leaves the arithmetic as is
   [§ 7](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)'s.
+- **`grace`** — the seconds after which the probe is taken to have seen a lease's holder, from one
+  to that entry's `ttl`. Unwritten, every live lease is added to the probe's count. ⛔ **Refused
+  beside `probe: null`**, there being no count for it to qualify.
+- **`probe_timeout`** — the seconds the probe may run before its count is unestablished, at most
+  eight, the guard's own budget being shared by every probe one call reaches and its other reads.
+  Unwritten, the guard's own limit applies.
+  ⛔ **Refused beside `probe: null`**, for the same reason.
 - **`ttl`** — the seconds a lease counts for before it expires, which bounds what one leaked lease
   costs. ⚠️ **It is not a timeout on the work**: the work is not watched, and nothing here stops
   anything.
@@ -4095,7 +4154,8 @@ is not configuration here:
 [§ 7 → A lease on an exclusive resource](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
 is where it is stated, along with how the count is read and what releases a place. This facet
 states what is exclusive, how many of it there are, what holds a place, which calls put it at
-stake, what can be asked how many are held, and how long a lease counts.
+stake, what can be asked how many are held and for how long, when that answer covers a lease's
+holder, and how long a lease counts.
 
 ### Pruning a tree whose branch has landed
 
