@@ -8191,7 +8191,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                         f"{at}.{key}",
                         f"is {value!r}; it is a whole number of seconds from one to {most} "
                         "(§ 10). A grace past the lease's lifetime leaves no lease out, and a "
-                        "probe outlasting the guard's own budget ends the guard.",
+                        "probe shares the guard's own budget with every other read it makes.",
                     )
             try:
                 re.compile(str(entry["claimed_by"]))

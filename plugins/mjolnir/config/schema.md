@@ -4078,7 +4078,8 @@ branch_model:
   to that entry's `ttl`. Unwritten, every live lease is added to the probe's count. ⛔ **Refused
   beside `probe: null`**, there being no count for it to qualify.
 - **`probe_timeout`** — the seconds the probe may run before its count is unestablished, at most
-  eight so that it stays inside the guard's own budget. Unwritten, the guard's own limit applies.
+  eight, the guard's own budget being shared by every probe one call reaches and its other reads.
+  Unwritten, the guard's own limit applies.
   ⛔ **Refused beside `probe: null`**, for the same reason.
 - **`ttl`** — the seconds a lease counts for before it expires, which bounds what one leaked lease
   costs. ⚠️ **It is not a timeout on the work**: the work is not watched, and nothing here stops
