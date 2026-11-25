@@ -70,6 +70,7 @@ COVERED = {
     "advance_on_merge",
     "assign",
     "comment",
+    "read_comments",
     "item_number",
     "link_for_close",
     "set_labels",
@@ -156,6 +157,8 @@ class _Host:
                 raise HostUnavailable(f"this suite's host holds no #{number}")
             return self.issues[number]
         if args[0] == "api" and args[-1].endswith("/dependencies/blocked_by"):
+            return []
+        if args[0] == "api" and "/comments" in args[-1]:
             return []
         if args[0] == "api":
             return 4321
@@ -669,6 +672,71 @@ def self_test() -> int:
                                 for args in wrote),
             f"sent {writing.sent!r}",
         )
+
+    # --- the comments, whose shape both kinds on this host share -------------
+    def _said(identifier, **other) -> dict:
+        return {
+            "id": identifier, "user": {"login": "a-writer"}, "body": f"note {identifier}",
+            "created_at": "2026-10-01T00:00:00Z", "updated_at": "2026-10-01T00:00:00Z",
+            "html_url": f"https://example.invalid/c/{identifier}", **other,
+        }
+
+    def _comments_from(planted):
+        conversing = _Host({"/comments?": planted})
+        return conversing, with_host(
+            conversing, lambda: under_test.read_comments(f"0{BLOCKED}")
+        )
+
+    conversing, answered = _comments_from([
+        _said(1), _said(2, updated_at="2026-10-02T00:00:00Z"),
+        _said(3, user=None, body=""),
+    ])
+    check(
+        "every comment comes back with who wrote it, when, and when it was edited",
+        answered.get("number") == BLOCKED and [
+            (c["id"], c["author"], c["created"], c["edited"], c["body"])
+            for c in answered.get("comments") or []
+        ] == [
+            (1, "a-writer", "2026-10-01T00:00:00Z", None, "note 1"),
+            (2, "a-writer", "2026-10-01T00:00:00Z", "2026-10-02T00:00:00Z", "note 2"),
+            (3, None, "2026-10-01T00:00:00Z", None, ""),
+        ],
+        f"answered {answered!r}",
+    )
+    check(
+        "every page is asked for, at the host's own number",
+        conversing.sent[-1:] == [[
+            "api", "--paginate", f"repos/{A_REPO}/issues/{BLOCKED}/comments?per_page=100",
+        ]],
+        f"sent {conversing.sent!r}",
+    )
+    check(
+        "an item with no comment answers an empty list",
+        with_host(_Host(), lambda: under_test.read_comments(BLOCKED)).get("comments") == [],
+    )
+    for label, planted in (
+        ("an object where a list belongs", {"message": "no"}),
+        ("an entry that is not a comment", ["a note"]),
+        ("a comment with no text", [_said(1), _said(2, body=None)]),
+        ("a comment with no time", [_said(1, created_at="")]),
+    ):
+        reported = with_host(
+            _Host({"/comments?": planted}),
+            lambda: unavailable(lambda: under_test.read_comments(BLOCKED)),
+        )
+        check(f"{label} is a failed read and never a shorter list",
+              "unread" in str(reported) and "<" not in str(reported)[:1], f"got {reported!r}")
+    a_change = _Host(issues={BLOCKED: {
+        **_issue(BLOCKED), "url": f"https://example.invalid/{A_REPO}/pull/{BLOCKED}",
+    }})
+    reported = with_host(
+        a_change, lambda: unavailable(lambda: under_test.read_comments(BLOCKED))
+    )
+    check(
+        "a pull request's conversation is not read as an item's",
+        "pull request" in str(reported) and a_change.calls == ["issue view"],
+        f"got {reported!r} after {a_change.calls!r}",
+    )
 
     # --- § 33's publishing half: the milestone, by title ----------------------
     #

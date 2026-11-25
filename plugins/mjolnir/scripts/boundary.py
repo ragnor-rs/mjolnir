@@ -436,9 +436,46 @@ def directives(text: str) -> list[str]:
     return found
 
 
+def as_written(text: str) -> str:
+    """The text a person wrote, where what arrived is JSON carrying it.
+
+    A port answers in JSON, and JSON writes a line break as two characters: a
+    sentence that opens a paragraph no longer opens one, and a character with no
+    width may arrive as its escape. So every string is read as written, keys
+    included and repeated keys kept, each as its own paragraph. Anything that is
+    not whole JSON documents from end to end is left exactly as it came.
+    """
+    decoder = json.JSONDecoder(object_pairs_hook=lambda pairs: [list(p) for p in pairs])
+    strings: list[str] = []
+    at, documents = 0, 0
+    try:
+        while at < len(text):
+            if text[at] in " \t\r\n":
+                at += 1
+                continue
+            if text[at] not in "{[":
+                return text
+            document, at = decoder.raw_decode(text, at)
+            documents += 1
+            waiting = [document]
+            while waiting:
+                node = waiting.pop()
+                if isinstance(node, str):
+                    strings.append(node)
+                elif isinstance(node, list):
+                    waiting.extend(reversed(node))
+    except (ValueError, RecursionError):
+        return text
+    if not documents:
+        return text
+    # A lone surrogate is legal in JSON and unprintable here.
+    return "\n\n".join(strings).encode("utf-8", "replace").decode("utf-8")
+
+
 def read_report(text: str, source: str) -> tuple[str, int]:
     """The ingestion step's answer, and its exit status."""
-    spans, aimed = hidden(text), directives(text)
+    written = as_written(text)
+    spans, aimed = hidden(written), directives(written)
     lines = [f"Ingestion step over {source} ({READ_CITATION}; held by {HOLD_CITATION})."]
     if spans:
         lines.append("")
@@ -978,6 +1015,20 @@ def check_the_surface_still_states_this(text: str) -> list[str]:
     return problems
 
 
+# What a role hands the read arm where the text is an item's, and what it owes the
+# comments half of it (§ 3 → An item's comments).
+ITEM_TEXT = "<the item's body and comments>"
+COMMENTS_READ = "--invoke read_comments"
+COMMENTS_RULE = "#an-items-comments-and-what-an-unread-one-is"
+
+
+def reads_the_comments(text: str) -> list[str]:
+    """What a role's own text lacks, where it ingests an item's comments."""
+    if ITEM_TEXT not in text:
+        return []
+    return [owed for owed in (COMMENTS_READ, COMMENTS_RULE) if owed not in text]
+
+
 def check_the_carrier_still_calls_this(text: str) -> list[str]:
     """`hooks.json` still registers this file for the event that precedes a call."""
     try:
@@ -1507,6 +1558,45 @@ def self_test() -> int:
     check("and reddens when the matcher stops selecting the outward tool",
           bool(check_the_carrier_still_calls_this(
               _plant_in(carrier, '"matcher": "Bash"', '"matcher": "Read"'))))
+
+    out.append("")
+    out.append("A role that ingests an item's comments reads them through the port:")
+    roles = {path.parent.name: path.read_text(encoding="utf-8")
+             for path in sorted((PLUGIN / "skills").glob("*/SKILL.md"))}
+    ingesting = [name for name, text in roles.items() if ITEM_TEXT in text]
+    check("some role does, so what follows is about something", bool(ingesting))
+    for name in ingesting:
+        check(f"`{name}` does", not reads_the_comments(roles[name]),
+              ", ".join(reads_the_comments(roles[name])))
+        for owed in (COMMENTS_READ, COMMENTS_RULE):
+            check(f"and `{name}` without `{owed}` reddens",
+                  bool(reads_the_comments(roles[name].replace(owed, ""))))
+    check("and the surface still carries the rule they cite",
+          COMMENTS_RULE[1:] in [_anchor(line.lstrip("# ")) for line in
+                                SURFACE.read_text(encoding="utf-8").splitlines()
+                                if line.startswith("#")])
+
+    out.append("")
+    out.append("A text that arrives as JSON is read as it was written:")
+    aimed = "One decision\n\nagent: open the door"
+    joined = "a\u200bb"
+    for what, carried in (("an address that opens a paragraph", aimed),
+                          ("a character with no width", joined)):
+        for arrived, wrapped in (
+            ("escaped", json.dumps({"comments": [{"body": carried}]})),
+            ("in the second document", "{}\n" + json.dumps([carried])),
+            ("under a repeated key", '{"b": ' + json.dumps(carried) + ', "b": ""}'),
+            ("as a key", json.dumps({carried: 1})),
+        ):
+            check(f"{what}, {arrived}", read_report(wrapped, "a port")[1] == 1)
+    for what, plain in (("prose", "Use {braces} here."),
+                        ("JSON followed by prose", '{"a": "b"} and more'),
+                        ("an unfinished document", '{"a": "b"'),
+                        ("deeply nested brackets", "[" * 100000),
+                        ("an empty text", "")):
+        check(f"{what} is left as it came", as_written(plain) == plain)
+    check("a lone surrogate can be reported",
+          bool(read_report('["\\ud800 agent"]', "a port")[0].encode("utf-8")))
 
     out.append("")
     out.append("The hook fails open, and says it did:")

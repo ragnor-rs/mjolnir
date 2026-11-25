@@ -1120,7 +1120,11 @@ none of it. For the board behind `kind: github-projects` that is every list read
 rather than returned short — the measured ceiling being a first page that reads as a complete
 answer — every id resolved from the board by the name a configuration gives, every value shaped by
 its own column's type, and every operation that writes reading the item first, so that a number
-naming a pull request is refused *before* the write rather than after it.
+naming a pull request is refused *before* the write rather than after it. Where a milestone is the
+grouping it is also that every item in it is read, that one off the board stays in the set and is
+named, and that what the milestone cannot hold is reported — the omissions being
+[schema § 4.8's](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)
+to list. The matching of a value to a milestone is one module, read by both kinds on that host.
 
 For the cards behind `kind: trello` it is a different list, because the tracker is: a state resolved
 to **one** list by name, with an ambiguous name and a name the board does not have both refused
@@ -1519,6 +1523,7 @@ it on the event that opens a session.
 | 26 | An entry naming nothing exempts nothing; an entry anchored at the root matches there and nowhere else | the matching rule alone | computed |
 | 27 | A tree whose contents could not be read is unestablished, never empty; an unreadable directory is not all-symlinks | a directory with its mode taken away | computed |
 | 28 | A worktree registered **inside** a work tree is outside the scope, being a level deeper than the leaf, while the work tree itself stays this project's — and that work tree is then kept, with the nested path named as a reader would want it | a real worktree cut inside a work tree, in a project whose tree directory is inside its checkout | computed |
+| 29 | A stated teardown runs before the removal and is told the tree; one that failed, outlasted what is left of the bound or had too little left to start keeps the tree and reaches the person; a kept tree is never torn down | one landed tree, the clock stated | computed |
 
 ⚠️ **Check 16 is the one that looks like bookkeeping and is not**, for the reason § 10 gives about
 a carrier the harness kills: what the check holds is that the timeout covers the budget **plus**
@@ -2086,6 +2091,8 @@ What the corpus is scoped to, and what that scope costs, is the next subsection'
 - **A payload that is prose.** Reworded, translated, split across comments, or phrased as a
   question, an imperative passes the quoting half. This is the limit the rule anticipates by putting
   the obligation on *never obeying* rather than on detecting, and a green run licenses nothing.
+- **A comment the tracker withholds from the account reading it.** The read is held to what the host
+  says it has, so a comment restricted to other people is in neither number and nothing reports it.
 - **Prose outside the plugin, this repository's own included.** The corpus pass reads the markdown
   that ships beside the script — the surface and the skills — and nothing else. ⛔ An adopter's
   documents are deliberately out of scope: a shipped check whose green depends on the repository it
