@@ -975,7 +975,8 @@ def self_test() -> int:
     # --- what a merge will close ---------------------------------------------
     def closing_answer(**changed):
         held = {
-            "baseRefName": "main", "body": "This does not close #34.\n\nCloses #21.",
+            "baseRefName": "main", "title": "Fix #37 again",
+            "body": "This does not close #34.\n\nCloses #21.",
             "closingIssuesReferences": {"pageInfo": {"hasNextPage": False}, "nodes": [
                 {"number": 34, "repository": {"nameWithOwner": A_REPO}},
                 {"number": 7, "repository": {"nameWithOwner": "else/where"}},
@@ -998,10 +999,11 @@ def self_test() -> int:
         f"answered {reading!r}",
     )
     check(
-        "every text that closes is named with its line: body, commit and landing",
+        "every text that closes is named with its line: body, title, commit and landing",
         [(one["item"], one["where"], one["text"]) for one in reading["mentions"]] == [
             ("34", "body", "This does not close #34."),
             ("21", "body", "Closes #21."),
+            ("37", "title", "Fix #37 again"),
             ("35", "commit", "Fixes: #35"),
             ("36", "landing", "Resolve GH-36 now"),
         ],
@@ -1030,6 +1032,13 @@ def self_test() -> int:
             said is not None and not said.startswith("<"),
             f"said {said!r}",
         )
+    forms = under_test.closing_reading.mentions(
+        A_REPO, "fixes:#1 RESOLVED o/r#5 close https://h.invalid/o/r/issues/8.", "body")
+    check(
+        "each form of reference the host resolves is read, spaced or not",
+        [one["item"] for one in forms] == ["1", "o/r#5", "o/r#8"],
+        f"read {forms!r}",
+    )
     check(
         "a word that only contains a closing one, and a bare number, close nothing",
         under_test.closing_reading.mentions(

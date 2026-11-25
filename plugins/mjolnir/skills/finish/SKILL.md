@@ -457,9 +457,9 @@ own list, and this file does not carry a second copy of it.
 ## 8. The merge, and reading it back
 
 ⛔ **These are established before the merge, because each of them is cheap now and expensive
-after.** Every one was in a single copy of a role and in none of the rest, and ⛔ **this step is
-ordered so that nothing irreversible happens before the thing that would have stopped it** —
-which the tracker's answering is the measured violation of.
+after.** Each of the first four was in a single copy of a role and in none of the rest, and ⛔
+**this step is ordered so that nothing irreversible happens before the thing that would have
+stopped it** — which the tracker's answering is the measured violation of.
 
 1. ⛔ **Whether anything is based on this branch.** Retarget-on-merge does **not** fire reliably:
    deleting the head branch **closes** every change based on it instead of moving it to this one's
@@ -487,7 +487,8 @@ which the tracker's answering is the measured violation of.
    ```
 
    ⛔ **A difference withdraws the merge ask**, and the reply names each item with the text the
-   command printed. ⚠️ **Exit 3 is *unread* and never *the same***, and the ask says so.
+   command printed. ⚠️ **Exit 3 is *unread* and never *the same***: `failed` is
+   false where the capability is absent and true where the host did not answer.
 
 ⛔ **Then the merge is asked for, with those established and before the merge call.** The
 question, that *later* is an answer rather than a failure, and that it is procedure no project can

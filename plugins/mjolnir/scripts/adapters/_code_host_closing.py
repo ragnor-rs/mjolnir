@@ -13,7 +13,7 @@ is the authority on them: a scan of the body is only what *explains* an entry.
 ⚠️ Measured on this repository: one body carrying a closing word beside a number
 was not listed for it, so a scan taken as the verdict would have been wrong. A
 **commit message** is on no such list and closes an item all the same once it
-reaches the default branch, so those are scanned, and so is any text the merge
+reaches the default branch, so those are scanned, and so are the title and any text the merge
 call itself supplies.
 
 ⛔ **The scan ignores negation because the host does.** That is the defect this
@@ -43,6 +43,7 @@ query ClosingList($owner:String!, $name:String!, $number:Int!) {
     defaultBranchRef { name }
     pullRequest(number:$number) {
       baseRefName
+      title
       body
       closingIssuesReferences(first:100) {
         pageInfo { hasNextPage }
@@ -59,7 +60,7 @@ query ClosingList($owner:String!, $name:String!, $number:Int!) {
 
 # The words this host closes on, with each form of reference it resolves.
 CLOSES = re.compile(
-    r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b:?\s+"
+    r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b(?::\s*|\s+)"
     r"(?:https?://[^\s/]+/(?P<url>[\w.-]+/[\w.-]+)/issues/(?P<at>[0-9]+)"
     r"|(?P<repo>[\w.-]+/[\w.-]+)#(?P<far>[0-9]+)"
     r"|(?:#|GH-)(?P<near>[0-9]+))\b",
@@ -134,6 +135,8 @@ def closing_list(repo: str, change: int, repository, landing: tuple = ()) -> dic
                 f"an entry of what merging #{change} closes names no item."
             ) from None
     said = mentions(repo, held.get("body") or "", "body")
+    # ⚠️ On no list of the host's either, and a subject it composes carries it.
+    said += mentions(repo, held.get("title") or "", "title")
     for node in _whole(held.get("commits"), f"the commits of #{change}"):
         commit = (node or {}).get("commit") or {}
         if not isinstance(commit.get("message"), str):

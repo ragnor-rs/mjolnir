@@ -1608,7 +1608,7 @@ class Port:
             elif responsible(item):
                 why = "a closing phrase names it and the host does not list it"
             else:
-                why = "no closing phrase in the body or a commit names it"
+                why = "no closing phrase in anything read names it"
             missing.append({"item": item, "text": responsible(item), "why": why})
         return {
             "change": change,
@@ -3166,6 +3166,12 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         "a commit carries an intended item where it lands whole, and not under a squash",
         comparing("rebase", ["35"], said=[stray])["matches"] is True
         and comparing("squash", ["35"], said=[stray])["matches"] is False,
+    )
+    titled = [("35", "title", "Fix #35")]
+    check(
+        "a title that closes an item is an extra, and is never relied on for one",
+        comparing("squash", [], said=titled)["matches"] is False
+        and comparing("rebase", ["35"], said=titled)["matches"] is False,
     )
     unnamed = comparing("squash", [], listed=["34"])
     check(
